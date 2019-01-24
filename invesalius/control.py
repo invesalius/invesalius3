@@ -249,6 +249,7 @@ class Controller():
     def ShowDialogCloseProject(self):
         session = ses.Session()
         st = session.project_status
+        print('Status', st, type(st))
         if st == const.PROJ_CLOSE:
             return -1
         try:

@@ -161,6 +161,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
         Publisher.subscribe(self.__show_current_mask, 'Show current mask')
         Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
 
+        Publisher.subscribe(self.__export_slice, 'Export slice')
+        Publisher.subscribe(self.__export_actual_mask, 'Export actual mask')
+
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
 
@@ -425,6 +428,23 @@ class Slice(with_metaclass(utils.Singleton, object)):
             # Marking the project as changed
             session = ses.Session()
             session.ChangeProject()
+
+    def __export_slice(self, filename):
+        import h5py
+        f = h5py.File(filename, 'w')
+        f['data'] = self.matrix
+        f['spacing'] = self.spacing
+        f.flush()
+        f.close()
+
+    def __export_actual_mask(self, filename):
+        import h5py
+        f = h5py.File(filename, 'w')
+        self.do_threshold_to_all_slices()
+        f['data'] = self.current_mask.matrix[1:, 1:, 1:]
+        f['spacing'] = self.spacing
+        f.flush()
+        f.close()
 
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
@@ -898,6 +918,10 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj = Project()
         proj.mask_dict[index].is_shown = value
         proj.mask_dict[index].on_show()
+
+        if value:
+            threshold_range = proj.mask_dict[index].threshold_range
+            Publisher.sendMessage('Set edition threshold gui', threshold_range=threshold_range)
 
         if (index == self.current_mask.index):
             for buffer_ in self.buffer_slices.values():

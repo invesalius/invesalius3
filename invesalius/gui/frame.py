@@ -53,6 +53,15 @@ import invesalius.gui.preferences as preferences
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
                                 [wx.NewId() for number in range(2)]
 
+WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
+    "NIfTI 1 (*.nii)|*.nii|" \
+    "Compressed NIfTI (*.nii.gz)|*.nii.gz"
+
+IDX_EXT = {
+    0: '.hdf5',
+    1: '.nii',
+    2: '.nii.gz'
+}
 
 
 class MessageWatershed(wx.PopupWindow):
@@ -419,6 +428,8 @@ class Frame(wx.Frame):
                 self.SaveProject()
         elif id == const.ID_PROJECT_SAVE_AS:
             self.ShowSaveAsProject()
+        elif id == const.ID_EXPORT_SLICE:
+            self.ExportProject()
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
@@ -629,6 +640,28 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show save dialog', save_as=True)
 
+    def ExportProject(self):
+        """
+        Show save dialog to export slice.
+        """
+        p = prj.Project()
+
+        session = ses.Session()
+        last_directory = session.get('paths', 'last_directory_export_prj', '')
+        dlg = wx.FileDialog(None,
+                            "Export slice ...",
+                            last_directory, # last used directory
+                            os.path.split(p.name)[-1], # initial filename
+                            WILDCARD_EXPORT_SLICE,
+                            wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ext = IDX_EXT[dlg.GetFilterIndex()]
+            if not filename.endswith(ext):
+                filename += ext
+            p.export_project(filename)
+            session['paths']['last_directory_export_prj'] = os.path.split(filename)[0]
+
     def ShowBitmapImporter(self):
         """
         Tiff, BMP, JPEG and PNG
@@ -702,6 +735,7 @@ class MenuBar(wx.MenuBar):
         # not. Eg. save should only be available if a project is open
         self.enable_items = [const.ID_PROJECT_SAVE,
                              const.ID_PROJECT_SAVE_AS,
+                             const.ID_EXPORT_SLICE,
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
@@ -771,6 +805,7 @@ class MenuBar(wx.MenuBar):
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
         app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
+        app(const.ID_EXPORT_SLICE, _("Export project"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
         #app(const.ID_PROJECT_INFO, _("Project Information..."))

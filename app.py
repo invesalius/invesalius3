@@ -147,9 +147,8 @@ class Inv3SplashScreen(SplashScreen):
             create_session = True
 
         install_lang = 0
-        # Check if there is a language set (if session file exists
-        if session.ReadLanguage():
-            lang = session.GetLanguage()
+        lang = session.GetLanguage()
+        if lang:
             if (lang != "False"):
                 _ = i18n.InstallLanguage(lang)
                 install_lang = 1
@@ -179,7 +178,9 @@ class Inv3SplashScreen(SplashScreen):
                     invdir = os.path.join(homedir, ".invesalius")
                     shutil.rmtree(invdir)
                     sys.exit()
-                    
+
+            dialog.Destroy()
+
         # Session file should be created... So we set the recent
         # choosen language
         if (create_session):
@@ -187,7 +188,7 @@ class Inv3SplashScreen(SplashScreen):
             session.SetLanguage(lang)
             session.WriteSessionFile()
 
-        session.SaveConfigFileBackup()
+        #  session.SaveConfigFileBackup()
 
            
         # Only after language was defined, splash screen will be
@@ -335,6 +336,13 @@ def parse_comand_line():
     parser.add_option("-a", "--export-to-all",
                       help="Export to STL for all mask presets.")
 
+    parser.add_option("--export-project",
+                      help="Export slices and mask to HDF5 or Nifti file.")
+
+    parser.add_option("--no-masks", action="store_false",
+                      dest="save_masks", default=True,
+                      help="Make InVesalius not export mask when exporting project.")
+
     options, args = parser.parse_args()
     return options, args
 
@@ -427,6 +435,17 @@ def check_for_export(options, suffix='', remove_surfaces=False):
             traceback.print_exc()
         finally:
             exit(0)
+
+    if options.export_project:
+        from invesalius.project import Project
+        prj = Project()
+        export_filename = options.export_project
+        if suffix:
+            export_filename, ext = os.path.splitext(export_filename)
+            export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
+
+        prj.export_project(export_filename, save_masks=options.save_masks)
+        print("Saved {}".format(export_filename))
 
 
 def export(path_, threshold_range, remove_surface=False):
