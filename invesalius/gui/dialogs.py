@@ -3590,3 +3590,65 @@ class SurfaceProgressWindow(object):
 
     def Close(self):
         self.dlg.Destroy()
+
+
+class GoToDialog(wx.Dialog):
+    def __init__(self, title="Go to slice ..."):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self._init_gui()
+
+    def _init_gui(self):
+        orientations = (
+            (_("Axial"), const.AXIAL_STR),
+            (_("Coronal"), const.CORONAL_STR),
+            (_("Sagital"), const.SAGITAL_STR),
+        )
+        self.goto_slice = wx.TextCtrl(self, -1, "")
+        self.goto_orientation = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        for orientation in orientations:
+            self.goto_orientation.Append(*orientation)
+        self.goto_orientation.SetSelection(0)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        slice_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        slice_sizer.Add(wx.StaticText(self, -1, _("Slice"), style=wx.ALIGN_CENTER), 0, wx.ALIGN_CENTER|wx.RIGHT, 5)
+        slice_sizer.Add(self.goto_slice, 0, wx.EXPAND)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(slice_sizer, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(self.goto_orientation, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+    def OnOk(self, evt):
+        try:
+            slice_number = int(self.goto_slice.GetValue())
+            orientation = self.goto_orientation.GetClientData(self.goto_orientation.GetSelection())
+            Publisher.sendMessage(("Set scroll position", orientation), index=slice_number)
+        except ValueError:
+            pass
+        self.Close()
+
+    def Close(self):
+        wx.Dialog.Close(self)
+        self.Destroy()

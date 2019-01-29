@@ -456,6 +456,8 @@ class Frame(wx.Frame):
             self.OnUndo()
         elif id == wx.ID_REDO:
             self.OnRedo()
+        elif id == const.ID_GOTO_SLICE:
+            self.OnGotoSlice()
 
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
@@ -683,6 +685,10 @@ class Frame(wx.Frame):
     def OnRedo(self):
         Publisher.sendMessage('Redo edition')
 
+    def OnGotoSlice(self):
+        gt_dialog = dlg.GoToDialog()
+        gt_dialog.Show()
+
     def OnMaskBoolean(self):
         Publisher.sendMessage('Show boolean dialog')
 
@@ -755,7 +761,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
                              const.ID_CREATE_SURFACE,
-                             const.ID_CREATE_MASK]
+                             const.ID_CREATE_MASK,
+                             const.ID_GOTO_SLICE]
         self.__init_items()
         self.__bind_events()
 
@@ -839,6 +846,7 @@ class MenuBar(wx.MenuBar):
         else:
             file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
             file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
+        file_edit.Append(const.ID_GOTO_SLICE, _("Go to slice ...\tCtrl+G"))
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
