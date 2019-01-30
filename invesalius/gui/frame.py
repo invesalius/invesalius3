@@ -98,7 +98,7 @@ class Frame(wx.Frame):
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
 
         self.mw = None
-
+        self._last_viewer_orientation_focus = const.AXIAL_STR
 
         if sys.platform != 'darwin':
             self.Maximize()
@@ -153,6 +153,7 @@ class Frame(wx.Frame):
         sub(self._ShowImportBitmap, 'Show import bitmap panel in frame')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
+        sub(self._UpdateViewerFocus, 'Set viewer orientation focus')
         sub(self._Exit, 'Exit')
 
     def __bind_events_wx(self):
@@ -387,6 +388,10 @@ class Frame(wx.Frame):
         Refresh AUI panels/data.
         """
         self.aui_manager.Update()
+
+    def _UpdateViewerFocus(self, orientation):
+        if orientation in (const.AXIAL_STR, const.CORONAL_STR, const.SAGITAL_STR):
+            self._last_viewer_orientation_focus = orientation
 
     def CloseProject(self):
         Publisher.sendMessage('Close Project')
@@ -686,8 +691,8 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Redo edition')
 
     def OnGotoSlice(self):
-        gt_dialog = dlg.GoToDialog()
-        gt_dialog.Show()
+        gt_dialog = dlg.GoToDialog(init_orientation=self._last_viewer_orientation_focus)
+        gt_dialog.ShowModal()
 
     def OnMaskBoolean(self):
         Publisher.sendMessage('Show boolean dialog')

@@ -3593,11 +3593,11 @@ class SurfaceProgressWindow(object):
 
 
 class GoToDialog(wx.Dialog):
-    def __init__(self, title="Go to slice ..."):
+    def __init__(self, title="Go to slice ...", init_orientation=const.AXIAL_STR):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-        self._init_gui()
+        self._init_gui(init_orientation)
 
-    def _init_gui(self):
+    def _init_gui(self, init_orientation):
         orientations = (
             (_("Axial"), const.AXIAL_STR),
             (_("Coronal"), const.CORONAL_STR),
@@ -3605,9 +3605,12 @@ class GoToDialog(wx.Dialog):
         )
         self.goto_slice = wx.TextCtrl(self, -1, "")
         self.goto_orientation = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        for orientation in orientations:
+        cb_init = 0
+        for n, orientation in enumerate(orientations):
             self.goto_orientation.Append(*orientation)
-        self.goto_orientation.SetSelection(0)
+            if orientation[1] == init_orientation:
+                cb_init = n
+        self.goto_orientation.SetSelection(cb_init)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
