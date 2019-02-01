@@ -98,7 +98,7 @@ class Frame(wx.Frame):
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
 
         self.mw = None
-
+        self._last_viewer_orientation_focus = const.AXIAL_STR
 
         if sys.platform != 'darwin':
             self.Maximize()
@@ -153,6 +153,7 @@ class Frame(wx.Frame):
         sub(self._ShowImportBitmap, 'Show import bitmap panel in frame')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
+        sub(self._UpdateViewerFocus, 'Set viewer orientation focus')
         sub(self._Exit, 'Exit')
 
     def __bind_events_wx(self):
@@ -388,6 +389,10 @@ class Frame(wx.Frame):
         """
         self.aui_manager.Update()
 
+    def _UpdateViewerFocus(self, orientation):
+        if orientation in (const.AXIAL_STR, const.CORONAL_STR, const.SAGITAL_STR):
+            self._last_viewer_orientation_focus = orientation
+
     def CloseProject(self):
         Publisher.sendMessage('Close Project')
 
@@ -456,6 +461,8 @@ class Frame(wx.Frame):
             self.OnUndo()
         elif id == wx.ID_REDO:
             self.OnRedo()
+        elif id == const.ID_GOTO_SLICE:
+            self.OnGotoSlice()
 
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
@@ -683,6 +690,12 @@ class Frame(wx.Frame):
     def OnRedo(self):
         Publisher.sendMessage('Redo edition')
 
+    def OnGotoSlice(self):
+        gt_dialog = dlg.GoToDialog(init_orientation=self._last_viewer_orientation_focus)
+        gt_dialog.CenterOnParent()
+        gt_dialog.ShowModal()
+        self.Refresh()
+
     def OnMaskBoolean(self):
         Publisher.sendMessage('Show boolean dialog')
 
@@ -755,7 +768,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
                              const.ID_CREATE_SURFACE,
-                             const.ID_CREATE_MASK]
+                             const.ID_CREATE_MASK,
+                             const.ID_GOTO_SLICE]
         self.__init_items()
         self.__bind_events()
 
@@ -839,6 +853,7 @@ class MenuBar(wx.MenuBar):
         else:
             file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
             file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
+        file_edit.Append(const.ID_GOTO_SLICE, _("Go to slice ...\tCtrl+G"))
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
