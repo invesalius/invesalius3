@@ -3593,7 +3593,7 @@ class SurfaceProgressWindow(object):
 
 
 class GoToDialog(wx.Dialog):
-    def __init__(self, title="Go to slice ...", init_orientation=const.AXIAL_STR):
+    def __init__(self, title=_("Go to slice ..."), init_orientation=const.AXIAL_STR):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
         self._init_gui(init_orientation)
 
@@ -3627,7 +3627,7 @@ class GoToDialog(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         slice_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        slice_sizer.Add(wx.StaticText(self, -1, _("Slice"), style=wx.ALIGN_CENTER), 0, wx.ALIGN_CENTER|wx.RIGHT, 5)
+        slice_sizer.Add(wx.StaticText(self, -1, _("Slice number"), style=wx.ALIGN_CENTER), 0, wx.ALIGN_CENTER|wx.RIGHT, 5)
         slice_sizer.Add(self.goto_slice, 0, wx.EXPAND)
 
         main_sizer.Add((5, 5))
