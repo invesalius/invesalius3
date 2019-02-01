@@ -692,6 +692,7 @@ class Frame(wx.Frame):
 
     def OnGotoSlice(self):
         gt_dialog = dlg.GoToDialog(init_orientation=self._last_viewer_orientation_focus)
+        gt_dialog.CenterOnParent()
         gt_dialog.ShowModal()
         self.Refresh()
 
