@@ -3628,12 +3628,12 @@ class GoToDialog(wx.Dialog):
 
         slice_sizer = wx.BoxSizer(wx.HORIZONTAL)
         slice_sizer.Add(wx.StaticText(self, -1, _("Slice number"), style=wx.ALIGN_CENTER), 0, wx.ALIGN_CENTER|wx.RIGHT, 5)
-        slice_sizer.Add(self.goto_slice, 0, wx.EXPAND)
+        slice_sizer.Add(self.goto_slice, 1, wx.EXPAND)
 
         main_sizer.Add((5, 5))
-        main_sizer.Add(slice_sizer, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add(slice_sizer, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.Add((5, 5))
-        main_sizer.Add(self.goto_orientation, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add(self.goto_orientation, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.Add((5, 5))
         main_sizer.Add(btnsizer, 0, wx.EXPAND)
         main_sizer.Add((5, 5))
