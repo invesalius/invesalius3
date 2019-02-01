@@ -98,6 +98,10 @@ SAGITAL = 3
 VOLUME = 4
 SURFACE = 5
 
+AXIAL_STR="AXIAL"
+CORONAL_STR="CORONAL"
+SAGITAL_STR="SAGITAL"
+
 # Measure type
 LINEAR = 6
 ANGULAR = 7
@@ -553,6 +557,8 @@ ID_DENSITY_MEASURE = wx.NewId()
 ID_MASK_DENSITY_MEASURE = wx.NewId()
 ID_CREATE_SURFACE = wx.NewId()
 ID_CREATE_MASK = wx.NewId()
+
+ID_GOTO_SLICE = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

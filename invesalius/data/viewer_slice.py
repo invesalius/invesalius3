@@ -893,6 +893,11 @@ class Viewer(wx.Panel):
         else:
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
+    def SetFocus(self):
+        Publisher.sendMessage('Set viewer orientation focus',
+                              orientation=self.orientation)
+        super().SetFocus()
+
     def OnExportPicture(self, orientation, filename, filetype):
         dict = {"AXIAL": const.AXIAL,
                 "CORONAL": const.CORONAL,
