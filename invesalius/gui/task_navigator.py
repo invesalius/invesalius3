@@ -688,9 +688,6 @@ class NeuronavigationPanel(wx.Panel):
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
-        for n in range(0, 3):
-            self.numctrls_coord[6][n].SetValue(0.0)
-
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
             self.fiducials[m, :] = [np.nan, np.nan, np.nan]
