@@ -301,8 +301,8 @@ class NeuronavigationPanel(wx.Panel):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         # Initialize list of buttons and numctrls for wx objects
-        self.btns_coord = [None] * 6
-        self.numctrls_coord = [list(), list(), list(), list(), list(), list()]
+        self.btns_coord = [None, None, None, None, None, None]
+        self.numctrls_coord = [[], [], [], [], [], []]
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
@@ -362,8 +362,8 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
         # Image and tracker coordinates number controls
-        for m in range(0, len(self.btns_coord)):
-            for n in range(0, 3):
+        for m in range(len(self.btns_coord)):
+            for n in range(3):
                 self.numctrls_coord[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
@@ -374,9 +374,9 @@ class NeuronavigationPanel(wx.Panel):
 
         coord_sizer = wx.GridBagSizer(hgap=5, vgap=5)
 
-        for m in range(0, len(self.btns_coord)):
+        for m in range(len(self.btns_coord)):
             coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
-            for n in range(0, 3):
+            for n in range(3):
                 coord_sizer.Add(self.numctrls_coord[m][n], pos=wx.GBPosition(m, n+1))
                 if m in range(1, 6):
                     self.numctrls_coord[m][n].SetEditable(False)
