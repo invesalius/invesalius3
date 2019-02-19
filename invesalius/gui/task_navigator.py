@@ -305,8 +305,8 @@ class NeuronavigationPanel(wx.Panel):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         # Initialize list of buttons and numctrls for wx objects
-        self.btns_coord = [None] * 7
-        self.numctrls_coord = [list(), list(), list(), list(), list(), list(), list()]
+        self.btns_coord = [None] * 6
+        self.numctrls_coord = [list(), list(), list(), list(), list(), list()]
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
@@ -346,10 +346,10 @@ class NeuronavigationPanel(wx.Panel):
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
             # Exception for event of button that set image coordinates
-            if n == 6:
-                self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetImageCoordinates)
-            else:
-                self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
+            # if n == 6:
+            #     self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetImageCoordinates)
+            # else:
+            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
@@ -370,7 +370,7 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
         # Image and tracker coordinates number controls
-        for m in range(0, 7):
+        for m in range(0, len(self.btns_coord)):
             for n in range(0, 3):
                 self.numctrls_coord[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
@@ -382,7 +382,7 @@ class NeuronavigationPanel(wx.Panel):
 
         coord_sizer = wx.GridBagSizer(hgap=5, vgap=5)
 
-        for m in range(0, 7):
+        for m in range(0, len(self.btns_coord)):
             coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
             for n in range(0, 3):
                 coord_sizer.Add(self.numctrls_coord[m][n], pos=wx.GBPosition(m, n+1))
@@ -432,11 +432,12 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = position
-        for m in [0, 1, 2, 6]:
-            if m == 6 and self.btns_coord[m].IsEnabled():
-                for n in [0, 1, 2]:
-                    self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
-            elif m != 6 and not self.btns_coord[m].GetValue():
+        for m in [0, 1, 2]:
+            # if m == 6 and self.btns_coord[m].IsEnabled():
+            #     for n in [0, 1, 2]:
+            #         self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
+            # elif m != 6 and not self.btns_coord[m].GetValue():
+            if not self.btns_coord[m].GetValue():
                 # btn_state = self.btns_coord[m].GetValue()
                 # if not btn_state:
                 for n in [0, 1, 2]:
@@ -544,18 +545,18 @@ class NeuronavigationPanel(wx.Panel):
                               nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         print("Reference mode changed!")
 
-    def OnSetImageCoordinates(self, evt):
-        # FIXME: Cross does not update in last clicked slice, only on the other two
-        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
-
-        ux, uy, uz = self.numctrls_coord[btn_id][0].GetValue(),\
-                     self.numctrls_coord[btn_id][1].GetValue(),\
-                     self.numctrls_coord[btn_id][2].GetValue()
-
-        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
-        # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', arg=(ux, uy, uz), position=(0., 0., 0.))
-        Publisher.sendMessage('Update cross position', position=(ux, uy, uz))
+    # def OnSetImageCoordinates(self, evt):
+    #     # FIXME: Cross does not update in last clicked slice, only on the other two
+    #     btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
+    #
+    #     ux, uy, uz = self.numctrls_coord[btn_id][0].GetValue(),\
+    #                  self.numctrls_coord[btn_id][1].GetValue(),\
+    #                  self.numctrls_coord[btn_id][2].GetValue()
+    #
+    #     Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
+    #     # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
+    #     Publisher.sendMessage('Co-registered points', arg=(ux, uy, uz), position=(0., 0., 0.))
+    #     Publisher.sendMessage('Update cross position', position=(ux, uy, uz))
 
     def OnImageFiducials(self, evt):
         btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
