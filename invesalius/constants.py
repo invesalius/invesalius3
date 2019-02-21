@@ -691,6 +691,7 @@ STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
+FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
 
 DEFAULT_COIL = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
