@@ -719,13 +719,11 @@ TIPS_IMG = [_("Select left ear in image"),
 
 BTNS_TRK = {TR1: {3: _('LET')},
             TR2: {4: _('RET')},
-            TR3: {5: _('NAT')},
-            SET: {6: _('SET')}}
+            TR3: {5: _('NAT')}}
 
 TIPS_TRK = [_("Select left ear with spatial tracker"),
             _("Select right ear with spatial tracker"),
-            _("Select nasion with spatial tracker"),
-            _("Show set coordinates in image")]
+            _("Select nasion with spatial tracker")]
 
 OBJL = wx.NewId()
 OBJR = wx.NewId()
