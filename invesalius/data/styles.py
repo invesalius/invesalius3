@@ -45,7 +45,7 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 
 import invesalius.gui.dialogs as dialogs
-from invesalius.data.measures import MeasureData
+from invesalius.data.measures import MeasureData, CircleDensityMeasure, PolygonDensityMeasure
 
 from . import floodfill
 
@@ -140,6 +140,7 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
 
         # Zoom using right button
         self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+        self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
         self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
 
         self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
@@ -160,6 +161,12 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
 
     def OnZoomRightClick(self, evt, obj):
         evt.StartDolly()
+
+    def OnZoomRightRelease(self, evt, obj):
+        print('EndDolly')
+        evt.OnRightButtonUp()
+        #  evt.EndDolly()
+        self.right_pressed = False
 
     def OnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
@@ -525,6 +532,150 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
         self._type = const.ANGULAR
 
         self.state_code = const.STATE_MEASURE_ANGLE
+
+
+class DensityMeasureStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for density measurements.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.STATE_MEASURE_DENSITY
+
+        self.format = 'polygon'
+
+        self._last_measure = None
+
+        self.viewer = viewer
+        self.orientation = viewer.orientation
+        self.slice_data = viewer.slice_data
+
+        self.picker = vtk.vtkCellPicker()
+        self.picker.PickFromListOn()
+
+        self.measures = MeasureData()
+
+        self._bind_events()
+
+    def _bind_events(self):
+        #  self.AddObserver("LeftButtonPressEvent", self.OnInsertPoint)
+        #  self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
+        #  self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
+        #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
+        self.viewer.canvas.subscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
+        self.viewer.canvas.subscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
+
+    def SetUp(self):
+        for n in self.viewer.draw_by_slice_number:
+            for i in self.viewer.draw_by_slice_number[n]:
+                if isinstance(i, PolygonDensityMeasure):
+                    i.set_interactive(True)
+        self.viewer.canvas.Refresh()
+
+    def CleanUp(self):
+        self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
+        self.viewer.canvas.unsubscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
+        old_list = self.viewer.draw_by_slice_number
+        self.viewer.draw_by_slice_number.clear()
+        for n in old_list:
+            for i in old_list[n]:
+                if isinstance(i, PolygonDensityMeasure):
+                    if i.complete:
+                        self.viewer.draw_by_slice_number[n].append(i)
+                else:
+                    self.viewer.draw_by_slice_number[n].append(i)
+
+        self.viewer.UpdateCanvas()
+
+    def _2d_to_3d(self, pos):
+        mx, my = pos
+        iren = self.viewer.interactor
+        render = iren.FindPokedRenderer(mx, my)
+        self.picker.AddPickList(self.slice_data.actor)
+        self.picker.Pick(mx, my, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        self.picker.DeletePickList(self.slice_data.actor)
+        return (x, y, z)
+
+    def _pick_position(self):
+        iren = self.viewer.interactor
+        mx, my = iren.GetEventPosition()
+        return (mx, my)
+
+    def _get_pos_clicked(self):
+        mouse_x, mouse_y = self._pick_position()
+        position = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        return position
+
+    def OnInsertPoint(self, evt):
+        mouse_x, mouse_y = evt.position
+        print('OnInsertPoint', evt.position)
+        n = self.viewer.slice_data.number
+        pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+
+        if self.format == 'ellipse':
+            pp1 = self.viewer.get_coordinate_cursor(mouse_x+50, mouse_y, self.picker)
+            pp2 = self.viewer.get_coordinate_cursor(mouse_x, mouse_y+50, self.picker)
+
+            m = CircleDensityMeasure(self.orientation, n)
+            m.set_center(pos)
+            m.set_point1(pp1)
+            m.set_point2(pp2)
+            m.calc_density()
+            _new_measure = True
+            Publisher.sendMessage("Add density measurement", density_measure=m)
+        elif self.format == 'polygon':
+            if self._last_measure is None:
+                m = PolygonDensityMeasure(self.orientation, n)
+                _new_measure = True
+            else:
+                m = self._last_measure
+                _new_measure = False
+                if m.slice_number != n:
+                    self.viewer.draw_by_slice_number[m.slice_number].remove(m)
+                    del m
+                    m = PolygonDensityMeasure(self.orientation, n)
+                    _new_measure = True
+
+            m.insert_point(pos)
+
+            if _new_measure:
+                self.viewer.draw_by_slice_number[n].append(m)
+
+                if self._last_measure:
+                    self._last_measure.set_interactive(False)
+
+                self._last_measure = m
+            #  m.calc_density()
+
+        self.viewer.UpdateCanvas()
+
+    def OnInsertPolygon(self, evt):
+        if self.format == 'polygon' and self._last_measure:
+            m = self._last_measure
+            if len(m.points) >= 3:
+                n = self.viewer.slice_data.number
+                print(self.viewer.draw_by_slice_number[n], m)
+                self.viewer.draw_by_slice_number[n].remove(m)
+                m.complete_polygon()
+                self._last_measure = None
+                Publisher.sendMessage("Add density measurement", density_measure=m)
+                self.viewer.UpdateCanvas()
+
+
+class DensityMeasureEllipseStyle(DensityMeasureStyle):
+    def __init__(self, viewer):
+        DensityMeasureStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_DENSITY_ELLIPSE
+        self.format = 'ellipse'
+
+
+class DensityMeasurePolygonStyle(DensityMeasureStyle):
+    def __init__(self, viewer):
+        DensityMeasureStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_DENSITY_POLYGON
+        self.format = 'polygon'
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
@@ -2356,6 +2507,10 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
         return out_mask
 
+
+
+
+
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -2363,6 +2518,8 @@ def get_style(style):
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
+        const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,

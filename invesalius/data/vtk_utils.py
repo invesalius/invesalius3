@@ -95,7 +95,8 @@ def ShowProgress(number_of_filters = 1,
 
 class Text(object):
     def __init__(self):
-
+        self.layer = 99
+        self.children = []
         property = vtk.vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE)
         property.SetFontFamilyToArial()
@@ -195,7 +196,8 @@ class Text(object):
 
 class TextZero(object):
     def __init__(self):
-
+        self.layer = 99
+        self.children = []
         property = vtk.vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE_LARGE)
         property.SetFontFamilyToArial()
