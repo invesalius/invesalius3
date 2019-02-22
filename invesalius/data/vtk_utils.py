@@ -239,7 +239,11 @@ class TextZero(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-        self.actor.SetInput(value.encode("cp1252"))
+        try:
+            self.actor.SetInput(value.encode("cp1252"))
+        except(UnicodeEncodeError):
+            self.actor.SetInput(value.encode("utf-8"))
+
         self.text = value
 
     def SetPosition(self, position):
