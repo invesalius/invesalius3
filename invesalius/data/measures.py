@@ -54,6 +54,9 @@ else:
     MEASURE_TEXT_COLOUR = (0, 0, 0)
     MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
 
+
+DEBUG_DENSITY = False
+
 class MeasureData(with_metaclass(utils.Singleton)):
     """
     Responsible to keep measures data.
@@ -1243,14 +1246,15 @@ class CircleDensityMeasure(CanvasHandlerBase):
             #  test_img = np.zeros_like(img_slice)
             #  test_img[mask] = img_slice[mask]
             #  imsave('/tmp/manolo.png', test_img[::-1,:])
-        try:
-            m[:] = 0
-            m[mask] = 254
-            slc.buffer_slices[self.orientation].discard_vtk_mask()
-            slc.buffer_slices[self.orientation].discard_mask()
-            Publisher.sendMessage('Reload actual slice')
-        except IndexError:
-                pass
+        if DEBUG_DENSITY:
+            try:
+                m[:] = 0
+                m[mask] = 254
+                slc.buffer_slices[self.orientation].discard_vtk_mask()
+                slc.buffer_slices[self.orientation].discard_mask()
+                Publisher.sendMessage('Reload actual slice')
+            except IndexError:
+                    pass
 
         values = img_slice[mask]
 
@@ -1438,14 +1442,15 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
         print("mask sum", mask.sum())
 
-        try:
-            m[:] = 0
-            m[mask] = 254
-            slc.buffer_slices[self.orientation].discard_vtk_mask()
-            slc.buffer_slices[self.orientation].discard_mask()
-            Publisher.sendMessage('Reload actual slice')
-        except IndexError:
-                pass
+        if DEBUG_DENSITY:
+            try:
+                m[:] = 0
+                m[mask] = 254
+                slc.buffer_slices[self.orientation].discard_vtk_mask()
+                slc.buffer_slices[self.orientation].discard_mask()
+                Publisher.sendMessage('Reload actual slice')
+            except IndexError:
+                    pass
 
         values = img_slice[mask]
 
