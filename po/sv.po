@@ -11,13 +11,13 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-03-27 11:03-0300\n"
-"PO-Revision-Date: 2017-09-22 05:06+0000\n"
-"Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
-"Language-Team: Greek (http://www.transifex.com/invesalius/invesalius3/language/el/)\n"
+"PO-Revision-Date: 2015-04-28 19:26+0000\n"
+"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Language-Team: Swedish (http://www.transifex.com/invesalius/invesalius3/language/sv/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: el\n"
+"Language: sv\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -26,7 +26,7 @@ msgstr ""
 #: bitmap_preview_panel.py:25 dicom_preview_panel.py:49
 #, python-format
 msgid "Image size: %d x %d"
-msgstr "Μέγεθος εικόνας: %d x %d"
+msgstr ""
 
 #: bitmap_preview_panel.py:26 dicom_preview_panel.py:50
 #, python-format
@@ -48,14 +48,14 @@ msgstr ""
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:793
 msgid "Image"
-msgstr "Εικόνα"
+msgstr ""
 
 #: bitmap_preview_panel.py:442 bitmap_preview_panel.py:443 constants.py:214
 #: constants.py:302 control.py:478 dialogs.py:827 dialogs.py:840
 #: dicom_preview_panel.py:676 dicom_preview_panel.py:677 presets.py:32
 #: presets.py:50 presets.py:106 presets.py:137
 msgid "Bone"
-msgstr "Οστό"
+msgstr ""
 
 #: bitmap_preview_panel.py:510 dicom_preview_panel.py:744
 msgid "Auto-play"
@@ -74,7 +74,7 @@ msgstr ""
 #: constants.py:32
 #, python-format
 msgid "M %d"
-msgstr "Μ %d"
+msgstr ""
 
 #: constants.py:44 constants.py:415 constants.py:417
 msgid " Off"
@@ -94,11 +94,11 @@ msgstr ""
 
 #: constants.py:48 constants.py:354
 msgid "Left"
-msgstr "Αριστερά"
+msgstr ""
 
 #: constants.py:49 constants.py:353
 msgid "Right"
-msgstr "Δεξιά"
+msgstr ""
 
 #: constants.py:50
 msgid "Dresden"
@@ -114,15 +114,15 @@ msgstr ""
 
 #: constants.py:105
 msgid "Keep all slices"
-msgstr "Διατήρησε όλες τις τομές"
+msgstr ""
 
 #: constants.py:105
 msgid "Skip 1 for each 2 slices"
-msgstr "Διατήρησε μια τομή ανα δύο"
+msgstr ""
 
 #: constants.py:106
 msgid "Skip 2 for each 3 slices"
-msgstr "Διατήρησε μια τομή ανα τρεις"
+msgstr ""
 
 #: constants.py:106
 msgid "Skip 3 for each 4 slices"
@@ -138,27 +138,27 @@ msgstr ""
 
 #: constants.py:164 slice_menu.py:103 slice_menu.py:110
 msgid "Default "
-msgstr "Προεπιλογή"
+msgstr ""
 
 #: constants.py:165
 msgid "Hue"
-msgstr "Απόχρωση"
+msgstr ""
 
 #: constants.py:166
 msgid "Saturation"
-msgstr "Κορεσμός"
+msgstr ""
 
 #: constants.py:167
 msgid "Desert"
-msgstr "Έρημος"
+msgstr ""
 
 #: constants.py:168
 msgid "Rainbow"
-msgstr "Ουράνιο τόξο"
+msgstr ""
 
 #: constants.py:169
 msgid "Ocean"
-msgstr "Ωκεανός"
+msgstr ""
 
 #: constants.py:170
 msgid "Inverse Gray"
@@ -167,40 +167,40 @@ msgstr ""
 #: constants.py:220
 #, python-format
 msgid "Mask %d"
-msgstr "Μάσκα %d"
+msgstr ""
 
 #: constants.py:276 task_surface.py:44
 msgid "Draw"
-msgstr "Σχεδίαση"
+msgstr ""
 
 #: constants.py:276 styles.py:66 task_slice.py:853 task_surface.py:44
 msgid "Erase"
-msgstr "Διαγραφή"
+msgstr ""
 
 #: constants.py:276 data_notebook.py:447 dialogs.py:2514 task_surface.py:44
 msgid "Threshold"
-msgstr "Όριο"
+msgstr ""
 
 #: constants.py:288 constants.py:293
 msgid "Low"
-msgstr "Χαμηλό"
+msgstr ""
 
 #: constants.py:289 constants.py:293
 msgid "Medium"
-msgstr "Μεσαίο"
+msgstr ""
 
 #: constants.py:290 constants.py:293
 msgid "High"
-msgstr "Ψηλό"
+msgstr ""
 
 #: constants.py:291 constants.py:292 constants.py:293 task_slice.py:176
 msgid "Optimal *"
-msgstr "Βέλτιστο *"
+msgstr ""
 
 #: constants.py:298
 #, python-format
 msgid "Surface %d"
-msgstr "Επιφάνεια %d"
+msgstr ""
 
 #: constants.py:301
 msgid "Abdomen"
@@ -212,16 +212,16 @@ msgstr ""
 
 #: constants.py:304
 msgid "Brain"
-msgstr "Εγκέφαλος"
+msgstr ""
 
 #: constants.py:305 control.py:480 dialogs.py:1490 dialogs.py:1493
 #: dialogs.py:1501 dialogs.py:1576 slice_menu.py:60 slice_menu.py:72
 msgid "Default"
-msgstr "Προεπιλογή"
+msgstr ""
 
 #: constants.py:306
 msgid "Emphysema"
-msgstr "Εμφύσημα"
+msgstr ""
 
 #: constants.py:307
 msgid "Ischemia - Hard, non contrast"
@@ -237,7 +237,7 @@ msgstr ""
 
 #: constants.py:310
 msgid "Liver"
-msgstr "Ήπαρ"
+msgstr ""
 
 #: constants.py:311
 msgid "Lung - Soft"
@@ -253,11 +253,11 @@ msgstr ""
 
 #: constants.py:314 control.py:481 slice_menu.py:67 slice_menu.py:72
 msgid "Manual"
-msgstr "Εγχειρίδιο"
+msgstr ""
 
 #: constants.py:315
 msgid "Pelvis"
-msgstr "Πύελος"
+msgstr ""
 
 #: constants.py:316
 msgid "Sinus"
@@ -277,35 +277,35 @@ msgstr ""
 
 #: constants.py:349
 msgid "Front"
-msgstr "Μπροστά"
+msgstr ""
 
 #: constants.py:350
 msgid "Back"
-msgstr "Πίσω"
+msgstr ""
 
 #: constants.py:351
 msgid "Top"
-msgstr "Πάνω"
+msgstr ""
 
 #: constants.py:352
 msgid "Bottom"
-msgstr "Κάτω"
+msgstr ""
 
 #: constants.py:355
 msgid "Isometric"
-msgstr "Ισομετρικό"
+msgstr ""
 
 #: constants.py:362
 msgid "Airways"
-msgstr "Αεραγωγοί"
+msgstr ""
 
 #: constants.py:363
 msgid "Airways II"
-msgstr "Αεραγωγοί II"
+msgstr ""
 
 #: constants.py:364
 msgid "Black & White"
-msgstr "Μαύρο & Άσπρο"
+msgstr ""
 
 #: constants.py:365
 msgid "Bone + Skin"
@@ -535,16 +535,16 @@ msgstr ""
 #: data_notebook.py:50 dialogs.py:1912 dialogs.py:2063 dialogs.py:2082
 #: measures.py:22
 msgid "Axial"
-msgstr "Αξονική"
+msgstr ""
 
 #: data_notebook.py:51 dialogs.py:1912 dialogs.py:2063 dialogs.py:2083
 #: measures.py:23
 msgid "Coronal"
-msgstr "Οριζόντια"
+msgstr ""
 
 #: data_notebook.py:52 measures.py:24
 msgid "Sagittal"
-msgstr "Τοξοειδής"
+msgstr ""
 
 #: data_notebook.py:67
 msgid "Masks"
@@ -556,7 +556,7 @@ msgstr ""
 
 #: data_notebook.py:69
 msgid "Measures"
-msgstr "Μέτρηση"
+msgstr ""
 
 #: data_notebook.py:186 frame.py:1328
 msgid "Measure distance"
@@ -569,11 +569,11 @@ msgstr ""
 #: data_notebook.py:446 data_notebook.py:771 data_notebook.py:1035
 #: data_notebook.py:1232
 msgid "Name"
-msgstr "Όνομα"
+msgstr ""
 
 #: data_notebook.py:510 frame.py:780
 msgid "Mask"
-msgstr "Μάσκα"
+msgstr ""
 
 #: data_notebook.py:635 task_surface.py:141
 msgid "New surface"
@@ -581,7 +581,7 @@ msgstr ""
 
 #: data_notebook.py:772
 msgid "Volume (mm³)"
-msgstr "Όγκος (mm³)"
+msgstr ""
 
 #: data_notebook.py:773
 msgid "Area (mm²)"
@@ -589,7 +589,7 @@ msgstr ""
 
 #: data_notebook.py:774
 msgid "Transparency"
-msgstr "Διαφάνεια"
+msgstr ""
 
 #: data_notebook.py:1036
 msgid "Location"
@@ -597,15 +597,15 @@ msgstr ""
 
 #: data_notebook.py:1037 data_notebook.py:1233 import_bitmap_panel.py:203
 msgid "Type"
-msgstr "Τύπος"
+msgstr ""
 
 #: data_notebook.py:1038 data_notebook.py:1234
 msgid "Value"
-msgstr "Τιμή"
+msgstr ""
 
 #: default_tasks.py:151
 msgid "Data"
-msgstr "Δεδομένα"
+msgstr ""
 
 #: default_tasks.py:244 default_tasks.py:250
 msgid "Load data"
@@ -613,15 +613,15 @@ msgstr ""
 
 #: default_tasks.py:245 default_tasks.py:251 default_tasks.py:280
 msgid "Select region of interest"
-msgstr "Επιλέξτε την περιοχή ενδιαφέροντος"
+msgstr ""
 
 #: default_tasks.py:246 default_tasks.py:252 default_tasks.py:282
 msgid "Configure 3D surface"
-msgstr "Ρυθμιση της 3D επιφάνειας"
+msgstr ""
 
 #: default_tasks.py:247 default_tasks.py:253
 msgid "Export data"
-msgstr "Εξαγωγή δεδομένων"
+msgstr ""
 
 #: default_tasks.py:254
 msgid "Navigation system"
@@ -629,23 +629,23 @@ msgstr ""
 
 #: default_viewers.py:82 default_viewers.py:171 task_exporter.py:247
 msgid "Axial slice"
-msgstr "Αξονική τομή"
+msgstr ""
 
 #: default_viewers.py:87 default_viewers.py:177 task_exporter.py:248
 msgid "Coronal slice"
-msgstr "Οριζόντια τομή"
+msgstr ""
 
 #: default_viewers.py:92 default_viewers.py:183 task_exporter.py:249
 msgid "Sagittal slice"
-msgstr "Τοξοειδής τομή"
+msgstr ""
 
 #: default_viewers.py:98 default_viewers.py:189 task_exporter.py:250
 msgid "Volume"
-msgstr "Όγκος"
+msgstr ""
 
 #: default_viewers.py:437
 msgid "Preset name"
-msgstr "Προκαθορισμένο όνομα"
+msgstr ""
 
 #: default_viewers.py:440
 msgid "Save raycasting preset"
@@ -653,11 +653,11 @@ msgstr ""
 
 #: default_viewers.py:473 frame.py:854
 msgid "Tools"
-msgstr "Εργαλεία"
+msgstr ""
 
 #: dialogs.py:78
 msgid "Value will be applied."
-msgstr "Η τιμή θα εφαρμοστεί."
+msgstr ""
 
 #: dialogs.py:82
 msgid "Value will not be applied."
@@ -676,7 +676,7 @@ msgstr ""
 
 #: dialogs.py:178
 msgid "Loading DICOM files"
-msgstr "Φόρτωση αρχείων DICOM"
+msgstr ""
 
 #: dialogs.py:230
 msgid "Open InVesalius 3 project..."
@@ -684,7 +684,7 @@ msgstr ""
 
 #: dialogs.py:268
 msgid "Choose a DICOM folder:"
-msgstr "Επιλέξτε ένα φάκελο DICOM:"
+msgstr ""
 
 #: dialogs.py:309
 msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
@@ -704,7 +704,7 @@ msgstr ""
 
 #: dialogs.py:382 frame.py:692
 msgid "Save project as..."
-msgstr "Αποθήκευση project ως..."
+msgstr ""
 
 #: dialogs.py:385
 msgid "InVesalius project (*.inv3)|*.inv3"
@@ -737,7 +737,7 @@ msgstr ""
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr "Το project %s έχει τροποποιηθεί.\n Αποθήκευση αλλαγών;"
+msgstr ""
 
 #: dialogs.py:583
 #, python-format
@@ -837,7 +837,7 @@ msgstr ""
 #: dialogs.py:923
 #, python-format
 msgid "%s does not exist."
-msgstr "Το %s δεν υπάρχει."
+msgstr ""
 
 #: dialogs.py:934
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
@@ -858,7 +858,7 @@ msgstr ""
 
 #: dialogs.py:1004
 msgid "GNU GPL (General Public License) version 2"
-msgstr "GNU GPL (Γενική Άδεια Δημόσιας Χρήσης) έκδοση 2"
+msgstr ""
 
 #: dialogs.py:1044
 msgid "Save raycasting preset as:"
@@ -866,11 +866,11 @@ msgstr ""
 
 #: dialogs.py:1087 dialogs.py:1345
 msgid "New surface name:"
-msgstr "Νέο όνομα επιφάνειας:"
+msgstr ""
 
 #: dialogs.py:1091 dialogs.py:1349
 msgid "Name the surface to be created"
-msgstr "Ονόμασε την επιφάνεια που θα δημιουργηθεί"
+msgstr ""
 
 #: dialogs.py:1098 dialogs.py:1356
 msgid "Mask of reference:"
@@ -878,39 +878,39 @@ msgstr ""
 
 #: dialogs.py:1116 dialogs.py:1374
 msgid "Surface quality:"
-msgstr "Ποιότητα αναγλύφου:"
+msgstr ""
 
 #: dialogs.py:1145 dialogs.py:1402 styles.py:1668
 msgid "Fill holes"
-msgstr "Γέμισμα οπών"
+msgstr ""
 
 #: dialogs.py:1148 dialogs.py:1405
 msgid "Keep largest region"
-msgstr "Διατήρηση μέγιστης περιοχής"
+msgstr ""
 
 #: dialogs.py:1188
 msgid "BMP image"
-msgstr "Εικόνα BMP"
+msgstr ""
 
 #: dialogs.py:1189
 msgid "JPG image"
-msgstr "Εικόνα JPG"
+msgstr ""
 
 #: dialogs.py:1190
 msgid "PNG image"
-msgstr "Εικόνα PNG"
+msgstr ""
 
 #: dialogs.py:1191
 msgid "PostScript document"
-msgstr "Έγγραφο PostScript"
+msgstr ""
 
 #: dialogs.py:1192
 msgid "POV-Ray file"
-msgstr "Αρχείο POV-Ray"
+msgstr ""
 
 #: dialogs.py:1193
 msgid "TIFF image"
-msgstr "Εικόνα TIFF"
+msgstr ""
 
 #: dialogs.py:1238
 msgid "Surface generation options"
@@ -1171,15 +1171,15 @@ msgstr ""
 #: dicom_preview_panel.py:534 dicom_preview_panel.py:555
 #, python-format
 msgid "Image %d"
-msgstr "Εικόνα %d"
+msgstr ""
 
 #: frame.py:171
 msgid "Data panel"
-msgstr "Πάνελ δεδομένων"
+msgstr ""
 
 #: frame.py:177
 msgid "Preview medical data to be reconstructed"
-msgstr "Προεπισκόπηση ιατρικών δεδομένων που θα ανακατασκευαστούν"
+msgstr ""
 
 #: frame.py:183
 msgid "Preview bitmap to be reconstructed"
@@ -1279,11 +1279,11 @@ msgstr ""
 
 #: frame.py:843
 msgid "About..."
-msgstr "Σχετικά ..."
+msgstr ""
 
 #: frame.py:851
 msgid "File"
-msgstr "Αρχείο"
+msgstr ""
 
 #: frame.py:852
 msgid "Edit"
@@ -1295,11 +1295,11 @@ msgstr ""
 
 #: frame.py:857
 msgid "Help"
-msgstr "Βοήθεια"
+msgstr ""
 
 #: frame.py:985 surface.py:383 surface.py:775 surface.py:776
 msgid "Ready"
-msgstr "Έτοιμο"
+msgstr ""
 
 #: frame.py:1137
 msgid "Import DICOM files...\tCtrl+I"
@@ -1315,19 +1315,19 @@ msgstr ""
 
 #: frame.py:1298
 msgid "Zoom"
-msgstr "Εστίαση"
+msgstr ""
 
 #: frame.py:1304
 msgid "Zoom based on selection"
-msgstr "Εστίαση βασιζόμενη σε επιλογή"
+msgstr ""
 
 #: frame.py:1310
 msgid "Rotate"
-msgstr "Περιστροφή"
+msgstr ""
 
 #: frame.py:1316
 msgid "Move"
-msgstr "Μετακίνηση"
+msgstr ""
 
 #: frame.py:1322
 msgid "Constrast"
@@ -1347,7 +1347,7 @@ msgstr ""
 
 #: frame.py:1661 frame.py:1749 frame.py:1928
 msgid "Hide text"
-msgstr "Απόκρυψη κειμένου"
+msgstr ""
 
 #: frame.py:1733 frame.py:1912
 msgid "Show task panel"
@@ -1355,7 +1355,7 @@ msgstr ""
 
 #: frame.py:1743 frame.py:1922
 msgid "Show text"
-msgstr "Εμφάνιση κείμενου"
+msgstr ""
 
 #: frame.py:1824
 msgid "Undo"
@@ -1368,7 +1368,7 @@ msgstr ""
 #: imagedata_utils.py:93 imagedata_utils.py:227 imagedata_utils.py:332
 #: imagedata_utils.py:425 imagedata_utils.py:525
 msgid "Generating multiplanar visualization..."
-msgstr "Παραγωγή πολυεπίπεδης οπτικοποίηση..."
+msgstr ""
 
 #: import_bitmap_panel.py:92 import_network_panel.py:101 import_panel.py:94
 msgid "Import"
@@ -1388,19 +1388,19 @@ msgstr ""
 
 #: import_network_panel.py:239 import_panel.py:224
 msgid "Patient name"
-msgstr "Όνομα ασθενούς "
+msgstr ""
 
 #: import_network_panel.py:240 import_panel.py:225
 msgid "Patient ID"
-msgstr "ID Ασθενούς"
+msgstr ""
 
 #: import_network_panel.py:241 import_panel.py:226
 msgid "Age"
-msgstr "Ηλικία"
+msgstr ""
 
 #: import_network_panel.py:242 import_panel.py:227
 msgid "Gender"
-msgstr "Φύλο"
+msgstr ""
 
 #: import_network_panel.py:243 import_panel.py:228
 msgid "Study description"
@@ -1412,19 +1412,19 @@ msgstr ""
 
 #: import_network_panel.py:245 import_panel.py:230
 msgid "Date acquired"
-msgstr "Ημερομηνία απόκτησης"
+msgstr ""
 
 #: import_network_panel.py:246 import_panel.py:231
 msgid "# Images"
-msgstr "# Εικόνων"
+msgstr ""
 
 #: import_network_panel.py:247 import_panel.py:232
 msgid "Institution"
-msgstr "Ίδρυμα"
+msgstr ""
 
 #: import_network_panel.py:248 import_panel.py:233
 msgid "Date of birth"
-msgstr "Ημερομηνία γέννησης"
+msgstr ""
 
 #: import_network_panel.py:249 import_panel.py:234
 msgid "Accession Number"
@@ -1484,11 +1484,11 @@ msgstr ""
 
 #: language_dialog.py:91
 msgid "Language selection"
-msgstr "Επιλογή γλώσσας"
+msgstr ""
 
 #: language_dialog.py:135
 msgid "Choose user interface language"
-msgstr "Επιλέξτε γλώσσα εφαρμογής"
+msgstr ""
 
 #: polydata_utils.py:142
 msgid "Analysing selected regions..."
@@ -1558,7 +1558,7 @@ msgstr ""
 
 #: presets.py:33 presets.py:51 presets.py:107 presets.py:138
 msgid "Soft Tissue"
-msgstr "Μαλακός ιστός"
+msgstr ""
 
 #: presets.py:34 presets.py:52 presets.py:108 presets.py:139
 msgid "Enamel (Adult)"
@@ -1699,19 +1699,19 @@ msgstr ""
 
 #: task_exporter.py:111
 msgid "Export picture..."
-msgstr "Εξαγωγή εικόνας..."
+msgstr ""
 
 #: task_exporter.py:122
 msgid "Export 3D surface"
-msgstr "Εξαγωγή 3D ανάγλυφου"
+msgstr ""
 
 #: task_exporter.py:123
 msgid "Export 3D surface..."
-msgstr "Εξαγωγή 3D ανάγλυφου..."
+msgstr ""
 
 #: task_exporter.py:317
 msgid "Save 3D surface as..."
-msgstr "Αποθήκευση 3D ανάγλυφου ως..."
+msgstr ""
 
 #: task_exporter.py:336
 msgid "You need to create a surface and make it "
@@ -1735,11 +1735,11 @@ msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
-msgstr "Ανοίξτε ένα υπάρχον InVesalius project..."
+msgstr ""
 
 #: task_importer.py:88
 msgid "Open an existing project..."
-msgstr "Ανοίξτε ένα υπάρχον project ..."
+msgstr ""
 
 #: task_navigator.py:63
 msgid "Select fiducials and navigate"
@@ -1831,7 +1831,7 @@ msgstr ""
 
 #: task_slice.py:87
 msgid "Create new mask"
-msgstr "Δημιουργία νέας μάσκας"
+msgstr ""
 
 #: task_slice.py:117
 msgid "Create surface"
@@ -1839,11 +1839,11 @@ msgstr ""
 
 #: task_slice.py:118
 msgid "Overwrite last surface"
-msgstr "Αντικατάσταση τελευταίου ανάγλυφου"
+msgstr ""
 
 #: task_slice.py:267
 msgid "Mask properties"
-msgstr "Ιδιότητες μάσκας "
+msgstr ""
 
 #: task_slice.py:275
 msgid "Manual edition"
@@ -1859,15 +1859,15 @@ msgstr ""
 
 #: task_slice.py:656 task_slice.py:820
 msgid "Circle"
-msgstr "Κύκλος"
+msgstr ""
 
 #: task_slice.py:660 task_slice.py:824
 msgid "Square"
-msgstr "Τετράγωνο"
+msgstr ""
 
 #: task_slice.py:701
 msgid "Brush threshold range:"
-msgstr "Οριο φάσματοϛ βούρτσαϛ"
+msgstr ""
 
 #: task_slice.py:871
 msgid "Overwrite mask"
@@ -1879,7 +1879,7 @@ msgstr ""
 
 #: task_surface.py:88
 msgid "Create 3D surface based on a mask"
-msgstr "Δημιουργία 3D αναγλύφου βασισμένο σε μια μάσκα"
+msgstr ""
 
 #: task_surface.py:89
 msgid "Create new 3D surface"
@@ -1887,20 +1887,20 @@ msgstr ""
 
 #: task_surface.py:109
 msgid "Next step"
-msgstr "Επόμενο βήμα"
+msgstr ""
 
 #: task_surface.py:217
 msgid "Surface properties"
-msgstr "Ιδιότητες ανάγλυφου"
+msgstr ""
 
 #: task_surface.py:223
 msgid "Advanced options"
-msgstr "Προχωρημένες επιλογές"
+msgstr ""
 
 #: task_surface.py:275
 msgid ""
 "Automatically select largest disconnected region and create new surface"
-msgstr "Αυτόματα επέλεξε μέγιστη ασύνδετη περιοχή και δημιουργησε νέα επιφάνεια"
+msgstr ""
 
 #: task_surface.py:276
 msgid "Select largest surface"
@@ -1914,7 +1914,7 @@ msgstr ""
 
 #: task_surface.py:285
 msgid "Split all disconnected surfaces"
-msgstr "Διαχώρισε όλεςτις ασύνδετες επιφάνειες"
+msgstr ""
 
 #: task_surface.py:293
 msgid "Manually insert seeds of regions of interest and create a new surface"
@@ -1922,31 +1922,31 @@ msgstr ""
 
 #: task_surface.py:294
 msgid "Select regions of interest..."
-msgstr "Επιλέξτε περιοχές ενδιαφέροντος..."
+msgstr ""
 
 #: task_surface.py:430
 msgid "Transparency:"
-msgstr "Διαφάνεια:"
+msgstr ""
 
 #: task_surface.py:578
 msgid "Decimate resolution:"
-msgstr "Μείωση ανάλυσης:"
+msgstr ""
 
 #: task_surface.py:588
 msgid "Smooth iterations:"
-msgstr "Εξομάλυνση επαναλήψεων:"
+msgstr ""
 
 #: task_tools.py:62
 msgid "Measure distances"
-msgstr "Μέτρηση αποστάσεων"
+msgstr ""
 
 #: task_tools.py:63
 msgid "Measure"
-msgstr "Μέτρηση"
+msgstr ""
 
 #: task_tools.py:66 task_tools.py:67
 msgid "Add text annotations"
-msgstr "Προσθήκη σχολιασμού κειμένου"
+msgstr ""
 
 #: viewer_slice.py:68
 msgid "Number of slices used to compound the visualization."

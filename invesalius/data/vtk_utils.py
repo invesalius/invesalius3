@@ -95,7 +95,8 @@ def ShowProgress(number_of_filters = 1,
 
 class Text(object):
     def __init__(self):
-
+        self.layer = 99
+        self.children = []
         property = vtk.vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE)
         property.SetFontFamilyToArial()
@@ -195,7 +196,8 @@ class Text(object):
 
 class TextZero(object):
     def __init__(self):
-
+        self.layer = 99
+        self.children = []
         property = vtk.vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE_LARGE)
         property.SetFontFamilyToArial()
@@ -237,7 +239,11 @@ class TextZero(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-        self.actor.SetInput(value.encode("cp1252"))
+        try:
+            self.actor.SetInput(value.encode("cp1252"))
+        except(UnicodeEncodeError):
+            self.actor.SetInput(value.encode("utf-8"))
+
         self.text = value
 
     def SetPosition(self, position):

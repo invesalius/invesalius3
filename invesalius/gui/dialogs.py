@@ -18,9 +18,13 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import itertools
 import os
 import random
 import sys
+import time
+
+from concurrent import futures
 
 if sys.platform == 'win32':
     try:
@@ -1257,7 +1261,7 @@ def ShowAboutDialog(parent):
     info = AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.1.1"
-    info.Copyright = _("(c) 2007-2017 Center for Information Technology Renato Archer - CTI")
+    info.Copyright = _("(c) 2007-2019 Center for Information Technology Renato Archer - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
@@ -3315,6 +3319,112 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             self.panel3dcon.Enable(1)
             self.panel2dcon.Enable(0)
+
+
+class MaskDensityDialog(wx.Dialog):
+    def __init__(self, title):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Mask density"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Mask density"),
+                               style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+
+        self._init_gui()
+        self._bind_events()
+
+    def _init_gui(self):
+        import invesalius.project as prj
+        project = prj.Project()
+
+        self.cmb_mask = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
+        if project.mask_dict.values():
+            for mask in project.mask_dict.values():
+                self.cmb_mask.Append(mask.name, mask)
+            self.cmb_mask.SetValue(list(project.mask_dict.values())[0].name)
+
+        self.calc_button = wx.Button(self, -1, _(u'Calculate'))
+
+        self.mean_density = self._create_selectable_label_text('')
+        self.min_density = self._create_selectable_label_text('')
+        self.max_density = self._create_selectable_label_text('')
+        self.std_density = self._create_selectable_label_text('')
+
+
+        slt_mask_sizer = wx.FlexGridSizer(rows=1, cols=3, vgap=5, hgap=5)
+        slt_mask_sizer.AddMany([
+            (wx.StaticText(self, -1, _(u'Mask:'), style=wx.ALIGN_CENTER_VERTICAL),  0, wx.ALIGN_CENTRE),
+            (self.cmb_mask, 1, wx.EXPAND),
+            (self.calc_button, 0, wx.EXPAND),
+        ])
+
+        values_sizer = wx.FlexGridSizer(rows=4, cols=2, vgap=5, hgap=5)
+        values_sizer.AddMany([
+            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.mean_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Minimun:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.min_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Maximun:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.max_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Standard deviation:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.std_density, 1, wx.EXPAND),
+        ])
+
+        sizer = wx.FlexGridSizer(rows=4, cols=1, vgap=5, hgap=5)
+        sizer.AddSpacer(5)
+        sizer.AddMany([
+            (slt_mask_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5) ,
+            (values_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+        ])
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.CenterOnScreen()
+
+    def _create_selectable_label_text(self, text):
+        label = wx.TextCtrl(self, -1, style=wx.TE_READONLY)
+        label.SetValue(text)
+        #  label.SetBackgroundColour(self.GetBackgroundColour())
+        return label
+
+    def _bind_events(self):
+        self.calc_button.Bind(wx.EVT_BUTTON, self.OnCalcButton)
+
+    def OnCalcButton(self, evt):
+        from invesalius.data.slice_ import Slice
+        mask = self.cmb_mask.GetClientData(self.cmb_mask.GetSelection())
+
+        slc = Slice()
+
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(slc.calc_image_density, mask)
+            for c in itertools.cycle(['', '.', '..', '...']):
+                s = _(u'Calculating ') + c
+                self.mean_density.SetValue(s)
+                self.min_density.SetValue(s)
+                self.max_density.SetValue(s)
+                self.std_density.SetValue(s)
+                self.Update()
+                self.Refresh()
+                if future.done():
+                    break
+                time.sleep(0.1)
+
+            _min, _max, _mean, _std = future.result()
+
+        self.mean_density.SetValue(str(_mean))
+        self.min_density.SetValue(str(_min))
+        self.max_density.SetValue(str(_max))
+        self.std_density.SetValue(str(_std))
+
+        print(">>>> Area of mask", slc.calc_mask_area(mask))
 
 
 class ObjectCalibrationDialog(wx.Dialog):
