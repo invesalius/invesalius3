@@ -3472,7 +3472,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
         choice_ref.Enable(0)
-        if self.tracker_id == const.MTC or self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+        if self.tracker_id == const.MTC or self.tracker_id == const.FASTRAK or self.tracker_id == const.CAMERA or self.tracker_id == const.DEBUGTRACK:
             choice_ref.Enable(1)
 
         # ComboBox for sensor selection for FASTRAK

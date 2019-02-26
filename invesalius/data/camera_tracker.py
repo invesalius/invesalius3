@@ -7,7 +7,7 @@ from imutils import face_utils
 
 class camera():
     def __init__(self):
-        self.face_landmark_path = 'D:\\Repository\\camera_tracking\\Projeto_opencv_face_tracker\\shape_predictor_68_face_landmarks.dat'
+        self.face_landmark_path = 'D:\\Repository\\camera_tracking\\video_test_shape\\shape_predictor_68_face_landmarks.dat'
 
         K = [6.5308391993466671e+002, 0.0, 3.1950000000000000e+002,
              0.0, 6.5308391993466671e+002, 2.3950000000000000e+002,
@@ -61,6 +61,7 @@ class camera():
 
         self.ref = np.zeros(6)
         self.probe = np.zeros(6)
+        self.coil = np.zeros(6)
 
         self.cap.read()
 
@@ -75,13 +76,12 @@ class camera():
 
             # operations on the frame come here
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+            aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_50)
             parameters = aruco.DetectorParameters_create()
 
             # lists of ids and the corners beloning to each id
             corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
-            #tooltip is align with aruco marker along y axis. The distance is 21cm
             translate_tooltip = np.array([0, 0.21, 0])
 
             if len(face_rects) > 0:
@@ -97,23 +97,32 @@ class camera():
                 ref_id = 0
 
             if np.all(ids != None):
-                # 0.05 = 5cm marker size
-                rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[0], 0.05, self.cam_matrix,
-                                                                self.dist_coeffs)  # Estimate pose of each marker and return the values rvet and tvec---different from camera coefficients
+                for i in range(len(ids)):
+                    rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[i], 0.05, self.cam_matrix,
+                                                                    self.dist_coeffs)  # Estimate pose of each marker and return the values rvet and tvec---different from camera coefficients
 
-                # calc euler angle
-                rotation_mat, _ = cv2.Rodrigues(rvec)
-                pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec[0, 0])))
-                _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
-                angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
-                #tooltip offset
-                tool_tip_position = np.dot(rotation_mat, np.transpose(translate_tooltip)) + np.transpose(tvec[0, 0])
-                self.probe = np.hstack([1000*tool_tip_position, angles[:, 0]])
+                    if ids[i] == 0:
+                        # calc euler angle
+                        rotation_mat, _ = cv2.Rodrigues(rvec)
+                        pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec[0, 0])))
+                        _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
+                        angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
+                        tool_tip_position = np.dot(rotation_mat, np.transpose(translate_tooltip)) + np.transpose(tvec[0, 0])
+                        self.probe = np.hstack([1000*tool_tip_position, angles[:, 0]])
+
+                    elif ids[i] == 1:
+                        # calc euler angle
+                        rotation_mat, _ = cv2.Rodrigues(rvec)
+                        pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec[0, 0])))
+                        _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
+                        angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
+                        self.coil = np.hstack([1000 * tvec[0, 0, :], angles[:, 0]])
+
                 probe_id = 1
             else:
                 probe_id = 0
 
-        return np.vstack([self.probe, self.ref]), probe_id, ref_id
+        return np.vstack([self.probe, self.ref, self.coil]), probe_id, ref_id
 
     def Close(self):
         self.cap.release()
