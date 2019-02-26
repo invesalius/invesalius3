@@ -48,6 +48,8 @@ BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in range(4)]
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
+        const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
+        const.DENSITY_POLYGON: _(u"Density Polygon"),
         }
 
 LOCATION = {const.SURFACE: _(u"3D"),
@@ -1171,8 +1173,10 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
             location = LOCATION[m.location]
             if m.type == const.LINEAR:
                 value = (u"%.2f mm") % m.value
-            else:
+            elif m.type == const.ANGULAR:
                 value = (u"%.2f°") % m.value
+            else:
+                value = (u"%.3f") % m.value
             self.InsertNewItem(m.index, m.name, colour, location, type, value)
 
             if not m.visible:

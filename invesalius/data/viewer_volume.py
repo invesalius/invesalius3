@@ -32,6 +32,8 @@ from wx.lib.pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
 
+from scipy.misc import imsave
+
 import invesalius.constants as const
 import invesalius.data.bases as bases
 import invesalius.data.transformations as tr
@@ -50,6 +52,8 @@ else:
     _has_win32api = False
 
 PROP_MEASURE = 0.8
+
+from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX, Polygon
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -86,17 +90,32 @@ class Viewer(wx.Panel):
         interactor.Enable(1)
 
         ren = vtk.vtkRenderer()
-        interactor.GetRenderWindow().AddRenderer(ren)
         self.ren = ren
+
+        canvas_renderer = vtk.vtkRenderer()
+        canvas_renderer.SetLayer(1)
+        canvas_renderer.SetInteractive(0)
+        canvas_renderer.PreserveDepthBufferOn()
+        self.canvas_renderer = canvas_renderer
+
+        interactor.GetRenderWindow().SetNumberOfLayers(2)
+        interactor.GetRenderWindow().AddRenderer(ren)
+        interactor.GetRenderWindow().AddRenderer(canvas_renderer)
 
         self.raycasting_volume = False
 
         self.onclick = False
 
-        self.text = vtku.Text()
+        self.text = vtku.TextZero()
         self.text.SetValue("")
-        self.ren.AddActor(self.text.actor)
+        self.text.SetPosition(const.TEXT_POS_LEFT_UP)
+        #  self.ren.AddActor(self.text.actor)
 
+        #  self.polygon = Polygon(None, is_3d=False)
+
+        #  self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
+        #  self.canvas.draw_list.append(self.text)
+        #  self.canvas.draw_list.append(self.polygon)
         # axes = vtk.vtkAxesActor()
         # axes.SetXAxisLabelText('x')
         # axes.SetYAxisLabelText('y')
@@ -104,7 +123,6 @@ class Viewer(wx.Panel):
         # axes.SetTotalLength(50, 50, 50)
         #
         # self.ren.AddActor(axes)
-
 
         self.slice_plane = None
 
@@ -1230,7 +1248,16 @@ class Viewer(wx.Panel):
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
+        #  self.canvas.subscribe_event('LeftButtonPressEvent', self.on_insert_point)
         pass
+
+    def on_insert_point(self, evt):
+        pos = evt.position
+        self.polygon.append_point(pos)
+        self.canvas.Refresh()
+
+        arr = self.canvas.draw_element_to_array([self.polygon,])
+        imsave('/tmp/polygon.png', arr)
 
     def SetInteractorStyle(self, state):
         action = {
@@ -1304,7 +1331,7 @@ class Viewer(wx.Panel):
             self.style = style
 
             # Check each event available for each mode
-            for event in action[state]:
+            for event in action.get(state, []):
                 # Bind event
                 style.AddObserver(event,action[state][event])
 
@@ -1483,6 +1510,7 @@ class Viewer(wx.Panel):
     def OnSetWindowLevelText(self, ww, wl):
         if self.raycasting_volume:
             self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
+            self.canvas.modified = True
 
     def OnShowRaycasting(self):
         if not self.raycasting_volume:

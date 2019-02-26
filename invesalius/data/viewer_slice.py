@@ -49,6 +49,8 @@ import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
 
+from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+
 if sys.platform == 'win32':
     try:
         import win32api
@@ -159,382 +161,6 @@ class ContourMIPConfig(wx.Panel):
             self.txt_mip_border.Disable()
 
 
-class CanvasRendererCTX:
-    def __init__(self, evt_renderer, canvas_renderer, orientation=None):
-        """
-        A Canvas to render over a vtktRenderer.
-
-        Params:
-            evt_renderer: a vtkRenderer which this class is going to watch for
-                any render event to update the canvas content.
-            canvas_renderer: the vtkRenderer where the canvas is going to be
-                added.
-
-        This class uses wx.GraphicsContext to render to a vtkImage.
-
-        TODO: Verify why in Windows the color are strange when using transparency.
-        TODO: Add support to evento (ex. click on a square)
-        """
-        self.canvas_renderer = canvas_renderer
-        self.evt_renderer = evt_renderer
-        self._size = self.canvas_renderer.GetSize()
-        self.draw_list = []
-        self.orientation = orientation
-        self.gc = None
-        self.last_cam_modif_time = -1
-        self.modified = True
-        self._drawn = False
-        self._init_canvas()
-        evt_renderer.AddObserver("StartEvent", self.OnPaint)
-
-    def _init_canvas(self):
-        w, h = self._size
-        self._array = np.zeros((h, w, 4), dtype=np.uint8)
-
-        self._cv_image = converters.np_rgba_to_vtk(self._array)
-
-        self.mapper = vtk.vtkImageMapper()
-        self.mapper.SetInputData(self._cv_image)
-        self.mapper.SetColorWindow(255)
-        self.mapper.SetColorLevel(128)
-
-        self.actor = vtk.vtkActor2D()
-        self.actor.SetPosition(0, 0)
-        self.actor.SetMapper(self.mapper)
-        self.actor.GetProperty().SetOpacity(0.99)
-
-        self.canvas_renderer.AddActor2D(self.actor)
-
-        self.rgb = np.zeros((h, w, 3), dtype=np.uint8)
-        self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
-
-        self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        try:
-            self.image = wx.Image(w, h, self.rgb, self.alpha)
-        except TypeError:
-            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
-
-    def _resize_canvas(self, w, h):
-        self._array = np.zeros((h, w, 4), dtype=np.uint8)
-        self._cv_image = converters.np_rgba_to_vtk(self._array)
-        self.mapper.SetInputData(self._cv_image)
-        self.mapper.Update()
-
-        self.rgb = np.zeros((h, w, 3), dtype=np.uint8)
-        self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
-
-        self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        try:
-            self.image = wx.Image(w, h, self.rgb, self.alpha)
-        except TypeError:
-            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
-
-        self.modified = True
-
-    def remove_from_renderer(self):
-        self.canvas_renderer.RemoveActor(self.actor)
-        self.evt_renderer.RemoveObservers("StartEvent")
-
-    def OnPaint(self, evt, obj):
-        size = self.canvas_renderer.GetSize()
-        w, h = size
-        if self._size != size:
-            self._size = size
-            self._resize_canvas(w, h)
-
-        cam_modif_time = self.evt_renderer.GetActiveCamera().GetMTime()
-        if (not self.modified) and cam_modif_time == self.last_cam_modif_time:
-            return
-
-        self.last_cam_modif_time = cam_modif_time
-
-        self._array[:] = 0
-
-        coord = vtk.vtkCoordinate()
-
-        self.image.SetDataBuffer(self.rgb)
-        self.image.SetAlphaBuffer(self.alpha)
-        self.image.Clear()
-        gc = wx.GraphicsContext.Create(self.image)
-        if sys.platform != 'darwin':
-            gc.SetAntialiasMode(0)
-
-        self.gc = gc
-
-        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        #  font.SetWeight(wx.BOLD)
-        font = gc.CreateFont(font, (0, 0, 255))
-        gc.SetFont(font)
-
-        pen = wx.Pen(wx.Colour(255, 0, 0, 128), 2, wx.SOLID)
-        brush = wx.Brush(wx.Colour(0, 255, 0, 128))
-        gc.SetPen(pen)
-        gc.SetBrush(brush)
-        gc.Scale(1, -1)
-
-        for d in self.draw_list:
-            d.draw_to_canvas(gc, self)
-
-        gc.Destroy()
-
-        self.gc = None
-
-        if self._drawn:
-            self.bitmap = self.image.ConvertToBitmap()
-            self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
-
-        self._cv_image.Modified()
-        self.modified = False
-        self._drawn = False
-
-    def calc_text_size(self, text, font=None):
-        """
-        Given an unicode text and a font returns the width and height of the
-        rendered text in pixels.
-
-        Params:
-            text: An unicode text.
-            font: An wxFont.
-
-        Returns:
-            A tuple with width and height values in pixels
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-
-        if font is None:
-            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-
-        _font = gc.CreateFont(font)
-        gc.SetFont(_font)
-        w, h = gc.GetTextExtent(text)
-        return w, h
-
-    def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
-        """
-        Draw a line from pos0 to pos1
-
-        Params:
-            pos0: the start of the line position (x, y).
-            pos1: the end of the line position (x, y).
-            arrow_start: if to draw a arrow at the start of the line.
-            arrow_end: if to draw a arrow at the end of the line.
-            colour: RGBA line colour.
-            width: the width of line.
-            style: default wx.SOLID.
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-
-        p0x, p0y = pos0
-        p1x, p1y = pos1
-
-        p0y = -p0y
-        p1y = -p1y
-
-        pen = wx.Pen(wx.Colour(*[int(c) for c in colour]), width, wx.SOLID)
-        pen.SetCap(wx.CAP_BUTT)
-        gc.SetPen(pen)
-
-        path = gc.CreatePath()
-        path.MoveToPoint(p0x, p0y)
-        path.AddLineToPoint(p1x, p1y)
-        gc.StrokePath(path)
-
-        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        font = gc.CreateFont(font)
-        gc.SetFont(font)
-        w, h = gc.GetTextExtent("M")
-
-        p0 = np.array((p0x, p0y))
-        p3 = np.array((p1x, p1y))
-        if arrow_start:
-            v = p3 - p0
-            v = v / np.linalg.norm(v)
-            iv = np.array((v[1], -v[0]))
-            p1 = p0 + w*v + iv*w/2.0
-            p2 = p0 + w*v + (-iv)*w/2.0
-
-            path = gc.CreatePath()
-            path.MoveToPoint(p0)
-            path.AddLineToPoint(p1)
-            path.MoveToPoint(p0)
-            path.AddLineToPoint(p2)
-            gc.StrokePath(path)
-
-        if arrow_end:
-            v = p3 - p0
-            v = v / np.linalg.norm(v)
-            iv = np.array((v[1], -v[0]))
-            p1 = p3 - w*v + iv*w/2.0
-            p2 = p3 - w*v + (-iv)*w/2.0
-
-            path = gc.CreatePath()
-            path.MoveToPoint(p3)
-            path.AddLineToPoint(p1)
-            path.MoveToPoint(p3)
-            path.AddLineToPoint(p2)
-            gc.StrokePath(path)
-
-        self._drawn = True
-
-    def draw_circle(self, center, radius, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
-        """
-        Draw a circle centered at center with the given radius.
-
-        Params:
-            center: (x, y) position.
-            radius: float number.
-            width: line width.
-            line_colour: RGBA line colour
-            fill_colour: RGBA fill colour.
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-
-        pen = wx.Pen(wx.Colour(*line_colour), width, wx.SOLID)
-        gc.SetPen(pen)
-
-        brush = wx.Brush(wx.Colour(*fill_colour))
-        gc.SetBrush(brush)
-
-        cx, cy = center
-        cy = -cy
-
-        path = gc.CreatePath()
-        path.AddCircle(cx, cy, 2.5)
-        gc.StrokePath(path)
-        gc.FillPath(path)
-        self._drawn = True
-
-    def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
-        """
-        Draw a rectangle with its top left at pos and with the given width and height.
-
-        Params:
-            pos: The top left pos (x, y) of the rectangle.
-            width: width of the rectangle.
-            height: heigth of the rectangle.
-            line_colour: RGBA line colour.
-            fill_colour: RGBA fill colour.
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-
-        px, py = pos
-        gc.SetPen(wx.Pen(line_colour))
-        gc.SetBrush(wx.Brush(fill_colour))
-        gc.DrawRectangle(px, py, width, height)
-        self._drawn = True
-
-    def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)):
-        """
-        Draw text.
-
-        Params:
-            text: an unicode text.
-            pos: (x, y) top left position.
-            font: if None it'll use the default gui font.
-            txt_colour: RGB text colour
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-
-        if font is None:
-            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-
-        font = gc.CreateFont(font, txt_colour)
-        gc.SetFont(font)
-
-        px, py = pos
-        py = -py
-
-        gc.DrawText(text, px, py)
-        self._drawn = True
-
-    def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
-        """
-        Draw text inside a text box.
-
-        Params:
-            text: an unicode text.
-            pos: (x, y) top left position.
-            font: if None it'll use the default gui font.
-            txt_colour: RGB text colour
-            bg_colour: RGBA box colour
-            border: the border size.
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-
-        if font is None:
-            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-
-        _font = gc.CreateFont(font, txt_colour)
-        gc.SetFont(_font)
-        w, h = gc.GetTextExtent(text)
-
-        px, py = pos
-
-        # Drawing the box
-        cw, ch = w + border * 2, h + border * 2
-        self.draw_rectangle((px, -py), cw, ch, bg_colour, bg_colour)
-
-        # Drawing the text
-        tpx, tpy = px + border, py - border
-        self.draw_text(text, (tpx, tpy), font, txt_colour)
-        self._drawn = True
-
-    def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2):
-        """
-        Draw an arc passing in p0 and p1 centered at center.
-
-        Params:
-            center: (x, y) center of the arc.
-            p0: (x, y).
-            p1: (x, y).
-            line_colour: RGBA line colour.
-            width: width of the line.
-        """
-        if self.gc is None:
-            return None
-        gc = self.gc
-        pen = wx.Pen(wx.Colour(*[int(c) for c in line_colour]), width, wx.SOLID)
-        gc.SetPen(pen)
-
-        c = np.array(center)
-        v0 = np.array(p0) - c
-        v1 = np.array(p1) - c
-
-        c[1] = -c[1]
-        v0[1] = -v0[1]
-        v1[1] = -v1[1]
-
-        s0 = np.linalg.norm(v0)
-        s1 = np.linalg.norm(v1)
-
-        a0 = np.arctan2(v0[1] , v0[0])
-        a1 = np.arctan2(v1[1] , v1[0])
-
-        if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
-            sa = a0
-            ea = a1
-        else:
-            sa = a1
-            ea = a0
-
-        path = gc.CreatePath()
-        path.AddArc(float(c[0]), float(c[1]), float(min(s0, s1)), float(sa), float(ea), True)
-        gc.StrokePath(path)
-        self._drawn = True
-
-
 class Viewer(wx.Panel):
 
     def __init__(self, prnt, orientation='AXIAL'):
@@ -562,6 +188,8 @@ class Viewer(wx.Panel):
         self.interpolation_slice_status = True
 
         self.canvas = None
+
+        self.draw_by_slice_number = collections.defaultdict(list)
 
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
@@ -1037,8 +665,10 @@ class Viewer(wx.Panel):
             z = bounds[4]
         return x, y, z
 
-    def get_coordinate_cursor_edition(self, slice_data, picker=None):
+    def get_coordinate_cursor_edition(self, slice_data=None, picker=None):
         # Find position
+        if slice_data is None:
+            slice_data = self.slice_data
         actor = slice_data.actor
         slice_number = slice_data.number
         if picker is None:
@@ -1263,6 +893,11 @@ class Viewer(wx.Panel):
         else:
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
+    def SetFocus(self):
+        Publisher.sendMessage('Set viewer orientation focus',
+                              orientation=self.orientation)
+        super().SetFocus()
+
     def OnExportPicture(self, orientation, filename, filetype):
         dict = {"AXIAL": const.AXIAL,
                 "CORONAL": const.CORONAL,
@@ -1455,7 +1090,7 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
-        self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
+        self.canvas = CanvasRendererCTX(self, self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
         self.canvas.draw_list.append(self.slice_data.text)
 
         # Set the slice number to the last slice to ensure the camera if far
@@ -1597,21 +1232,27 @@ class Viewer(wx.Panel):
 
     def UpdateCanvas(self, evt=None):
         if self.canvas is not None:
-            cp_draw_list = self.canvas.draw_list[:]
-            self.canvas.draw_list = []
-
-            # Removing all measures
-            for i in cp_draw_list:
-                if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
-                    self.canvas.draw_list.append(i)
-
-            # Then add all needed measures
-            for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-                if m.visible:
-                    self.canvas.draw_list.append(mr)
-
+            self._update_draw_list()
             self.canvas.modified = True
             self.interactor.Render()
+
+    def _update_draw_list(self):
+        cp_draw_list = self.canvas.draw_list[:]
+        self.canvas.draw_list = []
+
+        # Removing all measures
+        for i in cp_draw_list:
+            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure, measures.CircleDensityMeasure, measures.PolygonDensityMeasure)):
+                self.canvas.draw_list.append(i)
+
+        # Then add all needed measures
+        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            if m.visible:
+                self.canvas.draw_list.append(mr)
+
+        n = self.slice_data.number
+        self.canvas.draw_list.extend(self.draw_by_slice_number[n])
+
 
     def __configure_scroll(self):
         actor = self.slice_data_list[0].actor
@@ -1794,15 +1435,16 @@ class Viewer(wx.Panel):
         for actor in self.actors_by_slice_number[index]:
             self.slice_data.renderer.AddActor(actor)
 
-        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            try:
-                self.canvas.draw_list.remove(mr)
-            except ValueError:
-                pass
+        #  for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            #  try:
+                #  self.canvas.draw_list.remove(mr)
+            #  except ValueError:
+                #  pass
 
-        for (m, mr) in self.measures.get(self.orientation, index):
-            if m.visible:
-                self.canvas.draw_list.append(mr)
+        #  for (m, mr) in self.measures.get(self.orientation, index):
+            #  if m.visible:
+                #  self.canvas.draw_list.append(mr)
+
 
         if self.slice_._type_projection == const.PROJECTION_NORMAL:
             self.slice_data.SetNumber(index)
@@ -1812,6 +1454,7 @@ class Viewer(wx.Panel):
             self.slice_data.SetNumber(index, end)
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
+        self._update_draw_list()
 
     def ChangeSliceNumber(self, index):
         #self.set_slice_number(index)

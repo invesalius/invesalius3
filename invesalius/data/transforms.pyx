@@ -133,3 +133,42 @@ def apply_view_matrix_transform(image_t[:, :, :] volume,
                 for y in xrange(dy):
                     out[z, y, count] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1
+
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
+def convolve_non_zero(image_t[:, :, :] volume,
+                      image_t[:, :, :] kernel,
+                      image_t cval):
+    cdef Py_ssize_t x, y, z, sx, sy, sz, kx, ky, kz, skx, sky, skz, i, j, k
+    cdef image_t v
+
+    cdef image_t[:, :, :] out = np.zeros_like(volume)
+
+    sz = volume.shape[0]
+    sy = volume.shape[1]
+    sx = volume.shape[2]
+
+    skz = kernel.shape[0]
+    sky = kernel.shape[1]
+    skx = kernel.shape[2]
+
+    for z in prange(sz, nogil=True):
+        for y in xrange(sy):
+            for x in xrange(sx):
+                if volume[z, y, x] != 0:
+                    for k in xrange(skz):
+                        kz = z - skz // 2 + k
+                        for j in xrange(sky):
+                            ky = y - sky // 2 + j
+                            for i in xrange(skx):
+                                kx = x - skx // 2 + i
+
+                                if 0 <= kz < sz and 0 <= ky < sy and 0 <= kx < sx:
+                                    v = volume[kz, ky, kx]
+                                else:
+                                    v = cval
+
+                                out[z, y, x] += (v * kernel[k, j, i])
+    return np.asarray(out)

@@ -18,9 +18,13 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import itertools
 import os
 import random
 import sys
+import time
+
+from concurrent import futures
 
 if sys.platform == 'win32':
     try:
@@ -1258,7 +1262,7 @@ def ShowAboutDialog(parent):
     info = AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.1.1"
-    info.Copyright = _("(c) 2007-2017 Center for Information Technology Renato Archer - CTI")
+    info.Copyright = _("(c) 2007-2019 Center for Information Technology Renato Archer - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
@@ -1888,10 +1892,10 @@ class ClutImagedataDialog(wx.Dialog):
     def __init__(self, histogram, init, end, nodes=None):
         try:
             pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
             self.PostCreate(pre)
         except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.histogram = histogram
         self.init = init
@@ -1989,7 +1993,7 @@ class WatershedOptionsPanel(wx.Panel):
 
 
 class WatershedOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+    def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         try:
             pre = wx.PreDialog()
             pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
@@ -2117,7 +2121,7 @@ class MaskBooleanDialog(wx.Dialog):
 
 
 class ReorientImageDialog(wx.Dialog):
-    def __init__(self, ID=-1, title=_(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+    def __init__(self, ID=-1, title=_(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         try:
             pre = wx.PreDialog()
             pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
@@ -2695,10 +2699,10 @@ class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
         try:
             pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
             self.PostCreate(pre)
         except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.config = config
 
@@ -2808,10 +2812,10 @@ class SelectPartsOptionsDialog(wx.Dialog):
     def __init__(self, config):
         try:
             pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
             self.PostCreate(pre)
         except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.config = config
 
@@ -2890,7 +2894,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         try:
             pre = wx.PreDialog()
             pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
@@ -3095,7 +3099,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 class CropOptionsDialog(wx.Dialog):
     
-    def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+    def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         self.config = config
         try:
             pre = wx.PreDialog()
@@ -3218,10 +3222,10 @@ class FillHolesAutoDialog(wx.Dialog):
     def __init__(self, title):
         try:
             pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
             self.PostCreate(pre)
         except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self._init_gui()
 
@@ -3318,6 +3322,112 @@ class FillHolesAutoDialog(wx.Dialog):
             self.panel2dcon.Enable(0)
 
 
+class MaskDensityDialog(wx.Dialog):
+    def __init__(self, title):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Mask density"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Mask density"),
+                               style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+
+        self._init_gui()
+        self._bind_events()
+
+    def _init_gui(self):
+        import invesalius.project as prj
+        project = prj.Project()
+
+        self.cmb_mask = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
+        if project.mask_dict.values():
+            for mask in project.mask_dict.values():
+                self.cmb_mask.Append(mask.name, mask)
+            self.cmb_mask.SetValue(list(project.mask_dict.values())[0].name)
+
+        self.calc_button = wx.Button(self, -1, _(u'Calculate'))
+
+        self.mean_density = self._create_selectable_label_text('')
+        self.min_density = self._create_selectable_label_text('')
+        self.max_density = self._create_selectable_label_text('')
+        self.std_density = self._create_selectable_label_text('')
+
+
+        slt_mask_sizer = wx.FlexGridSizer(rows=1, cols=3, vgap=5, hgap=5)
+        slt_mask_sizer.AddMany([
+            (wx.StaticText(self, -1, _(u'Mask:'), style=wx.ALIGN_CENTER_VERTICAL),  0, wx.ALIGN_CENTRE),
+            (self.cmb_mask, 1, wx.EXPAND),
+            (self.calc_button, 0, wx.EXPAND),
+        ])
+
+        values_sizer = wx.FlexGridSizer(rows=4, cols=2, vgap=5, hgap=5)
+        values_sizer.AddMany([
+            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.mean_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Minimun:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.min_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Maximun:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.max_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Standard deviation:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
+            (self.std_density, 1, wx.EXPAND),
+        ])
+
+        sizer = wx.FlexGridSizer(rows=4, cols=1, vgap=5, hgap=5)
+        sizer.AddSpacer(5)
+        sizer.AddMany([
+            (slt_mask_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5) ,
+            (values_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+        ])
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.CenterOnScreen()
+
+    def _create_selectable_label_text(self, text):
+        label = wx.TextCtrl(self, -1, style=wx.TE_READONLY)
+        label.SetValue(text)
+        #  label.SetBackgroundColour(self.GetBackgroundColour())
+        return label
+
+    def _bind_events(self):
+        self.calc_button.Bind(wx.EVT_BUTTON, self.OnCalcButton)
+
+    def OnCalcButton(self, evt):
+        from invesalius.data.slice_ import Slice
+        mask = self.cmb_mask.GetClientData(self.cmb_mask.GetSelection())
+
+        slc = Slice()
+
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(slc.calc_image_density, mask)
+            for c in itertools.cycle(['', '.', '..', '...']):
+                s = _(u'Calculating ') + c
+                self.mean_density.SetValue(s)
+                self.min_density.SetValue(s)
+                self.max_density.SetValue(s)
+                self.std_density.SetValue(s)
+                self.Update()
+                self.Refresh()
+                if future.done():
+                    break
+                time.sleep(0.1)
+
+            _min, _max, _mean, _std = future.result()
+
+        self.mean_density.SetValue(str(_mean))
+        self.min_density.SetValue(str(_min))
+        self.max_density.SetValue(str(_max))
+        self.std_density.SetValue(str(_std))
+
+        print(">>>> Area of mask", slc.calc_mask_area(mask))
+
+
 class ObjectCalibrationDialog(wx.Dialog):
 
     def __init__(self, nav_prop):
@@ -3333,11 +3443,11 @@ class ObjectCalibrationDialog(wx.Dialog):
         try:
             pre = wx.PreDialog()
             pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
-                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
             self.PostCreate(pre)
         except AttributeError:
             wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
-                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self._init_gui()
         self.LoadObject()
@@ -3591,3 +3701,68 @@ class SurfaceProgressWindow(object):
 
     def Close(self):
         self.dlg.Destroy()
+
+
+class GoToDialog(wx.Dialog):
+    def __init__(self, title=_("Go to slice ..."), init_orientation=const.AXIAL_STR):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self._init_gui(init_orientation)
+
+    def _init_gui(self, init_orientation):
+        orientations = (
+            (_("Axial"), const.AXIAL_STR),
+            (_("Coronal"), const.CORONAL_STR),
+            (_("Sagital"), const.SAGITAL_STR),
+        )
+        self.goto_slice = wx.TextCtrl(self, -1, "")
+        self.goto_orientation = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        cb_init = 0
+        for n, orientation in enumerate(orientations):
+            self.goto_orientation.Append(*orientation)
+            if orientation[1] == init_orientation:
+                cb_init = n
+        self.goto_orientation.SetSelection(cb_init)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        slice_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        slice_sizer.Add(wx.StaticText(self, -1, _("Slice number"), style=wx.ALIGN_CENTER), 0, wx.ALIGN_CENTER|wx.RIGHT, 5)
+        slice_sizer.Add(self.goto_slice, 1, wx.EXPAND)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(slice_sizer, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(self.goto_orientation, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+    def OnOk(self, evt):
+        try:
+            slice_number = int(self.goto_slice.GetValue())
+            orientation = self.goto_orientation.GetClientData(self.goto_orientation.GetSelection())
+            Publisher.sendMessage(("Set scroll position", orientation), index=slice_number)
+        except ValueError:
+            pass
+        self.Close()
+
+    def Close(self):
+        wx.Dialog.Close(self)
+        self.Destroy()

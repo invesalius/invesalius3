@@ -346,6 +346,8 @@ class SurfaceManager():
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
 
+        print("BOunds", actor.GetBounds())
+
         if overwrite:
             surface = Surface(index = self.last_surface_index)
         else:
