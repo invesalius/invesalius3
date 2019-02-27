@@ -885,7 +885,7 @@ msgstr "Няправільны файл."
 
 #: dialogs.py:822
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
-msgstr "Увага! InVesalius мае абмежаваную падтрымку для фармату Analyze.\\n"
+msgstr "Увага! InVesalius мае абмежаваную падтрымку для фармату Analyze.\n"
 
 #: dialogs.py:823
 msgid "Slices may be wrongly oriented and functions may not work properly."
