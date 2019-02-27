@@ -1438,9 +1438,11 @@ class ObjectToolBar(AuiToolBar):
             path = os.path.join(d, "measure_angle_original.png")
             BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            BMP_ELLIPSE = wx.ArtProvider.GetBitmap(wx.ART_HELP, wx.ART_TOOLBAR, (48, 48))
+            path = os.path.join(d, "measure_density_ellipse32px.png")
+            BMP_ELLIPSE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            BMP_POLYGON = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN, wx.ART_TOOLBAR, (48, 48))
+            path = os.path.join(d, "measure_density_polygon32px.png")
+            BMP_POLYGON = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             #path = os.path.join(d, "tool_annotation_original.png")
             #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
@@ -1467,9 +1469,11 @@ class ObjectToolBar(AuiToolBar):
             path = os.path.join(d, "measure_angle.png")
             BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            BMP_ELLIPSE = wx.ArtProvider.GetBitmap(wx.ART_HELP, wx.ART_TOOLBAR, (32, 32))
+            path = os.path.join(d, "measure_density_ellipse28px.png")
+            BMP_ELLIPSE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            BMP_POLYGON = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN, wx.ART_TOOLBAR, (32, 32))
+            path = os.path.join(d, "measure_density_polygon28px.png")
+            BMP_POLYGON = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             #path = os.path.join(d, "tool_annotation.png")
             #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
