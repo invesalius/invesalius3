@@ -3,6 +3,7 @@ import cv2.aruco as aruco
 import dlib
 import numpy as np
 from imutils import face_utils
+from imutils.video import WebcamVideoStream
 
 
 class camera():
@@ -49,11 +50,21 @@ class camera():
                       [4, 5], [5, 6], [6, 7], [7, 4],
                       [0, 4], [1, 5], [2, 6], [3, 7]]
 
+        #Aruco parameters:
+        self.aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_50)
+        self.parameters = aruco.DetectorParameters_create()
+        self.parameters.cornerRefinementMethod = aruco.CORNER_REFINE_SUBPIX
+        self.parameters.cornerRefinementWinSize = 10
+
+        markerLength = 0.05  #unit is meters.
+        markerSeparation = 0.008  #unit is meters.
+        self.board_probe = aruco.GridBoard_create(2, 1, markerLength, markerSeparation, self.aruco_dict, firstMarker = 0)
+        self.board_coil = aruco.GridBoard_create(2, 1, markerLength, markerSeparation, self.aruco_dict, firstMarker = 2)
+
+
     def Initialize(self):
-
-        self.cap = cv2.VideoCapture(0)
-
-        if not self.cap.isOpened():
+        self.cap = WebcamVideoStream(src=0).start()
+        if not self.cap.stream.isOpened():
             print("Unable to connect to camera.")
             return
         self.detector = dlib.get_frontal_face_detector()
@@ -69,63 +80,72 @@ class camera():
 
 
     def Run(self):
-        ret, frame = self.cap.read()
+        frame = self.cap.read()
+        #frame = imutils.resize(frame, width=400)
 
-        if ret:
-            face_rects = self.detector(frame, 0)
+        face_rects = self.detector(frame, 0)
 
-            # operations on the frame come here
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_50)
-            parameters = aruco.DetectorParameters_create()
+        # operations on the frame come here
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            # lists of ids and the corners beloning to each id
-            corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+        # lists of ids and the corners beloning to each id
+        corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
+        aruco.refineDetectedMarkers(gray, self.board_probe, corners, ids, rejectedImgPoints)
+        aruco.refineDetectedMarkers(gray, self.board_coil, corners, ids, rejectedImgPoints)
 
-            translate_tooltip = np.array([0, 0.21, 0])
+        #translate_tooltip = np.array([0, 0.21, 0])
+        translate_tooltip = np.array([0.05, 0.25, 0])
 
-            if len(face_rects) > 0:
-                shape = self.predictor(frame, face_rects[0])
-                shape = face_utils.shape_to_np(shape)
+        if len(face_rects) > 0:
+            shape = self.predictor(frame, face_rects[0])
+            shape = face_utils.shape_to_np(shape)
 
-                _, euler_angle, translation_vec = self.get_head_pose(shape)
-                angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
-                self.ref = np.hstack([-10*translation_vec[:, 0], angles[:, 0]])
+            _, euler_angle, translation_vec = self.get_head_pose(shape)
+            angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
+            self.ref = np.hstack([-10*translation_vec[:, 0], angles[:, 0]])
 
-                ref_id = 1
-            else:
-                ref_id = 0
+            ref_id = 1
+        else:
+            ref_id = 0
 
-            if np.all(ids != None):
-                for i in range(len(ids)):
-                    rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[i], 0.05, self.cam_matrix,
-                                                                    self.dist_coeffs)  # Estimate pose of each marker and return the values rvet and tvec---different from camera coefficients
+        if np.all(ids != None):
+            for i in range(len(ids)):
+                if ids[i] == 0 or ids[i] == 1:
+                    retval, rvec, tvec = aruco.estimatePoseBoard(corners, ids, self.board_probe, self.cam_matrix,
+                                                                 self.dist_coeffs)
+                    tvec = np.hstack(tvec)
+                    # calc for probe board
+                    rotation_mat, _ = cv2.Rodrigues(rvec)
+                    pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec)))
+                    _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
+                    angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
+                    tool_tip_position = np.dot(rotation_mat, np.transpose(translate_tooltip)) + np.transpose(tvec)
+                    self.probe = np.hstack([1000*tool_tip_position, angles[:, 0]])
 
-                    if ids[i] == 0:
-                        # calc euler angle
-                        rotation_mat, _ = cv2.Rodrigues(rvec)
-                        pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec[0, 0])))
-                        _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
-                        angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
-                        tool_tip_position = np.dot(rotation_mat, np.transpose(translate_tooltip)) + np.transpose(tvec[0, 0])
-                        self.probe = np.hstack([1000*tool_tip_position, angles[:, 0]])
 
-                    elif ids[i] == 1:
-                        # calc euler angle
-                        rotation_mat, _ = cv2.Rodrigues(rvec)
-                        pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec[0, 0])))
-                        _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
-                        angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
-                        self.coil = np.hstack([1000 * tvec[0, 0, :], angles[:, 0]])
+                elif ids[i] == 2 or ids[i] == 3:
+                    retval, rvec, tvec = aruco.estimatePoseBoard(corners, ids, self.board_coil, self.cam_matrix,
+                                                                 self.dist_coeffs)
+                    tvec = np.hstack(tvec)
+                    # calc for coil board
+                    rotation_mat, _ = cv2.Rodrigues(rvec)
+                    pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec)))
+                    _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
+                    angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
 
-                probe_id = 1
-            else:
-                probe_id = 0
+                    self.coil = np.hstack([1000*tvec, angles[:, 0]])
 
+            probe_id = 1
+        else:
+            probe_id = 0
+        cv2.imshow("demo", frame)
         return np.vstack([self.probe, self.ref, self.coil]), probe_id, ref_id
 
     def Close(self):
-        self.cap.release()
+        #self.cap.release()
+        cv2.destroyAllWindows()
+        self.cap.stop()
+        self.cap.stream.release()
 
     def get_head_pose(self, shape):
         image_pts = np.float32([shape[17], shape[21], shape[22], shape[26], shape[36],
