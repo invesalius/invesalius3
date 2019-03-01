@@ -1306,6 +1306,7 @@ def ShowAboutDialog(parent):
                         u"Maki Sugimoto",
                         u"Mario Regino Moreno Guerra",
                         u"Massimo Crisantemo",
+                        u"Nikolai Guschinsky",
                         u"Nikos Korkakakis",
                         u"Raul Bolliger Neto",
                         u"Sebastian Hilbert",
