@@ -657,6 +657,7 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
+        proj.affine = self.affine.tolist()
 
         ######
         session = ses.Session()
@@ -860,6 +861,14 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
+        if group.affine.any():
+            from numpy import hstack
+            from numpy.linalg import inv
+            affine = inv(group.affine)
+            affine[1, 3] = -affine[1, 3]
+            self.affine = hstack(affine)
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])

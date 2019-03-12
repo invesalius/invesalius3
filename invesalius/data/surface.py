@@ -157,6 +157,8 @@ class SurfaceManager():
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
+        self.affine = None
+        self.converttoInV = None
         self.__bind_events()
 
         self._default_parameters = {
@@ -205,6 +207,9 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
+
+        Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
+        Publisher.subscribe(self.UpdateconverttoInVflag, 'Update converttoInV flag')
 
     def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
@@ -303,6 +308,7 @@ class SurfaceManager():
         self.CreateSurfaceFromFile(filename)
 
     def CreateSurfaceFromFile(self, filename):
+        scalar = False
         if filename.lower().endswith('.stl'):
             reader = vtk.vtkSTLReader()
         elif filename.lower().endswith('.ply'):
@@ -311,6 +317,7 @@ class SurfaceManager():
             reader = vtk.vtkOBJReader()
         elif filename.lower().endswith('.vtp'):
             reader = vtk.vtkXMLPolyDataReader()
+            scalar = True
         else:
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
@@ -327,11 +334,27 @@ class SurfaceManager():
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
         else:
             name = os.path.splitext(os.path.split(filename)[-1])[0]
-            self.CreateSurfaceFromPolydata(polydata, name=name)
+            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+
+    def UpdateAffineMatrix(self, affine, status):
+        self.affine = affine
+
+    def UpdateconverttoInVflag(self, converttoInV):
+        self.converttoInV = converttoInV
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
-                                  transparency=None, volume=None, area=None):
+                                  transparency=None, volume=None, area=None, scalar=False):
+        if self.converttoInV and self.affine is not None:
+            transform = vtk.vtkTransform()
+            transform.SetMatrix(self.affine)
+            transformFilter = vtk.vtkTransformPolyDataFilter()
+            transformFilter.SetTransform(transform)
+            transformFilter.SetInputData(polydata)
+            transformFilter.Update()
+            polydata = transformFilter.GetOutput()
+            self.converttoInV = None
+
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
         normals.SetFeatureAngle(80)
@@ -340,7 +363,10 @@ class SurfaceManager():
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
-        mapper.ScalarVisibilityOff()
+        if scalar:
+            mapper.ScalarVisibilityOn()
+        else:
+            mapper.ScalarVisibilityOff()
         mapper.ImmediateModeRenderingOn() # improve performance
 
         actor = vtk.vtkActor()
@@ -418,6 +444,9 @@ class SurfaceManager():
 
         # restarting the surface index
         Surface.general_index = -1
+
+        Publisher.sendMessage('Update affine matrix',
+                              affine=None, status=False)
 
     def OnSelectSurface(self, surface_index):
         #self.last_surface_index = surface_index
