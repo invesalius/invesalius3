@@ -708,6 +708,7 @@ STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
+FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
 
 DEFAULT_COIL = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
@@ -735,13 +736,11 @@ TIPS_IMG = [_("Select left ear in image"),
 
 BTNS_TRK = {TR1: {3: _('LET')},
             TR2: {4: _('RET')},
-            TR3: {5: _('NAT')},
-            SET: {6: _('SET')}}
+            TR3: {5: _('NAT')}}
 
 TIPS_TRK = [_("Select left ear with spatial tracker"),
             _("Select right ear with spatial tracker"),
-            _("Select nasion with spatial tracker"),
-            _("Show set coordinates in image")]
+            _("Select nasion with spatial tracker")]
 
 OBJL = wx.NewId()
 OBJR = wx.NewId()

@@ -3487,8 +3487,19 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetSelection(self.obj_ref_id)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
-        if self.tracker_id != const.MTC:
-            choice_ref.Enable(0)
+        choice_ref.Enable(0)
+        if self.tracker_id == const.MTC or self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            choice_ref.Enable(1)
+
+        # ComboBox for sensor selection for FASTRAK
+        tooltip = wx.ToolTip(_(u"Choose the FASTRAK sensor port"))
+        choice_sensor = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
+                                 choices=const.FT_SENSOR_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        choice_sensor.SetSelection(0)
+        choice_sensor.SetToolTip(tooltip)
+        choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
+        choice_sensor.Show(False)
+        self.choice_sensor = choice_sensor
 
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Registration done"))
@@ -3496,9 +3507,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
         btn_ok.SetToolTip(tooltip)
 
-        extra_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=5, vgap=30)
+        extra_sizer = wx.FlexGridSizer(rows=3, cols=1, hgap=5, vgap=30)
         extra_sizer.AddMany([choice_ref,
-                             btn_ok])
+                             btn_ok,
+                             choice_sensor])
 
         # Push buttons for object fiducials
         btns_obj = const.BTNS_OBJ
@@ -3651,7 +3663,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         if self.trk_init and self.tracker_id:
             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
             if self.obj_ref_id and btn_id == 4:
-                coord = coord_raw[2, :]
+                coord = coord_raw[self.obj_ref_id, :]
             else:
                 coord = coord_raw[0, :]
         else:
@@ -3680,6 +3692,9 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if evt.GetSelection():
             self.obj_ref_id = 2
+            if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+                self.choice_sensor.Show(True)
+                self.Layout()
         else:
             self.obj_ref_id = 0
         for m in range(0, 5):
@@ -3687,6 +3702,12 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):
                 self.txt_coord[m][n].SetLabel('-')
+
+    def OnChoiceFTSensor(self, evt):
+        if evt.GetSelection():
+            self.obj_ref_id = 3
+        else:
+            self.obj_ref_id = 0
 
     def GetValue(self):
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name

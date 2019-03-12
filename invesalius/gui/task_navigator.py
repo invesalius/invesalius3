@@ -134,13 +134,9 @@ class InnerFoldPanel(wx.Panel):
         # is not working properly in this panel. It might be on some child or
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
-        displaySize = wx.DisplaySize()
-        if displaySize[1] > 768:
-            fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                          (10, 350), 0, fpb.FPB_SINGLE_FOLD)
-        else:
-            fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                          (10, 320), 0, fpb.FPB_SINGLE_FOLD)
+
+        fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
+                                          (10, 290), 0, fpb.FPB_SINGLE_FOLD)
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -305,8 +301,8 @@ class NeuronavigationPanel(wx.Panel):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         # Initialize list of buttons and numctrls for wx objects
-        self.btns_coord = [None] * 7
-        self.numctrls_coord = [list(), list(), list(), list(), list(), list(), list()]
+        self.btns_coord = [None, None, None, None, None, None]
+        self.numctrls_coord = [[], [], [], [], [], []]
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
@@ -345,11 +341,7 @@ class NeuronavigationPanel(wx.Panel):
             lab = list(btns_trk[k].values())[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
-            # Exception for event of button that set image coordinates
-            if n == 6:
-                self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetImageCoordinates)
-            else:
-                self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
+            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
@@ -370,8 +362,8 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
         # Image and tracker coordinates number controls
-        for m in range(0, 7):
-            for n in range(0, 3):
+        for m in range(len(self.btns_coord)):
+            for n in range(3):
                 self.numctrls_coord[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
@@ -382,9 +374,9 @@ class NeuronavigationPanel(wx.Panel):
 
         coord_sizer = wx.GridBagSizer(hgap=5, vgap=5)
 
-        for m in range(0, 7):
+        for m in range(len(self.btns_coord)):
             coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
-            for n in range(0, 3):
+            for n in range(3):
                 coord_sizer.Add(self.numctrls_coord[m][n], pos=wx.GBPosition(m, n+1))
                 if m in range(1, 6):
                     self.numctrls_coord[m][n].SetEditable(False)
@@ -432,13 +424,8 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = position
-        for m in [0, 1, 2, 6]:
-            if m == 6 and self.btns_coord[m].IsEnabled():
-                for n in [0, 1, 2]:
-                    self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
-            elif m != 6 and not self.btns_coord[m].GetValue():
-                # btn_state = self.btns_coord[m].GetValue()
-                # if not btn_state:
+        for m in [0, 1, 2]:
+            if not self.btns_coord[m].GetValue():
                 for n in [0, 1, 2]:
                     self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
 
@@ -543,19 +530,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update tracker initializer',
                               nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         print("Reference mode changed!")
-
-    def OnSetImageCoordinates(self, evt):
-        # FIXME: Cross does not update in last clicked slice, only on the other two
-        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
-
-        ux, uy, uz = self.numctrls_coord[btn_id][0].GetValue(),\
-                     self.numctrls_coord[btn_id][1].GetValue(),\
-                     self.numctrls_coord[btn_id][2].GetValue()
-
-        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
-        # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', arg=(ux, uy, uz), position=(0., 0., 0.))
-        Publisher.sendMessage('Update cross position', position=(ux, uy, uz))
 
     def OnImageFiducials(self, evt):
         btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
@@ -713,9 +687,6 @@ class NeuronavigationPanel(wx.Panel):
             self.fiducials[m, :] = [np.nan, np.nan, np.nan]
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
-
-        for n in range(0, 3):
-            self.numctrls_coord[6][n].SetValue(0.0)
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):

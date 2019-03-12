@@ -109,7 +109,10 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
         coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
                            float(trck.PositionTooltipZ3) * scale[2],
                            float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
-        coord = np.vstack([coord, coord3])
+        coord4 = np.array([float(trck.PositionTooltipX4) * scale[0], float(trck.PositionTooltipY4) * scale[1],
+                           float(trck.PositionTooltipZ4) * scale[2],
+                           float(trck.AngleX4), float(trck.AngleY4), float(trck.AngleZ4)])
+        coord = np.vstack([coord, coord3, coord4])
 
     if trck.StylusButton:
         Publisher.sendMessage('PLH Stylus Button On')
@@ -208,9 +211,12 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                        uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
+    coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+
     Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)))
 
-    return np.vstack([coord1, coord2, coord3])
+    return np.vstack([coord1, coord2, coord3, coord4])
 
 
 def dynamic_reference(probe, reference):
