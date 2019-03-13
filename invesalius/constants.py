@@ -765,7 +765,7 @@ CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
 PROBE_NAME = "1Probe"
 REF_NAME = "2Ref"
-OBJ_NAME = "3Coil"
+OBJ_NAME = "3Coil_big"
 
 #OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))

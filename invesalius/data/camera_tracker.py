@@ -54,7 +54,7 @@ class camera():
         self.aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_50)
         self.parameters = aruco.DetectorParameters_create()
         self.parameters.cornerRefinementMethod = aruco.CORNER_REFINE_SUBPIX
-        self.parameters.cornerRefinementWinSize = 10
+        self.parameters.cornerRefinementWinSize = 5
 
         markerLength = 0.05  #unit is meters.
         markerSeparation = 0.008  #unit is meters.
@@ -94,7 +94,7 @@ class camera():
         aruco.refineDetectedMarkers(gray, self.board_coil, corners, ids, rejectedImgPoints)
 
         #translate_tooltip = np.array([0, 0.21, 0])
-        translate_tooltip = np.array([0.05, 0.25, 0])
+        translate_tooltip = np.array([0.055, 0.24, -0.01])
 
         if len(face_rects) > 0:
             shape = self.predictor(frame, face_rects[0])
@@ -138,7 +138,7 @@ class camera():
             probe_id = 1
         else:
             probe_id = 0
-        cv2.imshow("demo", frame)
+        #cv2.imshow("demo", frame)
         return np.vstack([self.probe, self.ref, self.coil]), probe_id, ref_id
 
     def Close(self):
