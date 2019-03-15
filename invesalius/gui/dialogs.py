@@ -946,11 +946,12 @@ def NavigationTrackerWarning(trck_id, lib_mode):
     """
     Spatial Tracker connection error
     """
-    trck = {1: 'Claron MicronTracker',
-            2: 'Polhemus FASTRAK',
-            3: 'Polhemus ISOTRAK',
-            4: 'Polhemus PATRIOT',
-            5: 'Debug tracker device'}
+    trck = {const.MTC: 'Claron MicronTracker',
+            const.FASTRAK: 'Polhemus FASTRAK',
+            const.ISOTRAKII: 'Polhemus ISOTRAK',
+            const.PATRIOT: 'Polhemus PATRIOT',
+            const.CAMERA: 'CAMERA',
+            const.DEBUGTRACK: 'Debug tracker device'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
@@ -3488,7 +3489,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
         choice_ref.Enable(0)
-        if self.tracker_id == const.MTC or self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+        if self.tracker_id == const.MTC or self.tracker_id == const.FASTRAK or self.tracker_id == const.CAMERA or self.tracker_id == const.DEBUGTRACK:
             choice_ref.Enable(1)
 
         # ComboBox for sensor selection for FASTRAK
