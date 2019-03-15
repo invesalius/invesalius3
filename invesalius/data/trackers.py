@@ -37,6 +37,7 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.ISOTRAKII: PolhemusTracker,    # ISOTRAK
                     const.PATRIOT: PolhemusTracker,    # PATRIOT
                     const.CAMERA: CameraTracker,      # CAMERA
+                    const.POLARIS: PolarisTracker,      # POLARIS
                     const.DEBUGTRACK: DebugTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
@@ -52,6 +53,20 @@ def DefaultTracker(tracker_id):
     try:
         # import spatial tracker library
         print('Connect to default tracking device.')
+
+    except:
+        print('Could not connect to default tracker.')
+
+    # return tracker initialization variable and type of connection
+    return trck_init, 'wrapper'
+
+def PolarisTracker(tracker_id):
+    trck_init = None
+    try:
+        import pypolaris
+        trck_init = pypolaris.pypolaris()
+        trck_init.Initialize(const.NDICOMPORT)
+        print('Connect to polaris tracking device.')
 
     except:
         print('Could not connect to default tracker.')

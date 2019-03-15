@@ -951,6 +951,7 @@ def NavigationTrackerWarning(trck_id, lib_mode):
             const.ISOTRAKII: 'Polhemus ISOTRAK',
             const.PATRIOT: 'Polhemus PATRIOT',
             const.CAMERA: 'CAMERA',
+            const.POLARIS: 'NDI Polaris',
             const.DEBUGTRACK: 'Debug tracker device'}
 
     if lib_mode == 'choose':

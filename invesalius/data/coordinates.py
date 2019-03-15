@@ -46,6 +46,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.ISOTRAKII: PolhemusCoord,
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
+                    const.POLARIS: PolarisCoord,
                     const.DEBUGTRACK: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
@@ -53,6 +54,28 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 
     return coord
 
+def PolarisCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+
+    probe = trck.probe.decode(const.FS_ENCODE).split(',')
+    angles_probe = tr.euler_from_quaternion(probe[4:8])
+    trans_probe = np.array(probe[8:11]).astype(float)
+    coord1 = np.hstack((trans_probe, angles_probe))
+
+    ref = trck.ref.decode(const.FS_ENCODE).split(',')
+    angles_ref = tr.euler_from_quaternion(ref[4:8])
+    trans_ref = np.array(ref[8:11]).astype(float)
+    coord2 = np.hstack((trans_ref, angles_ref))
+
+    coil = trck.coil.decode(const.FS_ENCODE).split(',')
+    angles_coil = tr.euler_from_quaternion(coil[4:8])
+    trans_coil = np.array(coil[8:11]).astype(float)
+    coord3 = np.hstack((trans_coil, angles_coil))
+
+    coord = np.vstack([coord1, coord2, coord3])
+    #Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
+    return coord
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
