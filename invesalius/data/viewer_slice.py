@@ -874,6 +874,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SetInterpolatedSlices, "Set interpolated slices")
         Publisher.subscribe(self.UpdateInterpolatedSlice, "Update Slice Interpolation")
 
+        Publisher.subscribe(self.GetCrossPos, "Set Update cross pos")
+        Publisher.subscribe(self.UpdateCross, "Update cross pos")
+
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1487,6 +1490,17 @@ class Viewer(wx.Panel):
             cursor.SetSpacing((spacing[0], spacing[2], spacing[1]))
 
         self.slice_data.renderer.ResetCamera()
+
+    def GetCrossPos(self):
+        spacing = self.slice_data.actor.GetInput().GetSpacing()
+        Publisher.sendMessage("Cross focal point", coord = self.cross.GetFocalPoint(), spacing = spacing)
+
+    def UpdateCross(self, coord):
+        self.cross.SetFocalPoint(coord)
+        Publisher.sendMessage('Set ball reference position', position=self.cross.GetFocalPoint())
+        Publisher.sendMessage('Co-registered points',  arg=None, position=(coord[0], coord[1], coord[2], 0., 0., 0.))
+        self.OnScrollBar()
+        self.interactor.Render()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"

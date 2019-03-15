@@ -3751,16 +3751,37 @@ class GoToDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
+        self.orientation = None
+
+        self.__bind_events()
+
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetNewFocalPoint,'Cross focal point')
 
     def OnOk(self, evt):
         try:
             slice_number = int(self.goto_slice.GetValue())
-            orientation = self.goto_orientation.GetClientData(self.goto_orientation.GetSelection())
+            orientation = self.orientation = self.goto_orientation.GetClientData(self.goto_orientation.GetSelection())
+
             Publisher.sendMessage(("Set scroll position", orientation), index=slice_number)
+            Publisher.sendMessage('Set Update cross pos')
+
         except ValueError:
             pass
         self.Close()
+
+    def SetNewFocalPoint(self, coord, spacing):
+        newCoord = list(coord)
+        if self.orientation=='AXIAL':
+            newCoord[2] = int(self.goto_slice.GetValue())*spacing[2]
+        if self.orientation == 'CORONAL':
+            newCoord[1] = int(self.goto_slice.GetValue())*spacing[1]
+        if self.orientation == 'SAGITAL':
+            newCoord[0] = int(self.goto_slice.GetValue())*spacing[0]
+
+        Publisher.sendMessage('Update cross pos', coord = newCoord)
 
     def Close(self):
         wx.Dialog.Close(self)
