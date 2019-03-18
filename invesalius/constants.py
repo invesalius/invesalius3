@@ -764,11 +764,16 @@ TIPS_OBJ = [_("Select left object fiducial"),
             _("Select object center"),
             _("Attach sensor to object")]
 
-CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
-MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
-PROBE_NAME = "1Probe"
-REF_NAME = "2Ref"
-OBJ_NAME = "3Coil_big"
+MTC_CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
+MTC_MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+MTC_PROBE_NAME = "1Probe"
+MTC_REF_NAME = "2Ref"
+MTC_OBJ_NAME = "3Coil"
+
+NDI_MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'ndi_files', 'Markers'))
+NDI_PROBE_NAME = "NBSprobe"
+NDI_REF_NAME = "NBSref"
+NDI_OBJ_NAME = "NBScoil"
 
 #OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))

@@ -65,7 +65,12 @@ def PolarisTracker(tracker_id):
     try:
         import pypolaris
         trck_init = pypolaris.pypolaris()
-        trck_init.Initialize(const.NDICOMPORT)
+        MarkerDir = const.NDI_MAR_DIR.encode(const.FS_ENCODE)
+        PROBE = const.NDI_PROBE_NAME.encode(const.FS_ENCODE)
+        REF_NAME = const.NDI_REF_NAME.encode(const.FS_ENCODE)
+        OBJ_NAME = const.NDI_OBJ_NAME.encode(const.FS_ENCODE)
+        trck_init.Initialize(const.NDICOMPORT, MarkerDir, PROBE, REF_NAME, OBJ_NAME)
+
         print('Connect to polaris tracking device.')
 
     except:
@@ -95,13 +100,13 @@ def ClaronTracker(tracker_id):
 
         lib_mode = 'wrapper'
         trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = const.CAL_DIR.encode(const.FS_ENCODE)
-        trck_init.MarkerDir = const.MAR_DIR.encode(const.FS_ENCODE)
+        trck_init.CalibrationDir = const.MTC_CAL_DIR.encode(const.FS_ENCODE)
+        trck_init.MarkerDir = const.MTC_MAR_DIR.encode(const.FS_ENCODE)
         trck_init.NumberFramesProcessed = 1
         trck_init.FramesExtrapolated = 0
-        trck_init.PROBE_NAME = const.PROBE_NAME.encode(const.FS_ENCODE)
-        trck_init.REF_NAME = const.REF_NAME.encode(const.FS_ENCODE)
-        trck_init.OBJ_NAME = const.OBJ_NAME.encode(const.FS_ENCODE)
+        trck_init.PROBE_NAME = const.MTC_PROBE_NAME.encode(const.FS_ENCODE)
+        trck_init.REF_NAME = const.MTC_REF_NAME.encode(const.FS_ENCODE)
+        trck_init.OBJ_NAME = const.MTC_OBJ_NAME.encode(const.FS_ENCODE)
         trck_init.Initialize()
 
         if trck_init.GetIdentifyingCamera():
