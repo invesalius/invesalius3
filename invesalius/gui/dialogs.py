@@ -3805,3 +3805,53 @@ class GoToDialog(wx.Dialog):
     def Close(self):
         wx.Dialog.Close(self)
         self.Destroy()
+
+class SetCOMport(wx.Dialog):
+    def __init__(self, title=_("Select COM port")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self._init_gui()
+
+    def serial_ports(self):
+        """ Lists serial port names
+        """
+        import serial.tools.list_ports
+        if sys.platform.startswith('win'):
+            ports = ([comport.device for comport in serial.tools.list_ports.comports()])
+        else:
+            raise EnvironmentError('Unsupported platform')
+        return ports
+
+    def _init_gui(self):
+        self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        ports = self.serial_ports()
+        self.com_ports.Append(ports)
+
+       # self.goto_orientation.SetSelection(cb_init)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(self.com_ports, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def GetValue(self):
+        return self.com_ports.GetString(self.com_ports.GetSelection())

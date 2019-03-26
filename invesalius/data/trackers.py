@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import invesalius.constants as const
+import invesalius.gui.dialogs as dlg
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
 
@@ -61,23 +62,38 @@ def DefaultTracker(tracker_id):
     return trck_init, 'wrapper'
 
 def PolarisTracker(tracker_id):
+    from wx import ID_OK
     trck_init = None
-    try:
-        import pypolaris
-        trck_init = pypolaris.pypolaris()
-        MarkerDir = const.NDI_MAR_DIR.encode(const.FS_ENCODE)
-        PROBE = const.NDI_PROBE_NAME.encode(const.FS_ENCODE)
-        REF_NAME = const.NDI_REF_NAME.encode(const.FS_ENCODE)
-        OBJ_NAME = const.NDI_OBJ_NAME.encode(const.FS_ENCODE)
-        trck_init.Initialize(const.NDICOMPORT, MarkerDir, PROBE, REF_NAME, OBJ_NAME)
+    dlg_port = dlg.SetCOMport()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port = dlg_port.GetValue()
+        try:
+            import pypolaris
+            lib_mode = 'wrapper'
+            trck_init = pypolaris.pypolaris()
+            MarkerDir = const.NDI_MAR_DIR.encode(const.FS_ENCODE)
+            PROBE = const.NDI_PROBE_NAME.encode(const.FS_ENCODE)
+            REF_NAME = const.NDI_REF_NAME.encode(const.FS_ENCODE)
+            OBJ_NAME = const.NDI_OBJ_NAME.encode(const.FS_ENCODE)
+            com_port = com_port.encode(const.FS_ENCODE)
 
-        print('Connect to polaris tracking device.')
+            if trck_init.Initialize(com_port, MarkerDir, PROBE, REF_NAME, OBJ_NAME) != 0:
+                trck_init = None
+                lib_mode = None
+                print('Could not connect to default tracker.')
+            else:
+                print('Connect to polaris tracking device.')
 
-    except:
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to default tracker.')
+    else:
+        lib_mode = None
         print('Could not connect to default tracker.')
 
     # return tracker initialization variable and type of connection
-    return trck_init, 'wrapper'
+    return trck_init, lib_mode
 
 def CameraTracker(tracker_id):
     trck_init = None
