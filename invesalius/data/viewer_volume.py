@@ -72,6 +72,7 @@ class Viewer(wx.Panel):
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
         interactor.SetInteractorStyle(style)
         self.interactor = interactor
+        self.interactor.SetRenderWhenDisabled(True)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.EXPAND)

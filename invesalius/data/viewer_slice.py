@@ -225,6 +225,7 @@ class Viewer(wx.Panel):
 
     def __init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.SetRenderWhenDisabled(True)
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
