@@ -193,25 +193,38 @@ def PlhWrapperConnection(tracker_id):
 
 def PlhSerialConnection(tracker_id):
     import serial
+    from wx import ID_OK
+    trck_init = None
+    dlg_port = dlg.SetCOMport()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port = dlg_port.GetValue()
+        try:
+            trck_init = serial.Serial(com_port, baudrate=115200, timeout=0.03)
 
-    trck_init = serial.Serial('COM3', baudrate=115200, timeout=0.03)
+            if tracker_id == 2:
+                # Polhemus FASTRAK needs configurations first
+                trck_init.write(0x02, str.encode("u"))
+                trck_init.write(0x02, str.encode("F"))
+            elif tracker_id == 3:
+                # Polhemus ISOTRAK needs to set tracking point from
+                # center to tip.
+                trck_init.write(str.encode("u"))
+                trck_init.write(str.encode("F"))
+                trck_init.write(str.encode("Y"))
 
-    if tracker_id == 2:
-        # Polhemus FASTRAK needs configurations first
-        trck_init.write(0x02, str.encode("u"))
-        trck_init.write(0x02, str.encode("F"))
-    elif tracker_id == 3:
-        # Polhemus ISOTRAK needs to set tracking point from
-        # center to tip.
-        trck_init.write(str.encode("u"))
-        trck_init.write(str.encode("F"))
-        trck_init.write(str.encode("Y"))
+            trck_init.write(str.encode("P"))
+            data = trck_init.readlines()
+            if not data:
+                trck_init = None
+                print('Could not connect to Polhemus serial without error.')
 
-    trck_init.write(str.encode("P"))
-    data = trck_init.readlines()
-    if not data:
-        trck_init = None
-        print('Could not connect to Polhemus serial without error.')
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to default tracker.')
+    else:
+        lib_mode = None
+        print('Could not connect to default tracker.')
 
     return trck_init
 
