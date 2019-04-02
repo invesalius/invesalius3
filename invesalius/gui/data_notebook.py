@@ -537,9 +537,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
         self.InsertItem(index, "")
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                            imageId=self.mask_list_index[index])
-        self.SetStringItem(index, 2, threshold)
+        self.SetItem(index, 2, threshold)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
             #  if key != index:
@@ -553,7 +553,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.InsertNewItem(mask.index, mask.name, str(mask.threshold_range))
 
     def EditMaskThreshold(self, index, threshold_range):
-        self.SetStringItem(index, 2, str(threshold_range))
+        self.SetItem(index, 2, str(threshold_range))
 
     def EditMaskColour(self, index, colour):
         image = self.CreateColourBitmap(colour)
@@ -924,22 +924,22 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
         self.InsertItem(index, "")
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                             imageId = self.surface_list_index[index])
-        self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, area)
-        self.SetStringItem(index, 4, transparency)
+        self.SetItem(index, 2, volume)
+        self.SetItem(index, 3, area)
+        self.SetItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
     def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
                        area="0 mm2", transparency="0%%", colour=None):
         print("UpdateItemInfo", index)
         # TODO: Retornar esse codigo
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                             imageId = self.surface_list_index[index])
-        self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, area)
-        self.SetStringItem(index, 4, transparency)
+        self.SetItem(index, 2, volume)
+        self.SetItem(index, 3, area)
+        self.SetItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
     def CreateColourBitmap(self, colour):
@@ -969,7 +969,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        self.SetStringItem(surface_index, 4, "%d%%"%(int(transparency*100)))
+        self.SetItem(surface_index, 4, "%d%%"%(int(transparency*100)))
 
     def EditSurfaceColour(self, surface_index, colour):
         """
@@ -1218,21 +1218,21 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
     def InsertNewItem(self, index=0, label="Measurement 1", colour=None,
                        location="SURFACE", type_="LINEAR", value="0 mm"):
         self.InsertItem(index, "")
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                             imageId = self._list_index[index])
-        self.SetStringItem(index, 2, location)
-        self.SetStringItem(index, 3, type_)
-        self.SetStringItem(index, 4, value)
+        self.SetItem(index, 2, location)
+        self.SetItem(index, 3, type_)
+        self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
 
     def UpdateItemInfo(self, index=0, label="Measurement 1", colour=None,
                       location="SURFACE", type_="LINEAR", value="0 mm"):
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                             imageId = self._list_index[index])
-        self.SetStringItem(index, 2, location)
-        self.SetStringItem(index, 3, type_)
-        self.SetStringItem(index, 4, value)
+        self.SetItem(index, 2, location)
+        self.SetItem(index, 3, type_)
+        self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
 
@@ -1343,9 +1343,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d",
                       value="bla", colour=None):
         self.InsertItem(index, "")
-        self.SetStringItem(index, 1, name, imageId = self.img_colour)
-        self.SetStringItem(index, 2, type_)
-        self.SetStringItem(index, 3, value)
+        self.SetItem(index, 1, name, imageId = self.img_colour)
+        self.SetItem(index, 2, type_)
+        self.SetItem(index, 3, value)
 
     def Populate(self):
         dict = ((0, "Axial 1", "2D", "blalbalblabllablalbla"),

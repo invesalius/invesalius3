@@ -678,21 +678,21 @@ class NodesPanel(wx.Panel):
             index = self.tree_node.InsertItem(sys.maxsize, "")
         except (OverflowError, AssertionError):
             index = self.tree_node.InsertItem(sys.maxint, "")
-        self.tree_node.SetStringItem(index, 1, "localhost")
-        self.tree_node.SetStringItem(index, 2, "")
-        self.tree_node.SetStringItem(index, 3, "invesalius")
-        self.tree_node.SetStringItem(index, 4, "ok")
+        self.tree_node.SetItem(index, 1, "localhost")
+        self.tree_node.SetItem(index, 2, "")
+        self.tree_node.SetItem(index, 3, "invesalius")
+        self.tree_node.SetItem(index, 4, "ok")
         self.tree_node.CheckItem(index)
         self.tree_node.SetItemBackgroundColour(index, wx.Colour(245,245,245))
         #print ">>>>>>>>>>>>>>>>>>>>>", sys.maxint
         #index = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
-        #self.tree_node.SetStringItem(index, 1, "200.144.114.19")
-        #self.tree_node.SetStringItem(index, 2, "80")
+        #self.tree_node.SetItem(index, 1, "200.144.114.19")
+        #self.tree_node.SetItem(index, 2, "80")
         #self.tree_node.SetItemData(index, 0)      
 
         #index2 = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
-        #self.tree_node.SetStringItem(index2, 1, "200.144.114.19")
-        #self.tree_node.SetStringItem(index2, 2, "80")
+        #self.tree_node.SetItem(index2, 1, "200.144.114.19")
+        #self.tree_node.SetItem(index2, 2, "80")
         #self.tree_node.SetItemData(index2, 0)      
 
         self.btn_add = wx.Button(self, -1, _("Add"))
@@ -735,9 +735,9 @@ class NodesPanel(wx.Panel):
         index = self.tree_node.InsertItem(sys.maxsize, "")
 
         self.hosts[index] = [True, "localhost", "80", ""]
-        self.tree_node.SetStringItem(index, 1, "localhost")
-        self.tree_node.SetStringItem(index, 2, "80")
-        self.tree_node.SetStringItem(index, 3, "")
+        self.tree_node.SetItem(index, 1, "localhost")
+        self.tree_node.SetItem(index, 2, "80")
+        self.tree_node.SetItem(index, 3, "")
         self.tree_node.CheckItem(index)
 
     def OnLeftDown(self, evt):
@@ -770,9 +770,9 @@ class NodesPanel(wx.Panel):
                 dn.SetAETitle(self.hosts[0][3])
 
                 if dn.RunCEcho():
-                    self.tree_node.SetStringItem(key, 4, _("ok"))
+                    self.tree_node.SetItem(key, 4, _("ok"))
                 else:
-                    self.tree_node.SetStringItem(key, 4, _("error"))
+                    self.tree_node.SetItem(key, 4, _("error"))
 
     def RightButton(self,evt):
         event.Skip()
