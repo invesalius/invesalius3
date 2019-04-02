@@ -383,7 +383,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.to_render = True
         i,j = self.point_dragged
 
-        width, height= self.GetVirtualSizeTuple()
+        width, height= self.GetVirtualSize()
 
         if y >= height - self.padding:
             y = height - self.padding
@@ -525,7 +525,7 @@ class CLUTRaycastingWidget(wx.Panel):
         x,y = node.x, node.y
         value = node.graylevel
         alpha = node.opacity
-        widget_width, widget_height = self.GetVirtualSizeTuple()
+        widget_width, widget_height = self.GetVirtualSize()
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         font.SetWeight(wx.BOLD)
@@ -600,7 +600,7 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def Render(self, dc):
         ctx = wx.GraphicsContext.Create(dc)
-        width, height= self.GetVirtualSizeTuple()
+        width, height= self.GetVirtualSize()
         height -= (self.padding * 2)
         width -= self.padding
 
@@ -614,7 +614,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self._draw_selected_point_text(ctx)
 
     def _build_histogram(self):
-        width, height = self.GetVirtualSizeTuple()
+        width, height = self.GetVirtualSize()
         width -= self.padding
         height -= (self.padding * 2)
         x_init = self.Histogram.init
@@ -684,7 +684,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """
-        width,height = self.GetVirtualSizeTuple()
+        width,height = self.GetVirtualSize()
         width -= (TOOLBAR_SIZE)
         proportion = width * 1.0 / (self.end - self.init)
         x = (graylevel - self.init) * proportion + TOOLBAR_SIZE
@@ -694,7 +694,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Given a Opacity point returns a pixel point in the canvas.
         """
-        width,height = self.GetVirtualSizeTuple()
+        width,height = self.GetVirtualSize()
         height -= (self.padding * 2)
         y = height - (opacity * height) + self.padding
         return y
@@ -703,7 +703,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Translate from pixel point to Hounsfield scale.
         """
-        width, height= self.GetVirtualSizeTuple()
+        width, height= self.GetVirtualSize()
         width -= (TOOLBAR_SIZE)
         proportion = width * 1.0 / (self.end - self.init)
         graylevel = (x - TOOLBAR_SIZE) / proportion - abs(self.init)
@@ -713,7 +713,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Translate from pixel point to opacity.
         """
-        width, height= self.GetVirtualSizeTuple()
+        width, height= self.GetVirtualSize()
         height -= (self.padding * 2)
         opacity = (height - y + self.padding) * 1.0 / height
         return opacity
