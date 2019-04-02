@@ -151,7 +151,7 @@ class GradientSlider(wx.Panel):
         if not self.selected:
             # The user is over a push button, change the cursor.
             if self._is_over_what(x) in (1, 2):
-                self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
+                self.SetCursor(wx.Cursor(wx.CURSOR_SIZEWE))
             else:
                 self.SetCursor(wx.NullCursor)
 

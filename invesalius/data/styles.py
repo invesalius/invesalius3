@@ -467,9 +467,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         else:
             mx, my = self.viewer.interactor.GetEventPosition()
             if self._verify_clicked_display(mx, my):
-                self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             else:
-                self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def OnLeaveMeasureInteractor(self, obj, evt):
         if self.creating or self.selected:
@@ -922,7 +922,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
             self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
             
-            self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+            self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
             self.viewer.interactor.Render()
 
     def CleanUp(self):
@@ -931,7 +931,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
 
         self.viewer.slice_data.cursor.Show(0)
-        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
     def set_bsize(self, size):
@@ -967,12 +967,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
         self.viewer.slice_data.cursor.Show()
-        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
         self.viewer.interactor.Render()
 
     def OnLeaveInteractor(self, obj, evt):
         self.viewer.slice_data.cursor.Show(0)
-        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
     def OnBrushClick(self, obj, evt):
@@ -1230,7 +1230,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
             self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
             
-            self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+            self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
             self.viewer.interactor.Render()
 
     def CleanUp(self):
@@ -1243,7 +1243,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.OnScrollBar()
 
         self.viewer.slice_data.cursor.Show(0)
-        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
     def _create_mask(self):
@@ -1290,12 +1290,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
         self.viewer.slice_data.cursor.Show()
-        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
         self.viewer.interactor.Render()
 
     def OnLeaveInteractor(self, obj, evt):
         self.viewer.slice_data.cursor.Show(0)
-        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
     def WOnScrollBackward(self, obj, evt):
@@ -1757,10 +1757,10 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             dist_center = ((mx - cx)**2 + (my - cy)**2)**0.5
             if dist_center <= 15:
                 self._over_center = True
-                cursor = wx.StockCursor(wx.CURSOR_SIZENESW)
+                cursor = wx.Cursor(wx.CURSOR_SIZENESW)
             else:
                 self._over_center = False
-                cursor = wx.StockCursor(wx.CURSOR_DEFAULT)
+                cursor = wx.Cursor(wx.CURSOR_DEFAULT)
 
             self.viewer.interactor.SetCursor(cursor)
 

@@ -880,19 +880,19 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def SetDefaultCursor(self):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def SetSizeNSCursor(self):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+        self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZENS))
 
     def SetSizeWECursor(self):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
+        self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZEWE))
 
     def SetSizeNWSECursor(self):
         if sys.platform.startswith('linux'):
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
+            self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZENWSE))
         else:
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+            self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZING))
 
     def SetFocus(self):
         Publisher.sendMessage('Set viewer orientation focus',
