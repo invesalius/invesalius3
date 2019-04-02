@@ -820,7 +820,7 @@ class MenuBar(wx.MenuBar):
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
         #app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
-        file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
+        file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
         app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
@@ -925,17 +925,17 @@ class MenuBar(wx.MenuBar):
         swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom")).Enable(False)
         swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom")).Enable(False)
 
-        image_menu.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
-        image_menu.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
+        image_menu.Append(wx.NewId(), _('Flip'), flip_menu)
+        image_menu.Append(wx.NewId(), _('Swap axes'), swap_axes_menu)
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
 
         reorient_menu.Enable(False)
-        tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
-        tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
-        tools_menu.AppendMenu(-1, _(u"Segmentation"), segmentation_menu)
-        tools_menu.AppendMenu(-1, _(u"Surface"), surface_menu)
+        tools_menu.Append(-1, _(u'Image'), image_menu)
+        tools_menu.Append(-1,  _(u"Mask"), mask_menu)
+        tools_menu.Append(-1, _(u"Segmentation"), segmentation_menu)
+        tools_menu.Append(-1, _(u"Surface"), surface_menu)
 
         #View
         self.view_menu = view_menu = wx.Menu()
@@ -961,7 +961,7 @@ class MenuBar(wx.MenuBar):
 
         #view_menu = wx.Menu()
         #app = view_menu.Append
-        #appm = view_menu.AppendMenu
+        #appm = view_menu.Append
         #appm(-1, "Toolbars",view_tool_menu)
         #appm(-1, "Layout", view_layout_menu)
         #view_menu.AppendSeparator()

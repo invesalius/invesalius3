@@ -527,7 +527,7 @@ class VolumeToolPanel(wx.Panel):
            ID_TO_TOOL_ITEM[id] = item
            TOOL_STATE[id] = False
         self.submenu_raycasting_tools = submenu
-        menu.AppendMenu(RAYCASTING_TOOLS, _("Tools"), submenu)
+        menu.Append(RAYCASTING_TOOLS, _("Tools"), submenu)
         menu.Enable(RAYCASTING_TOOLS, 0)
 
         self.menu_raycasting = menu
