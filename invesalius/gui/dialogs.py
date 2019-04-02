@@ -1831,7 +1831,7 @@ class SurfaceMethodPanel(wx.Panel):
         icon = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
                                         (h * 0.8, h * 0.8))
         self.bmp = wx.StaticBitmap(self, -1, icon)
-        self.bmp.SetToolTipString(_("It is not possible to use the Default method because the mask was edited."))
+        self.bmp.SetToolTip(_("It is not possible to use the Default method because the mask was edited."))
 
         self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.method_sizer.Add(wx.StaticText(self, -1, _(u'Method:')), 0,
