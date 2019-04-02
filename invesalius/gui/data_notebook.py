@@ -536,7 +536,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
-        self.InsertStringItem(index, "")
+        self.InsertItem(index, "")
         self.SetStringItem(index, 1, label,
                            imageId=self.mask_list_index[index])
         self.SetStringItem(index, 2, threshold)
@@ -923,7 +923,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
-        self.InsertStringItem(index, "")
+        self.InsertItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
@@ -1217,7 +1217,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
     def InsertNewItem(self, index=0, label="Measurement 1", colour=None,
                        location="SURFACE", type_="LINEAR", value="0 mm"):
-        self.InsertStringItem(index, "")
+        self.InsertItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self._list_index[index])
         self.SetStringItem(index, 2, location)
@@ -1342,7 +1342,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
 
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d",
                       value="bla", colour=None):
-        self.InsertStringItem(index, "")
+        self.InsertItem(index, "")
         self.SetStringItem(index, 1, name, imageId = self.img_colour)
         self.SetStringItem(index, 2, type_)
         self.SetStringItem(index, 3, value)

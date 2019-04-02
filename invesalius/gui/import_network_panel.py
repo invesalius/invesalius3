@@ -675,9 +675,9 @@ class NodesPanel(wx.Panel):
 
         self.hosts[0] = [True, "localhost", "", "invesalius"]
         try:
-            index = self.tree_node.InsertStringItem(sys.maxsize, "")
+            index = self.tree_node.InsertItem(sys.maxsize, "")
         except (OverflowError, AssertionError):
-            index = self.tree_node.InsertStringItem(sys.maxint, "")
+            index = self.tree_node.InsertItem(sys.maxint, "")
         self.tree_node.SetStringItem(index, 1, "localhost")
         self.tree_node.SetStringItem(index, 2, "")
         self.tree_node.SetStringItem(index, 3, "invesalius")
@@ -685,12 +685,12 @@ class NodesPanel(wx.Panel):
         self.tree_node.CheckItem(index)
         self.tree_node.SetItemBackgroundColour(index, wx.Colour(245,245,245))
         #print ">>>>>>>>>>>>>>>>>>>>>", sys.maxint
-        #index = self.tree_node.InsertStringItem(sys.maxint, "")#adiciona vazio a coluna de check
+        #index = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
         #self.tree_node.SetStringItem(index, 1, "200.144.114.19")
         #self.tree_node.SetStringItem(index, 2, "80")
         #self.tree_node.SetItemData(index, 0)      
 
-        #index2 = self.tree_node.InsertStringItem(sys.maxint, "")#adiciona vazio a coluna de check
+        #index2 = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
         #self.tree_node.SetStringItem(index2, 1, "200.144.114.19")
         #self.tree_node.SetStringItem(index2, 2, "80")
         #self.tree_node.SetItemData(index2, 0)      
@@ -732,7 +732,7 @@ class NodesPanel(wx.Panel):
 
     def OnButtonAdd(self, evt):
         #adiciona vazio a coluna de check
-        index = self.tree_node.InsertStringItem(sys.maxsize, "")
+        index = self.tree_node.InsertItem(sys.maxsize, "")
 
         self.hosts[index] = [True, "localhost", "80", ""]
         self.tree_node.SetStringItem(index, 1, "localhost")

@@ -1312,7 +1312,7 @@ class MarkersPanel(wx.Panel):
 
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()
-        self.lc.InsertStringItem(num_items, str(num_items + 1))
+        self.lc.InsertItem(num_items, str(num_items + 1))
         self.lc.SetStringItem(num_items, 1, str(round(coord[0], 2)))
         self.lc.SetStringItem(num_items, 2, str(round(coord[1], 2)))
         self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
