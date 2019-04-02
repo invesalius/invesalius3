@@ -526,8 +526,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.EmptyImage(new_image.size[0],
-                                 new_image.size[1])
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
         try:
             wx_image.SetData(new_image.tostring())
         except Exception:
@@ -955,8 +955,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.EmptyImage(new_image.size[0],
-                                 new_image.size[1])
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
         try:
             wx_image.SetData(new_image.tostring())
         except Exception:
@@ -1249,8 +1249,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.EmptyImage(new_image.size[0],
-                                 new_image.size[1])
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
         try:
             wx_image.SetData(new_image.tostring())
         except:

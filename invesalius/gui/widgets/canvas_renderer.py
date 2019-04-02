@@ -379,7 +379,7 @@ class CanvasRendererCTX:
         if size is None:
             size = self.canvas_renderer.GetSize()
         w, h = size
-        image = wx.EmptyImage(w, h)
+        image = wx.Image(w, h)
         image.Clear()
 
         arr = np.zeros((h, w, 4), dtype=np.uint8)
