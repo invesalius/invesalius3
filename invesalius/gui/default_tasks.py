@@ -63,7 +63,7 @@ def GetCollapsedIconBitmap():
 def GetCollapsedIconImage():
     from io import BytesIO
     stream = BytesIO(GetCollapsedIconData())
-    return wx.ImageFromStream(stream)
+    return wx.Image(stream)
 
 def GetExpandedIconData():
     return \
@@ -94,7 +94,7 @@ def GetExpandedIconBitmap():
 def GetExpandedIconImage():
     from io import BytesIO
     stream = BytesIO(GetExpandedIconData())
-    return wx.ImageFromStream(stream)
+    return wx.Image(stream)
 
 
 # Main panel
