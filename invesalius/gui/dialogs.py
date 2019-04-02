@@ -1826,7 +1826,7 @@ class SurfaceMethodPanel(wx.Panel):
                                     choices=[i for i in sorted(self.alg_types)
                                             if not (self.mask_edited and i in self.edited_imp)],
                                     style=wx.CB_READONLY)
-        w, h = self.cb_types.GetSizeTuple()
+        w, h = self.cb_types.GetSize()
 
         icon = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
                                         (h * 0.8, h * 0.8))
