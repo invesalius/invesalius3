@@ -257,7 +257,7 @@ class InnerTaskPanel(wx.Panel):
 
         for id in self.id_to_name:
             item = wx.MenuItem(menu, id, self.id_to_name[id])
-            menu.AppendItem(item)
+            menu.Append(item)
 
         self.menu_picture = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuPicture)

@@ -693,8 +693,8 @@ class EditionTools(wx.Panel):
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
-        menu.AppendItem(item)
-        menu.AppendItem(item2)
+        menu.Append(item)
+        menu.Append(item2)
 
         bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
                             const.BRUSH_SQUARE: SQUARE_BMP}
@@ -861,8 +861,8 @@ class WatershedTool(EditionTools):
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
-        menu.AppendItem(item)
-        menu.AppendItem(item2)
+        menu.Append(item)
+        menu.Append(item2)
 
         bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
                             const.BRUSH_SQUARE: SQUARE_BMP}

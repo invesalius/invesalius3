@@ -848,12 +848,12 @@ class MenuBar(wx.MenuBar):
 
             file_edit_item_undo = wx.MenuItem(file_edit, wx.ID_UNDO,  _("Undo\tCtrl+Z"))
             file_edit_item_undo.SetBitmap(self.BMP_UNDO)
-            file_edit.AppendItem(file_edit_item_undo)
+            file_edit.Append(file_edit_item_undo)
             file_edit_item_undo.Enable(False)
 
             file_edit_item_redo = wx.MenuItem(file_edit, wx.ID_REDO,  _("Redo\tCtrl+Y"))
             file_edit_item_redo.SetBitmap(self.BMP_REDO)
-            file_edit.AppendItem(file_edit_item_redo)
+            file_edit.Append(file_edit_item_redo)
             file_edit_item_redo.Enable(False)
         else:
             file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)

@@ -506,7 +506,7 @@ class VolumeToolPanel(wx.Panel):
         for name in const.RAYCASTING_TYPES:
             id = wx.NewId()
             item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
-            menu.AppendItem(item)
+            menu.Append(item)
             if name == const.RAYCASTING_OFF_LABEL:
                 self.off_item = item
                 item.Check(1)
@@ -522,7 +522,7 @@ class VolumeToolPanel(wx.Panel):
                self.id_cutplane = id
            
            item = wx.MenuItem(submenu, id, name, kind=wx.ITEM_CHECK)
-           submenu.AppendItem(item)
+           submenu.Append(item)
            ID_TO_TOOL[id] = name
            ID_TO_TOOL_ITEM[id] = item
            TOOL_STATE[id] = False
@@ -544,7 +544,7 @@ class VolumeToolPanel(wx.Panel):
             bmp =  wx.Bitmap(ID_TO_BMP[id][1], wx.BITMAP_TYPE_PNG)
             item = wx.MenuItem(menu, id, ID_TO_BMP[id][0])
             item.SetBitmap(bmp)
-            menu.AppendItem(item)
+            menu.Append(item)
         menu.Bind(wx.EVT_MENU, self.OnMenuView)
         self.menu_view = menu
 
@@ -558,7 +558,7 @@ class VolumeToolPanel(wx.Panel):
             item = wx.MenuItem(slice_plane_menu, new_id, value,
                                             kind = wx.ITEM_CHECK)
             ID_TO_ITEMSLICEMENU[new_id] = item
-            slice_plane_menu.AppendItem(item)
+            slice_plane_menu.Append(item)
 
         slice_plane_menu.Bind(wx.EVT_MENU, self.OnMenuPlaneSlice)
 
@@ -577,7 +577,7 @@ class VolumeToolPanel(wx.Panel):
 
             ID_TO_ITEM_3DSTEREO[new_id] = item
             ID_TO_STEREO_NAME[new_id] = value 
-            stereo_menu.AppendItem(item)
+            stereo_menu.Append(item)
 
         stereo_menu.Bind(wx.EVT_MENU, self.OnMenuStereo)
 
