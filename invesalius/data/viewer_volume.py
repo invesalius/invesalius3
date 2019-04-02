@@ -53,7 +53,7 @@ else:
 
 PROP_MEASURE = 0.8
 
-from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX, Polygon
+#  from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX, Polygon
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -110,7 +110,7 @@ class Viewer(wx.Panel):
         self.text = vtku.TextZero()
         self.text.SetValue("")
         self.text.SetPosition(const.TEXT_POS_LEFT_UP)
-        #  self.ren.AddActor(self.text.actor)
+        self.ren.AddActor(self.text.actor)
 
         #  self.polygon = Polygon(None, is_3d=False)
 
@@ -1511,7 +1511,7 @@ class Viewer(wx.Panel):
     def OnSetWindowLevelText(self, ww, wl):
         if self.raycasting_volume:
             self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
-            self.canvas.modified = True
+            #  self.canvas.modified = True
 
     def OnShowRaycasting(self):
         if not self.raycasting_volume:
