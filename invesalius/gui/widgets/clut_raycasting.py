@@ -638,7 +638,7 @@ class CLUTRaycastingWidget(wx.Panel):
         width = img.GetWidth()
         height = img.GetHeight()
         self.save_button = Button()
-        self.save_button.image = wx.BitmapFromImage(img)
+        self.save_button.image = wx.Bitmap(img)
         self.save_button.size = (width, height)
 
     def __sort_pixel_points(self):

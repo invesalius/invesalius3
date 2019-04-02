@@ -474,13 +474,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
@@ -532,7 +532,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
             wx_image.SetData(new_image.tostring())
         except Exception:
             wx_image.SetData(new_image.tobytes())
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
@@ -840,13 +840,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
@@ -962,7 +962,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         except Exception:
             wx_image.SetData(new_image.tobytes())
 
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def EditSurfaceTransparency(self, surface_index, transparency):
         """
@@ -1115,13 +1115,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
@@ -1255,7 +1255,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
             wx_image.SetData(new_image.tostring())
         except:
             wx_image.SetData(new_image.tobytes())
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def EditItemColour(self, measure_index, colour):
         """
@@ -1310,19 +1310,19 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_colour.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
