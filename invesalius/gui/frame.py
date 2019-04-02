@@ -2007,8 +2007,8 @@ class HistoryToolBar(AuiToolBar):
         Bind normal events from wx (except pubsub related).
         """
         #self.Bind(wx.EVT_TOOL, self.OnToggle)
-        wx.EVT_TOOL( self, wx.ID_UNDO, self.OnUndo )
-        wx.EVT_TOOL( self, wx.ID_REDO, self.OnRedo )
+        self.Bind(wx.EVT_TOOL, self.OnUndo, id=wx.ID_UNDO)
+        self.Bind(wx.EVT_TOOL, self.OnRedo, id=wx.ID_REDO)
 
     def __init_items(self):
         """
