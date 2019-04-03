@@ -249,7 +249,7 @@ class Inv3SplashScreen(SplashScreen):
         
         self.fc = wx.CallLater(200, self.ShowMain)
         options, args = parse_comand_line()
-        wx.CallLater(100, use_cmd_optargs, options, args)
+        wx.CallLater(1, use_cmd_optargs, options, args)
 
         # Check for updates
         from threading import Thread
