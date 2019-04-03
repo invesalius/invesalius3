@@ -38,6 +38,7 @@ import invesalius.data.slice_ as slice_
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
+from invesalius.gui.inv_spinctrl import InvSpinCtrl
 
 from invesalius.project import Project
 import invesalius.session as ses
@@ -705,14 +706,9 @@ class EditionTools(wx.Panel):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
+        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000)
         # To calculate best width to spinctrl
-        dc = wx.WindowDC(self)
-        dc.SetFont(self.GetFont())
-        width, height = dc.GetTextExtent("MMM")
-
-        spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
-        spin_brush_size.SetRange(1,100)
-        spin_brush_size.SetValue(const.BRUSH_SIZE)
+        spin_brush_size.CalcSizeFromTextSize("MMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
@@ -873,14 +869,9 @@ class WatershedTool(EditionTools):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
+        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000)
         # To calculate best width to spinctrl
-        dc = wx.WindowDC(self)
-        dc.SetFont(self.GetFont())
-        width, height = dc.GetTextExtent("MMM")
-
-        spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
-        spin_brush_size.SetRange(1,100)
-        spin_brush_size.SetValue(const.BRUSH_SIZE)
+        spin_brush_size.CalcSizeFromTextSize("MMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
