@@ -49,6 +49,7 @@ import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
 
+from invesalius.gui.inv_spinctrl import InvSpinCtrl
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 if sys.platform == 'win32':
@@ -73,13 +74,9 @@ ORIENTATIONS = {
 class ContourMIPConfig(wx.Panel):
     def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
-        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
-                                         initial=const.PROJECTION_MIP_SIZE)
-        self.mip_size_spin.SetValue(const.PROJECTION_MIP_SIZE)
+        self.mip_size_spin = InvSpinCtrl(self, -1, value=const.PROJECTION_MIP_SIZE, min_value=1, max_value=240)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
-        w, h = self.mip_size_spin.GetTextExtent('M')
-        self.mip_size_spin.SetMinSize((5 * w + 10, -1))
-        self.mip_size_spin.SetMaxSize((5 * w + 10, -1))
+        self.mip_size_spin.CalcSizeFromTextSize('MMM')
 
         self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
                                         increment=0.1,
