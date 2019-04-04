@@ -3251,7 +3251,7 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             border_style = wx.SUNKEN_BORDER
 
-        self.spin_size = wx.SpinCtrl(self, -1, value='1000', min=1, max=1000000000)
+        self.spin_size = InvSpinCtrl(self, -1, value=1000, min_value=1, max_value=1000000000)
         self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
         self.panel2dcon = Panel2DConnectivity(self, show_orientation=True, style=border_style|wx.TAB_TRAVERSAL)
         self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
