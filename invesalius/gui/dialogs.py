@@ -2326,16 +2326,16 @@ class ImportBitmapParameters(wx.Dialog):
         gbs_spacing = wx.GridBagSizer(2, 6)
         
         stx_spacing_x = stx_spacing_x = wx.StaticText(p, -1, _(u"X:"))
-        fsp_spacing_x = self.fsp_spacing_x = FS.FloatSpin(p, -1, min_val=0,\
+        fsp_spacing_x = self.fsp_spacing_x = InvFloatSpinCtrl(p, -1, min_value=0, max_value=1000000000,
                                             increment=0.25, value=1.0, digits=8)
 
 
         stx_spacing_y = stx_spacing_y = wx.StaticText(p, -1, _(u"Y:"))
-        fsp_spacing_y = self.fsp_spacing_y = FS.FloatSpin(p, -1, min_val=0,\
+        fsp_spacing_y = self.fsp_spacing_y = InvFloatSpinCtrl(p, -1, min_value=0, max_value=1000000000,
                                             increment=0.25, value=1.0, digits=8)
 
         stx_spacing_z = stx_spacing_z = wx.StaticText(p, -1, _(u"Z:"))
-        fsp_spacing_z = self.fsp_spacing_z = FS.FloatSpin(p, -1, min_val=0,\
+        fsp_spacing_z = self.fsp_spacing_z = InvFloatSpinCtrl(p, -1, min_value=0, max_value=1000000000,
                                             increment=0.25, value=1.0, digits=8)
 
 
