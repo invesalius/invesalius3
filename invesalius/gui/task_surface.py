@@ -38,6 +38,8 @@ import wx.lib.platebtn as pbtn
 import invesalius.project as prj
 import invesalius.utils as utl
 
+from invesalius.gui.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
+
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
 MAX_TRANSPARENCY = 100
@@ -620,9 +622,7 @@ class QualityAdjustment(wx.Panel):
 
         text_decimate = wx.StaticText(self, -1, _("Decimate resolution:"))
 
-        spin_decimate = wx.SpinCtrl(self, -1, "", (30, 50))
-        spin_decimate.SetRange(1,100)
-        spin_decimate.SetValue(30)
+        spin_decimate = InvSpinCtrl(self, -1, value=30, min_value=1, max_value=100, size=(30, 50))
         #spin_decimate.Bind(wx.EVT_TEXT, self.OnDecimate)
 
         # LINE 3
@@ -630,9 +630,7 @@ class QualityAdjustment(wx.Panel):
 
         text_smooth = wx.StaticText(self, -1, _("Smooth iterations:"))
 
-        spin_smooth = wx.SpinCtrl(self, -1, "", (30, 50))
-        spin_smooth.SetRange(1,100)
-        spin_smooth.SetValue(0)
+        spin_smooth = InvSpinCtrl(self, -1, value=0, min_value=1, max_values=100, size=(30, 50))
 
         # MIXED LINE 2 AND 3
         flag_link = wx.EXPAND|wx.GROW|wx.RIGHT|wx.LEFT
