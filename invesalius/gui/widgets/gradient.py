@@ -25,6 +25,8 @@ import wx
 
 from wx.lib import intctrl
 
+from invesalius.gui.inv_spinctrl import InvSpinCtrl
+
 PUSH_WIDTH = 7
 
 myEVT_SLIDER_CHANGED = wx.NewEventType()
@@ -340,17 +342,20 @@ class GradientCtrl(wx.Panel):
                                               self.max_range, self.minimun,
                                               self.maximun, self.colour)
 
-        self.spin_min = intctrl.IntCtrl(self, size=(40,20), 
-                                        style=wx.TE_PROCESS_ENTER)
-        self.spin_min.SetValue(self.minimun)
+        self.spin_min = InvSpinCtrl(self, value=self.minimun,
+                                    min_value=self.min_range,
+                                    max_value=self.max_range)
         if sys.platform != 'win32':
             self.spin_min.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        self.spin_max = intctrl.IntCtrl(self, size=(40,20), 
-                                        style=wx.TE_PROCESS_ENTER)
-        self.spin_max.SetValue(self.maximun)
+        self.spin_max = InvSpinCtrl(self, value=self.maximun,
+                                    min_value=self.min_range,
+                                    max_value=self.max_range)
         if sys.platform != 'win32':
             self.spin_max.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        self.spin_min.CalcSizeFromTextSize()
+        self.spin_max.CalcSizeFromTextSize()
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.spin_min, 0, wx.EXPAND | wx.RIGHT, 2)
@@ -362,17 +367,8 @@ class GradientCtrl(wx.Panel):
         self.gradient_slider.Bind(EVT_SLIDER_CHANGING, self.OnSliding)
         self.gradient_slider.Bind(EVT_SLIDER_CHANGED, self.OnSlider)
 
-        # self.spin_min.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMinValue)
-        self.spin_min.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMinChange)
-        self.spin_min.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMinChange)
-        #self.spin_min.Bind(wx.EVT_KEY_DOWN, self._FireSpinMinChange)
-        self.spin_min.Bind(wx.EVT_MOUSEWHEEL, self.OnMinMouseWheel)
-
-        # self.spin_max.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMaxValue)
-        self.spin_max.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMaxChange)
-        self.spin_max.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMaxChange)
-        #self.spin_max.Bind(wx.EVT_KEY_DOWN, self._FireSpinMaxChange)
-        self.spin_max.Bind(wx.EVT_MOUSEWHEEL, self.OnMaxMouseWheel)
+        self.spin_min.Bind(wx.EVT_SPINCTRL, self.OnMinMouseWheel)
+        self.spin_max.Bind(wx.EVT_SPINCTRL, self.OnMaxMouseWheel)
 
     def OnSlider(self, evt):
         self.spin_min.SetValue(evt.minimun)
@@ -422,7 +418,7 @@ class GradientCtrl(wx.Panel):
         """ 
         When the user wheel the mouse over min texbox
         """
-        v = self.GetMinValue() + e.GetWheelRotation()/e.GetWheelDelta()
+        v = self.spin_min.GetValue()
         self.SetMinValue(v)
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
@@ -430,7 +426,7 @@ class GradientCtrl(wx.Panel):
         """ 
         When the user wheel the mouse over max texbox
         """
-        v = self.GetMaxValue() + e.GetWheelRotation()/e.GetWheelDelta()
+        v = self.spin_max.GetValue()
         self.SetMaxValue(v)
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
@@ -443,6 +439,8 @@ class GradientCtrl(wx.Panel):
     def SetMaxRange(self, value):
         self.spin_min.SetMax(value)
         self.spin_max.SetMax(value)
+        self.spin_min.CalcSizeFromTextSize()
+        self.spin_max.CalcSizeFromTextSize()
         self.gradient_slider.SetMaxRange(value)
         self.max_range = value
         if value > self.max_range:
@@ -451,6 +449,8 @@ class GradientCtrl(wx.Panel):
     def SetMinRange(self, value):
         self.spin_min.SetMin(value)
         self.spin_max.SetMin(value)
+        self.spin_min.CalcSizeFromTextSize()
+        self.spin_max.CalcSizeFromTextSize()
         self.gradient_slider.SetMinRange(value)
         self.min_range = value
         if value < self.min_range:
@@ -461,6 +461,10 @@ class GradientCtrl(wx.Panel):
             value = int(value)
             if value > self.max_range:
                 value = int(self.max_range)
+            if value < self.min_range:
+                value = int(self.min_range)
+            if value < self.minimun:
+                value = int(self.minimun)
             self.spin_max.SetValue(value)
             self.gradient_slider.SetMaximun(value)
             self.maximun = value
@@ -470,6 +474,10 @@ class GradientCtrl(wx.Panel):
             value = int(value)
             if value < self.min_range:
                 value = int(self.min_range)
+            if value > self.max_range:
+                value = int(self.max_range)
+            if value > self.maximun:
+                value = int(self.maximun)
             self.spin_min.SetValue(value)
             self.gradient_slider.SetMinimun(value)
             self.minimun = value

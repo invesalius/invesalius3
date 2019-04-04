@@ -89,7 +89,7 @@ class InvSpinCtrl(wx.Panel):
 
     def CalcSizeFromTextSize(self, text=None):
         if text is None:
-            text = "{}".format(self._max_value)
+            text = "{}".format(len(str(self._max_value)) * "M")
         self.SetMinSize(
             self._textctrl.GetSizeFromTextSize(self._textctrl.GetTextExtent(text))
         )
