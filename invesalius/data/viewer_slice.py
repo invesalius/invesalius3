@@ -49,7 +49,7 @@ import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
 
-from invesalius.gui.inv_spinctrl import InvSpinCtrl
+from invesalius.gui.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 if sys.platform == 'win32':
@@ -76,19 +76,20 @@ class ContourMIPConfig(wx.Panel):
         wx.Panel.__init__(self, prnt)
         self.mip_size_spin = InvSpinCtrl(self, -1, value=const.PROJECTION_MIP_SIZE, min_value=1, max_value=240)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
-        self.mip_size_spin.CalcSizeFromTextSize('MMM')
+        size = self.mip_size_spin.CalcSizeFromTextSize('MMM')
 
-        self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
+        self.border_spin = InvFloatSpinCtrl(self, -1, min_value=0, max_value=10,
                                         increment=0.1,
                                         value=const.PROJECTION_BORDER_SIZE,
-                                        digits=1, agwStyle=FS.FS_LEFT)
+                                        digits=1)
         self.border_spin.SetToolTip(wx.ToolTip(_("Controls the sharpness of the"
                                                  " contour. The greater the"
                                                  " value, the sharper the"
                                                  " contour.")))
-        w, h = self.border_spin.GetTextExtent('M')
-        self.border_spin.SetMinSize((5 * w + 10, -1))
-        self.border_spin.SetMaxSize((5 * w + 10, -1))
+        size = self.border_spin.CalcSizeFromTextSize()
+        #  w, h = self.border_spin.GetTextExtent('M')
+        #  self.border_spin.SetMinSize((5 * w + 10, -1))
+        #  self.border_spin.SetMaxSize((5 * w + 10, -1))
 
         self.inverted = wx.CheckBox(self, -1, _("Inverted order"))
         self.inverted.SetToolTip(wx.ToolTip(_("If checked, the slices are"
@@ -102,7 +103,7 @@ class ContourMIPConfig(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
-        sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
+        sizer.Add(self.mip_size_spin, 0)
         try:
             sizer.Add(10, 0)
         except TypeError:

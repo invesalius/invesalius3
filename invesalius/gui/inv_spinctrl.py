@@ -122,7 +122,7 @@ class InvFloatSpinCtrl(wx.Panel):
         value=0.0,
         min_value=1.0,
         max_value=100.0,
-        increment=0.1
+        increment=0.1,
         digits=1,
         size=wx.DefaultSize,
     ):
@@ -157,7 +157,8 @@ class InvFloatSpinCtrl(wx.Panel):
         self._textctrl.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
 
     def _to_decimal(self, value):
-        value = '{:.{digits}f}'.format(value, self._digits)
+        if not isinstance(value, str):
+            value = '{:.{digits}f}'.format(value, digits=self._digits)
         return decimal.Decimal(value, self._dec_context)
 
     def SetDigits(self, digits):
@@ -185,7 +186,7 @@ class InvFloatSpinCtrl(wx.Panel):
         self.SetMax(max_value)
 
     def GetValue(self):
-        return self._value
+        return float(self._value)
 
     def SetValue(self, value):
         try:
@@ -205,7 +206,7 @@ class InvFloatSpinCtrl(wx.Panel):
 
     def CalcSizeFromTextSize(self, text=None):
         if text is None:
-            text = "{}".format(self._max_value)
+            text = "{}.{}".format(self._max_value, "M" * self._digits)
         self.SetMinSize(
             self._textctrl.GetSizeFromTextSize(self._textctrl.GetTextExtent(text))
         )
@@ -213,9 +214,9 @@ class InvFloatSpinCtrl(wx.Panel):
     def OnMouseWheel(self, evt):
         r = evt.GetWheelRotation()
         if r > 0:
-            self.SetValue(self.GetValue() + 1)
+            self.SetValue(self._value + self._increment)
         else:
-            self.SetValue(self.GetValue() - 1)
+            self.SetValue(self._value - self._increment)
         self.raise_event()
         evt.Skip()
 
