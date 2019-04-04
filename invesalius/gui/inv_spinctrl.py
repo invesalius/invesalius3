@@ -30,10 +30,11 @@ class InvSpinCtrl(wx.Panel):
         min_value=1,
         max_value=100,
         size=wx.DefaultSize,
+        style=wx.TE_RIGHT
     ):
         super().__init__(parent, id, size=size)
 
-        self._textctrl = wx.TextCtrl(self, -1)
+        self._textctrl = wx.TextCtrl(self, -1, style=style)
 
         self._value = 0
         self._last_value = 0
