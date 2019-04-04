@@ -80,16 +80,9 @@ EVT_MASK_SET = wx.PyEventBinder(myEVT_MASK_SET, 1)
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
-                       pos=wx.DefaultPosition,
-                       style=wx.DEFAULT_DIALOG_STYLE)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
-                               pos=wx.DefaultPosition,
-                               style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
+                           pos=wx.DefaultPosition,
+                           style=wx.DEFAULT_DIALOG_STYLE)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
@@ -135,16 +128,9 @@ class NumberDialog(wx.Dialog):
 class ResizeImageDialog(wx.Dialog):
 
     def __init__(self):#, message, value=0):
-        try:
-            pre = self.pre = wx.PreDialog()
-            pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
-                       pos=wx.DefaultPosition,
-                       style=wx.DEFAULT_DIALOG_STYLE)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
-                              pos=wx.DefaultPosition,
-                              style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
+                          pos=wx.DefaultPosition,
+                          style=wx.DEFAULT_DIALOG_STYLE)
 
         lbl_message = wx.StaticText(self, -1, _("InVesalius is running on a 32-bit operating system or has insufficient memory. \nIf you want to work with 3D surfaces or volume rendering, \nit is recommended to reduce the medical images resolution."))
         icon = wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_MESSAGE_BOX, (32,32))
@@ -676,14 +662,8 @@ def ShowLoadRegistrationDialog():
 
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
-                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
-                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+        wx.Dialog.__init__(self, None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
@@ -722,14 +702,8 @@ class UpdateMessageDialog(wx.Dialog):
         title=_("Invesalius Update")
         self.url = url
 
-        try:
-            pre = wx.PreDialog()
-            pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
-                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
-                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+        wx.Dialog.__init__(self, None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, msg)
@@ -1067,22 +1041,8 @@ class NewMask(wx.Dialog):
         import invesalius.data.mask as mask
         import invesalius.project as prj
 
-        try:
-            # Instead of calling wx.Dialog.__init__ we precreate the dialog
-            # so we can set an extra style that must be set before
-            # creation, and then we create the GUI object using the Create
-            # method.
-            pre = wx.PreDialog()
-            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-            pre.Create(parent, ID, title, pos, (500,300), style)
-            # This next step is the most important, it turns this Python
-            # object into the real wrapper of the dialog (instead of pre)
-            # as far as the wxPython extension is concerned.
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
-            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-
+        wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+        self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
         self.CenterOnScreen()
 
@@ -1363,22 +1323,8 @@ class NewSurfaceDialog(wx.Dialog):
         import invesalius.data.surface as surface
         import invesalius.project as prj
 
-        try:
-            # Instead of calling wx.Dialog.__init__ we precreate the dialog
-            # so we can set an extra style that must be set before
-            # creation, and then we create the GUI object using the Create
-            # method.
-            pre = wx.PreDialog()
-            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-            pre.Create(parent, ID, title, pos, (500,300), style)
-
-            # This next step is the most important, it turns this Python
-            # object into the real wrapper of the dialog (instead of pre)
-            # as far as the wxPython extension is concerned.
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
-            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+        self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
         self.CenterOnScreen()
 
@@ -1580,28 +1526,10 @@ class SurfaceCreationDialog(wx.Dialog):
                  style=wx.DEFAULT_DIALOG_STYLE, useMetal=False,
                  mask_edited=False):
 
-        # Instead of calling wx.Dialog.__init__ we precreate the dialog
-        # so we can set an extra style that must be set before
-        # creation, and then we create the GUI object using the Create
-        # method.
-        try:
-            pre = wx.PreDialog()
-            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-            pre.Create(parent, ID, title, pos, (500,300), style)
-
-            # This extra style can be set after the UI object has been created.
-            if 'wxMac' in wx.PlatformInfo and useMetal:
-                self.SetExtraStyle(wx.DIALOG_EX_METAL)
-
-            # This next step is the most important, it turns this Python
-            # object into the real wrapper of the dialog (instead of pre)
-            # as far as the wxPython extension is concerned.
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
-            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-            if 'wxMac' in wx.PlatformInfo and useMetal:
-                self.SetExtraStyle(wx.DIALOG_EX_METAL)
+        wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
+        self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        if 'wxMac' in wx.PlatformInfo and useMetal:
+            self.SetExtraStyle(wx.DIALOG_EX_METAL)
 
         self.CenterOnScreen()
 
@@ -1907,12 +1835,7 @@ class SurfaceMethodPanel(wx.Panel):
 
 class ClutImagedataDialog(wx.Dialog):
     def __init__(self, histogram, init, end, nodes=None):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.histogram = histogram
         self.init = init
@@ -2011,12 +1934,7 @@ class WatershedOptionsPanel(wx.Panel):
 
 class WatershedOptionsDialog(wx.Dialog):
     def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
 
@@ -2055,12 +1973,7 @@ class WatershedOptionsDialog(wx.Dialog):
 
 class MaskBooleanDialog(wx.Dialog):
     def __init__(self, masks, ID=-1, title=_(u"Boolean operations"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self._init_gui(masks)
         self.CenterOnScreen()
@@ -2139,12 +2052,7 @@ class MaskBooleanDialog(wx.Dialog):
 
 class ReorientImageDialog(wx.Dialog):
     def __init__(self, ID=-1, title=_(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self._closed = False
 
@@ -2264,16 +2172,10 @@ class ImportBitmapParameters(wx.Dialog):
         else:
             size=wx.Size(380,210)
 
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=size,
-                                    style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1,
-                               _(u"Create project from bitmap"),
-                               size=size,
-                               style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1,
+                           _(u"Create project from bitmap"),
+                           size=size,
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.interval = 0
 
@@ -2712,12 +2614,7 @@ class PanelFFillConfidence(wx.Panel):
 
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.config = config
 
@@ -2825,12 +2722,7 @@ class FFillOptionsDialog(wx.Dialog):
 
 class SelectPartsOptionsDialog(wx.Dialog):
     def __init__(self, config):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.config = config
 
@@ -2910,12 +2802,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
     def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
 
@@ -3116,15 +3003,7 @@ class CropOptionsDialog(wx.Dialog):
     
     def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         self.config = config
-        try:
-            pre = wx.PreDialog()
-
-            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
-
-
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
         self._init_gui()
 
     def UpdateValues(self, limits):
@@ -3235,13 +3114,7 @@ class CropOptionsDialog(wx.Dialog):
 
 class FillHolesAutoDialog(wx.Dialog):
     def __init__(self, title):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
         self._init_gui()
 
     def _init_gui(self):
@@ -3339,14 +3212,8 @@ class FillHolesAutoDialog(wx.Dialog):
 
 class MaskDensityDialog(wx.Dialog):
     def __init__(self, title):
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Mask density"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Mask density"),
-                               style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
-
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Mask density"),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
         self._init_gui()
         self._bind_events()
 
@@ -3455,14 +3322,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
 
-        try:
-            pre = wx.PreDialog()
-            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
-                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
-                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self._init_gui()
         self.LoadObject()
