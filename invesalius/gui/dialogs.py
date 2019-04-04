@@ -2596,12 +2596,11 @@ class PanelFFillDynamic(wx.Panel):
         self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW&WL"))
         self.use_ww_wl.SetValue(self.config.use_ww_wl)
 
-        self.deviation_min = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_min, min=0, max=10000)
-        w, h = self.deviation_min.GetTextExtent('M')
-        self.deviation_min.SetMinSize((w*5, -1))
+        self.deviation_min = InvSpinCtrl(self, -1, value=self.config.dev_min, min_value=0, max_value=10000)
+        self.deviation_min.CalcSizeFromTextSize()
 
-        self.deviation_max = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_max, min=0, max=10000)
-        self.deviation_max.SetMinSize((w*5, -1))
+        self.deviation_max = InvSpinCtrl(self, -1, value=self.config.dev_max, min_value=0, max_value=10000)
+        self.deviation_max.CalcSizeFromTextSize()
 
         sizer = wx.GridBagSizer(5, 5)
 
@@ -2658,17 +2657,16 @@ class PanelFFillConfidence(wx.Panel):
         self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW&WL"))
         self.use_ww_wl.SetValue(self.config.use_ww_wl)
 
-        self.spin_mult = floatspin.FloatSpin(self, -1,
-                                             value=self.config.confid_mult,
-                                             min_val=1.0, max_val=10.0,
-                                             increment=0.1, digits=1,
-                                             style=wx.TE_PROCESS_TAB|wx.TE_PROCESS_ENTER,
-                                             agwStyle=floatspin.FS_RIGHT)
-        w, h = self.spin_mult.GetTextExtent('M')
-        self.spin_mult.SetMinSize((w*7, -1))
+        self.spin_mult = InvFloatSpinCtrl(self, -1,
+                                          value=self.config.confid_mult,
+                                          min_value=1.0, max_value=10.0,
+                                          increment=0.1, digits=1)
+                                          #  style=wx.TE_PROCESS_TAB|wx.TE_PROCESS_ENTER,
+                                          #  agwStyle=floatspin.FS_RIGHT)
+        self.spin_mult.CalcSizeFromTextSize()
 
-        self.spin_iters = wx.SpinCtrl(self, -1, value='%d' % self.config.confid_iters, min=0, max=100)
-        self.spin_iters.SetMinSize((w*7, -1))
+        self.spin_iters = InvSpinCtrl(self, -1, value=self.config.confid_iters, min_value=0, max_value=100)
+        self.spin_iters.CalcSizeFromTextSize()
 
         sizer = wx.GridBagSizer(5, 5)
 
