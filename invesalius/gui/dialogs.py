@@ -1774,19 +1774,19 @@ class CAOptions(wx.Panel):
 
     def _build_widgets(self):
         sb = wx.StaticBox(self, -1, _('Options'))
-        self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
-                                         max_val=1.0, increment=0.1,
-                                         digits=1)
+        self.angle = InvFloatSpinCtrl(self, -1, value=0.7, min_value=0.0,
+                                      max_value=1.0, increment=0.1,
+                                      digits=1)
 
-        self.max_distance = floatspin.FloatSpin(self, -1, value=3.0, min_val=0.0,
-                                         max_val=100.0, increment=0.1,
+        self.max_distance = InvFloatSpinCtrl(self, -1, value=3.0, min_value=0.0,
+                                         max_value=100.0, increment=0.1,
                                          digits=2)
 
-        self.min_weight = floatspin.FloatSpin(self, -1, value=0.5, min_val=0.0,
-                                         max_val=1.0, increment=0.1,
+        self.min_weight = InvFloatSpinCtrl(self, -1, value=0.5, min_value=0.0,
+                                         max_value=1.0, increment=0.1,
                                          digits=1)
 
-        self.steps = wx.SpinCtrl(self, -1, value='10', min=1, max=100)
+        self.steps = InvSpinCtrl(self, -1, value=10, min_value=1, max_value=100)
 
         layout_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=5, vgap=5)
         layout_sizer.Add(wx.StaticText(self, -1, _(u'Angle:')),  0, wx.EXPAND)
