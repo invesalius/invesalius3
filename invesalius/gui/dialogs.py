@@ -162,8 +162,7 @@ class ResizeImageDialog(wx.Dialog):
 
         lbl_message_percent = wx.StaticText(self, -1,_("Percentage of original resolution"))
 
-        num_ctrl_percent = wx.SpinCtrl(self, -1)
-        num_ctrl_percent.SetRange(20,100)
+        num_ctrl_percent = InvSpinCtrl(self, -1, value=100, min_value=20, max_value=100)
         self.num_ctrl_porcent = num_ctrl_percent
 
         sizer_percent = wx.BoxSizer(wx.HORIZONTAL)
