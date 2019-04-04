@@ -1983,8 +1983,8 @@ class WatershedOptionsPanel(wx.Panel):
                                         style=wx.NO_BORDER | wx.HORIZONTAL)
         self.choice_3dcon.SetSelection(self.con3d_choices.index(self.config.con_3d))
 
-        self.gaussian_size = wx.SpinCtrl(self, -1, "", min=1, max=10)
-        self.gaussian_size.SetValue(self.config.mg_size)
+        self.gaussian_size = InvSpinCtrl(self, -1, value=self.config.mg_size,
+                                         min_value=1, max_value=10)
 
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, "Conectivity"), wx.VERTICAL)
         box_sizer.Add(self.choice_2dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
