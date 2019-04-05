@@ -271,6 +271,7 @@ class DrawCrop2DRetangle():
         self.last_x = 0
         self.last_y = 0
         self.last_z = 0
+        self.layer = 0
 
     def MouseMove(self, x, y):
 
