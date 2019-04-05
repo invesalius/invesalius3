@@ -32,12 +32,12 @@ class InvSpinCtrl(wx.Panel):
         increment=1,
         spin_button=True,
         size=wx.DefaultSize,
-        style=wx.TE_RIGHT
+        style=wx.TE_RIGHT,
     ):
         super().__init__(parent, id, size=size)
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
-        if spin_button and wx.Platform != '__WXGTK__':
+        if spin_button and wx.Platform != "__WXGTK__":
             self._spinbtn = wx.SpinButton(self, -1)
         else:
             self._spinbtn = None
@@ -153,12 +153,12 @@ class InvFloatSpinCtrl(wx.Panel):
         digits=1,
         spin_button=True,
         size=wx.DefaultSize,
-        style=wx.TE_RIGHT
+        style=wx.TE_RIGHT,
     ):
         super().__init__(parent, id, size=size)
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
-        if spin_button and wx.Platform != '__WXGTK__':
+        if spin_button and wx.Platform != "__WXGTK__":
             self._spinbtn = wx.SpinButton(self, -1)
         else:
             self._spinbtn = None
@@ -166,11 +166,11 @@ class InvFloatSpinCtrl(wx.Panel):
         self._digits = digits
         self._dec_context = decimal.Context(prec=digits)
 
-        self._value = decimal.Decimal('0', self._dec_context)
+        self._value = decimal.Decimal("0", self._dec_context)
         self._last_value = self._value
-        self._min_value = decimal.Decimal('0', self._dec_context)
-        self._max_value = decimal.Decimal('100', self._dec_context)
-        self._increment = decimal.Decimal('0.1', self._dec_context)
+        self._min_value = decimal.Decimal("0", self._dec_context)
+        self._max_value = decimal.Decimal("100", self._dec_context)
+        self._increment = decimal.Decimal("0.1", self._dec_context)
 
         self.SetIncrement(increment)
         self.SetMin(min_value)
@@ -196,7 +196,7 @@ class InvFloatSpinCtrl(wx.Panel):
 
     def _to_decimal(self, value):
         if not isinstance(value, str):
-            value = '{:.{digits}f}'.format(value, digits=self._digits)
+            value = "{:.{digits}f}".format(value, digits=self._digits)
         return decimal.Decimal(value, self._dec_context)
 
     def SetDigits(self, digits):
