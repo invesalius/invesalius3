@@ -29,24 +29,34 @@ class InvSpinCtrl(wx.Panel):
         value=0,
         min_value=1,
         max_value=100,
+        increment=1,
+        spin_button=True,
         size=wx.DefaultSize,
         style=wx.TE_RIGHT
     ):
         super().__init__(parent, id, size=size)
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
+        if spin_button and wx.Platform != '__WXGTK__':
+            self._spinbtn = wx.SpinButton(self, -1)
+        else:
+            self._spinbtn = None
 
         self._value = 0
         self._last_value = 0
         self._min_value = 0
         self._max_value = 100
+        self._increment = 1
 
         self.SetMin(min_value)
         self.SetMax(max_value)
         self.SetValue(value)
+        self.SetIncrement(increment)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self._textctrl, 1, wx.EXPAND)
+        if self._spinbtn:
+            sizer.Add(self._spinbtn, 0, wx.EXPAND)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -56,6 +66,12 @@ class InvSpinCtrl(wx.Panel):
     def __bind_events(self):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self._textctrl.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        if self._spinbtn:
+            self._spinbtn.Bind(wx.EVT_SPIN_UP, self.OnSpinUp)
+            self._spinbtn.Bind(wx.EVT_SPIN_DOWN, self.OnSpinDown)
+
+    def SetIncrement(self, increment):
+        self._increment = increment
 
     def SetMin(self, min_value):
         self._min_value = min_value
@@ -98,15 +114,25 @@ class InvSpinCtrl(wx.Panel):
     def OnMouseWheel(self, evt):
         r = evt.GetWheelRotation()
         if r > 0:
-            self.SetValue(self.GetValue() + 1)
+            self.SetValue(self.GetValue() + self._increment)
         else:
-            self.SetValue(self.GetValue() - 1)
+            self.SetValue(self.GetValue() - self._increment)
         self.raise_event()
         evt.Skip()
 
     def OnKillFocus(self, evt):
         value = self._textctrl.GetValue()
         self.SetValue(value)
+        self.raise_event()
+        evt.Skip()
+
+    def OnSpinDown(self, evt):
+        self.SetValue(self.GetValue() - self._increment)
+        self.raise_event()
+        evt.Skip()
+
+    def OnSpinUp(self, evt):
+        self.SetValue(self.GetValue() + self._increment)
         self.raise_event()
         evt.Skip()
 
@@ -125,11 +151,17 @@ class InvFloatSpinCtrl(wx.Panel):
         max_value=100.0,
         increment=0.1,
         digits=1,
+        spin_button=True,
         size=wx.DefaultSize,
+        style=wx.TE_RIGHT
     ):
         super().__init__(parent, id, size=size)
 
-        self._textctrl = wx.TextCtrl(self, -1)
+        self._textctrl = wx.TextCtrl(self, -1, style=style)
+        if spin_button and wx.Platform != '__WXGTK__':
+            self._spinbtn = wx.SpinButton(self, -1)
+        else:
+            self._spinbtn = None
 
         self._digits = digits
         self._dec_context = decimal.Context(prec=digits)
@@ -147,6 +179,8 @@ class InvFloatSpinCtrl(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self._textctrl, 1, wx.EXPAND)
+        if self._spinbtn:
+            sizer.Add(self._spinbtn, 0, wx.EXPAND)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -156,6 +190,9 @@ class InvFloatSpinCtrl(wx.Panel):
     def __bind_events(self):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self._textctrl.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        if self._spinbtn:
+            self._spinbtn.Bind(wx.EVT_SPIN_UP, self.OnSpinUp)
+            self._spinbtn.Bind(wx.EVT_SPIN_DOWN, self.OnSpinDown)
 
     def _to_decimal(self, value):
         if not isinstance(value, str):
@@ -224,6 +261,16 @@ class InvFloatSpinCtrl(wx.Panel):
     def OnKillFocus(self, evt):
         value = self._textctrl.GetValue()
         self.SetValue(value)
+        self.raise_event()
+        evt.Skip()
+
+    def OnSpinDown(self, evt):
+        self.SetValue(self._value - self._increment)
+        self.raise_event()
+        evt.Skip()
+
+    def OnSpinUp(self, evt):
+        self.SetValue(self._value + self._increment)
         self.raise_event()
         evt.Skip()
 
