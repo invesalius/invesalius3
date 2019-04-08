@@ -506,6 +506,9 @@ class SurfaceManager():
 
     def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
         surface_filename, surface_measures = args
+        wx.CallAfter(self._show_surface, surface_filename, surface_measures, overwrite, surface_name, colour, dialog)
+
+    def _show_surface(self, surface_filename, surface_measures, overwrite, surface_name, colour, dialog):
         print(surface_filename, surface_measures)
         reader = vtk.vtkXMLPolyDataReader()
         reader.SetFileName(surface_filename)
@@ -739,31 +742,18 @@ class SurfaceManager():
                 wx.Yield()
 
             if not sp.WasCancelled() or sp.running:
-                try:
-                    f = pool.apply_async(surface_process.join_process_surface,
-                                         args=(filenames, algorithm, smooth_iterations,
-                                               smooth_relaxation_factor,
-                                               decimate_reduction, keep_largest,
-                                               fill_holes, options, msg_queue),
-                                         callback=functools.partial(self._on_complete_surface_creation,
-                                                                    overwrite=overwrite,
-                                                                    surface_name=surface_name,
-                                                                    colour=colour,
-                                                                    dialog=sp),
-                                         error_callback=functools.partial(self._on_callback_error,
-                                                                          dialog=sp))
-                # python2
-                except TypeError:
-                    f = pool.apply_async(surface_process.join_process_surface,
-                                         args=(filenames, algorithm, smooth_iterations,
-                                               smooth_relaxation_factor,
-                                               decimate_reduction, keep_largest,
-                                               fill_holes, options, msg_queue),
-                                         callback=functools.partial(self._on_complete_surface_creation,
-                                                                    overwrite=overwrite,
-                                                                    surface_name=surface_name,
-                                                                    colour=colour,
-                                                                    dialog=sp))
+                f = pool.apply_async(surface_process.join_process_surface,
+                                     args=(filenames, algorithm, smooth_iterations,
+                                           smooth_relaxation_factor,
+                                           decimate_reduction, keep_largest,
+                                           fill_holes, options, msg_queue),
+                                     callback=functools.partial(self._on_complete_surface_creation,
+                                                                overwrite=overwrite,
+                                                                surface_name=surface_name,
+                                                                colour=colour,
+                                                                dialog=sp),
+                                     error_callback=functools.partial(self._on_callback_error,
+                                                                      dialog=sp))
 
                 while sp.running:
                     if sp.WasCancelled():
@@ -787,7 +777,10 @@ class SurfaceManager():
             del sp
 
         pool.close()
-        pool.terminate()
+        try:
+            pool.terminate()
+        except AssertionError:
+            pass
         del pool
         del manager
         del msg_queue
