@@ -506,6 +506,9 @@ class SurfaceManager():
 
     def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
         surface_filename, surface_measures = args
+        wx.CallLater(1, self._show_surface, surface_filename, surface_measures, overwrite, surface_name, colour, dialog)
+
+    def _show_surface(self, surface_filename, surface_measures, overwrite, surface_name, colour, dialog):
         print(surface_filename, surface_measures)
         reader = vtk.vtkXMLPolyDataReader()
         reader.SetFileName(surface_filename)
