@@ -463,6 +463,8 @@ class Frame(wx.Frame):
             self.OnRedo()
         elif id == const.ID_GOTO_SLICE:
             self.OnGotoSlice()
+        elif id == const.ID_GOTO_COORD:
+            self.GoToDialogScannerCoord()
 
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
@@ -700,6 +702,12 @@ class Frame(wx.Frame):
         gt_dialog.ShowModal()
         self.Refresh()
 
+    def GoToDialogScannerCoord(self):
+        gts_dialog = dlg.GoToDialogScannerCoord(init_orientation=self._last_viewer_orientation_focus)
+        gts_dialog.CenterOnParent()
+        gts_dialog.ShowModal()
+        self.Refresh()
+
     def OnMaskBoolean(self):
         Publisher.sendMessage('Show boolean dialog')
 
@@ -774,7 +782,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
-                             const.ID_GOTO_SLICE]
+                             const.ID_GOTO_SLICE,
+                             const.ID_GOTO_COORD]
         self.__init_items()
         self.__bind_events()
 
@@ -859,6 +868,7 @@ class MenuBar(wx.MenuBar):
             file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
             file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
         file_edit.Append(const.ID_GOTO_SLICE, _("Go to slice ...\tCtrl+G"))
+        file_edit.Append(const.ID_GOTO_COORD, _("Go to scanner coord ...\tCtrl+Shift+G"))
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
