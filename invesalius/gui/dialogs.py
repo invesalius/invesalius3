@@ -3894,11 +3894,20 @@ class GoToDialogScannerCoord(wx.Dialog):
         from numpy.linalg import inv
         import invesalius.data.slice_ as slc
         try:
-            affine = inv(self.affine)
+            #get affine from image import
+            if self.affine is not None:
+                affine = self.affine
+            #get affine from project
+            else:
+                from invesalius.project import Project
+                affine = Project().affine
+
             point = [float(self.goto_sagital.GetValue()),
                      float(self.goto_coronal.GetValue()),
                      float(self.goto_axial.GetValue())]
 
+            # transformation from scanner coordinates to inv coord system
+            affine = inv(affine)
             self.result = np.dot(affine[:3, :3], np.transpose(point[0:3])) + affine[:3, 3]
             self.result[1] = slc.Slice().GetMaxSliceNumber(const.CORONAL_STR) - self.result[1]
 
@@ -3906,7 +3915,6 @@ class GoToDialogScannerCoord(wx.Dialog):
             Publisher.sendMessage(("Set scroll position", const.CORONAL_STR), index=self.result[1])
             Publisher.sendMessage(("Set scroll position", const.AXIAL_STR), index=self.result[2])
             Publisher.sendMessage('Set Update cross pos')
-
         except ValueError:
             pass
         self.Close()
