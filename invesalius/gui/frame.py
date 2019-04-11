@@ -703,7 +703,7 @@ class Frame(wx.Frame):
         self.Refresh()
 
     def GoToDialogScannerCoord(self):
-        gts_dialog = dlg.GoToDialogScannerCoord(init_orientation=self._last_viewer_orientation_focus)
+        gts_dialog = dlg.GoToDialogScannerCoord()
         gts_dialog.CenterOnParent()
         gts_dialog.ShowModal()
         self.Refresh()

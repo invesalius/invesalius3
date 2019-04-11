@@ -3827,14 +3827,14 @@ class GoToDialog(wx.Dialog):
 
 
 class GoToDialogScannerCoord(wx.Dialog):
-    def __init__(self, title=_("Go to scanner coord..."), init_orientation=const.AXIAL_STR):
+    def __init__(self, title=_("Go to scanner coord...")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-        self._init_gui(init_orientation)
+        self._init_gui()
 
-    def _init_gui(self, init_orientation):
-        self.goto_sagital = wx.TextCtrl(self)
-        self.goto_coronal = wx.TextCtrl(self)
-        self.goto_axial = wx.TextCtrl(self)
+    def _init_gui(self):
+        self.goto_sagital = wx.TextCtrl(self, size=(50,-1))
+        self.goto_coronal = wx.TextCtrl(self, size=(50,-1))
+        self.goto_axial = wx.TextCtrl(self, size=(50,-1))
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
@@ -3848,25 +3848,16 @@ class GoToDialogScannerCoord(wx.Dialog):
         btnsizer.AddButton(btn_cancel)
         btnsizer.Realize()
 
+        sizer_create = wx.FlexGridSizer(3, 2, 10, 10)
+        sizer_create.AddMany([(wx.StaticText(self, 1, _("Sagital coordinate:")), 1, wx.LEFT, 10), (self.goto_sagital, 1, wx.RIGHT, 10),
+                              (wx.StaticText(self, 1, _("Coronal coordinate:")), 1, wx.LEFT, 10), (self.goto_coronal, 1, wx.RIGHT, 10),
+                              (wx.StaticText(self, 1, _("Axial coordinate:")), 1, wx.LEFT, 10), (self.goto_axial, 1, wx.RIGHT, 10)])
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        coordinate_sagital = wx.BoxSizer(wx.HORIZONTAL)
-        coordinate_sagital.Add(wx.StaticText(self, -1, _("Sagital coordinate")), 1, wx.ALL, 5)
-        coordinate_sagital.Add(self.goto_sagital, 1, wx.ALL, 5)
-
-        coordinate_coronal = wx.BoxSizer(wx.HORIZONTAL)
-        coordinate_coronal.Add(wx.StaticText(self, -1, _("Coronal coordinate")), 1, wx.ALL, 5)
-        coordinate_coronal.Add(self.goto_coronal, 1, wx.ALL, 5)
-
-        coordinate_axial = wx.BoxSizer(wx.HORIZONTAL)
-        coordinate_axial.Add(wx.StaticText(self, -1, _("Axial coordinate")), 1, wx.ALL, 5)
-        coordinate_axial.Add(self.goto_axial, 1, wx.ALL, 5)
-
-
-        main_sizer.Add(coordinate_sagital, 1, wx.ALL, 2)
-        main_sizer.Add(coordinate_coronal, 1, wx.ALL, 2)
-        main_sizer.Add(coordinate_axial, 1, wx.ALL, 2)
-        main_sizer.Add(btnsizer, 0, wx.CENTER)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(sizer_create, proportion=3, flag=wx.CENTER, border=20)
+        main_sizer.Add(btnsizer, proportion=1, flag=wx.CENTER|wx.TOP, border=5)
         main_sizer.Add((5, 5))
 
         self.SetSizer(main_sizer)
