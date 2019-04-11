@@ -371,6 +371,7 @@ class Controller():
         session = ses.Session()
         session.CloseProject()
 
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 ###########################
 
     def StartImportBitmapPanel(self, path):
