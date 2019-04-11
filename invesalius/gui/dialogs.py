@@ -3912,10 +3912,10 @@ class GoToDialogScannerCoord(wx.Dialog):
             self.result[1] = slc.Slice().GetMaxSliceNumber(const.CORONAL_STR) - self.result[1]
 
             Publisher.sendMessage('Update status text in GUI', label=_("Calculating the transformation ..."))
-            Publisher.sendMessage(("Set scroll position", const.SAGITAL_STR), index=self.result[0])
-            Publisher.sendMessage(("Set scroll position", const.CORONAL_STR), index=self.result[1])
-            Publisher.sendMessage(("Set scroll position", const.AXIAL_STR), index=self.result[2])
+
             Publisher.sendMessage('Set Update cross pos')
+            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+
             Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         except ValueError:
             pass
