@@ -65,6 +65,14 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          smooth_iterations, language, flip_image,
                          from_binary, algorithm, imagedata_resolution, fill_border_holes):
 
+
+    log_path = tempfile.mktemp('vtkoutput.txt')
+    fow = vtk.vtkFileOutputWindow()
+    fow.SetFileName(log_path)
+    ow = vtk.vtkOutputWindow()
+    ow.SetInstance(fow)
+
+
     pad_bottom = (roi.start == 0)
     pad_top = (roi.stop >= shape[0])
 
@@ -176,6 +184,12 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
             msg_queue.put_nowait(msg)
         except queue.Full as e:
             print(e)
+
+    log_path = tempfile.mktemp('vtkoutput.txt')
+    fow = vtk.vtkFileOutputWindow()
+    fow.SetFileName(log_path)
+    ow = vtk.vtkOutputWindow()
+    ow.SetInstance(fow)
 
     send_message('Joining surfaces ...')
     polydata_append = vtk.vtkAppendPolyData()
