@@ -74,7 +74,8 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((trans_coil, angles_coil))
 
     coord = np.vstack([coord1, coord2, coord3])
-    #Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
+    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
+
     return coord
 
 def CameraCoord(trck_init, trck_id, ref_mode):
