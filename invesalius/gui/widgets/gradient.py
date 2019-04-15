@@ -59,7 +59,7 @@ class GradientSlider(wx.Panel):
         # minValue: the least value in the range
         # maxValue: the most value in the range
         # colour: colour used in this widget.
-        super(GradientSlider, self).__init__(parent, id, size = (100, 25))
+        super(GradientSlider, self).__init__(parent, id)
         self._bind_events_wx()
 
         self.min_range = minRange
@@ -358,9 +358,9 @@ class GradientCtrl(wx.Panel):
         self.spin_max.CalcSizeFromTextSize()
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.spin_min, 0, wx.EXPAND | wx.RIGHT, 2)
+        sizer.Add(self.spin_min, 0, wx.RIGHT, 2)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
-        sizer.Add(self.spin_max, 0, wx.EXPAND | wx.LEFT, 2)
+        sizer.Add(self.spin_max, 0, wx.LEFT, 2)
         self.sizer.Add(sizer, 1, wx.EXPAND)
 
     def _bind_events_wx(self):
@@ -446,6 +446,10 @@ class GradientCtrl(wx.Panel):
         if value > self.max_range:
             value = self.max_range
 
+        self.spin_min.CalcSizeFromTextSize()
+        self.spin_max.CalcSizeFromTextSize()
+        self.Layout()
+
     def SetMinRange(self, value):
         self.spin_min.SetMin(value)
         self.spin_max.SetMin(value)
@@ -455,6 +459,10 @@ class GradientCtrl(wx.Panel):
         self.min_range = value
         if value < self.min_range:
             value = self.min_range
+
+        self.spin_min.CalcSizeFromTextSize()
+        self.spin_max.CalcSizeFromTextSize()
+        self.Layout()
 
     def SetMaxValue(self, value):
         if value is not None:

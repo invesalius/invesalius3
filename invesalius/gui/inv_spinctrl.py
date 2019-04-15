@@ -56,7 +56,7 @@ class InvSpinCtrl(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self._textctrl, 1, wx.EXPAND)
         if self._spinbtn:
-            sizer.Add(self._spinbtn, 0, wx.EXPAND)
+            sizer.Add(self._spinbtn, 0)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -107,13 +107,19 @@ class InvSpinCtrl(wx.Panel):
     def CalcSizeFromTextSize(self, text=None):
         # To calculate best width to spinctrl
         if text is None:
-            text = "{}".format(max(len(str(self._max_value)), len(str(self._min_value))) * "M")
+            text = "{}".format(
+                max(len(str(self._max_value)), len(str(self._min_value))) * "M"
+            )
 
         dc = wx.WindowDC(self)
         dc.SetFont(self.GetFont())
         width, height = dc.GetTextExtent(text)
 
-        self.SetMinSize((width, -1))
+        spin = wx.SpinCtrl(self, -1)
+        height = spin.GetBestSize().GetHeight()
+        spin.Destroy()
+
+        self.SetMinSize((width, height))
         self.Layout()
 
     def OnMouseWheel(self, evt):
@@ -250,13 +256,19 @@ class InvFloatSpinCtrl(wx.Panel):
     def CalcSizeFromTextSize(self, text=None):
         # To calculate best width to spinctrl
         if text is None:
-            text = "{}".format(max(len(str(self._max_value)), len(str(self._min_value))) * "M")
+            text = "{}".format(
+                max(len(str(self._max_value)), len(str(self._min_value))) * "M"
+            )
 
         dc = wx.WindowDC(self)
         dc.SetFont(self.GetFont())
         width, height = dc.GetTextExtent(text)
 
-        self.SetMinSize((width, -1))
+        spin = wx.SpinCtrl(self, -1)
+        height = spin.GetBestSize().GetHeight()
+        spin.Destroy()
+
+        self.SetMinSize((width, height))
         self.Layout()
 
     def OnMouseWheel(self, evt):
