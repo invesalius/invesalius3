@@ -76,7 +76,7 @@ class ContourMIPConfig(wx.Panel):
         wx.Panel.__init__(self, prnt)
         self.mip_size_spin = InvSpinCtrl(self, -1, value=const.PROJECTION_MIP_SIZE, min_value=1, max_value=240)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
-        size = self.mip_size_spin.CalcSizeFromTextSize('MMM')
+        self.mip_size_spin.CalcSizeFromTextSize('MMM')
 
         self.border_spin = InvFloatSpinCtrl(self, -1, min_value=0, max_value=10,
                                         increment=0.1,
@@ -86,7 +86,7 @@ class ContourMIPConfig(wx.Panel):
                                                  " contour. The greater the"
                                                  " value, the sharper the"
                                                  " contour.")))
-        size = self.border_spin.CalcSizeFromTextSize()
+        self.border_spin.CalcSizeFromTextSize()
         #  w, h = self.border_spin.GetTextExtent('M')
         #  self.border_spin.SetMinSize((5 * w + 10, -1))
         #  self.border_spin.SetMaxSize((5 * w + 10, -1))

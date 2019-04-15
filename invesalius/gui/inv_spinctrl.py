@@ -56,7 +56,7 @@ class InvSpinCtrl(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self._textctrl, 1, wx.EXPAND)
         if self._spinbtn:
-            sizer.Add(self._spinbtn, 0)
+            sizer.Add(self._spinbtn, 0, wx.EXPAND)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -116,10 +116,10 @@ class InvSpinCtrl(wx.Panel):
         width, height = dc.GetTextExtent(text)
 
         spin = wx.SpinCtrl(self, -1)
-        height = spin.GetBestSize().GetHeight()
+        spin_width, spin_height = spin.GetBestSize()
         spin.Destroy()
 
-        self.SetMinSize((width, height))
+        self.SetMinSize((width, spin_height))
         self.Layout()
 
     def OnMouseWheel(self, evt):
@@ -265,10 +265,10 @@ class InvFloatSpinCtrl(wx.Panel):
         width, height = dc.GetTextExtent(text)
 
         spin = wx.SpinCtrl(self, -1)
-        height = spin.GetBestSize().GetHeight()
+        spin_width, spin_height = spin.GetBestSize()
         spin.Destroy()
 
-        self.SetMinSize((width, height))
+        self.SetMinSize((width, spin_height))
         self.Layout()
 
     def OnMouseWheel(self, evt):
