@@ -49,7 +49,7 @@ import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
 
-from invesalius.gui.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
+from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 if sys.platform == 'win32':

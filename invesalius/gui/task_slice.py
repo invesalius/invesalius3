@@ -38,7 +38,7 @@ import invesalius.data.slice_ as slice_
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
-from invesalius.gui.inv_spinctrl import InvSpinCtrl
+from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 
 from invesalius.project import Project
 import invesalius.session as ses

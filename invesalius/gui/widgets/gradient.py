@@ -24,7 +24,7 @@ import numpy
 import wx
 from wx.lib import intctrl
 
-from invesalius.gui.inv_spinctrl import InvSpinCtrl
+from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 
 PUSH_WIDTH = 7
 

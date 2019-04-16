@@ -38,7 +38,7 @@ import wx.lib.platebtn as pbtn
 import invesalius.project as prj
 import invesalius.utils as utl
 
-from invesalius.gui.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
+from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
