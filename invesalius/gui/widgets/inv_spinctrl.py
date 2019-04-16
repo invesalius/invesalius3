@@ -125,7 +125,10 @@ class InvSpinCtrl(wx.Panel):
             spinb.Destroy()
 
             width += spinb_width
-            height = max(height, spin_height, spinb_height)
+            if wx.Platform == "__WXMAC":
+                height = max(height, spin_height, spinb_height)
+            else:
+                height = spin_height
         else:
             height = -1
 
@@ -288,7 +291,10 @@ class InvFloatSpinCtrl(wx.Panel):
             spinb.Destroy()
 
             width += spinb_width
-            height = max(height, spin_height, spinb_height)
+            if wx.Platform == "__WXMAC":
+                height = max(height, spin_height, spinb_height)
+            else:
+                height = spin_height
         else:
             height = -1
 
