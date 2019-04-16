@@ -149,7 +149,7 @@ class DicomPaintPanel(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def _build_bitmap(self, image):
-        bmp = wx.BitmapFromImage(image)
+        bmp = wx.Bitmap(image)
         return bmp
 
     def _image_resize(self, image):

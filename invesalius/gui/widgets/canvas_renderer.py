@@ -140,7 +140,7 @@ class CanvasRendererCTX:
         self.rgb = np.zeros((h, w, 3), dtype=np.uint8)
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
-        self.bitmap = wx.EmptyBitmapRGBA(w, h)
+        self.bitmap = wx.Bitmap.FromRGBA(w, h)
         try:
             self.image = wx.Image(w, h, self.rgb, self.alpha)
         except TypeError:
@@ -155,7 +155,7 @@ class CanvasRendererCTX:
         self.rgb = np.zeros((h, w, 3), dtype=np.uint8)
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
-        self.bitmap = wx.EmptyBitmapRGBA(w, h)
+        self.bitmap = wx.Bitmap.FromRGBA(w, h)
         try:
             self.image = wx.Image(w, h, self.rgb, self.alpha)
         except TypeError:
@@ -379,7 +379,7 @@ class CanvasRendererCTX:
         if size is None:
             size = self.canvas_renderer.GetSize()
         w, h = size
-        image = wx.EmptyImage(w, h)
+        image = wx.Image(w, h)
         image.Clear()
 
         arr = np.zeros((h, w, 4), dtype=np.uint8)

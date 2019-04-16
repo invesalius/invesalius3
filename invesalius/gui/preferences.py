@@ -17,15 +17,8 @@ class Preferences(wx.Dialog):
     def __init__( self, parent, id = ID, title = _("Preferences"), size=wx.DefaultSize,\
                                 pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
 
-        try:
-            pre = wx.PreDialog()
-            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-            pre.Create(parent, ID, title, pos, size, style)
-
-            self.PostCreate(pre)
-        except AttributeError:
-            wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
-            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
+        self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 

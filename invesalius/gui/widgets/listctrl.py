@@ -739,7 +739,7 @@ class TextEditMixin:
                 # data source
                 self.SetVirtualData(self.curRow, self.curCol, text)
             else:
-                self.SetStringItem(self.curRow, self.curCol, text)
+                self.SetItem(self.curRow, self.curCol, text)
         self.RefreshItem(self.curRow)
 
     def _SelectIndex(self, row):
