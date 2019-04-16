@@ -1041,7 +1041,7 @@ class NewMask(wx.Dialog):
         import invesalius.data.mask as mask
         import invesalius.project as prj
 
-        wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+        wx.Dialog.__init__(self, parent, ID, title, pos, style=style)
         self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
         self.CenterOnScreen()
@@ -1088,10 +1088,10 @@ class NewMask(wx.Dialog):
         self.colour = original_colour
         colour = [255*i for i in original_colour]
         colour.append(100)
-        gradient = grad.GradientSlider(self, -1, int(bound_min),
-                                        int(bound_max),
-                                        int(thresh_min), int(thresh_max),
-                                        colour)
+        gradient = grad.GradientCtrl(self, -1, int(bound_min),
+                                     int(bound_max),
+                                     int(thresh_min), int(thresh_max),
+                                     colour)
         self.gradient = gradient
 
         # OVERVIEW
@@ -1123,11 +1123,12 @@ class NewMask(wx.Dialog):
         # Merge all sizers and checkboxes
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fixed_sizer, 0, wx.ALL|wx.GROW|wx.EXPAND, 15)
-        sizer.Add(gradient, 1, wx.BOTTOM|wx.RIGHT|wx.LEFT|wx.EXPAND|wx.GROW, 20)
+        sizer.Add(gradient, 0, wx.BOTTOM|wx.RIGHT|wx.LEFT|wx.EXPAND|wx.GROW, 20)
         sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.BOTTOM, 10)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
+        self.Layout()
 
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)

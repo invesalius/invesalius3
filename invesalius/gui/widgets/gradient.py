@@ -357,10 +357,6 @@ class GradientSlider(wx.Panel):
 class GradientCtrl(wx.Panel):
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         super(GradientCtrl, self).__init__(parent, id)
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.SetSizer(self.sizer)
-        self.sizer.Fit(self)
-        self.SetAutoLayout(1)
         self.min_range = minRange
         self.max_range = maxRange
         self.minimun = minValue
@@ -409,7 +405,12 @@ class GradientCtrl(wx.Panel):
         sizer.Add(self.spin_min, 0, wx.RIGHT, 2)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
         sizer.Add(self.spin_max, 0, wx.LEFT, 2)
+
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(sizer, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        self.sizer.Fit(self)
+        #  self.SetAutoLayout(1)
 
     def _bind_events_wx(self):
         self.gradient_slider.Bind(EVT_SLIDER_CHANGING, self.OnSliding)
