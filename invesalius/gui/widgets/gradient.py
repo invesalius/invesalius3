@@ -344,13 +344,15 @@ class GradientCtrl(wx.Panel):
 
         self.spin_min = InvSpinCtrl(self, value=self.minimun,
                                     min_value=self.min_range,
-                                    max_value=self.max_range)
+                                    max_value=self.max_range,
+                                    spin_button=False)
         if sys.platform != 'win32':
             self.spin_min.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         self.spin_max = InvSpinCtrl(self, value=self.maximun,
                                     min_value=self.min_range,
-                                    max_value=self.max_range)
+                                    max_value=self.max_range,
+                                    spin_button=False)
         if sys.platform != 'win32':
             self.spin_max.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 

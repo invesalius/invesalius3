@@ -706,7 +706,7 @@ class EditionTools(wx.Panel):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000)
+        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False)
         # To calculate best width to spinctrl
         spin_brush_size.CalcSizeFromTextSize("MMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
@@ -869,7 +869,7 @@ class WatershedTool(EditionTools):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000)
+        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False)
         # To calculate best width to spinctrl
         spin_brush_size.CalcSizeFromTextSize("MMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)

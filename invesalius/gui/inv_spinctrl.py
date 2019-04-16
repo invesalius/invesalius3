@@ -119,6 +119,13 @@ class InvSpinCtrl(wx.Panel):
         spin_width, spin_height = spin.GetBestSize()
         spin.Destroy()
 
+        if self._spinbtn:
+            spinb = wx.SpinButton(self, -1)
+            spinb_width, spinb_height = spinb.GetBestSize()
+            spinb.Destroy()
+
+            width += spinb_width
+
         self.SetMinSize((width, spin_height))
         self.Layout()
 
@@ -267,6 +274,13 @@ class InvFloatSpinCtrl(wx.Panel):
         spin = wx.SpinCtrl(self, -1)
         spin_width, spin_height = spin.GetBestSize()
         spin.Destroy()
+
+        if self._spinbtn:
+            spinb = wx.SpinButton(self, -1)
+            spinb_width, spinb_height = spinb.GetBestSize()
+            spinb.Destroy()
+
+            width += spinb_width
 
         self.SetMinSize((width, spin_height))
         self.Layout()
