@@ -115,18 +115,21 @@ class InvSpinCtrl(wx.Panel):
         dc.SetFont(self.GetFont())
         width, height = dc.GetTextExtent(text)
 
-        spin = wx.SpinCtrl(self, -1)
-        spin_width, spin_height = spin.GetBestSize()
-        spin.Destroy()
-
         if self._spinbtn:
+            spin = wx.SpinCtrl(self, -1)
+            spin_width, spin_height = spin.GetBestSize()
+            spin.Destroy()
+
             spinb = wx.SpinButton(self, -1)
             spinb_width, spinb_height = spinb.GetBestSize()
             spinb.Destroy()
 
             width += spinb_width
+            height = max(height, spin_height, spinb_height)
+        else:
+            height = -1
 
-        self.SetMinSize((width, spin_height))
+        self.SetMinSize((width, height))
         self.Layout()
 
     def OnMouseWheel(self, evt):
@@ -276,13 +279,20 @@ class InvFloatSpinCtrl(wx.Panel):
         spin.Destroy()
 
         if self._spinbtn:
+            spin = wx.SpinCtrl(self, -1)
+            spin_width, spin_height = spin.GetBestSize()
+            spin.Destroy()
+
             spinb = wx.SpinButton(self, -1)
             spinb_width, spinb_height = spinb.GetBestSize()
             spinb.Destroy()
 
             width += spinb_width
+            height = max(height, spin_height, spinb_height)
+        else:
+            height = -1
 
-        self.SetMinSize((width, spin_height))
+        self.SetMinSize((width, height))
         self.Layout()
 
     def OnMouseWheel(self, evt):
