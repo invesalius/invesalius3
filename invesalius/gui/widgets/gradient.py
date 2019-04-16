@@ -85,7 +85,34 @@ class GradientSlider(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def OnLeaveWindow(self, evt):
+        if self.selected == 0:
+            return
+
+        x = evt.GetX()
+        w, h = self.GetSize()
+
+        if self.selected == 1:
+            if x - PUSH_WIDTH < 0:
+                x = PUSH_WIDTH
+            elif x >= self.max_position:
+                x = self.max_position
+            value = self._min_position_to_minimun(x)
+            self.minimun = value
+            self.min_position = x
+
+        # The user is moving the second push (Max)
+        elif self.selected == 2:
+            if x + PUSH_WIDTH > w:
+                x = w - PUSH_WIDTH
+            elif x < self.min_position:
+                x = self.min_position
+
+            value = self._max_position_to_maximun(x)
+            self.maximun = value
+            self.max_position = x
+
         self.selected = 0
+        self._generate_event(myEVT_SLIDER_CHANGED)
         evt.Skip()
 
     def OnPaint(self, evt):
