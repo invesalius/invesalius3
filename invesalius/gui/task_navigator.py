@@ -1093,7 +1093,7 @@ class MarkersPanel(wx.Panel):
             if id_label == 'TARGET':
                 id_label = ''
                 dlg.InvalidTargetID()
-        self.lc.SetStringItem(list_index, 4, id_label)
+        self.lc.SetItem(list_index, 4, id_label)
         # Add the new ID to exported list
         if len(self.list_coord[list_index]) > 8:
             self.list_coord[list_index][10] = str(id_label)
@@ -1107,7 +1107,7 @@ class MarkersPanel(wx.Panel):
         if self.tgt_flag:
             self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
             Publisher.sendMessage('Set target transparency', status=False, index=self.tgt_index)
-            self.lc.SetStringItem(self.tgt_index, 4, '')
+            self.lc.SetItem(self.tgt_index, 4, '')
             # Add the new ID to exported list
             if len(self.list_coord[self.tgt_index]) > 8:
                 self.list_coord[self.tgt_index][10] = str('')
@@ -1197,7 +1197,7 @@ class MarkersPanel(wx.Panel):
             del self.list_coord[i]
             self.lc.DeleteItem(i)
             for n in range(0, self.lc.GetItemCount()):
-                self.lc.SetStringItem(n, 0, str(n+1))
+                self.lc.SetItem(n, 0, str(n+1))
             self.marker_ind -= 1
         Publisher.sendMessage('Remove marker', index=index)
 
@@ -1312,11 +1312,11 @@ class MarkersPanel(wx.Panel):
 
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()
-        self.lc.InsertStringItem(num_items, str(num_items + 1))
-        self.lc.SetStringItem(num_items, 1, str(round(coord[0], 2)))
-        self.lc.SetStringItem(num_items, 2, str(round(coord[1], 2)))
-        self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
-        self.lc.SetStringItem(num_items, 4, str(marker_id))
+        self.lc.InsertItem(num_items, str(num_items + 1))
+        self.lc.SetItem(num_items, 1, str(round(coord[0], 2)))
+        self.lc.SetItem(num_items, 2, str(round(coord[1], 2)))
+        self.lc.SetItem(num_items, 3, str(round(coord[2], 2)))
+        self.lc.SetItem(num_items, 4, str(marker_id))
         self.lc.EnsureVisible(num_items)
 
     def GetSelectedItems(self):

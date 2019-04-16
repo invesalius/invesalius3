@@ -49,6 +49,7 @@ import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
 
+from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 if sys.platform == 'win32':
@@ -73,25 +74,22 @@ ORIENTATIONS = {
 class ContourMIPConfig(wx.Panel):
     def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
-        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
-                                         initial=const.PROJECTION_MIP_SIZE)
-        self.mip_size_spin.SetValue(const.PROJECTION_MIP_SIZE)
+        self.mip_size_spin = InvSpinCtrl(self, -1, value=const.PROJECTION_MIP_SIZE, min_value=1, max_value=240)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
-        w, h = self.mip_size_spin.GetTextExtent('M')
-        self.mip_size_spin.SetMinSize((5 * w + 10, -1))
-        self.mip_size_spin.SetMaxSize((5 * w + 10, -1))
+        self.mip_size_spin.CalcSizeFromTextSize('MMM')
 
-        self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
+        self.border_spin = InvFloatSpinCtrl(self, -1, min_value=0, max_value=10,
                                         increment=0.1,
                                         value=const.PROJECTION_BORDER_SIZE,
-                                        digits=1, agwStyle=FS.FS_LEFT)
+                                        digits=1)
         self.border_spin.SetToolTip(wx.ToolTip(_("Controls the sharpness of the"
                                                  " contour. The greater the"
                                                  " value, the sharper the"
                                                  " contour.")))
-        w, h = self.border_spin.GetTextExtent('M')
-        self.border_spin.SetMinSize((5 * w + 10, -1))
-        self.border_spin.SetMaxSize((5 * w + 10, -1))
+        self.border_spin.CalcSizeFromTextSize()
+        #  w, h = self.border_spin.GetTextExtent('M')
+        #  self.border_spin.SetMinSize((5 * w + 10, -1))
+        #  self.border_spin.SetMaxSize((5 * w + 10, -1))
 
         self.inverted = wx.CheckBox(self, -1, _("Inverted order"))
         self.inverted.SetToolTip(wx.ToolTip(_("If checked, the slices are"
@@ -105,7 +103,7 @@ class ContourMIPConfig(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
-        sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
+        sizer.Add(self.mip_size_spin, 0)
         try:
             sizer.Add(10, 0)
         except TypeError:
@@ -883,19 +881,19 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def SetDefaultCursor(self):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def SetSizeNSCursor(self):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+        self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZENS))
 
     def SetSizeWECursor(self):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
+        self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZEWE))
 
     def SetSizeNWSECursor(self):
         if sys.platform.startswith('linux'):
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
+            self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZENWSE))
         else:
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+            self.interactor.SetCursor(wx.Cursor(wx.CURSOR_SIZING))
 
     def SetFocus(self):
         Publisher.sendMessage('Set viewer orientation focus',

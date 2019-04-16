@@ -168,20 +168,20 @@ class MeasureButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
-        button_new.SetToolTipString(_("Create a new measure"))
+        button_new.SetToolTip(_("Create a new measure"))
         self.button_new = button_new
 
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
-        button_remove.SetToolTipString(_("Remove measure"))
+        button_remove.SetToolTip(_("Remove measure"))
 
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
-        button_duplicate.SetToolTipString(_("Duplicate measure"))
+        button_duplicate.SetToolTip(_("Duplicate measure"))
         button_duplicate.Disable()
 
         # Add all controls to gui
@@ -195,10 +195,10 @@ class MeasureButtonControlPanel(wx.Panel):
         menu = wx.Menu()
         item = wx.MenuItem(menu, const.MEASURE_LINEAR,
                             _("Measure distance"))
-        menu.AppendItem(item)
+        menu.Append(item)
         item = wx.MenuItem(menu, const.MEASURE_ANGULAR,
                             _("Measure angle"))
-        menu.AppendItem(item)
+        menu.Append(item)
         menu.Bind(wx.EVT_MENU, self.OnMenu)
         self.menu = menu
 
@@ -286,19 +286,19 @@ class ButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
-        button_new.SetToolTipString(_("Create a new mask"))
+        button_new.SetToolTip(_("Create a new mask"))
 
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
-        button_remove.SetToolTipString(_("Remove mask"))
+        button_remove.SetToolTip(_("Remove mask"))
 
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
-        button_duplicate.SetToolTipString(_("Duplicate mask"))
+        button_duplicate.SetToolTip(_("Duplicate mask"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -474,13 +474,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
@@ -526,20 +526,20 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.EmptyImage(new_image.size[0],
-                                 new_image.size[1])
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
         try:
             wx_image.SetData(new_image.tostring())
         except Exception:
             wx_image.SetData(new_image.tobytes())
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
-        self.InsertStringItem(index, "")
-        self.SetStringItem(index, 1, label,
+        self.InsertItem(index, "")
+        self.SetItem(index, 1, label,
                            imageId=self.mask_list_index[index])
-        self.SetStringItem(index, 2, threshold)
+        self.SetItem(index, 2, threshold)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
             #  if key != index:
@@ -553,7 +553,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.InsertNewItem(mask.index, mask.name, str(mask.threshold_range))
 
     def EditMaskThreshold(self, index, threshold_range):
-        self.SetStringItem(index, 2, str(threshold_range))
+        self.SetItem(index, 2, str(threshold_range))
 
     def EditMaskColour(self, index, colour):
         image = self.CreateColourBitmap(colour)
@@ -631,25 +631,25 @@ class SurfaceButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
-        button_new.SetToolTipString(_("Create a new surface"))
+        button_new.SetToolTip(_("Create a new surface"))
 
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
-        button_remove.SetToolTipString(_("Remove surface"))
+        button_remove.SetToolTip(_("Remove surface"))
 
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
-        button_duplicate.SetToolTipString(_("Duplicate surface"))
+        button_duplicate.SetToolTip(_("Duplicate surface"))
 
         button_open = pbtn.PlateButton(self, BTN_OPEN, "",
                                        BMP_OPEN,
                                        style=button_style,
                                        size = wx.Size(24, 20))
-        button_open.SetToolTipString(_("Import a surface file into InVesalius"))
+        button_open.SetToolTip(_("Import a surface file into InVesalius"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -840,13 +840,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
@@ -923,23 +923,23 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
-        self.InsertStringItem(index, "")
-        self.SetStringItem(index, 1, label,
+        self.InsertItem(index, "")
+        self.SetItem(index, 1, label,
                             imageId = self.surface_list_index[index])
-        self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, area)
-        self.SetStringItem(index, 4, transparency)
+        self.SetItem(index, 2, volume)
+        self.SetItem(index, 3, area)
+        self.SetItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
     def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
                        area="0 mm2", transparency="0%%", colour=None):
         print("UpdateItemInfo", index)
         # TODO: Retornar esse codigo
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                             imageId = self.surface_list_index[index])
-        self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, area)
-        self.SetStringItem(index, 4, transparency)
+        self.SetItem(index, 2, volume)
+        self.SetItem(index, 3, area)
+        self.SetItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
     def CreateColourBitmap(self, colour):
@@ -955,21 +955,21 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.EmptyImage(new_image.size[0],
-                                 new_image.size[1])
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
         try:
             wx_image.SetData(new_image.tostring())
         except Exception:
             wx_image.SetData(new_image.tobytes())
 
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def EditSurfaceTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        self.SetStringItem(surface_index, 4, "%d%%"%(int(transparency*100)))
+        self.SetItem(surface_index, 4, "%d%%"%(int(transparency*100)))
 
     def EditSurfaceColour(self, surface_index, colour):
         """
@@ -1115,13 +1115,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
@@ -1217,22 +1217,22 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
     def InsertNewItem(self, index=0, label="Measurement 1", colour=None,
                        location="SURFACE", type_="LINEAR", value="0 mm"):
-        self.InsertStringItem(index, "")
-        self.SetStringItem(index, 1, label,
+        self.InsertItem(index, "")
+        self.SetItem(index, 1, label,
                             imageId = self._list_index[index])
-        self.SetStringItem(index, 2, location)
-        self.SetStringItem(index, 3, type_)
-        self.SetStringItem(index, 4, value)
+        self.SetItem(index, 2, location)
+        self.SetItem(index, 3, type_)
+        self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
 
     def UpdateItemInfo(self, index=0, label="Measurement 1", colour=None,
                       location="SURFACE", type_="LINEAR", value="0 mm"):
-        self.SetStringItem(index, 1, label,
+        self.SetItem(index, 1, label,
                             imageId = self._list_index[index])
-        self.SetStringItem(index, 2, location)
-        self.SetStringItem(index, 3, type_)
-        self.SetStringItem(index, 4, value)
+        self.SetItem(index, 2, location)
+        self.SetItem(index, 3, type_)
+        self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
 
@@ -1249,13 +1249,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.EmptyImage(new_image.size[0],
-                                 new_image.size[1])
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
         try:
             wx_image.SetData(new_image.tostring())
         except:
             wx_image.SetData(new_image.tobytes())
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def EditItemColour(self, measure_index, colour):
         """
@@ -1310,19 +1310,19 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(const.ICON_DIR, "object_colour.jpg"))
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
@@ -1342,10 +1342,10 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
 
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d",
                       value="bla", colour=None):
-        self.InsertStringItem(index, "")
-        self.SetStringItem(index, 1, name, imageId = self.img_colour)
-        self.SetStringItem(index, 2, type_)
-        self.SetStringItem(index, 3, value)
+        self.InsertItem(index, "")
+        self.SetItem(index, 1, name, imageId = self.img_colour)
+        self.SetItem(index, 2, type_)
+        self.SetItem(index, 3, value)
 
     def Populate(self):
         dict = ((0, "Axial 1", "2D", "blalbalblabllablalbla"),
