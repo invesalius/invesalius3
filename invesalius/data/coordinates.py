@@ -59,18 +59,18 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     trck.Run()
 
     probe = trck.probe.decode(const.FS_ENCODE).split(',')
-    angles_probe = tr.euler_from_quaternion(probe[4:8])
-    trans_probe = np.array(probe[8:11]).astype(float)
+    angles_probe = tr.euler_from_quaternion(probe[2:6])
+    trans_probe = np.array(probe[6:9]).astype(float)
     coord1 = np.hstack((trans_probe, angles_probe))
 
     ref = trck.ref.decode(const.FS_ENCODE).split(',')
-    angles_ref = tr.euler_from_quaternion(ref[4:8])
-    trans_ref = np.array(ref[8:11]).astype(float)
+    angles_ref = tr.euler_from_quaternion(ref[2:6])
+    trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
     coil = trck.coil.decode(const.FS_ENCODE).split(',')
-    angles_coil = tr.euler_from_quaternion(coil[4:8])
-    trans_coil = np.array(coil[8:11]).astype(float)
+    angles_coil = tr.euler_from_quaternion(coil[2:6])
+    trans_coil = np.array(coil[6:9]).astype(float)
     coord3 = np.hstack((trans_coil, angles_coil))
 
     coord = np.vstack([coord1, coord2, coord3])
