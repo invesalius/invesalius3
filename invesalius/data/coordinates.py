@@ -68,13 +68,13 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
-    coil = trck.coil.decode(const.FS_ENCODE).split(',')
-    angles_coil = tr.euler_from_quaternion(coil[2:6])
-    trans_coil = np.array(coil[6:9]).astype(float)
-    coord3 = np.hstack((trans_coil, angles_coil))
+    obj = trck.obj.decode(const.FS_ENCODE).split(',')
+    angles_obj = tr.euler_from_quaternion(obj[2:6])
+    trans_obj = np.array(obj[6:9]).astype(float)
+    coord3 = np.hstack((trans_obj, angles_obj))
 
     coord = np.vstack([coord1, coord2, coord3])
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
+    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
 
     return coord
 
@@ -246,7 +246,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                        uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)))
+    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
 
     return np.vstack([coord1, coord2, coord3, coord4])
 

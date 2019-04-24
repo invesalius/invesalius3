@@ -170,8 +170,9 @@ class Viewer(wx.Panel):
         self._to_show_ball = 0
         self._ball_ref_visibility = False
 
-        self.sen1 = False
-        self.sen2 = False
+        self.probe = False
+        self.ref = False
+        self.obj = False
 
         self.timer = False
         self.index = False
@@ -323,8 +324,8 @@ class Viewer(wx.Panel):
             self.RemoveBallReference()
             self.interactor.Render()
 
-    def OnSensors(self, probe_id, ref_id):
-        if not self.sen1:
+    def OnSensors(self, probe_id, ref_id, obj_id=0):
+        if not self.probe:
             self.CreateSensorID()
 
         if probe_id:
@@ -335,35 +336,49 @@ class Viewer(wx.Panel):
             colour2 = (0, 1, 0)
         else:
             colour2 = (1, 0, 0)
+        if obj_id:
+            colour3 = (0, 1, 0)
+        else:
+            colour3 = (1, 0, 0)
 
-        self.sen1.SetColour(colour1)
-        self.sen2.SetColour(colour2)
+        self.probe.SetColour(colour1)
+        self.ref.SetColour(colour2)
+        self.obj.SetColour(colour3)
         self.Refresh()
 
     def CreateSensorID(self):
-        sen1 = vtku.Text()
-        sen1.SetSize(const.TEXT_SIZE_LARGE)
-        sen1.SetPosition((const.X, const.Y))
-        sen1.ShadowOff()
-        sen1.SetValue("O")
-        self.sen1 = sen1
-        self.ren.AddActor(sen1.actor)
+        probe = vtku.Text()
+        probe.SetSize(const.TEXT_SIZE_LARGE)
+        probe.SetPosition((const.X, const.Y))
+        probe.ShadowOff()
+        probe.SetValue("P")
+        self.probe = probe
+        self.ren.AddActor(probe.actor)
 
-        sen2 = vtku.Text()
-        sen2.SetSize(const.TEXT_SIZE_LARGE)
-        sen2.SetPosition((const.X+0.04, const.Y))
-        sen2.ShadowOff()
-        sen2.SetValue("O")
-        self.sen2 = sen2
-        self.ren.AddActor(sen2.actor)
+        ref = vtku.Text()
+        ref.SetSize(const.TEXT_SIZE_LARGE)
+        ref.SetPosition((const.X+0.04, const.Y))
+        ref.ShadowOff()
+        ref.SetValue("R")
+        self.ref = ref
+        self.ren.AddActor(ref.actor)
+
+        obj = vtku.Text()
+        obj.SetSize(const.TEXT_SIZE_LARGE)
+        obj.SetPosition((const.X+0.08, const.Y))
+        obj.ShadowOff()
+        obj.SetValue("O")
+        self.obj = obj
+        self.ren.AddActor(obj.actor)
 
         self.interactor.Render()
 
     def OnRemoveSensorsID(self):
-        if self.sen1:
-            self.ren.RemoveActor(self.sen1.actor)
-            self.ren.RemoveActor(self.sen2.actor)
-            self.sen1 = self.sen2 = False
+        if self.probe:
+            self.ren.RemoveActor(self.probe.actor)
+            self.ren.RemoveActor(self.ref.actor)
+            self.ren.RemoveActor(self.obj.actor)
+            self.probe = self.ref = self.obj = False
             self.interactor.Render()
 
     def OnShowSurface(self, index, visibility):
@@ -706,7 +721,7 @@ class Viewer(wx.Panel):
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
 
             # self.txt.SetCoilDistanceValue(target_dist)
-            self.textSource.SetText('Dist: ' + str("{:06.2f}".format(target_dist)) + ' mm')
+            self.tdist.SetValue('Distance: ' + str("{:06.2f}".format(target_dist)) + ' mm')
             self.ren.ResetCamera()
             self.SetCameraTarget()
             if target_dist > 100:
@@ -817,9 +832,6 @@ class Viewer(wx.Panel):
                 self.ren2.AddActor(ind)
 
 
-            x, y, z = bases.flip_x(coord[0:3])
-            self.tactor.SetPosition(x-20, y-30, z+20)
-
             self.Refresh()
 
     def OnUpdateTargetCoordinates(self, coord):
@@ -838,27 +850,6 @@ class Viewer(wx.Panel):
         if self.aim_actor:
             self.RemoveTargetAim()
             self.aim_actor = None
-
-        self.textSource = vtk.vtkVectorText()
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(self.textSource.GetOutputPort())
-        tactor = vtk.vtkFollower()
-        tactor.SetMapper(mapper)
-        tactor.GetProperty().SetColor(1.0, 0.25, 0.0)
-        tactor.SetScale(5)
-        #tactor.SetPosition(self.target_coord[0]+10, self.target_coord[1]+30, self.target_coord[2]+20)
-        self.ren.AddActor(tactor)
-        self.tactor = tactor
-        tactor.SetCamera(self.ren.GetActiveCamera())
-
-
-        # v3, M_plane_inv = self.Plane(self.target_coord[0:3], self.pTarget)
-        # mat4x4 = vtk.vtkMatrix4x4()
-        # for i in range(4):
-        #     mat4x4.SetElement(i, 0, M_plane_inv[i][0])
-        #     mat4x4.SetElement(i, 1, M_plane_inv[i][1])
-        #     mat4x4.SetElement(i, 2, M_plane_inv[i][2])
-        #     mat4x4.SetElement(i, 3, M_plane_inv[i][3])
 
         a, b, g = np.radians(self.target_coord[3:])
         r_ref = tr.euler_matrix(a, b, g, 'sxyz')
@@ -883,7 +874,6 @@ class Viewer(wx.Panel):
         # Transform the polydata
         transform = vtk.vtkTransform()
         transform.SetMatrix(m_img_vtk)
-        #transform.SetMatrix(mat4x4)
         transformPD = vtk.vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
@@ -932,24 +922,24 @@ class Viewer(wx.Panel):
     def RemoveTargetAim(self):
         self.ren.RemoveActor(self.aim_actor)
         self.ren.RemoveActor(self.dummy_coil_actor)
-        self.ren.RemoveActor(self.tactor)
         self.Refresh()
 
     def CreateTextDistance(self):
-        txt = vtku.Text()
-        txt.SetSize(const.TEXT_SIZE_EXTRA_LARGE)
-        txt.SetPosition((0.76, 0.05))
-        txt.ShadowOff()
-        txt.BoldOn()
-        self.txt = txt
-        self.ren2.AddActor(txt.actor)
+        tdist = vtku.Text()
+        tdist.SetSize(const.TEXT_SIZE_LARGE)
+        tdist.SetPosition((const.X, 1.03-const.Y))
+        tdist.ShadowOff()
+        tdist.BoldOn()
+
+        self.ren.AddActor(tdist.actor)
+        self.tdist = tdist
 
     def DisableCoilTracker(self):
         try:
             self.ren.SetViewport(0, 0, 1, 1)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
             self.SetViewAngle(const.VOL_FRONT)
-            self.ren.RemoveActor(self.txt.actor)
+            self.ren.RemoveActor(self.tdist.actor)
             self.CreateTargetAim()
             self.interactor.Render()
         except:
