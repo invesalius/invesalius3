@@ -59,17 +59,17 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     trck.Run()
 
     probe = trck.probe.decode(const.FS_ENCODE).split(',')
-    angles_probe = tr.euler_from_quaternion(probe[2:6])
+    angles_probe = np.degrees(tr.euler_from_quaternion(probe[2:6], axes='rzyx'))
     trans_probe = np.array(probe[6:9]).astype(float)
     coord1 = np.hstack((trans_probe, angles_probe))
 
     ref = trck.ref.decode(const.FS_ENCODE).split(',')
-    angles_ref = tr.euler_from_quaternion(ref[2:6])
+    angles_ref = np.degrees(tr.euler_from_quaternion(ref[2:6], axes='rzyx'))
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
     obj = trck.obj.decode(const.FS_ENCODE).split(',')
-    angles_obj = tr.euler_from_quaternion(obj[2:6])
+    angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes='rzyx'))
     trans_obj = np.array(obj[6:9]).astype(float)
     coord3 = np.hstack((trans_obj, angles_obj))
 
