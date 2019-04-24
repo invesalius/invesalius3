@@ -66,18 +66,13 @@ def PolarisTracker(tracker_id):
     trck_init = None
     dlg_port = dlg.SetCOMport()
     if dlg_port.ShowModal() == ID_OK:
-        com_port = dlg_port.GetValue()
+        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
         try:
             import pypolaris
             lib_mode = 'wrapper'
             trck_init = pypolaris.pypolaris()
-            MarkerDir = const.NDI_MAR_DIR.encode(const.FS_ENCODE)
-            PROBE = const.NDI_PROBE_NAME.encode(const.FS_ENCODE)
-            REF_NAME = const.NDI_REF_NAME.encode(const.FS_ENCODE)
-            OBJ_NAME = const.NDI_OBJ_NAME.encode(const.FS_ENCODE)
-            com_port = com_port.encode(const.FS_ENCODE)
 
-            if trck_init.Initialize(com_port, MarkerDir, PROBE, REF_NAME, OBJ_NAME) != 0:
+            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
                 trck_init = None
                 lib_mode = None
                 print('Could not connect to default tracker.')

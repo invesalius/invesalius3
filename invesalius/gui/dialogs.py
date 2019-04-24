@@ -3689,7 +3689,7 @@ class GoToDialog(wx.Dialog):
         self.Destroy()
 
 class SetCOMport(wx.Dialog):
-    def __init__(self, title=_("Select COM port")):
+    def __init__(self, title=_("Setting NDI polaris configs:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
         self._init_gui()
 
@@ -3705,8 +3705,31 @@ class SetCOMport(wx.Dialog):
 
     def _init_gui(self):
         self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        row_com = wx.BoxSizer(wx.VERTICAL)
+        row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
+        row_com.Add(self.com_ports, 0, wx.EXPAND)
+
         ports = self.serial_ports()
         self.com_ports.Append(ports)
+
+        self.dir_probe = wx.FilePickerCtrl(self, path=const.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+                                           wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
+        row_probe = wx.BoxSizer(wx.VERTICAL)
+        row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
+        row_probe.Add(self.dir_probe, 0, wx.EXPAND|wx.ALIGN_CENTER)
+
+        self.dir_ref = wx.FilePickerCtrl(self, path=const.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+                                           wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
+        row_ref = wx.BoxSizer(wx.VERTICAL)
+        row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_ref.Add(self.dir_ref, 0, wx.EXPAND|wx.ALIGN_CENTER)
+
+        self.dir_obj = wx.FilePickerCtrl(self, path=const.NDI_MAR_DIR_OBJ, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+                                           wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
+        #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
+        row_obj = wx.BoxSizer(wx.VERTICAL)
+        row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
+        row_obj.Add(self.dir_obj, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
        # self.goto_orientation.SetSelection(cb_init)
 
@@ -3725,8 +3748,14 @@ class SetCOMport(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         main_sizer.Add((5, 5))
-        main_sizer.Add(self.com_ports, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add(row_com, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.Add((5, 5))
+        main_sizer.Add(row_probe, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(row_ref, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(row_obj, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
         main_sizer.Add(btnsizer, 0, wx.EXPAND)
         main_sizer.Add((5, 5))
 
@@ -3736,4 +3765,7 @@ class SetCOMport(wx.Dialog):
         self.CenterOnParent()
 
     def GetValue(self):
-        return self.com_ports.GetString(self.com_ports.GetSelection())
+        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), \
+               self.dir_probe.GetPath().encode(const.FS_ENCODE),\
+               self.dir_ref.GetPath().encode(const.FS_ENCODE), \
+               self.dir_obj.GetPath().encode(const.FS_ENCODE)
