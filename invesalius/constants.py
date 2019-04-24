@@ -771,9 +771,9 @@ MTC_REF_NAME = "2Ref"
 MTC_OBJ_NAME = "3Coil"
 
 NDI_MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'ndi_files', 'Markers'))
-NDI_PROBE_NAME = "NBSprobe"
-NDI_REF_NAME = "NBSref"
-NDI_OBJ_NAME = "NBScoil"
+NDI_PROBE_NAME = "NT-115"
+NDI_REF_NAME = "NT-103"
+NDI_OBJ_NAME = "NT-112"
 
 #OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
