@@ -64,7 +64,7 @@ def DefaultTracker(tracker_id):
 def PolarisTracker(tracker_id):
     from wx import ID_OK
     trck_init = None
-    dlg_port = dlg.SetCOMport()
+    dlg_port = dlg.SetNDIconfigs()
     if dlg_port.ShowModal() == ID_OK:
         com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
         try:
