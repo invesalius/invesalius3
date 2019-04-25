@@ -776,8 +776,8 @@ NDI_MAR_DIR_OBJ = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'n
 
 #OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
-ARROW_SCALE = 3
-ARROW_UPPER_LIMIT = 30
+ARROW_SCALE = 6
+ARROW_UPPER_LIMIT = 15
 #COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
 COIL_ANGLES_THRESHOLD = 3
 COIL_COORD_THRESHOLD = 3
