@@ -40,6 +40,8 @@ import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 
+from invesalius import inv_paths
+
 from invesalius.project import Project
 import invesalius.session as ses
 
@@ -78,7 +80,7 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
         # Image(s) for buttons
-        BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
+        BMP_ADD = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
         #BMP_ADD.SetWidth(25)
         #BMP_ADD.SetHeight(25)
 
@@ -686,11 +688,11 @@ class EditionTools(wx.Panel):
         ## LINE 2
         menu = wx.Menu()
 
-        CIRCLE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
         item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
-        SQUARE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
@@ -800,8 +802,8 @@ class EditionTools(wx.Panel):
                                   threshold_range=(thresh_min, thresh_max))
 
     def OnMenu(self, evt):
-        SQUARE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
 
         brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
                  MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}
@@ -849,11 +851,11 @@ class WatershedTool(EditionTools):
         ## LINE 2
         menu = wx.Menu()
 
-        CIRCLE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
         item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
-        SQUARE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
@@ -903,7 +905,7 @@ class WatershedTool(EditionTools):
         self.ww_wl_cbox = ww_wl_cbox
 
         # Line 6
-        bmp = wx.Bitmap(os.path.join(const.ICON_DIR, "configuration.png"), wx.BITMAP_TYPE_PNG)
+        bmp = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "configuration.png"), wx.BITMAP_TYPE_PNG)
         self.btn_wconfig = wx.BitmapButton(self, -1, bitmap=bmp,
                                            size=(bmp.GetWidth()+10, bmp.GetHeight()+10))
         self.btn_exp_watershed = wx.Button(self, -1, _('Expand watershed to 3D'))
@@ -970,8 +972,8 @@ class WatershedTool(EditionTools):
         self.gradient_thresh.SetMaxValue(thresh_max)
 
     def OnMenu(self, evt):
-        SQUARE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
 
         brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
                  MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}

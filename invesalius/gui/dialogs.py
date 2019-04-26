@@ -64,6 +64,8 @@ from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
 
+from invesalius import inv_paths
+
 try:
     from agw import floatspin as FS
 except ImportError: # if it's not there locally, try the wxPython lib.
@@ -3443,10 +3445,10 @@ class ObjectCalibrationDialog(wx.Dialog):
                     wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
                     return
             else:
-                filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+                filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
                 reader = vtk.vtkSTLReader()
         else:
-            filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()
 
         if _has_win32api:

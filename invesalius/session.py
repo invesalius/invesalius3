@@ -40,22 +40,12 @@ import wx
 from invesalius.utils import Singleton, debug, decode
 from random import randint
 
+from invesalius import inv_paths
+
 FS_ENCODE = sys.getfilesystemencoding()
 
-if sys.platform == 'win32':
-    from invesalius.expanduser import expand_user
-    try:
-        USER_DIR = expand_user()
-    except:
-        USER_DIR = decode(os.path.expanduser('~'), FS_ENCODE)
-else:
-    USER_DIR = decode(os.path.expanduser('~'), FS_ENCODE)
-
-USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
-USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
-USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
-USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.json')
-OLD_USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
+USER_INV_CFG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.json')
+OLD_USER_INV_CFG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.cfg')
 
 SESSION_ENCODING = 'utf8'
 
@@ -98,8 +88,8 @@ class Session(with_metaclass(Singleton, object)):
 
     def CreateItens(self):
         import invesalius.constants as const
-        homedir = USER_DIR
-        tempdir = os.path.join(USER_DIR, u".invesalius", u"temp")
+        homedir = inv_paths.USER_DIR
+        tempdir = os.path.join(inv_paths.USER_DIR, u".invesalius", u"temp")
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
 
@@ -116,11 +106,11 @@ class Session(with_metaclass(Singleton, object)):
             },
 
             'project': {
-                'recent_projects': [(const.SAMPLE_DIR, u"Cranium.inv3"), ],
+                'recent_projects': [(inv_paths.SAMPLE_DIR, u"Cranium.inv3"), ],
             },
 
             'paths': {
-                'homedir': USER_DIR,
+                'homedir': inv_paths.USER_DIR,
                 'tempdir': os.path.join(homedir, u".invesalius", u"temp"),
                 'last_dicom_folder': '',
             },
