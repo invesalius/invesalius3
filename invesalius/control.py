@@ -58,7 +58,8 @@ class Controller():
         #None, others and opened Project = 0
         #DICOM = 1
         #TIFF uCT = 2
-        self.img_type = 0 
+        self.img_type = 0
+        self.affine = None
 
         #Init session
         session = ses.Session()
@@ -107,6 +108,8 @@ class Controller():
         Publisher.subscribe(self.SetBitmapSpacing, 'Set bitmap spacing')
 
         Publisher.subscribe(self.OnSaveProject, 'Save project')
+
+        Publisher.subscribe(self.Send_affine, 'Get affine matrix')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -368,6 +371,7 @@ class Controller():
         session = ses.Session()
         session.CloseProject()
 
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 ###########################
 
     def StartImportBitmapPanel(self, path):
@@ -862,11 +866,7 @@ class Controller():
 
         hdr = group.header
         if group.affine.any():
-            from numpy import hstack
-            from numpy.linalg import inv
-            affine = inv(group.affine)
-            affine[1, 3] = -affine[1, 3]
-            self.affine = hstack(affine)
+            self.affine = group.affine
             Publisher.sendMessage('Update affine matrix',
                                   affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
@@ -888,6 +888,11 @@ class Controller():
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=scalar_range)
         return self.matrix, self.filename
+
+    def Send_affine(self):
+        if self.affine is not None:
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine, status=True)
 
     def LoadImagedataInfo(self):
         proj = prj.Project()

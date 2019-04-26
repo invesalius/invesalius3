@@ -478,8 +478,6 @@ class NeuronavigationPanel(wx.Panel):
                     ctrl.SetSelection(0)
                     print("Tracker not connected!")
                 else:
-                    Publisher.sendMessage('Update status text in GUI',
-                                          label=_("Ready"))
                     ctrl.SetSelection(self.tracker_id)
                     print("Tracker connected!")
         elif choice == 6:
@@ -513,10 +511,8 @@ class NeuronavigationPanel(wx.Panel):
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
-                else:
-                    Publisher.sendMessage('Update status text in GUI',
-                                          label=_("Ready"))
 
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage('Update tracker initializer',
                               nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
 

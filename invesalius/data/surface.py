@@ -337,7 +337,18 @@ class SurfaceManager():
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
     def UpdateAffineMatrix(self, affine, status):
-        self.affine = affine
+        try:
+            if status:
+                from numpy import hstack
+                from numpy.linalg import inv
+                affine = inv(affine)
+                affine[1, 3] = -affine[1, 3]
+                self.affine = hstack(affine)
+            else:
+                self.affine = None
+        except:
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=None, status=False)
 
     def UpdateconverttoInVflag(self, converttoInV):
         self.converttoInV = converttoInV

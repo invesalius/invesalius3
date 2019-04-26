@@ -559,6 +559,7 @@ ID_CREATE_SURFACE = wx.NewId()
 ID_CREATE_MASK = wx.NewId()
 
 ID_GOTO_SLICE = wx.NewId()
+ID_GOTO_COORD = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

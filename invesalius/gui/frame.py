@@ -463,6 +463,8 @@ class Frame(wx.Frame):
             self.OnRedo()
         elif id == const.ID_GOTO_SLICE:
             self.OnGotoSlice()
+        elif id == const.ID_GOTO_COORD:
+            self.GoToDialogScannerCoord()
 
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
@@ -700,6 +702,12 @@ class Frame(wx.Frame):
         gt_dialog.ShowModal()
         self.Refresh()
 
+    def GoToDialogScannerCoord(self):
+        gts_dialog = dlg.GoToDialogScannerCoord()
+        gts_dialog.CenterOnParent()
+        gts_dialog.ShowModal()
+        self.Refresh()
+
     def OnMaskBoolean(self):
         Publisher.sendMessage('Show boolean dialog')
 
@@ -792,6 +800,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
+        sub(self.OnEnableGotoCoord, "Update affine matrix")
         sub(self.OnEnableNavigation, "Navigation status")
 
         sub(self.OnAddMask, "Add mask")
@@ -859,6 +868,8 @@ class MenuBar(wx.MenuBar):
             file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
             file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
         file_edit.Append(const.ID_GOTO_SLICE, _("Go to slice ...\tCtrl+G"))
+        file_edit.Append(const.ID_GOTO_COORD, _("Go to scanner coord ...\t")).Enable(False)
+
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
@@ -1076,6 +1087,16 @@ class MenuBar(wx.MenuBar):
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
+
+    def OnEnableGotoCoord(self,  affine, status):
+        """
+        Disable goto coord either if there is no affine matrix or affine is wrongly imported.
+        :param status: Affine matrix status
+        """
+        if status:
+            self.FindItemById(const.ID_GOTO_COORD).Enable(True)
+        else:
+            self.FindItemById(const.ID_GOTO_COORD).Enable(False)
 
     def OnEnableNavigation(self, status):
         """

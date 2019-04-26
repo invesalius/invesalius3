@@ -3685,3 +3685,94 @@ class GoToDialog(wx.Dialog):
     def Close(self):
         wx.Dialog.Close(self)
         self.Destroy()
+
+
+class GoToDialogScannerCoord(wx.Dialog):
+    def __init__(self, title=_("Go to scanner coord...")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self._init_gui()
+
+    def _init_gui(self):
+        self.goto_sagital = wx.TextCtrl(self, size=(50,-1))
+        self.goto_coronal = wx.TextCtrl(self, size=(50,-1))
+        self.goto_axial = wx.TextCtrl(self, size=(50,-1))
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        sizer_create = wx.FlexGridSizer(3, 2, 10, 10)
+        sizer_create.AddMany([(wx.StaticText(self, 1, _("Sagital coordinate:")), 1, wx.LEFT, 10), (self.goto_sagital, 1, wx.RIGHT, 10),
+                              (wx.StaticText(self, 1, _("Coronal coordinate:")), 1, wx.LEFT, 10), (self.goto_coronal, 1, wx.RIGHT, 10),
+                              (wx.StaticText(self, 1, _("Axial coordinate:")), 1, wx.LEFT, 10), (self.goto_axial, 1, wx.RIGHT, 10)])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(sizer_create, proportion=3, flag=wx.CENTER, border=20)
+        main_sizer.Add(btnsizer, proportion=1, flag=wx.CENTER|wx.TOP, border=5)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.orientation = None
+        self.affine = None
+
+        self.__bind_events()
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        Publisher.sendMessage('Get affine matrix')
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetNewFocalPoint, 'Cross focal point')
+        Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
+
+    def UpdateAffineMatrix(self, affine, status):
+        self.affine = affine
+
+    def SetNewFocalPoint(self, coord, spacing):
+        Publisher.sendMessage('Update cross pos', coord=self.result*spacing)
+
+    def OnOk(self, evt):
+        from numpy.linalg import inv
+        import invesalius.data.slice_ as slc
+        try:
+            #get affine from image import
+            if self.affine is not None:
+                affine = self.affine
+            #get affine from project
+            else:
+                from invesalius.project import Project
+                affine = Project().affine
+
+            point = [float(self.goto_sagital.GetValue()),
+                     float(self.goto_coronal.GetValue()),
+                     float(self.goto_axial.GetValue())]
+
+            # transformation from scanner coordinates to inv coord system
+            affine = inv(affine)
+            self.result = np.dot(affine[:3, :3], np.transpose(point[0:3])) + affine[:3, 3]
+            self.result[1] = slc.Slice().GetMaxSliceNumber(const.CORONAL_STR) - self.result[1]
+
+            Publisher.sendMessage('Update status text in GUI', label=_("Calculating the transformation ..."))
+
+            Publisher.sendMessage('Set Update cross pos')
+            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+
+            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
+        except ValueError:
+            pass
+        self.Close()
+
+    def Close(self):
+        wx.Dialog.Close(self)
+        self.Destroy()
