@@ -35,6 +35,7 @@ import invesalius.session as session
 import glob
 import invesalius.utils as utils
 
+from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 
 import plistlib
@@ -334,7 +335,7 @@ class ProgressDicomReader:
     def GetDicomGroups(self, path, recursive):
 
         if not const.VTK_WARNING:
-            log_path = utils.encode(os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt'), const.FS_ENCODE)
+            log_path = utils.encode(str(inv_paths.USER_LOG_DIR.joinpath('vtkoutput.txt')), const.FS_ENCODE)
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
