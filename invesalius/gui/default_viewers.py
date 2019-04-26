@@ -34,6 +34,7 @@ from invesalius.gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
         EVT_CLUT_CURVE_WL_CHANGE
 
 from invesalius.constants import ID_TO_BMP
+from invesalius import inv_paths
 
 import invesalius.session as ses
 import invesalius.constants as const
@@ -348,17 +349,17 @@ class VolumeToolPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         # VOLUME RAYCASTING BUTTON
-        BMP_RAYCASTING = wx.Bitmap(os.path.join(const.ICON_DIR, "volume_raycasting.png"),
+        BMP_RAYCASTING = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "volume_raycasting.png"),
                                     wx.BITMAP_TYPE_PNG)
 
-        BMP_SLICE_PLANE = wx.Bitmap(os.path.join(const.ICON_DIR, "slice_plane.png"),
+        BMP_SLICE_PLANE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "slice_plane.png"),
                                     wx.BITMAP_TYPE_PNG)
 
 
-        BMP_3D_STEREO = wx.Bitmap(os.path.join(const.ICON_DIR, "3D_glasses.png"),
+        BMP_3D_STEREO = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "3D_glasses.png"),
                                     wx.BITMAP_TYPE_PNG)
 
-        BMP_TARGET = wx.Bitmap(os.path.join(const.ICON_DIR, "target.png"),
+        BMP_TARGET = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "target.png"),
                                     wx.BITMAP_TYPE_PNG)
 
 
