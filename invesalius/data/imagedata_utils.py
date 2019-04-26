@@ -37,6 +37,8 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 import invesalius.data.converters as converters
 
+from invesalius import inv_paths
+
 if sys.platform == 'win32':
     try:
         import win32api
@@ -335,7 +337,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
     message = _("Generating multiplanar visualization...")
 
     if not const.VTK_WARNING:
-        log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
+        log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
         fow.SetFileName(log_path)
         ow = vtk.vtkOutputWindow()
@@ -440,7 +442,7 @@ class ImageCreator:
         message = _("Generating multiplanar visualization...")
 
         if not const.VTK_WARNING:
-            log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
+            log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()

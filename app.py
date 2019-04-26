@@ -69,20 +69,6 @@ from invesalius import inv_paths
 
 FS_ENCODE = sys.getfilesystemencoding()
 
-if sys.platform == 'win32':
-    from invesalius.expanduser import expand_user
-    try:
-        USER_DIR = expand_user()
-    except:
-        USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
-else:
-    USER_DIR = utils.decode(os.path.expanduser('~'),FS_ENCODE)
-
-USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
-USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
-USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
-USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
-
 # ------------------------------------------------------------------
 
 if sys.platform in ('linux2', 'linux', 'win32'):

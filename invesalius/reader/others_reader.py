@@ -23,6 +23,7 @@ import vtk
 import nibabel as nib
 
 import invesalius.constants as const
+from invesalius import inv_paths
 
 
 def ReadOthers(dir_):
@@ -38,7 +39,7 @@ def ReadOthers(dir_):
     """
 
     if not const.VTK_WARNING:
-        log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
+        log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
         fow.SetFileName(log_path.encode(const.FS_ENCODE))
         ow = vtk.vtkOutputWindow()
