@@ -38,6 +38,7 @@ import wx.lib.platebtn as pbtn
 import invesalius.project as prj
 import invesalius.utils as utl
 
+from invesalius import inv_paths
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
@@ -82,7 +83,7 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 
-        BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
+        BMP_ADD = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
         #BMP_ADD.SetWidth(25)
         #BMP_ADD.SetHeight(25)
 
@@ -330,17 +331,17 @@ class SurfaceTools(wx.Panel):
         link_seeds.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSeed)
 
         # Image(s) for buttons
-        img_largest = wx.Image(os.path.join(const.ICON_DIR, "connectivity_largest.png"),
+        img_largest = wx.Image(os.path.join(inv_paths.ICON_DIR, "connectivity_largest.png"),
                                wx.BITMAP_TYPE_PNG)
         img_largest.Rescale(25, 25)
         bmp_largest = img_largest.ConvertToBitmap()
 
-        img_split_all = wx.Image(os.path.join(const.ICON_DIR, "connectivity_split_all.png"),
+        img_split_all = wx.Image(os.path.join(inv_paths.ICON_DIR, "connectivity_split_all.png"),
                                  wx.BITMAP_TYPE_PNG)
         img_split_all.Rescale(25, 25)
         bmp_split_all = img_split_all.ConvertToBitmap()
 
-        img_seeds = wx.Image(os.path.join(const.ICON_DIR, "connectivity_manual.png"),
+        img_seeds = wx.Image(os.path.join(inv_paths.ICON_DIR, "connectivity_manual.png"),
                              wx.BITMAP_TYPE_PNG)
         img_seeds.Rescale(25, 25)
         bmp_seeds = img_seeds.ConvertToBitmap()
