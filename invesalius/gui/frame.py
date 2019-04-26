@@ -619,7 +619,7 @@ class Frame(wx.Frame):
         else:
             user_guide = "user_guide_en.pdf"
 
-        path = os.path.join(const.DOC_DIR,
+        path = os.path.join(inv_paths.DOC_DIR,
                             user_guide)
         if sys.platform == 'darwin':
             path = r'file://' + path

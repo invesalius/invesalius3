@@ -106,7 +106,7 @@ class Session(with_metaclass(Singleton, object)):
             },
 
             'project': {
-                'recent_projects': [(const.SAMPLE_DIR, u"Cranium.inv3"), ],
+                'recent_projects': [(inv_paths.SAMPLE_DIR, u"Cranium.inv3"), ],
             },
 
             'paths': {

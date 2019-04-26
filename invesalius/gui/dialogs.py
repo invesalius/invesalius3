@@ -64,6 +64,8 @@ from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
 
+from invesalius import inv_paths
+
 try:
     from agw import floatspin as FS
 except ImportError: # if it's not there locally, try the wxPython lib.
