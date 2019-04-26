@@ -42,6 +42,8 @@ import invesalius.gui.dialogs as dialogs
 import subprocess
 import sys
 
+from invesalius import inv_paths
+
 DEFAULT_THRESH_MODE = 0
 
 class Controller():
@@ -915,13 +917,13 @@ class Controller():
     def LoadRaycastingPreset(self, preset_name):
         if preset_name != const.RAYCASTING_OFF_LABEL:
             if preset_name in const.RAYCASTING_FILES.keys():
-                path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                     const.RAYCASTING_FILES[preset_name])
             else:
-                path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                         preset_name+".plist")
                 if not os.path.isfile(path):
-                    path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
+                    path = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     preset_name+".plist")
             preset = plistlib.readPlist(path)
             prj.Project().raycasting_preset = preset
@@ -935,7 +937,7 @@ class Controller():
     def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
-        preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
+        preset_dir = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 

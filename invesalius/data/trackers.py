@@ -61,6 +61,7 @@ def DefaultTracker(tracker_id):
 
 def ClaronTracker(tracker_id):
     import invesalius.constants as const
+    from invesalius import inv_paths
 
     trck_init = None
     try:
@@ -68,8 +69,8 @@ def ClaronTracker(tracker_id):
 
         lib_mode = 'wrapper'
         trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = const.CAL_DIR.encode(const.FS_ENCODE)
-        trck_init.MarkerDir = const.MAR_DIR.encode(const.FS_ENCODE)
+        trck_init.CalibrationDir = inv_paths.CAL_DIR.encode(const.FS_ENCODE)
+        trck_init.MarkerDir = inv_paths.MAR_DIR.encode(const.FS_ENCODE)
         trck_init.NumberFramesProcessed = 1
         trck_init.FramesExtrapolated = 0
         trck_init.PROBE_NAME = const.PROBE_NAME.encode(const.FS_ENCODE)

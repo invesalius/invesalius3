@@ -33,6 +33,8 @@ import invesalius.data.vtk_utils as vtk_utils
 from vtk.util import numpy_support
 import invesalius.session as ses
 
+from invesalius import inv_paths
+
 
 Kernels = { 
     "Basic Smooth 5x5" : [1.0, 1.0, 1.0, 1.0, 1.0,
@@ -352,7 +354,7 @@ class Volume():
         color_preset = self.config['CLUT']
         if color_preset != "No CLUT":
             p = plistlib.readPlist(
-                os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                              'color_list', color_preset + '.plist'))
             r = p['Red']
             g = p['Green']

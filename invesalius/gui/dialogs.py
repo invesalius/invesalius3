@@ -3443,10 +3443,10 @@ class ObjectCalibrationDialog(wx.Dialog):
                     wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
                     return
             else:
-                filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+                filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
                 reader = vtk.vtkSTLReader()
         else:
-            filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()
 
         if _has_win32api:
