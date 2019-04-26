@@ -29,6 +29,8 @@ from wx.lib.pubsub import pub as Publisher
 import invesalius.gui.dialogs as dialog
 import invesalius.constants as const
 
+from invesalius import inv_paths
+
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)
 LINE_WIDTH = 2
@@ -634,7 +636,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.Histogram.points.append((x, y))
 
     def _build_buttons(self):
-        img = wx.Image(os.path.join(const.ICON_DIR, 'Floppy.png'))
+        img = wx.Image(os.path.join(inv_paths.ICON_DIR, 'Floppy.png'))
         width = img.GetWidth()
         height = img.GetHeight()
         self.save_button = Button()
