@@ -106,11 +106,11 @@ class Session(with_metaclass(Singleton, object)):
             },
 
             'project': {
-                'recent_projects': [(inv_paths.SAMPLE_DIR, u"Cranium.inv3"), ],
+                'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             },
 
             'paths': {
-                'homedir': inv_paths.USER_DIR,
+                'homedir': str(inv_paths.USER_DIR),
                 'tempdir': os.path.join(homedir, u".invesalius", u"temp"),
                 'last_dicom_folder': '',
             },
