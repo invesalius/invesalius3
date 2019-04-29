@@ -43,6 +43,8 @@ import invesalius.gui.dialogs as dlg
 import wx.lib.mixins.listctrl as listmix
 import invesalius.utils as ul
 
+from invesalius import inv_paths
+
 
 BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in range(4)]
 
@@ -155,11 +157,11 @@ class MeasureButtonControlPanel(wx.Panel):
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
-        BMP_NEW = wx.Bitmap(os.path.join(const.ICON_DIR, "data_new.png"),
+        BMP_NEW = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_new.png"),
                             wx.BITMAP_TYPE_PNG)
-        BMP_REMOVE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_remove.png"),
+        BMP_REMOVE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_remove.png"),
                                 wx.BITMAP_TYPE_PNG)
-        BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
+        BMP_DUPLICATE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
@@ -273,11 +275,11 @@ class ButtonControlPanel(wx.Panel):
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
-        BMP_NEW = wx.Bitmap(os.path.join(const.ICON_DIR, "data_new.png"),
+        BMP_NEW = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_new.png"),
                             wx.BITMAP_TYPE_PNG)
-        BMP_REMOVE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_remove.png"),
+        BMP_REMOVE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_remove.png"),
                                 wx.BITMAP_TYPE_PNG)
-        BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
+        BMP_DUPLICATE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
@@ -473,13 +475,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -487,7 +489,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -616,13 +618,13 @@ class SurfaceButtonControlPanel(wx.Panel):
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
-        BMP_NEW = wx.Bitmap(os.path.join(const.ICON_DIR, "data_new.png"),
+        BMP_NEW = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_new.png"),
                             wx.BITMAP_TYPE_PNG)
-        BMP_REMOVE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_remove.png"),
+        BMP_REMOVE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_remove.png"),
                                 wx.BITMAP_TYPE_PNG)
-        BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
+        BMP_DUPLICATE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
-        BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR, "load_mesh.png"),
+        BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "load_mesh.png"),
                                 wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
@@ -839,13 +841,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -853,7 +855,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -1114,13 +1116,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -1128,7 +1130,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -1309,19 +1311,19 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(const.ICON_DIR, "object_colour.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)

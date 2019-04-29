@@ -42,6 +42,8 @@ import invesalius.gui.dialogs as dialogs
 import subprocess
 import sys
 
+from invesalius import inv_paths
+
 DEFAULT_THRESH_MODE = 0
 
 class Controller():
@@ -58,7 +60,8 @@ class Controller():
         #None, others and opened Project = 0
         #DICOM = 1
         #TIFF uCT = 2
-        self.img_type = 0 
+        self.img_type = 0
+        self.affine = None
 
         #Init session
         session = ses.Session()
@@ -107,6 +110,8 @@ class Controller():
         Publisher.subscribe(self.SetBitmapSpacing, 'Set bitmap spacing')
 
         Publisher.subscribe(self.OnSaveProject, 'Save project')
+
+        Publisher.subscribe(self.Send_affine, 'Get affine matrix')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -368,6 +373,7 @@ class Controller():
         session = ses.Session()
         session.CloseProject()
 
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 ###########################
 
     def StartImportBitmapPanel(self, path):
@@ -862,11 +868,7 @@ class Controller():
 
         hdr = group.header
         if group.affine.any():
-            from numpy import hstack
-            from numpy.linalg import inv
-            affine = inv(group.affine)
-            affine[1, 3] = -affine[1, 3]
-            self.affine = hstack(affine)
+            self.affine = group.affine
             Publisher.sendMessage('Update affine matrix',
                                   affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
@@ -888,6 +890,11 @@ class Controller():
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=scalar_range)
         return self.matrix, self.filename
+
+    def Send_affine(self):
+        if self.affine is not None:
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine, status=True)
 
     def LoadImagedataInfo(self):
         proj = prj.Project()
@@ -915,13 +922,13 @@ class Controller():
     def LoadRaycastingPreset(self, preset_name):
         if preset_name != const.RAYCASTING_OFF_LABEL:
             if preset_name in const.RAYCASTING_FILES.keys():
-                path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                     const.RAYCASTING_FILES[preset_name])
             else:
-                path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                         preset_name+".plist")
                 if not os.path.isfile(path):
-                    path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
+                    path = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     preset_name+".plist")
             preset = plistlib.readPlist(path)
             prj.Project().raycasting_preset = preset
@@ -935,7 +942,7 @@ class Controller():
     def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
-        preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
+        preset_dir = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 

@@ -105,14 +105,17 @@ def CameraTracker(tracker_id):
     return trck_init, 'wrapper'
 
 def ClaronTracker(tracker_id):
+    import invesalius.constants as const
+    from invesalius import inv_paths
+
     trck_init = None
     try:
         import pyclaron
 
         lib_mode = 'wrapper'
         trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = const.MTC_CAL_DIR.encode(const.FS_ENCODE)
-        trck_init.MarkerDir = const.MTC_MAR_DIR.encode(const.FS_ENCODE)
+        trck_init.CalibrationDir = inv_paths.MTC_CAL_DIR.encode(const.FS_ENCODE)
+        trck_init.MarkerDir = inv_paths.MTC_MAR_DIR.encode(const.FS_ENCODE)
         trck_init.NumberFramesProcessed = 1
         trck_init.FramesExtrapolated = 0
         trck_init.PROBE_NAME = const.MTC_PROBE_NAME.encode(const.FS_ENCODE)

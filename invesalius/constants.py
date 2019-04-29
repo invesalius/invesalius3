@@ -24,6 +24,7 @@ import wx
 import itertools
 
 from invesalius import utils
+from invesalius import inv_paths
 
 #from invesalius.project import Project
 INVESALIUS_VERSION = "3.1.1"
@@ -335,59 +336,13 @@ REDUCE_IMAGEDATA_QUALITY = 0
 # PATHS
 FS_ENCODE = sys.getfilesystemencoding()
 
-if sys.platform == 'win32':
-    from invesalius.expanduser import expand_user
-    try:
-        USER_DIR = expand_user()
-    except:
-        USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
-else:
-    USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
-
-USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
-USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
-USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
-
-FILE_PATH = utils.decode(os.path.split(__file__)[0], FS_ENCODE)
-
-if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
-                            or sys.frozen == "console_exe"):
-    abs_path = os.path.abspath(FILE_PATH, u'..', u'..', u'..')
-    ICON_DIR = os.path.join(abs_path, u"icons")
-    SAMPLE_DIR = os.path.join(FILE_PATH, u'samples')
-    DOC_DIR = os.path.join(FILE_PATH, u'docs')
-    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join(abs_path, u"presets", u"raycasting")
-    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.join(abs_path, u"presets", u"raycasting", u"color_list")
-
-else:
-    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'icons'))
-    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'samples'))
-    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'docs'))
-
-    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(u".",
-                                                                  u"presets",
-                                                                  u"raycasting"))
-
-    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.abspath(os.path.join(u".",
-                                                                  u"presets",
-                                                                  u"raycasting",
-                                                                  u"color_list"))
-
-
-# MAC App
-if not os.path.exists(ICON_DIR):
-    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'..', u'..', u'..', u'icons'))
-    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..',  u'..', u'..', u'..', u'samples'))
-    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'..', u'..', u'..', u'docs'))
-
-
-ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, u"view_front.png")],
-             VOL_BACK: [_("Back"), os.path.join(ICON_DIR, u"view_back.png")],
-             VOL_TOP: [_("Top"), os.path.join(ICON_DIR, u"view_top.png")],
-             VOL_BOTTOM: [_("Bottom"), os.path.join(ICON_DIR, u"view_bottom.png")],
-             VOL_RIGHT: [_("Right"), os.path.join(ICON_DIR, u"view_right.png")],
-             VOL_LEFT: [_("Left"), os.path.join(ICON_DIR, u"view_left.png")],
-             VOL_ISO:[_("Isometric"), os.path.join(ICON_DIR, u"view_isometric.png")]
+ID_TO_BMP = {VOL_FRONT: [_("Front"), str(inv_paths.ICON_DIR.joinpath("view_front.png"))],
+             VOL_BACK: [_("Back"), str(inv_paths.ICON_DIR.joinpath("view_back.png"))],
+             VOL_TOP: [_("Top"), str(inv_paths.ICON_DIR.joinpath("view_top.png"))],
+             VOL_BOTTOM: [_("Bottom"), str(inv_paths.ICON_DIR.joinpath("view_bottom.png"))],
+             VOL_RIGHT: [_("Right"), str(inv_paths.ICON_DIR.joinpath("view_right.png"))],
+             VOL_LEFT: [_("Left"), str(inv_paths.ICON_DIR.joinpath("view_left.png"))],
+             VOL_ISO:[_("Isometric"), str(inv_paths.ICON_DIR.joinpath("view_isometric.png"))]
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
@@ -433,10 +388,9 @@ RAYCASTING_FILES = {_("Airways"): "Airways.plist",
 #                    os.path.isfile(os.path.join(folder,filename))]
 
 
-USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
-RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
-                     os.listdir(USER_RAYCASTING_PRESETS_DIRECTORY) if
-                     os.path.isfile(os.path.join(USER_RAYCASTING_PRESETS_DIRECTORY, filename))]
+RAYCASTING_TYPES = [_(filename.name.split(".")[0]) for filename in
+                    inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.glob('*') if
+                    filename.is_file()]
 RAYCASTING_TYPES += RAYCASTING_FILES.keys()
 RAYCASTING_TYPES.append(_(' Off'))
 RAYCASTING_TYPES.sort()
@@ -446,8 +400,8 @@ RAYCASTING_TOOLS = [_("Cut plane")]
 # If 0 dont't blur, 1 blur
 RAYCASTING_WWWL_BLUR = 0
 
-RAYCASTING_PRESETS_FOLDERS = (RAYCASTING_PRESETS_DIRECTORY,
-                              USER_RAYCASTING_PRESETS_DIRECTORY)
+RAYCASTING_PRESETS_FOLDERS = (inv_paths.RAYCASTING_PRESETS_DIRECTORY,
+                              inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY)
 
 
 ####
@@ -559,6 +513,7 @@ ID_CREATE_SURFACE = wx.NewId()
 ID_CREATE_MASK = wx.NewId()
 
 ID_GOTO_SLICE = wx.NewId()
+ID_GOTO_COORD = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

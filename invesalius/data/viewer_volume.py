@@ -42,6 +42,8 @@ import invesalius.project as prj
 import invesalius.style as st
 import invesalius.utils as utils
 
+from invesalius import inv_paths
+
 if sys.platform == 'win32':
     try:
         import win32api
@@ -864,7 +866,7 @@ class Viewer(wx.Panel):
 
         self.m_img_vtk = m_img_vtk
 
-        filename = os.path.join(const.OBJ_DIR, "aim.stl")
+        filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
 
         reader = vtk.vtkSTLReader()
         reader.SetFileName(filename)
@@ -888,7 +890,7 @@ class Viewer(wx.Panel):
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
 
-        obj_polydata = self.CreateObjectPolyData(os.path.join(const.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+        obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
 
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
@@ -1138,7 +1140,7 @@ class Viewer(wx.Panel):
                 wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
                 return
         else:
-            filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()
 
         if _has_win32api:

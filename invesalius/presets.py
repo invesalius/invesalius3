@@ -24,7 +24,10 @@ import invesalius.constants as const
 
 from wx.lib.pubsub import pub as Publisher
 
+from invesalius import inv_paths
 from invesalius.utils import TwoWaysDictionary
+
+
 class Presets():
 
     def __init__(self):
@@ -169,7 +172,7 @@ class Presets():
 
 
 def get_wwwl_presets():
-    files = glob.glob(os.path.join(const.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
+    files = glob.glob(os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
     presets = {}
     for f in files:
         p = os.path.splitext(os.path.basename(f))[0]
