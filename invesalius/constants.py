@@ -719,18 +719,11 @@ TIPS_OBJ = [_("Select left object fiducial"),
             _("Select object center"),
             _("Attach sensor to object")]
 
-MTC_CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
-MTC_MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
 MTC_PROBE_NAME = "1Probe"
 MTC_REF_NAME = "2Ref"
 MTC_OBJ_NAME = "3Coil"
 
-NDI_MAR_DIR_PROBE = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'ndi_files', 'Markers', '8700340.rom'))
-NDI_MAR_DIR_REF = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'ndi_files', 'Markers', '8700339.rom'))
-NDI_MAR_DIR_OBJ = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'ndi_files', 'Markers', '8700338.rom'))
-
 #OBJECT TRACKING
-OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
 ARROW_SCALE = 6
 ARROW_UPPER_LIMIT = 15
 #COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
