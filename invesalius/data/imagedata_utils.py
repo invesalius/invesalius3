@@ -23,6 +23,7 @@ import sys
 import tempfile
 
 import gdcm
+import imageio
 import numpy
 import vtk
 import vtkgdcm
@@ -266,19 +267,21 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
 
 
 def create_dicom_thumbnails(filename, window=None, level=None):
-    rvtk = vtkgdcm.vtkGDCMImageReader()
-    rvtk.SetFileName(utils.encode(filename, const.FS_ENCODE))
-    rvtk.Update()
+    print("filename", filename, type(filename))
+    rvtk = gdcm.ImageReader()
+    rvtk.SetFileName(filename)
+    rvtk.Read()
 
-    img = rvtk.GetOutput()
+    img = rvtk.GetImage()
+
     if window is None or level is None:
         _min, _max = img.GetScalarRange()
         window = _max - _min
         level = _min + window / 2
 
-    dx, dy, dz = img.GetDimensions()
+    #  dx, dy, dz = img.GetDimensions()
 
-    if dz > 1:
+    if img.GetNumberOfDimensions() == 3:
         thumbnail_paths = []
         for i in range(dz):
             img_slice = ExtractVOI(img, 0, dx-1, 0, dy-1, i, i+1)
@@ -308,26 +311,25 @@ def create_dicom_thumbnails(filename, window=None, level=None):
 
         return thumbnail_paths
     else:
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInputData(img)
-        colorer.SetWindow(window)
-        colorer.SetLevel(level)
-        colorer.SetOutputFormatToRGB()
-        colorer.Update()
+        np_image = converters.gdcm_to_numpy(img)
+        thumb_image = zoom(np_image, 0.25)
 
-        resample = vtk.vtkImageResample()
-        resample.SetInputData(colorer.GetOutput())
-        resample.SetAxisMagnificationFactor ( 0, 0.25 )
-        resample.SetAxisMagnificationFactor ( 1, 0.25 )
-        resample.SetAxisMagnificationFactor ( 2, 1 )
-        resample.Update()
+        #  colorer = vtk.vtkImageMapToWindowLevelColors()
+        #  colorer.SetInputData(img)
+        #  colorer.SetWindow(window)
+        #  colorer.SetLevel(level)
+        #  colorer.SetOutputFormatToRGB()
+        #  colorer.Update()
 
-        thumbnail_path = tempfile.mktemp()
+        #  resample = vtk.vtkImageResample()
+        #  resample.SetInputData(colorer.GetOutput())
+        #  resample.SetAxisMagnificationFactor ( 0, 0.25 )
+        #  resample.SetAxisMagnificationFactor ( 1, 0.25 )
+        #  resample.SetAxisMagnificationFactor ( 2, 1 )
+        #  resample.Update()
 
-        write_png = vtk.vtkPNGWriter()
-        write_png.SetInputData(resample.GetOutput())
-        write_png.SetFileName(thumbnail_path)
-        write_png.Write()
+        thumbnail_path = tempfile.mktemp(prefix='thumb_', suffix='.png')
+        imageio.imsave(thumbnail_path, thumb_image)
 
         return thumbnail_path
 
