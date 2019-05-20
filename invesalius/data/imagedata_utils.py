@@ -25,6 +25,7 @@ import tempfile
 import gdcm
 import imageio
 import numpy
+import numpy as np
 import vtk
 import vtkgdcm
 from wx.lib.pubsub import pub as Publisher
@@ -139,6 +140,24 @@ def read_dcm_slice_as_np(filename, resolution_percentage=1.0):
     im_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
     im_array.shape = dy, dx
     return im_array
+
+
+def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
+    reader = gdcm.ImageReader()
+    reader.SetFileName(filename)
+    reader.Read()
+
+    image = reader.GetImage()
+    pixel_format = image.GetPixelFormat()
+    shift = image.GetIntercept()
+    scale = image.GetSlope()
+
+    np_image = converters.gdcm_to_numpy(image)
+    output = np.empty_like(np_image, np.int16)
+    output[:] = scale * np_image + shift
+    if resolution_percentage < 1.0:
+        return zoom(output, resolution_percentage)
+    return output
 
 
 def FixGantryTilt(matrix, spacing, tilt):
@@ -311,8 +330,10 @@ def create_dicom_thumbnails(filename, window=None, level=None):
 
         return thumbnail_paths
     else:
-        np_image = converters.gdcm_to_numpy(img)
+        np_image = read_dcm_slice_as_np2(filename)
         thumb_image = zoom(np_image, 0.25)
+        thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
+        print(thumb_image.min(), thumb_image.max(), thumb_image.dtype)
 
         #  colorer = vtk.vtkImageMapToWindowLevelColors()
         #  colorer.SetInputData(img)
@@ -755,3 +776,14 @@ def imgnormalize(data, srange=(0, 255)):
     datan = datan.astype(numpy.int16)
 
     return datan
+
+
+def get_LUT_value_255(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
+    data.shape = shape
+    return data
