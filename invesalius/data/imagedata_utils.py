@@ -297,7 +297,7 @@ def create_dicom_thumbnails(filename, window=None, level=None):
     if len(np_image.shape) >= 3:
         thumbnail_paths = []
         for i in range(np_image.shape[0]):
-            thumb_image = zoom(np_image, 0.25)
+            thumb_image = zoom(np_image[i], 0.25)
             thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
             thumbnail_path = tempfile.mktemp(prefix='thumb_', suffix='.png')
             imageio.imsave(thumbnail_path, thumb_image)
@@ -453,11 +453,9 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
 def dcmmf2memmap(dcm_file, orientation):
     d = read_dcm_slice_as_np2(dcm_file)
-
     temp_file = tempfile.mktemp()
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=d.shape)
-
-    d.shape = z, y, x
+    z, y, x = d.shape
     if orientation == 'CORONAL':
         matrix.shape = y, z, x
         for n in range(z):
@@ -472,9 +470,9 @@ def dcmmf2memmap(dcm_file, orientation):
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
 
-    print("ORIENTATION", orientation)
+    print("ORIENTATION", orientation, matrix.shape, matrix.min(), matrix.max(), d.min(), d.max())
 
-    return matrix, spacing, scalar_range, temp_file
+    return matrix, scalar_range, temp_file
 
 
 def img2memmap(group):
