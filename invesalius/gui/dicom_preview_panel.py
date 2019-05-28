@@ -897,6 +897,7 @@ class SingleImagePreview(wx.Panel):
                 filename = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
 
             np_image = imagedata_utils.read_dcm_slice_as_np2(filename)
+            print(">>> spacing", dicom.image.spacing)
             vtk_image = converters.to_vtk(np_image, dicom.image.spacing, 0, 'AXIAL')
 
             # ADJUST CONTRAST

@@ -285,16 +285,15 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     return voi.GetOutput()
 
 
-def create_dicom_thumbnails(filename, window=None, level=None):
-    print("filename", filename, type(filename))
-    np_image = read_dcm_slice_as_np2(filename)
-
+def create_dicom_thumbnails(image, window=None, level=None):
+    pf = image.GetPixelFormat()
+    np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     if window is None or level is None:
         _min, _max = np_image.min(), np_image.max()
         window = _max - _min
         level = _min + window / 2
 
-    if len(np_image.shape) >= 3:
+    if image.GetNumberOfDimensions() >= 3:
         thumbnail_paths = []
         for i in range(np_image.shape[0]):
             thumb_image = zoom(np_image[i], 0.25)
@@ -304,9 +303,12 @@ def create_dicom_thumbnails(filename, window=None, level=None):
             thumbnail_paths.append(thumbnail_path)
         return thumbnail_paths
     else:
-        thumb_image = zoom(np_image, 0.25)
-        thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
         thumbnail_path = tempfile.mktemp(prefix='thumb_', suffix='.png')
+        if pf.GetSamplesPerPixel() == 1:
+            thumb_image = zoom(np_image, 0.25)
+            thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
+        else:
+            thumb_image = zoom(np_image, (0.25, 0.25, 1))
         imageio.imsave(thumbnail_path, thumb_image)
         return thumbnail_path
 

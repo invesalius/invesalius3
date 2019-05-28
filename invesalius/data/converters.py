@@ -90,18 +90,20 @@ def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
 
 
 # Based on http://gdcm.sourceforge.net/html/ConvertNumpy_8py-example.html
-def gdcm_to_numpy(image):
-    map_gdcm_np = {gdcm.PixelFormat.UINT8  :np.int8,
-                   gdcm.PixelFormat.INT8   :np.uint8,
-                   #gdcm.PixelFormat.UINT12 :np.uint12,
-                   #gdcm.PixelFormat.INT12  :np.int12,
-                   gdcm.PixelFormat.UINT16 :np.uint16,
-                   gdcm.PixelFormat.INT16  :np.int16,
-                   gdcm.PixelFormat.UINT32 :np.uint32,
-                   gdcm.PixelFormat.INT32  :np.int32,
-                   #gdcm.PixelFormat.FLOAT16:np.float16,
-                   gdcm.PixelFormat.FLOAT32:np.float32,
-                   gdcm.PixelFormat.FLOAT64:np.float64 }
+def gdcm_to_numpy(image, apply_intercep_scale=True):
+    map_gdcm_np = {
+        gdcm.PixelFormat.UINT8   :np.uint8,
+        gdcm.PixelFormat.INT8  :np.int8,
+        #gdcm.PixelFormat.UINT12 :np.uint12,
+        #gdcm.PixelFormat.INT12  :np.int12,
+        gdcm.PixelFormat.UINT16 :np.uint16,
+        gdcm.PixelFormat.INT16  :np.int16,
+        gdcm.PixelFormat.UINT32 :np.uint32,
+        gdcm.PixelFormat.INT32  :np.int32,
+        #gdcm.PixelFormat.FLOAT16:np.float16,
+        gdcm.PixelFormat.FLOAT32:np.float32,
+        gdcm.PixelFormat.FLOAT64:np.float64,
+    }
 
     pf = image.GetPixelFormat()
     if image.GetNumberOfDimensions() == 3:
@@ -112,4 +114,13 @@ def gdcm_to_numpy(image):
     gdcm_array = image.GetBuffer()
     np_array = np.frombuffer(gdcm_array.encode('utf-8', errors="surrogateescape"), dtype=dtype)
     np_array.shape = shape
-    return np_array.squeeze()
+    np_array = np_array.squeeze()
+
+    if apply_intercep_scale:
+        shift = image.GetIntercept()
+        scale = image.GetSlope()
+        output = np.empty_like(np_array, np.int16)
+        output[:] = scale * np_array + shift
+        return output
+    else:
+        return np_array
