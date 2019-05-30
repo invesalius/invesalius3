@@ -152,7 +152,7 @@ def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
     shift = image.GetIntercept()
     scale = image.GetSlope()
 
-    np_image = converters.gdcm_to_numpy(image)
+    np_image = converters.gdcm_to_numpy(image, False)
     output = np.empty_like(np_image, np.int16)
     output[:] = scale * np_image + shift
     if resolution_percentage < 1.0:
