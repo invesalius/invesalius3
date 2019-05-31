@@ -24,7 +24,6 @@ import sys
 from multiprocessing import cpu_count
 
 import vtk
-import vtkgdcm
 import gdcm
 from wx.lib.pubsub import pub as Publisher
 

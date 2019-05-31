@@ -27,7 +27,6 @@ import imageio
 import numpy
 import numpy as np
 import vtk
-#  import vtkgdcm
 from wx.lib.pubsub import pub as Publisher
 
 from scipy.ndimage import shift, zoom
@@ -126,35 +125,12 @@ def resize_slice(im_array, resolution_percentage):
     return out
 
 
-def read_dcm_slice_as_np(filename, resolution_percentage=1.0):
-    """
-    read a dicom slice file and return the slice as numpy ndarray
-    """
-    dcm_reader = vtkgdcm.vtkGDCMImageReader()
-    dcm_reader.SetFileName(filename)
-    dcm_reader.Update()
-    image = dcm_reader.GetOutput()
-    if resolution_percentage < 1.0:
-        image = ResampleImage2D(image, resolution_percentage=resolution_percentage)
-    dx, dy, dz = image.GetDimensions()
-    im_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
-    im_array.shape = dy, dx
-    return im_array
-
-
 def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
     reader = gdcm.ImageReader()
     reader.SetFileName(filename)
     reader.Read()
-
     image = reader.GetImage()
-    pixel_format = image.GetPixelFormat()
-    shift = image.GetIntercept()
-    scale = image.GetSlope()
-
-    np_image = converters.gdcm_to_numpy(image, False)
-    output = np.empty_like(np_image, np.int16)
-    output[:] = scale * np_image + shift
+    output = converters.gdcm_to_numpy(image)
     if resolution_percentage < 1.0:
         output = zoom(output, resolution_percentage)
     return output
@@ -259,17 +235,6 @@ def View(imagedata):
 
     import time
     time.sleep(10)
-
-def ViewGDCM(imagedata):
-    viewer = vtkgdcm.vtkImageColorViewer()
-    viewer.SetInput(reader.GetOutput())
-    viewer.SetColorWindow(500.)
-    viewer.SetColorLevel(50.)
-    viewer.Render()
-
-    import time
-    time.sleep(5)
-
 
 
 def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):

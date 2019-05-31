@@ -1,6 +1,5 @@
 import wx
 import vtk
-import vtkgdcm
 import time
 import numpy
 
