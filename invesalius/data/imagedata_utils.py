@@ -419,27 +419,35 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
 
 def dcmmf2memmap(dcm_file, orientation):
-    d = read_dcm_slice_as_np2(dcm_file)
+    reader = gdcm.ImageReader()
+    reader.SetFileName(dcm_file)
+    reader.Read()
+    image = reader.GetImage()
+    xs, ys, zs = image.GetSpacing()
+    pf = image.GetPixelFormat()
+    np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     temp_file = tempfile.mktemp()
-    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=d.shape)
-    z, y, x = d.shape
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=np_image.shape)
+    print("Number of dimensions", np_image.shape)
+    z, y, x = np_image.shape
     if orientation == 'CORONAL':
+        spacing = xs, zs, ys
         matrix.shape = y, z, x
         for n in range(z):
-            matrix[:, n, :] = d[n][::-1]
+            matrix[:, n, :] = np_image[n][::-1]
     elif orientation == 'SAGITTAL':
-        matrix.shape = x, z, y
+        spacing = zs, ys, xs
+        matrix.shape = y, x, z
         for n in range(z):
-            matrix[:, :, n] = d[n][::-1]
+            matrix[:, :, n] = np_image[n][::-1]
     else:
-        matrix[:] = d[:, ::-1, :]
+        spacing = xs, ys, zs
+        matrix[:] = np_image[:, ::-1, :]
 
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
 
-    print("ORIENTATION", orientation, matrix.shape, matrix.min(), matrix.max(), d.min(), d.max())
-
-    return matrix, scalar_range, temp_file
+    return matrix, scalar_range, spacing, temp_file
 
 
 def img2memmap(group):
