@@ -485,6 +485,7 @@ ID_ABOUT = wx.ID_ABOUT
     [wx.NewId() for number in range(3)]
 
 ID_START = wx.NewId()
+ID_PLUGINS_SHOW_PATH = wx.NewId()
 
 ID_FLIP_X = wx.NewId()
 ID_FLIP_Y = wx.NewId()

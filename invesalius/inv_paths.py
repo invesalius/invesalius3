@@ -10,6 +10,8 @@ USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")
 USER_LOG_DIR = USER_INV_DIR.joinpath("logs")
 USER_RAYCASTING_PRESETS_DIRECTORY = USER_PRESET_DIR.joinpath("raycasting")
 
+USER_PLUGINS_DIRECTORY = USER_INV_DIR.joinpath("plugins")
+
 OLD_USER_INV_DIR = USER_DIR.joinpath(".invesalius")
 OLD_USER_PRESET_DIR = OLD_USER_INV_DIR.joinpath("presets")
 OLD_USER_LOG_DIR = OLD_USER_INV_DIR.joinpath("logs")
@@ -23,6 +25,7 @@ RAYCASTING_PRESETS_DIRECTORY = INV_TOP_DIR.joinpath("presets", "raycasting")
 RAYCASTING_PRESETS_COLOR_DIRECTORY = INV_TOP_DIR.joinpath(
     "presets", "raycasting", "color_list"
 )
+
 
 # Inside the windows executable
 if hasattr(sys, "frozen") and (
@@ -64,6 +67,7 @@ def create_conf_folders():
     USER_INV_DIR.mkdir(parents=True, exist_ok=True)
     USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
     USER_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    USER_PLUGINS_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
 def copy_old_files():

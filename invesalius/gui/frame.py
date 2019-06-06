@@ -20,6 +20,7 @@
 import math
 import os.path
 import platform
+import subprocess
 import sys
 import webbrowser
 
@@ -535,6 +536,9 @@ class Frame(wx.Frame):
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage('New mask from shortcut')
 
+        elif id == const.ID_PLUGINS_SHOW_PATH:
+            self.ShowPluginsFolder()
+
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
         Publisher.sendMessage('Deactive target button')
@@ -741,6 +745,19 @@ class Frame(wx.Frame):
 
     def OnCropMask(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
+
+    def ShowPluginsFolder(self):
+        """
+        Show getting started window.
+        """
+        inv_paths.create_conf_folders()
+        path = str(inv_paths.USER_PLUGINS_DIRECTORY)
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -1003,6 +1020,9 @@ class MenuBar(wx.MenuBar):
 
         self.actived_navigation_mode = self.mode_menu
 
+        plugins_menu = wx.Menu()
+        plugins_menu.Append(const.ID_PLUGINS_SHOW_PATH, _("Open Plugins folder"))
+
         # HELP
         help_menu = wx.Menu()
         help_menu.Append(const.ID_START, _("Getting started..."))
@@ -1020,6 +1040,7 @@ class MenuBar(wx.MenuBar):
         self.Append(file_edit, _("Edit"))
         self.Append(view_menu, _(u"View"))
         self.Append(tools_menu, _(u"Tools"))
+        self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
