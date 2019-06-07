@@ -43,6 +43,7 @@ import subprocess
 import sys
 
 from invesalius import inv_paths
+from invesalius import plugins
 
 DEFAULT_THRESH_MODE = 0
 
@@ -51,6 +52,7 @@ class Controller():
     def __init__(self, frame):
         self.surface_manager = srf.SurfaceManager()
         self.volume = volume.Volume()
+        self.plugin_manager = plugins.PluginManager()
         self.__bind_events()
         self.frame = frame
         self.progress_dialog = None
@@ -68,6 +70,8 @@ class Controller():
         self.measure_manager = measures.MeasurementManager()
 
         Publisher.sendMessage('Load Preferences')
+
+        self.plugin_manager.find_plugins()
 
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
