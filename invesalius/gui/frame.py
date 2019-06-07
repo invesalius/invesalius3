@@ -826,6 +826,8 @@ class MenuBar(wx.MenuBar):
         sub(self.OnUpdateSliceInterpolation, "Update Slice Interpolation MenuBar")
         sub(self.OnUpdateNavigationMode, "Update Navigation Mode MenuBar")
 
+        sub(self.AddPluginsItems, "Add plugins menu items")
+
         self.num_masks = 0
 
     def __init_items(self):
@@ -1022,6 +1024,7 @@ class MenuBar(wx.MenuBar):
 
         plugins_menu = wx.Menu()
         plugins_menu.Append(const.ID_PLUGINS_SHOW_PATH, _("Open Plugins folder"))
+        self.plugins_menu = plugins_menu
 
         # HELP
         help_menu = wx.Menu()
@@ -1072,6 +1075,15 @@ class MenuBar(wx.MenuBar):
     def OnUpdateNavigationMode(self):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
+
+    def AddPluginsItems(self, items):
+        for menu_item in self.plugins_menu.GetMenuItems():
+            if menu_item.GetId() != const.ID_PLUGINS_SHOW_PATH:
+                self.plugins_menu.DestroyItem(menu_item)
+
+        for item in items:
+            self.plugins_menu.Append(-1, item, items[item]["description"])
+            print(">>> menu", item)
 
     def OnEnableState(self, state):
         """
