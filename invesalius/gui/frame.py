@@ -1234,7 +1234,7 @@ class TaskBarIcon(wx_TaskBarIcon):
         wx_TaskBarIcon.__init__(self)
         self.frame = parent
 
-        icon = wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),
+        icon = wx.Icon(os.path.join(inv_paths.ICON_DIR, "invesalius.ico"),
                        wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon, "InVesalius")
         self.imgidx = 1
