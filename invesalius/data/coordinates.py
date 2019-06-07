@@ -21,6 +21,7 @@ from math import sin, cos
 import numpy as np
 
 import invesalius.data.transformations as tr
+import invesalius.constants as const
 
 from time import sleep
 from random import uniform
@@ -40,17 +41,48 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 
     coord = None
     if trck_id:
-        getcoord = {1: ClaronCoord,
-                    2: PolhemusCoord,
-                    3: PolhemusCoord,
-                    4: PolhemusCoord,
-                    5: DebugCoord}
+        getcoord = {const.MTC: ClaronCoord,
+                    const.FASTRAK: PolhemusCoord,
+                    const.ISOTRAKII: PolhemusCoord,
+                    const.PATRIOT: PolhemusCoord,
+                    const.CAMERA: CameraCoord,
+                    const.POLARIS: PolarisCoord,
+                    const.DEBUGTRACK: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
 
     return coord
 
+def PolarisCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+
+    probe = trck.probe.decode(const.FS_ENCODE).split(',')
+    angles_probe = np.degrees(tr.euler_from_quaternion(probe[2:6], axes='rzyx'))
+    trans_probe = np.array(probe[6:9]).astype(float)
+    coord1 = np.hstack((trans_probe, angles_probe))
+
+    ref = trck.ref.decode(const.FS_ENCODE).split(',')
+    angles_ref = np.degrees(tr.euler_from_quaternion(ref[2:6], axes='rzyx'))
+    trans_ref = np.array(ref[6:9]).astype(float)
+    coord2 = np.hstack((trans_ref, angles_ref))
+
+    obj = trck.obj.decode(const.FS_ENCODE).split(',')
+    angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes='rzyx'))
+    trans_obj = np.array(obj[6:9]).astype(float)
+    coord3 = np.hstack((trans_obj, angles_obj))
+
+    coord = np.vstack([coord1, coord2, coord3])
+    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+
+    return coord
+
+def CameraCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    coord, probeID, refID = trck.Run()
+    Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
+    return coord
 
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -214,7 +246,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                        uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)))
+    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
 
     return np.vstack([coord1, coord2, coord3, coord4])
 

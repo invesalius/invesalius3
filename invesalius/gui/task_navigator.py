@@ -453,7 +453,7 @@ class NeuronavigationPanel(wx.Panel):
         if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
-            choice = 6
+            choice = const.DISCTRACK
 
         if self.trk_init:
             trck = self.trk_init[0]
@@ -462,7 +462,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Conditions check if click was on current selection and if any other tracker
         # has been initialized before
-        if trck and choice != 6:
+        if trck and choice != const.DISCTRACK:
             self.ResetTrackerFiducials()
             Publisher.sendMessage('Update status text in GUI',
                                   label=_("Disconnecting tracker..."))
@@ -480,7 +480,7 @@ class NeuronavigationPanel(wx.Panel):
                 else:
                     ctrl.SetSelection(self.tracker_id)
                     print("Tracker connected!")
-        elif choice == 6:
+        elif choice == const.DISCTRACK:
             if trck:
                 self.ResetTrackerFiducials()
                 Publisher.sendMessage('Update status text in GUI',

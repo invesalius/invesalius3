@@ -650,14 +650,18 @@ MTC = 1
 FASTRAK = 2
 ISOTRAKII = 3
 PATRIOT = 4
-DEBUGTRACK = 5
-DISCTRACK = 6
+CAMERA = 5
+POLARIS = 6
+DEBUGTRACK = 7
+DISCTRACK = 8
 DEFAULT_TRACKER = SELECT
+
+NDICOMPORT = b'COM1'
 
 TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
-           _("Polhemus PATRIOT"), _("Debug tracker"),
-           _("Disconnect tracker")]
+           _("Polhemus PATRIOT"), _("Camera tracker"),
+           _("NDI Polaris"), _("Debug tracker"), _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -715,13 +719,13 @@ TIPS_OBJ = [_("Select left object fiducial"),
             _("Select object center"),
             _("Attach sensor to object")]
 
-PROBE_NAME = "1Probe"
-REF_NAME = "2Ref"
-OBJ_NAME = "3Coil"
+MTC_PROBE_NAME = "1Probe"
+MTC_REF_NAME = "2Ref"
+MTC_OBJ_NAME = "3Coil"
 
 #OBJECT TRACKING
-ARROW_SCALE = 3
-ARROW_UPPER_LIMIT = 30
+ARROW_SCALE = 6
+ARROW_UPPER_LIMIT = 15
 #COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
 COIL_ANGLES_THRESHOLD = 3
 COIL_COORD_THRESHOLD = 3
