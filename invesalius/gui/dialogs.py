@@ -48,7 +48,6 @@ from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
-
 try:
     from wx.adv import AboutDialogInfo, AboutBox
 except ImportError:
@@ -1242,7 +1241,7 @@ def ShowAboutDialog(parent):
 
     info = AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.1.1"
+    info.Version = const.INVESALIUS_VERSION
     info.Copyright = _("(c) 2007-2019 Center for Information Technology Renato Archer - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
@@ -1251,7 +1250,13 @@ def ShowAboutDialog(parent):
 #       _("The software also allows generating correspondent STL files,")+\
 #       _("so the user can print 3D physical models of the patient's anatomy ")+\
 #       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
-    info.WebSite = ("https://www.cti.gov.br/invesalius")
+
+    icon = wx.Icon(os.path.join(inv_paths.ICON_DIR, "invesalius_64x64.ico"),\
+            wx.BITMAP_TYPE_ICO)
+
+    info.SetWebSite("https://www.cti.gov.br/invesalius")
+    info.SetIcon(icon)
+    
     info.License = _("GNU GPL (General Public License) version 2")
 
     info.Developers = [u"Paulo Henrique Junqueira Amorim",
@@ -1999,7 +2004,7 @@ class MaskBooleanDialog(wx.Dialog):
         else:
             self.mask2.SetSelection(0)
 
-        icon_folder = const.ICON_DIR
+        icon_folder = inv_paths.ICON_DIR
         op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
                       (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
                       (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
