@@ -16,7 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-
+import invesalius.constants as const
+import invesalius.gui.dialogs as dlg
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
 
@@ -32,11 +33,13 @@ def TrackerConnection(tracker_id, trck_init, action):
     """
 
     if action == 'connect':
-        trck_fcn = {1: ClaronTracker,
-                    2: PolhemusTracker,    # FASTRAK
-                    3: PolhemusTracker,    # ISOTRAK
-                    4: PolhemusTracker,    # PATRIOT
-                    5: DebugTracker}
+        trck_fcn = {const.MTC: ClaronTracker,
+                    const.FASTRAK: PolhemusTracker,    # FASTRAK
+                    const.ISOTRAKII: PolhemusTracker,    # ISOTRAK
+                    const.PATRIOT: PolhemusTracker,    # PATRIOT
+                    const.CAMERA: CameraTracker,      # CAMERA
+                    const.POLARIS: PolarisTracker,      # POLARIS
+                    const.DEBUGTRACK: DebugTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
 
@@ -58,6 +61,48 @@ def DefaultTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
+def PolarisTracker(tracker_id):
+    from wx import ID_OK
+    trck_init = None
+    dlg_port = dlg.SetNDIconfigs()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
+        try:
+            import pypolaris
+            lib_mode = 'wrapper'
+            trck_init = pypolaris.pypolaris()
+
+            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
+                trck_init = None
+                lib_mode = None
+                print('Could not connect to default tracker.')
+            else:
+                print('Connect to polaris tracking device.')
+
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to default tracker.')
+    else:
+        lib_mode = None
+        print('Could not connect to default tracker.')
+
+    # return tracker initialization variable and type of connection
+    return trck_init, lib_mode
+
+def CameraTracker(tracker_id):
+    trck_init = None
+    try:
+        import invesalius.data.camera_tracker as cam
+        trck_init = cam.camera()
+        trck_init.Initialize()
+        print('Connect to camera tracking device.')
+
+    except:
+        print('Could not connect to default tracker.')
+
+    # return tracker initialization variable and type of connection
+    return trck_init, 'wrapper'
 
 def ClaronTracker(tracker_id):
     import invesalius.constants as const
@@ -69,13 +114,13 @@ def ClaronTracker(tracker_id):
 
         lib_mode = 'wrapper'
         trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = inv_paths.CAL_DIR.encode(const.FS_ENCODE)
-        trck_init.MarkerDir = inv_paths.MAR_DIR.encode(const.FS_ENCODE)
+        trck_init.CalibrationDir = inv_paths.MTC_CAL_DIR.encode(const.FS_ENCODE)
+        trck_init.MarkerDir = inv_paths.MTC_MAR_DIR.encode(const.FS_ENCODE)
         trck_init.NumberFramesProcessed = 1
         trck_init.FramesExtrapolated = 0
-        trck_init.PROBE_NAME = const.PROBE_NAME.encode(const.FS_ENCODE)
-        trck_init.REF_NAME = const.REF_NAME.encode(const.FS_ENCODE)
-        trck_init.OBJ_NAME = const.OBJ_NAME.encode(const.FS_ENCODE)
+        trck_init.PROBE_NAME = const.MTC_PROBE_NAME.encode(const.FS_ENCODE)
+        trck_init.REF_NAME = const.MTC_REF_NAME.encode(const.FS_ENCODE)
+        trck_init.OBJ_NAME = const.MTC_OBJ_NAME.encode(const.FS_ENCODE)
         trck_init.Initialize()
 
         if trck_init.GetIdentifyingCamera():
@@ -146,25 +191,38 @@ def PlhWrapperConnection(tracker_id):
 
 def PlhSerialConnection(tracker_id):
     import serial
+    from wx import ID_OK
+    trck_init = None
+    dlg_port = dlg.SetCOMport()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port = dlg_port.GetValue()
+        try:
+            trck_init = serial.Serial(com_port, baudrate=115200, timeout=0.03)
 
-    trck_init = serial.Serial('COM3', baudrate=115200, timeout=0.03)
+            if tracker_id == 2:
+                # Polhemus FASTRAK needs configurations first
+                trck_init.write(0x02, str.encode("u"))
+                trck_init.write(0x02, str.encode("F"))
+            elif tracker_id == 3:
+                # Polhemus ISOTRAK needs to set tracking point from
+                # center to tip.
+                trck_init.write(str.encode("u"))
+                trck_init.write(str.encode("F"))
+                trck_init.write(str.encode("Y"))
 
-    if tracker_id == 2:
-        # Polhemus FASTRAK needs configurations first
-        trck_init.write(0x02, str.encode("u"))
-        trck_init.write(0x02, str.encode("F"))
-    elif tracker_id == 3:
-        # Polhemus ISOTRAK needs to set tracking point from
-        # center to tip.
-        trck_init.write(str.encode("u"))
-        trck_init.write(str.encode("F"))
-        trck_init.write(str.encode("Y"))
+            trck_init.write(str.encode("P"))
+            data = trck_init.readlines()
+            if not data:
+                trck_init = None
+                print('Could not connect to Polhemus serial without error.')
 
-    trck_init.write(str.encode("P"))
-    data = trck_init.readlines()
-    if not data:
-        trck_init = None
-        print('Could not connect to Polhemus serial without error.')
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to default tracker.')
+    else:
+        lib_mode = None
+        print('Could not connect to default tracker.')
 
     return trck_init
 
@@ -211,13 +269,13 @@ def DisconnectTracker(tracker_id, trck_init):
     :param trck_init: Initialization variable of tracking device.
     """
 
-    if tracker_id == 5:
+    if tracker_id == const.DEBUGTRACK:
         trck_init = False
         lib_mode = 'debug'
         print('Debug tracker disconnected.')
     else:
         try:
-            if tracker_id == 3:
+            if tracker_id == const.ISOTRAKII:
                 trck_init.close()
                 trck_init = False
                 lib_mode = 'serial'

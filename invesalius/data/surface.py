@@ -313,6 +313,7 @@ class SurfaceManager():
             reader = vtk.vtkSTLReader()
         elif filename.lower().endswith('.ply'):
             reader = vtk.vtkPLYReader()
+            scalar = True
         elif filename.lower().endswith('.obj'):
             reader = vtk.vtkOBJReader()
         elif filename.lower().endswith('.vtp'):

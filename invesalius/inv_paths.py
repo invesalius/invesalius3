@@ -70,9 +70,14 @@ else:
     )
 
 # Navigation paths
-CAL_DIR = INV_TOP_DIR.joinpath("navigation", "mtc_files", "CalibrationFiles")
-MAR_DIR = INV_TOP_DIR.joinpath("navigation", "mtc_files", "Markers")
-OBJ_DIR = INV_TOP_DIR.joinpath("navigation", "objects")
+OBJ_DIR = str(INV_TOP_DIR.joinpath("navigation", "objects"))
+
+MTC_CAL_DIR = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "CalibrationFiles"))
+MTC_MAR_DIR = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "Markers"))
+
+NDI_MAR_DIR_PROBE = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700340.rom"))
+NDI_MAR_DIR_REF = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700339.rom"))
+NDI_MAR_DIR_OBJ = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700338.rom"))
 
 # MAC App
 if not os.path.exists(ICON_DIR):
