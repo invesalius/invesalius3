@@ -229,17 +229,15 @@ class InnerFoldPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
-        Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
+        Publisher.subscribe(self.OnVolumeCamera, 'Change camera checkbox')
         Publisher.subscribe(self.OnShowDbs, "Active dbs folder")
         Publisher.subscribe(self.OnHideDbs, "Deactive dbs folder")
 
     def OnShowDbs(self):
         self.dbs_item.Show()
 
-
     def OnHideDbs(self):
         self.dbs_item.Hide()
-
 
     def OnCheckStatus(self, status):
         if status:
@@ -257,6 +255,7 @@ class InnerFoldPanel(wx.Panel):
         if not evt:
             if flag:
                 self.checkobj.Enable(True)
+                self.checkobj.SetValue(True)
                 self.track_obj = True
                 Publisher.sendMessage('Status target button', status=True)
             else:
@@ -267,11 +266,11 @@ class InnerFoldPanel(wx.Panel):
 
         Publisher.sendMessage('Update show object state', state=self.checkobj.GetValue())
 
-    def OnVolumeCamera(self, evt=None, target_mode=None):
+    def OnVolumeCamera(self, evt=None, status=None):
         if not evt:
-            if target_mode is True:
-                self.checkcamera.SetValue(0)
+            self.checkcamera.SetValue(status)
         Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
+
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
@@ -890,6 +889,10 @@ class ObjectRegistrationPanel(wx.Panel):
                                               data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                         Publisher.sendMessage('Update status text in GUI',
                                               label=_("Ready"))
+                        # Enable automatically Track object, Show coil and disable Vol. Camera
+                        self.checktrack.SetValue(True)
+                        Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                        Publisher.sendMessage('Change camera checkbox', status=False)
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -1058,9 +1061,7 @@ class MarkersPanel(wx.Panel):
             self.nav_status = True
 
     def OnMouseRightDown(self, evt):
-        self.OnListEditMarkerId(self.nav_status)
-
-    def OnListEditMarkerId(self, status):
+        # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
         edit_id = menu_id.Append(0, _('Edit ID'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
@@ -1070,7 +1071,7 @@ class MarkersPanel(wx.Panel):
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
 
-        target_menu.Enable(status)
+        target_menu.Enable(True)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 

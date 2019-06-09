@@ -3326,7 +3326,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
-        self.obj_ref_id = 0
+        self.obj_ref_id = 2
         self.obj_name = None
 
         self.obj_fiducials = np.full([5, 3], np.nan)
@@ -3354,7 +3354,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        choice_ref.SetSelection(self.obj_ref_id)
+        choice_ref.SetSelection(1)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
         choice_ref.Enable(0)
@@ -3368,7 +3368,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        choice_sensor.Show(False)
+        if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            choice_sensor.Show(True)
+        else:
+            choice_sensor.Show(False)
         self.choice_sensor = choice_sensor
 
         # Buttons to finish or cancel object registration
@@ -3563,15 +3566,18 @@ class ObjectCalibrationDialog(wx.Dialog):
         if evt.GetSelection():
             self.obj_ref_id = 2
             if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
-                self.choice_sensor.Show(True)
-                self.Layout()
+                self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
+            self.choice_sensor.Show(self.obj_ref_id)
         for m in range(0, 5):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):
                 self.txt_coord[m][n].SetLabel('-')
+
+        # Used to update choice sensor controls
+        self.Layout()
 
     def OnChoiceFTSensor(self, evt):
         if evt.GetSelection():
@@ -3786,6 +3792,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         wx.Dialog.Close(self)
         self.Destroy()
 
+
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
@@ -3867,6 +3874,7 @@ class SetNDIconfigs(wx.Dialog):
                self.dir_probe.GetPath().encode(const.FS_ENCODE),\
                self.dir_ref.GetPath().encode(const.FS_ENCODE), \
                self.dir_obj.GetPath().encode(const.FS_ENCODE)
+
 
 class SetCOMport(wx.Dialog):
     def __init__(self, title=_("Select COM port")):

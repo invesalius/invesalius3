@@ -165,6 +165,7 @@ class Viewer(wx.Panel):
         self.obj_state = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
+        self.pTarget = [0., 0., 0.]
 
         # self.obj_axes = None
 
