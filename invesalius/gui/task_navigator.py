@@ -919,6 +919,9 @@ class ObjectRegistrationPanel(wx.Panel):
             Publisher.sendMessage('Update object registration',
                                   data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
             Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
+            self.checktrack.SetValue(True)
+            Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+            Publisher.sendMessage('Change camera checkbox', status=False)
             wx.MessageBox(_("Object file successfully loaded"), _("Load"))
 
     def ShowSaveObjectDialog(self, evt):
@@ -966,8 +969,8 @@ class MarkersPanel(wx.Panel):
         self.tgt_flag = self.tgt_index = None
         self.nav_status = False
 
-        self.marker_colour = (0.0, 0.0, 1.)
-        self.marker_size = 4
+        self.marker_colour = (1.0, 1.0, 0.)
+        self.marker_size = 3
 
         # Change marker size
         spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))

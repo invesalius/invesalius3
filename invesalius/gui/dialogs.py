@@ -3490,7 +3490,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOff()
-        mapper.ImmediateModeRenderingOn()
+        #mapper.ImmediateModeRenderingOn()
 
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)
@@ -3795,18 +3795,30 @@ class GoToDialogScannerCoord(wx.Dialog):
 
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         self._init_gui()
 
     def serial_ports(self):
-        """ Lists serial port names
+        """ Lists serial port names and pre-select the description containing NDI
         """
         import serial.tools.list_ports
+
+        ports = serial.tools.list_ports.comports()
         if sys.platform.startswith('win'):
-            ports = ([comport.device for comport in serial.tools.list_ports.comports()])
+            port_list = []
+            count = 0
+            for port, desc, hwid in sorted(ports):
+                port_list.append(port)
+                if 'NDI' in desc:
+                    port_selec = port, count
+                count += 1
         else:
             raise EnvironmentError('Unsupported platform')
-        return ports
+
+        #print("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
+
+        return port_list, port_selec
 
     def _init_gui(self):
         self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
@@ -3814,8 +3826,10 @@ class SetNDIconfigs(wx.Dialog):
         row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
         row_com.Add(self.com_ports, 0, wx.EXPAND)
 
-        ports = self.serial_ports()
-        self.com_ports.Append(ports)
+        port_list, port_selec = self.serial_ports()
+
+        self.com_ports.Append(port_list)
+        self.com_ports.SetSelection(port_selec[1])
 
         self.dir_probe = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
@@ -3824,19 +3838,17 @@ class SetNDIconfigs(wx.Dialog):
         row_probe.Add(self.dir_probe, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
         self.dir_ref = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                           wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
+                                         wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
         row_ref.Add(self.dir_ref, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
         self.dir_obj = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_OBJ, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                           wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
+                                         wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
         row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
         row_obj.Add(self.dir_obj, 0, wx.EXPAND|wx.ALIGN_CENTER)
-
-       # self.goto_orientation.SetSelection(cb_init)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
