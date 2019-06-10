@@ -3326,7 +3326,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
-        self.obj_ref_id = 0
+        self.obj_ref_id = 2
         self.obj_name = None
 
         self.obj_fiducials = np.full([5, 3], np.nan)
@@ -3354,7 +3354,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        choice_ref.SetSelection(self.obj_ref_id)
+        choice_ref.SetSelection(1)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
         choice_ref.Enable(0)
@@ -3368,7 +3368,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        choice_sensor.Show(False)
+        if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            choice_sensor.Show(True)
+        else:
+            choice_sensor.Show(False)
         self.choice_sensor = choice_sensor
 
         # Buttons to finish or cancel object registration
@@ -3487,7 +3490,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOff()
-        mapper.ImmediateModeRenderingOn()
+        #mapper.ImmediateModeRenderingOn()
 
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)
@@ -3563,15 +3566,18 @@ class ObjectCalibrationDialog(wx.Dialog):
         if evt.GetSelection():
             self.obj_ref_id = 2
             if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
-                self.choice_sensor.Show(True)
-                self.Layout()
+                self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
+            self.choice_sensor.Show(self.obj_ref_id)
         for m in range(0, 5):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):
                 self.txt_coord[m][n].SetLabel('-')
+
+        # Used to update choice sensor controls
+        self.Layout()
 
     def OnChoiceFTSensor(self, evt):
         if evt.GetSelection():
@@ -3786,20 +3792,33 @@ class GoToDialogScannerCoord(wx.Dialog):
         wx.Dialog.Close(self)
         self.Destroy()
 
+
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         self._init_gui()
 
     def serial_ports(self):
-        """ Lists serial port names
+        """ Lists serial port names and pre-select the description containing NDI
         """
         import serial.tools.list_ports
+
+        ports = serial.tools.list_ports.comports()
         if sys.platform.startswith('win'):
-            ports = ([comport.device for comport in serial.tools.list_ports.comports()])
+            port_list = []
+            count = 0
+            for port, desc, hwid in sorted(ports):
+                port_list.append(port)
+                if 'NDI' in desc:
+                    port_selec = port, count
+                count += 1
         else:
             raise EnvironmentError('Unsupported platform')
-        return ports
+
+        #print("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
+
+        return port_list, port_selec
 
     def _init_gui(self):
         self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
@@ -3807,29 +3826,41 @@ class SetNDIconfigs(wx.Dialog):
         row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
         row_com.Add(self.com_ports, 0, wx.EXPAND)
 
-        ports = self.serial_ports()
-        self.com_ports.Append(ports)
+        port_list, port_selec = self.serial_ports()
 
-        self.dir_probe = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+        self.com_ports.Append(port_list)
+        self.com_ports.SetSelection(port_selec[1])
+
+        session = ses.Session()
+        last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
+        last_ndi_ref_marker = session.get('paths', 'last_ndi_ref_marker', '')
+        last_ndi_obj_marker = session.get('paths', 'last_ndi_obj_marker', '')
+
+        if not last_ndi_probe_marker:
+            last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
+        if not last_ndi_ref_marker:
+            last_ndi_ref_marker = inv_paths.NDI_MAR_DIR_REF
+        if not last_ndi_obj_marker:
+            last_ndi_obj_marker = inv_paths.NDI_MAR_DIR_OBJ
+
+        self.dir_probe = wx.FilePickerCtrl(self, path=last_ndi_probe_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
         row_probe = wx.BoxSizer(wx.VERTICAL)
         row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
         row_probe.Add(self.dir_probe, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
-        self.dir_ref = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                           wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
+        self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+                                         wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
         row_ref.Add(self.dir_ref, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
-        self.dir_obj = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_OBJ, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                           wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
+        self.dir_obj = wx.FilePickerCtrl(self, path=last_ndi_obj_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+                                         wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
         row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
         row_obj.Add(self.dir_obj, 0, wx.EXPAND|wx.ALIGN_CENTER)
-
-       # self.goto_orientation.SetSelection(cb_init)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
@@ -3863,10 +3894,19 @@ class SetNDIconfigs(wx.Dialog):
         self.CenterOnParent()
 
     def GetValue(self):
-        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), \
-               self.dir_probe.GetPath().encode(const.FS_ENCODE),\
-               self.dir_ref.GetPath().encode(const.FS_ENCODE), \
-               self.dir_obj.GetPath().encode(const.FS_ENCODE)
+        fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)
+        fn_ref = self.dir_ref.GetPath().encode(const.FS_ENCODE)
+        fn_obj = self.dir_obj.GetPath().encode(const.FS_ENCODE)
+
+        if fn_probe and fn_ref and fn_obj:
+            session = ses.Session()
+            session['paths']['last_ndi_probe_marker'] = self.dir_probe.GetPath()
+            session['paths']['last_ndi_ref_marker'] = self.dir_ref.GetPath()
+            session['paths']['last_ndi_obj_marker'] = self.dir_obj.GetPath()
+            session.WriteSessionFile()
+
+        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
+
 
 class SetCOMport(wx.Dialog):
     def __init__(self, title=_("Select COM port")):
