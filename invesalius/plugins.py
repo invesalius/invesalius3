@@ -28,6 +28,9 @@ class PluginManager:
     def __init__(self):
         self.plugins = {}
 
+    def __bind_pubsub_evt(self):
+        Publisher.subscribe(self.load_plugin, 'Load plugin')
+
     def find_plugins(self):
         self.plugins = {}
         for p in sorted(inv_paths.USER_PLUGINS_DIRECTORY.glob("*")):
@@ -46,3 +49,7 @@ class PluginManager:
                     print("It was not possible to load plugin. Error: {}".format(err))
 
         Publisher.sendMessage("Add plugins menu items", items=self.plugins)
+
+    def load_plugin(self, name):
+        if name in self.plugins:
+            print("NAME")
