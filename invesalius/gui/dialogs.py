@@ -3831,19 +3831,31 @@ class SetNDIconfigs(wx.Dialog):
         self.com_ports.Append(port_list)
         self.com_ports.SetSelection(port_selec[1])
 
-        self.dir_probe = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+        session = ses.Session()
+        last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
+        last_ndi_ref_marker = session.get('paths', 'last_ndi_ref_marker', '')
+        last_ndi_obj_marker = session.get('paths', 'last_ndi_obj_marker', '')
+
+        if not last_ndi_probe_marker:
+            last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
+        if not last_ndi_ref_marker:
+            last_ndi_ref_marker = inv_paths.NDI_MAR_DIR_REF
+        if not last_ndi_obj_marker:
+            last_ndi_obj_marker = inv_paths.NDI_MAR_DIR_OBJ
+
+        self.dir_probe = wx.FilePickerCtrl(self, path=last_ndi_probe_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
         row_probe = wx.BoxSizer(wx.VERTICAL)
         row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
         row_probe.Add(self.dir_probe, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
-        self.dir_ref = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_REF, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+        self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
         row_ref.Add(self.dir_ref, 0, wx.EXPAND|wx.ALIGN_CENTER)
 
-        self.dir_obj = wx.FilePickerCtrl(self, path=inv_paths.NDI_MAR_DIR_OBJ, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
+        self.dir_obj = wx.FilePickerCtrl(self, path=last_ndi_obj_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
@@ -3882,10 +3894,18 @@ class SetNDIconfigs(wx.Dialog):
         self.CenterOnParent()
 
     def GetValue(self):
-        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), \
-               self.dir_probe.GetPath().encode(const.FS_ENCODE),\
-               self.dir_ref.GetPath().encode(const.FS_ENCODE), \
-               self.dir_obj.GetPath().encode(const.FS_ENCODE)
+        fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)
+        fn_ref = self.dir_ref.GetPath().encode(const.FS_ENCODE)
+        fn_obj = self.dir_obj.GetPath().encode(const.FS_ENCODE)
+
+        if fn_probe and fn_ref and fn_obj:
+            session = ses.Session()
+            session['paths']['last_ndi_probe_marker'] = self.dir_probe.GetPath()
+            session['paths']['last_ndi_ref_marker'] = self.dir_ref.GetPath()
+            session['paths']['last_ndi_obj_marker'] = self.dir_obj.GetPath()
+            session.WriteSessionFile()
+
+        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
 
 
 class SetCOMport(wx.Dialog):
