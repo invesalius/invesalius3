@@ -40,7 +40,7 @@ import invesalius.session as ses
 import numpy as np
 
 from scipy import ndimage
-from scipy.misc import imsave
+from imageio import imsave
 from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 

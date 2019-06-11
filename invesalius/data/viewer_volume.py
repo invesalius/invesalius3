@@ -32,7 +32,7 @@ from wx.lib.pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
 
-from scipy.misc import imsave
+from imageio import imsave
 
 import invesalius.constants as const
 import invesalius.data.bases as bases
