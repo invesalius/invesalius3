@@ -3354,12 +3354,13 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        choice_ref.SetSelection(1)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
-        choice_ref.Enable(0)
-        if not (self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII):
-            choice_ref.Enable(1)
+        choice_ref.SetSelection(1)
+        choice_ref.Enable(1)
+        if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
+            choice_ref.SetSelection(0)
+            choice_ref.Enable(0)
 
         # ComboBox for sensor selection for FASTRAK
         tooltip = wx.ToolTip(_(u"Choose the FASTRAK sensor port"))
