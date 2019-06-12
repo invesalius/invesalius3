@@ -3807,12 +3807,11 @@ class SetNDIconfigs(wx.Dialog):
         ports = serial.tools.list_ports.comports()
         if sys.platform.startswith('win'):
             port_list = []
-            count = 0
+            desc_list = []
             for port, desc, hwid in sorted(ports):
                 port_list.append(port)
-                if 'NDI' in desc:
-                    port_selec = port, count
-                count += 1
+                desc_list.append(desc)
+            port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
         else:
             raise EnvironmentError('Unsupported platform')
 
@@ -3829,7 +3828,8 @@ class SetNDIconfigs(wx.Dialog):
         port_list, port_selec = self.serial_ports()
 
         self.com_ports.Append(port_list)
-        self.com_ports.SetSelection(port_selec[1])
+        if port_selec:
+            self.com_ports.SetSelection(port_selec[0])
 
         session = ses.Session()
         last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')

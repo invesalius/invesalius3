@@ -20,6 +20,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
+# TODO: Redesign error messages. No point in having "Could not connect to default tracker" in all trackers
 
 
 def TrackerConnection(tracker_id, trck_init, action):
