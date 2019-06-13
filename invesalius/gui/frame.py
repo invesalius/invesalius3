@@ -772,6 +772,7 @@ class MenuBar(wx.MenuBar):
         wx.MenuBar.__init__(self)
 
         self.parent = parent
+        self._plugins_menu_ids = {}
 
         # Used to enable/disable menu items if project is opened or
         # not. Eg. save should only be available if a project is open
@@ -1049,6 +1050,18 @@ class MenuBar(wx.MenuBar):
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
+        plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
+
+    def OnPluginMenu(self, evt):
+        id = evt.GetId()
+        if id != const.ID_PLUGINS_SHOW_PATH:
+            try:
+                plugin_name = self._plugins_menu_ids[id]
+                print("Loading plugin:", plugin_name)
+                Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
+            except KeyError:
+                print("Invalid plugin")
+        evt.Skip()
 
     def SliceInterpolationStatus(self):
         
@@ -1082,7 +1095,9 @@ class MenuBar(wx.MenuBar):
                 self.plugins_menu.DestroyItem(menu_item)
 
         for item in items:
-            self.plugins_menu.Append(-1, item, items[item]["description"])
+            _new_id = wx.NewId()
+            self._plugins_menu_ids[_new_id] = item
+            self.plugins_menu.Append(_new_id, item, items[item]["description"])
             print(">>> menu", item)
 
     def OnEnableState(self, state):
