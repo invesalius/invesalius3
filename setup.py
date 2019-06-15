@@ -64,24 +64,24 @@ elif sys.platform == 'win32':
                                  ])
     )
 
-else:
+elif sys.platform == 'darwin':
     setup(
         packages=["invesalius", ],
         cmdclass = {'build_ext': build_ext},
         ext_modules = cythonize([Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
                                            include_dirs =  [numpy.get_include()],
-                                           extra_compile_args=['-fopenmp',],
-                                           extra_link_args=['-fopenmp',]),
+                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
+                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp']),
 
                                  Extension("invesalius.data.interpolation", ["invesalius/data/interpolation.pyx"],
                                            include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-fopenmp',],
-                                           extra_link_args=['-fopenmp',]),
+                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
+                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp']),
 
                                  Extension("invesalius.data.transforms", ["invesalius/data/transforms.pyx"],
                                            include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-fopenmp',],
-                                           extra_link_args=['-fopenmp',]),
+                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
+                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp']),
 
                                  Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
                                            include_dirs=[numpy.get_include()],
@@ -89,8 +89,8 @@ else:
 
                                  Extension("invesalius.data.cy_mesh", ["invesalius/data/cy_mesh.pyx"],
                                            include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-fopenmp', '-std=c++11'],
-                                           extra_link_args=['-fopenmp', '-std=c++11'],
+                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
+                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
                                            language='c++',),
 
                                  ])
