@@ -17,9 +17,12 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import numpy
+import gdcm
+import numpy as np
 import vtk
+
 from vtk.util import numpy_support
+
 
 def to_vtk(n_array, spacing, slice_number, orientation, origin=(0, 0, 0), padding=(0, 0, 0)):
 
@@ -84,3 +87,40 @@ def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
     image.GetPointData().SetScalars(v_image)
 
     return image
+
+
+# Based on http://gdcm.sourceforge.net/html/ConvertNumpy_8py-example.html
+def gdcm_to_numpy(image, apply_intercep_scale=True):
+    map_gdcm_np = {
+        gdcm.PixelFormat.UINT8   :np.uint8,
+        gdcm.PixelFormat.INT8  :np.int8,
+        #gdcm.PixelFormat.UINT12 :np.uint12,
+        #gdcm.PixelFormat.INT12  :np.int12,
+        gdcm.PixelFormat.UINT16 :np.uint16,
+        gdcm.PixelFormat.INT16  :np.int16,
+        gdcm.PixelFormat.UINT32 :np.uint32,
+        gdcm.PixelFormat.INT32  :np.int32,
+        #gdcm.PixelFormat.FLOAT16:np.float16,
+        gdcm.PixelFormat.FLOAT32:np.float32,
+        gdcm.PixelFormat.FLOAT64:np.float64,
+    }
+
+    pf = image.GetPixelFormat()
+    if image.GetNumberOfDimensions() == 3:
+        shape = image.GetDimension(2), image.GetDimension(1), image.GetDimension(0), pf.GetSamplesPerPixel()
+    else:
+        shape = image.GetDimension(1), image.GetDimension(0), pf.GetSamplesPerPixel()
+    dtype = map_gdcm_np[pf.GetScalarType()]
+    gdcm_array = image.GetBuffer()
+    np_array = np.frombuffer(gdcm_array.encode('utf-8', errors="surrogateescape"), dtype=dtype)
+    np_array.shape = shape
+    np_array = np_array.squeeze()
+
+    if apply_intercep_scale:
+        shift = image.GetIntercept()
+        scale = image.GetSlope()
+        output = np.empty_like(np_array, np.int16)
+        output[:] = scale * np_array + shift
+        return output
+    else:
+        return np_array
