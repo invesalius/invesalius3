@@ -43,7 +43,8 @@ class Trigger(threading.Thread):
             self.COM = True
 
         except:
-            wx.MessageBox(_('Connection with port COM1 failed'), _('Communication error'), wx.OK | wx.ICON_ERROR)
+            #wx.MessageBox(_('Connection with port COM1 failed'), _('Communication error'), wx.OK | wx.ICON_ERROR)
+            print("Trigger init error: Connection with port COM1 failed")
             self.COM = False
 
         self._pause_ = False
@@ -61,7 +62,7 @@ class Trigger(threading.Thread):
     def run(self):
         while self.nav_id:
             if self.COM:
-                self.trigger_init.write('0')
+                self.trigger_init.write(b'0')
                 sleep(0.3)
                 lines = self.trigger_init.readlines()
                 # Following lines can simulate a trigger in 3 sec repetitions
