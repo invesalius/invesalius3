@@ -459,6 +459,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
         image = self.buffer_slices[orientation].image
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
 
+        print("Threshold", thresh_min, thresh_max)
+
         if hasattr(position, '__iter__'):
             px, py = position
             if orientation == 'AXIAL':
@@ -922,7 +924,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj.mask_dict[index].on_show()
 
         if value:
-            threshold_range = proj.mask_dict[index].threshold_range
+            threshold_range = proj.mask_dict[index].edition_threshold_range
             Publisher.sendMessage('Set edition threshold gui', threshold_range=threshold_range)
 
         if (index == self.current_mask.index):
