@@ -303,8 +303,8 @@ class Viewer(wx.Panel):
             self.style.CleanUp()
 
         del self.style
-        
-        style = styles.get_style(state)(self)
+
+        style = styles.Styles.get_style(state)(self)
 
         setup = getattr(style, 'SetUp', None)
         if setup:

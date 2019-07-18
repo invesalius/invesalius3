@@ -17,42 +17,36 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from six import with_metaclass
-
-import os
+import math
 import multiprocessing
+import os
 import tempfile
 import time
-import math
-
 from concurrent import futures
 
+import numpy as np
 import vtk
 import wx
-
+from scipy import ndimage
+from scipy.misc import imsave
+from scipy.ndimage import generate_binary_structure, watershed_ift
+from six import with_metaclass
+from skimage.morphology import watershed
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.cursor_actors as ca
-import invesalius.session as ses
-
-import numpy as np
-
-from scipy import ndimage
-from scipy.misc import imsave
-from scipy.ndimage import watershed_ift, generate_binary_structure
-from skimage.morphology import watershed
-
+import invesalius.data.geometry as geom
+import invesalius.data.transformations as transformations
+import invesalius.data.watershed_process as watershed_process
 import invesalius.gui.dialogs as dialogs
-from invesalius.data.measures import MeasureData, CircleDensityMeasure, PolygonDensityMeasure
+import invesalius.session as ses
+import invesalius.utils as utils
+from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
+                                      PolygonDensityMeasure)
 
 from . import floodfill
-
-import invesalius.data.watershed_process as watershed_process
-import invesalius.utils as utils
-import invesalius.data.transformations as transformations
-import invesalius.data.geometry as geom
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,
@@ -2509,10 +2503,8 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
 
 
-
-
-def get_style(style):
-    STYLES = {
+class Styles:
+    styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
@@ -2534,4 +2526,22 @@ def get_style(style):
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
         const.SLICE_STATE_CROP_MASK: CropMaskInteractorStyle,
     }
-    return STYLES[style]
+
+    @classmethod
+    def add_style(cls, style_cls):
+        if style_cls in cls.styles.values():
+            for style_id in cls.styles:
+                if cls.styles[style_id] == style_cls:
+                    return style_id
+
+        new_style_id = max(cls.styles) + 1
+        cls.styles[new_style_id] = style_cls
+        return new_style_id
+
+    @classmethod
+    def remove_style(cls, style_id):
+        del cls.styles[style_id]
+
+    @classmethod
+    def get_style(cls, style):
+        return cls.styles[style]
