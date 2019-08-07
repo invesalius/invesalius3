@@ -2528,14 +2528,18 @@ class Styles:
     }
 
     @classmethod
-    def add_style(cls, style_cls):
+    def add_style(cls, style_cls, level=1):
         if style_cls in cls.styles.values():
             for style_id in cls.styles:
                 if cls.styles[style_id] == style_cls:
+                    const.SLICE_STYLES.append(style_id)
+                    const.STYLE_LEVEL[style_id] = level
                     return style_id
 
         new_style_id = max(cls.styles) + 1
         cls.styles[new_style_id] = style_cls
+        const.SLICE_STYLES.append(new_style_id)
+        const.STYLE_LEVEL[new_style_id] = level
         return new_style_id
 
     @classmethod
