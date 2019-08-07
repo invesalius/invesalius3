@@ -19,6 +19,7 @@
 
 import importlib.util
 import json
+import sys
 
 from wx.lib.pubsub import pub as Publisher
 
@@ -65,4 +66,6 @@ class PluginManager:
             plugin_module = import_source(
                 plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")
             )
-            print(dir(plugin_module))
+            sys.modules[plugin_name] = plugin_module
+            main = importlib.import_module(plugin_name + '.main')
+            main.load()
