@@ -1540,20 +1540,29 @@ class Viewer(wx.Panel):
     def get_slice(self):
         return self.slice_
 
-    def discard_slice_cache(self, all_orientations=False):
+    def discard_slice_cache(self, all_orientations=False, vtk_cache=True):
         if all_orientations:
             for orientation in self.slice_.buffer_slices:
                 buffer_ = self.slice_.buffer_slices[orientation]
                 buffer_.discard_image()
+                if vtk_cache:
+                    buffer_.discard_vtk_image()
         else:
             buffer_ = self.slice_.buffer_slices[self.orientation]
             buffer_.discard_image()
+            if vtk_cache:
+                buffer_.discard_vtk_image()
 
-    def discard_mask_cache(self, all_orientations=False):
+    def discard_mask_cache(self, all_orientations=False, vtk_cache=True):
         if all_orientations:
             for orientation in self.slice_.buffer_slices:
                 buffer_ = self.slice_.buffer_slices[orientation]
                 buffer_.discard_mask()
+                if vtk_cache:
+                    buffer_.discard_vtk_mask()
+
         else:
             buffer_ = self.slice_.buffer_slices[self.orientation]
             buffer_.discard_mask()
+            if vtk_cache:
+                buffer_.discard_vtk_mask()
