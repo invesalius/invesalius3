@@ -18,7 +18,11 @@
 #--------------------------------------------------------------------------
 import os
 import plistlib
+import tempfile
+
 import wx
+import numpy as np
+
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -116,6 +120,8 @@ class Controller():
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
         Publisher.subscribe(self.Send_affine, 'Get affine matrix')
+
+        Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -676,6 +682,55 @@ class Controller():
         filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
 
         dirpath = session.CreateProject(filename)
+
+
+    def create_project_from_matrix(self, name, matrix, spacing=(1.0, 1.0, 1.0), modality="CT"):
+        name_to_const = {"AXIAL": const.AXIAL,
+                         "CORONAL": const.CORONAL,
+                         "SAGITTAL": const.SAGITAL}
+
+        mmap_matrix = image_utils.array2memmap(matrix)
+
+        self.Slice = sl.Slice()
+        self.Slice.matrix = mmap_matrix
+        self.Slice.matrix_filename = mmap_matrix.filename
+        self.Slice.spacing = spacing
+
+        self.Slice.window_level = (matrix.max() + matrix.min()) // 2
+        self.Slice.window_width = (matrix.max() - matrix.min())
+
+        proj = prj.Project()
+        proj.name = name
+        proj.modality = modality
+        proj.SetAcquisitionModality(modality)
+        proj.matrix_shape = matrix.shape
+        proj.matrix_dtype = matrix.dtype.name
+        proj.matrix_filename = self.Slice.matrix_filename
+
+        orientation = "AXIAL"
+
+        proj.original_orientation =\
+            name_to_const[orientation]
+
+        proj.window = self.Slice.window_width
+        proj.level = self.Slice.window_level
+        proj.threshold_range = int(matrix.min()), int(matrix.max())
+        proj.spacing = self.Slice.spacing
+
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=proj.threshold_range)
+
+        ######
+        session = ses.Session()
+        filename = proj.name + ".inv3"
+
+        filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
+
+        dirpath = session.CreateProject(filename)
+
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", state=True)
+
 
     def OnOpenBitmapFiles(self, rec_data):
         bmp_data = bmp.BitmapData()

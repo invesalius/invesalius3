@@ -527,6 +527,15 @@ class ImageCreator:
 
         return imagedata
 
+
+def array2memmap(arr):
+    temp_file = tempfile.mktemp(prefix='inv3_', suffix='.dat')
+    matrix = numpy.memmap(temp_file, mode='w+', dtype=arr.dtype, shape=arr.shape)
+    matrix[:] = arr[:]
+    matrix.flush()
+    return matrix
+
+
 def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
