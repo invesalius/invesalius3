@@ -23,6 +23,8 @@ from math import cos, sin
 import os
 import sys
 
+import Trekker
+
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
@@ -187,6 +189,13 @@ class Viewer(wx.Panel):
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
 
+        self.ntimes = False
+        self._to_show_stream = True
+        data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+        nii_path = b'sub-P0_dwi_FOD.nii'
+        trk_path = os.path.join(data_dir, nii_path)
+        self.tracker_FOD = Trekker.tracker(trk_path)
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -286,6 +295,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
+
+        Publisher.subscribe(self.OnShowStreamLines, 'Set ball reference position')
 
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
@@ -1270,6 +1281,108 @@ class Viewer(wx.Panel):
         if self.obj_actor and not self.obj_state:
             self.obj_actor.SetVisibility(self.obj_state)
             self.Refresh()
+
+    def OnShowStreamLines(self, position):
+        if not self.ntimes:
+            if self._to_show_stream:
+                seed = np.array([[-8.49, -8.39, 2.5]])
+                repos = [0., 0., 0., 0., 0., 0.]
+                for i in range(5):
+                    self.visualizeTracks(self.tracker_FOD, seed=seed, replace=repos, user_matrix=np.linalg.inv(np.identity(4)))
+
+                # coord = position
+                # x, y, z = bases.flip_x(coord)
+                # self.ball_actor.SetPosition(x, y, z)
+
+        self.ntimes = True
+
+    def visualizeTracks(self, tracker, seed, replace, user_matrix):
+        # Input the seed to the tracker object
+        tracker.set_seeds(seed)
+
+        # Run the tracker
+        # This step will create N tracks if seed is a 3xN matrix
+        tractogram = tracker.run()
+
+        # Convert the first track to a vtkActor, i.e., tractogram[0] is the track
+        # computed for the first seed
+        trkActor = self.trk2vtkActor(tractogram[0], replace)
+
+        matrix_vtk = vtk.vtkMatrix4x4()
+
+        for row in range(0, 4):
+            for col in range(0, 4):
+                matrix_vtk.SetElement(row, col, user_matrix[row, col])
+
+        trkActor.SetUserMatrix(matrix_vtk)
+
+        self.ren.AddActor(trkActor)
+        self.Refresh()
+
+    def trk2vtkActor(self, trk, replace):
+        # This function converts a single track to a vtkActor
+        # convert trk to vtkPolyData
+        trk = np.transpose(np.asarray(trk))
+        numberOfPoints = trk.shape[0]
+
+        points = vtk.vtkPoints()
+        lines = vtk.vtkCellArray()
+
+        colors = vtk.vtkFloatArray()
+        colors.SetNumberOfComponents(4)
+        colors.SetName("tangents")
+
+        k = 0
+        lines.InsertNextCell(numberOfPoints)
+        for j in range(numberOfPoints):
+            points.InsertNextPoint(trk[j, :])
+            lines.InsertCellPoint(k)
+            k = k + 1
+
+            if j < (numberOfPoints - 1):
+                direction = trk[j + 1, :] - trk[j, :]
+                direction = direction / np.linalg.norm(direction)
+                colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
+            else:
+                colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
+
+        trkData = vtk.vtkPolyData()
+        trkData.SetPoints(points)
+        trkData.SetLines(lines)
+        trkData.GetPointData().SetScalars(colors)
+
+        # make it a tube
+        trkTube = vtk.vtkTubeFilter()
+        trkTube.SetRadius(0.1)
+        trkTube.SetNumberOfSides(4)
+        trkTube.SetInputData(trkData)
+        trkTube.Update()
+
+        if replace:
+            transx, transy, transz, rotx, roty, rotz = replace
+            # create a transform that rotates the stl source
+            transform = vtk.vtkTransform()
+            transform.PostMultiply()
+            transform.RotateX(rotx)
+            transform.RotateY(roty)
+            transform.RotateZ(rotz)
+            transform.Translate(transx, transy, transz)
+
+            transform_filt = vtk.vtkTransformPolyDataFilter()
+            transform_filt.SetTransform(transform)
+            transform_filt.SetInputConnection(trkTube.GetOutputPort())
+            transform_filt.Update()
+
+        # mapper
+        trkMapper = vtk.vtkPolyDataMapper()
+        trkMapper.SetInputData(trkTube.GetOutput())
+
+        # actor
+        trkActor = vtk.vtkActor()
+        trkActor.SetMapper(trkMapper)
+
+        return trkActor
+
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
