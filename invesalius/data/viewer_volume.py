@@ -44,6 +44,9 @@ import invesalius.project as prj
 import invesalius.style as st
 import invesalius.utils as utils
 
+# only for DTI support in principle
+import invesalius.data.slice_ as sl
+
 from invesalius import inv_paths
 
 if sys.platform == 'win32':
@@ -121,13 +124,13 @@ class Viewer(wx.Panel):
         #  self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
         #  self.canvas.draw_list.append(self.text)
         #  self.canvas.draw_list.append(self.polygon)
-        # axes = vtk.vtkAxesActor()
-        # axes.SetXAxisLabelText('x')
-        # axes.SetYAxisLabelText('y')
-        # axes.SetZAxisLabelText('z')
-        # axes.SetTotalLength(50, 50, 50)
-        #
-        # self.ren.AddActor(axes)
+        axes = vtk.vtkAxesActor()
+        axes.SetXAxisLabelText('x')
+        axes.SetYAxisLabelText('y')
+        axes.SetZAxisLabelText('z')
+        axes.SetTotalLength(50, 50, 50)
+
+        self.ren.AddActor(axes)
 
         self.slice_plane = None
 
@@ -189,12 +192,16 @@ class Viewer(wx.Panel):
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
 
+        # for DTI support tests
         self.ntimes = False
         self._to_show_stream = True
         data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
         nii_path = b'sub-P0_dwi_FOD.nii'
         trk_path = os.path.join(data_dir, nii_path)
         self.tracker_FOD = Trekker.tracker(trk_path)
+        # proj = prj.Project()
+        self.affine = np.identity(4)
+        Publisher.sendMessage('Get affine matrix')
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -297,6 +304,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
 
         Publisher.subscribe(self.OnShowStreamLines, 'Set ball reference position')
+        Publisher.subscribe(self.UpdateAffineWorld2Inv, 'Update affine matrix')
 
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
@@ -1282,21 +1290,41 @@ class Viewer(wx.Panel):
             self.obj_actor.SetVisibility(self.obj_state)
             self.Refresh()
 
+    def UpdateAffineWorld2Inv(self, affine, status):
+        self.affine = affine
+
     def OnShowStreamLines(self, position):
-        if not self.ntimes:
-            if self._to_show_stream:
-                seed = np.array([[-8.49, -8.39, 2.5]])
-                repos = [0., 0., 0., 0., 0., 0.]
-                for i in range(5):
-                    self.visualizeTracks(self.tracker_FOD, seed=seed, replace=repos, user_matrix=np.linalg.inv(np.identity(4)))
+        # if not self.ntimes:
+        # pos_inv = bases.flip_x(position)
+        print("Passing here again and again ")
+        proj = prj.Project()
+        pos_world_aux = np.ones([4, 1])
+        pos_world_aux[:3, -1] = bases.flip_x(position)[:3]
+        pos_world = np.linalg.inv(proj.affine) @ pos_world_aux
+        if self._to_show_stream:
+            affine_vtk = vtk.vtkMatrix4x4()
+
+            for row in range(0, 4):
+                for col in range(0, 4):
+                    affine_vtk.SetElement(row, col, proj.affine[row, col])
+
+            print("Affine tracts: {}".format(proj.affine))
+            print("Self Affine tracts: {}".format(self.affine))
+
+            # seed = np.array([[-8.49, -8.39, 2.5]])
+            seed = pos_world.reshape([1, 4])[0, :3]
+
+            for i in range(5):
+                # self.visualizeTracks(self.tracker_FOD, seed=seed, user_matrix=proj.affine)
+                self.visualizeTracks(self.tracker_FOD, seed=seed[np.newaxis, :], user_matrix=affine_vtk)
 
                 # coord = position
                 # x, y, z = bases.flip_x(coord)
                 # self.ball_actor.SetPosition(x, y, z)
+        self.Refresh()
+        # self.ntimes = True
 
-        self.ntimes = True
-
-    def visualizeTracks(self, tracker, seed, replace, user_matrix):
+    def visualizeTracks(self, tracker, seed, user_matrix):
         # Input the seed to the tracker object
         tracker.set_seeds(seed)
 
@@ -1306,20 +1334,13 @@ class Viewer(wx.Panel):
 
         # Convert the first track to a vtkActor, i.e., tractogram[0] is the track
         # computed for the first seed
-        trkActor = self.trk2vtkActor(tractogram[0], replace)
+        trkActor = self.trk2vtkActor(tractogram[0])
 
-        matrix_vtk = vtk.vtkMatrix4x4()
-
-        for row in range(0, 4):
-            for col in range(0, 4):
-                matrix_vtk.SetElement(row, col, user_matrix[row, col])
-
-        trkActor.SetUserMatrix(matrix_vtk)
+        trkActor.SetUserMatrix(user_matrix)
 
         self.ren.AddActor(trkActor)
-        self.Refresh()
 
-    def trk2vtkActor(self, trk, replace):
+    def trk2vtkActor(self, trk):
         # This function converts a single track to a vtkActor
         # convert trk to vtkPolyData
         trk = np.transpose(np.asarray(trk))
@@ -1357,21 +1378,6 @@ class Viewer(wx.Panel):
         trkTube.SetNumberOfSides(4)
         trkTube.SetInputData(trkData)
         trkTube.Update()
-
-        if replace:
-            transx, transy, transz, rotx, roty, rotz = replace
-            # create a transform that rotates the stl source
-            transform = vtk.vtkTransform()
-            transform.PostMultiply()
-            transform.RotateX(rotx)
-            transform.RotateY(roty)
-            transform.RotateZ(rotz)
-            transform.Translate(transx, transy, transz)
-
-            transform_filt = vtk.vtkTransformPolyDataFilter()
-            transform_filt.SetTransform(transform)
-            transform_filt.SetInputConnection(trkTube.GetOutputPort())
-            transform_filt.Update()
 
         # mapper
         trkMapper = vtk.vtkPolyDataMapper()

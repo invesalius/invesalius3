@@ -664,7 +664,7 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
-        proj.affine = self.affine.tolist()
+        proj.affine = self.affine
 
         ######
         session = ses.Session()
@@ -889,7 +889,11 @@ class Controller():
             # remove scaling factor for non-unitary voxel dimensions
             scale, shear, angs, trans, persp = tf.decompose_matrix(group.affine)
             affine = tf.compose_matrix(scale=None, shear=shear, angles=angs, translate=trans, perspective=persp)
-            self.affine = affine
+            repos_img = [0.]*6
+            repos_img[1] = -float(group.shape[1])
+            affine_inv = image_utils.world2invspace(repos=repos_img, user_matrix=affine)
+            self.affine = affine_inv
+            print("repos_img: {}".format(repos_img))
             self.Slice.affine = self.affine
             Publisher.sendMessage('Update affine matrix',
                                   affine=self.affine, status=True)

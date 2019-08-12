@@ -573,7 +573,7 @@ class Viewer(wx.Panel):
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
+        #Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -1496,7 +1496,7 @@ class Viewer(wx.Panel):
 
     def UpdateCross(self, coord):
         self.cross.SetFocalPoint(coord)
-        Publisher.sendMessage('Set ball reference position', position=self.cross.GetFocalPoint())
+        #Publisher.sendMessage('Set ball reference position', position=self.cross.GetFocalPoint())
         Publisher.sendMessage('Co-registered points',  arg=None, position=(coord[0], coord[1], coord[2], 0., 0., 0.))
         self.OnScrollBar()
         self.interactor.Render()

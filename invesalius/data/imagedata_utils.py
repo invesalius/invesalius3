@@ -37,6 +37,7 @@ from invesalius.data import vtk_utils as vtk_utils
 import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 import invesalius.data.converters as converters
+import invesalius.data.transformations as tr
 
 from invesalius import inv_paths
 
@@ -513,27 +514,32 @@ def world2invspace(repos=None, user_matrix=None):
     :return: vtk transform filter for repositioning the polydata and affine matrix to be used as SetUserMatrix in actor
     """
 
-    if repos:
-        transx, transy, transz, rotx, roty, rotz = repos
-        # create a transform that rotates the stl source
-        transform = vtk.vtkTransform()
-        transform.PostMultiply()
-        transform.RotateX(rotx)
-        transform.RotateY(roty)
-        transform.RotateZ(rotz)
-        transform.Translate(transx, transy, transz)
+    repos_mat = np.identity(4)
+    # translation
+    repos_mat[:3, -1] = repos[:3]
+    # rotation
+    repos_mat[:3, :3] = tr.euler_matrix(*np.deg2rad(repos[3:]), axes='sxyz')[:3, :3]
 
-        transform_filt = vtk.vtkTransformPolyDataFilter()
-        transform_filt.SetTransform(transform)
-        transform_filt.Update()
+    # if repos:
+    #     transx, transy, transz, rotx, roty, rotz = repos
+    #     # create a transform that rotates the stl source
+    #     transform = vtk.vtkTransform()
+    #     transform.PostMultiply()
+    #     transform.RotateX(rotx)
+    #     transform.RotateY(roty)
+    #     transform.RotateZ(rotz)
+    #     transform.Translate(transx, transy, transz)
+    #
+    #     transform_filt = vtk.vtkTransformPolyDataFilter()
+    #     transform_filt.SetTransform(transform)
+    #     transform_filt.Update()
 
-    affine_vtk = vtk.vtkMatrix4x4()
+    # assuming vtk default transformation order is PreMultiply, the user matrix is set so:
+    # 1. Replace the object -> 2. Transform the object to desired position/orientation
+    # PreMultiplty: M = M*A where M is current transformation and A is applied transformation
+    # user_matrix = np.linalg.inv(user_matrix) @ repos_mat
 
-    for row in range(0, 4):
-        for col in range(0, 4):
-            affine_vtk.SetElement(row, col, user_matrix[row, col])
-
-    return transform_filt, affine_vtk
+    return np.linalg.inv(user_matrix) @ repos_mat
 
 
 def get_LUT_value_255(data, window, level):
