@@ -503,6 +503,39 @@ def imgnormalize(data, srange=(0, 255)):
     return datan
 
 
+def world2invspace(repos=None, user_matrix=None):
+    """
+    Normalize image pixel intensity for int16 gray scale values.
+
+    :param repos: list of translation and rotation [trans_x, trans_y, trans_z, rot_x, rot_y, rot_z] to reposition the
+    vtk object prior to applying the affine matrix transformation. Note: rotation given in degrees
+    :param user_matrix: affine matrix from image header, prefered QForm matrix
+    :return: vtk transform filter for repositioning the polydata and affine matrix to be used as SetUserMatrix in actor
+    """
+
+    if repos:
+        transx, transy, transz, rotx, roty, rotz = repos
+        # create a transform that rotates the stl source
+        transform = vtk.vtkTransform()
+        transform.PostMultiply()
+        transform.RotateX(rotx)
+        transform.RotateY(roty)
+        transform.RotateZ(rotz)
+        transform.Translate(transx, transy, transz)
+
+        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.Update()
+
+    affine_vtk = vtk.vtkMatrix4x4()
+
+    for row in range(0, 4):
+        for col in range(0, 4):
+            affine_vtk.SetElement(row, col, user_matrix[row, col])
+
+    return transform_filt, affine_vtk
+
+
 def get_LUT_value_255(data, window, level):
     shape = data.shape
     data_ = data.ravel()

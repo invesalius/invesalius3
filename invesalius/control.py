@@ -27,6 +27,7 @@ import invesalius.data.mask as msk
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
+import invesalius.data.transformations as tf
 import invesalius.data.volume as volume
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
@@ -869,10 +870,6 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
-        if group.affine.any():
-            self.affine = group.affine
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])
@@ -887,6 +884,15 @@ class Controller():
         self.Slice.spacing = dimsf
         self.Slice.window_level = wl
         self.Slice.window_width = ww
+
+        if group.affine.any():
+            # remove scaling factor for non-unitary voxel dimensions
+            scale, shear, angs, trans, persp = tf.decompose_matrix(group.affine)
+            affine = tf.compose_matrix(scale=None, shear=shear, angles=angs, translate=trans, perspective=persp)
+            self.affine = affine
+            self.Slice.affine = self.affine
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine, status=True)
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
         Publisher.sendMessage('Update threshold limits list',

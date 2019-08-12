@@ -85,6 +85,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.blend_filter = None
         self.histogram = None
         self._matrix = None
+        self._affine = np.identity(4)
         self.aux_matrices = {}
         self.state = const.STATE_DEFAULT
 
@@ -139,6 +140,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def spacing(self, value):
         self._spacing = value
         self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+
+    @property
+    def affine(self):
+        return self._affine
+
+    @affine.setter
+    def affine(self, value):
+        self._affine = value
 
     def __bind_events(self):
         # General slice control
