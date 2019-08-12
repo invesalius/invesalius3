@@ -1314,9 +1314,10 @@ class Viewer(wx.Panel):
             # seed = np.array([[-8.49, -8.39, 2.5]])
             seed = pos_world.reshape([1, 4])[0, :3]
 
-            for i in range(5):
+            act_list = [self.trk2vtkActor(self.tracker_FOD, seed=seed[np.newaxis, :],
+                                          user_matrix=affine_vtk) for _ in range(5)]
                 # self.visualizeTracks(self.tracker_FOD, seed=seed, user_matrix=proj.affine)
-                self.visualizeTracks(self.tracker_FOD, seed=seed[np.newaxis, :], user_matrix=affine_vtk)
+
 
                 # coord = position
                 # x, y, z = bases.flip_x(coord)
@@ -1336,14 +1337,13 @@ class Viewer(wx.Panel):
         # computed for the first seed
         trkActor = self.trk2vtkActor(tractogram[0])
 
-        trkActor.SetUserMatrix(user_matrix)
-
         self.ren.AddActor(trkActor)
 
-    def trk2vtkActor(self, trk):
+    def trk2vtkActor(self, tracker, seed, user_matrix):
+        tracker.set_seeds(seed)
         # This function converts a single track to a vtkActor
         # convert trk to vtkPolyData
-        trk = np.transpose(np.asarray(trk))
+        trk = np.transpose(np.asarray(tracker.run()[0]))
         numberOfPoints = trk.shape[0]
 
         points = vtk.vtkPoints()
@@ -1386,6 +1386,7 @@ class Viewer(wx.Panel):
         # actor
         trkActor = vtk.vtkActor()
         trkActor.SetMapper(trkMapper)
+        trkActor.SetUserMatrix(user_matrix)
 
         return trkActor
 
