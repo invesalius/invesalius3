@@ -20,6 +20,7 @@ import os
 import plistlib
 import wx
 from wx.lib.pubsub import pub as Publisher
+import Trekker
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as image_utils
@@ -27,7 +28,6 @@ import invesalius.data.mask as msk
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
-import invesalius.data.transformations as tf
 import invesalius.data.volume as volume
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
@@ -325,9 +325,18 @@ class Controller():
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
+        self.Slice.affine = proj.affine
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
+
+        ## tracts
+        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+        # FOD_path = b"sub-P0_dwi_FOD.nii"
+        # # FOD_path = b"test_fod.nii"
+        # full_path = os.path.join(data_dir, FOD_path)
+        # self.Slice.tracker = Trekker.tracker(full_path)
+        ##
 
         self.LoadProject()
 
@@ -508,6 +517,14 @@ class Controller():
         self.Slice = sl.Slice()
         self.Slice.spacing = proj.spacing
 
+        ## tracts
+        data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+        FOD_path = b"sub-P0_dwi_FOD.nii"
+        # FOD_path = b"test_fod.nii"
+        full_path = os.path.join(data_dir, FOD_path)
+        self.Slice.tracker = Trekker.tracker(full_path)
+        ##
+
         Publisher.sendMessage('Load slice to viewer',
                               mask_dict=proj.mask_dict)
 
@@ -652,6 +669,9 @@ class Controller():
         proj.matrix_dtype = matrix.dtype.name
         proj.matrix_filename = matrix_filename
 
+        if self.affine is not None:
+            proj.affine = self.affine.tolist()
+
         # Orientation must be CORONAL in order to as_closes_canonical and
         # swap axis in img2memmap to work in a standardized way.
         # TODO: Create standard import image for all acquisition orientations
@@ -664,7 +684,6 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
-        proj.affine = self.affine
 
         ######
         session = ses.Session()
@@ -887,13 +906,8 @@ class Controller():
 
         if group.affine.any():
             # remove scaling factor for non-unitary voxel dimensions
-            scale, shear, angs, trans, persp = tf.decompose_matrix(group.affine)
-            affine = tf.compose_matrix(scale=None, shear=shear, angles=angs, translate=trans, perspective=persp)
-            repos_img = [0.]*6
-            repos_img[1] = -float(group.shape[1])
-            affine_inv = image_utils.world2invspace(repos=repos_img, user_matrix=affine)
-            self.affine = affine_inv
-            print("repos_img: {}".format(repos_img))
+            self.affine = image_utils.world2invspace(shape=group.shape, affine=group.affine)
+            # print("repos_img: {}".format(repos_img))
             self.Slice.affine = self.affine
             Publisher.sendMessage('Update affine matrix',
                                   affine=self.affine, status=True)

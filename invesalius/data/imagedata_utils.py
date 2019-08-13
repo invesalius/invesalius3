@@ -504,7 +504,7 @@ def imgnormalize(data, srange=(0, 255)):
     return datan
 
 
-def world2invspace(repos=None, user_matrix=None):
+def world2invspace(shape=None, affine=None):
     """
     Normalize image pixel intensity for int16 gray scale values.
 
@@ -514,11 +514,16 @@ def world2invspace(repos=None, user_matrix=None):
     :return: vtk transform filter for repositioning the polydata and affine matrix to be used as SetUserMatrix in actor
     """
 
+    scale, shear, angs, trans, persp = tr.decompose_matrix(affine)
+    affine_noscale = tr.compose_matrix(scale=None, shear=shear, angles=angs, translate=trans, perspective=persp)
+    repos_img = [0.] * 6
+    repos_img[1] = -float(shape[1])
+
     repos_mat = np.identity(4)
     # translation
-    repos_mat[:3, -1] = repos[:3]
-    # rotation
-    repos_mat[:3, :3] = tr.euler_matrix(*np.deg2rad(repos[3:]), axes='sxyz')[:3, :3]
+    repos_mat[:3, -1] = repos_img[:3]
+    # rotation (in principle for invesalius space no rotation is needed)
+    repos_mat[:3, :3] = tr.euler_matrix(*np.deg2rad(repos_img[3:]), axes='sxyz')[:3, :3]
 
     # if repos:
     #     transx, transy, transz, rotx, roty, rotz = repos
@@ -539,7 +544,7 @@ def world2invspace(repos=None, user_matrix=None):
     # PreMultiplty: M = M*A where M is current transformation and A is applied transformation
     # user_matrix = np.linalg.inv(user_matrix) @ repos_mat
 
-    return np.linalg.inv(user_matrix) @ repos_mat
+    return np.linalg.inv(affine_noscale) @ repos_mat
 
 
 def get_LUT_value_255(data, window, level):

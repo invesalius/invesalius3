@@ -311,7 +311,7 @@ class Project(with_metaclass(Singleton, object)):
         if project.get("affine"):
             self.affine = project["affine"]
             Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
+                                  affine=np.asarray(self.affine), status=True)
 
         self.compress = project.get("compress", True)
 

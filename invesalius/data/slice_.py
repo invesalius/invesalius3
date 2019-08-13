@@ -86,6 +86,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.histogram = None
         self._matrix = None
         self._affine = np.identity(4)
+        self._tracker = None
         self.aux_matrices = {}
         self.state = const.STATE_DEFAULT
 
@@ -148,6 +149,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
     @affine.setter
     def affine(self, value):
         self._affine = value
+
+    @property
+    def tracker(self):
+        return self._tracker
+
+    @tracker.setter
+    def tracker(self, value):
+        self._tracker = value
 
     def __bind_events(self):
         # General slice control
@@ -1499,6 +1508,10 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def _open_image_matrix(self, filename, shape, dtype):
         self.matrix_filename = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
+
+    def _open_image_affine(self, filename, shape, dtype):
+        self.affine_filename = filename
+        self.affine = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
 
     def OnFlipVolume(self, axis):
         if axis == 0:

@@ -37,6 +37,14 @@ import invesalius.data.converters as converters
 import invesalius.data.cursor_actors as ca
 import invesalius.session as ses
 
+# For tracts
+import invesalius.data.trekker_data as dtr
+# import invesalius.project as prj
+import invesalius.data.slice_ as sl
+import invesalius.data.bases as bases
+# from time import sleep
+# ---
+
 import numpy as np
 
 from scipy import ndimage
@@ -212,6 +220,21 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
 
+        # tracts
+        self.seed = [0., 0., 0.]
+        slic = sl.Slice()
+
+        # proj = prj.Project()
+        self.affine = np.asarray(slic.affine)
+        self.tracker = slic.tracker
+
+        self.affine_vtk = vtk.vtkMatrix4x4()
+
+        for row in range(0, 4):
+            for col in range(0, 4):
+                self.affine_vtk.SetElement(row, col, self.affine[row, col])
+        # ---
+
         self.picker = vtk.vtkWorldPointPicker()
 
         self.AddObserver("MouseMoveEvent", self.OnCrossMove)
@@ -244,6 +267,16 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
         coord = self.viewer.calcultate_scroll_position(px, py)
+
+        # Tracts
+        pos_world_aux = np.ones([4, 1])
+        pos_world_aux[:3, -1] = bases.flip_x((wx, wy, wz))[:3]
+        pos_world = np.linalg.inv(self.affine) @ pos_world_aux
+        seed_aux = pos_world.reshape([1, 4])[0, :3]
+        self.seed = seed_aux[np.newaxis, :]
+        print("Check the seed: ", self.seed)
+        #
+
         Publisher.sendMessage('Update cross position', position=(wx, wy, wz))
         self.ScrollSlice(coord)
         Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
@@ -267,6 +300,92 @@ class CrossInteractorStyle(DefaultInteractorStyle):
                                        index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        index=coord[0])
+
+
+class TractsInteractorStyle(CrossInteractorStyle):
+    """
+    Interactor style responsible for tracts visualization.
+    """
+    def __init__(self, viewer):
+        CrossInteractorStyle.__init__(self, viewer)
+
+        # self.state_code = const.SLICE_STATE_TRACTS
+
+        self.viewer = viewer
+        # print("Im fucking brilliant!")
+        self.tracts = None
+
+        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+        # FOD_path = b"sub-P0_dwi_FOD.nii"
+        # full_path = os.path.join(data_dir, FOD_path)
+        # self.tracker = Trekker.tracker(full_path)
+        # self.orientation = viewer.orientation
+        # self.slice_actor = viewer.slice_data.actor
+        # self.slice_data = viewer.slice_data
+
+        # self.picker = vtk.vtkWorldPointPicker()
+
+        self.AddObserver("MouseMoveEvent", self.OnTractsMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnTractsMouseClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnTractsReleaseLeftButton)
+
+    # def SetUp(self):
+    #     self.viewer._set_cross_visibility(1)
+    #     Publisher.sendMessage('Toggle toolbar item',
+    #                           _id=self.state_code, value=True)
+
+    # def CleanUp(self):
+    #     self.viewer._set_cross_visibility(0)
+    #     Publisher.sendMessage('Toggle toolbar item',
+    #                           _id=self.state_code, value=False)
+
+    def OnTractsMove(self, obj, evt):
+        # The user moved the mouse with left button pressed
+        if self.left_pressed:
+            # print("OnTractsMove interactor style")
+            # iren = obj.GetInteractor()
+            self.ChangeTracts(True)
+
+    def OnTractsMouseClick(self, obj, evt):
+        # print("Single mouse click")
+        # self.tracts = dtr.ComputeTracts(self.tracker, self.seed, self.left_pressed)
+        self.ChangeTracts(True)
+
+    def OnTractsReleaseLeftButton(self, obj, evt):
+        # time.sleep(3.)
+        self.tracts.stop()
+        # self.ChangeCrossPosition(iren)
+
+    def ChangeTracts(self, pressed):
+        # print("Trying to compute tracts")
+        self.tracts = dtr.ComputeTracts(self.tracker, self.seed, self.affine_vtk, pressed)
+        # mouse_x, mouse_y = iren.GetEventPosition()
+        # wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        # px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        # coord = self.viewer.calcultate_scroll_position(px, py)
+        # Publisher.sendMessage('Update cross position', position=(wx, wy, wz))
+        # # self.ScrollSlice(coord)
+        # Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
+        # Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
+
+        # iren.Render()
+
+    # def ScrollSlice(self, coord):
+    #     if self.orientation == "AXIAL":
+    #         Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+    #                                    index=coord[0])
+    #         Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+    #                                    index=coord[1])
+    #     elif self.orientation == "SAGITAL":
+    #         Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+    #                                    index=coord[2])
+    #         Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+    #                                    index=coord[1])
+    #     elif self.orientation == "CORONAL":
+    #         Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+    #                                    index=coord[2])
+    #         Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+    #                                    index=coord[0])
 
 
 class WWWLInteractorStyle(DefaultInteractorStyle):
@@ -2514,7 +2633,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
-        const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        const.SLICE_STATE_CROSS: TractsInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
@@ -2533,5 +2652,6 @@ def get_style(style):
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
         const.SLICE_STATE_CROP_MASK: CropMaskInteractorStyle,
+        const.SLICE_STATE_TRACTS: CrossInteractorStyle,
     }
     return STYLES[style]
