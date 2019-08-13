@@ -1,18 +1,13 @@
 import threading
-from time import sleep
+import time
 
 import numpy as np
 import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
 
-import invesalius.data.coordinates as dco
-import invesalius.data.transformations as tr
 
-# TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
-
-
-class TrekkerStart(threading.Thread):
+class ComputeTracts(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -20,9 +15,12 @@ class TrekkerStart(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, seed):
+    def __init__(self, tracker, seed, affine_vtk, run_id):
         threading.Thread.__init__(self)
+        self.tracker = tracker
         self.seed = seed
+        self.affine_vtk = affine_vtk
+        self.run_id = run_id
         self._pause_ = False
         self.start()
 
@@ -30,32 +28,94 @@ class TrekkerStart(threading.Thread):
         self._pause_ = True
 
     def run(self):
-        # m_change = self.coreg_data[0]
-        # obj_ref_mode = self.coreg_data[2]
-        #
-        # trck_init = self.trck_info[0]
-        # trck_id = self.trck_info[1]
-        # trck_mode = self.trck_info[2]
 
-        m_change, obj_ref_mode = self.coreg_data
-        trck_init, trck_id, trck_mode = self.trck_info
+        # while self.run_id:
+            # procs = 5
+            # out_list = list()
+        # start_time = time.time()
+        actor = False
+        out_list = [None]*5
+        tract_exist = False
+        for n in range(5):
+            # print("out_list: ", out_list)
+            out_list[n] = self.trk2vtkActor(self.tracker, self.seed)
+        # print("out_list depois: ", out_list)
 
-        while self.nav_id:
-            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+        # create tracts only when at least one was computed
+        if not out_list.count(None) == len(out_list):
+            root = vtk.vtkMultiBlockDataSet()
 
-            psi, theta, phi = coord_raw[obj_ref_mode, 3:]
-            t_probe_raw = asmatrix(tr.translation_matrix(coord_raw[obj_ref_mode, :3]))
+            for n, tube in enumerate(out_list):
+                if tube:
+                    root.SetBlock(n, tube.GetOutput())
 
-            t_probe_raw[2, -1] = -t_probe_raw[2, -1]
+            # https://lorensen.github.io/VTKExamples/site/Python/CompositeData/CompositePolyDataMapper/
+            mapper = vtk.vtkCompositePolyDataMapper2()
+            mapper.SetInputDataObject(root)
 
-            m_img = m_change * t_probe_raw
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.SetUserMatrix(self.affine_vtk)
+            # duration = time.time() - start_time
+            # print(f"Tract computing duration {duration} seconds")
 
-            coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], psi, theta, phi
+        wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, actor=actor)
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
+        # time.sleep(1.)
 
-            # TODO: Optimize the value of sleep for each tracking device.
-            sleep(0.175)
+        if self._pause_:
+            return
 
-            if self._pause_:
-                return
+    def trk2vtkActor(self, tracker, seed):
+        tracker.set_seeds(seed)
+        # convert trk to vtkPolyData
+        trk_run = tracker.run()
+        if trk_run:
+            trk = np.transpose(np.asarray(trk_run[0]))
+            numb_points = trk.shape[0]
+
+            points = vtk.vtkPoints()
+            lines = vtk.vtkCellArray()
+
+            colors = vtk.vtkFloatArray()
+            colors.SetNumberOfComponents(4)
+            colors.SetName("tangents")
+
+            k = 0
+            lines.InsertNextCell(numb_points)
+            for j in range(numb_points):
+                points.InsertNextPoint(trk[j, :])
+                lines.InsertCellPoint(k)
+                k = k + 1
+
+                if j < (numb_points - 1):
+                    direction = trk[j + 1, :] - trk[j, :]
+                    direction = direction / np.linalg.norm(direction)
+                    colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
+                else:
+                    colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
+
+            trkData = vtk.vtkPolyData()
+            trkData.SetPoints(points)
+            trkData.SetLines(lines)
+            trkData.GetPointData().SetScalars(colors)
+
+            # make it a tube
+            trkTube = vtk.vtkTubeFilter()
+            trkTube.SetRadius(0.1)
+            trkTube.SetNumberOfSides(4)
+            trkTube.SetInputData(trkData)
+            trkTube.Update()
+            # print("trkTube: ", trkTube)
+
+            # # mapper
+            # trkMapper = vtk.vtkPolyDataMapper()
+            # trkMapper.SetInputData(trkTube.GetOutput())
+            #
+            # # actor
+            # trkActor = vtk.vtkActor()
+            # trkActor.SetMapper(trkMapper)
+        else:
+            trkTube = None
+
+        return trkTube
