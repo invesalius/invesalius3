@@ -223,13 +223,10 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # tracts
         self.seed = [0., 0., 0.]
         slic = sl.Slice()
-
-        # proj = prj.Project()
         self.affine = np.asarray(slic.affine)
         self.tracker = slic.tracker
 
         self.affine_vtk = vtk.vtkMatrix4x4()
-
         for row in range(0, 4):
             for col in range(0, 4):
                 self.affine_vtk.SetElement(row, col, self.affine[row, col])

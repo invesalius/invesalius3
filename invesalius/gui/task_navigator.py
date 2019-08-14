@@ -50,6 +50,9 @@ import invesalius.data.record_coords as rec
 import invesalius.gui.dialogs as dlg
 from invesalius import utils
 
+import invesalius.data.slice_ as sl
+import vtk
+
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
 
@@ -570,6 +573,19 @@ class NeuronavigationPanel(wx.Panel):
         choice_trck = btn[1]
         choice_ref = btn[2]
 
+        seed = [0., 0., 0.]
+        slic = sl.Slice()
+        affine = np.asarray(slic.affine)
+        tracker = slic.tracker
+
+        affine_vtk = vtk.vtkMatrix4x4()
+
+        for row in range(0, 4):
+            for col in range(0, 4):
+                affine_vtk.SetElement(row, col, affine[row, col])
+        tracts_info = seed, tracker, affine, affine_vtk
+        # ---
+
         nav_id = btn_nav.GetValue()
         if nav_id:
             if np.isnan(self.fiducials).any():
@@ -637,7 +653,7 @@ class NeuronavigationPanel(wx.Panel):
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
-                                self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode)
+                                self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
                             else:
                                 coord_raw = np.array([None])
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
@@ -655,7 +671,7 @@ class NeuronavigationPanel(wx.Panel):
                     coreg_data = [m_change, 0]
                     if self.ref_mode_id:
                         # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
-                        self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)
+                        self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
                     else:
                         self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
 

@@ -26,6 +26,9 @@ from wx.lib.pubsub import pub as Publisher
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
+import invesalius.data.trekker_data as dtr
+import invesalius.data.bases as db
+import numpy as np
 
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
 
@@ -89,20 +92,24 @@ class CoregistrationDynamic(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, coreg_data, nav_id, trck_info):
+    def __init__(self, coreg_data, nav_id, trck_info, tracts_info):
         threading.Thread.__init__(self)
         self.coreg_data = coreg_data
         self.nav_id = nav_id
         self.trck_info = trck_info
+        self.tracts_info = tracts_info
+        self.tracts = None
         self._pause_ = False
         self.start()
 
     def stop(self):
+        self.tracts.stop()
         self._pause_ = True
 
     def run(self):
         m_change, obj_ref_mode = self.coreg_data
         trck_init, trck_id, trck_mode = self.trck_info
+        seed, tracker, affine, affine_vtk = self.tracts_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -127,10 +134,18 @@ class CoregistrationDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
+            pos_world_aux = np.ones([4, 1])
+            pos_world_aux[:3, -1] = db.flip_x(coord[:3])[:3]
+            pos_world = np.linalg.inv(affine) @ pos_world_aux
+            seed_aux = pos_world.reshape([1, 4])[0, :3]
+            seed = seed_aux[np.newaxis, :]
+
+            self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
+
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(0.175)
+            sleep(3.175)
 
             if self._pause_:
                 return
@@ -289,21 +304,25 @@ class CoregistrationObjectDynamic(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, coreg_data, nav_id, trck_info):
+    def __init__(self, coreg_data, nav_id, trck_info, tracts_info):
         threading.Thread.__init__(self)
         self.coreg_data = coreg_data
         self.nav_id = nav_id
         self.trck_info = trck_info
+        self.tracts_info = tracts_info
+        self.tracts = None
         self._pause_ = False
         self.start()
 
     def stop(self):
+        self.tracts.stop()
         self._pause_ = True
 
     def run(self):
 
         m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = self.coreg_data
         trck_init, trck_id, trck_mode = self.trck_info
+        seed, tracker, affine, affine_vtk = self.tracts_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -335,11 +354,19 @@ class CoregistrationObjectDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
+            pos_world_aux = np.ones([4, 1])
+            pos_world_aux[:3, -1] = db.flip_x(coord[:3])[:3]
+            pos_world = np.linalg.inv(affine) @ pos_world_aux
+            seed_aux = pos_world.reshape([1, 4])[0, :3]
+            seed = seed_aux[np.newaxis, :]
+
+            self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
+
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(0.175)
+            sleep(3.175)
 
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
