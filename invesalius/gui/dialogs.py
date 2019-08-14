@@ -3359,6 +3359,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetSelection(1)
         choice_ref.Enable(1)
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
+            self.obj_ref_id = 0
             choice_ref.SetSelection(0)
             choice_ref.Enable(0)
 
