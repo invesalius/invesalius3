@@ -18,7 +18,7 @@ import invesalius.utils as utils
 
 from invesalius import math_utils
 from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon, CanvasHandlerBase
-from scipy.misc import imsave
+from imageio import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),

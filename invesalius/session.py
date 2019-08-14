@@ -88,11 +88,6 @@ class Session(with_metaclass(Singleton, object)):
 
     def CreateItens(self):
         import invesalius.constants as const
-        homedir = inv_paths.USER_DIR
-        tempdir = os.path.join(inv_paths.USER_DIR, u".invesalius", u"temp")
-        if not os.path.isdir(tempdir):
-            os.makedirs(tempdir)
-
         self._values = collections.defaultdict(dict, {
             'session': {
                 'mode': const.MODE_RP,
@@ -111,7 +106,7 @@ class Session(with_metaclass(Singleton, object)):
 
             'paths': {
                 'homedir': str(inv_paths.USER_DIR),
-                'tempdir': os.path.join(homedir, u".invesalius", u"temp"),
+                'tempdir': str(inv_paths.TEMP_DIR),
                 'last_dicom_folder': '',
             },
         })

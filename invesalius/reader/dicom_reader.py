@@ -24,7 +24,6 @@ import sys
 from multiprocessing import cpu_count
 
 import vtk
-import vtkgdcm
 import gdcm
 from wx.lib.pubsub import pub as Publisher
 
@@ -202,14 +201,11 @@ class LoadDicom:
                 level = None
                 window = None
 
-            if _has_win32api:
-                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath), window, level)
-            else:
-                thumbnail_path = imagedata_utils.create_dicom_thumbnails(self.filepath, window, level)
+            img = reader.GetImage()
+            thumbnail_path = imagedata_utils.create_dicom_thumbnails(img, window, level)
 
             #------ Verify the orientation --------------------------------
 
-            img = reader.GetImage()
             direc_cosines = img.GetDirectionCosines()
             orientation = gdcm.Orientation()
             try:

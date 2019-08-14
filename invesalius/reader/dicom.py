@@ -19,7 +19,6 @@
 #---------------------------------------------------------------------
 import time
 #import gdcm
-#import vtkgdcm
 import sys
 import invesalius.utils as utils
 import invesalius.constants as const

@@ -771,6 +771,7 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
         Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
         Publisher.subscribe(self._set_threshold_range_gui, 'Set edition threshold gui')
+        Publisher.subscribe(self.ChangeMaskColour, 'Set GUI items colour')
 
     def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)

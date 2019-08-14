@@ -29,7 +29,7 @@ from wx.lib.pubsub import pub as Publisher
 from multiprocessing import cpu_count
 
 from vtk.util import numpy_support
-from scipy import misc
+from imageio import imread
 import numpy
 import imghdr
 
@@ -286,7 +286,7 @@ def VtkErrorPNGWriter(obj, f):
 
 def ScipyRead(filepath):
     try:
-        r = misc.imread(filepath, flatten=True)
+        r = imread(filepath, flatten=True)
         dt = r.dtype 
         if  dt == "float" or dt == "float16"\
                           or dt == "float32" or dt == "float64":   

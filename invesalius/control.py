@@ -901,7 +901,6 @@ class Controller():
             self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
                                                                         orientation, resolution_percentage)
 
-            print(xyspacing, zspacing)
             if orientation == 'AXIAL':
                 spacing = xyspacing[0], xyspacing[1], zspacing
             elif orientation == 'CORONAL':
@@ -909,7 +908,10 @@ class Controller():
             elif orientation == 'SAGITTAL':
                 spacing = zspacing, xyspacing[1], xyspacing[0]
         else:
-            self.matrix, spacing, scalar_range, self.filename = image_utils.dcmmf2memmap(filelist[0], orientation)
+            print(">>>>>> filelist", filelist)
+            self.matrix, scalar_range, spacing, self.filename = image_utils.dcmmf2memmap(filelist[0], orientation)
+
+        print(">>>>>> spacing", spacing)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix

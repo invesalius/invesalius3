@@ -20,6 +20,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
+# TODO: Redesign error messages. No point in having "Could not connect to default tracker" in all trackers
 
 
 def TrackerConnection(tracker_id, trck_init, action):
@@ -151,7 +152,7 @@ def PolhemusTracker(tracker_id):
     except:
         trck_init = None
         lib_mode = 'error'
-        print('Could not connect to Polhemus.')
+        print('Could not connect to Polhemus by any method.')
 
     return trck_init, lib_mode
 
@@ -181,10 +182,10 @@ def PlhWrapperConnection(tracker_id):
                 sleep(0.175)
         else:
             trck_init = None
-            print('Could not connect to Polhemus via wrapper without error.')
+            print('Could not connect to Polhemus via wrapper without error: Initialize is False.')
     except:
         trck_init = None
-        print('Could not connect to Polhemus via wrapper with error.')
+        print('Could not connect to Polhemus via wrapper without error: Import failed.')
 
     return trck_init
 

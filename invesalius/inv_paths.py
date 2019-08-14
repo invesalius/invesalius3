@@ -20,6 +20,7 @@ import os
 import pathlib
 import shutil
 import sys
+import tempfile
 
 USER_DIR = pathlib.Path().home()
 CONF_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", USER_DIR.joinpath(".config")))
@@ -27,6 +28,7 @@ USER_INV_DIR = CONF_DIR.joinpath("invesalius")
 USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")
 USER_LOG_DIR = USER_INV_DIR.joinpath("logs")
 USER_RAYCASTING_PRESETS_DIRECTORY = USER_PRESET_DIR.joinpath("raycasting")
+TEMP_DIR = tempfile.gettempdir()
 
 USER_PLUGINS_DIRECTORY = USER_INV_DIR.joinpath("plugins")
 

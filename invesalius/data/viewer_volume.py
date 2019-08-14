@@ -32,7 +32,7 @@ from wx.lib.pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
 
-from scipy.misc import imsave
+from imageio import imsave
 
 import invesalius.constants as const
 import invesalius.data.bases as bases
@@ -165,6 +165,7 @@ class Viewer(wx.Panel):
         self.obj_state = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
+        #self.pTarget = [0., 0., 0.]
 
         # self.obj_axes = None
 
@@ -623,6 +624,7 @@ class Viewer(wx.Panel):
         self.distthreshold = dist_threshold
 
     def ActivateTargetMode(self, evt=None, target_mode=None):
+        vtk_colors = vtk.vtkNamedColors()
         self.target_mode = target_mode
         if self.target_coord and self.target_mode:
             self.CreateTargetAim()
@@ -646,21 +648,33 @@ class Viewer(wx.Panel):
             mapper = vtk.vtkPolyDataMapper()
             mapper.SetInputData(normals.GetOutput())
             mapper.ScalarVisibilityOff()
-            mapper.ImmediateModeRenderingOn()  # improve performance
+            #mapper.ImmediateModeRenderingOn()  # improve performance
 
             obj_roll = vtk.vtkActor()
             obj_roll.SetMapper(mapper)
+            obj_roll.GetProperty().SetColor(1, 1, 1)
+            # obj_roll.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
+            # obj_roll.GetProperty().SetSpecular(30)
+            # obj_roll.GetProperty().SetSpecularPower(80)
             obj_roll.SetPosition(0, 25, -30)
             obj_roll.RotateX(-60)
             obj_roll.RotateZ(180)
 
             obj_yaw = vtk.vtkActor()
             obj_yaw.SetMapper(mapper)
+            obj_yaw.GetProperty().SetColor(1, 1, 1)
+            # obj_yaw.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
+            # obj_yaw.GetProperty().SetSpecular(30)
+            # obj_yaw.GetProperty().SetSpecularPower(80)
             obj_yaw.SetPosition(0, -115, 5)
             obj_yaw.RotateZ(180)
 
             obj_pitch = vtk.vtkActor()
             obj_pitch.SetMapper(mapper)
+            obj_pitch.GetProperty().SetColor(1, 1, 1)
+            # obj_pitch.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
+            # obj_pitch.GetProperty().SetSpecular(30)
+            # obj_pitch.GetProperty().SetSpecularPower(80)
             obj_pitch.SetPosition(5, -265, 5)
             obj_pitch.RotateY(90)
             obj_pitch.RotateZ(180)
@@ -717,6 +731,9 @@ class Viewer(wx.Panel):
             self.DisableCoilTracker()
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
+
+        vtk_colors = vtk.vtkNamedColors()
+
         if self.target_coord and self.target_mode:
 
             target_dist = distance.euclidean(coord[0:3],
@@ -734,10 +751,10 @@ class Viewer(wx.Panel):
 
             if target_dist <= self.distthreshold:
                 thrdist = True
-                self.aim_actor.GetProperty().SetColor(0, 1, 0)
+                self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
             else:
                 thrdist = False
-                self.aim_actor.GetProperty().SetColor(1, 1, 1)
+                self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
 
             coordx = self.target_coord[3] - coord[3]
             if coordx > const.ARROW_UPPER_LIMIT:
@@ -765,9 +782,11 @@ class Viewer(wx.Panel):
 
             if self.anglethreshold * const.ARROW_SCALE > coordx > -self.anglethreshold * const.ARROW_SCALE:
                 thrcoordx = True
+                # self.obj_actor_list[0].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 self.obj_actor_list[0].GetProperty().SetColor(0, 1, 0)
             else:
                 thrcoordx = False
+                # self.obj_actor_list[0].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
                 self.obj_actor_list[0].GetProperty().SetColor(1, 1, 1)
 
             offset = 5
@@ -784,9 +803,11 @@ class Viewer(wx.Panel):
 
             if self.anglethreshold * const.ARROW_SCALE > coordz > -self.anglethreshold * const.ARROW_SCALE:
                 thrcoordz = True
+                # self.obj_actor_list[1].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 self.obj_actor_list[1].GetProperty().SetColor(0, 1, 0)
             else:
                 thrcoordz = False
+                # self.obj_actor_list[1].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
                 self.obj_actor_list[1].GetProperty().SetColor(1, 1, 1)
 
             offset = -35
@@ -803,9 +824,11 @@ class Viewer(wx.Panel):
 
             if self.anglethreshold * const.ARROW_SCALE > coordy > -self.anglethreshold * const.ARROW_SCALE:
                 thrcoordy = True
+                #self.obj_actor_list[2].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 self.obj_actor_list[2].GetProperty().SetColor(0, 1, 0)
             else:
                 thrcoordy = False
+                #self.obj_actor_list[2].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
                 self.obj_actor_list[2].GetProperty().SetColor(1, 1, 1)
 
             offset = 38
@@ -823,16 +846,15 @@ class Viewer(wx.Panel):
             arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
 
             if thrdist and thrcoordx and thrcoordy and thrcoordz:
-                self.dummy_coil_actor.GetProperty().SetColor(0, 1, 0)
+                self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
             else:
-                self.dummy_coil_actor.GetProperty().SetColor(1, 1, 1)
+                self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
 
             self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                     arrow_pitch_y1, arrow_pitch_y2
 
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
-
 
             self.Refresh()
 
@@ -852,6 +874,8 @@ class Viewer(wx.Panel):
         if self.aim_actor:
             self.RemoveTargetAim()
             self.aim_actor = None
+
+        vtk_colors = vtk.vtkNamedColors()
 
         a, b, g = np.radians(self.target_coord[3:])
         r_ref = tr.euler_matrix(a, b, g, 'sxyz')
@@ -885,8 +909,10 @@ class Viewer(wx.Panel):
 
         aim_actor = vtk.vtkActor()
         aim_actor.SetMapper(mapper)
-        aim_actor.GetProperty().SetColor(1, 1, 1)
-        aim_actor.GetProperty().SetOpacity(0.6)
+        aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
+        aim_actor.GetProperty().SetSpecular(.2)
+        aim_actor.GetProperty().SetSpecularPower(100)
+        aim_actor.GetProperty().SetOpacity(1.)
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
 
@@ -909,11 +935,14 @@ class Viewer(wx.Panel):
         obj_mapper = vtk.vtkPolyDataMapper()
         obj_mapper.SetInputData(normals.GetOutput())
         obj_mapper.ScalarVisibilityOff()
-        obj_mapper.ImmediateModeRenderingOn()  # improve performance
+        #obj_mapper.ImmediateModeRenderingOn()  # improve performance
 
         self.dummy_coil_actor = vtk.vtkActor()
         self.dummy_coil_actor.SetMapper(obj_mapper)
-        self.dummy_coil_actor.GetProperty().SetOpacity(0.15)
+        self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
+        self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
+        self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
+        self.dummy_coil_actor.GetProperty().SetOpacity(.3)
         self.dummy_coil_actor.SetVisibility(1)
         self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
 
@@ -928,9 +957,9 @@ class Viewer(wx.Panel):
 
     def CreateTextDistance(self):
         tdist = vtku.Text()
-        tdist.SetSize(const.TEXT_SIZE_LARGE)
-        tdist.SetPosition((const.X, 1.03-const.Y))
-        tdist.ShadowOff()
+        tdist.SetSize(const.TEXT_SIZE_DIST_NAV)
+        tdist.SetPosition((const.X, 1.-const.Y))
+        tdist.SetVerticalJustificationToBottom()
         tdist.BoldOn()
 
         self.ren.AddActor(tdist.actor)
@@ -1162,7 +1191,7 @@ class Viewer(wx.Panel):
         """
         Coil for navigation rendered in volume viewer.
         """
-
+        vtk_colors = vtk.vtkNamedColors()
         obj_polydata = self.CreateObjectPolyData(obj_name)
 
         transform = vtk.vtkTransform()
@@ -1182,11 +1211,14 @@ class Viewer(wx.Panel):
         obj_mapper = vtk.vtkPolyDataMapper()
         obj_mapper.SetInputData(normals.GetOutput())
         obj_mapper.ScalarVisibilityOff()
-        obj_mapper.ImmediateModeRenderingOn()  # improve performance
+        #obj_mapper.ImmediateModeRenderingOn()  # improve performance
 
         self.obj_actor = vtk.vtkActor()
         self.obj_actor.SetMapper(obj_mapper)
-        self.obj_actor.GetProperty().SetOpacity(0.9)
+        self.obj_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d('GhostWhite'))
+        self.obj_actor.GetProperty().SetSpecular(30)
+        self.obj_actor.GetProperty().SetSpecularPower(80)
+        self.obj_actor.GetProperty().SetOpacity(.4)
         self.obj_actor.SetVisibility(0)
 
         self.ren.AddActor(self.obj_actor)

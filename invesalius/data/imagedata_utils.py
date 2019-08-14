@@ -23,9 +23,10 @@ import sys
 import tempfile
 
 import gdcm
+import imageio
 import numpy
+import numpy as np
 import vtk
-import vtkgdcm
 from wx.lib.pubsub import pub as Publisher
 
 from scipy.ndimage import shift, zoom
@@ -124,20 +125,15 @@ def resize_slice(im_array, resolution_percentage):
     return out
 
 
-def read_dcm_slice_as_np(filename, resolution_percentage=1.0):
-    """
-    read a dicom slice file and return the slice as numpy ndarray
-    """
-    dcm_reader = vtkgdcm.vtkGDCMImageReader()
-    dcm_reader.SetFileName(filename)
-    dcm_reader.Update()
-    image = dcm_reader.GetOutput()
+def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
+    reader = gdcm.ImageReader()
+    reader.SetFileName(filename)
+    reader.Read()
+    image = reader.GetImage()
+    output = converters.gdcm_to_numpy(image)
     if resolution_percentage < 1.0:
-        image = ResampleImage2D(image, resolution_percentage=resolution_percentage)
-    dx, dy, dz = image.GetDimensions()
-    im_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
-    im_array.shape = dy, dx
-    return im_array
+        output = zoom(output, resolution_percentage)
+    return output
 
 
 def FixGantryTilt(matrix, spacing, tilt):
@@ -240,17 +236,6 @@ def View(imagedata):
     import time
     time.sleep(10)
 
-def ViewGDCM(imagedata):
-    viewer = vtkgdcm.vtkImageColorViewer()
-    viewer.SetInput(reader.GetOutput())
-    viewer.SetColorWindow(500.)
-    viewer.SetColorLevel(50.)
-    viewer.Render()
-
-    import time
-    time.sleep(5)
-
-
 
 def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
@@ -265,267 +250,33 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     return voi.GetOutput()
 
 
-def create_dicom_thumbnails(filename, window=None, level=None):
-    rvtk = vtkgdcm.vtkGDCMImageReader()
-    rvtk.SetFileName(utils.encode(filename, const.FS_ENCODE))
-    rvtk.Update()
-
-    img = rvtk.GetOutput()
+def create_dicom_thumbnails(image, window=None, level=None):
+    pf = image.GetPixelFormat()
+    np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     if window is None or level is None:
-        _min, _max = img.GetScalarRange()
+        _min, _max = np_image.min(), np_image.max()
         window = _max - _min
         level = _min + window / 2
 
-    dx, dy, dz = img.GetDimensions()
-
-    if dz > 1:
+    if image.GetNumberOfDimensions() >= 3:
         thumbnail_paths = []
-        for i in range(dz):
-            img_slice = ExtractVOI(img, 0, dx-1, 0, dy-1, i, i+1)
-
-            colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInputData(img_slice)
-            colorer.SetWindow(window)
-            colorer.SetLevel(level)
-            colorer.SetOutputFormatToRGB()
-            colorer.Update()
-
-            resample = vtk.vtkImageResample()
-            resample.SetInputData(colorer.GetOutput())
-            resample.SetAxisMagnificationFactor ( 0, 0.25 )
-            resample.SetAxisMagnificationFactor ( 1, 0.25 )
-            resample.SetAxisMagnificationFactor ( 2, 1 )
-            resample.Update()
-
-            thumbnail_path = tempfile.mktemp()
-
-            write_png = vtk.vtkPNGWriter()
-            write_png.SetInputData(resample.GetOutput())
-            write_png.SetFileName(thumbnail_path)
-            write_png.Write()
-
+        for i in range(np_image.shape[0]):
+            thumb_image = zoom(np_image[i], 0.25)
+            thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
+            thumbnail_path = tempfile.mktemp(prefix='thumb_', suffix='.png')
+            imageio.imsave(thumbnail_path, thumb_image)
             thumbnail_paths.append(thumbnail_path)
-
         return thumbnail_paths
     else:
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInputData(img)
-        colorer.SetWindow(window)
-        colorer.SetLevel(level)
-        colorer.SetOutputFormatToRGB()
-        colorer.Update()
-
-        resample = vtk.vtkImageResample()
-        resample.SetInputData(colorer.GetOutput())
-        resample.SetAxisMagnificationFactor ( 0, 0.25 )
-        resample.SetAxisMagnificationFactor ( 1, 0.25 )
-        resample.SetAxisMagnificationFactor ( 2, 1 )
-        resample.Update()
-
-        thumbnail_path = tempfile.mktemp()
-
-        write_png = vtk.vtkPNGWriter()
-        write_png.SetInputData(resample.GetOutput())
-        write_png.SetFileName(thumbnail_path)
-        write_png.Write()
-
+        thumbnail_path = tempfile.mktemp(prefix='thumb_', suffix='.png')
+        if pf.GetSamplesPerPixel() == 1:
+            thumb_image = zoom(np_image, 0.25)
+            thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
+        else:
+            thumb_image = zoom(np_image, (0.25, 0.25, 1))
+        imageio.imsave(thumbnail_path, thumb_image)
         return thumbnail_path
 
-
-def CreateImageData(filelist, zspacing, xyspacing,size,
-                                bits, use_dcmspacing):
-    message = _("Generating multiplanar visualization...")
-
-    if not const.VTK_WARNING:
-        log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
-        fow = vtk.vtkFileOutputWindow()
-        fow.SetFileName(log_path)
-        ow = vtk.vtkOutputWindow()
-        ow.SetInstance(fow)
-
-    x,y = size
-    px, py = utils.predict_memory(len(filelist), x, y, bits)
-
-    utils.debug("Image Resized to >>> %f x %f" % (px, py))
-
-    if (x == px) and (y == py):
-        const.REDUCE_IMAGEDATA_QUALITY = 0
-    else:
-        const.REDUCE_IMAGEDATA_QUALITY = 1
-
-    if not(const.REDUCE_IMAGEDATA_QUALITY):
-        update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
-
-        array = vtk.vtkStringArray()
-        for x in range(len(filelist)):
-            array.InsertValue(x,filelist[x])
-
-        reader = vtkgdcm.vtkGDCMImageReader()
-        reader.SetFileNames(array)
-        reader.AddObserver("ProgressEvent", lambda obj,evt:
-                     update_progress(reader,message))
-        reader.Update()
-
-        # The zpacing is a DicomGroup property, so we need to set it
-        imagedata = vtk.vtkImageData()
-        imagedata.DeepCopy(reader.GetOutput())
-        if (use_dcmspacing):
-            spacing = xyspacing
-            spacing[2] = zspacing
-        else:
-            spacing = imagedata.GetSpacing()
-
-        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-    else:
-
-        update_progress= vtk_utils.ShowProgress(2*len(filelist),
-                                            dialog_type = "ProgressDialog")
-
-        # Reformat each slice and future append them
-        appender = vtk.vtkImageAppend()
-        appender.SetAppendAxis(2) #Define Stack in Z
-
-
-        # Reformat each slice
-        for x in range(len(filelist)):
-            # TODO: We need to check this automatically according
-            # to each computer's architecture
-            # If the resolution of the matrix is too large
-            reader = vtkgdcm.vtkGDCMImageReader()
-            reader.SetFileName(filelist[x])
-            reader.AddObserver("ProgressEvent", lambda obj,evt:
-                         update_progress(reader,message))
-            reader.Update()
-
-            if (use_dcmspacing):
-                spacing = xyspacing
-                spacing[2] = zspacing
-            else:
-                spacing = reader.GetOutput().GetSpacing()
-
-            tmp_image = vtk.vtkImageData()
-            tmp_image.DeepCopy(reader.GetOutput())
-            tmp_image.SetSpacing(spacing[0], spacing[1], zspacing)
-            tmp_image.Update()
-
-            #Resample image in x,y dimension
-            slice_imagedata = ResampleImage2D(tmp_image, px, py, update_progress)
-            #Stack images in Z axes
-            appender.AddInput(slice_imagedata)
-            #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
-            appender.Update()
-
-        spacing = appender.GetOutput().GetSpacing()
-
-        # The zpacing is a DicomGroup property, so we need to set it
-        imagedata = vtk.vtkImageData()
-        imagedata.DeepCopy(appender.GetOutput())
-        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-
-    imagedata.AddObserver("ProgressEvent", lambda obj,evt:
-                 update_progress(imagedata,message))
-    imagedata.Update()
-
-    return imagedata
-
-
-class ImageCreator:
-    def __init__(self):
-        self.running = True
-        Publisher.subscribe(self.CancelImageDataLoad, "Cancel DICOM load")
-
-    def CancelImageDataLoad(self, evt_pusub):
-        utils.debug("Canceling")
-        self.running = False
-
-    def CreateImageData(self, filelist, zspacing, size, bits):
-        message = _("Generating multiplanar visualization...")
-
-        if not const.VTK_WARNING:
-            log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
-            fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName(log_path)
-            ow = vtk.vtkOutputWindow()
-            ow.SetInstance(fow)
-
-        x,y = size
-        px, py = utils.predict_memory(len(filelist), x, y, bits)
-        utils.debug("Image Resized to >>> %f x %f" % (px, py))
-
-        if (x == px) and (y == py):
-            const.REDUCE_IMAGEDATA_QUALITY = 0
-        else:
-            const.REDUCE_IMAGEDATA_QUALITY = 1
-
-        if not(const.REDUCE_IMAGEDATA_QUALITY):
-            update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
-
-            array = vtk.vtkStringArray()
-            for x in range(len(filelist)):
-                if not self.running:
-                    return False
-                array.InsertValue(x,filelist[x])
-
-            if not self.running:
-                return False
-            reader = vtkgdcm.vtkGDCMImageReader()
-            reader.SetFileNames(array)
-            reader.AddObserver("ProgressEvent", lambda obj,evt:
-                         update_progress(reader,message))
-            reader.Update()
-
-            if not self.running:
-                reader.AbortExecuteOn()
-                return False
-            # The zpacing is a DicomGroup property, so we need to set it
-            imagedata = vtk.vtkImageData()
-            imagedata.DeepCopy(reader.GetOutput())
-            spacing = imagedata.GetSpacing()
-            imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-        else:
-
-            update_progress= vtk_utils.ShowProgress(2*len(filelist),
-                                                dialog_type = "ProgressDialog")
-
-            # Reformat each slice and future append them
-            appender = vtk.vtkImageAppend()
-            appender.SetAppendAxis(2) #Define Stack in Z
-
-
-            # Reformat each slice
-            for x in range(len(filelist)):
-                # TODO: We need to check this automatically according
-                # to each computer's architecture
-                # If the resolution of the matrix is too large
-                if not self.running:
-                    return False
-                reader = vtkgdcm.vtkGDCMImageReader()
-                reader.SetFileName(filelist[x])
-                reader.AddObserver("ProgressEvent", lambda obj,evt:
-                             update_progress(reader,message))
-                reader.Update()
-
-                #Resample image in x,y dimension
-                slice_imagedata = ResampleImage2D(reader.GetOutput(), px, py, update_progress)
-                #Stack images in Z axes
-                appender.AddInput(slice_imagedata)
-                #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
-                appender.Update()
-
-            # The zpacing is a DicomGroup property, so we need to set it
-            if not self.running:
-                return False
-            imagedata = vtk.vtkImageData()
-            imagedata.DeepCopy(appender.GetOutput())
-            spacing = imagedata.GetSpacing()
-
-            imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-
-        imagedata.AddObserver("ProgressEvent", lambda obj,evt:
-                     update_progress(imagedata,message))
-        imagedata.Update()
-
-        return imagedata
 
 
 def array2memmap(arr):
@@ -635,7 +386,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     return matrix, scalar_range, temp_file
 
 
-
 def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -644,7 +394,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     message = _("Generating multiplanar visualization...")
     update_progress= vtk_utils.ShowProgress(len(files) - 1, dialog_type = "ProgressDialog")
 
-    first_slice = read_dcm_slice_as_np(files[0], resolution_percentage)
+    first_slice = read_dcm_slice_as_np2(files[0], resolution_percentage)
     slice_size = first_slice.shape[::-1]
 
     temp_file = tempfile.mktemp()
@@ -658,7 +408,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
     for n, f in enumerate(files):
-        im_array = read_dcm_slice_as_np(f, resolution_percentage)
+        im_array = read_dcm_slice_as_np2(f, resolution_percentage)[::-1]
 
         if orientation == 'CORONAL':
             matrix[:, shape[1] - n - 1, :] = im_array
@@ -678,37 +428,35 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
 
 def dcmmf2memmap(dcm_file, orientation):
-    r = vtkgdcm.vtkGDCMImageReader()
-    r.SetFileName(dcm_file)
-    r.Update()
-
+    reader = gdcm.ImageReader()
+    reader.SetFileName(dcm_file)
+    reader.Read()
+    image = reader.GetImage()
+    xs, ys, zs = image.GetSpacing()
+    pf = image.GetPixelFormat()
+    np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     temp_file = tempfile.mktemp()
-
-    o = r.GetOutput()
-    x, y, z = o.GetDimensions()
-    spacing = o.GetSpacing()
-
-    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=(z, y, x))
-
-    d = numpy_support.vtk_to_numpy(o.GetPointData().GetScalars())
-    d.shape = z, y, x
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=np_image.shape)
+    print("Number of dimensions", np_image.shape)
+    z, y, x = np_image.shape
     if orientation == 'CORONAL':
+        spacing = xs, zs, ys
         matrix.shape = y, z, x
         for n in range(z):
-            matrix[:, n, :] = d[n]
+            matrix[:, n, :] = np_image[n][::-1]
     elif orientation == 'SAGITTAL':
-        matrix.shape = x, z, y
+        spacing = zs, ys, xs
+        matrix.shape = y, x, z
         for n in range(z):
-            matrix[:, :, n] = d[n]
+            matrix[:, :, n] = np_image[n][::-1]
     else:
-        matrix[:] = d
+        spacing = xs, ys, zs
+        matrix[:] = np_image[:, ::-1, :]
 
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
 
-    print("ORIENTATION", orientation)
-
-    return matrix, spacing, scalar_range, temp_file
+    return matrix, scalar_range, spacing, temp_file
 
 
 def img2memmap(group):
@@ -762,3 +510,14 @@ def imgnormalize(data, srange=(0, 255)):
     datan = datan.astype(numpy.int16)
 
     return datan
+
+
+def get_LUT_value_255(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
+    data.shape = shape
+    return data

@@ -149,6 +149,7 @@ class Text(object):
                 self.mapper.SetInput(value.encode("utf-8", errors='replace'))
 
     def SetCoilDistanceValue(self, value):
+        #TODO: Not being used anymore. Can be deleted.
         if isinstance(value, int) or isinstance(value, float):
             value = 'Dist: ' + str("{:06.2f}".format(value)) + ' mm'
             if sys.platform == 'win32':
