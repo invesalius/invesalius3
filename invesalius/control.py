@@ -685,10 +685,28 @@ class Controller():
 
 
     def create_project_from_matrix(self, name, matrix, spacing=(1.0, 1.0, 1.0), modality="CT"):
+        """
+        Creates a new project from a Numpy 3D array.
+
+        name: Name of the project.
+        matrix: A Numpy 3D array. It only works with int16 arrays.
+        spacing: The spacing between the center of the voxels in X, Y and Z direction.
+        modality: Imaging modality.
+        """
+
+        # Verifying if there is a project open
+        s = ses.Session()
+        if s.IsOpen():
+            Publisher.sendMessage('Close Project')
+            Publisher.sendMessage('Disconnect tracker')
+
+        # Check if user really closed the project, if not, stop project creation
+        if s.IsOpen():
+            return
+
         name_to_const = {"AXIAL": const.AXIAL,
                          "CORONAL": const.CORONAL,
                          "SAGITTAL": const.SAGITAL}
-
         mmap_matrix = image_utils.array2memmap(matrix)
 
         self.Slice = sl.Slice()
