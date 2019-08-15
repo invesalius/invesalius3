@@ -28,7 +28,7 @@ import numpy as np
 import vtk
 import wx
 from scipy import ndimage
-from scipy.misc import imsave
+from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
 from six import with_metaclass
 from skimage.morphology import watershed
