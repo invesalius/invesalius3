@@ -169,6 +169,10 @@ class Viewer(wx.Panel):
         #self.pTarget = [0., 0., 0.]
 
         # self.obj_axes = None
+        self.x_actor = None
+        self.y_actor = None
+        self.z_actor = None
+        self.mark_actor = None
 
         self._mode_cross = False
         self._to_show_ball = 0
@@ -1238,7 +1242,16 @@ class Viewer(wx.Panel):
         self.obj_actor.GetProperty().SetOpacity(.4)
         self.obj_actor.SetVisibility(0)
 
+        self.x_actor = self.add_line([0., 0., 0.], [1., 0., 0.], color=[.0, .0, 1.0])
+        self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
+        self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
+        self.mark_actor = self.add_marker([0., 0., 0.], color=[0., 1., 1.])
+
         self.ren.AddActor(self.obj_actor)
+        self.ren.AddActor(self.x_actor)
+        self.ren.AddActor(self.y_actor)
+        self.ren.AddActor(self.z_actor)
+        self.ren.AddActor(self.mark_actor)
 
         # self.obj_axes = vtk.vtkAxesActor()
         # self.obj_axes.SetShaftTypeToCylinder()
@@ -1249,25 +1262,79 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
+    def add_line(self, p1, p2, color=[0.0, 0.0, 1.0]):
+        line = vtk.vtkLineSource()
+        line.SetPoint1(p1)
+        line.SetPoint2(p2)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(line.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(color)
+
+        return actor
+
+    def add_marker(self, coord, color):
+        # x, y, z = coord
+
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(3)
+        ball_ref.SetCenter(coord)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_ref.GetOutputPort())
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(color)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.SetProperty(prop)
+
+        # ren.AddActor(actor)
+
+        return actor
+
     def OnNavigationStatus(self, status):
         self.nav_status = status
         self.pTarget = self.CenterOfMass()
         if self.obj_actor and self.nav_status:
             self.obj_actor.SetVisibility(self.obj_state)
+            self.x_actor.SetVisibility(self.obj_state)
+            self.y_actor.SetVisibility(self.obj_state)
+            self.z_actor.SetVisibility(self.obj_state)
+            self.mark_actor.SetVisibility(self.obj_state)
             if not self.obj_state:
                 self.Refresh()
 
     def UpdateObjectOrientation(self, m_img, coord):
         m_img[:3, -1] = np.asmatrix(bases.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
+        norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+        p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+        p2 = [x - 30 * y for x, y in zip(p0[0], norm_vec[0])]
+        m_tract = m_img.copy()
+        m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+
+        # m_img[:3, 0] is from posterior to anterior direction of the coil
+        # m_img[:3, 1] is from left to right direction of the coil
+        # m_img[:3, 2] is from bottom to up direction of the coil
 
         m_img_vtk = vtk.vtkMatrix4x4()
+        m_tract_vtk = vtk.vtkMatrix4x4()
 
         for row in range(0, 4):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
+                m_tract_vtk.SetElement(row, col, m_tract[row, col])
 
         self.obj_actor.SetUserMatrix(m_img_vtk)
         # self.obj_axes.SetUserMatrix(m_rot_vtk)
+        self.x_actor.SetUserMatrix(m_img_vtk)
+        self.y_actor.SetUserMatrix(m_img_vtk)
+        self.z_actor.SetUserMatrix(m_img_vtk)
+        self.mark_actor.SetUserMatrix(m_tract_vtk)
 
         self.Refresh()
 
@@ -1279,13 +1346,25 @@ class Viewer(wx.Panel):
         else:
             if self.obj_actor:
                 self.ren.RemoveActor(self.obj_actor)
+                self.ren.RemoveActor(self.x_actor)
+                self.ren.RemoveActor(self.y_actor)
+                self.ren.RemoveActor(self.z_actor)
+                self.ren.RemoveActor(self.mark_actor)
                 self.obj_actor = None
+                self.x_actor = None
+                self.y_actor = None
+                self.z_actor = None
+                self.mark_actor = None
         self.Refresh()
 
     def UpdateShowObjectState(self, state):
         self.obj_state = state
         if self.obj_actor and not self.obj_state:
             self.obj_actor.SetVisibility(self.obj_state)
+            self.x_actor.SetVisibility(self.obj_state)
+            self.y_actor.SetVisibility(self.obj_state)
+            self.z_actor.SetVisibility(self.obj_state)
+            self.mark_actor.SetVisibility(self.obj_state)
             self.Refresh()
 
     # def UpdateAffineWorld2Inv(self, affine, status):

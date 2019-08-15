@@ -31,6 +31,7 @@ import invesalius.data.bases as db
 import numpy as np
 
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
+# TODO: Optimize the navigation speed by replacing all matrix multiplications with @ opperator (about 4 times faster)
 
 
 class CoregistrationStatic(threading.Thread):
@@ -354,8 +355,14 @@ class CoregistrationObjectDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
+            norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+            p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+            p2 = [x - 30 * y for x, y in zip(p0[0], norm_vec[0])]
+            # m_tract = m_img.copy()
+            # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+
             pos_world_aux = np.ones([4, 1])
-            pos_world_aux[:3, -1] = db.flip_x(coord[:3])[:3]
+            pos_world_aux[:3, -1] = db.flip_x(p2[:3])[:3]
             pos_world = np.linalg.inv(affine) @ pos_world_aux
             seed_aux = pos_world.reshape([1, 4])[0, :3]
             seed = seed_aux[np.newaxis, :]
