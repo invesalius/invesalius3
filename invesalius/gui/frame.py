@@ -1056,7 +1056,7 @@ class MenuBar(wx.MenuBar):
         id = evt.GetId()
         if id != const.ID_PLUGINS_SHOW_PATH:
             try:
-                plugin_name = self._plugins_menu_ids[id]
+                plugin_name = self._plugins_menu_ids[id]["name"]
                 print("Loading plugin:", plugin_name)
                 Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
             except KeyError:
@@ -1096,8 +1096,9 @@ class MenuBar(wx.MenuBar):
 
         for item in items:
             _new_id = wx.NewId()
-            self._plugins_menu_ids[_new_id] = item
-            self.plugins_menu.Append(_new_id, item, items[item]["description"])
+            self._plugins_menu_ids[_new_id] = items[item]
+            menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
+            menu_item.Enable(items[item]["enable_startup"])
             print(">>> menu", item)
 
     def OnEnableState(self, state):
@@ -1117,12 +1118,22 @@ class MenuBar(wx.MenuBar):
         for item in self.enable_items:
             self.Enable(item, False)
 
+        # Disabling plugins menus that needs a project open
+        for item in self._plugins_menu_ids:
+            if not self._plugins_menu_ids[item]["enable_startup"]:
+                self.Enable(item, False)
+
     def SetStateProjectOpen(self):
         """
         Enable menu items (e.g. save) when project is opened.
         """
         for item in self.enable_items:
             self.Enable(item, True)
+
+        # Enabling plugins menus that needs a project open
+        for item in self._plugins_menu_ids:
+            if not self._plugins_menu_ids[item]["enable_startup"]:
+                self.Enable(item, True)
 
     def OnEnableUndo(self, value):
         if value:

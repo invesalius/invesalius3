@@ -51,10 +51,13 @@ class PluginManager:
                         jdict = json.load(f)
                         plugin_name = jdict["name"]
                         plugin_description = jdict["description"]
+                        enable_startup = jdict.get("enable-startup", False)
 
                         self.plugins[plugin_name] = {
+                            "name": plugin_name,
                             "description": plugin_description,
                             "folder": p,
+                            "enable_startup": enable_startup,
                         }
                 except Exception as err:
                     print("It was not possible to load plugin. Error: {}".format(err))
