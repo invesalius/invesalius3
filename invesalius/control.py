@@ -730,8 +730,12 @@ class Controller():
         proj.original_orientation =\
             name_to_const[orientation]
 
-        proj.window = self.Slice.window_width
-        proj.level = self.Slice.window_level
+        if const.WINDOW_LEVEL[_("Default")] != (None, None):
+            proj.window, proj.level = const.WINDOW_LEVEL[_("Default")]
+        else:
+            proj.window = 255
+            proj.level = 127
+
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
 
