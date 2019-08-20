@@ -420,7 +420,8 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
-        Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
+        Publisher.subscribe(self.UpdateImageCoordinates, 'Update cross position')
+        # Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -435,7 +436,7 @@ class NeuronavigationPanel(wx.Panel):
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
-    def UpdateImageCoordinates(self, position):
+    def UpdateImageCoordinates(self, arg, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = position
         for m in [0, 1, 2]:
@@ -1084,7 +1085,8 @@ class MarkersPanel(wx.Panel):
         self.Update()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
+        # Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Update cross position')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
@@ -1507,7 +1509,7 @@ class TractographyPanel(wx.Panel):
         # Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
         # Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        Publisher.subscribe(self.OnUpdateTracts, 'Co-registered points')
+        # Publisher.subscribe(self.OnUpdateTracts, 'Co-registered points')
 
     def UpdateTrackerInit(self, nav_prop):
         self.nav_prop = nav_prop

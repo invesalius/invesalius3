@@ -42,7 +42,8 @@ class Record(threading.Thread):
         self.start()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoords, 'Co-registered points')
+        # Publisher.subscribe(self.UpdateCurrentCoords, 'Co-registered points')
+        Publisher.subscribe(self.UpdateCurrentCoords, 'Update cross position')
 
     def UpdateCurrentCoords(self, arg, position):
         self.coord = asarray(position)

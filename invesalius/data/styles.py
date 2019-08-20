@@ -221,15 +221,15 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.slice_data = viewer.slice_data
 
         # tracts
-        self.seed = [0., 0., 0.]
-        slic = sl.Slice()
-        self.affine = slic.affine
-        self.tracker = slic.tracker
-
-        self.affine_vtk = vtk.vtkMatrix4x4()
-        for row in range(0, 4):
-            for col in range(0, 4):
-                self.affine_vtk.SetElement(row, col, self.affine[row, col])
+        # self.seed = [0., 0., 0.]
+        # slic = sl.Slice()
+        # self.affine = slic.affine
+        # self.tracker = slic.tracker
+        #
+        # self.affine_vtk = vtk.vtkMatrix4x4()
+        # for row in range(0, 4):
+        #     for col in range(0, 4):
+        #         self.affine_vtk.SetElement(row, col, self.affine[row, col])
         # ---
 
         self.picker = vtk.vtkWorldPointPicker()
@@ -274,10 +274,10 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # print("Check the seed: ", self.seed)
         #
 
-        Publisher.sendMessage('Update cross position', position=(wx, wy, wz))
+        Publisher.sendMessage('Update cross position', arg=None, position=(wx, wy, wz, 0., 0., 0.))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
-        Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
+        # Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
+        # Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
 
         iren.Render()
 

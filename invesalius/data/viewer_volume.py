@@ -125,7 +125,7 @@ class Viewer(wx.Panel):
         # axes.SetYAxisLabelText('y')
         # axes.SetZAxisLabelText('z')
         # axes.SetTotalLength(50, 50, 50)
-        # 
+        #
         # self.ren.AddActor(axes)
 
         self.slice_plane = None
@@ -209,7 +209,7 @@ class Viewer(wx.Panel):
                                  'Load surface actor into viewer')
         Publisher.subscribe(self.RemoveActor,
                                 'Remove surface actor from viewer')
-        Publisher.subscribe(self.OnShowSurface, 'Show surface')
+        # Publisher.subscribe(self.OnShowSurface, 'Show surface')
         Publisher.subscribe(self.UpdateRender,
                                  'Render volume viewer')
         Publisher.subscribe(self.ChangeBackgroundColour,
@@ -241,7 +241,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, 'Load slice plane')
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
-        Publisher.subscribe(self.SetVolumeCamera, 'Co-registered points')
+        # Publisher.subscribe(self.SetVolumeCamera, 'Update cross position')
+        # Publisher.subscribe(self.SetVolumeCamera, 'Co-registered points')
         # Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
         Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
@@ -271,8 +272,12 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-        Publisher.subscribe(self.SetBallReferencePosition,
-                            'Set ball reference position')
+        # Publisher.subscribe(self.SetBallReferencePosition,
+        #                     'Set ball reference position')
+        # Publisher.subscribe(self.SetBallReferencePosition,
+        #                     'Update cross position')
+        Publisher.subscribe(self.UpdateCameraBallPosition,
+                            'Update cross position')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
@@ -339,13 +344,23 @@ class Viewer(wx.Panel):
     def _check_ball_reference(self, style):
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = True
-            self._check_and_set_ball_visibility()
+            # self._check_and_set_ball_visibility()
+            self._ball_ref_visibility = True
+            # if self._to_show_ball:
+            if not self.ball_actor:
+                self.CreateBallReference()
+
             self.interactor.Render()
 
     def _uncheck_ball_reference(self, style):
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = False
-            self.RemoveBallReference()
+            # self.RemoveBallReference()
+            self._ball_ref_visibility = False
+            if self.ball_actor:
+                self.ren.RemoveActor(self.ball_actor)
+                self.ball_actor = None
+
             self.interactor.Render()
 
     def OnSensors(self, probe_id, ref_id, obj_id=0):
@@ -405,12 +420,12 @@ class Viewer(wx.Panel):
             self.probe = self.ref = self.obj = False
             self.interactor.Render()
 
-    def OnShowSurface(self, index, visibility):
-        if visibility:
-            self._to_show_ball += 1
-        else:
-            self._to_show_ball -= 1
-        self._check_and_set_ball_visibility()
+    # def OnShowSurface(self, index, visibility):
+    #     if visibility:
+    #         self._to_show_ball += 1
+    #     else:
+    #         self._to_show_ball -= 1
+    #     self._check_and_set_ball_visibility()
 
     def OnStartSeed(self):
         self.seed_points = []
@@ -505,8 +520,8 @@ class Viewer(wx.Panel):
         if (volumes.GetNumberOfItems()):
             self.ren.RemoveVolume(volumes.GetLastProp())
             self.interactor.Render()
-            self._to_show_ball -= 1
-            self._check_and_set_ball_visibility()
+            # self._to_show_ball -= 1
+            # self._check_and_set_ball_visibility()
 
     def RemoveActors(self, actors):
         "Remove a list of actors"
@@ -1146,31 +1161,44 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.ball_actor)
 
-    def ActivateBallReference(self):
-        self._mode_cross = True
-        self._ball_ref_visibility = True
-        if self._to_show_ball:
-            if not self.ball_actor:
-                self.CreateBallReference()
+    # def ActivateBallReference(self):
+    #     self._mode_cross = True
+    #     self._ball_ref_visibility = True
+    #     if self._to_show_ball:
+    #         if not self.ball_actor:
+    #             self.CreateBallReference()
+    #
+    # def RemoveBallReference(self):
+    #     self._mode_cross = False
+    #     self._ball_ref_visibility = False
+    #     if self.ball_actor:
+    #         self.ren.RemoveActor(self.ball_actor)
+    #         self.ball_actor = None
 
-    def RemoveBallReference(self):
-        self._mode_cross = False
-        self._ball_ref_visibility = False
-        if self.ball_actor:
-            self.ren.RemoveActor(self.ball_actor)
-            self.ball_actor = None
+    def UpdateCameraBallPosition(self, arg, position):
+        # if self._to_show_ball:
+        #     if not self.ball_actor:
+        #         self.ActivateBallReference()
+
+        # coord = position
+        x, y, z = bases.flip_x(position[:3])
+        self.ball_actor.SetPosition(x, y, z)
+
+        self.SetVolumeCamera(position[:3])
+
+        self.Refresh()
 
     def SetBallReferencePosition(self, position):
-        if self._to_show_ball:
-            if not self.ball_actor:
-                self.ActivateBallReference()
+        # if self._to_show_ball:
+        #     if not self.ball_actor:
+        #         self.ActivateBallReference()
 
-            coord = position
-            x, y, z = bases.flip_x(coord)
-            self.ball_actor.SetPosition(x, y, z)
+        # coord = position
+        x, y, z = bases.flip_x(position)
+        self.ball_actor.SetPosition(x, y, z)
 
-        else:
-            self.RemoveBallReference()
+        # else:
+        #     self.RemoveBallReference()
 
     def CreateObjectPolyData(self, filename):
         """
@@ -1658,10 +1686,12 @@ class Viewer(wx.Panel):
     def SetVolumeCameraState(self, camera_state):
         self.camera_state = camera_state
 
-    def SetVolumeCamera(self, arg, position):
+    # def SetVolumeCamera(self, arg, position):
+    def SetVolumeCamera(self, position):
         if self.camera_state:
             # TODO: exclude dependency on initial focus
-            cam_focus = np.array(bases.flip_x(position[:3]))
+            # cam_focus = np.array(bases.flip_x(position[:3]))
+            cam_focus = np.array(bases.flip_x(position))
             cam = self.ren.GetActiveCamera()
 
             if self.initial_focus is None:
@@ -1690,7 +1720,7 @@ class Viewer(wx.Panel):
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
         #self.interactor.Render()
-        self.Refresh()
+        # self.Refresh()
 
     def OnExportSurface(self, filename, filetype):
         if filetype not in (const.FILETYPE_STL,
@@ -1755,16 +1785,16 @@ class Viewer(wx.Panel):
     def OnShowRaycasting(self):
         if not self.raycasting_volume:
             self.raycasting_volume = True
-            self._to_show_ball += 1
-            self._check_and_set_ball_visibility()
+            # self._to_show_ball += 1
+            # self._check_and_set_ball_visibility()
             if self.on_wl:
                 self.text.Show()
 
     def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
-        self._to_show_ball -= 1
-        self._check_and_set_ball_visibility()
+        # self._to_show_ball -= 1
+        # self._check_and_set_ball_visibility()
 
     def OnSize(self, evt):
         self.UpdateRender()
@@ -1791,16 +1821,16 @@ class Viewer(wx.Panel):
 
         #self.ShowOrientationCube()
         self.interactor.Render()
-        self._to_show_ball += 1
-        self._check_and_set_ball_visibility()
+        # self._to_show_ball += 1
+        # self._check_and_set_ball_visibility()
 
     def RemoveActor(self, actor):
         utils.debug("RemoveActor")
         ren = self.ren
         ren.RemoveActor(actor)
         self.interactor.Render()
-        self._to_show_ball -= 1
-        self._check_and_set_ball_visibility()
+        # self._to_show_ball -= 1
+        # self._check_and_set_ball_visibility()
 
     def RemoveAllActor(self):
         utils.debug("RemoveAllActor")
@@ -1812,7 +1842,8 @@ class Viewer(wx.Panel):
 
     def LoadVolume(self, volume, colour, ww, wl):
         self.raycasting_volume = True
-        self._to_show_ball += 1
+        # self._to_show_ball += 1
+        # self._check_and_set_ball_visibility()
 
         self.light = self.ren.GetLights().GetNextItem()
 
@@ -1832,15 +1863,14 @@ class Viewer(wx.Panel):
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
 
-        self._check_and_set_ball_visibility()
         self.UpdateRender()
 
     def UnloadVolume(self, volume):
         self.ren.RemoveVolume(volume)
         del volume
         self.raycasting_volume = False
-        self._to_show_ball -= 1
-        self._check_and_set_ball_visibility()
+        # self._to_show_ball -= 1
+        # self._check_and_set_ball_visibility()
 
     def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
@@ -1987,17 +2017,17 @@ class Viewer(wx.Panel):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
 
-    def _check_and_set_ball_visibility(self):
-        #TODO: When creating Raycasting volume and cross is pressed, it is not
-        # automatically creating the ball reference.
-        print("mode_cross, show_ball, ball_vis ", self._mode_cross, self._to_show_ball, self._ball_ref_visibility)
-        if self._mode_cross:
-            if self._to_show_ball > 0 and not self._ball_ref_visibility:
-                self.ActivateBallReference()
-                self.interactor.Render()
-            elif not self._to_show_ball and self._ball_ref_visibility:
-                self.RemoveBallReference()
-                self.interactor.Render()
+    # def _check_and_set_ball_visibility(self):
+    #     #TODO: When creating Raycasting volume and cross is pressed, it is not
+    #     # automatically creating the ball reference.
+    #     # print("mode_cross, show_ball, ball_vis ", self._mode_cross, self._to_show_ball, self._ball_ref_visibility)
+    #     if self._mode_cross:
+    #         if self._to_show_ball > 0 and not self._ball_ref_visibility:
+    #             self.ActivateBallReference()
+    #             self.interactor.Render()
+    #         elif not self._to_show_ball and self._ball_ref_visibility:
+    #             self.RemoveBallReference()
+    #             self.interactor.Render()
 
 class SlicePlane:
     def __init__(self):

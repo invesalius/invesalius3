@@ -98,19 +98,19 @@ class CoregistrationDynamic(threading.Thread):
         self.coreg_data = coreg_data
         self.nav_id = nav_id
         self.trck_info = trck_info
-        self.tracts_info = tracts_info
-        self.tracts = None
+        # self.tracts_info = tracts_info
+        # self.tracts = None
         self._pause_ = False
         self.start()
 
     def stop(self):
-        self.tracts.stop()
+        # self.tracts.stop()
         self._pause_ = True
 
     def run(self):
         m_change, obj_ref_mode = self.coreg_data
         trck_init, trck_id, trck_mode = self.trck_info
-        seed, tracker, affine, affine_vtk = self.tracts_info
+        # seed, tracker, affine, affine_vtk = self.tracts_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -143,10 +143,11 @@ class CoregistrationDynamic(threading.Thread):
             #
             # self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
+            # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(3.175)
+            sleep(1.175)
 
             if self._pause_:
                 return
@@ -310,8 +311,8 @@ class CoregistrationObjectDynamic(threading.Thread):
         self.coreg_data = coreg_data
         self.nav_id = nav_id
         self.trck_info = trck_info
-        self.tracts_info = tracts_info
-        self.tracts = None
+        # self.tracts_info = tracts_info
+        # self.tracts = None
         self._pause_ = False
         self.start()
 
@@ -323,7 +324,7 @@ class CoregistrationObjectDynamic(threading.Thread):
 
         m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = self.coreg_data
         trck_init, trck_id, trck_mode = self.trck_info
-        seed, tracker, affine, affine_vtk = self.tracts_info
+        # seed, tracker, affine, affine_vtk = self.tracts_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -373,7 +374,7 @@ class CoregistrationObjectDynamic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(3.175)
+            sleep(0.175)
 
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
