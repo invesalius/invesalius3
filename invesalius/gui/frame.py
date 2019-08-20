@@ -1804,7 +1804,8 @@ class SliceToolBar(AuiToolBar):
 
         self.parent = parent
         self.enable_items = [const.SLICE_STATE_SCROLL,
-                             const.SLICE_STATE_CROSS,]
+                             const.SLICE_STATE_CROSS,
+                             const.SLICE_STATE_TRACTS,]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
@@ -1823,12 +1824,18 @@ class SliceToolBar(AuiToolBar):
 
             path = os.path.join(d,"cross_original.png")
             BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "cross_original.png")
+            BMP_TRACT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
         else:
             path = os.path.join(d, "slice.png")
             BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d,"cross.png")
             BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "cross.png")
+            BMP_TRACT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         self.sst = self.AddToggleTool(const.SLICE_STATE_SCROLL,
                           BMP_SLICE,#, kind=wx.ITEM_CHECK)
@@ -1841,6 +1848,12 @@ class SliceToolBar(AuiToolBar):
                           wx.NullBitmap,
                           toggle=True,
                           short_help_string=_("Slices' cross intersection"))
+
+        sdti = self.AddToggleTool(const.SLICE_STATE_TRACTS,
+                                  BMP_TRACT,  # , kind=wx.ITEM_CHECK)
+                                  wx.NullBitmap,
+                                  toggle=True,
+                                  short_help_string=_("Tracts visualization"))
 
     def __bind_events(self):
         """
@@ -1878,7 +1891,7 @@ class SliceToolBar(AuiToolBar):
             state = self.GetToolToggled(id)
             if state:
                 self.ToggleTool(id, False)
-                if id == const.SLICE_STATE_CROSS:
+                if id in [const.SLICE_STATE_CROSS, const.SLICE_STATE_TRACTS]:
                     msg = 'Set cross visibility'
                     Publisher.sendMessage(msg, visibility=0)
         self.Refresh()
