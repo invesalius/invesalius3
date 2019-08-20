@@ -55,6 +55,7 @@ import invesalius.data.imagedata_utils as image_utils
 import invesalius.reader.others_reader as oth
 import vtk
 import Trekker
+import invesalius.data.brainmesh_handler as brain
 
 import invesalius.data.trekker_nothread as dti
 
@@ -1402,15 +1403,17 @@ class TractographyPanel(wx.Panel):
         # self.obj_ref_mode = None
         # self.obj_name = None
         self.timestamp = const.SEED_OFFSET
+        self.brain_peel = None
+        self.n_peels = const.MAX_PEEL_DEPTH
 
         self.SetAutoLayout(1)
         self.__bind_events()
 
         # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load parameters"))
+        tooltip = wx.ToolTip(_("Load brain"))
         btn_new = wx.Button(self, -1, _("Load brain"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
-        btn_new.Enable(0)
+        btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
         self.btn_new = btn_new
 
@@ -1439,8 +1442,8 @@ class TractographyPanel(wx.Panel):
         # Change peeling depth
         text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
         spin_peel_depth = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_peel_depth.Enable(0)
-        spin_peel_depth.SetRange(0, 30)
+        spin_peel_depth.Enable(1)
+        spin_peel_depth.SetRange(0, const.MAX_PEEL_DEPTH)
         spin_peel_depth.SetValue(const.PEEL_DEPTH)
         spin_peel_depth.Bind(wx.EVT_TEXT, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth))
         spin_peel_depth.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth))
@@ -1513,6 +1516,9 @@ class TractographyPanel(wx.Panel):
 
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
+        if self.checkpeeling.GetValue():
+            actor = self.brain_peel.get_actor(self.peel_depth)
+            Publisher.sendMessage('Update peel', flag=True, actor=actor)
 
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
@@ -1522,7 +1528,12 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Update seed offset', offset=self.timestamp)
 
     def OnShowPeeling(self, evt, ctrl):
-        self.view_peeling = ctrl.GetValue()
+        # self.view_peeling = ctrl.GetValue()
+        if ctrl.GetValue():
+            actor = self.brain_peel.get_actor(self.peel_depth)
+        else:
+            actor = None
+        Publisher.sendMessage('Update peel', flag=ctrl.GetValue(), actor=actor)
 
     def OnEnableTracts(self, evt, ctrl):
         self.view_tracts = ctrl.GetValue()
@@ -1560,27 +1571,33 @@ class TractographyPanel(wx.Panel):
 
     def OnLinkBrain(self, event=None):
 
-        if self.nav_prop:
-            dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
-            try:
-                if dialog.ShowModal() == wx.ID_OK:
-                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
-                    if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
-                        self.checktrack.Enable(1)
-                        Publisher.sendMessage('Update object registration',
-                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-                        Publisher.sendMessage('Update status text in GUI',
-                                              label=_("Ready"))
-                        # Enable automatically Track object, Show coil and disable Vol. Camera
-                        self.checktrack.SetValue(True)
-                        Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
-                        Publisher.sendMessage('Change camera checkbox', status=False)
+        # filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT)
+        data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
+        mask_file = 'sub-P0_dwi_mask.nii'
+        mask_path = os.path.join(data_dir, mask_file)
+        img_file = 'sub-P0_T1w_biascorrected.nii'
+        img_path = os.path.join(data_dir, img_file)
+        # n_peels = 10
 
-            except wx._core.PyAssertionError:  # TODO FIX: win64
-                pass
+        if mask_path and img_path:
+            self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
+            print("Load completed")
+            Publisher.sendMessage('Update peel', flag=True, actor=actor)
 
-        else:
-            dlg.NavigationTrackerWarning(0, 'choose')
+            # slic = sl.Slice()
+            # self.affine = slic.affine
+            #
+            # self.affine_vtk = vtk.vtkMatrix4x4()
+            # for row in range(0, 4):
+            #     for col in range(0, 4):
+            #         self.affine_vtk.SetElement(row, col, self.affine[row, col])
+
+            self.checkpeeling.Enable(1)
+            # Publisher.sendMessage('Update object registration',
+            #                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+            # Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
+            self.checkpeeling.SetValue(True)
 
     def OnLinkFOD(self, event=None):
         # filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT)

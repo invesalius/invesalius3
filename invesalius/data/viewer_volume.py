@@ -202,6 +202,7 @@ class Viewer(wx.Panel):
         # proj = prj.Project()
         # self.affine = np.identity(4)
         self.actor_tracts = None
+        self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
         # Publisher.sendMessage('Get affine matrix')
 
@@ -313,6 +314,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.OnShowStreamLines, 'Set ball reference position')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
+        Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         # Publisher.subscribe(self.UpdateAffineWorld2Inv, 'Update affine matrix')
 
     def SetStereoMode(self, mode):
@@ -1327,6 +1329,19 @@ class Viewer(wx.Panel):
         # ren.AddActor(actor)
 
         return actor
+
+    def AddPeeledSurface(self, flag, actor):
+        if flag:
+            if self.actor_peel:
+                self.ren.RemoveActor(self.actor_peel)
+            if actor:
+                self.ren.AddActor(actor)
+                self.actor_peel = actor
+        else:
+            if self.actor_peel:
+                self.ren.RemoveActor(self.actor_peel)
+                self.actor_peel = None
+        self.Refresh()
 
     def OnNavigationStatus(self, status):
         self.nav_status = status
