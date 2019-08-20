@@ -37,7 +37,8 @@ class ComputeTracts:
         tract_exist = False
 
         pos_world_aux = np.ones([4, 1])
-        pos_world_aux[:3, -1] = db.flip_x(self.position)[:3]
+        # pos_world_aux[:3, -1] = db.flip_x(self.position)[:3]
+        pos_world_aux[:3, -1] = self.position[:3]
         pos_world = np.linalg.inv(self.affine) @ pos_world_aux
         seed = pos_world.reshape([1, 4])[0, :3]
 
