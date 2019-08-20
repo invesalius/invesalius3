@@ -147,7 +147,7 @@ class CoregistrationDynamic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(1.175)
+            sleep(3.175)
 
             if self._pause_:
                 return
@@ -356,9 +356,9 @@ class CoregistrationObjectDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
-            norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-            p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-            p2 = [x - 30 * y for x, y in zip(p0[0], norm_vec[0])]
+            # norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+            # p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+            # p2 = [x - 30 * y for x, y in zip(p0[0], norm_vec[0])]
             # m_tract = m_img.copy()
             # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
 
@@ -370,11 +370,12 @@ class CoregistrationObjectDynamic(threading.Thread):
 
             # self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
+            # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(0.175)
+            sleep(2.175)
 
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.

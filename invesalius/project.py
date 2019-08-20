@@ -309,9 +309,9 @@ class Project(with_metaclass(Singleton, object)):
         self.threshold_range = project["scalar_range"]
         self.spacing = project["spacing"]
         if project.get("affine"):
-            self.affine = np.asarray(project["affine"]).reshape(4, 4)
+            self.affine = project.get("affine")
             Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
+                                  affine=np.asarray(self.affine).reshape(4, 4), status=True)
 
         self.compress = project.get("compress", True)
 

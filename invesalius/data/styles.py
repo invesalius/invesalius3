@@ -279,7 +279,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
         # Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
 
-        iren.Render()
+        # iren.Render()
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":

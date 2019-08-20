@@ -3543,6 +3543,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:
             NavigationTrackerWarning(0, 'choose')
 
+        if btn_id == 3:
+            coord = np.zeros([6,])
+
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
             self.obj_fiducials[btn_id, :] = coord[:3]

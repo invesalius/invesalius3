@@ -232,31 +232,31 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :return: six coordinates x, y, z, alfa, beta and gama
     """
 
-    sleep(0.5)
+    sleep(0.05)
 
     dx = [-70, 70]
     dt = [-180, 180]
 
-    # coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-    #                   uniform(*dt), uniform(*dt), uniform(*dt)])
-    # coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-    #                   uniform(*dt), uniform(*dt), uniform(*dt)])
-    # coord3 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-    #                    uniform(*dt), uniform(*dt), uniform(*dt)])
-    # coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-    #                    uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                      uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                      uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord3 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                       uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                       uniform(*dt), uniform(*dt), uniform(*dt)])
 
-    coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
-    coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
-    coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
-    coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    # coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    #
+    # coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    #
+    # coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    #
+    # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
     Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
 

@@ -20,7 +20,7 @@ import os
 import plistlib
 import wx
 from wx.lib.pubsub import pub as Publisher
-import Trekker
+import numpy as np
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as image_utils
@@ -325,7 +325,7 @@ class Controller():
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
-        self.Slice.affine = proj.affine
+        self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)

@@ -573,6 +573,7 @@ class Viewer(wx.Panel):
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
+        self.interactor.Render()
         # Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
 
     def ScrollSlice(self, coord):
@@ -1137,7 +1138,8 @@ class Viewer(wx.Panel):
         renderer.AddActor(cross_actor)
 
     def __update_cross_position(self, arg, position):
-        self.cross.SetFocalPoint(position[:3])
+        # self.cross.SetFocalPoint(position[:3])
+        self.UpdateSlicesNavigation(None, position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)

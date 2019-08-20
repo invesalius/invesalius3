@@ -37,7 +37,7 @@ import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
 
 from math import cos, sin, pi
-from time import sleep
+from time import sleep, time
 
 import invesalius.data.transformations as tr
 import invesalius.constants as const
@@ -144,7 +144,7 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                          (10, 320), 0, fpb.FPB_SINGLE_FOLD)
+                                      (10, 310), 0, fpb.FPB_SINGLE_FOLD)
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -565,17 +565,17 @@ class NeuronavigationPanel(wx.Panel):
         coord = None
 
         if self.trk_init and self.tracker_id:
-            if self.tracker_id == const.DEBUGTRACK:
-                if btn_id == 3:
-                    coord1 = np.array([-120., 0., 0., 0., 0., 0.])
-                elif btn_id == 4:
-                    coord1 = np.array([120., 0., 0., 0., 0., 0.])
-                elif btn_id == 5:
-                    coord1 = np.array([0., 120., 0., 0., 0., 0.])
-                coord2 = np.zeros([3, 6])
-                coord_raw = np.vstack([coord1, coord2])
-            else:
-                coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            # if self.tracker_id == const.DEBUGTRACK:
+            #     if btn_id == 3:
+            #         coord1 = np.array([-120., 0., 0., 0., 0., 0.])
+            #     elif btn_id == 4:
+            #         coord1 = np.array([120., 0., 0., 0., 0., 0.])
+            #     elif btn_id == 5:
+            #         coord1 = np.array([0., 120., 0., 0., 0., 0.])
+            #     coord2 = np.zeros([3, 6])
+            #     coord_raw = np.vstack([coord1, coord2])
+            # else:
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
 
             if self.ref_mode_id:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
@@ -1396,7 +1396,9 @@ class TractographyPanel(wx.Panel):
         self.affine = None
         self.affine_vtk = None
         self.tracker = None
-        self.n_tracts = 5
+        self.n_tracts = const.N_TRACTS
+        self.peel_depth = const.PEEL_DEPTH
+        self.view_tracts = False
         # self.obj_ref_mode = None
         # self.obj_name = None
         self.timestamp = const.TIMESTAMP
@@ -1434,23 +1436,23 @@ class TractographyPanel(wx.Panel):
         line_save.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_save.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
 
-        # Change angles threshold
-        text_angles = wx.StaticText(self, -1, _("Peeling depth (mm):"))
-        spin_size_angles = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_size_angles.Enable(0)
-        spin_size_angles.SetRange(0, 30)
-        spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
-        spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
-        spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+        # Change peeling depth
+        text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
+        spin_peel_depth = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
+        spin_peel_depth.Enable(0)
+        spin_peel_depth.SetRange(0, 30)
+        spin_peel_depth.SetValue(const.PEEL_DEPTH)
+        spin_peel_depth.Bind(wx.EVT_TEXT, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth))
+        spin_peel_depth.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth))
 
-        # Change dist threshold
-        text_dist = wx.StaticText(self, -1, _("Param 2:"))
-        spin_size_dist = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_size_dist.Enable(0)
-        spin_size_dist.SetRange(1, 99)
-        spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
-        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
-        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+        # Change number of tracts
+        text_ntracts = wx.StaticText(self, -1, _("Number tracts:"))
+        spin_ntracts = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
+        spin_ntracts.Enable(1)
+        spin_ntracts.SetRange(1, 99)
+        spin_ntracts.SetValue(const.N_TRACTS)
+        spin_ntracts.Bind(wx.EVT_TEXT, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
+        spin_ntracts.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
 
         # Change timestamp interval
         text_timestamp = wx.StaticText(self, -1, _("Param 3:"))
@@ -1464,25 +1466,25 @@ class TractographyPanel(wx.Panel):
 
         # Create a horizontal sizer to threshold configs
         line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
-        line_angle_threshold.AddMany([(text_angles, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
-                                      (spin_size_angles, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+        line_angle_threshold.AddMany([(text_peel_depth, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_peel_depth, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
         line_dist_threshold = wx.BoxSizer(wx.HORIZONTAL)
-        line_dist_threshold.AddMany([(text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
-                                      (spin_size_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+        line_dist_threshold.AddMany([(text_ntracts, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_ntracts, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
         line_timestamp = wx.BoxSizer(wx.HORIZONTAL)
         line_timestamp.AddMany([(text_timestamp, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
                                       (spin_timestamp_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
-        # Check box for trigger monitoring to create markers from serial port
+        # Check box to enable tract visualization
         checktracts = wx.CheckBox(self, -1, _('Enable tracts'))
         checktracts.SetValue(False)
         checktracts.Enable(0)
         checktracts.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableTracts, ctrl=checktracts))
         self.checktracts = checktracts
 
-        # Check box to track object or simply the stylus
+        # Check box to enable surface peeling
         checkpeeling = wx.CheckBox(self, -1, _('Peel surface'))
         checkpeeling.SetValue(False)
         checkpeeling.Enable(0)
@@ -1506,70 +1508,53 @@ class TractographyPanel(wx.Panel):
         self.Update()
 
     def __bind_events(self):
-        # Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
-        # Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        # Publisher.subscribe(self.OnUpdateTracts, 'Co-registered points')
+        Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
 
-    def UpdateTrackerInit(self, nav_prop):
-        self.nav_prop = nav_prop
+    def OnSelectPeelingDepth(self, evt, ctrl):
+        self.peel_depth = ctrl.GetValue()
 
-    def UpdateNavigationStatus(self, status):
-        nav_status = status
-        if nav_status:
-            self.checkrecordcoords.Enable(1)
-            self.checktrack.Enable(0)
-            self.btn_save.Enable(0)
-            self.btn_new.Enable(0)
-            self.btn_load.Enable(0)
-        else:
-            self.OnRecordCoords(nav_status, self.checkrecordcoords)
-            self.checkrecordcoords.SetValue(False)
-            self.checkrecordcoords.Enable(0)
-            self.btn_save.Enable(1)
-            self.btn_new.Enable(1)
-            self.btn_load.Enable(1)
-            if self.obj_fiducials is not None:
-                self.checktrack.Enable(1)
-                #Publisher.sendMessage('Enable target button', True)
-
-    def OnSelectAngleThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
-
-    def OnSelectDistThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update dist threshold', dist_threshold=ctrl.GetValue())
+    def OnSelectNumTracts(self, evt, ctrl):
+        self.n_tracts = ctrl.GetValue()
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
 
     def OnShowPeeling(self, evt, ctrl):
-        if ctrl.GetValue() and evt:
-            self.spin_timestamp_dist.Enable(0)
-            self.thr_record = rec.Record(ctrl.GetValue(), self.timestamp)
-        elif (not ctrl.GetValue() and evt) or (ctrl.GetValue() and not evt) :
-            self.spin_timestamp_dist.Enable(1)
-            self.thr_record.stop()
-        elif not ctrl.GetValue() and not evt:
-            None
+        self.view_peeling = ctrl.GetValue()
 
     def OnEnableTracts(self, evt, ctrl):
-        Publisher.sendMessage('Update track object state', flag=evt.GetSelection(), obj_name=self.obj_name)
+        self.view_tracts = ctrl.GetValue()
 
     def OnUpdateTracts(self, arg, position):
         # Tracts
         wx, wy, wz = position[:3]
+
+        # if np.any(arg):
+        #     m_img = arg.copy()
+        #     # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
+        #     norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+        #     p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+        #     p2 = [x + 30 * y for x, y in zip(p0[0], norm_vec[0])]
+        #     wx, wy, wz = p2
+        #     # print("m_img in task_nav: {}".format(m_img))
+        #     # m_tract = m_img.copy()
+        #     # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+
         # pos_world_aux = np.ones([4, 1])
         # pos_world_aux[:3, -1] = db.flip_x(position)[:3]
         # pos_world = np.linalg.inv(self.affine) @ pos_world_aux
         # seed = pos_world.reshape([1, 4])[0, :3]
         # seed = seed_aux[np.newaxis, :]
-        # print("Check the seed: ", seed)
+        # print("Check the seed: ", (wx, wy, wz))
         if self.checktracts.GetValue():
+            start_time = time()
             actor = dti.ComputeTracts(self.tracker, (wx, wy, wz),
                                       self.affine, self.affine_vtk, self.n_tracts).run()
             # print("The actor: ", actor)
             Publisher.sendMessage('Update tracts', flag=True, actor=actor)
-        #
+            duration = time() - start_time
+            print(f"Tracts duration {duration} seconds")
 
     def OnLinkBrain(self, event=None):
 
@@ -1656,10 +1641,7 @@ class TractographyPanel(wx.Panel):
         self.checkpeeling.SetValue(False)
         self.checkpeeling.Enable(0)
 
-        self.nav_prop = None
-        self.obj_fiducials = None
-        self.obj_orients = None
-        self.obj_ref_mode = None
-        self.obj_name = None
+        self.peel_depth = const.PEEL_DEPTH
+        self.n_tracts = const.N_TRACTS
         self.timestamp = const.TIMESTAMP
 

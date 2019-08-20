@@ -734,3 +734,7 @@ COIL_COORD_THRESHOLD = 3
 TIMESTAMP = 2.0
 
 CAM_MODE = True
+
+# Tractography visualization
+N_TRACTS = 5
+PEEL_DEPTH = 17

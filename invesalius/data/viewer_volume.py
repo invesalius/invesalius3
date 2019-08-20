@@ -1181,12 +1181,12 @@ class Viewer(wx.Panel):
         #         self.ActivateBallReference()
 
         # coord = position
-        x, y, z = bases.flip_x(position[:3])
-        self.ball_actor.SetPosition(x, y, z)
+        coord_flip = bases.flip_x(position[:3])
+        self.ball_actor.SetPosition(*coord_flip)
 
-        self.SetVolumeCamera(position[:3])
+        self.SetVolumeCamera(np.array(coord_flip))
 
-        self.Refresh()
+        # self.Refresh()
 
     def SetBallReferencePosition(self, position):
         # if self._to_show_ball:
@@ -1272,7 +1272,7 @@ class Viewer(wx.Panel):
 
         self.x_actor = self.add_line([0., 0., 0.], [1., 0., 0.], color=[.0, .0, 1.0])
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
-        self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
+        self.z_actor = self.add_line([0., 0., 0.], [0., 0., -50.], color=[1.0, .0, .0])
         self.mark_actor = self.add_marker([0., 0., 0.], color=[0., 1., 1.])
 
         self.ren.AddActor(self.obj_actor)
@@ -1320,6 +1320,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
+        actor.GetProperty().SetOpacity(.5)
 
         # ren.AddActor(actor)
 
@@ -1338,12 +1339,14 @@ class Viewer(wx.Panel):
                 self.Refresh()
 
     def UpdateObjectOrientation(self, m_img, coord):
-        m_img[:3, -1] = np.asmatrix(bases.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-        norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-        p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+        m_img_copy = m_img.copy()
+        m_img_copy[:3, -1] = np.asmatrix(bases.flip_x_m((m_img_copy[0, -1], m_img_copy[1, -1], m_img_copy[2, -1]))).reshape([3, 1])
+        norm_vec = m_img_copy[:3, 2].reshape([1, 3]).tolist()
+        p0 = m_img_copy[:3, -1].reshape([1, 3]).tolist()
         p2 = [x - 30 * y for x, y in zip(p0[0], norm_vec[0])]
-        m_tract = m_img.copy()
+        m_tract = m_img_copy.copy()
         m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+        # print("m_img copy in viewer_vol: {}".format(m_img_copy))
 
         # m_img[:3, 0] is from posterior to anterior direction of the coil
         # m_img[:3, 1] is from left to right direction of the coil
@@ -1354,7 +1357,7 @@ class Viewer(wx.Panel):
 
         for row in range(0, 4):
             for col in range(0, 4):
-                m_img_vtk.SetElement(row, col, m_img[row, col])
+                m_img_vtk.SetElement(row, col, m_img_copy[row, col])
                 m_tract_vtk.SetElement(row, col, m_tract[row, col])
 
         self.obj_actor.SetUserMatrix(m_img_vtk)
@@ -1687,11 +1690,11 @@ class Viewer(wx.Panel):
         self.camera_state = camera_state
 
     # def SetVolumeCamera(self, arg, position):
-    def SetVolumeCamera(self, position):
+    def SetVolumeCamera(self, cam_focus):
         if self.camera_state:
             # TODO: exclude dependency on initial focus
             # cam_focus = np.array(bases.flip_x(position[:3]))
-            cam_focus = np.array(bases.flip_x(position))
+            # cam_focus = np.array(bases.flip_x(position))
             cam = self.ren.GetActiveCamera()
 
             if self.initial_focus is None:
@@ -1720,7 +1723,7 @@ class Viewer(wx.Panel):
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
         #self.interactor.Render()
-        # self.Refresh()
+        self.Refresh()
 
     def OnExportSurface(self, filename, filetype):
         if filetype not in (const.FILETYPE_STL,
