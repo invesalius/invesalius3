@@ -738,3 +738,4 @@ CAM_MODE = True
 # Tractography visualization
 N_TRACTS = 5
 PEEL_DEPTH = 17
+SEED_OFFSET = 30

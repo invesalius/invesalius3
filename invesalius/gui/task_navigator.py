@@ -1401,7 +1401,7 @@ class TractographyPanel(wx.Panel):
         self.view_tracts = False
         # self.obj_ref_mode = None
         # self.obj_name = None
-        self.timestamp = const.TIMESTAMP
+        self.timestamp = const.SEED_OFFSET
 
         self.SetAutoLayout(1)
         self.__bind_events()
@@ -1455,10 +1455,10 @@ class TractographyPanel(wx.Panel):
         spin_ntracts.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
 
         # Change timestamp interval
-        text_timestamp = wx.StaticText(self, -1, _("Param 3:"))
+        text_timestamp = wx.StaticText(self, -1, _("Seed offset (mm):"))
         spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
-        spin_timestamp_dist.Enable(0)
-        spin_timestamp_dist.SetRange(0.5, 60.0)
+        spin_timestamp_dist.Enable(1)
+        spin_timestamp_dist.SetRange(0, 100.0)
         spin_timestamp_dist.SetValue(self.timestamp)
         spin_timestamp_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
         spin_timestamp_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
@@ -1519,6 +1519,7 @@ class TractographyPanel(wx.Panel):
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
+        Publisher.sendMessage('Update seed offset', offset=self.timestamp)
 
     def OnShowPeeling(self, evt, ctrl):
         self.view_peeling = ctrl.GetValue()
@@ -1528,18 +1529,19 @@ class TractographyPanel(wx.Panel):
 
     def OnUpdateTracts(self, arg, position):
         # Tracts
-        wx, wy, wz = position[:3]
+        # wx, wy, wz = position[:3]
+        wx, wy, wz = db.flip_x(position[:3])
 
-        # if np.any(arg):
-        #     m_img = arg.copy()
-        #     # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-        #     norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-        #     p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-        #     p2 = [x + 30 * y for x, y in zip(p0[0], norm_vec[0])]
-        #     wx, wy, wz = p2
-        #     # print("m_img in task_nav: {}".format(m_img))
-        #     # m_tract = m_img.copy()
-        #     # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+        if np.any(arg):
+            m_img2 = arg.copy()
+            m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
+            norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
+            p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
+            p2 = [x - self.timestamp * y for x, y in zip(p0[0], norm_vec[0])]
+            wx, wy, wz = p2
+            # print("m_img in task_nav: {}".format(m_img))
+            # m_tract = m_img.copy()
+            # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
 
         # pos_world_aux = np.ones([4, 1])
         # pos_world_aux[:3, -1] = db.flip_x(position)[:3]

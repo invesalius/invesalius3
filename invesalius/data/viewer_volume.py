@@ -202,6 +202,7 @@ class Viewer(wx.Panel):
         # proj = prj.Project()
         # self.affine = np.identity(4)
         self.actor_tracts = None
+        self.seed_offset = const.SEED_OFFSET
         # Publisher.sendMessage('Get affine matrix')
 
     def __bind_events(self):
@@ -311,6 +312,7 @@ class Viewer(wx.Panel):
 
         # Publisher.subscribe(self.OnShowStreamLines, 'Set ball reference position')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
+        Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         # Publisher.subscribe(self.UpdateAffineWorld2Inv, 'Update affine matrix')
 
     def SetStereoMode(self, mode):
@@ -1272,7 +1274,7 @@ class Viewer(wx.Panel):
 
         self.x_actor = self.add_line([0., 0., 0.], [1., 0., 0.], color=[.0, .0, 1.0])
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
-        self.z_actor = self.add_line([0., 0., 0.], [0., 0., -50.], color=[1.0, .0, .0])
+        self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
         self.mark_actor = self.add_marker([0., 0., 0.], color=[0., 1., 1.])
 
         self.ren.AddActor(self.obj_actor)
@@ -1308,7 +1310,7 @@ class Viewer(wx.Panel):
         # x, y, z = coord
 
         ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(3)
+        ball_ref.SetRadius(2)
         ball_ref.SetCenter(coord)
 
         mapper = vtk.vtkPolyDataMapper()
@@ -1338,12 +1340,15 @@ class Viewer(wx.Panel):
             if not self.obj_state:
                 self.Refresh()
 
+    def UpdateSeedOffset(self, offset):
+        self.seed_offset = offset
+
     def UpdateObjectOrientation(self, m_img, coord):
         m_img_copy = m_img.copy()
         m_img_copy[:3, -1] = np.asmatrix(bases.flip_x_m((m_img_copy[0, -1], m_img_copy[1, -1], m_img_copy[2, -1]))).reshape([3, 1])
         norm_vec = m_img_copy[:3, 2].reshape([1, 3]).tolist()
         p0 = m_img_copy[:3, -1].reshape([1, 3]).tolist()
-        p2 = [x - 30 * y for x, y in zip(p0[0], norm_vec[0])]
+        p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
         m_tract = m_img_copy.copy()
         m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
         # print("m_img copy in viewer_vol: {}".format(m_img_copy))
