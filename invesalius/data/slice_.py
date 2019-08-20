@@ -1509,10 +1509,6 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.matrix_filename = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
 
-    def _open_image_affine(self, filename, shape, dtype):
-        self.affine_filename = filename
-        self.affine = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
-
     def OnFlipVolume(self, axis):
         if axis == 0:
             self.matrix[:] = self.matrix[::-1]

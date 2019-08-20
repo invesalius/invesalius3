@@ -120,13 +120,13 @@ class Viewer(wx.Panel):
         #  self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
         #  self.canvas.draw_list.append(self.text)
         #  self.canvas.draw_list.append(self.polygon)
-        axes = vtk.vtkAxesActor()
-        axes.SetXAxisLabelText('x')
-        axes.SetYAxisLabelText('y')
-        axes.SetZAxisLabelText('z')
-        axes.SetTotalLength(50, 50, 50)
-
-        self.ren.AddActor(axes)
+        # axes = vtk.vtkAxesActor()
+        # axes.SetXAxisLabelText('x')
+        # axes.SetYAxisLabelText('y')
+        # axes.SetZAxisLabelText('z')
+        # axes.SetTotalLength(50, 50, 50)
+        # 
+        # self.ren.AddActor(axes)
 
         self.slice_plane = None
 
@@ -1373,6 +1373,7 @@ class Viewer(wx.Panel):
     def OnUpdateTracts(self, evt=None, flag=None, actor=None):
         # TODO: Remove tracts also when cross button is untoogled
         # start_time = time.time()
+
         if flag:
             if self.actor_tracts:
                 self.ren.RemoveActor(self.actor_tracts)
@@ -1989,6 +1990,7 @@ class Viewer(wx.Panel):
     def _check_and_set_ball_visibility(self):
         #TODO: When creating Raycasting volume and cross is pressed, it is not
         # automatically creating the ball reference.
+        print("mode_cross, show_ball, ball_vis ", self._mode_cross, self._to_show_ball, self._ball_ref_visibility)
         if self._mode_cross:
             if self._to_show_ball > 0 and not self._ball_ref_visibility:
                 self.ActivateBallReference()

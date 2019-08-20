@@ -518,11 +518,12 @@ class Controller():
         self.Slice.spacing = proj.spacing
 
         ## tracts
-        data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
-        FOD_path = b"sub-P0_dwi_FOD.nii"
+        # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
+        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+        # FOD_path = 'sub-P0_dwi_FOD.nii'
         # FOD_path = b"test_fod.nii"
-        full_path = os.path.join(data_dir, FOD_path)
-        self.Slice.tracker = Trekker.tracker(full_path)
+        # full_path = os.path.join(data_dir, FOD_path)
+        # self.Slice.tracker = Trekker.tracker(full_path.encode('utf-8'))
         ##
 
         Publisher.sendMessage('Load slice to viewer',

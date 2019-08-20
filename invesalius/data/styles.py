@@ -223,7 +223,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # tracts
         self.seed = [0., 0., 0.]
         slic = sl.Slice()
-        self.affine = np.asarray(slic.affine)
+        self.affine = slic.affine
         self.tracker = slic.tracker
 
         self.affine_vtk = vtk.vtkMatrix4x4()
@@ -266,12 +266,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         coord = self.viewer.calcultate_scroll_position(px, py)
 
         # Tracts
-        pos_world_aux = np.ones([4, 1])
-        pos_world_aux[:3, -1] = bases.flip_x((wx, wy, wz))[:3]
-        pos_world = np.linalg.inv(self.affine) @ pos_world_aux
-        seed_aux = pos_world.reshape([1, 4])[0, :3]
-        self.seed = seed_aux[np.newaxis, :]
-        print("Check the seed: ", self.seed)
+        # pos_world_aux = np.ones([4, 1])
+        # pos_world_aux[:3, -1] = bases.flip_x((wx, wy, wz))[:3]
+        # pos_world = np.linalg.inv(self.affine) @ pos_world_aux
+        # seed_aux = pos_world.reshape([1, 4])[0, :3]
+        # self.seed = seed_aux[np.newaxis, :]
+        # print("Check the seed: ", self.seed)
         #
 
         Publisher.sendMessage('Update cross position', position=(wx, wy, wz))
@@ -2630,7 +2630,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
-        const.SLICE_STATE_CROSS: TractsInteractorStyle,
+        const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
@@ -2649,6 +2649,6 @@ def get_style(style):
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
         const.SLICE_STATE_CROP_MASK: CropMaskInteractorStyle,
-        const.SLICE_STATE_TRACTS: CrossInteractorStyle,
+        const.SLICE_STATE_TRACTS: TractsInteractorStyle,
     }
     return STYLES[style]

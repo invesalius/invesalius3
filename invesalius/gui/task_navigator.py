@@ -51,7 +51,12 @@ import invesalius.gui.dialogs as dlg
 from invesalius import utils
 
 import invesalius.data.slice_ as sl
+import invesalius.data.imagedata_utils as image_utils
+import invesalius.reader.others_reader as oth
 import vtk
+import Trekker
+
+import invesalius.data.trekker_nothread as dti
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -139,7 +144,7 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                          (10, 290), 0, fpb.FPB_SINGLE_FOLD)
+                                          (10, 320), 0, fpb.FPB_SINGLE_FOLD)
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -164,15 +169,22 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 3 - Markers panel
-        item = fold_panel.AddFoldPanel(_("Extra tools"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Markers"), collapsed=True)
         mtw = MarkersPanel(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
-        # Fold 4 - DBS
+        # Fold 4 - Tractography panel
+        item = fold_panel.AddFoldPanel(_("Tractography"), collapsed=True)
+        otw = TractographyPanel(item)
 
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
+                                      leftSpacing=0, rightSpacing=0)
+
+        # Fold 5 - DBS
         self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
         dtw = DbsPanel(self.dbs_item) #Atribuir nova var, criar panel
 
@@ -552,7 +564,18 @@ class NeuronavigationPanel(wx.Panel):
         coord = None
 
         if self.trk_init and self.tracker_id:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            if self.tracker_id == const.DEBUGTRACK:
+                if btn_id == 3:
+                    coord1 = np.array([-120., 0., 0., 0., 0., 0.])
+                elif btn_id == 4:
+                    coord1 = np.array([120., 0., 0., 0., 0., 0.])
+                elif btn_id == 5:
+                    coord1 = np.array([0., 120., 0., 0., 0., 0.])
+                coord2 = np.zeros([3, 6])
+                coord_raw = np.vstack([coord1, coord2])
+            else:
+                coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+
             if self.ref_mode_id:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             else:
@@ -575,7 +598,7 @@ class NeuronavigationPanel(wx.Panel):
 
         seed = [0., 0., 0.]
         slic = sl.Slice()
-        affine = np.asarray(slic.affine)
+        affine = slic.affine
         tracker = slic.tracker
 
         affine_vtk = vtk.vtkMatrix4x4()
@@ -1354,4 +1377,287 @@ class DbsPanel(wx.Panel):
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+
+
+class TractographyPanel(wx.Panel):
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+
+        # self.coil_list = const.COIL
+
+        self.affine = None
+        self.affine_vtk = None
+        self.tracker = None
+        self.n_tracts = 5
+        # self.obj_ref_mode = None
+        # self.obj_name = None
+        self.timestamp = const.TIMESTAMP
+
+        self.SetAutoLayout(1)
+        self.__bind_events()
+
+        # Button for creating new coil
+        tooltip = wx.ToolTip(_("Load parameters"))
+        btn_new = wx.Button(self, -1, _("Load brain"), size=wx.Size(65, 23))
+        btn_new.SetToolTip(tooltip)
+        btn_new.Enable(0)
+        btn_new.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
+        self.btn_new = btn_new
+
+        # Button for import config coil file
+        tooltip = wx.ToolTip(_("Load FOD"))
+        btn_load = wx.Button(self, -1, _("Load FOD"), size=wx.Size(65, 23))
+        btn_load.SetToolTip(tooltip)
+        btn_load.Enable(1)
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLinkFOD)
+        self.btn_load = btn_load
+
+        # Save button for object registration
+        tooltip = wx.ToolTip(_(u"Save parameters"))
+        btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
+        btn_save.SetToolTip(tooltip)
+        btn_save.Enable(1)
+        btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveParameters)
+        self.btn_save = btn_save
+
+        # Create a horizontal sizer to represent button save
+        line_save = wx.BoxSizer(wx.HORIZONTAL)
+        line_save.Add(btn_new, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_save.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_save.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+
+        # Change angles threshold
+        text_angles = wx.StaticText(self, -1, _("Peeling depth (mm):"))
+        spin_size_angles = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
+        spin_size_angles.Enable(0)
+        spin_size_angles.SetRange(0, 30)
+        spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
+        spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+        spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+
+        # Change dist threshold
+        text_dist = wx.StaticText(self, -1, _("Param 2:"))
+        spin_size_dist = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
+        spin_size_dist.Enable(0)
+        spin_size_dist.SetRange(1, 99)
+        spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
+        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+
+        # Change timestamp interval
+        text_timestamp = wx.StaticText(self, -1, _("Param 3:"))
+        spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
+        spin_timestamp_dist.Enable(0)
+        spin_timestamp_dist.SetRange(0.5, 60.0)
+        spin_timestamp_dist.SetValue(self.timestamp)
+        spin_timestamp_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
+        spin_timestamp_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
+        self.spin_timestamp_dist = spin_timestamp_dist
+
+        # Create a horizontal sizer to threshold configs
+        line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
+        line_angle_threshold.AddMany([(text_angles, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_size_angles, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+
+        line_dist_threshold = wx.BoxSizer(wx.HORIZONTAL)
+        line_dist_threshold.AddMany([(text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_size_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+
+        line_timestamp = wx.BoxSizer(wx.HORIZONTAL)
+        line_timestamp.AddMany([(text_timestamp, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_timestamp_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+
+        # Check box for trigger monitoring to create markers from serial port
+        checktracts = wx.CheckBox(self, -1, _('Enable tracts'))
+        checktracts.SetValue(False)
+        checktracts.Enable(0)
+        checktracts.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableTracts, ctrl=checktracts))
+        self.checktracts = checktracts
+
+        # Check box to track object or simply the stylus
+        checkpeeling = wx.CheckBox(self, -1, _('Peel surface'))
+        checkpeeling.SetValue(False)
+        checkpeeling.Enable(0)
+        checkpeeling.Bind(wx.EVT_CHECKBOX, partial(self.OnShowPeeling, ctrl=checkpeeling))
+        self.checkpeeling = checkpeeling
+
+        line_checks = wx.BoxSizer(wx.HORIZONTAL)
+        line_checks.Add(checktracts, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
+        line_checks.Add(checkpeeling, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
+
+        # Add line sizers into main sizer
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        main_sizer.Add(line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_timestamp, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_checks, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
+        main_sizer.Fit(self)
+
+        self.SetSizer(main_sizer)
+        self.Update()
+
+    def __bind_events(self):
+        # Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
+        # Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnUpdateTracts, 'Co-registered points')
+
+    def UpdateTrackerInit(self, nav_prop):
+        self.nav_prop = nav_prop
+
+    def UpdateNavigationStatus(self, status):
+        nav_status = status
+        if nav_status:
+            self.checkrecordcoords.Enable(1)
+            self.checktrack.Enable(0)
+            self.btn_save.Enable(0)
+            self.btn_new.Enable(0)
+            self.btn_load.Enable(0)
+        else:
+            self.OnRecordCoords(nav_status, self.checkrecordcoords)
+            self.checkrecordcoords.SetValue(False)
+            self.checkrecordcoords.Enable(0)
+            self.btn_save.Enable(1)
+            self.btn_new.Enable(1)
+            self.btn_load.Enable(1)
+            if self.obj_fiducials is not None:
+                self.checktrack.Enable(1)
+                #Publisher.sendMessage('Enable target button', True)
+
+    def OnSelectAngleThreshold(self, evt, ctrl):
+        Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
+
+    def OnSelectDistThreshold(self, evt, ctrl):
+        Publisher.sendMessage('Update dist threshold', dist_threshold=ctrl.GetValue())
+
+    def OnSelectTimestamp(self, evt, ctrl):
+        self.timestamp = ctrl.GetValue()
+
+    def OnShowPeeling(self, evt, ctrl):
+        if ctrl.GetValue() and evt:
+            self.spin_timestamp_dist.Enable(0)
+            self.thr_record = rec.Record(ctrl.GetValue(), self.timestamp)
+        elif (not ctrl.GetValue() and evt) or (ctrl.GetValue() and not evt) :
+            self.spin_timestamp_dist.Enable(1)
+            self.thr_record.stop()
+        elif not ctrl.GetValue() and not evt:
+            None
+
+    def OnEnableTracts(self, evt, ctrl):
+        Publisher.sendMessage('Update track object state', flag=evt.GetSelection(), obj_name=self.obj_name)
+
+    def OnUpdateTracts(self, arg, position):
+        # Tracts
+        wx, wy, wz = position[:3]
+        # pos_world_aux = np.ones([4, 1])
+        # pos_world_aux[:3, -1] = db.flip_x(position)[:3]
+        # pos_world = np.linalg.inv(self.affine) @ pos_world_aux
+        # seed = pos_world.reshape([1, 4])[0, :3]
+        # seed = seed_aux[np.newaxis, :]
+        # print("Check the seed: ", seed)
+        if self.checktracts.GetValue():
+            actor = dti.ComputeTracts(self.tracker, (wx, wy, wz),
+                                      self.affine, self.affine_vtk, self.n_tracts).run()
+            # print("The actor: ", actor)
+            Publisher.sendMessage('Update tracts', flag=True, actor=actor)
+        #
+
+    def OnLinkBrain(self, event=None):
+
+        if self.nav_prop:
+            dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
+            try:
+                if dialog.ShowModal() == wx.ID_OK:
+                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
+                    if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                        self.checktrack.Enable(1)
+                        Publisher.sendMessage('Update object registration',
+                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                        Publisher.sendMessage('Update status text in GUI',
+                                              label=_("Ready"))
+                        # Enable automatically Track object, Show coil and disable Vol. Camera
+                        self.checktrack.SetValue(True)
+                        Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                        Publisher.sendMessage('Change camera checkbox', status=False)
+
+            except wx._core.PyAssertionError:  # TODO FIX: win64
+                pass
+
+        else:
+            dlg.NavigationTrackerWarning(0, 'choose')
+
+    def OnLinkFOD(self, event=None):
+        # filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT)
+        data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
+        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+        FOD_path = 'sub-P0_dwi_FOD.nii'
+        # FOD_path = b"test_fod.nii"
+        filename = os.path.join(data_dir, FOD_path)
+
+        if filename:
+            # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
+            # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
+            # FOD_path = 'sub-P0_dwi_FOD.nii'
+            # FOD_path = b"test_fod.nii"
+            # full_path = os.path.join(data_dir, FOD_path)
+            slic = sl.Slice()
+            slic.tracker = Trekker.tracker(filename.encode('utf-8'))
+
+            group = oth.ReadOthers(filename)
+            # if group.affine.any():
+            #     if np.sum(slic.affine - group.affine):
+            #         slic.affine = image_utils.world2invspace(shape=group.shape, affine=group.affine)
+            #         Publisher.sendMessage('Update affine matrix',
+            #                               affine=slic.affine, status=True)
+
+            # tracts
+            # self.seed = [0., 0., 0.]
+            self.affine = slic.affine
+            self.tracker = slic.tracker
+
+            self.affine_vtk = vtk.vtkMatrix4x4()
+            for row in range(0, 4):
+                for col in range(0, 4):
+                    self.affine_vtk.SetElement(row, col, self.affine[row, col])
+            # ---
+
+            self.checktracts.Enable(1)
+            # Publisher.sendMessage('Update object registration',
+            #                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+            # Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
+            self.checktracts.SetValue(True)
+            # Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+            # Publisher.sendMessage('Change camera checkbox', status=False)
+            # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+
+    def ShowSaveParameters(self, evt):
+        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
+            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
+        else:
+            filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
+            if filename:
+                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
+                data = np.hstack([self.obj_fiducials, self.obj_orients])
+                np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
+                wx.MessageBox(_("Object file successfully saved"), _("Save"))
+
+    def OnCloseProject(self):
+        self.checktracts.SetValue(False)
+        self.checktracts.Enable(0)
+        self.checkpeeling.SetValue(False)
+        self.checkpeeling.Enable(0)
+
+        self.nav_prop = None
+        self.obj_fiducials = None
+        self.obj_orients = None
+        self.obj_ref_mode = None
+        self.obj_name = None
+        self.timestamp = const.TIMESTAMP
 

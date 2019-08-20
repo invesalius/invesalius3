@@ -514,6 +514,7 @@ def world2invspace(shape=None, affine=None):
     :return: vtk transform filter for repositioning the polydata and affine matrix to be used as SetUserMatrix in actor
     """
 
+    # remove scaling factor for non-unitary voxel dimensions
     scale, shear, angs, trans, persp = tr.decompose_matrix(affine)
     affine_noscale = tr.compose_matrix(scale=None, shear=shear, angles=angs, translate=trans, perspective=persp)
     repos_img = [0.] * 6

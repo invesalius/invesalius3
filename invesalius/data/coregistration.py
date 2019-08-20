@@ -135,13 +135,13 @@ class CoregistrationDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
-            pos_world_aux = np.ones([4, 1])
-            pos_world_aux[:3, -1] = db.flip_x(coord[:3])[:3]
-            pos_world = np.linalg.inv(affine) @ pos_world_aux
-            seed_aux = pos_world.reshape([1, 4])[0, :3]
-            seed = seed_aux[np.newaxis, :]
-
-            self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
+            # pos_world_aux = np.ones([4, 1])
+            # pos_world_aux[:3, -1] = db.flip_x((m_img[0, -1], m_img[1, -1], m_img[2, -1]))[:3]
+            # pos_world = np.linalg.inv(affine) @ pos_world_aux
+            # seed_aux = pos_world.reshape([1, 4])[0, :3]
+            # seed = seed_aux[np.newaxis, :]
+            #
+            # self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
 
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
 
@@ -316,7 +316,7 @@ class CoregistrationObjectDynamic(threading.Thread):
         self.start()
 
     def stop(self):
-        self.tracts.stop()
+        # self.tracts.stop()
         self._pause_ = True
 
     def run(self):
@@ -361,13 +361,13 @@ class CoregistrationObjectDynamic(threading.Thread):
             # m_tract = m_img.copy()
             # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
 
-            pos_world_aux = np.ones([4, 1])
-            pos_world_aux[:3, -1] = db.flip_x(p2[:3])[:3]
-            pos_world = np.linalg.inv(affine) @ pos_world_aux
-            seed_aux = pos_world.reshape([1, 4])[0, :3]
-            seed = seed_aux[np.newaxis, :]
+            # pos_world_aux = np.ones([4, 1])
+            # pos_world_aux[:3, -1] = db.flip_x((p2[0], p2[1], p2[2]))[:3]
+            # pos_world = np.linalg.inv(affine) @ pos_world_aux
+            # seed_aux = pos_world.reshape([1, 4])[0, :3]
+            # seed = seed_aux[np.newaxis, :]
 
-            self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
+            # self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
 
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
