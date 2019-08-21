@@ -375,7 +375,8 @@ class CoregistrationObjectDynamic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
-            sleep(2.175)
+            #sleep(2.175)
+            sleep(2.775)
 
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
