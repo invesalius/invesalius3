@@ -192,6 +192,72 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
             self.viewer.OnScrollBackward()
 
 
+class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        super().__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+
+        self.picker = vtk.vtkWorldPointPicker()
+        self.matrix = None
+
+        self.cursor = None
+        self.brush_size = const.BRUSH_SIZE
+        self.brush_format = const.DEFAULT_BRUSH_FORMAT
+        self.brush_colour = const.BRUSH_COLOUR
+
+        self.fill_value = 254
+
+        self.AddObserver("EnterEvent", self.OnEnterInteractor)
+        self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
+
+        self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
+        self.AddObserver("MouseMoveEvent", self.OnBrushMove)
+
+        self.RemoveObservers("MouseWheelForwardEvent")
+        self.RemoveObservers("MouseWheelBackwardEvent")
+        self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
+
+    def _set_cursor():
+        if const.DEFAULT_BRUSH_FORMAT == const.BRUSH_SQUARE:
+            self.cursor = ca.CursorRectangle()
+        elif const.DEFAULT_BRUSH_FORMAT == const.BRUSH_CIRCLE:
+            self.cursor = ca.CursorCircle()
+
+        self.cursor.SetOrientation(self.orientation)
+        n = self.viewer.slice_data.number
+        coordinates = {"SAGITAL": [n, 0, 0],
+                       "CORONAL": [0, n, 0],
+                       "AXIAL": [0, 0, n]}
+        self.cursor.SetPosition(coordinates[self.orientation])
+        spacing = self.viewer.slice_.spacing
+        self.cursor.SetSpacing(spacing)
+        self.cursor.SetColour(self.viewer._brush_cursor_colour)
+        self.cursor.SetSize(self.config.cursor_size)
+        self.viewer.slice_data.SetCursor(self.cursor)
+
+    def set_brush_size(self, size):
+        self.brush_size = size
+        self._set_cursor()
+
+    def set_brush_format(self, format):
+        self.brush_format = format
+        self._set_cursor()
+
+    def set_brush_operation(self, operation):
+        self.brush_operation = operation
+        self._set_cursor()
+
+    def set_fill_value(self, fill_value):
+        self.fill_value = fill_value
+
+    def set_matrix(self, matrix):
+        self.matrix = matrix
+
+
 class CrossInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for the Cross.

@@ -84,6 +84,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.histogram = None
         self._matrix = None
         self.aux_matrices = {}
+        self.aux_matrices_colours = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
@@ -639,14 +640,18 @@ class Slice(with_metaclass(utils.Singleton, object)):
         elif self.to_show_aux and self.current_mask:
             m = self.get_aux_slice(self.to_show_aux, orientation, slice_number)
             tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
-            aux_image = self.do_custom_colour(
-                tmp_vimage,
-                {
+            try:
+                colour_table =  self.aux_matrices_colours[self.to_show_aux]
+            except KeyError:
+                colour_table = {
                     0: (0.0, 0.0, 0.0, 0.0),
                     1: (0.0, 0.0, 0.0, 0.0),
                     254: (1.0, 0.0, 0.0, 1.0),
                     255: (1.0, 0.0, 0.0, 1.0),
-                },
+                }
+            aux_image = self.do_custom_colour(
+                tmp_vimage,
+                colour_table
             )
             final_image = self.do_blend(final_image, aux_image)
         return final_image
