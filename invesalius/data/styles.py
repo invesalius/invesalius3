@@ -194,7 +194,7 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
 
 class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
-        super().__init__(self, viewer)
+        super().__init__(viewer)
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
@@ -206,22 +206,23 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         self.brush_size = const.BRUSH_SIZE
         self.brush_format = const.DEFAULT_BRUSH_FORMAT
         self.brush_colour = const.BRUSH_COLOUR
+        self._set_cursor()
 
         self.fill_value = 254
 
-        self.AddObserver("EnterEvent", self.OnEnterInteractor)
-        self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
+        self.AddObserver("EnterEvent", self.OnBIEnterInteractor)
+        self.AddObserver("LeaveEvent", self.OnBILeaveInteractor)
 
-        self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
-        self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
-        self.AddObserver("MouseMoveEvent", self.OnBrushMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnBIBrushClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnBIBrushRelease)
+        self.AddObserver("MouseMoveEvent", self.OnBIBrushMove)
 
         self.RemoveObservers("MouseWheelForwardEvent")
         self.RemoveObservers("MouseWheelBackwardEvent")
-        self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
-        self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
+        self.AddObserver("MouseWheelForwardEvent", self.OnBIScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.OnBIScrollBackward)
 
-    def _set_cursor():
+    def _set_cursor(self):
         if const.DEFAULT_BRUSH_FORMAT == const.BRUSH_SQUARE:
             self.cursor = ca.CursorRectangle()
         elif const.DEFAULT_BRUSH_FORMAT == const.BRUSH_CIRCLE:
@@ -236,7 +237,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         spacing = self.viewer.slice_.spacing
         self.cursor.SetSpacing(spacing)
         self.cursor.SetColour(self.viewer._brush_cursor_colour)
-        self.cursor.SetSize(self.config.cursor_size)
+        self.cursor.SetSize(self.brush_size)
         self.viewer.slice_data.SetCursor(self.cursor)
 
     def set_brush_size(self, size):
@@ -256,6 +257,173 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
     def set_matrix(self, matrix):
         self.matrix = matrix
+
+    def OnBIEnterInteractor(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+        self.viewer.slice_data.cursor.Show()
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.Render()
+
+    def OnBILeaveInteractor(self, obj, evt):
+        self.viewer.slice_data.cursor.Show(0)
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.Render()
+
+    def OnBIBrushClick(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+        operation = self.config.operation
+
+        viewer._set_editor_cursor_visibility(1)
+
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+
+        slice_data.cursor.Show()
+
+        wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        position = viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        index = slice_data.number
+
+        cursor = slice_data.cursor
+        radius = cursor.radius
+
+        slice_data.cursor.SetPosition((wx, wy, wz))
+
+        self.edit_mask_pixel(self.fill_value, index, cursor.GetPixels(),
+                             position, radius, viewer.orientation)
+        viewer.OnScrollBar()
+
+    def OnBIBrushMove(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+
+        viewer._set_editor_cursor_visibility(1)
+
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+        operation = self.config.operation
+
+        wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        slice_data.cursor.SetPosition((wx, wy, wz))
+
+        if (self.left_pressed):
+            cursor = slice_data.cursor
+            radius = cursor.radius
+
+            position = viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+            index = slice_data.number
+
+            slice_data.cursor.SetPosition((wx, wy, wz))
+            self.edit_mask_pixel(self.fill_value, index, cursor.GetPixels(),
+                                 position, radius, viewer.orientation)
+            viewer.OnScrollBar(update3D=False)
+        else:
+            viewer.interactor.Render()
+
+    def OnBIBrushRelease(self, evt, obj):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+        self.viewer._flush_buffer = True
+        self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
+        self.viewer._flush_buffer = False
+
+    def edit_mask_pixel(self, fill_value, n, index, position, radius, orientation):
+        if orientation == 'AXIAL':
+            matrix = self.matrix[n, :, :]
+        elif orientation == 'CORONAL':
+            matrix = self.matrix[:, n, :]
+        elif orientation == 'SAGITAL':
+            matrix = self.matrix[:, :, n]
+
+        spacing = self.viewer.slice_.spacing
+        if hasattr(position, '__iter__'):
+            px, py = position
+            if orientation == 'AXIAL':
+                sx = spacing[0]
+                sy = spacing[1]
+            elif orientation == 'CORONAL':
+                sx = spacing[0]
+                sy = spacing[2]
+            elif orientation == 'SAGITAL':
+                sx = spacing[2]
+                sy = spacing[1]
+
+        else:
+            if orientation == 'AXIAL':
+                sx = spacing[0]
+                sy = spacing[1]
+                py = position / matrix.shape[1]
+                px = position % matrix.shape[1]
+            elif orientation == 'CORONAL':
+                sx = spacing[0]
+                sy = spacing[2]
+                py = position / matrix.shape[1]
+                px = position % matrix.shape[1]
+            elif orientation == 'SAGITAL':
+                sx = spacing[2]
+                sy = spacing[1]
+                py = position / matrix.shape[1]
+                px = position % matrix.shape[1]
+
+        cx = index.shape[1] / 2 + 1
+        cy = index.shape[0] / 2 + 1
+        xi = int(px - index.shape[1] + cx)
+        xf = int(xi + index.shape[1])
+        yi = int(py - index.shape[0] + cy)
+        yf = int(yi + index.shape[0])
+
+        if yi < 0:
+            index = index[abs(yi):,:]
+            yi = 0
+        if yf > matrix.shape[0]:
+            index = index[:index.shape[0]-(yf-matrix.shape[0]), :]
+            yf = matrix.shape[0]
+
+        if xi < 0:
+            index = index[:,abs(xi):]
+            xi = 0
+        if xf > matrix.shape[1]:
+            index = index[:,:index.shape[1]-(xf-matrix.shape[1])]
+            xf = matrix.shape[1]
+
+        # Verifying if the points is over the image array.
+        if (not 0 <= xi <= matrix.shape[1] and not 0 <= xf <= matrix.shape[1]) or \
+           (not 0 <= yi <= matrix.shape[0] and not 0 <= yf <= matrix.shape[0]):
+            return
+
+        roi_m = matrix[yi:yf,xi:xf]
+
+        # Checking if roi_i has at least one element.
+        if roi_m.size:
+            roi_m[index] = self.fill_value
+
+    def OnBIScrollForward(self, evt, obj):
+        iren = self.viewer.interactor
+        if iren.GetControlKey():
+            size = self.brush_size + 1
+            if size <= 100:
+                self.set_brush_size(size)
+        else:
+            self.OnScrollForward(obj, evt)
+
+    def OnBIScrollBackward(self, evt, obj):
+        iren = self.viewer.interactor
+        if iren.GetControlKey():
+            size = self.brush_size - 1
+            if size > 0:
+                self.set_brush_size(size)
+        else:
+            self.OnScrollBackward(obj, evt)
 
 
 class CrossInteractorStyle(DefaultInteractorStyle):
