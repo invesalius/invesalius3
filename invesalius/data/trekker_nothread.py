@@ -84,9 +84,10 @@ class ComputeTracts:
             points = vtk.vtkPoints()
             lines = vtk.vtkCellArray()
 
-            colors = vtk.vtkFloatArray()
-            colors.SetNumberOfComponents(4)
-            colors.SetName("tangents")
+            # colors = vtk.vtkFloatArray()
+            colors = vtk.vtkUnsignedCharArray()
+            colors.SetNumberOfComponents(3)
+            # colors.SetName("tangents")
 
             k = 0
             lines.InsertNextCell(numb_points)
@@ -98,9 +99,13 @@ class ComputeTracts:
                 if j < (numb_points - 1):
                     direction = trk[j + 1, :] - trk[j, :]
                     direction = direction / np.linalg.norm(direction)
-                    colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
+                    direc = [int(255*abs(s)) for s in direction]
+                    # colors.InsertNextTuple(np.abs([direc[0], direc[1], direc[2], 1]))
+                    colors.InsertNextTuple(direc)
                 else:
-                    colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
+                    # colors.InsertNextTuple(np.abs([direc[0], direc[1], direc[2], 1]))
+                    print("Coming here")
+                    colors.InsertNextTuple(direc)
 
             trkData = vtk.vtkPolyData()
             trkData.SetPoints(points)
@@ -109,7 +114,7 @@ class ComputeTracts:
 
             # make it a tube
             trkTube = vtk.vtkTubeFilter()
-            trkTube.SetRadius(0.1)
+            trkTube.SetRadius(0.3)
             trkTube.SetNumberOfSides(4)
             trkTube.SetInputData(trkData)
             trkTube.Update()
