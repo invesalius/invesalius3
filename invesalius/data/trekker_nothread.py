@@ -104,7 +104,6 @@ class ComputeTracts:
                     colors.InsertNextTuple(direc)
                 else:
                     # colors.InsertNextTuple(np.abs([direc[0], direc[1], direc[2], 1]))
-                    print("Coming here")
                     colors.InsertNextTuple(direc)
 
             trkData = vtk.vtkPolyData()
