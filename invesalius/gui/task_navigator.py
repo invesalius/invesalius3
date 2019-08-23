@@ -1615,6 +1615,10 @@ class TractographyPanel(wx.Panel):
             # full_path = os.path.join(data_dir, FOD_path)
             slic = sl.Slice()
             slic.tracker = Trekker.tracker(filename.encode('utf-8'))
+            slic.tracker.set_seed_maxTrials(1)
+            slic.tracker.set_stepSize(0.1)
+            slic.tracker.set_minFODamp(0.04)
+            slic.tracker.set_probeQuality(3)
 
             group = oth.ReadOthers(filename)
             # if group.affine.any():
