@@ -358,14 +358,8 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
-        self.viewer._flush_buffer = True
-        self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
-        self.viewer._flush_buffer = False
 
-        try:
-            self.after_brush_release()
-        except AttributeError:
-            pass
+        self.after_brush_release()
 
     def edit_mask_pixel(self, fill_value, n, index, position, radius, orientation):
         if orientation == 'AXIAL':
