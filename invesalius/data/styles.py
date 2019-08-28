@@ -302,12 +302,13 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         self.edit_mask_pixel(self.fill_value, index, cursor.GetPixels(),
                              position, radius, viewer.orientation)
-        viewer.OnScrollBar()
 
         try:
             self.after_brush_click()
         except AttributeError:
             pass
+
+        viewer.OnScrollBar()
 
     def OnBIBrushMove(self, obj, evt):
         try:
@@ -341,14 +342,13 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             slice_data.cursor.SetPosition((wx, wy, wz))
             self.edit_mask_pixel(self.fill_value, index, cursor.GetPixels(),
                                  position, radius, viewer.orientation)
+            try:
+                self.after_brush_move()
+            except AttributeError:
+                pass
             viewer.OnScrollBar(update3D=False)
         else:
             viewer.interactor.Render()
-
-        try:
-            self.after_brush_move()
-        except AttributeError:
-            pass
 
     def OnBIBrushRelease(self, evt, obj):
         try:
@@ -360,6 +360,8 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             return
 
         self.after_brush_release()
+        self.viewer.discard_mask_cache(all_orientations=True, vtk_cache=True)
+        Publisher.sendMessage('Reload actual slice')
 
     def edit_mask_pixel(self, fill_value, n, index, position, radius, orientation):
         if orientation == 'AXIAL':
