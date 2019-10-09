@@ -1312,7 +1312,7 @@ class Viewer(wx.Panel):
 
     def OnKeyDown(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
-        skip = True
+        skip = False
 
         min = 0
         max = self.slice_.GetMaxSliceNumber(self.orientation)
