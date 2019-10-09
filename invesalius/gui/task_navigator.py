@@ -251,7 +251,7 @@ class InnerFoldPanel(wx.Panel):
     def OnExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', trigger_state=ctrl.GetValue())
 
-    def OnShowObject(self, evt=None, flag=None, obj_name=None):
+    def OnShowObject(self, evt=None, flag=None, obj_name=None, polydata=None):
         if not evt:
             if flag:
                 self.checkobj.Enable(True)
@@ -436,7 +436,7 @@ class NeuronavigationPanel(wx.Panel):
             self.obj_reg = None
             self.obj_reg_status = False
 
-    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
         self.track_obj = flag
 
     def UpdateTriggerState(self, trigger_state):
@@ -882,7 +882,7 @@ class ObjectRegistrationPanel(wx.Panel):
             dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
+                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata = dialog.GetValue()
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
@@ -891,7 +891,7 @@ class ObjectRegistrationPanel(wx.Panel):
                                               label=_("Ready"))
                         # Enable automatically Track object, Show coil and disable Vol. Camera
                         self.checktrack.SetValue(True)
-                        Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                        Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name, polydata=polydata)
                         Publisher.sendMessage('Change camera checkbox', status=False)
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
