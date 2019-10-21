@@ -25,6 +25,9 @@ from multiprocessing import cpu_count
 
 import vtk
 import gdcm
+# Not showing GDCM warning and debug messages
+gdcm.Trace_DebugOff()
+gdcm.Trace_WarningOff()
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -47,6 +50,7 @@ if sys.platform == 'win32':
         _has_win32api = False
 else:
     _has_win32api = False
+
 
 def ReadDicomGroup(dir_):
 

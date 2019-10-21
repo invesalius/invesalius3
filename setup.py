@@ -1,97 +1,66 @@
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Distutils import build_ext
-from Cython.Build import cythonize
-
 import os
 import sys
+from distutils.core import setup
+from distutils.extension import Extension
 
 import numpy
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 
-if sys.platform.startswith('linux'):
-    setup(
-        cmdclass = {'build_ext': build_ext},
-        ext_modules = cythonize([ Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
-                                  include_dirs =  [numpy.get_include()],
-                                  extra_compile_args=['-fopenmp'],
-                                  extra_link_args=['-fopenmp']),
+if sys.platform == 'darwin':
+    unix_copt = ['-Xpreprocessor', '-fopenmp', '-lomp']
+    unix_lopt = ['-Xpreprocessor', '-fopenmp', '-lomp']
+else:
+    unix_copt = ['-fopenmp',]
+    unix_lopt = ['-fopenmp',]
 
-                       Extension("invesalius.data.interpolation", ["invesalius/data/interpolation.pyx"],
-                                 include_dirs=[numpy.get_include()],
-                                 extra_compile_args=['-fopenmp',],
-                                 extra_link_args=['-fopenmp',]),
 
-                       Extension("invesalius.data.transforms", ["invesalius/data/transforms.pyx"],
-                                 include_dirs=[numpy.get_include()],
-                                 extra_compile_args=['-fopenmp',],
-                                 extra_link_args=['-fopenmp',]),
+copt = {"msvc": ["/openmp"], "mingw32": ["-fopenmp"], "unix": unix_copt}
 
-                       Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
-                                 include_dirs=[numpy.get_include()],
-                                 language='c++',),
+lopt = {"mingw32": ["-fopenmp"], "unix": unix_lopt}
 
-                       Extension("invesalius.data.cy_mesh", ["invesalius/data/cy_mesh.pyx"],
-                                 include_dirs=[numpy.get_include()],
-                                 extra_compile_args=['-fopenmp', '-std=c++11'],
-                                 extra_link_args=['-fopenmp', '-std=c++11'],
-                                 language='c++',),
-                       ])
-         )
 
-elif sys.platform == 'win32':
-    setup(
-        cmdclass = {'build_ext': build_ext},
-        ext_modules = cythonize([ Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
-                                            include_dirs =  [numpy.get_include()],
-                                            extra_compile_args=['/openmp'],),
+class build_ext_subclass(build_ext):
+    def build_extensions(self):
+        c = self.compiler.compiler_type
+        print("Compiler", c)
+        if c in copt:
+            for e in self.extensions:
+                e.extra_compile_args = copt[c]
+        if c in lopt:
+            for e in self.extensions:
+                e.extra_link_args = lopt[c]
+        for e in self.extensions:
+            e.include_dirs = [numpy.get_include()]
+        build_ext.build_extensions(self)
 
-                                 Extension("invesalius.data.interpolation", ["invesalius/data/interpolation.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['/openmp'],),
 
-                                 Extension("invesalius.data.transforms", ["invesalius/data/transforms.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['/openmp'],),
-
-                                 Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           language='c++',),
-
-                                 Extension("invesalius.data.cy_mesh", ["invesalius/data/cy_mesh.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['/openmp',],
-                                           language='c++',),
-                                 ])
-    )
-
-elif sys.platform == 'darwin':
-    setup(
-        packages=["invesalius", ],
-        cmdclass = {'build_ext': build_ext},
-        ext_modules = cythonize([Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
-                                           include_dirs =  [numpy.get_include()],
-                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
-                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp']),
-
-                                 Extension("invesalius.data.interpolation", ["invesalius/data/interpolation.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
-                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp']),
-
-                                 Extension("invesalius.data.transforms", ["invesalius/data/transforms.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
-                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp']),
-
-                                 Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           language='c++',),
-
-                                 Extension("invesalius.data.cy_mesh", ["invesalius/data/cy_mesh.pyx"],
-                                           include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
-                                           extra_link_args=['-Xpreprocessor', '-fopenmp', '-lomp'],
-                                           language='c++',),
-
-                                 ])
-    )
+setup(
+    cmdclass={"build_ext": build_ext_subclass},
+    ext_modules=cythonize(
+        [
+            Extension(
+                "invesalius.data.mips",
+                ["invesalius/data/mips.pyx"],
+            ),
+            Extension(
+                "invesalius.data.interpolation",
+                ["invesalius/data/interpolation.pyx"],
+            ),
+            Extension(
+                "invesalius.data.transforms",
+                ["invesalius/data/transforms.pyx"],
+            ),
+            Extension(
+                "invesalius.data.floodfill",
+                ["invesalius/data/floodfill.pyx"],
+                language="c++",
+            ),
+            Extension(
+                "invesalius.data.cy_mesh",
+                ["invesalius/data/cy_mesh.pyx"],
+                language="c++",
+            ),
+        ]
+    ),
+)

@@ -664,12 +664,15 @@ class Slice(with_metaclass(utils.Singleton, object)):
         inverted=False,
         border_size=1.0,
     ):
+<<<<<<< HEAD
+=======
+        dz, dy, dx = self.matrix.shape
+>>>>>>> master
         if (
             self.buffer_slices[orientation].index == slice_number
             and self.buffer_slices[orientation].image is not None
         ):
             n_image = self.buffer_slices[orientation].image
-            #  print "BUFFER IMAGE"
         else:
             if self._type_projection == const.PROJECTION_NORMAL:
                 number_slices = 1
@@ -702,7 +705,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                         tmp_array,
                     )
                 if self._type_projection == const.PROJECTION_NORMAL:
-                    n_image = tmp_array.squeeze()
+                    n_image = tmp_array.reshape(dy, dx)
                 else:
                     if inverted:
                         tmp_array = tmp_array[::-1]
@@ -791,7 +794,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     )
 
                 if self._type_projection == const.PROJECTION_NORMAL:
-                    n_image = tmp_array.squeeze()
+                    n_image = tmp_array.reshape(dz, dx)
                 else:
                     # if slice_number == 0:
                     # slice_number = 1
@@ -882,7 +885,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     )
 
                 if self._type_projection == const.PROJECTION_NORMAL:
-                    n_image = tmp_array.squeeze()
+                    n_image = tmp_array.reshape(dz, dy)
                 else:
                     if inverted:
                         tmp_array = tmp_array[:, :, ::-1]
