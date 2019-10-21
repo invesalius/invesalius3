@@ -284,7 +284,8 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     returns it and its related filename.
     """
     message = _("Generating multiplanar visualization...")
-    update_progress= vtk_utils.ShowProgress(len(files) - 1, dialog_type = "ProgressDialog")
+    if len(files) > 1:
+        update_progress= vtk_utils.ShowProgress(len(files) - 1, dialog_type = "ProgressDialog")
 
     temp_file = tempfile.mktemp()
 
@@ -368,12 +369,14 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         
-        update_progress(cont,message)
+        if len(files) > 1:
+            update_progress(cont,message)
         cont += 1
 
     matrix.flush()
     scalar_range = min_scalar, max_scalar
 
+    print("MATRIX", matrix.shape)
     return matrix, scalar_range, temp_file
 
 

@@ -264,21 +264,20 @@ class ProgressBitmapReader:
         Publisher.sendMessage("End bitmap load", data=bitmap_list)
 
     def GetBitmaps(self, path, recursive):
-
         y = yGetBitmaps(path, recursive)
         for value_progress in y:
+            print(">>> YYYYYY", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
+                print("UPDATE PROGRESS")
                 self.UpdateLoadFileProgress(value_progress)
             else:
+                print("END PROGRESS")
                 self.EndLoadFile(value_progress)
 
-        #Is necessary in the case user cancel
-        #the load, ensure that dicomdialog is closed
-        if(self.stoped):
-            self.UpdateLoadFileProgress(None)
-            self.stoped = False   
+        self.UpdateLoadFileProgress(None)
+        self.stoped = False
 
 def VtkErrorPNGWriter(obj, f):
     global vtk_error

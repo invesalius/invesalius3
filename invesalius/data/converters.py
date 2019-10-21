@@ -29,6 +29,8 @@ def to_vtk(n_array, spacing, slice_number, orientation, origin=(0, 0, 0), paddin
     if orientation == "SAGITTAL":
         orientation = "SAGITAL"
 
+    print("N_ARRAY", n_array.shape)
+
     try:
         dz, dy, dx = n_array.shape
     except ValueError:
