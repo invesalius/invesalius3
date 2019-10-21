@@ -664,10 +664,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         inverted=False,
         border_size=1.0,
     ):
-<<<<<<< HEAD
-=======
         dz, dy, dx = self.matrix.shape
->>>>>>> master
         if (
             self.buffer_slices[orientation].index == slice_number
             and self.buffer_slices[orientation].image is not None
