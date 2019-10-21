@@ -185,12 +185,9 @@ class InnerPanel(wx.Panel):
                 slice_amont = group.nslices
 
         nslices_result = slice_amont / (interval + 1)
-        if (nslices_result > 1):
-            Publisher.sendMessage('Open DICOM group', group=group,
-                                  interval=interval,
-                                  file_range=(self.first_image_selection, self.last_image_selection))
-        else:
-            dlg.MissingFilesForReconstruction()
+        Publisher.sendMessage('Open DICOM group', group=group,
+                              interval=interval,
+                              file_range=(self.first_image_selection, self.last_image_selection))
 
 class TextPanel(wx.Panel):
     def __init__(self, parent):
