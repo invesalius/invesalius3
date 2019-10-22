@@ -132,6 +132,8 @@ class LoadDicom:
 
             tag = gdcm.Tag(0x0008, 0x0005)
             ds = reader.GetFile().GetDataSet()
+            image_helper = gdcm.ImageHelper()
+            data_dict['spacing'] = image_helper.GetSpacingValue(reader.GetFile())
             if ds.FindDataElement(tag):
                 encoding_value = str(ds.GetDataElement(tag).GetValue()).split('\\')[0]
                 
