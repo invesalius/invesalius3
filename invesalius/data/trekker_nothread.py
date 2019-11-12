@@ -113,7 +113,7 @@ class ComputeTracts:
 
             # make it a tube
             trkTube = vtk.vtkTubeFilter()
-            trkTube.SetRadius(0.3)
+            trkTube.SetRadius(0.5)
             trkTube.SetNumberOfSides(4)
             trkTube.SetInputData(trkData)
             trkTube.Update()
