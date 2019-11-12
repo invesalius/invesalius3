@@ -1577,6 +1577,17 @@ class TractographyPanel(wx.Panel):
         mask_path = os.path.join(data_dir, mask_file)
         img_file = 'sub-P0_T1w_biascorrected.nii'
         img_path = os.path.join(data_dir, img_file)
+
+        if not self.affine_vtk:
+            slic = sl.Slice()
+            self.affine = slic.affine
+            self.affine_vtk = vtk.vtkMatrix4x4()
+            for row in range(0, 4):
+                for col in range(0, 4):
+                    self.affine_vtk.SetElement(row, col, self.affine[row, col])
+
+        print("Loading brain model...")
+        #print("Affine: ", self.affine_vtk)
         # n_peels = 10
 
         if mask_path and img_path:
@@ -1584,14 +1595,6 @@ class TractographyPanel(wx.Panel):
             actor = self.brain_peel.get_actor(self.peel_depth)
             print("Load completed")
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
-
-            # slic = sl.Slice()
-            # self.affine = slic.affine
-            #
-            # self.affine_vtk = vtk.vtkMatrix4x4()
-            # for row in range(0, 4):
-            #     for col in range(0, 4):
-            #         self.affine_vtk.SetElement(row, col, self.affine[row, col])
 
             self.checkpeeling.Enable(1)
             # Publisher.sendMessage('Update object registration',
@@ -1617,7 +1620,7 @@ class TractographyPanel(wx.Panel):
             slic.tracker = Trekker.tracker(filename.encode('utf-8'))
             slic.tracker.set_seed_maxTrials(1)
             slic.tracker.set_stepSize(0.1)
-            slic.tracker.set_minFODamp(0.04)
+            slic.tracker.set_minFODamp(0.05)
             slic.tracker.set_probeQuality(3)
 
             group = oth.ReadOthers(filename)
