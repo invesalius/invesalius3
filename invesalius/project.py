@@ -17,8 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from six import with_metaclass
-
 import datetime
 import glob
 import os
@@ -29,17 +27,18 @@ import tarfile
 import tempfile
 
 import numpy as np
-import wx
-from wx.lib.pubsub import pub as Publisher
 import vtk
+import wx
+from six import with_metaclass
+from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
-from invesalius.presets import Presets 
-from invesalius.utils import Singleton, debug, touch, decode
 import invesalius.version as version
-
 from invesalius import inv_paths
+from invesalius.data import imagedata_utils
+from invesalius.presets import Presets
+from invesalius.utils import Singleton, debug, decode, touch
 
 if sys.platform == 'win32':
     try:
@@ -354,6 +353,35 @@ class Project(with_metaclass(Singleton, object)):
                 measure = ms.Measurement()
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
+
+    def create_project_file(self, name, spacing, modality, orientation, window_width, window_level, image, affine=None, folder=None):
+        if folder is None:
+            folder = tempfile.mkdtemp()
+        image_file = os.path.join(folder, 'matrix.dat')
+        image_mmap = imagedata_utils.array2memmap(image, image_file)
+        matrix = {
+            'filename': 'matrix.dat',
+            'shape': image.shape,
+            'dtype': image.dtype
+        }
+        project = {
+                   # Format info
+                   "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
+                   "invesalius_version": const.INVESALIUS_VERSION,
+                   "date": datetime.datetime.now().isoformat(),
+                   "compress": True,
+
+                   # case info
+                   "name": name, # patient's name
+                   "modality": modality, # CT, RMI, ...
+                   "orientation": orientation,
+                   "window_width": window,
+                   "window_level": level,
+                   "scalar_range": (image.min(), image.max()),
+                   "spacing": spacing,
+                   "affine": affine,
+                  }
+
 
     def export_project(self, filename, save_masks=True):
         if filename.lower().endswith('.hdf5') or filename.lower().endswith('.h5'):

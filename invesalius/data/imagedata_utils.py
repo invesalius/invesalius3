@@ -279,9 +279,10 @@ def create_dicom_thumbnails(image, window=None, level=None):
 
 
 
-def array2memmap(arr):
-    temp_file = tempfile.mktemp(prefix='inv3_', suffix='.dat')
-    matrix = numpy.memmap(temp_file, mode='w+', dtype=arr.dtype, shape=arr.shape)
+def array2memmap(arr, filename=None):
+    if filename is None:
+        filename = tempfile.mktemp(prefix='inv3_', suffix='.dat')
+    matrix = numpy.memmap(filename, mode='w+', dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
     return matrix
