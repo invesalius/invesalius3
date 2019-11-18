@@ -277,20 +277,24 @@ class Project(with_metaclass(Singleton, object)):
                 os.remove(f)
 
     def OpenPlistProject(self, filename):
-        import invesalius.data.measures as ms
-        import invesalius.data.mask as msk
-        import invesalius.data.surface as srf
-        
         if not const.VTK_WARNING:
             log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path.encode(const.FS_ENCODE))
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
-            
+
         filelist = Extract(filename, tempfile.mkdtemp())
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
+        self.load_from_folder(dirpath)
 
+    def load_from_folder(self, dirpath):
+        """
+        Loads invesalius3 project files from dipath.
+        """
+        import invesalius.data.measures as ms
+        import invesalius.data.mask as msk
+        import invesalius.data.surface as srf
         # Opening the main file from invesalius 3 project
         main_plist =  os.path.join(dirpath ,'main.plist')
         project = plistlib.readPlist(main_plist)

@@ -1035,3 +1035,6 @@ class Controller():
 
     def ApplyReorientation(self):
         self.Slice.apply_reorientation()
+
+    def start_new_inv_instance(self, name, spacing, modality, orientation, window_width, window_level):
+        pass
