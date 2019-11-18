@@ -184,6 +184,7 @@ class Viewer(wx.Panel):
         self.aim_actor = None
         self.dummy_coil_actor = None
         self.target_mode = False
+        self.polydata = None
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
 
@@ -916,7 +917,10 @@ class Viewer(wx.Panel):
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
 
-        obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+        if self.polydata:
+            obj_polydata = self.polydata
+        else:
+            obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
 
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
@@ -1254,9 +1258,10 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
         if flag:
             self.obj_name = obj_name
+            self.polydata = polydata
             if not self.obj_actor:
                 self.AddObjectActor(self.obj_name)
         else:
