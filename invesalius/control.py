@@ -19,6 +19,7 @@
 import os
 import plistlib
 import tempfile
+import textwrap
 
 import wx
 import numpy as np
@@ -1072,4 +1073,16 @@ class Controller():
         p = prj.Project()
         project_folder = '/tmp/manolo_safado'
         p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
-        subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder])
+        err_msg = ''
+        try:
+            sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder+++', project_folder],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
+        except Exception as err:
+            err_msg = str(err)
+        else:
+            if sp.wait(2):
+                err_msg = sp.stderr.read().decode('utf8')
+                sp.terminate()
+
+        if err_msg:
+            dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
