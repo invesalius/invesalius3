@@ -1070,4 +1070,6 @@ class Controller():
 
     def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
         p = prj.Project()
-        p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder="/tmp/manolo_safado/")
+        project_folder = '/tmp/manolo_safado'
+        p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
+        subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder])
