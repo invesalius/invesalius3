@@ -80,6 +80,7 @@ class Controller():
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnImportGroup, 'Import group')
+        Publisher.subscribe(self.OnImportFolder, 'Import folder')
         Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
@@ -502,7 +503,32 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    #-------------------------------------------------------------------------------------
+    def OnImportFolder(self, folder):
+        Publisher.sendMessage('Begin busy cursor')
+        folder = os.path.abspath(folder)
+
+        proj = prj.Project()
+        proj.load_from_folder(folder)
+
+        self.Slice = sl.Slice()
+        self.Slice._open_image_matrix(proj.matrix_filename,
+                                      tuple(proj.matrix_shape),
+                                      proj.matrix_dtype)
+
+        self.Slice.window_level = proj.level
+        self.Slice.window_width = proj.window
+
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=proj.threshold_range)
+
+        session = ses.Session()
+        filename = proj.name+".inv3"
+        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
+        dirpath = session.CreateProject(filename)
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", state=True)
+
+        Publisher.sendMessage('End busy cursor')
 
     def LoadProject(self):
         proj = prj.Project()
@@ -684,7 +710,7 @@ class Controller():
         dirpath = session.CreateProject(filename)
 
 
-    def create_project_from_matrix(self, name, matrix, spacing=(1.0, 1.0, 1.0), modality="CT"):
+    def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False):
         """
         Creates a new project from a Numpy 3D array.
 
@@ -693,65 +719,71 @@ class Controller():
         spacing: The spacing between the center of the voxels in X, Y and Z direction.
         modality: Imaging modality.
         """
+        if window_width is None:
+            window_width = (matrix.max() - matrix.min())
+        if window_level is None:
+            window_level = (matrix.max() + matrix.min()) // 2
 
-        # Verifying if there is a project open
-        s = ses.Session()
-        if s.IsOpen():
-            Publisher.sendMessage('Close Project')
-            Publisher.sendMessage('Disconnect tracker')
-
-        # Check if user really closed the project, if not, stop project creation
-        if s.IsOpen():
-            return
+        window_width = int(window_width)
+        window_level = int(window_level)
 
         name_to_const = {"AXIAL": const.AXIAL,
                          "CORONAL": const.CORONAL,
                          "SAGITTAL": const.SAGITAL}
-        mmap_matrix = image_utils.array2memmap(matrix)
 
-        self.Slice = sl.Slice()
-        self.Slice.matrix = mmap_matrix
-        self.Slice.matrix_filename = mmap_matrix.filename
-        self.Slice.spacing = spacing
-
-        self.Slice.window_level = (matrix.max() + matrix.min()) // 2
-        self.Slice.window_width = (matrix.max() - matrix.min())
-
-        proj = prj.Project()
-        proj.name = name
-        proj.modality = modality
-        proj.SetAcquisitionModality(modality)
-        proj.matrix_shape = matrix.shape
-        proj.matrix_dtype = matrix.dtype.name
-        proj.matrix_filename = self.Slice.matrix_filename
-
-        orientation = "AXIAL"
-
-        proj.original_orientation =\
-            name_to_const[orientation]
-
-        if const.WINDOW_LEVEL[_("Default")] != (None, None):
-            proj.window, proj.level = const.WINDOW_LEVEL[_("Default")]
+        if new_instance:
+            self.start_new_inv_instance(matrix, name, spacing, modality, name_to_const[orientation], window_width, window_level)
         else:
-            proj.window = 255
-            proj.level = 127
+            # Verifying if there is a project open
+            s = ses.Session()
+            if s.IsOpen():
+                Publisher.sendMessage('Close Project')
+                Publisher.sendMessage('Disconnect tracker')
 
-        proj.threshold_range = int(matrix.min()), int(matrix.max())
-        proj.spacing = self.Slice.spacing
+            # Check if user really closed the project, if not, stop project creation
+            if s.IsOpen():
+                return
 
-        Publisher.sendMessage('Update threshold limits list',
-                              threshold_range=proj.threshold_range)
+            mmap_matrix = image_utils.array2memmap(matrix)
 
-        ######
-        session = ses.Session()
-        filename = proj.name + ".inv3"
+            self.Slice = sl.Slice()
+            self.Slice.matrix = mmap_matrix
+            self.Slice.matrix_filename = mmap_matrix.filename
+            self.Slice.spacing = spacing
 
-        filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
+            self.Slice.window_width = window_width
+            self.Slice.window_level = window_level
 
-        dirpath = session.CreateProject(filename)
+            proj = prj.Project()
+            proj.name = name
+            proj.modality = modality
+            proj.SetAcquisitionModality(modality)
+            proj.matrix_shape = matrix.shape
+            proj.matrix_dtype = matrix.dtype.name
+            proj.matrix_filename = self.Slice.matrix_filename
+            proj.window = window_width
+            proj.level = window_level
 
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", state=True)
+
+            proj.original_orientation =\
+                name_to_const[orientation]
+
+            proj.threshold_range = int(matrix.min()), int(matrix.max())
+            proj.spacing = self.Slice.spacing
+
+            Publisher.sendMessage('Update threshold limits list',
+                                  threshold_range=proj.threshold_range)
+
+            ######
+            session = ses.Session()
+            filename = proj.name + ".inv3"
+
+            filename = filename.replace("/", "")
+
+            dirpath = session.CreateProject(filename)
+
+            self.LoadProject()
+            Publisher.sendMessage("Enable state project", state=True)
 
 
     def OnOpenBitmapFiles(self, rec_data):
@@ -1036,5 +1068,6 @@ class Controller():
     def ApplyReorientation(self):
         self.Slice.apply_reorientation()
 
-    def start_new_inv_instance(self, name, spacing, modality, orientation, window_width, window_level):
-        pass
+    def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
+        p = prj.Project()
+        p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder="/tmp/manolo_safado/")

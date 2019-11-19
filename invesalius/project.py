@@ -311,7 +311,7 @@ class Project(with_metaclass(Singleton, object)):
         self.level = project["window_level"]
         self.threshold_range = project["scalar_range"]
         self.spacing = project["spacing"]
-        if project.get("affine"):
+        if project.get("affine", ""):
             self.affine = project["affine"]
             Publisher.sendMessage('Update affine matrix',
                                   affine=self.affine, status=True)
@@ -326,7 +326,7 @@ class Project(with_metaclass(Singleton, object)):
 
         # Opening the masks
         self.mask_dict = {}
-        for index in project["masks"]:
+        for index in project.get("masks", []):
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
@@ -335,7 +335,7 @@ class Project(with_metaclass(Singleton, object)):
 
         # Opening the surfaces
         self.surface_dict = {}
-        for index in project["surfaces"]:
+        for index in project.get("surfaces", []):
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
             s = srf.Surface(int(index))
@@ -344,25 +344,28 @@ class Project(with_metaclass(Singleton, object)):
 
         # Opening the measurements
         self.measurement_dict = {}
-        measurements = plistlib.readPlist(os.path.join(dirpath,
-                                                       project["measurements"]))
-        for index in measurements:
-            if measurements[index]["type"] in (const.DENSITY_ELLIPSE, const.DENSITY_POLYGON):
-                measure = ms.DensityMeasurement()
-            else:
-                measure = ms.Measurement()
-            measure.Load(measurements[index])
-            self.measurement_dict[int(index)] = measure
+        measures_file = os.path.join(dirpath, project.get("measurements", "measurements.plist"))
+        if os.path.exists(measures_file):
+            measurements = plistlib.readPlist(measures_file)
+            for index in measurements:
+                if measurements[index]["type"] in (const.DENSITY_ELLIPSE, const.DENSITY_POLYGON):
+                    measure = ms.DensityMeasurement()
+                else:
+                    measure = ms.Measurement()
+                measure.Load(measurements[index])
+                self.measurement_dict[int(index)] = measure
 
-    def create_project_file(self, name, spacing, modality, orientation, window_width, window_level, image, affine=None, folder=None):
+    def create_project_file(self, name, spacing, modality, orientation, window_width, window_level, image, affine='', folder=None):
         if folder is None:
             folder = tempfile.mkdtemp()
+        if not os.path.exists(folder):
+            os.mkdir(folder)
         image_file = os.path.join(folder, 'matrix.dat')
         image_mmap = imagedata_utils.array2memmap(image, image_file)
         matrix = {
             'filename': 'matrix.dat',
             'shape': image.shape,
-            'dtype': image.dtype
+            'dtype': str(image.dtype)
         }
         project = {
                    # Format info
@@ -375,12 +378,15 @@ class Project(with_metaclass(Singleton, object)):
                    "name": name, # patient's name
                    "modality": modality, # CT, RMI, ...
                    "orientation": orientation,
-                   "window_width": window,
-                   "window_level": level,
-                   "scalar_range": (image.min(), image.max()),
+                   "window_width": window_width,
+                   "window_level": window_level,
+                   "scalar_range": (int(image.min()), int(image.max())),
                    "spacing": spacing,
                    "affine": affine,
+
+                   "matrix": matrix,
                   }
+        plistlib.writePlist(project, os.path.join(folder, 'main.plist'))
 
 
     def export_project(self, filename, save_masks=True):
