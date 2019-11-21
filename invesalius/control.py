@@ -1075,7 +1075,7 @@ class Controller():
         p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
         err_msg = ''
         try:
-            sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder+++', project_folder],
+            sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder],
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
         except Exception as err:
             err_msg = str(err)
