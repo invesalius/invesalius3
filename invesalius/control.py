@@ -1071,7 +1071,7 @@ class Controller():
 
     def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
         p = prj.Project()
-        project_folder = '/tmp/manolo_safado'
+        project_folder = tempfile.mkdtemp()
         p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
         err_msg = ''
         try:
@@ -1080,9 +1080,12 @@ class Controller():
         except Exception as err:
             err_msg = str(err)
         else:
-            if sp.wait(2):
-                err_msg = sp.stderr.read().decode('utf8')
-                sp.terminate()
+            try:
+                if sp.wait(2):
+                    err_msg = sp.stderr.read().decode('utf8')
+                    sp.terminate()
+            except subprocess.TimeoutExpired:
+                pass
 
         if err_msg:
             dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
