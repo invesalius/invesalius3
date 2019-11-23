@@ -1333,10 +1333,12 @@ class Viewer(wx.Panel):
         if (evt.GetKeyCode() == wx.WXK_UP and pos > min):
             self.OnScrollForward()
             self.OnScrollBar()
+            skip = False
 
         elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
             self.OnScrollBackward()
             self.OnScrollBar()
+            skip = False
 
         elif (evt.GetKeyCode() == wx.WXK_NUMPAD_ADD):
             actual_value = self.mip_ctrls.mip_size_spin.GetValue()
@@ -1344,6 +1346,7 @@ class Viewer(wx.Panel):
             if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
                 self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
                 self.ReloadActualSlice()
+            skip = False
 
         elif (evt.GetKeyCode() == wx.WXK_NUMPAD_SUBTRACT):
             actual_value = self.mip_ctrls.mip_size_spin.GetValue()
@@ -1351,6 +1354,7 @@ class Viewer(wx.Panel):
             if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
                 self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
                 self.ReloadActualSlice()
+            skip = False
 
         elif evt.GetKeyCode() in projections:
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])

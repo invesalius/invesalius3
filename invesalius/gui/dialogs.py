@@ -3328,6 +3328,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.trk_init = nav_prop[1]
         self.obj_ref_id = 2
         self.obj_name = None
+        self.polydata = None
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3359,6 +3360,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetSelection(1)
         choice_ref.Enable(1)
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
+            self.obj_ref_id = 0
             choice_ref.SetSelection(0)
             choice_ref.Enable(0)
 
@@ -3470,6 +3472,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         reader.SetFileName(self.obj_name)
         reader.Update()
         polydata = reader.GetOutput()
+        self.polydata = polydata
 
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
@@ -3590,7 +3593,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
 
     def GetValue(self):
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata
 
 
 class SurfaceProgressWindow(object):
