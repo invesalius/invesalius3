@@ -57,7 +57,8 @@ import vtk
 import Trekker
 import invesalius.data.brainmesh_handler as brain
 
-import invesalius.data.trekker_nothread as dti
+# import invesalius.data.trekker_nothread as dti
+import invesalius.data.trekker_data as dti
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -697,6 +698,7 @@ class NeuronavigationPanel(wx.Panel):
                     if self.ref_mode_id:
                         # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
                         self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
+                        self.correg.start()
                     else:
                         self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
 
@@ -1405,6 +1407,9 @@ class TractographyPanel(wx.Panel):
         self.timestamp = const.SEED_OFFSET
         self.brain_peel = None
         self.n_peels = const.MAX_PEEL_DEPTH
+        self.p_old = np.array([[0., 0., 0.]])
+        self.tracts_run = None
+        # self.vezes = 0
 
         self.SetAutoLayout(1)
         self.__bind_events()
@@ -1452,7 +1457,7 @@ class TractographyPanel(wx.Panel):
         text_ntracts = wx.StaticText(self, -1, _("Number tracts:"))
         spin_ntracts = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
         spin_ntracts.Enable(1)
-        spin_ntracts.SetRange(1, 99)
+        spin_ntracts.SetRange(1, 200)
         spin_ntracts.SetValue(const.N_TRACTS)
         spin_ntracts.Bind(wx.EVT_TEXT, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
         spin_ntracts.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
@@ -1542,6 +1547,7 @@ class TractographyPanel(wx.Panel):
         # Tracts
         # wx, wy, wz = position[:3]
         wx, wy, wz = db.flip_x(position[:3])
+        p2 = db.flip_x(position[:3])
 
         if np.any(arg):
             m_img2 = arg.copy()
@@ -1560,14 +1566,32 @@ class TractographyPanel(wx.Panel):
         # seed = pos_world.reshape([1, 4])[0, :3]
         # seed = seed_aux[np.newaxis, :]
         # print("Check the seed: ", (wx, wy, wz))
+
+        # working version
+        # if self.checktracts.GetValue():
+        #     # start_time = time()
+        #     # actor = dti.ComputeTractsSimple(self.tracker, (wx, wy, wz),
+        #     #                                 self.affine, self.affine_vtk, self.n_tracts).run()
+        #     actor = dti.ComputeTracts(self.tracker, (wx, wy, wz),
+        #                                     self.affine, self.affine_vtk, self.n_tracts).run()
+        #     # Publisher.sendMessage('Update tracts', flag=True, actor=actor)
+        #     # duration = time() - start_time
+        #     # print(f"Tracts duration {duration} seconds")
+
         if self.checktracts.GetValue():
-            start_time = time()
-            actor = dti.ComputeTracts(self.tracker, (wx, wy, wz),
-                                      self.affine, self.affine_vtk, self.n_tracts).run()
-            # print("The actor: ", actor)
-            Publisher.sendMessage('Update tracts', flag=True, actor=actor)
-            duration = time() - start_time
-            print(f"Tracts duration {duration} seconds")
+            dist = abs(np.linalg.norm(self.p_old - np.asarray(p2)))
+            self.p_old = np.asarray(p2)
+            # print("Distancia: ", dist)
+
+            if dist > 3:
+                if self.tracts_run:
+                    print("Parei")
+                    self.tracts_run.stop()
+                # self.vezes += 1
+                # print("N vezes: ", self.vezes)
+                print("Rodei")
+                self.tracts_run = dti.ComputeTractsParallel(self.tracker, (wx, wy, wz), self.affine, self.affine_vtk, self.n_tracts)
+                self.tracts_run.start()
 
     def OnLinkBrain(self, event=None):
 
@@ -1622,8 +1646,10 @@ class TractographyPanel(wx.Panel):
             slic.tracker.set_stepSize(0.1)
             slic.tracker.set_minFODamp(0.05)
             slic.tracker.set_probeQuality(3)
+            slic.tracker.set_numberOfThreads(10)
+            print("Trekker initialized.")
 
-            group = oth.ReadOthers(filename)
+            # group = oth.ReadOthers(filename)
             # if group.affine.any():
             #     if np.sum(slic.affine - group.affine):
             #         slic.affine = image_utils.world2invspace(shape=group.shape, affine=group.affine)

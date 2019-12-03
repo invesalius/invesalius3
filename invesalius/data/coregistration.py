@@ -101,7 +101,7 @@ class CoregistrationDynamic(threading.Thread):
         # self.tracts_info = tracts_info
         # self.tracts = None
         self._pause_ = False
-        self.start()
+        # self.start()
 
     def stop(self):
         # self.tracts.stop()

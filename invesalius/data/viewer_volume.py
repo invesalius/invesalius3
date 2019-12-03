@@ -1426,16 +1426,34 @@ class Viewer(wx.Panel):
     # def UpdateAffineWorld2Inv(self, affine, status):
     #     self.affine = affine
 
-    def OnUpdateTracts(self, evt=None, flag=None, actor=None):
+    def OnUpdateTracts(self, evt=None, flag=None, actor=None, root=None, affine_vtk=None):
         # TODO: Remove tracts also when cross button is untoogled
         # start_time = time.time()
 
+        # working version
+        # if flag:
+        #     if self.actor_tracts:
+        #         self.ren.RemoveActor(self.actor_tracts)
+        #     if actor:
+        #         self.ren.AddActor(actor)
+        #         self.actor_tracts = actor
+
+        # new method to update real time the actor
         if flag:
             if self.actor_tracts:
                 self.ren.RemoveActor(self.actor_tracts)
-            if actor:
+            if root:
+                # https://lorensen.github.io/VTKExamples/site/Python/CompositeData/CompositePolyDataMapper/
+                mapper = vtk.vtkCompositePolyDataMapper2()
+                mapper.SetInputDataObject(root)
+
+                actor = vtk.vtkActor()
+                actor.SetMapper(mapper)
+                actor.SetUserMatrix(affine_vtk)
+
                 self.ren.AddActor(actor)
                 self.actor_tracts = actor
+
         # else:
         #     if self.obj_actor:
         #         self.ren.RemoveActor(self.obj_actor)

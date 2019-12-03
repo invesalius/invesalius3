@@ -736,7 +736,7 @@ TIMESTAMP = 2.0
 CAM_MODE = True
 
 # Tractography visualization
-N_TRACTS = 5
+N_TRACTS = 10
 PEEL_DEPTH = 5
 MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 30
