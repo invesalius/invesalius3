@@ -468,7 +468,8 @@ def CoregistrationNoThread(coreg_data, queue, event):
 
 class CoregistrationThread(threading.Thread):
 
-    def __init__(self, pipeline, coreg_data, event):
+    def __init__(self, coreg_data, pipeline, event):
+        threading.Thread.__init__(self, name='Consumer')
         self.coreg_data = coreg_data
         self.pipeline = pipeline
         self.event = event
@@ -486,18 +487,17 @@ class CoregistrationThread(threading.Thread):
         coord_raw = self.pipeline.get_message()
 
         while not event.is_set():
-            print("Corregistering the coordinate")
             coord, m_img = corregistrate_final(coreg_data, coord_raw)
 
             # if not queue2.full():
             #     queue2.put((m_img, coord))
 
-            print(f"Pubsub the coordinate: {coord}")
+            print(f"Pubsub the coregistered coordinate: {coord}")
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
             # Publisher.sendMessage('Update cross position', arg=m_img, position=coord)
             # Publisher.sendMessage('Update object matrix', m_img=m_img, coord=coord)
-            sleep(1.)
+            # sleep(1.)
 
     def stop(self):
         self.event.set()
@@ -513,6 +513,7 @@ class CoregistrationThread(threading.Thread):
 
 class CoordinateProducer(threading.Thread):
     def __init__(self, trck_info, pipeline, event):
+        threading.Thread.__init__(self, name='Producer')
         self.trck_info = trck_info
         self.pipeline = pipeline
         self.event = event

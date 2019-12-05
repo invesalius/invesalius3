@@ -693,19 +693,29 @@ class NeuronavigationPanel(wx.Panel):
                                 # inp_trk = tracker, position, affine
                                 inp_trk = self.trk_inp
 
-                                pipe_coord = queue.LifoQueue(maxsize=1)
-                                pipe_coord2 = queue.LifoQueue(maxsize=1)
-                                pipe_tract = queue.LifoQueue(maxsize=1)
                                 self.event = threading.Event()
-                                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                                    print("About start generate_coord\n")
-                                    executor.submit(dcr.GetCoordinatesProducer, tracker_mode, pipe_coord, self.event)
-                                    print("About start corregistrate\n")
-                                    executor.submit(dcr.CoregistrationNoThread, coreg_data, pipe_coord, self.event)
-                                    # print("About start compute_tract\n")
-                                    # executor.submit(dti.TractsThread, inp_trk, pipe_coord2, pipe_tract, self.event)
-                                    # print("About start split_simple\n")
-                                    # executor.submit(dti.ComputeTractsChunck, affine_vtk, pipe_tract, self.event)
+                                pipeline = Pipeline()
+                                process1 = dcr.CoordinateProducer(tracker_mode, pipeline, self.event)
+                                process2 = dcr.CoregistrationThread(coreg_data, pipeline, self.event)
+                                # tracker.set_seeds(seed)
+                                # process = mp.Process(target=trk2vtkActor, args=(tracker, seed, out_list))
+                                process1.start()
+                                process2.start()
+
+                                # Threads using Queue
+                                # pipe_coord = queue.LifoQueue(maxsize=1)
+                                # pipe_coord2 = queue.LifoQueue(maxsize=1)
+                                # pipe_tract = queue.LifoQueue(maxsize=1)
+                                # self.event = threading.Event()
+                                # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                                #     print("About start generate_coord\n")
+                                #     executor.submit(dcr.GetCoordinatesProducer, tracker_mode, pipe_coord, self.event)
+                                #     print("About start corregistrate\n")
+                                #     executor.submit(dcr.CoregistrationNoThread, coreg_data, pipe_coord, self.event)
+                                #     # print("About start compute_tract\n")
+                                #     # executor.submit(dti.TractsThread, inp_trk, pipe_coord2, pipe_tract, self.event)
+                                #     # print("About start split_simple\n")
+                                #     # executor.submit(dti.ComputeTractsChunck, affine_vtk, pipe_tract, self.event)
                             else:
                                 coord_raw = np.array([None])
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
