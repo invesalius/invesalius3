@@ -316,7 +316,7 @@ class NeuronavigationPanel(wx.Panel):
         self.obj_reg_status = False
         self.track_obj = False
         self.trk_inp = None
-        self.event = None
+        self.event = threading.Event()
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -693,7 +693,9 @@ class NeuronavigationPanel(wx.Panel):
                                 # inp_trk = tracker, position, affine
                                 inp_trk = self.trk_inp
 
-                                self.event = threading.Event()
+                                if self.event.is_set():
+                                    self.event.clear()
+
                                 pipeline = Pipeline()
                                 process1 = dcr.CoordinateProducer(tracker_mode, pipeline, self.event)
                                 process2 = dcr.CoregistrationThread(coreg_data, pipeline, self.event)
@@ -739,6 +741,8 @@ class NeuronavigationPanel(wx.Panel):
                         self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
 
         else:
+            self.event.set()
+
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
 
@@ -752,7 +756,6 @@ class NeuronavigationPanel(wx.Panel):
                 self.trigger.stop()
 
             # self.correg.stop()
-            self.event.set()
 
             Publisher.sendMessage("Navigation status", status=False)
 
@@ -1745,15 +1748,57 @@ class Pipeline:
         self.message = 0
         self.producer_lock = threading.Lock()
         self.consumer_lock = threading.Lock()
-        self.consumer_lock.acquire()
+        self.consumer_lock.acquire(timeout=1)
 
     def get_message(self):
-        self.consumer_lock.acquire()
+        print("Getting message")
+        self.consumer_lock.acquire(timeout=1)
         message = self.message
         self.producer_lock.release()
         return message
 
     def set_message(self, message):
-        self.producer_lock.acquire()
+        print("Setting message")
+        self.producer_lock.acquire(timeout=1)
         self.message = message
         self.consumer_lock.release()
+
+
+class PipelineTracts:
+    """Class to allow a single element pipeline between producer and consumer.
+    """
+
+    def __init__(self):
+        self.message = 0
+        self.coord = 0
+        self.producer_lock = threading.Lock()
+        self.consumer_lock = threading.Lock()
+        self.coord_lock = threading.Lock()
+        self.tracts_lock = threading.Lock()
+        self.consumer_lock.acquire(timeout=1)
+
+    def get_message(self):
+        print("Getting message")
+        self.consumer_lock.acquire(timeout=1)
+        message = self.message
+        self.producer_lock.release()
+        return message
+
+    def set_message(self, message):
+        print("Setting message")
+        self.producer_lock.acquire(timeout=1)
+        self.message = message
+        self.consumer_lock.release()
+
+    def get_tracts_list(self):
+        print("Getting message")
+        self.tracts_lock.acquire(timeout=1)
+        message = self.message
+        self.coord_lock.release()
+        return message
+
+    def set_tracts_list(self, message):
+        print("Setting message")
+        self.coord_lock.acquire(timeout=1)
+        self.message = message
+        self.tracts_lock.release()

@@ -482,11 +482,11 @@ class CoregistrationThread(threading.Thread):
         for better real-time navigation
         """
 
-        event = self.event
+        # event = self.event
         coreg_data = self.coreg_data
-        coord_raw = self.pipeline.get_message()
 
-        while not event.is_set():
+        while not self.event.is_set():
+            coord_raw = self.pipeline.get_message()
             coord, m_img = corregistrate_final(coreg_data, coord_raw)
 
             # if not queue2.full():
@@ -495,9 +495,11 @@ class CoregistrationThread(threading.Thread):
             print(f"Pubsub the coregistered coordinate: {coord}")
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+            print("Success")
             # Publisher.sendMessage('Update cross position', arg=m_img, position=coord)
             # Publisher.sendMessage('Update object matrix', m_img=m_img, coord=coord)
-            # sleep(1.)
+            # a sleep at 0.01 crashes the GUI and do not allow to update the 3D
+            sleep(.05)
 
     def stop(self):
         self.event.set()
@@ -519,16 +521,17 @@ class CoordinateProducer(threading.Thread):
         self.event = event
 
     def run(self):
-        event = self.event
+        # event = self.event
         trck_info = self.trck_info
 
         trck_init, trck_id, trck_mode = trck_info
-        while not event.is_set():
-            # time.sleep(0.5)
+        while not self.event.is_set():
             # print("Enter generate_coord\n")
             coord = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-            print(f"Get the coordinate: {coord}")
+            print(f"Set the coordinate: {coord}")
             self.pipeline.set_message(coord)
+            # The sleep has to be in both threads
+            sleep(0.05)
 
     def stop(self):
         self.event.set()
