@@ -56,6 +56,9 @@ import invesalius.reader.others_reader as oth
 import vtk
 import Trekker
 import invesalius.data.brainmesh_handler as brain
+import concurrent.futures
+import queue
+import threading
 
 # import invesalius.data.trekker_nothread as dti
 import invesalius.data.trekker_data as dti
@@ -312,6 +315,8 @@ class NeuronavigationPanel(wx.Panel):
         self.obj_reg = None
         self.obj_reg_status = False
         self.track_obj = False
+        self.trk_inp = None
+        self.event = None
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -427,6 +432,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.UpdateTrekkerObject, 'Update Trekker object')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -437,6 +443,10 @@ class NeuronavigationPanel(wx.Panel):
                 self.fiducials[btn_id, :] = coord[0:3]
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
+
+    def UpdateTrekkerObject(self, data=None):
+        if data:
+            self.trk_inp = data
 
     def UpdateImageCoordinates(self, arg, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
@@ -679,7 +689,23 @@ class NeuronavigationPanel(wx.Panel):
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
-                                self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
+                                # self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
+                                # inp_trk = tracker, position, affine
+                                inp_trk = self.trk_inp
+
+                                pipe_coord = queue.LifoQueue(maxsize=1)
+                                pipe_coord2 = queue.LifoQueue(maxsize=1)
+                                pipe_tract = queue.LifoQueue(maxsize=1)
+                                self.event = threading.Event()
+                                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                                    print("About start generate_coord\n")
+                                    executor.submit(dcr.GetCoordinatesProducer, tracker_mode, pipe_coord, self.event)
+                                    print("About start corregistrate\n")
+                                    executor.submit(dcr.CoregistrationNoThread, coreg_data, pipe_coord, self.event)
+                                    # print("About start compute_tract\n")
+                                    # executor.submit(dti.TractsThread, inp_trk, pipe_coord2, pipe_tract, self.event)
+                                    # print("About start split_simple\n")
+                                    # executor.submit(dti.ComputeTractsChunck, affine_vtk, pipe_tract, self.event)
                             else:
                                 coord_raw = np.array([None])
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
@@ -715,7 +741,8 @@ class NeuronavigationPanel(wx.Panel):
             if self.trigger_state:
                 self.trigger.stop()
 
-            self.correg.stop()
+            # self.correg.stop()
+            self.event.set()
 
             Publisher.sendMessage("Navigation status", status=False)
 
@@ -1517,7 +1544,7 @@ class TractographyPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
+        # Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
 
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
@@ -1675,6 +1702,8 @@ class TractographyPanel(wx.Panel):
             # Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
             # Publisher.sendMessage('Change camera checkbox', status=False)
             # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+            data = self.tracker, self.affine, self.timestamp
+            Publisher.sendMessage('Update Trekker object', data=data)
 
     def ShowSaveParameters(self, evt):
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
@@ -1697,3 +1726,24 @@ class TractographyPanel(wx.Panel):
         self.n_tracts = const.N_TRACTS
         self.timestamp = const.TIMESTAMP
 
+
+class Pipeline:
+    """Class to allow a single element pipeline between producer and consumer.
+    """
+
+    def __init__(self):
+        self.message = 0
+        self.producer_lock = threading.Lock()
+        self.consumer_lock = threading.Lock()
+        self.consumer_lock.acquire()
+
+    def get_message(self):
+        self.consumer_lock.acquire()
+        message = self.message
+        self.producer_lock.release()
+        return message
+
+    def set_message(self, message):
+        self.producer_lock.acquire()
+        self.message = message
+        self.consumer_lock.release()

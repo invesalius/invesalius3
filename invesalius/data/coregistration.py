@@ -398,3 +398,144 @@ class CoregistrationObjectDynamic(threading.Thread):
 
             if self._pause_:
                 return
+
+
+def corregistrate_final(inp, coord_raw):
+    m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
+    as1, bs1, gs1 = radians(coord_raw[obj_ref_mode, 3:])
+    r_probe = asmatrix(tr.euler_matrix(as1, bs1, gs1, 'rzyx'))
+    t_probe_raw = asmatrix(tr.translation_matrix(coord_raw[obj_ref_mode, :3]))
+    t_offset_aux = r_s0_raw.I * r_probe * t_obj_raw
+    t_offset = asmatrix(identity(4))
+    t_offset[:, -1] = t_offset_aux[:, -1]
+    t_probe = s0_raw * t_offset * s0_raw.I * t_probe_raw
+    m_probe = asmatrix(tr.concatenate_matrices(t_probe, r_probe))
+
+    a, b, g = radians(coord_raw[1, 3:])
+    r_ref = tr.euler_matrix(a, b, g, 'rzyx')
+    t_ref = tr.translation_matrix(coord_raw[1, :3])
+    m_ref = asmatrix(tr.concatenate_matrices(t_ref, r_ref))
+
+    m_dyn = m_ref.I * m_probe
+    m_dyn[2, -1] = -m_dyn[2, -1]
+
+    m_img = m_change * m_dyn
+    r_obj = r_obj_img * m_obj_raw.I * s0_dyn.I * m_dyn * m_obj_raw
+
+    m_img[:3, :3] = r_obj[:3, :3]
+
+    scale, shear, angles, trans, persp = tr.decompose_matrix(m_img)
+
+    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
+            degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
+
+    return coord, m_img
+
+
+def GetCoordinatesProducer(trck_info, queue, event):
+    trck_init, trck_id, trck_mode = trck_info
+    while not event.is_set() or not queue.full():
+        # time.sleep(0.5)
+        # print("Enter generate_coord\n")
+        coord = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+        print(f"Get the coordinate: {coord}")
+        queue.put(coord)
+
+
+def CoregistrationNoThread(coreg_data, queue, event):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    while not event.is_set() or not queue.empty():
+        print("Corregistering the coordinate")
+        coord_raw = queue.get()
+        coord, m_img = corregistrate_final(coreg_data, coord_raw)
+
+        # if not queue2.full():
+        #     queue2.put((m_img, coord))
+
+        print(f"Pubsub the coordinate: {coord}")
+        wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+        wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+        # Publisher.sendMessage('Update cross position', arg=m_img, position=coord)
+        # Publisher.sendMessage('Update object matrix', m_img=m_img, coord=coord)
+        sleep(1.)
+
+
+class CoregistrationThread(threading.Thread):
+
+    def __init__(self, pipeline, coreg_data, event):
+        self.coreg_data = coreg_data
+        self.pipeline = pipeline
+        self.event = event
+
+    def run(self):
+        """
+        Thread to update the coordinates with the fiducial points
+        co-registration method while the Navigation Button is pressed.
+        Sleep function in run method is used to avoid blocking GUI and
+        for better real-time navigation
+        """
+
+        event = self.event
+        coreg_data = self.coreg_data
+        coord_raw = self.pipeline.get_message()
+
+        while not event.is_set():
+            print("Corregistering the coordinate")
+            coord, m_img = corregistrate_final(coreg_data, coord_raw)
+
+            # if not queue2.full():
+            #     queue2.put((m_img, coord))
+
+            print(f"Pubsub the coordinate: {coord}")
+            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+            # Publisher.sendMessage('Update cross position', arg=m_img, position=coord)
+            # Publisher.sendMessage('Update object matrix', m_img=m_img, coord=coord)
+            sleep(1.)
+
+    def stop(self):
+        self.event.set()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.stop()
+        print('Force set Thread Sleeper stop_event')
+
+
+class CoordinateProducer(threading.Thread):
+    def __init__(self, trck_info, pipeline, event):
+        self.trck_info = trck_info
+        self.pipeline = pipeline
+        self.event = event
+
+    def run(self):
+        event = self.event
+        trck_info = self.trck_info
+
+        trck_init, trck_id, trck_mode = trck_info
+        while not event.is_set():
+            # time.sleep(0.5)
+            # print("Enter generate_coord\n")
+            coord = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            print(f"Get the coordinate: {coord}")
+            self.pipeline.set_message(coord)
+
+    def stop(self):
+        self.event.set()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.stop()
+        print('Force set Thread Sleeper stop_event')
