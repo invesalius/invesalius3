@@ -406,7 +406,7 @@ def ComputeTractsChunck(affine_vtk, queue, event):
         # return actor
 
 
-class ComputeTractsDev:
+class VisualizeTractsDev(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -414,51 +414,88 @@ class ComputeTractsDev:
     for better real-time navigation
     """
 
-    def __init__(self, tracker, position, affine, affine_vtk, n_tracts):
-        # threading.Thread.__init__(self)
-        self.tracker = tracker
-        self.position = position
-        self.affine = affine
+    def __init__(self, affine_vtk, pipeline, event):
+        threading.Thread.__init__(self, name='VisTracts')
         self.affine_vtk = affine_vtk
-        self.n_tracts = n_tracts
+        self.pipeline = pipeline
+        self.event = event
+
+    def run(self):
+        n_tracts = 0
+        root = vtk.vtkMultiBlockDataSet()
+        # Compute the tracts
+        while not self.event.is_set():
+            trk_list = self.pipeline.set_tracts_list()
+            root = tracts_computation(trk_list, root, n_tracts)
+            n_tracts += len(trk_list)
+
+            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root, affine_vtk=self.affine_vtk)
+            time.sleep(.05)
+
+    def stop(self):
+        self.event.set()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.stop()
+        print('Force set Thread Sleeper stop_event')
+
+
+class ComputeTractsDev(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, inp, pipeline, event):
+        threading.Thread.__init__(self, name='CompTracts')
+        self.inp = inp
+        self.pipeline = pipeline
+        self.event = event
 
     def run(self):
 
-        seed = compute_seed(self.position, self.affine)
-
+        tracker, affine, timestamp = self.inp
+        p_old = np.array([[0., 0., 0.]])
         # Compute the tracts
-        start_time = time.time()
-        trk_list = []
-        for n in range(self.n_tracts):
-            self.tracker.set_seeds(seed)
-            if self.tracker.run()[0]:
-                trk_list.append(self.tracker.run()[0])
+        while not self.event.is_set():
+            position, arg = self.pipeline.get_coord_raw()
+            wx, wy, wz = db.flip_x(position[:3])
+            p2 = db.flip_x(position[:3])
 
-        duration = time.time() - start_time
-        print(f"Tract run duration duration {duration} seconds")
+            if np.any(arg):
+                m_img2 = arg.copy()
+                m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
+                norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
+                p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
+                p2 = [x - timestamp * y for x, y in zip(p0[0], norm_vec[0])]
+                wx, wy, wz = p2
+                dist = abs(np.linalg.norm(p_old - np.asarray(p2)))
+                p_old = np.asarray(p2)
 
-        # Transform tracts to array
-        start_time = time.time()
-        trk_arr = [np.asarray(trk_n).T if trk_n else None for trk_n in trk_list]
-        duration = time.time() - start_time
-        print(f"Tract run trk_arr duration {duration} seconds")
+            if dist > 3:
+                seed = compute_seed((wx, wy, wz), affine)
+                chunck_size = 6
+                tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
 
-        # Compute the directions
-        start_time = time.time()
-        trk_dir = [simple_direction(trk_n) for trk_n in trk_arr]
-        duration = time.time() - start_time
-        print(f"Tract run trk_dir duration {duration} seconds")
+                if tracker.run():
+                    trk_list = tracker.run()
+            else:
+                trk_list = []
+            self.pipeline.set_tracts_list(trk_list)
 
-        # Compute the vtk tubes
-        start_time = time.time()
-        out_list = [compute_tubes_vtk(trk_arr_n, trk_dir_n) for trk_arr_n, trk_dir_n in zip(trk_arr, trk_dir)]
-        duration = time.time() - start_time
-        print(f"Tract run to_vtk duration {duration} seconds")
+    def stop(self):
+        self.event.set()
 
-        # Compute the actor
-        start_time = time.time()
-        actor = tracts_actor(out_list, affine_vtk=self.affine_vtk)
-        duration = time.time() - start_time
-        print(f"Visualize duration {duration} seconds")
+    def __enter__(self):
+        self.start()
+        return self
 
-        return actor
+    def __exit__(self, *args, **kwargs):
+        self.stop()
+        print('Force set Thread Sleeper stop_event')
