@@ -609,21 +609,41 @@ class NeuronavigationPanel(wx.Panel):
         choice_trck = btn[1]
         choice_ref = btn[2]
 
-        seed = [0., 0., 0.]
-        slic = sl.Slice()
-        affine = slic.affine
-        tracker = slic.tracker
-
-        affine_vtk = vtk.vtkMatrix4x4()
-
-        for row in range(0, 4):
-            for col in range(0, 4):
-                affine_vtk.SetElement(row, col, affine[row, col])
-        tracts_info = seed, tracker, affine, affine_vtk
-        # ---
-
         nav_id = btn_nav.GetValue()
-        if nav_id:
+        if not nav_id:
+            self.event.set()
+
+            tooltip = wx.ToolTip(_("Start neuronavigation"))
+            btn_nav.SetToolTip(tooltip)
+
+            # Enable all navigation buttons
+            choice_ref.Enable(True)
+            choice_trck.Enable(True)
+            for btn_c in self.btns_coord:
+                btn_c.Enable(True)
+
+            if self.trigger_state:
+                self.trigger.stop()
+
+            # self.correg.stop()
+
+            Publisher.sendMessage("Navigation status", status=False)
+
+        else:
+            seed = [0., 0., 0.]
+            slic = sl.Slice()
+            affine = slic.affine
+            tracker = slic.tracker
+
+            affine_vtk = vtk.vtkMatrix4x4()
+
+            for row in range(0, 4):
+                for col in range(0, 4):
+                    affine_vtk.SetElement(row, col, affine[row, col])
+            tracts_info = seed, tracker, affine, affine_vtk
+            # ---
+
+
             if np.isnan(self.fiducials).any():
                 dlg.InvalidFiducials()
                 btn_nav.SetValue(False)
@@ -696,13 +716,37 @@ class NeuronavigationPanel(wx.Panel):
                                 if self.event.is_set():
                                     self.event.clear()
 
-                                pipeline = Pipeline()
-                                process1 = dcr.CoordinateProducer(tracker_mode, pipeline, self.event)
-                                process2 = dcr.CoregistrationThread(coreg_data, pipeline, self.event)
-                                # tracker.set_seeds(seed)
-                                # process = mp.Process(target=trk2vtkActor, args=(tracker, seed, out_list))
-                                process1.start()
-                                process2.start()
+                                sle = 0.3
+                                # pipeline = Pipeline()
+                                # working with both sets below
+                                # pipeline = PipelineTractsCondition()
+                                pipeline = PipelineSimple()
+
+                                # this works with sleep of 0.25 for each thread
+                                threds = []
+                                threds.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event, sle))
+                                threds.append(dti.ComputeVisualize(inp_trk, affine_vtk, pipeline, self.event, sle))
+                                # threds.append(dcr.CoordinateProducer(tracker_mode, pipeline, self.event, sle))
+                                # threds.append(dcr.CoregistrationThread(coreg_data, pipeline, self.event, sle))
+                                # threds.append(dti.ComputeTractsDev(inp_trk, pipeline, self.event, sle))
+                                # threds.append(dti.VisualizeTractsDev(affine_vtk, pipeline, self.event, sle))
+
+                                # with NavThreadPool(threds):
+                                #     print("Main thread")
+                                    # sleep(.005)
+
+                                for th in threds:
+                                    th.start()
+
+                                # this works with sleep of 0.25 for each thread
+                                # process1 = dcr.CoordinateProducer(tracker_mode, pipeline, self.event, sle)
+                                # process2 = dcr.CoregistrationThread(coreg_data, pipeline, self.event, sle)
+                                # process3 = dti.ComputeTractsDev(inp_trk, pipeline, self.event, sle)
+                                # process4 = dti.VisualizeTractsDev(affine_vtk, pipeline, self.event, sle)
+                                # process1.start()
+                                # process2.start()
+                                # process3.start()
+                                # process4.start()
 
                                 # Threads using Queue
                                 # pipe_coord = queue.LifoQueue(maxsize=1)
@@ -739,25 +783,6 @@ class NeuronavigationPanel(wx.Panel):
                         self.correg.start()
                     else:
                         self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
-
-        else:
-            self.event.set()
-
-            tooltip = wx.ToolTip(_("Start neuronavigation"))
-            btn_nav.SetToolTip(tooltip)
-
-            # Enable all navigation buttons
-            choice_ref.Enable(True)
-            choice_trck.Enable(True)
-            for btn_c in self.btns_coord:
-                btn_c.Enable(True)
-
-            if self.trigger_state:
-                self.trigger.stop()
-
-            # self.correg.stop()
-
-            Publisher.sendMessage("Navigation status", status=False)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -1686,7 +1711,7 @@ class TractographyPanel(wx.Panel):
             slic.tracker.set_stepSize(0.1)
             slic.tracker.set_minFODamp(0.05)
             slic.tracker.set_probeQuality(3)
-            slic.tracker.set_numberOfThreads(10)
+            slic.tracker.set_numberOfThreads(4)
             print("Trekker initialized.")
 
             # group = oth.ReadOthers(filename)
@@ -1770,35 +1795,310 @@ class PipelineTracts:
 
     def __init__(self):
         self.message = 0
-        self.coord = 0
-        self.producer_lock = threading.Lock()
-        self.consumer_lock = threading.Lock()
-        self.coord_lock = threading.Lock()
-        self.tracts_lock = threading.Lock()
-        self.consumer_lock.acquire(timeout=1)
+        self.coord_coreg = 0
+        self.tracts_list = 0
+        # self.producer_lock = threading.Lock()
+        # self.consumer_lock = threading.Lock()
+        # self.prod_coreg_lock = threading.Lock()
+        # self.cons_coreg_lock = threading.Lock()
+        # self.prod_tract_lock = threading.Lock()
+        # self.cons_tract_lock = threading.Lock()
+        self.locks = [threading.Lock() for _ in range(6)]
+        self.locks[1].acquire(timeout=1)
+        # self.consumer_lock.acquire(timeout=1)
 
     def get_message(self):
         print("Getting message")
-        self.consumer_lock.acquire(timeout=1)
+        # self.consumer_lock.acquire(timeout=1)
+        self.locks[1].acquire(timeout=1)
         message = self.message
-        self.producer_lock.release()
+        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 1]
+
+        # self.cons_coreg_lock.release()
+        # self.cons_tract_lock.release()
+        #
+        # self.producer_lock.release()
+        # self.prod_coreg_lock.release()
+        # self.prod_tract_lock.release()
         return message
 
     def set_message(self, message):
         print("Setting message")
-        self.producer_lock.acquire(timeout=1)
+        # self.producer_lock.acquire(timeout=1)
+        self.locks[0].acquire(timeout=1)
         self.message = message
-        self.consumer_lock.release()
+        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 0]
+
+        # self.prod_coreg_lock.release()
+        # self.prod_tract_lock.release()
+        #
+        # self.consumer_lock.release()
+        # self.cons_coreg_lock.release()
+        # self.cons_tract_lock.release()
+
+    def get_coord_coreg(self):
+        print("Getting tracts")
+        self.locks[3].acquire(timeout=1)
+        # self.cons_coreg_lock.acquire(timeout=1)
+        coord_coreg = self.coord_coreg
+        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 3]
+
+        # self.consumer_lock.release()
+        # self.cons_tract_lock.release()
+        #
+        # self.producer_lock.release()
+        # self.prod_coreg_lock.release()
+        # self.prod_tract_lock.release()
+        return coord_coreg
+
+    def set_coord_coreg(self, coord_coreg):
+        print("Setting tracts")
+        # self.prod_coreg_lock.acquire(timeout=1)
+        self.locks[2].acquire(timeout=1)
+        self.coord_coreg = coord_coreg
+        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 2]
+
+        # self.producer_lock.release()
+        # self.prod_tract_lock.release()
+        #
+        # self.consumer_lock.release()
+        # self.cons_coreg_lock.release()
+        # self.cons_tract_lock.release()
 
     def get_tracts_list(self):
+        print("Getting tracts")
+        # self.cons_tract_lock.acquire(timeout=1)
+        self.locks[5].acquire(timeout=1)
+        tracts_list = self.tracts_list
+        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 5]
+        # self.consumer_lock.release()
+        # self.cons_coreg_lock.release()
+        #
+        # self.producer_lock.release()
+        # self.prod_coreg_lock.release()
+        # self.prod_tract_lock.release()
+        return tracts_list
+
+    def set_tracts_list(self, tracts_list):
+        print("Setting tracts")
+        # self.prod_tract_lock.acquire(timeout=1)
+        self.locks[4].acquire(timeout=1)
+        self.tracts_list = tracts_list
+        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 4]
+        # self.producer_lock.release()
+        # self.prod_coreg_lock.release()
+        #
+        # self.consumer_lock.release()
+        # self.cons_coreg_lock.release()
+        # self.cons_tract_lock.release()
+
+
+class PipelineTractsSimple:
+    """Class to allow a single element pipeline between producer and consumer.
+    """
+
+    def __init__(self):
+        self.message = 0
+        self.coord_coreg = 0
+        self.tracts_list = 0
+
+        self.locks = threading.Lock()
+
+    def get_message(self):
         print("Getting message")
-        self.tracts_lock.acquire(timeout=1)
-        message = self.message
-        self.coord_lock.release()
+        with self.locks:
+            message = self.message
         return message
 
-    def set_tracts_list(self, message):
+    def set_message(self, message):
         print("Setting message")
-        self.coord_lock.acquire(timeout=1)
-        self.message = message
-        self.tracts_lock.release()
+        with self.locks:
+            self.message = message
+
+    def get_coord_coreg(self):
+        print("Getting coreg")
+        with self.locks:
+            coord_coreg = self.coord_coreg
+        return coord_coreg
+
+    def set_coord_coreg(self, coord_coreg):
+        print("Setting coreg")
+        # self.prod_coreg_lock.acquire(timeout=1)
+        with self.locks:
+            self.coord_coreg = coord_coreg
+
+    def get_tracts_list(self):
+        print("Getting tracts")
+        with self.locks:
+            tracts_list = self.tracts_list
+        return tracts_list
+
+    def set_tracts_list(self, tracts_list):
+        print("Setting tracts")
+        # self.prod_tract_lock.acquire(timeout=1)
+        with self.locks:
+            self.tracts_list = tracts_list
+
+
+class PipelineTractsCondition:
+    """Class to allow a single element pipeline between producer and consumer.
+    """
+
+    def __init__(self):
+        self.message = False
+        self.coord_coreg = False
+        self.tracts_list = False
+
+        self.locks = threading.Lock()
+        self.event_coord = threading.Event()
+        self.event_coreg = threading.Event()
+        self.event_tracts = threading.Event()
+
+    def get_message(self):
+        print("Getting message")
+        with self.locks:
+            if self.event_coord.is_set():
+                return self.message
+            else:
+                return False
+
+    def set_message(self, message):
+        print("Setting message")
+        with self.locks:
+            self.message = message
+            self.event_coord.set()
+
+    def get_coord_coreg(self):
+        print("Getting coreg")
+        with self.locks:
+            if self.event_coreg.is_set():
+                return self.coord_coreg
+            else:
+                return False
+
+    def set_coord_coreg(self, coord_coreg):
+        print("Setting coreg")
+        # self.prod_coreg_lock.acquire(timeout=1)
+        with self.locks:
+            self.coord_coreg = coord_coreg
+            self.event_coreg.set()
+
+    def get_tracts_list(self):
+        print("Getting tracts")
+        with self.locks:
+            # if self.event_tracts.is_set():
+            return self.tracts_list
+            # else:
+            #     return False
+
+    def set_tracts_list(self, tracts_list):
+        print("Setting tracts")
+        # self.prod_tract_lock.acquire(timeout=1)
+        with self.locks:
+            self.tracts_list = tracts_list
+            self.event_tracts.set()
+
+
+class PipelineTractsCondition:
+    """Class to allow a single element pipeline between producer and consumer.
+    """
+
+    def __init__(self):
+        self.message = False
+        self.coord_coreg = False
+        self.tracts_list = False
+
+        self.locks = threading.Lock()
+        self.event_coord = threading.Event()
+        self.event_coreg = threading.Event()
+        self.event_tracts = threading.Event()
+
+    def get_message(self):
+        print("Getting message")
+        with self.locks:
+            if self.event_coord.is_set():
+                return self.message
+            else:
+                return False
+
+    def set_message(self, message):
+        print("Setting message")
+        with self.locks:
+            self.message = message
+            self.event_coord.set()
+
+    def get_coord_coreg(self):
+        print("Getting coreg")
+        with self.locks:
+            if self.event_coreg.is_set():
+                return self.coord_coreg
+            else:
+                return False
+
+    def set_coord_coreg(self, coord_coreg):
+        print("Setting coreg")
+        # self.prod_coreg_lock.acquire(timeout=1)
+        with self.locks:
+            self.coord_coreg = coord_coreg
+            self.event_coreg.set()
+
+    def get_tracts_list(self):
+        print("Getting tracts")
+        with self.locks:
+            # if self.event_tracts.is_set():
+            return self.tracts_list
+            # else:
+            #     return False
+
+    def set_tracts_list(self, tracts_list):
+        print("Setting tracts")
+        # self.prod_tract_lock.acquire(timeout=1)
+        with self.locks:
+            self.tracts_list = tracts_list
+            self.event_tracts.set()
+
+
+class NavThreadPool:
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, threads):
+        self.threads = threads
+
+    def __enter__(self):
+        # self.start()
+        for th in self.threads:
+            th.start()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        print('Force set Thread stop_event')
+
+
+class PipelineSimple:
+    """Class to allow a single element pipeline between producer and consumer.
+    """
+
+    def __init__(self):
+        self.message = False
+
+        self.locks = threading.Lock()
+        self.event = threading.Event()
+
+    def get_message(self):
+        print("Getting message")
+        with self.locks:
+            if self.event.is_set():
+                return self.message
+            else:
+                return False
+
+    def set_message(self, message):
+        print("Setting message")
+        with self.locks:
+            self.message = message
+            self.event.set()

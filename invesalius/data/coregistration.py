@@ -468,11 +468,12 @@ def CoregistrationNoThread(coreg_data, queue, event):
 
 class CoregistrationThread(threading.Thread):
 
-    def __init__(self, coreg_data, pipeline, event):
+    def __init__(self, coreg_data, pipeline, event, sle):
         threading.Thread.__init__(self, name='Consumer')
         self.coreg_data = coreg_data
         self.pipeline = pipeline
         self.event = event
+        self.sle = sle
 
     def run(self):
         """
@@ -486,39 +487,42 @@ class CoregistrationThread(threading.Thread):
         coreg_data = self.coreg_data
 
         while not self.event.is_set():
-            coord_raw = self.pipeline.get_message()
-            coord, m_img = corregistrate_final(coreg_data, coord_raw)
+            if self.pipeline.event_coord.is_set():
+                coord_raw = self.pipeline.get_message()
+                coord, m_img = corregistrate_final(coreg_data, coord_raw)
+                self.pipeline.set_coord_coreg((coord, m_img))
 
-            # if not queue2.full():
-            #     queue2.put((m_img, coord))
+                # if not queue2.full():
+                #     queue2.put((m_img, coord))
 
-            print(f"Pubsub the coregistered coordinate: {coord}")
-            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
-            wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-            print("Success")
-            # Publisher.sendMessage('Update cross position', arg=m_img, position=coord)
-            # Publisher.sendMessage('Update object matrix', m_img=m_img, coord=coord)
-            # a sleep at 0.01 crashes the GUI and do not allow to update the 3D
-            sleep(.05)
+                print(f"Pubsub the coregistered coordinate: {coord}")
+                wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+                wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+                # print("Success")
+                # Publisher.sendMessage('Update cross position', arg=m_img, position=coord)
+                # Publisher.sendMessage('Update object matrix', m_img=m_img, coord=coord)
+                # a sleep at 0.01 crashes the GUI and do not allow to update the 3D
+            sleep(self.sle)
 
-    def stop(self):
-        self.event.set()
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        self.stop()
-        print('Force set Thread Sleeper stop_event')
+    # def stop(self):
+    #     self.event.set()
+    #
+    # def __enter__(self):
+    #     self.start()
+    #     return self
+    #
+    # def __exit__(self, *args, **kwargs):
+    #     self.stop()
+    #     print('Force set Thread Sleeper stop_event')
 
 
 class CoordinateProducer(threading.Thread):
-    def __init__(self, trck_info, pipeline, event):
+    def __init__(self, trck_info, pipeline, event, sle):
         threading.Thread.__init__(self, name='Producer')
         self.trck_info = trck_info
         self.pipeline = pipeline
         self.event = event
+        self.sle = sle
 
     def run(self):
         # event = self.event
@@ -526,20 +530,51 @@ class CoordinateProducer(threading.Thread):
 
         trck_init, trck_id, trck_mode = trck_info
         while not self.event.is_set():
+            print(f"Set the coordinate")
             # print("Enter generate_coord\n")
             coord = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-            print(f"Set the coordinate: {coord}")
+            # print(f"Set the coordinate: {coord}")
             self.pipeline.set_message(coord)
             # The sleep has to be in both threads
-            sleep(0.05)
+            sleep(self.sle)
 
-    def stop(self):
-        self.event.set()
+    # def stop(self):
+    #     self.event.set()
+    #
+    # def __enter__(self):
+    #     self.start()
+    #     return self
+    #
+    # def __exit__(self, *args, **kwargs):
+    #     self.stop()
+    #     print('Force set Thread Sleeper stop_event')
 
-    def __enter__(self):
-        self.start()
-        return self
 
-    def __exit__(self, *args, **kwargs):
-        self.stop()
-        print('Force set Thread Sleeper stop_event')
+class CoordinateCorregistrate(threading.Thread):
+    def __init__(self, trck_info, coreg_data, pipeline, event, sle):
+        threading.Thread.__init__(self, name='CoordCoreg')
+        self.trck_info = trck_info
+        self.coreg_data = coreg_data
+        self.pipeline = pipeline
+        self.event = event
+        self.sle = sle
+
+    def run(self):
+        # event = self.event
+        trck_info = self.trck_info
+        coreg_data = self.coreg_data
+
+        trck_init, trck_id, trck_mode = trck_info
+        while not self.event.is_set():
+            print(f"Set the coordinate")
+            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            coord, m_img = corregistrate_final(coreg_data, coord_raw)
+            self.pipeline.set_message((coord, m_img))
+
+            print(f"Pubsub the coregistered coordinate: {coord}")
+            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+
+            # The sleep has to be in both threads
+            sleep(self.sle)
+

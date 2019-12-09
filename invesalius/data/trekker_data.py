@@ -94,8 +94,8 @@ def tracts_root(out_list, root, n_tracts):
     if not out_list.count(None) == len(out_list):
         for n, tube in enumerate(out_list):
             if tube:
-                # root.SetBlock(n_tracts + n, tube.GetOutput())
-                root.SetBlock(n_tracts + n, tube)
+                root.SetBlock(n_tracts + n, tube.GetOutput())
+                # root.SetBlock(n_tracts + n, tube)
 
     return root
 
@@ -414,34 +414,37 @@ class VisualizeTractsDev(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, affine_vtk, pipeline, event):
+    def __init__(self, affine_vtk, pipeline, event, sle):
         threading.Thread.__init__(self, name='VisTracts')
         self.affine_vtk = affine_vtk
         self.pipeline = pipeline
         self.event = event
+        self.sle = sle
 
     def run(self):
         n_tracts = 0
         root = vtk.vtkMultiBlockDataSet()
         # Compute the tracts
         while not self.event.is_set():
-            trk_list = self.pipeline.set_tracts_list()
-            root = tracts_computation(trk_list, root, n_tracts)
-            n_tracts += len(trk_list)
+            if self.pipeline.event_tracts.is_set():
+                print("Visualizing tracts")
+                trk_list = self.pipeline.get_tracts_list()
+                root = tracts_computation(trk_list, root, n_tracts)
+                n_tracts += len(trk_list)
 
-            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root, affine_vtk=self.affine_vtk)
-            time.sleep(.05)
+                wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root, affine_vtk=self.affine_vtk)
+            time.sleep(self.sle)
 
-    def stop(self):
-        self.event.set()
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        self.stop()
-        print('Force set Thread Sleeper stop_event')
+    # def stop(self):
+    #     self.event.set()
+    #
+    # def __enter__(self):
+    #     self.start()
+    #     return self
+    #
+    # def __exit__(self, *args, **kwargs):
+    #     self.stop()
+    #     print('Force set Thread Sleeper stop_event')
 
 
 class ComputeTractsDev(threading.Thread):
@@ -452,11 +455,12 @@ class ComputeTractsDev(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, inp, pipeline, event):
+    def __init__(self, inp, pipeline, event, sle):
         threading.Thread.__init__(self, name='CompTracts')
         self.inp = inp
         self.pipeline = pipeline
         self.event = event
+        self.sle = sle
 
     def run(self):
 
@@ -464,38 +468,99 @@ class ComputeTractsDev(threading.Thread):
         p_old = np.array([[0., 0., 0.]])
         # Compute the tracts
         while not self.event.is_set():
-            position, arg = self.pipeline.get_coord_raw()
-            wx, wy, wz = db.flip_x(position[:3])
-            p2 = db.flip_x(position[:3])
+            if self.pipeline.event_coreg.is_set():
+                print("Computing tracts")
+                position, arg = self.pipeline.get_coord_coreg()
+                wx, wy, wz = db.flip_x(position[:3])
+                p2 = db.flip_x(position[:3])
 
-            if np.any(arg):
-                m_img2 = arg.copy()
-                m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
-                norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
-                p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
-                p2 = [x - timestamp * y for x, y in zip(p0[0], norm_vec[0])]
-                wx, wy, wz = p2
-                dist = abs(np.linalg.norm(p_old - np.asarray(p2)))
-                p_old = np.asarray(p2)
+                if np.any(arg):
+                    m_img2 = arg.copy()
+                    m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
+                    norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
+                    p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
+                    p2 = [x - timestamp * y for x, y in zip(p0[0], norm_vec[0])]
+                    wx, wy, wz = p2
+                    dist = abs(np.linalg.norm(p_old - np.asarray(p2)))
+                    p_old = np.asarray(p2)
 
-            if dist > 3:
-                seed = compute_seed((wx, wy, wz), affine)
-                chunck_size = 6
-                tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+                if dist > 3:
+                    # seed = compute_seed((wx, wy, wz), affine)
+                    seed = np.array([[-8.49, -8.39, 2.5]])
+                    chunck_size = 6
+                    tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
 
-                if tracker.run():
-                    trk_list = tracker.run()
-            else:
-                trk_list = []
-            self.pipeline.set_tracts_list(trk_list)
+                    if tracker.run():
+                        trk_list = tracker.run()
+                        print(f"Tracts list: {len(trk_list)}")
+                        self.pipeline.set_tracts_list(trk_list)
+                else:
+                    trk_list = []
+            time.sleep(self.sle)
 
-    def stop(self):
-        self.event.set()
+    # def stop(self):
+    #     self.event.set()
+    #
+    # def __enter__(self):
+    #     self.start()
+    #     return self
+    #
+    # def __exit__(self, *args, **kwargs):
+    #     self.stop()
+    #     print('Force set Thread Sleeper stop_event')
 
-    def __enter__(self):
-        self.start()
-        return self
+class ComputeVisualize(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
 
-    def __exit__(self, *args, **kwargs):
-        self.stop()
-        print('Force set Thread Sleeper stop_event')
+    def __init__(self, inp, affine_vtk, pipeline, event, sle):
+        threading.Thread.__init__(self, name='CompVisTracts')
+        self.inp = inp
+        self.affine_vtk = affine_vtk
+        self.pipeline = pipeline
+        self.event = event
+        self.sle = sle
+
+    def run(self):
+
+        tracker, affine, timestamp = self.inp
+        p_old = np.array([[0., 0., 0.]])
+        n_tracts = 0
+        root = vtk.vtkMultiBlockDataSet()
+        # Compute the tracts
+        while not self.event.is_set():
+            if self.pipeline.event.is_set():
+                print("Computing tracts")
+                position, arg = self.pipeline.get_message()
+                xx, yy, zz = db.flip_x(position[:3])
+                p2 = db.flip_x(position[:3])
+
+                if np.any(arg):
+                    m_img2 = arg.copy()
+                    m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
+                    norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
+                    p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
+                    p2 = [x - timestamp * y for x, y in zip(p0[0], norm_vec[0])]
+                    xx, yy, zz = p2
+                    dist = abs(np.linalg.norm(p_old - np.asarray(p2)))
+                    p_old = np.asarray(p2)
+
+                if dist > 3:
+                    # seed = compute_seed((xx, yy, zz), affine)
+                    seed = np.array([[-8.49, -8.39, 2.5]])
+                    chunck_size = 4
+                    tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+
+                    if tracker.run():
+                        trk_list = tracker.run()
+                        root = tracts_computation(trk_list, root, n_tracts)
+                        n_tracts += len(trk_list)
+
+                        wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                                     affine_vtk=self.affine_vtk)
+
+            time.sleep(self.sle)
