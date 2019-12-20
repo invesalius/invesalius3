@@ -1,23 +1,31 @@
-import wx
 import invesalius.constants as const
-from wx.lib.pubsub import pub as Publisher
 import invesalius.session as ses
+import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
-ID = wx.NewId()
+from wx.lib.pubsub import pub as Publisher
 
 try:
     from agw import flatnotebook as fnb
+
     AGW = 1
-except ImportError: # if it's not there locally, try the wxPython lib.
+except ImportError:  # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.flatnotebook as fnb
+
     AGW = 0
 
+
 class Preferences(wx.Dialog):
+    def __init__(
+        self,
+        parent,
+        id_=-1,
+        title=_("Preferences"),
+        size=wx.DefaultSize,
+        pos=wx.DefaultPosition,
+        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+    ):
 
-    def __init__( self, parent, id = ID, title = _("Preferences"), size=wx.DefaultSize,\
-                                pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
-
-        wx.Dialog.__init__(self, parent, id, title, pos, size, style)
+        wx.Dialog.__init__(self, parent, id_, title, pos, size, style)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -28,7 +36,7 @@ class Preferences(wx.Dialog):
         else:
             self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
 
-        sizer.Add(self.book, 1, wx.EXPAND|wx.ALL)
+        sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
 
         self.pnl_viewer2d = Viewer2D(self)
         self.pnl_viewer3d = Viewer3D(self)
@@ -40,11 +48,16 @@ class Preferences(wx.Dialog):
         #  self.book.AddPage(self.pnl_surface, _("Surface creation"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
-        line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
-        sizer.Add(line, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP, 5)
+        line = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
+        sizer.Add(line, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 5)
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
-        sizer.Add(btnsizer, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
+        sizer.Add(
+            btnsizer,
+            0,
+            wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP | wx.BOTTOM,
+            5,
+        )
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -52,7 +65,7 @@ class Preferences(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.LoadPreferences, 'Load Preferences')
+        Publisher.subscribe(self.LoadPreferences, "Load Preferences")
 
     def GetPreferences(self):
         values = {}
@@ -62,41 +75,47 @@ class Preferences(wx.Dialog):
         values.update(lang)
         values.update(viewer)
         values.update(viewer2d)
-        
+
         return values
 
     def LoadPreferences(self):
         se = ses.Session()
-        
-        values = {const.RENDERING:se.rendering,
-                  const.SURFACE_INTERPOLATION:se.surface_interpolation,
-                  const.LANGUAGE:se.language,
-                  const.SLICE_INTERPOLATION: se.slice_interpolation,
-                }
+
+        values = {
+            const.RENDERING: se.rendering,
+            const.SURFACE_INTERPOLATION: se.surface_interpolation,
+            const.LANGUAGE: se.language,
+            const.SLICE_INTERPOLATION: se.slice_interpolation,
+        }
 
         self.pnl_viewer2d.LoadSelection(values)
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
 
 
-
 class Viewer3D(wx.Panel):
-
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
-
 
         box_visualization = wx.StaticBox(self, -1, _("Surface"))
         bsizer = wx.StaticBoxSizer(box_visualization, wx.VERTICAL)
 
         lbl_inter = wx.StaticText(self, -1, _("Interpolation "))
-        bsizer.Add(lbl_inter, 0, wx.TOP|wx.LEFT, 10)
+        bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT, 10)
 
-        rb_inter = self.rb_inter = wx.RadioBox(self, -1, "", wx.DefaultPosition, wx.DefaultSize,
-                    ['Flat','Gouraud','Phong'], 3, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+        rb_inter = self.rb_inter = wx.RadioBox(
+            self,
+            -1,
+            "",
+            wx.DefaultPosition,
+            wx.DefaultSize,
+            ["Flat", "Gouraud", "Phong"],
+            3,
+            wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
 
-        bsizer.Add(rb_inter, 0, wx.TOP|wx.LEFT, 0)
+        bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT, 0)
 
         box_rendering = wx.StaticBox(self, -1, _("Volume rendering"))
         bsizer_ren = wx.StaticBoxSizer(box_rendering, wx.VERTICAL)
@@ -104,22 +123,31 @@ class Viewer3D(wx.Panel):
         lbl_rendering = wx.StaticText(self, -1, _("Rendering"))
         bsizer_ren.Add(lbl_rendering, 0, wx.TOP | wx.LEFT, 10)
 
-        rb_rendering = self.rb_rendering = wx.RadioBox(self, -1, "", wx.DefaultPosition, wx.DefaultSize,
-                    ['CPU', _(u'GPU (NVidia video cards only)')], 2, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+        rb_rendering = self.rb_rendering = wx.RadioBox(
+            self,
+            -1,
+            "",
+            wx.DefaultPosition,
+            wx.DefaultSize,
+            ["CPU", _(u"GPU (NVidia video cards only)")],
+            2,
+            wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
 
         bsizer_ren.Add(rb_rendering, 0, wx.TOP | wx.LEFT, 0)
         border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer, 50, wx.EXPAND|wx.ALL, 10)
-        border.Add(bsizer_ren, 50, wx.EXPAND|wx.ALL, 10)
+        border.Add(bsizer, 50, wx.EXPAND | wx.ALL, 10)
+        border.Add(bsizer_ren, 50, wx.EXPAND | wx.ALL, 10)
         self.SetSizer(border)
 
         border.Fit(self)
 
-
     def GetSelection(self):
 
-        options = {const.RENDERING:self.rb_rendering.GetSelection(),
-                    const.SURFACE_INTERPOLATION:self.rb_inter.GetSelection()}
+        options = {
+            const.RENDERING: self.rb_rendering.GetSelection(),
+            const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
+        }
 
         return options
 
@@ -132,7 +160,6 @@ class Viewer3D(wx.Panel):
 
 
 class Viewer2D(wx.Panel):
-
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
@@ -141,23 +168,30 @@ class Viewer2D(wx.Panel):
         bsizer = wx.StaticBoxSizer(box_visualization, wx.VERTICAL)
 
         lbl_inter = wx.StaticText(self, -1, _("Interpolated "))
-        bsizer.Add(lbl_inter, 0, wx.TOP|wx.LEFT, 10)
+        bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT, 10)
 
-        rb_inter = self.rb_inter = wx.RadioBox(self, -1, "", wx.DefaultPosition, wx.DefaultSize,
-                    [_('Yes'), _('No')], 3, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+        rb_inter = self.rb_inter = wx.RadioBox(
+            self,
+            -1,
+            "",
+            wx.DefaultPosition,
+            wx.DefaultSize,
+            [_("Yes"), _("No")],
+            3,
+            wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
 
-        bsizer.Add(rb_inter, 0, wx.TOP|wx.LEFT, 0)
+        bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT, 0)
 
         border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer, 50, wx.EXPAND|wx.ALL, 10)
+        border.Add(bsizer, 50, wx.EXPAND | wx.ALL, 10)
         self.SetSizer(border)
 
         border.Fit(self)
 
-
     def GetSelection(self):
 
-        options = {const.SLICE_INTERPOLATION:self.rb_inter.GetSelection()}
+        options = {const.SLICE_INTERPOLATION: self.rb_inter.GetSelection()}
 
         return options
 
@@ -167,7 +201,6 @@ class Viewer2D(wx.Panel):
 
 
 class Language(wx.Panel):
-
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
@@ -178,19 +211,23 @@ class Language(wx.Panel):
         box = wx.StaticBox(self, -1, _("Language"))
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
 
-        text = wx.StaticText(self, -1, _("Language settings will be applied \n the next time InVesalius starts."))
+        text = wx.StaticText(
+            self,
+            -1,
+            _("Language settings will be applied \n the next time InVesalius starts."),
+        )
         bsizer.Add(cmb_lang, 0, wx.EXPAND)
         bsizer.AddSpacer(5)
         bsizer.Add(text, 0, wx.EXPAND)
 
         border = wx.BoxSizer()
-        border.Add(bsizer, 1, wx.EXPAND|wx.ALL, 20)
+        border.Add(bsizer, 1, wx.EXPAND | wx.ALL, 20)
         self.SetSizerAndFit(border)
 
     def GetSelection(self):
         selection = self.cmb_lang.GetSelection()
         locales = self.lg.GetLocalesKey()
-        options = {const.LANGUAGE:locales[selection]}
+        options = {const.LANGUAGE: locales[selection]}
         return options
 
     def LoadSelection(self, values):
@@ -200,11 +237,16 @@ class Language(wx.Panel):
         self.cmb_lang.SetSelection(int(selection))
 
 
-
 class SurfaceCreation(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.rb_fill_border = wx.RadioBox(self, -1, _("Fill border holes"), choices=[_('Yes'), _('No')], style=wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+        self.rb_fill_border = wx.RadioBox(
+            self,
+            -1,
+            _("Fill border holes"),
+            choices=[_("Yes"), _("No")],
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.rb_fill_border)
