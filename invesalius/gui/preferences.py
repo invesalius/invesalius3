@@ -17,8 +17,7 @@ class Preferences(wx.Dialog):
     def __init__( self, parent, id = ID, title = _("Preferences"), size=wx.DefaultSize,\
                                 pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
 
-        wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
-        self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        wx.Dialog.__init__(self, parent, id, title, pos, size, style)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -44,16 +43,7 @@ class Preferences(wx.Dialog):
         line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
         sizer.Add(line, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP, 5)
 
-        btnsizer = wx.StdDialogButtonSizer()
-
-        btn = wx.Button(self, wx.ID_OK)
-        btnsizer.AddButton(btn)
-
-        btn = wx.Button(self, wx.ID_CANCEL)
-        btnsizer.AddButton(btn)
-
-        btnsizer.Realize()
-
+        btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         sizer.Add(btnsizer, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
 
         self.SetSizer(sizer)
@@ -63,7 +53,6 @@ class Preferences(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadPreferences, 'Load Preferences')
-
 
     def GetPreferences(self):
         values = {}

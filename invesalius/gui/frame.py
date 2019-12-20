@@ -128,7 +128,6 @@ class Frame(wx.Frame):
         # Create aui manager and insert content in it
         self.__init_aui()
 
-        self.preferences = preferences.Preferences(self)
         # Initialize bind to pubsub events
         self.__bind_events()
         self.__bind_events_wx()
@@ -580,12 +579,13 @@ class Frame(wx.Frame):
         self.mw.SetPosition(pos)
 
     def ShowPreferences(self):
+        preferences_dialog = preferences.Preferences(None)
+        preferences_dialog.LoadPreferences()
+        preferences_dialog.Center()
 
-        self.preferences.Center()
-        
-        if self.preferences.ShowModal() == wx.ID_OK:
-            values = self.preferences.GetPreferences()
-            self.preferences.Close()
+        if preferences_dialog.ShowModal() == wx.ID_OK:
+            values = preferences_dialog.GetPreferences()
+            preferences_dialog.Destroy()
 
             ses.Session().rendering = values[const.RENDERING]
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
