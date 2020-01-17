@@ -711,7 +711,7 @@ class NeuronavigationPanel(wx.Panel):
 
                                 # self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
                                 # inp_trk = tracker, position, affine
-                                inp_trk = self.trk_inp
+                                # inp_trk = self.trk_inp
 
                                 if self.event.is_set():
                                     self.event.clear()
@@ -725,10 +725,12 @@ class NeuronavigationPanel(wx.Panel):
                                 # this works with sleep of 0.25 for each thread
                                 threds = []
                                 threds.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event, sle))
-                                threds.append(dti.ComputeVisualize(inp_trk, affine_vtk, pipeline, self.event, sle))
+                                # threds.append(dti.ComputeVisualize(self.trk_inp, affine_vtk, pipeline, self.event, sle))
+                                threds.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline, self.event, sle))
+
                                 # threds.append(dcr.CoordinateProducer(tracker_mode, pipeline, self.event, sle))
                                 # threds.append(dcr.CoregistrationThread(coreg_data, pipeline, self.event, sle))
-                                # threds.append(dti.ComputeTractsDev(inp_trk, pipeline, self.event, sle))
+                                # threds.append(dti.ComputeTractsDev(self.trk_inp, pipeline, self.event, sle))
                                 # threds.append(dti.VisualizeTractsDev(affine_vtk, pipeline, self.event, sle))
 
                                 # with NavThreadPool(threds):
@@ -741,7 +743,7 @@ class NeuronavigationPanel(wx.Panel):
                                 # this works with sleep of 0.25 for each thread
                                 # process1 = dcr.CoordinateProducer(tracker_mode, pipeline, self.event, sle)
                                 # process2 = dcr.CoregistrationThread(coreg_data, pipeline, self.event, sle)
-                                # process3 = dti.ComputeTractsDev(inp_trk, pipeline, self.event, sle)
+                                # process3 = dti.ComputeTractsDev(self.trk_inp, pipeline, self.event, sle)
                                 # process4 = dti.VisualizeTractsDev(affine_vtk, pipeline, self.event, sle)
                                 # process1.start()
                                 # process2.start()
@@ -759,7 +761,7 @@ class NeuronavigationPanel(wx.Panel):
                                 #     print("About start corregistrate\n")
                                 #     executor.submit(dcr.CoregistrationNoThread, coreg_data, pipe_coord, self.event)
                                 #     # print("About start compute_tract\n")
-                                #     # executor.submit(dti.TractsThread, inp_trk, pipe_coord2, pipe_tract, self.event)
+                                #     # executor.submit(dti.TractsThread, self.trk_inp, pipe_coord2, pipe_tract, self.event)
                                 #     # print("About start split_simple\n")
                                 #     # executor.submit(dti.ComputeTractsChunck, affine_vtk, pipe_tract, self.event)
                             else:
@@ -1469,7 +1471,7 @@ class TractographyPanel(wx.Panel):
         self.view_tracts = False
         # self.obj_ref_mode = None
         # self.obj_name = None
-        self.timestamp = const.SEED_OFFSET
+        self.seed_offset = const.SEED_OFFSET
         self.brain_peel = None
         self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0., 0., 0.]])
@@ -1527,15 +1529,15 @@ class TractographyPanel(wx.Panel):
         spin_ntracts.Bind(wx.EVT_TEXT, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
         spin_ntracts.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
 
-        # Change timestamp interval
-        text_timestamp = wx.StaticText(self, -1, _("Seed offset (mm):"))
-        spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
-        spin_timestamp_dist.Enable(1)
-        spin_timestamp_dist.SetRange(0, 100.0)
-        spin_timestamp_dist.SetValue(self.timestamp)
-        spin_timestamp_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
-        spin_timestamp_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
-        self.spin_timestamp_dist = spin_timestamp_dist
+        # Change seed offset for computing tracts
+        text_offset = wx.StaticText(self, -1, _("Seed offset (mm):"))
+        spin_offset = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
+        spin_offset.Enable(1)
+        spin_offset.SetRange(0, 100.0)
+        spin_offset.SetValue(self.seed_offset)
+        spin_offset.Bind(wx.EVT_TEXT, partial(self.OnSelectOffset, ctrl=spin_offset))
+        spin_offset.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectOffset, ctrl=spin_offset))
+        self.spin_offset = spin_offset
 
         # Create a horizontal sizer to threshold configs
         line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
@@ -1546,9 +1548,9 @@ class TractographyPanel(wx.Panel):
         line_dist_threshold.AddMany([(text_ntracts, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
                                       (spin_ntracts, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
-        line_timestamp = wx.BoxSizer(wx.HORIZONTAL)
-        line_timestamp.AddMany([(text_timestamp, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
-                                      (spin_timestamp_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+        line_offset = wx.BoxSizer(wx.HORIZONTAL)
+        line_offset.AddMany([(text_offset, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_offset, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
         # Check box to enable tract visualization
         checktracts = wx.CheckBox(self, -1, _('Enable tracts'))
@@ -1573,7 +1575,7 @@ class TractographyPanel(wx.Panel):
         main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_HORIZONTAL, 5)
         main_sizer.Add(line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        main_sizer.Add(line_timestamp, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_offset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_checks, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
         main_sizer.Fit(self)
 
@@ -1593,9 +1595,9 @@ class TractographyPanel(wx.Panel):
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
 
-    def OnSelectTimestamp(self, evt, ctrl):
-        self.timestamp = ctrl.GetValue()
-        Publisher.sendMessage('Update seed offset', offset=self.timestamp)
+    def OnSelectOffset(self, evt, ctrl):
+        self.seed_offset = ctrl.GetValue()
+        Publisher.sendMessage('Update seed offset', offset=self.seed_offset)
 
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
@@ -1619,7 +1621,7 @@ class TractographyPanel(wx.Panel):
             m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
             norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
             p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
-            p2 = [x - self.timestamp * y for x, y in zip(p0[0], norm_vec[0])]
+            p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
             wx, wy, wz = p2
             # print("m_img in task_nav: {}".format(m_img))
             # m_tract = m_img.copy()
@@ -1740,7 +1742,7 @@ class TractographyPanel(wx.Panel):
             # Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
             # Publisher.sendMessage('Change camera checkbox', status=False)
             # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
-            data = self.tracker, self.affine, self.timestamp
+            data = self.tracker, self.affine, self.seed_offset, self.n_tracts
             Publisher.sendMessage('Update Trekker object', data=data)
 
     def ShowSaveParameters(self, evt):
