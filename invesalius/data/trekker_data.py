@@ -586,7 +586,7 @@ class ComputeVisualizeParallel(threading.Thread):
         tracker, affine, offset, n_tracts_total = self.inp
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
-        chunck_size = 6
+        chunck_size = 4
         root = vtk.vtkMultiBlockDataSet()
         # Compute the tracts
         while not self.event.is_set():
@@ -600,7 +600,8 @@ class ComputeVisualizeParallel(threading.Thread):
                     m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
                     norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
                     p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-                    p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    p_new = [-8.49, -8.39, 2.5]
                     dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
                     p_old = np.asarray(p_new)
 
@@ -613,13 +614,62 @@ class ComputeVisualizeParallel(threading.Thread):
                         if dist < 3 and n_tracts < n_tracts_total:
                             # Compute the tracts
                             trk_list.extend(tracker.run())
+                            print("Menor que 3 com n tracts and dist: ", n_tracts, dist)
+                            root = tracts_computation(trk_list, root, n_tracts)
+                            n_tracts = len(trk_list)
+                            print("Total new tracts: ", n_tracts)
+                            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                                         affine_vtk=self.affine_vtk)
                         elif dist > 3:
                             n_tracts = 0
                             trk_list = tracker.run()
+                            print(">>> que 3 com n tracts: ", len(trk_list))
+                            root = tracts_computation(trk_list, root, n_tracts)
+                            n_tracts = len(trk_list)
+                            print("Total tracts: ", n_tracts)
+                            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                                         affine_vtk=self.affine_vtk)
 
-                        root = tracts_computation(trk_list, root, n_tracts)
-                        n_tracts += len(trk_list)
-                        wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                                     affine_vtk=self.affine_vtk)
+                        # this logic is a bit stupid because it has to compute the actors every loop, better would be
+                        # to check the distance and update actors in viewer volume, but that would require that each
+                        # loop outputs one actor which is a fiber bundle, and if the dist is < 3 and n_tract > n_total
+                        # do nothing
+
+
+                        # root = tracts_computation(trk_list, root, n_tracts)
+                        # print("Total tracts: ", n_tracts)
+                        # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                        #              affine_vtk=self.affine_vtk)
 
             time.sleep(self.sle)
+
+
+class Tractography:
+    def __init__(self):
+        self._n_tracts = None
+        self._seed_offset = None
+        self._tracker = None
+
+    @property
+    def n_tracts(self):
+        return self._n_tracts
+
+    @n_tracts.setter
+    def n_tracts(self, value):
+        self._n_tracts = value
+
+    @property
+    def tracker(self):
+        return self._tracker
+
+    @tracker.setter
+    def tracker(self, value):
+        self._tracker = value
+
+    @property
+    def seed_offset(self):
+        return self._seed_offset
+
+    @seed_offset.setter
+    def seed_offset(self, value):
+        self._seed_offset = value

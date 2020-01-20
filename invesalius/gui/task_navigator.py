@@ -317,6 +317,7 @@ class NeuronavigationPanel(wx.Panel):
         self.track_obj = False
         self.trk_inp = None
         self.event = threading.Event()
+        self.ntracts = 0
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -433,6 +434,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.UpdateTrekkerObject, 'Update Trekker object')
+        Publisher.subscribe(self.UpdateNumTracts, 'Update number of tracts')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -447,6 +449,9 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTrekkerObject(self, data=None):
         if data:
             self.trk_inp = data
+
+    def UpdateNumTracts(self, ntracts=0):
+        self.ntracts = ntracts
 
     def UpdateImageCoordinates(self, arg, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
@@ -633,10 +638,16 @@ class NeuronavigationPanel(wx.Panel):
             seed = [0., 0., 0.]
             slic = sl.Slice()
             affine = slic.affine
-            tracker = slic.tracker
+            # tracker = slic.tracker
+            # tract = dti.Tractography()
+            tract = self.tract
+            tracker = tract.tracker
+            print("n_tracts!!!!!!!!!!!!: ", tract.n_tracts)
+            print("seed_offse!!!!!!!!!!!!: ", tract.seed_offset)
+
+            self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
 
             affine_vtk = vtk.vtkMatrix4x4()
-
             for row in range(0, 4):
                 for col in range(0, 4):
                     affine_vtk.SetElement(row, col, affine[row, col])
@@ -716,7 +727,7 @@ class NeuronavigationPanel(wx.Panel):
                                 if self.event.is_set():
                                     self.event.clear()
 
-                                sle = 0.3
+                                sle = .3
                                 # pipeline = Pipeline()
                                 # working with both sets below
                                 # pipeline = PipelineTractsCondition()
@@ -1466,6 +1477,9 @@ class TractographyPanel(wx.Panel):
         self.affine = None
         self.affine_vtk = None
         self.tracker = None
+        self.tract = dti.Tractography()
+        self.tract.n_tracts = const.N_TRACTS
+        self.tract.seed_offset = const.SEED_OFFSET
         self.n_tracts = const.N_TRACTS
         self.peel_depth = const.PEEL_DEPTH
         self.view_tracts = False
@@ -1594,9 +1608,12 @@ class TractographyPanel(wx.Panel):
 
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
+        self.tract.n_tracts = ctrl.GetValue()
+        # Publisher.sendMessage('Update number of tracts', ntracts=self.n_tracts)
 
     def OnSelectOffset(self, evt, ctrl):
         self.seed_offset = ctrl.GetValue()
+        self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update seed offset', offset=self.seed_offset)
 
     def OnShowPeeling(self, evt, ctrl):
@@ -1708,12 +1725,20 @@ class TractographyPanel(wx.Panel):
             # FOD_path = b"test_fod.nii"
             # full_path = os.path.join(data_dir, FOD_path)
             slic = sl.Slice()
-            slic.tracker = Trekker.tracker(filename.encode('utf-8'))
-            slic.tracker.set_seed_maxTrials(1)
-            slic.tracker.set_stepSize(0.1)
-            slic.tracker.set_minFODamp(0.05)
-            slic.tracker.set_probeQuality(3)
-            slic.tracker.set_numberOfThreads(4)
+            # slic.tracker = Trekker.tracker(filename.encode('utf-8'))
+            # slic.tracker.set_seed_maxTrials(1)
+            # slic.tracker.set_stepSize(0.1)
+            # slic.tracker.set_minFODamp(0.05)
+            # slic.tracker.set_probeQuality(3)
+            # slic.tracker.set_numberOfThreads(4)
+
+            self.tract.tracker = Trekker.tracker(filename.encode('utf-8'))
+            self.tract.tracker.set_seed_maxTrials(1)
+            self.tract.tracker.set_stepSize(0.1)
+            self.tract.tracker.set_minFODamp(0.05)
+            self.tract.tracker.set_probeQuality(3)
+            self.tract.tracker.set_numberOfThreads(4)
+
             print("Trekker initialized.")
 
             # group = oth.ReadOthers(filename)
@@ -1726,7 +1751,8 @@ class TractographyPanel(wx.Panel):
             # tracts
             # self.seed = [0., 0., 0.]
             self.affine = slic.affine
-            self.tracker = slic.tracker
+            self.tracker = self.tract.tracker
+            # self.tract = self.tract
 
             self.affine_vtk = vtk.vtkMatrix4x4()
             for row in range(0, 4):
@@ -1743,7 +1769,8 @@ class TractographyPanel(wx.Panel):
             # Publisher.sendMessage('Change camera checkbox', status=False)
             # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
             data = self.tracker, self.affine, self.seed_offset, self.n_tracts
-            Publisher.sendMessage('Update Trekker object', data=data)
+            # tract.n_tracts = self.n_tracts
+            # Publisher.sendMessage('Update Trekker object', data=data)
 
     def ShowSaveParameters(self, evt):
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():

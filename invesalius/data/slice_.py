@@ -86,6 +86,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.histogram = None
         self._matrix = None
         self._affine = np.identity(4)
+        self._n_tracts = 0
         self._tracker = None
         self.aux_matrices = {}
         self.state = const.STATE_DEFAULT
@@ -149,6 +150,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
     @affine.setter
     def affine(self, value):
         self._affine = value
+
+    @property
+    def n_tracts(self):
+        return self._n_tracts
+
+    @n_tracts.setter
+    def n_tracts(self, value):
+        self._n_tracts = value
 
     @property
     def tracker(self):
