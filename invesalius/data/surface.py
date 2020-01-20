@@ -598,6 +598,10 @@ class SurfaceManager():
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
 
+        mask_temp_file = mask.temp_file
+        mask_shape = mask.matrix.shape
+        mask_dtype = mask.matrix.dtype
+
         algorithm = surface_parameters['method']['algorithm']
         options = surface_parameters['method']['options']
 
@@ -607,6 +611,8 @@ class SurfaceManager():
         keep_largest = surface_parameters['options']['keep_largest']
 
         fill_border_holes = surface_parameters['options'].get('fill_border_holes', True)
+
+        print(surface_parameters)
 
         mode = 'CONTOUR' # 'GRAYSCALE'
         min_value, max_value = mask.threshold_range
@@ -641,6 +647,16 @@ class SurfaceManager():
         else:
             flip_image = True
 
+        if imagedata_resolution > 0:
+            spacing = tuple([s * imagedata_resolution for s in spacing])
+            matrix = iu.resize_image_array(matrix, 1.0/imagedata_resolution, True)
+            mask = iu.resize_image_array(mask.matrix, 1.0/imagedata_resolution, True)
+
+            filename_img = matrix.filename
+            mask_temp_file = mask.filename
+            mask_shape = mask.shape
+            mask_dtype = mask.dtype
+
         n_processors = multiprocessing.cpu_count()
 
         o_piece = 1
@@ -653,6 +669,8 @@ class SurfaceManager():
         manager = multiprocessing.Manager()
         msg_queue = manager.Queue(1)
 
+        print("Resolution", imagedata_resolution)
+
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
             for i in range(n_pieces):
@@ -662,8 +680,8 @@ class SurfaceManager():
                 print("new_piece", roi)
                 f = pool.apply_async(surface_process.create_surface_piece,
                                      args = (filename_img, matrix.shape, matrix.dtype,
-                                             mask.temp_file, mask.matrix.shape,
-                                             mask.matrix.dtype, roi, spacing, mode,
+                                             mask_temp_file, mask_shape,
+                                             mask_dtype, roi, spacing, mode,
                                              min_value, max_value, decimate_reduction,
                                              smooth_relaxation_factor,
                                              smooth_iterations, language, flip_image,
@@ -720,31 +738,18 @@ class SurfaceManager():
                 end = init + piece_size + o_piece
                 roi = slice(init, end)
                 print("new_piece", roi)
-                try:
-                    f = pool.apply_async(surface_process.create_surface_piece,
-                                         args = (filename_img, matrix.shape, matrix.dtype,
-                                                 mask.temp_file, mask.matrix.shape,
-                                                 mask.matrix.dtype, roi, spacing, mode,
-                                                 min_value, max_value, decimate_reduction,
-                                                 smooth_relaxation_factor,
-                                                 smooth_iterations, language, flip_image,
-                                                 algorithm != 'Default', algorithm,
-                                                 imagedata_resolution, fill_border_holes),
-                                         callback=lambda x: filenames.append(x),
-                                         error_callback=functools.partial(self._on_callback_error,
-                                                                          dialog=sp))
-                # python2
-                except TypeError:
-                    f = pool.apply_async(surface_process.create_surface_piece,
-                                         args = (filename_img, matrix.shape, matrix.dtype,
-                                                 mask.temp_file, mask.matrix.shape,
-                                                 mask.matrix.dtype, roi, spacing, mode,
-                                                 min_value, max_value, decimate_reduction,
-                                                 smooth_relaxation_factor,
-                                                 smooth_iterations, language, flip_image,
-                                                 algorithm != 'Default', algorithm,
-                                                 imagedata_resolution, fill_border_holes),
-                                         callback=lambda x: filenames.append(x))
+                f = pool.apply_async(surface_process.create_surface_piece,
+                                     args = (filename_img, matrix.shape, matrix.dtype,
+                                             mask_temp_file, mask_shape,
+                                             mask_dtype, roi, spacing, mode,
+                                             min_value, max_value, decimate_reduction,
+                                             smooth_relaxation_factor,
+                                             smooth_iterations, language, flip_image,
+                                             algorithm != 'Default', algorithm,
+                                             imagedata_resolution, fill_border_holes),
+                                     callback=lambda x: filenames.append(x),
+                                     error_callback=functools.partial(self._on_callback_error,
+                                                                      dialog=sp))
 
             while len(filenames) != n_pieces:
                 if sp.WasCancelled() or not sp.running:
