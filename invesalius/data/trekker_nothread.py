@@ -74,7 +74,7 @@ class ComputeTracts:
         #     return
 
     def trk2vtkActor(self, tracker, seed):
-        tracker.set_seeds(seed)
+        tracker.seed_coordinates(seed)
         # convert trk to vtkPolyData
         trk_run = tracker.run()
         if trk_run:
