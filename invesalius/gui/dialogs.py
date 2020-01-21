@@ -389,6 +389,15 @@ def ShowImportOtherFilesDialog(id_type):
     if id_type == const.ID_NIFTI_IMPORT:
         dlg.SetMessage(_("Import NIFTi 1 file"))
         dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_TREKKER_MASK:
+        dlg.SetMessage(_("Import Trekker mask"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_TREKKER_IMG:
+        dlg.SetMessage(_("Import Trekker anatomical image"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_TREKKER_FOD:
+        dlg.SetMessage(_("Import Trekker FOD"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
     elif id_type == const.ID_PARREC_IMPORT:
         dlg.SetMessage(_("Import PAR/REC file"))
         dlg.SetWildcard(WILDCARD_PARREC)

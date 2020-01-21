@@ -104,7 +104,7 @@ class ComputeTractsSimple:
         start_time = time.time()
         trk_list = []
         for n in range(self.n_tracts):
-            self.tracker.set_seeds(seed)
+            self.tracker.seed_coordinates(seed)
             if self.tracker.run()[0]:
                 trk_list.append(self.tracker.run()[0])
 

@@ -495,7 +495,7 @@ class CoregistrationThread(threading.Thread):
                 # if not queue2.full():
                 #     queue2.put((m_img, coord))
 
-                print(f"Pubsub the coregistered coordinate: {coord}")
+                # print(f"Pubsub the coregistered coordinate: {coord}")
                 wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                 # print("Success")
@@ -530,7 +530,7 @@ class CoordinateProducer(threading.Thread):
 
         trck_init, trck_id, trck_mode = trck_info
         while not self.event.is_set():
-            print(f"Set the coordinate")
+            # print(f"Set the coordinate")
             # print("Enter generate_coord\n")
             coord = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             # print(f"Set the coordinate: {coord}")
@@ -566,12 +566,12 @@ class CoordinateCorregistrate(threading.Thread):
 
         trck_init, trck_id, trck_mode = trck_info
         while not self.event.is_set():
-            print(f"Set the coordinate")
+            # print(f"Set the coordinate")
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord, m_img = corregistrate_final(coreg_data, coord_raw)
             self.pipeline.set_message((coord, m_img))
 
-            print(f"Pubsub the coregistered coordinate: {coord}")
+            # print(f"Pubsub the coregistered coordinate: {coord}")
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 

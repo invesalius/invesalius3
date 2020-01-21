@@ -1,3 +1,4 @@
+import psutil
 import threading
 import time
 
@@ -140,7 +141,7 @@ class ComputeTractsRoot(threading.Thread):
                 # Compute the tracts
                 trk_list = []
                 for _ in range(chunck_size):
-                    self.tracker.set_seeds(seed)
+                    self.tracker.seed_coordinates(seed)
                     if self.tracker.run():
                         trk_list.append(self.tracker.run()[0])
 
@@ -213,7 +214,7 @@ class ComputeTractsParallel(threading.Thread):
                 # Compute the tracts
                 trk_list = []
                 # for _ in range(chunck_size):
-                self.tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+                self.tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
                 if self.tracker.run():
                     trk_list.extend(self.tracker.run())
 
@@ -317,7 +318,7 @@ class ComputeTractsSimple:
         # Compute the tracts
         trk_list = []
         for n in range(self.n_tracts):
-            self.tracker.set_seeds(seed)
+            self.tracker.seed_coordinates(seed)
             if self.tracker.run()[0]:
                 trk_list.append(self.tracker.run()[0])
 
@@ -363,7 +364,7 @@ def TractsThread(inp, queue_coord, queue_tract, event):
         if dist > 3:
             seed = compute_seed((wx, wy, wz), affine)
             chunck_size = 6
-            tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+            tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
 
             if tracker.run():
                 trk_list = tracker.run()
@@ -469,7 +470,7 @@ class ComputeTractsDev(threading.Thread):
         # Compute the tracts
         while not self.event.is_set():
             if self.pipeline.event_coreg.is_set():
-                print("Computing tracts")
+                # print("Computing tracts")
                 position, arg = self.pipeline.get_coord_coreg()
                 wx, wy, wz = db.flip_x(position[:3])
                 p2 = db.flip_x(position[:3])
@@ -488,7 +489,7 @@ class ComputeTractsDev(threading.Thread):
                     # seed = compute_seed((wx, wy, wz), affine)
                     seed = np.array([[-8.49, -8.39, 2.5]])
                     chunck_size = 6
-                    tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+                    tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
 
                     if tracker.run():
                         trk_list = tracker.run()
@@ -534,7 +535,7 @@ class ComputeVisualize(threading.Thread):
         # Compute the tracts
         while not self.event.is_set():
             if self.pipeline.event.is_set():
-                print("Computing tracts")
+                # print("Computing tracts")
                 position, m_img = self.pipeline.get_message()
                 xx, yy, zz = db.flip_x(position[:3])
                 p2 = db.flip_x(position[:3])
@@ -553,7 +554,7 @@ class ComputeVisualize(threading.Thread):
                         # seed = compute_seed(p_new, affine)
                         seed = np.array([[-8.49, -8.39, 2.5]])
                         chunck_size = 4
-                        tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+                        tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
                         trk_list = tracker.run()
 
                         if trk_list:
@@ -583,15 +584,16 @@ class ComputeVisualizeParallel(threading.Thread):
 
     def run(self):
 
-        tracker, affine, offset, n_tracts_total = self.inp
+        tracker, affine, offset, n_tracts_total, seed_radius = self.inp
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
-        chunck_size = 4
+        ncores = psutil.cpu_count()
+        chunck_size = ncores
         root = vtk.vtkMultiBlockDataSet()
         # Compute the tracts
         while not self.event.is_set():
             if self.pipeline.event.is_set():
-                print("Computing tracts")
+                # print("Computing tracts")
                 position, m_img = self.pipeline.get_message()
                 xx, yy, zz = db.flip_x(position[:3])
                 p2 = db.flip_x(position[:3])
@@ -607,26 +609,26 @@ class ComputeVisualizeParallel(threading.Thread):
 
                     # seed = compute_seed(p_new, affine)
                     seed = np.array([[-8.49, -8.39, 2.5]])
-                    tracker.set_seeds(np.repeat(seed, chunck_size, axis=0))
+                    tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
 
                     if tracker.run():
 
-                        if dist < 3 and n_tracts < n_tracts_total:
+                        if dist < seed_radius and n_tracts < n_tracts_total:
                             # Compute the tracts
                             trk_list.extend(tracker.run())
-                            print("Menor que 3 com n tracts and dist: ", n_tracts, dist)
+                            # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
-                            print("Total new tracts: ", n_tracts)
+                            # print("Total new tracts: ", n_tracts)
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                                          affine_vtk=self.affine_vtk)
-                        elif dist > 3:
+                        elif dist >= seed_radius:
                             n_tracts = 0
                             trk_list = tracker.run()
-                            print(">>> que 3 com n tracts: ", len(trk_list))
+                            # print(">>> que seed_radius com n tracts: ", len(trk_list))
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
-                            print("Total tracts: ", n_tracts)
+                            # print("Total tracts: ", n_tracts)
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                                          affine_vtk=self.affine_vtk)
 

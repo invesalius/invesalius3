@@ -1359,11 +1359,11 @@ class Viewer(wx.Panel):
             if not self.obj_state:
                 self.Refresh()
 
-    def UpdateSeedOffset(self, offset):
-        self.seed_offset = offset
+    def UpdateSeedOffset(self, data):
+        self.seed_offset = data
 
     def UpdateObjectOrientation(self, m_img, coord):
-        print("Update object orientation")
+        # print("Update object orientation")
         m_img_copy = m_img.copy()
         m_img_copy[:3, -1] = np.asmatrix(bases.flip_x_m((m_img_copy[0, -1], m_img_copy[1, -1], m_img_copy[2, -1]))).reshape([3, 1])
         norm_vec = m_img_copy[:3, 2].reshape([1, 3]).tolist()

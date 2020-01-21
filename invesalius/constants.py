@@ -516,6 +516,11 @@ ID_CREATE_MASK = wx.NewId()
 ID_GOTO_SLICE = wx.NewId()
 ID_GOTO_COORD = wx.NewId()
 
+# Tractography with Trekker
+ID_TREKKER_MASK = wx.NewId()
+ID_TREKKER_IMG = wx.NewId()
+ID_TREKKER_FOD = wx.NewId()
+
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001
@@ -740,3 +745,5 @@ N_TRACTS = 100
 PEEL_DEPTH = 5
 MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 30
+SEED_RADIUS = 3
+SLEEP_NAVIGATION = 0.3
