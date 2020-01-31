@@ -507,6 +507,17 @@ class Frame(wx.Frame):
         elif id == const.ID_FLOODFILL_SEGMENTATION:
             self.OnFFillSegmentation()
 
+        elif id == const.ID_SEGMENTATION_BRAIN:
+            import invesalius.data.slice_ as slc
+            from invesalius.segmentation.brain import segment
+
+            mask = slc.Slice().create_new_mask()
+            mask.was_edited = True
+            image = slc.Slice().matrix
+
+            segment.segment(image, mask)
+            Publisher.sendMessage('Reload actual slice')
+
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
             if st:
@@ -779,6 +790,7 @@ class MenuBar(wx.MenuBar):
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
+                             const.ID_SEGMENTATION_BRAIN,
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
@@ -916,6 +928,8 @@ class MenuBar(wx.MenuBar):
         self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed\tCtrl+Shift+W"))
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
+        segmentation_menu.AppendSeparator()
+        segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation"))
 
         # Surface Menu
         surface_menu = wx.Menu()

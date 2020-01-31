@@ -517,3 +517,8 @@ def get_LUT_value_255(data, window, level):
                         [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
     data.shape = shape
     return data
+
+
+def image_normalize(image, min_=0.0, max_=1.0):
+    imin, imax = image.min(), image.max()
+    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_
