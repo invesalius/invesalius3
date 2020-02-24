@@ -1796,7 +1796,7 @@ class TractographyPanel(wx.Panel):
         # FOD_path = 'sub-P0_dwi_FOD.nii'
         # # FOD_path = b"test_fod.nii"
         # filename = os.path.join(data_dir, FOD_path)
-        ncores = psutil.cpu_count()
+        ncores = 2*psutil.cpu_count()
 
         if filename:
             # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
@@ -1826,14 +1826,14 @@ class TractographyPanel(wx.Panel):
 
             self.tracker = Trekker.tracker(filename.encode('utf-8'))
             self.tracker.seed_maxTrials(1)
-            self.tracker.stepSize(0.1)
+            self.tracker.stepSize(0.05)
             self.tracker.minFODamp(0.05)
-            self.tracker.probeQuality(3)
+            self.tracker.probeQuality(4)
             self.tracker.numberOfThreads(ncores)
-            self.tracker.maxEstInterval(5)
-            self.tracker.minRadiusOfCurvature(0.5)
-            self.tracker.probeLength(0.4)
-            self.tracker.writeInterval(10)
+            self.tracker.maxEstInterval(10)
+            self.tracker.minRadiusOfCurvature(0.6)
+            self.tracker.probeLength(0.3)
+            self.tracker.writeInterval(20)
 
             print("Trekker initialized.")
 
