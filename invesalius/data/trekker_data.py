@@ -588,7 +588,7 @@ class ComputeVisualizeParallel(threading.Thread):
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
         ncores = psutil.cpu_count()
-        chunck_size = ncores
+        chunck_size = 2*ncores
         root = vtk.vtkMultiBlockDataSet()
         # Compute the tracts
         while not self.event.is_set():
@@ -602,13 +602,13 @@ class ComputeVisualizeParallel(threading.Thread):
                     m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
                     norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
                     p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-                    # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
-                    p_new = [-8.49, -8.39, 2.5]
+                    p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # p_new = [-8.49, -8.39, 2.5]
                     dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
                     p_old = np.asarray(p_new)
 
-                    # seed = compute_seed(p_new, affine)
-                    seed = np.array([[-8.49, -8.39, 2.5]])
+                    seed = compute_seed(p_new, affine)
+                    # seed = np.array([[-8.49, -8.39, 2.5]])
                     tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
 
                     if tracker.run():
