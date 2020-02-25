@@ -1519,6 +1519,7 @@ class TractographyPanel(wx.Panel):
         self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0., 0., 0.]])
         self.tracts_run = None
+        self.trekker_cfg = None
         # self.vezes = 0
 
         # self.affine_vtk = vtk.vtkMatrix4x4()
@@ -1546,18 +1547,18 @@ class TractographyPanel(wx.Panel):
         self.btn_load = btn_load
 
         # Save button for object registration
-        tooltip = wx.ToolTip(_(u"Save parameters"))
-        btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
-        btn_save.SetToolTip(tooltip)
-        btn_save.Enable(1)
-        btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveParameters)
-        self.btn_save = btn_save
+        tooltip = wx.ToolTip(_(u"Load parameters"))
+        btn_load_cfg = wx.Button(self, -1, _(u"Load"), size=wx.Size(65, 23))
+        btn_load_cfg.SetToolTip(tooltip)
+        btn_load_cfg.Enable(1)
+        btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
+        self.btn_load_cfg = btn_load_cfg
 
         # Create a horizontal sizer to represent button save
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_new, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_btns.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
-        line_btns.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_btns.Add(btn_load_cfg, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
 
         # Change peeling depth
         text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
@@ -1756,7 +1757,7 @@ class TractographyPanel(wx.Panel):
                 self.tracts_run.start()
 
     def OnLinkBrain(self, event=None):
-
+        Publisher.sendMessage('Begin busy cursor')
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_MASK)
         # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
         # mask_file = 'sub-P0_dwi_mask.nii'
@@ -1777,26 +1778,26 @@ class TractographyPanel(wx.Panel):
         # n_peels = 10
 
         if mask_path and img_path:
-            print("Loading brain model...")
             self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
             actor = self.brain_peel.get_actor(self.peel_depth)
-            print("Load completed")
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
-
             self.checkpeeling.Enable(1)
             # Publisher.sendMessage('Update object registration',
             #                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
             # Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
             self.checkpeeling.SetValue(True)
 
+        Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+        Publisher.sendMessage('End busy cursor')
+
     def OnLinkFOD(self, event=None):
+        Publisher.sendMessage('Begin busy cursor')
         filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_FOD)
         # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
         # # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
         # FOD_path = 'sub-P0_dwi_FOD.nii'
         # # FOD_path = b"test_fod.nii"
         # filename = os.path.join(data_dir, FOD_path)
-        ncores = 2*psutil.cpu_count()
 
         if filename:
             # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
@@ -1824,18 +1825,26 @@ class TractographyPanel(wx.Panel):
             # self.tract.tracker.probeLength(0.4)
             # self.tract.tracker.writeInterval(10)
 
-            self.tracker = Trekker.tracker(filename.encode('utf-8'))
-            self.tracker.seed_maxTrials(1)
-            self.tracker.stepSize(0.05)
-            self.tracker.minFODamp(0.05)
-            self.tracker.probeQuality(4)
-            self.tracker.numberOfThreads(ncores)
-            self.tracker.maxEstInterval(10)
-            self.tracker.minRadiusOfCurvature(0.6)
-            self.tracker.probeLength(0.3)
-            self.tracker.writeInterval(20)
+            if self.trekker_cfg:
+                self.tracker = Trekker.tracker(filename.encode('utf-8'))
+                self.tracker.seed_maxTrials(self.trekker_cfg['seed_max'])
+                self.tracker.stepSize(self.trekker_cfg['step_size'])
+                self.tracker.minFODamp(self.trekker_cfg['min_fod'])
+                self.tracker.probeQuality(self.trekker_cfg['probe_quality'])
+                self.tracker.maxEstInterval(self.trekker_cfg['max_interval'])
+                self.tracker.minRadiusOfCurvature(self.trekker_cfg['min_radius_curv'])
+                self.tracker.probeLength(self.trekker_cfg['probe_length'])
+                self.tracker.writeInterval(self.trekker_cfg['write_interval'])
 
-            print("Trekker initialized.")
+                # check number if number of cores is valid in configuration file,
+                # otherwise use the maximum number of threads which is usually 2*N_CPUS
+                if isinstance((self.trekker_cfg['numb_threads']), int):
+                    if self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
+                        self.tracker.numberOfThreads(self.trekker_cfg['numb_threads'])
+                    else:
+                        self.tracker.numberOfThreads(2*const.N_CPU)
+
+            Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
 
             # group = oth.ReadOthers(filename)
             # if group.affine.any():
@@ -1867,17 +1876,25 @@ class TractographyPanel(wx.Panel):
             # data = self.tracker, self.affine, self.seed_offset, self.n_tracts
             # tract.n_tracts = self.n_tracts
             Publisher.sendMessage('Update Trekker object', data=self.tracker)
+            Publisher.sendMessage('End busy cursor')
 
-    def ShowSaveParameters(self, evt):
-        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
-            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
-        else:
-            filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
+    def OnLoadParameters(self, event=None):
+        import json
+        filename = dlg.ShowLoadDialog(message=_(u"Load Trekker configuration"),
+                                      wildcard=_("JSON file (*.json)|*.json"))
+        try:
+            # Check if filename exists, read the JSON file and check if all parameters match
+            # with the required list defined in the constants module
+            # if a parameter is missing, raise an error
             if filename:
-                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
-                data = np.hstack([self.obj_fiducials, self.obj_orients])
-                np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
-                wx.MessageBox(_("Object file successfully saved"), _("Save"))
+                with open(filename) as json_file:
+                    self.trekker_cfg = json.load(json_file)
+                assert all(name in self.trekker_cfg for name in const.TREKKER_CONFIG)
+                Publisher.sendMessage('Update status text in GUI', label=_("Trekker config loaded"))
+
+        except (AssertionError, json.decoder.JSONDecodeError):
+            # Inform user that file is not compatible
+            wx.MessageBox(_("File incompatible, using default configuration."), _("InVesalius 3"))
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)

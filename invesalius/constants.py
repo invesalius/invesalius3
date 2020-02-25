@@ -19,6 +19,7 @@
 
 import os.path
 import platform
+import psutil
 import sys
 import wx
 import itertools
@@ -747,3 +748,6 @@ MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 30
 SEED_RADIUS = 3
 SLEEP_NAVIGATION = 0.3
+N_CPU = psutil.cpu_count()
+TREKKER_CONFIG = ['seed_max', 'step_size', 'min_fod', 'probe_quality', 'max_interval',
+                  'min_radius_curv', 'probe_length', 'write_interval', 'numb_threads']

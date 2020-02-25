@@ -670,6 +670,28 @@ def ShowLoadRegistrationDialog():
     return filepath
 
 
+def ShowLoadDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+                   wildcard=_("Registration files (*.obr)|*.obr")):
+
+    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile="", wildcard=wildcard, style=style)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            filepath = dlg.GetPath()
+    except(wx._core.PyAssertionError):  # FIX: win64
+        filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filepath
+
+
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
         wx.Dialog.__init__(self, None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
@@ -3973,246 +3995,3 @@ class SetCOMport(wx.Dialog):
 
     def GetValue(self):
         return self.com_ports.GetString(self.com_ports.GetSelection())
-
-
-class TrekkerConfiguration(wx.Dialog):
-    def __init__(self, parent=None, ID=-1, title=_(u"Trekker configuration"),
-                 size=wx.DefaultSize, pos=wx.DefaultPosition,
-                 style=wx.DEFAULT_DIALOG_STYLE, useMetal=False,
-                 mask_edited=False):
-
-        wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
-        self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        if 'wxMac' in wx.PlatformInfo and useMetal:
-            self.SetExtraStyle(wx.DIALOG_EX_METAL)
-
-        self.CenterOnScreen()
-
-        # It's necessary to create a staticbox before is children widgets
-        # because otherwise in MacOSX it'll not be possible to use the mouse in
-        # static's children widgets.
-        sb_nsd = wx.StaticBox(self, -1, _('Surface creation options'))
-        self.nsd = SurfaceCreationOptionsPanel(self, -1)
-        self.nsd.Bind(EVT_MASK_SET, self.OnSetMask)
-        surface_options_sizer = wx.StaticBoxSizer(sb_nsd, wx.VERTICAL)
-        surface_options_sizer.Add(self.nsd, 1, wx.EXPAND|wx.ALL, 5)
-
-        sb_ca = wx.StaticBox(self, -1, _('Surface creation method'))
-        self.ca = SurfaceMethodPanel(self, -1, mask_edited)
-        surface_method_sizer = wx.StaticBoxSizer(sb_ca, wx.VERTICAL)
-        surface_method_sizer.Add(self.ca, 1, wx.EXPAND|wx.ALL, 5)
-
-        btn_ok = wx.Button(self, wx.ID_OK)
-        btn_ok.SetDefault()
-        btn_cancel = wx.Button(self, wx.ID_CANCEL)
-
-        btnsizer = wx.StdDialogButtonSizer()
-        btnsizer.AddButton(btn_ok)
-        btnsizer.AddButton(btn_cancel)
-        btnsizer.Realize()
-
-        sizer_panels = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_panels.Add(surface_options_sizer, 0, wx.EXPAND|wx.ALL, 5)
-        sizer_panels.Add(surface_method_sizer, 0, wx.EXPAND|wx.ALL, 5)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(sizer_panels, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
-        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
-
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-
-
-class TrekkerOptionsPanel(wx.Panel):
-    '''
-    This dialog is only shown when the mask whose surface will be generate was
-    edited. So far, the only options available are the choice of method to
-    generate the surface, Binary or `Context aware smoothing', and options from
-    `Context aware smoothing'
-    '''
-    def __init__(self, parent, id, mask_edited=False):
-        wx.Panel.__init__(self, parent, id)
-
-        self.mask_edited = mask_edited
-        self.alg_types = {_(u'Default'): 'Default',
-                          _(u'Context aware smoothing'): 'ca_smoothing',
-                          _(u'Binary'): 'Binary'}
-        self.edited_imp = [_(u'Default'), ]
-
-        self._build_widgets()
-        self._bind_wx()
-
-    def _build_widgets(self):
-        self.trk_options = TrekkerOptions(self)
-
-        self.cb_types = wx.ComboBox(self, -1, _(u'Default'),
-                                    choices=[i for i in sorted(self.alg_types)
-                                            if not (self.mask_edited and i in self.edited_imp)],
-                                    style=wx.CB_READONLY)
-        w, h = self.cb_types.GetSize()
-
-        icon = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
-                                        (h * 0.8, h * 0.8))
-        self.bmp = wx.StaticBitmap(self, -1, icon)
-        self.bmp.SetToolTip(_("It is not possible to use the Default method because the mask was edited."))
-
-        self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.method_sizer.Add(wx.StaticText(self, -1, _(u'Method:')), 0,
-                              wx.EXPAND | wx.ALL, 5)
-        self.method_sizer.Add(self.cb_types, 1, wx.EXPAND)
-        self.method_sizer.Add(self.bmp, 0, wx.EXPAND|wx.ALL, 5)
-
-        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.main_sizer.Add(self.method_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        self.main_sizer.Add(self.trk_options, 0, wx.EXPAND | wx.ALL, 5)
-
-        self.SetSizer(self.main_sizer)
-        self.Layout()
-        self.Fit()
-
-        if self.mask_edited:
-            self.cb_types.SetValue(_(u'Context aware smoothing'))
-            self.ca_options.Enable()
-            self.method_sizer.Show(self.bmp)
-        else:
-            self.ca_options.Disable()
-            self.method_sizer.Hide(self.bmp)
-
-    def _bind_wx(self):
-        self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
-
-    def _set_cb_types(self, evt):
-        if self.alg_types[evt.GetString()] == 'ca_smoothing':
-            self.ca_options.Enable()
-        else:
-            self.ca_options.Disable()
-        evt.Skip()
-
-    def GetAlgorithmSelected(self):
-        try:
-            return self.alg_types[self.cb_types.GetValue()]
-        except KeyError:
-            return self.alg_types[0]
-
-    def GetOptions(self):
-        if self.GetAlgorithmSelected() == 'ca_smoothing':
-            options = {'angle': self.ca_options.angle.GetValue(),
-                       'max distance': self.ca_options.max_distance.GetValue(),
-                       'min weight': self.ca_options.min_weight.GetValue(),
-                       'steps': self.ca_options.steps.GetValue()}
-        else:
-            options = {}
-        return options
-
-    def GetValue(self):
-        algorithm = self.GetAlgorithmSelected()
-        options = self.GetOptions()
-
-        return {"algorithm": algorithm,
-                "options": options}
-
-    def ReloadMethodsOptions(self):
-        self.cb_types.Clear()
-        self.cb_types.AppendItems([i for i in sorted(self.alg_types)
-                                   if not (self.mask_edited and i in self.edited_imp)])
-        if self.mask_edited:
-            self.cb_types.SetValue(_(u'Context aware smoothing'))
-            self.ca_options.Enable()
-            self.method_sizer.Show(self.bmp)
-        else:
-            self.cb_types.SetValue(_(u'Default'))
-            self.ca_options.Disable()
-            self.method_sizer.Hide(self.bmp)
-
-        self.method_sizer.Layout()
-
-
-class TrekkerOptions(wx.Panel):
-    '''
-    Options related to Context aware algorithm:
-    Angle: The min angle to a vertex to be considered a staircase vertex;
-    Max distance: The max distance a normal vertex must be to calculate its
-        weighting;
-    Min Weighting: The min weight a vertex must have;
-    Steps: The number of iterations the smoothing algorithm have to do.
-    '''
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
-        self._build_widgets()
-
-    def _build_widgets(self):
-        sb = wx.StaticBox(self, -1, _('Options'))
-
-        self.seed_max = InvSpinCtrl(self, -1, value=10, min_value=1, max_value=100)
-
-        self.step_size = InvFloatSpinCtrl(self, -1, value=3.0, min_value=0.0,
-                                         max_value=100.0, increment=0.1,
-                                         digits=2)
-
-        self.min_fod = InvFloatSpinCtrl(self, -1, value=0.5, min_value=0.0,
-                                         max_value=1.0, increment=0.1,
-                                         digits=1)
-
-        self.probe_quality = InvSpinCtrl(self, -1, value=10, min_value=1, max_value=100)
-
-        self.numb_threads = InvSpinCtrl(self, -1, value=10, min_value=1, max_value=100)
-
-        self.max_interval = InvSpinCtrl(self, -1, value=10, min_value=1, max_value=100)
-
-        self.min_radius_curv = InvFloatSpinCtrl(self, -1, value=0.7, min_value=0.0,
-                                             max_value=1.0, increment=0.1,
-                                             digits=1)
-
-        self.probe_length = InvFloatSpinCtrl(self, -1, value=0.7, min_value=0.0,
-                                         max_value=1.0, increment=0.1,
-                                         digits=1)
-
-        self.write_interval = InvSpinCtrl(self, -1, value=10, min_value=1, max_value=100)
-
-        layout_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=5, vgap=5)
-        layout_sizer.Add(wx.StaticText(self, -1, _(u'Angle:')),  0, wx.EXPAND)
-        layout_sizer.Add(self.angle, 0, wx.EXPAND)
-        layout_sizer.Add(wx.StaticText(self, -1, _(u'Max. distance:')),  0, wx.EXPAND)
-        layout_sizer.Add(self.max_distance, 0, wx.EXPAND)
-        layout_sizer.Add(wx.StaticText(self, -1, _(u'Min. weight:')), 0, wx.EXPAND)
-        layout_sizer.Add(self.min_weight, 0, wx.EXPAND)
-        layout_sizer.Add(wx.StaticText(self, -1, _(u'N. steps:')),  0, wx.EXPAND)
-        layout_sizer.Add(self.steps, 0, wx.EXPAND)
-
-        self.main_sizer = wx.StaticBoxSizer(sb, wx.VERTICAL)
-        self.main_sizer.Add(layout_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        self.SetSizer(self.main_sizer)
-
-
-class TrekkerConfigurationSmall(wx.Dialog):
-    """
-    This dialog is shown to expose initial parameters for loading Trekker for tractography computation.
-    """
-
-    def __init__(self):
-        wx.Dialog.__init__(self, None, -1, _('Trekker parameters'))
-        self._build_widgets()
-        self.CenterOnScreen()
-
-    def _build_widgets(self):
-        btn_ok = wx.Button(self, wx.ID_OK)
-        btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        btn_sizer = wx.StdDialogButtonSizer()
-        btn_sizer.AddButton(btn_ok)
-        btn_sizer.AddButton(btn_cancel)
-        btn_sizer.Realize()
-
-        self.ca = SurfaceMethodPanel(self, -1, True)
-
-        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.main_sizer.Add(self.ca, 0, wx.EXPAND|wx.ALL, 5)
-        self.main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
-
-        self.SetSizer(self.main_sizer)
-        self.Fit()
-
-    def GetOptions(self):
-        return self.ca.GetOptions()
-
-    def GetAlgorithmSelected(self):
-        return self.ca.GetAlgorithmSelected()
