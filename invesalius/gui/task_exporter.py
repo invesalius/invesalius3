@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 
 import os
+import pathlib
 import sys
 
 import wx
@@ -317,9 +318,9 @@ class InnerTaskPanel(wx.Panel):
 
         if n_surface:
             if sys.platform == 'win32':
-                project_name = project.name
+                project_name = pathlib.Path(project.name).stem
             else:
-                project_name = project.name+".stl"
+                project_name = pathlib.Path(project.name).stem + ".stl"
 
             session = ses.Session()
             last_directory = session.get('paths', 'last_directory_3d_surface', '')

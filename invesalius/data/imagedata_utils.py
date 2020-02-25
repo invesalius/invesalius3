@@ -126,6 +126,16 @@ def resize_slice(im_array, resolution_percentage):
     return out
 
 
+def resize_image_array(image, resolution_percentage, as_mmap=False):
+    out = zoom(image, resolution_percentage, image.dtype, order=2)
+    if as_mmap:
+        fname = tempfile.mktemp(suffix="_resized")
+        out_mmap = np.memmap(fname, shape=out.shape, dtype=out.dtype, mode='w+')
+        out_mmap[:] = out
+        return out_mmap
+    return out
+
+
 def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
     reader = gdcm.ImageReader()
     reader.SetFileName(filename)

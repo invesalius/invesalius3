@@ -1433,6 +1433,11 @@ class Viewer(wx.Panel):
         self.overwrite_mask = flag
 
     def set_slice_number(self, index):
+        max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
+        if index < 0:
+            index = 0
+        if index >= max_slice_number:
+            index = max_slice_number - 1
         inverted = self.mip_ctrls.inverted.GetValue()
         border_size = self.mip_ctrls.border_spin.GetValue()
         image = self.slice_.GetSlices(self.orientation, index,

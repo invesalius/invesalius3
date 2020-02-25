@@ -131,8 +131,8 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
             image = converters.to_vtk(a_image, spacing, roi.start, "AXIAL", padding=padding)
         del a_image
 
-    if imagedata_resolution:
-        image = ResampleImage3D(image, imagedata_resolution)
+    #  if imagedata_resolution:
+        #  image = ResampleImage3D(image, imagedata_resolution)
 
     flip = vtk.vtkImageFlip()
     flip.SetInputData(image)
