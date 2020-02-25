@@ -1894,6 +1894,7 @@ class TractographyPanel(wx.Panel):
 
         except (AssertionError, json.decoder.JSONDecodeError):
             # Inform user that file is not compatible
+            self.trekker_cfg = const.TREKKER_CONFIG
             wx.MessageBox(_("File incompatible, using default configuration."), _("InVesalius 3"))
 
     def OnCloseProject(self):

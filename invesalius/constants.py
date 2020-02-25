@@ -749,5 +749,6 @@ SEED_OFFSET = 30
 SEED_RADIUS = 3
 SLEEP_NAVIGATION = 0.3
 N_CPU = psutil.cpu_count()
-TREKKER_CONFIG = ['seed_max', 'step_size', 'min_fod', 'probe_quality', 'max_interval',
-                  'min_radius_curv', 'probe_length', 'write_interval', 'numb_threads']
+TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.05, 'min_fod': 0.05, 'probe_quality': 4,
+                  'max_interval': 10, 'min_radius_curv': 0.6, 'probe_length': 0.3,
+                  'write_interval': 20, 'numb_threads': ''}
