@@ -925,29 +925,7 @@ def SurfaceSelectionRequiredForDuplication():
 
 
 # Dialogs for neuronavigation mode
-def InvalidFiducials():
-    msg = _("Fiducials are invalid. Select all coordinates.")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
-def InvalidObjectRegistration():
-    msg = _("Perform coil registration before navigation.")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
+# ----------------------------------
 
 def NavigationTrackerWarning(trck_id, lib_mode):
     """
@@ -981,74 +959,18 @@ def NavigationTrackerWarning(trck_id, lib_mode):
     dlg.Destroy()
 
 
-def InvalidMarkersFile():
-    msg = _("The TXT file is invalid.")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
-def NoMarkerSelected():
-    msg = _("No data selected")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
 def DeleteAllMarkers():
-    msg = _("Do you really want to delete all markers?")
+    msg = _("Do you want to delete all markers?")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.OK | wx.CANCEL | wx.ICON_QUESTION)
     else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
                                wx.OK | wx.CANCEL | wx.ICON_QUESTION)
     result = dlg.ShowModal()
     dlg.Destroy()
     return result
 
-def DeleteTarget():
-    msg = _("Target deleted")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-def NewTarget():
-    msg = _("New target selected")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-def InvalidTargetID():
-    msg = _("Sorry, you cannot use 'TARGET' ID")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
 
 def EnterMarkerID(default):
     msg = _("Edit marker ID")
@@ -1060,6 +982,7 @@ def EnterMarkerID(default):
     result = dlg.GetValue()
     dlg.Destroy()
     return result
+# ----------------------------------
 
 
 class NewMask(wx.Dialog):

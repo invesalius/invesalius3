@@ -659,7 +659,7 @@ class NeuronavigationPanel(wx.Panel):
         else:
 
             if np.isnan(self.fiducials).any():
-                dlg.InvalidFiducials()
+                wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
                 btn_nav.SetValue(False)
 
             elif not self.trk_init[0]:
@@ -753,7 +753,7 @@ class NeuronavigationPanel(wx.Panel):
                             dlg.NavigationTrackerWarning(0, 'choose')
 
                     else:
-                        dlg.InvalidObjectRegistration()
+                        wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
 
                 else:
                     coreg_data = [m_change, 0]
@@ -1181,7 +1181,7 @@ class MarkersPanel(wx.Panel):
             id_label = dlg.EnterMarkerID(self.lc.GetItemText(list_index, 4))
             if id_label == 'TARGET':
                 id_label = ''
-                dlg.InvalidTargetID()
+                wx.MessageBox(_("Invalid TARGET ID."), _("InVesalius 3"))
         self.lc.SetItem(list_index, 4, id_label)
         # Add the new ID to exported list
         if len(self.list_coord[list_index]) > 8:
@@ -1211,7 +1211,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
-        dlg.NewTarget()
+        wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 
     def OnMenuSetColor(self, evt):
         index = self.lc.GetFocusedItem()
@@ -1251,7 +1251,7 @@ class MarkersPanel(wx.Panel):
                     self.tgt_flag = self.tgt_index = None
                     Publisher.sendMessage('Disable or enable coil tracker', status=False)
                     if not hasattr(evt, 'data'):
-                        dlg.DeleteTarget()
+                        wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
     def OnDeleteSingleMarker(self, evt=None, marker_id=None):
         # OnDeleteSingleMarker is used for both pubsub and button click events
@@ -1272,14 +1272,16 @@ class MarkersPanel(wx.Panel):
             else:
                 index = None
 
+        #TODO: There are bugs when no marker is selected, test and improve
         if index:
             if self.tgt_flag and self.tgt_index == index[0]:
                 self.tgt_flag = self.tgt_index = None
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
-                dlg.DeleteTarget()
+                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+
             self.DeleteMarker(index)
         else:
-            dlg.NoMarkerSelected()
+            wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
     def DeleteMarker(self, index):
         for i in reversed(index):
@@ -1343,7 +1345,7 @@ class MarkersPanel(wx.Panel):
                         self.CreateMarker(coord, colour, size, line[7])
                     count_line += 1
             except:
-                dlg.InvalidMarkersFile()
+                wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
 
