@@ -37,6 +37,7 @@ from invesalius.data import vtk_utils as vtk_utils
 import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 import invesalius.data.converters as converters
+import invesalius.data.slice_ as sl
 import invesalius.data.transformations as tr
 
 from invesalius import inv_paths
@@ -572,3 +573,21 @@ def get_LUT_value_255(data, window, level):
                         [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
     data.shape = shape
     return data
+
+
+def compute_affine_vtk(affine=np.identity(4)):
+    """
+    Convert a numpy 4x4 array to a vtk 4x4 matrix
+    :param affine: 4x4 array
+    :return: vtkMatrix4x4 object representing the affine
+    """
+    # test for type and shape of affine matrix
+    assert isinstance(affine, np.ndarray)
+    assert affine.shape == (4, 4)
+
+    affine_vtk = vtk.vtkMatrix4x4()
+    for row in range(0, 4):
+        for col in range(0, 4):
+            affine_vtk.SetElement(row, col, affine[row, col])
+
+    return affine_vtk

@@ -23,8 +23,7 @@ def angle_calculation(ap_axis, coil_axis):
 
 def base_creation_old(fiducials):
     """
-    Calculate the origin and matrix for coordinate system
-    transformation.
+    Calculate the origin and matrix for coordinate system transformation.
     q: origin of coordinate system
     g1, g2, g3: orthogonal vectors of coordinate system
 

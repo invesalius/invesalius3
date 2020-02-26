@@ -654,31 +654,9 @@ class NeuronavigationPanel(wx.Panel):
             if self.trigger_state:
                 self.trigger.stop()
 
-            # self.correg.stop()
-
             Publisher.sendMessage("Navigation status", status=False)
 
         else:
-            seed = [0., 0., 0.]
-            slic = sl.Slice()
-            affine = slic.affine
-            # tracker = slic.tracker
-            # tract = dti.Tractography()
-            # tract = self.tract
-            # tracker = tract.tracker
-            # print("n_tracts!!!!!!!!!!!!: ", tract.n_tracts)
-            # print("seed_offse!!!!!!!!!!!!: ", tract.seed_offset)
-
-            # self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
-            self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius
-
-            affine_vtk = vtk.vtkMatrix4x4()
-            for row in range(0, 4):
-                for col in range(0, 4):
-                    affine_vtk.SetElement(row, col, affine[row, col])
-            tracts_info = seed, self.trekker, affine, affine_vtk
-            # ---
-
 
             if np.isnan(self.fiducials).any():
                 dlg.InvalidFiducials()
@@ -688,48 +666,50 @@ class NeuronavigationPanel(wx.Panel):
                 dlg.NavigationTrackerWarning(0, 'choose')
 
             else:
+                # prepare GUI for navigation
+                Publisher.sendMessage("Navigation status", status=True)
+                Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+                Publisher.sendMessage("Hide current mask")
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
                 btn_nav.SetToolTip(tooltip)
 
-                # Disable all navigation buttons
+                # disable all navigation buttons
                 choice_ref.Enable(False)
                 choice_trck.Enable(False)
                 for btn_c in self.btns_coord:
                     btn_c.Enable(False)
 
-                # fids_head_img = np.zeros([3, 3])
-                # for ic in range(0, 3):
-                #     fids_head_img[ic, :] = np.asarray(db.flip_x_m(self.fiducials[ic, :]))
-                #
-                # m_head_aux, q_head_aux, m_inv_head_aux = db.base_creation(fids_head_img)
-                # m_head = np.asmatrix(np.identity(4))
-                # m_head[:3, :3] = m_head_aux[:3, :3]
+                # initialize Trekker parameters
+                seed = [0., 0., 0.]
+                slic = sl.Slice()
+                affine = slic.affine
+                affine_vtk = image_utils.compute_affine_vtk(affine)
+                # self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
+                self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius
+                tracts_info = seed, self.trekker, affine, affine_vtk
 
+                # compute coordinate transformation matrices
+                #TODO: use array instead of matrix
                 m, q1, minv = db.base_creation_old(self.fiducials[:3, :])
                 n, q2, ninv = db.base_creation_old(self.fiducials[3:, :])
-
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
-
-                # coreg_data = [m_change, m_head]
-
+                # initialize spatial tracker parameters
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+
+                # compute fiducial registration error (FRE)
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
                 fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
-
                 self.txtctrl_fre.SetValue(str(round(fre, 2)))
                 if fre <= 3:
                     self.txtctrl_fre.SetBackgroundColour('GREEN')
                 else:
                     self.txtctrl_fre.SetBackgroundColour('RED')
 
+                # initialize trigger thread to synchronize with external devices
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
-
-                Publisher.sendMessage("Navigation status", status=True)
-                Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
-                Publisher.sendMessage("Hide current mask")
 
                 if self.track_obj:
                     if self.obj_reg_status:
@@ -745,63 +725,23 @@ class NeuronavigationPanel(wx.Panel):
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
-                                # self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
-                                # inp_trk = tracker, position, affine
-                                # inp_trk = self.trk_inp
-
                                 if self.event.is_set():
                                     self.event.clear()
 
-                                # sle = .3
                                 sle = self.sleep_nav
-                                # pipeline = Pipeline()
-                                # working with both sets below
-                                # pipeline = PipelineTractsCondition()
                                 pipeline = PipelineSimple()
 
                                 # this works with sleep of 0.25 for each thread
-                                threds = []
-                                threds.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event, sle))
-                                # threds.append(dti.ComputeVisualize(self.trk_inp, affine_vtk, pipeline, self.event, sle))
+                                jobs_list = [
+                                    dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event, sle)]
+
                                 if self.view_tracts:
-                                    threds.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline, self.event, sle))
+                                    jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
+                                                                                  self.event, sle))
 
-                                # threds.append(dcr.CoordinateProducer(tracker_mode, pipeline, self.event, sle))
-                                # threds.append(dcr.CoregistrationThread(coreg_data, pipeline, self.event, sle))
-                                # threds.append(dti.ComputeTractsDev(self.trk_inp, pipeline, self.event, sle))
-                                # threds.append(dti.VisualizeTractsDev(affine_vtk, pipeline, self.event, sle))
+                                for jobs in jobs_list:
+                                    jobs.start()
 
-                                # with NavThreadPool(threds):
-                                #     print("Main thread")
-                                    # sleep(.005)
-
-                                for th in threds:
-                                    th.start()
-
-                                # this works with sleep of 0.25 for each thread
-                                # process1 = dcr.CoordinateProducer(tracker_mode, pipeline, self.event, sle)
-                                # process2 = dcr.CoregistrationThread(coreg_data, pipeline, self.event, sle)
-                                # process3 = dti.ComputeTractsDev(self.trk_inp, pipeline, self.event, sle)
-                                # process4 = dti.VisualizeTractsDev(affine_vtk, pipeline, self.event, sle)
-                                # process1.start()
-                                # process2.start()
-                                # process3.start()
-                                # process4.start()
-
-                                # Threads using Queue
-                                # pipe_coord = queue.LifoQueue(maxsize=1)
-                                # pipe_coord2 = queue.LifoQueue(maxsize=1)
-                                # pipe_tract = queue.LifoQueue(maxsize=1)
-                                # self.event = threading.Event()
-                                # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                                #     print("About start generate_coord\n")
-                                #     executor.submit(dcr.GetCoordinatesProducer, tracker_mode, pipe_coord, self.event)
-                                #     print("About start corregistrate\n")
-                                #     executor.submit(dcr.CoregistrationNoThread, coreg_data, pipe_coord, self.event)
-                                #     # print("About start compute_tract\n")
-                                #     # executor.submit(dti.TractsThread, self.trk_inp, pipe_coord2, pipe_tract, self.event)
-                                #     # print("About start split_simple\n")
-                                #     # executor.submit(dti.ComputeTractsChunck, affine_vtk, pipe_tract, self.event)
                             else:
                                 coord_raw = np.array([None])
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
@@ -1499,19 +1439,12 @@ class TractographyPanel(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        # self.coil_list = const.COIL
-
         self.affine = None
         self.affine_vtk = None
         self.tracker = None
-        # self.tract = dti.Tractography()
-        # self.tract.n_tracts = const.N_TRACTS
-        # self.tract.seed_offset = const.SEED_OFFSET
         self.n_tracts = const.N_TRACTS
         self.peel_depth = const.PEEL_DEPTH
         self.view_tracts = False
-        # self.obj_ref_mode = None
-        # self.obj_name = None
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
         self.sleep_nav = const.SLEEP_NAVIGATION
@@ -1519,13 +1452,7 @@ class TractographyPanel(wx.Panel):
         self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0., 0., 0.]])
         self.tracts_run = None
-        self.trekker_cfg = None
-        # self.vezes = 0
-
-        # self.affine_vtk = vtk.vtkMatrix4x4()
-        # for row in range(0, 4):
-        #     for col in range(0, 4):
-        #         self.affine_vtk.SetElement(row, col, self.affine[row, col])
+        self.trekker_cfg = const.TREKKER_CONFIG
 
         self.SetAutoLayout(1)
         self.__bind_events()
@@ -1759,124 +1686,65 @@ class TractographyPanel(wx.Panel):
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_MASK)
+        img_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_IMG)
         # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
         # mask_file = 'sub-P0_dwi_mask.nii'
         # mask_path = os.path.join(data_dir, mask_file)
-        img_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_IMG)
         # img_file = 'sub-P0_T1w_biascorrected.nii'
         # img_path = os.path.join(data_dir, img_file)
 
         if not self.affine_vtk:
             slic = sl.Slice()
             self.affine = slic.affine
-            self.affine_vtk = vtk.vtkMatrix4x4()
-            for row in range(0, 4):
-                for col in range(0, 4):
-                    self.affine_vtk.SetElement(row, col, self.affine[row, col])
+            self.affine_vtk = image_utils.compute_affine_vtk(self.affine)
 
-        #print("Affine: ", self.affine_vtk)
-        # n_peels = 10
-
-        if mask_path and img_path:
+        try:
             self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
             actor = self.brain_peel.get_actor(self.peel_depth)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
             self.checkpeeling.Enable(1)
-            # Publisher.sendMessage('Update object registration',
-            #                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-            # Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
             self.checkpeeling.SetValue(True)
+            Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+        except:
+            wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
 
-        Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
         filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_FOD)
         # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
-        # # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
         # FOD_path = 'sub-P0_dwi_FOD.nii'
-        # # FOD_path = b"test_fod.nii"
         # filename = os.path.join(data_dir, FOD_path)
 
-        if filename:
-            # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
-            # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
-            # FOD_path = 'sub-P0_dwi_FOD.nii'
-            # FOD_path = b"test_fod.nii"
-            # full_path = os.path.join(data_dir, FOD_path)
-            # slic = sl.Slice()
-            # self.affine = slic.affine
-            # slic.tracker = Trekker.tracker(filename.encode('utf-8'))
-            # slic.tracker.set_seed_maxTrials(1)
-            # slic.tracker.set_stepSize(0.1)
-            # slic.tracker.set_minFODamp(0.05)
-            # slic.tracker.set_probeQuality(3)
-            # slic.tracker.set_numberOfThreads(4)
+        try:
+            self.tracker = Trekker.tracker(filename.encode('utf-8'))
+            self.tracker.seed_maxTrials(self.trekker_cfg['seed_max'])
+            self.tracker.stepSize(self.trekker_cfg['step_size'])
+            self.tracker.minFODamp(self.trekker_cfg['min_fod'])
+            self.tracker.probeQuality(self.trekker_cfg['probe_quality'])
+            self.tracker.maxEstInterval(self.trekker_cfg['max_interval'])
+            self.tracker.minRadiusOfCurvature(self.trekker_cfg['min_radius_curv'])
+            self.tracker.probeLength(self.trekker_cfg['probe_length'])
+            self.tracker.writeInterval(self.trekker_cfg['write_interval'])
 
-            # self.tract.tracker = Trekker.tracker(filename.encode('utf-8'))
-            # self.tract.tracker.seed_maxTrials(1)
-            # self.tract.tracker.stepSize(0.1)
-            # self.tract.tracker.minFODamp(0.05)
-            # self.tract.tracker.probeQuality(3)
-            # self.tract.tracker.numberOfThreads(ncores)
-            # self.tract.tracker.maxEstInterval(5)
-            # self.tract.tracker.minRadiusOfCurvature(0.5)
-            # self.tract.tracker.probeLength(0.4)
-            # self.tract.tracker.writeInterval(10)
-
-            if self.trekker_cfg:
-                self.tracker = Trekker.tracker(filename.encode('utf-8'))
-                self.tracker.seed_maxTrials(self.trekker_cfg['seed_max'])
-                self.tracker.stepSize(self.trekker_cfg['step_size'])
-                self.tracker.minFODamp(self.trekker_cfg['min_fod'])
-                self.tracker.probeQuality(self.trekker_cfg['probe_quality'])
-                self.tracker.maxEstInterval(self.trekker_cfg['max_interval'])
-                self.tracker.minRadiusOfCurvature(self.trekker_cfg['min_radius_curv'])
-                self.tracker.probeLength(self.trekker_cfg['probe_length'])
-                self.tracker.writeInterval(self.trekker_cfg['write_interval'])
-
-                # check number if number of cores is valid in configuration file,
-                # otherwise use the maximum number of threads which is usually 2*N_CPUS
-                if isinstance((self.trekker_cfg['numb_threads']), int):
-                    if self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
-                        self.tracker.numberOfThreads(self.trekker_cfg['numb_threads'])
-                    else:
-                        self.tracker.numberOfThreads(2*const.N_CPU)
-
-            Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
-
-            # group = oth.ReadOthers(filename)
-            # if group.affine.any():
-            #     if np.sum(slic.affine - group.affine):
-            #         slic.affine = image_utils.world2invspace(shape=group.shape, affine=group.affine)
-            #         Publisher.sendMessage('Update affine matrix',
-            #                               affine=slic.affine, status=True)
-
-            # tracts
-            # self.seed = [0., 0., 0.]
-            # self.tracker = self.tract.tracker
-            # self.tract = self.tract
-
-            # self.affine_vtk = vtk.vtkMatrix4x4()
-            # for row in range(0, 4):
-            #     for col in range(0, 4):
-            #         self.affine_vtk.SetElement(row, col, self.affine[row, col])
-            # ---
+            # check number if number of cores is valid in configuration file,
+            # otherwise use the maximum number of threads which is usually 2*N_CPUS
+            if isinstance((self.trekker_cfg['numb_threads']), int):
+                if self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
+                    self.tracker.numberOfThreads(self.trekker_cfg['numb_threads'])
+                else:
+                    self.tracker.numberOfThreads(2*const.N_CPU)
 
             self.checktracts.Enable(1)
             self.checktracts.SetValue(True)
-            Publisher.sendMessage('Update tracts visualization', data=1)
-            # Publisher.sendMessage('Update object registration',
-            #                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-            # Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
-            # Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
-            # Publisher.sendMessage('Change camera checkbox', status=False)
-            # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
-            # data = self.tracker, self.affine, self.seed_offset, self.n_tracts
-            # tract.n_tracts = self.n_tracts
             Publisher.sendMessage('Update Trekker object', data=self.tracker)
-            Publisher.sendMessage('End busy cursor')
+            Publisher.sendMessage('Update tracts visualization', data=1)
+            Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
+        except:
+            wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
+
+        Publisher.sendMessage('End busy cursor')
 
     def OnLoadParameters(self, event=None):
         import json

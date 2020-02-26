@@ -426,3 +426,14 @@ def str2float(data):
     data = [float(s) for s in data[1:len(data)]]
 
     return data
+
+
+def offset_coordinate():
+    m_img2 = arg.copy()
+    m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
+    norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
+    p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
+    p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
+    wx, wy, wz = p2
+
+    return
