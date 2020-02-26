@@ -314,6 +314,7 @@ class Viewer(wx.Panel):
 
         # Publisher.subscribe(self.OnShowStreamLines, 'Set ball reference position')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
+        Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         # Publisher.subscribe(self.UpdateAffineWorld2Inv, 'Update affine matrix')
@@ -1429,137 +1430,27 @@ class Viewer(wx.Panel):
 
     def OnUpdateTracts(self, evt=None, flag=None, actor=None, root=None, affine_vtk=None):
         # TODO: Remove tracts also when cross button is untoogled
-        # start_time = time.time()
-
-        # working version
-        # if flag:
-        #     if self.actor_tracts:
-        #         self.ren.RemoveActor(self.actor_tracts)
-        #     if actor:
-        #         self.ren.AddActor(actor)
-        #         self.actor_tracts = actor
 
         # new method to update real time the actor
-        if flag:
-            if self.actor_tracts:
-                self.ren.RemoveActor(self.actor_tracts)
-            if root:
-                # https://lorensen.github.io/VTKExamples/site/Python/CompositeData/CompositePolyDataMapper/
-                mapper = vtk.vtkCompositePolyDataMapper2()
-                mapper.SetInputDataObject(root)
+        # if flag:
+            # if self.actor_tracts:
+            #     self.ren.RemoveActor(self.actor_tracts)
+            #     self.Refresh()
+            # if root:
+        # https://lorensen.github.io/VTKExamples/site/Python/CompositeData/CompositePolyDataMapper/
+        mapper = vtk.vtkCompositePolyDataMapper2()
+        mapper.SetInputDataObject(root)
 
-                actor = vtk.vtkActor()
-                actor.SetMapper(mapper)
-                actor.SetUserMatrix(affine_vtk)
+        self.actor_tracts = vtk.vtkActor()
+        self.actor_tracts.SetMapper(mapper)
+        self.actor_tracts.SetUserMatrix(affine_vtk)
 
-                self.ren.AddActor(actor)
-                self.actor_tracts = actor
-
-        # else:
-        #     if self.obj_actor:
-        #         self.ren.RemoveActor(self.obj_actor)
-        #         self.obj_actor = None
+        self.ren.AddActor(self.actor_tracts)
         self.Refresh()
-        # duration = time.time() - start_time
-        # print(f"Rendering duration {1e3 * duration} mili-seconds")
 
-    # def OnShowStreamLines(self, position):
-    #     # if not self.ntimes:
-    #     # pos_inv = bases.flip_x(position)
-    #     print("Passing here again and again ")
-    #     proj = prj.Project()
-    #     pos_world_aux = np.ones([4, 1])
-    #     pos_world_aux[:3, -1] = bases.flip_x(position)[:3]
-    #     pos_world = np.linalg.inv(proj.affine) @ pos_world_aux
-    #     if self._to_show_stream:
-    #         affine_vtk = vtk.vtkMatrix4x4()
-    #
-    #         for row in range(0, 4):
-    #             for col in range(0, 4):
-    #                 affine_vtk.SetElement(row, col, proj.affine[row, col])
-    #
-    #         print("Affine tracts: {}".format(proj.affine))
-    #         print("Self Affine tracts: {}".format(self.affine))
-    #
-    #         # seed = np.array([[-8.49, -8.39, 2.5]])
-    #         seed = pos_world.reshape([1, 4])[0, :3]
-    #
-    #         act_list = [self.trk2vtkActor(self.tracker_FOD, seed=seed[np.newaxis, :],
-    #                                       user_matrix=affine_vtk) for _ in range(5)]
-    #             # self.visualizeTracks(self.tracker_FOD, seed=seed, user_matrix=proj.affine)
-    #
-    #
-    #             # coord = position
-    #             # x, y, z = bases.flip_x(coord)
-    #             # self.ball_actor.SetPosition(x, y, z)
-    #     self.Refresh()
-    #     # self.ntimes = True
-
-    # def visualizeTracks(self, tracker, seed, user_matrix):
-    #     # Input the seed to the tracker object
-    #     tracker.set_seeds(seed)
-    #
-    #     # Run the tracker
-    #     # This step will create N tracks if seed is a 3xN matrix
-    #     tractogram = tracker.run()
-    #
-    #     # Convert the first track to a vtkActor, i.e., tractogram[0] is the track
-    #     # computed for the first seed
-    #     trkActor = self.trk2vtkActor(tractogram[0])
-    #
-    #     self.ren.AddActor(trkActor)
-    #
-    # def trk2vtkActor(self, tracker, seed, user_matrix):
-    #     tracker.set_seeds(seed)
-    #     # This function converts a single track to a vtkActor
-    #     # convert trk to vtkPolyData
-    #     trk = np.transpose(np.asarray(tracker.run()[0]))
-    #     numberOfPoints = trk.shape[0]
-    #
-    #     points = vtk.vtkPoints()
-    #     lines = vtk.vtkCellArray()
-    #
-    #     colors = vtk.vtkFloatArray()
-    #     colors.SetNumberOfComponents(4)
-    #     colors.SetName("tangents")
-    #
-    #     k = 0
-    #     lines.InsertNextCell(numberOfPoints)
-    #     for j in range(numberOfPoints):
-    #         points.InsertNextPoint(trk[j, :])
-    #         lines.InsertCellPoint(k)
-    #         k = k + 1
-    #
-    #         if j < (numberOfPoints - 1):
-    #             direction = trk[j + 1, :] - trk[j, :]
-    #             direction = direction / np.linalg.norm(direction)
-    #             colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
-    #         else:
-    #             colors.InsertNextTuple(np.abs([direction[0], direction[1], direction[2], 1]))
-    #
-    #     trkData = vtk.vtkPolyData()
-    #     trkData.SetPoints(points)
-    #     trkData.SetLines(lines)
-    #     trkData.GetPointData().SetScalars(colors)
-    #
-    #     # make it a tube
-    #     trkTube = vtk.vtkTubeFilter()
-    #     trkTube.SetRadius(0.1)
-    #     trkTube.SetNumberOfSides(4)
-    #     trkTube.SetInputData(trkData)
-    #     trkTube.Update()
-    #
-    #     # mapper
-    #     trkMapper = vtk.vtkPolyDataMapper()
-    #     trkMapper.SetInputData(trkTube.GetOutput())
-    #
-    #     # actor
-    #     trkActor = vtk.vtkActor()
-    #     trkActor.SetMapper(trkMapper)
-    #     trkActor.SetUserMatrix(user_matrix)
-    #
-    #     return trkActor
-
+    def OnRemoveTracts(self, evt=None):
+        self.ren.RemoveActor(self.actor_tracts)
+        self.Refresh()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)

@@ -530,7 +530,7 @@ class NeuronavigationPanel(wx.Panel):
                                       label=_("Tracker disconnected successfully"))
                 self.trk_init = dt.TrackerConnection(self.tracker_id, None, 'connect')
                 if not self.trk_init[0]:
-                    dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+                    dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     ctrl.SetSelection(0)
                     print("Tracker not connected!")
                 else:
@@ -545,7 +545,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
                 if not self.trk_init[0]:
                     if evt is not False:
-                        dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
+                        dlg.ShowNavigationTrackerWarning(self.tracker_id, 'disconnect')
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
                     Publisher.sendMessage('Update status text in GUI',
@@ -564,7 +564,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.tracker_id = choice
                 self.trk_init = dt.TrackerConnection(self.tracker_id, None, 'connect')
                 if not self.trk_init[0]:
-                    dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+                    dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
 
@@ -625,7 +625,7 @@ class NeuronavigationPanel(wx.Panel):
                 coord[2] = -coord[2]
 
         else:
-            dlg.NavigationTrackerWarning(0, 'choose')
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
 
         # Update number controls with tracker coordinates
         if coord is not None:
@@ -655,6 +655,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.trigger.stop()
 
             Publisher.sendMessage("Navigation status", status=False)
+            Publisher.sendMessage("Remove tracts")
 
         else:
 
@@ -663,7 +664,7 @@ class NeuronavigationPanel(wx.Panel):
                 btn_nav.SetValue(False)
 
             elif not self.trk_init[0]:
-                dlg.NavigationTrackerWarning(0, 'choose')
+                dlg.ShowNavigationTrackerWarning(0, 'choose')
 
             else:
                 # prepare GUI for navigation
@@ -750,7 +751,7 @@ class NeuronavigationPanel(wx.Panel):
                                 self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
 
                         else:
-                            dlg.NavigationTrackerWarning(0, 'choose')
+                            dlg.ShowNavigationTrackerWarning(0, 'choose')
 
                     else:
                         wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
@@ -986,7 +987,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 pass
 
         else:
-            dlg.NavigationTrackerWarning(0, 'choose')
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
 
     def OnLinkLoad(self, event=None):
         filename = dlg.ShowLoadRegistrationDialog()
@@ -1178,7 +1179,7 @@ class MarkersPanel(wx.Panel):
         if evt == 'TARGET':
             id_label = evt
         else:
-            id_label = dlg.EnterMarkerID(self.lc.GetItemText(list_index, 4))
+            id_label = dlg.ShowEnterMarkerID(self.lc.GetItemText(list_index, 4))
             if id_label == 'TARGET':
                 id_label = ''
                 wx.MessageBox(_("Invalid TARGET ID."), _("InVesalius 3"))
@@ -1215,30 +1216,25 @@ class MarkersPanel(wx.Panel):
 
     def OnMenuSetColor(self, evt):
         index = self.lc.GetFocusedItem()
-        cdata = wx.ColourData()
-        cdata.SetColour(wx.Colour(self.list_coord[index][6]*255,self.list_coord[index][7]*255,self.list_coord[index][8]*255))
-        dlg = wx.ColourDialog(self, data=cdata)
-        dlg.GetColourData().SetChooseFull(True)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.r, self.g, self.b = dlg.GetColourData().GetColour().Get(includeAlpha=False)
-            r = float(self.r) / 255.0
-            g = float(self.g) / 255.0
-            b = float(self.b) / 255.0
-        dlg.Destroy()
-        color = [r,g,b]
 
-        Publisher.sendMessage('Set new color', index=index, color=color)
+        color_current = [self.list_coord[index][n] * 255 for n in range(6, 9)]
 
-        self.list_coord[index][6] = r
-        self.list_coord[index][7] = g
-        self.list_coord[index][8] = b
+        color_new = dlg.ShowColorDialog(color_current=color_current)
+
+        if color_new:
+            assert len(color_new) == 3
+            for n, col in enumerate(color_new):
+                self.list_coord[index][n+6] = col/255.0
+
+            Publisher.sendMessage('Set new color', index=index, color=color_new)
 
     def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:
             if evt is None:
                 result = wx.ID_OK
             else:
-                result = dlg.DeleteAllMarkers()
+                # result = dlg.DeleteAllMarkers()
+                result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
 
             if result == wx.ID_OK:
                 self.list_coord = []
@@ -1634,56 +1630,6 @@ class TractographyPanel(wx.Panel):
     def OnEnableTracts(self, evt, ctrl):
         self.view_tracts = ctrl.GetValue()
         Publisher.sendMessage('Update tracts visualization', data=self.view_tracts)
-
-    def OnUpdateTracts(self, arg, position):
-        # Tracts
-        # wx, wy, wz = position[:3]
-        wx, wy, wz = db.flip_x(position[:3])
-        p2 = db.flip_x(position[:3])
-
-        if np.any(arg):
-            m_img2 = arg.copy()
-            m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
-            norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
-            p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
-            p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
-            wx, wy, wz = p2
-            # print("m_img in task_nav: {}".format(m_img))
-            # m_tract = m_img.copy()
-            # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
-
-        # pos_world_aux = np.ones([4, 1])
-        # pos_world_aux[:3, -1] = db.flip_x(position)[:3]
-        # pos_world = np.linalg.inv(self.affine) @ pos_world_aux
-        # seed = pos_world.reshape([1, 4])[0, :3]
-        # seed = seed_aux[np.newaxis, :]
-        # print("Check the seed: ", (wx, wy, wz))
-
-        # working version
-        # if self.checktracts.GetValue():
-        #     # start_time = time()
-        #     # actor = dti.ComputeTractsSimple(self.tracker, (wx, wy, wz),
-        #     #                                 self.affine, self.affine_vtk, self.n_tracts).run()
-        #     actor = dti.ComputeTracts(self.tracker, (wx, wy, wz),
-        #                                     self.affine, self.affine_vtk, self.n_tracts).run()
-        #     # Publisher.sendMessage('Update tracts', flag=True, actor=actor)
-        #     # duration = time() - start_time
-        #     # print(f"Tracts duration {duration} seconds")
-
-        if self.checktracts.GetValue():
-            dist = abs(np.linalg.norm(self.p_old - np.asarray(p2)))
-            self.p_old = np.asarray(p2)
-            # print("Distancia: ", dist)
-
-            if dist > 3:
-                if self.tracts_run:
-                    print("Parei")
-                    self.tracts_run.stop()
-                # self.vezes += 1
-                # print("N vezes: ", self.vezes)
-                print("Rodei")
-                self.tracts_run = dti.ComputeTractsParallel(self.tracker, (wx, wy, wz), self.affine, self.affine_vtk, self.n_tracts)
-                self.tracts_run.start()
 
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')

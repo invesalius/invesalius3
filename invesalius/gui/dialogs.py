@@ -927,7 +927,7 @@ def SurfaceSelectionRequiredForDuplication():
 # Dialogs for neuronavigation mode
 # ----------------------------------
 
-def NavigationTrackerWarning(trck_id, lib_mode):
+def ShowNavigationTrackerWarning(trck_id, lib_mode):
     """
     Spatial Tracker connection error
     """
@@ -959,8 +959,20 @@ def NavigationTrackerWarning(trck_id, lib_mode):
     dlg.Destroy()
 
 
-def DeleteAllMarkers():
-    msg = _("Do you want to delete all markers?")
+def ShowEnterMarkerID(default):
+    msg = _("Edit marker ID")
+    if sys.platform == 'darwin':
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+    else:
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+    dlg.ShowModal()
+    result = dlg.GetValue()
+    dlg.Destroy()
+    return result
+
+
+def ShowConfirmationDialog(msg=_('Proceed?')):
+    # msg = _("Do you want to delete all markers?")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.OK | wx.CANCEL | wx.ICON_QUESTION)
@@ -972,16 +984,20 @@ def DeleteAllMarkers():
     return result
 
 
-def EnterMarkerID(default):
-    msg = _("Edit marker ID")
-    if sys.platform == 'darwin':
-        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+def ShowColorDialog(color_current):
+    cdata = wx.ColourData()
+    cdata.SetColour(wx.Colour(color_current))
+    dlg = wx.ColourDialog(None, data=cdata)
+    dlg.GetColourData().SetChooseFull(True)
+
+    if dlg.ShowModal() == wx.ID_OK:
+        color_new = dlg.GetColourData().GetColour().Get(includeAlpha=False)
     else:
-        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
-    dlg.ShowModal()
-    result = dlg.GetValue()
+        color_new = None
+
     dlg.Destroy()
-    return result
+    return color_new
+
 # ----------------------------------
 
 
@@ -3498,7 +3514,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             else:
                 coord = coord_raw[0, :]
         else:
-            NavigationTrackerWarning(0, 'choose')
+            ShowNavigationTrackerWarning(0, 'choose')
 
         if btn_id == 3:
             coord = np.zeros([6,])
@@ -3514,7 +3530,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                     self.ball_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
             self.Refresh()
         else:
-            NavigationTrackerWarning(0, 'choose')
+            ShowNavigationTrackerWarning(0, 'choose')
 
     def OnChoiceRefMode(self, evt):
         # When ref mode is changed the tracker coordinates are set to nan
