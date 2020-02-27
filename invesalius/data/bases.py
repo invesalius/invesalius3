@@ -175,6 +175,30 @@ def flip_x(point):
     return x, y, z
 
 
+# def flip_x_m(point):
+#     """
+#     Rotate coordinates of a vector by pi around X axis in static reference frame.
+#
+#     InVesalius also require to multiply the z coordinate by (-1). Possibly
+#     because the origin of coordinate system of imagedata is
+#     located in superior left corner and the origin of VTK scene coordinate
+#     system (polygonal surface) is in the interior left corner. Second
+#     possibility is the order of slice stacking
+#
+#     :param point: list of coordinates x, y and z
+#     :return: rotated coordinates
+#     """
+#
+#     point_4 = np.hstack((point, 1.)).reshape([4, 1])
+#     point_4[2, 0] = -point_4[2, 0]
+#
+#     m_rot = tr.euler_matrix(pi, 0, 0)
+#
+#     point_rot = m_rot @ point_4
+#
+#     return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
+
+
 def flip_x_m(point):
     """
     Rotate coordinates of a vector by pi around X axis in static reference frame.
@@ -189,14 +213,14 @@ def flip_x_m(point):
     :return: rotated coordinates
     """
 
-    point_4 = np.hstack((point, 1.)).reshape([4, 1])
+    point_4 = np.hstack((point, 1.)).T
     point_4[2, 0] = -point_4[2, 0]
 
-    m_rot = np.asmatrix(tr.euler_matrix(pi, 0, 0))
+    m_rot = tr.euler_matrix(pi, 0, 0)
 
-    point_rot = m_rot*point_4
+    point_rot = m_rot @ point_4
 
-    return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
+    return point_rot
 
 
 def object_registration(fiducials, orients, coord_raw, m_change):
@@ -223,17 +247,17 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
     # compute initial alignment of probe fixed in the object in source frame
-    t_s0_raw = np.asmatrix(tr.translation_matrix(coords[3, :3]))
-    r_s0_raw = np.asmatrix(tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
-                             np.radians(coords[3, 5]), 'rzyx'))
-    s0_raw = np.asmatrix(tr.concatenate_matrices(t_s0_raw, r_s0_raw))
+    t_s0_raw = tr.translation_matrix(coords[3, :3])
+    r_s0_raw = tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
+                             np.radians(coords[3, 5]), 'rzyx')
+    s0_raw = tr.concatenate_matrices(t_s0_raw, r_s0_raw)
 
     # compute change of basis for object fiducials in source frame
     base_obj_raw, q_obj_raw, base_inv_obj_raw = base_creation(fids_raw[:3, :3])
-    r_obj_raw = np.asmatrix(np.identity(4))
+    r_obj_raw = np.identity(4)
     r_obj_raw[:3, :3] = base_obj_raw[:3, :3]
-    t_obj_raw = np.asmatrix(tr.translation_matrix(q_obj_raw))
-    m_obj_raw = np.asmatrix(tr.concatenate_matrices(t_obj_raw, r_obj_raw))
+    t_obj_raw = tr.translation_matrix(q_obj_raw)
+    m_obj_raw = tr.concatenate_matrices(t_obj_raw, r_obj_raw)
 
     for ic in range(0, 4):
         if coord_raw.any():
@@ -248,23 +272,25 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         a, b, g = np.radians(fids_dyn[ic, 3:])
         T_p = tr.translation_matrix(fids_dyn[ic, :3])
         R_p = tr.euler_matrix(a, b, g, 'rzyx')
-        M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-        M_img = np.asmatrix(m_change) * M_p
+        # M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
+        # M_img = np.asmatrix(m_change) * M_p
+        M_p = tr.concatenate_matrices(T_p, R_p)
+        M_img = m_change @ M_p
 
         angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
-        coord_img = np.asarray(flip_x_m(tr.translation_from_matrix(M_img)))
+        coord_img = flip_x_m(tr.translation_from_matrix(M_img))
 
-        fids_img[ic, :] = np.hstack((coord_img, angles_img))
+        fids_img[ic, :] = np.hstack((coord_img[:3, 0], angles_img))
 
     # compute object base change in vtk head frame
     base_obj_img, q_obj_img, base_inv_obj_img = base_creation(fids_img[:3, :3])
-    r_obj_img = np.asmatrix(np.identity(4))
+    r_obj_img = np.identity(4)
     r_obj_img[:3, :3] = base_obj_img[:3, :3]
 
     # compute initial alignment of probe fixed in the object in reference (or static) frame
-    s0_trans_dyn = np.asmatrix(tr.translation_matrix(fids_dyn[3, :3]))
-    s0_rot_dyn = np.asmatrix(tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
-                                             np.radians(fids_dyn[3, 5]), 'rzyx'))
-    s0_dyn = np.asmatrix(tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn))
+    s0_trans_dyn = tr.translation_matrix(fids_dyn[3, :3])
+    s0_rot_dyn = tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
+                                             np.radians(fids_dyn[3, 5]), 'rzyx')
+    s0_dyn = tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn)
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img

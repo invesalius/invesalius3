@@ -321,6 +321,7 @@ class NeuronavigationPanel(wx.Panel):
         # Tractography parameters
         self.trk_inp = None
         self.trekker = None
+        self.n_threads = None
         self.view_tracts = False
         self.n_tracts = const.N_TRACTS
         self.seed_offset = const.SEED_OFFSET
@@ -446,6 +447,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateSeedRadius, 'Update seed radius')
         Publisher.subscribe(self.UpdateSleep, 'Update sleep')
+        Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
 
     def LoadImageFiducials(self, marker_id, coord):
@@ -473,6 +475,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateSleep(self, data):
         self.sleep_nav = data
+
+    def UpdateNumberThreads(self, data):
+        self.n_threads = data
 
     def UpdateTractsVisualization(self, data):
         self.view_tracts = data
@@ -686,7 +691,7 @@ class NeuronavigationPanel(wx.Panel):
                 affine = slic.affine
                 affine_vtk = image_utils.compute_affine_vtk(affine)
                 # self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
-                self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius
+                self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
                 tracts_info = seed, self.trekker, affine, affine_vtk
 
                 # compute coordinate transformation matrices
@@ -1678,15 +1683,16 @@ class TractographyPanel(wx.Panel):
 
             # check number if number of cores is valid in configuration file,
             # otherwise use the maximum number of threads which is usually 2*N_CPUS
-            if isinstance((self.trekker_cfg['numb_threads']), int):
-                if self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
-                    self.tracker.numberOfThreads(self.trekker_cfg['numb_threads'])
-                else:
-                    self.tracker.numberOfThreads(2*const.N_CPU)
+            n_threads = 2 * const.N_CPU
+            if isinstance((self.trekker_cfg['numb_threads']), int) and self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
+                n_threads = self.trekker_cfg['numb_threads']
+
+            self.tracker.numberOfThreads(n_threads)
 
             self.checktracts.Enable(1)
             self.checktracts.SetValue(True)
             Publisher.sendMessage('Update Trekker object', data=self.tracker)
+            Publisher.sendMessage('Update number of threads', data=n_threads)
             Publisher.sendMessage('Update tracts visualization', data=1)
             Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
         except:

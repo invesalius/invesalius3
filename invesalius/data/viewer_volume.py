@@ -1365,13 +1365,21 @@ class Viewer(wx.Panel):
 
     def UpdateObjectOrientation(self, m_img, coord):
         # print("Update object orientation")
-        m_img_copy = m_img.copy()
-        m_img_copy[:3, -1] = np.asmatrix(bases.flip_x_m((m_img_copy[0, -1], m_img_copy[1, -1], m_img_copy[2, -1]))).reshape([3, 1])
-        norm_vec = m_img_copy[:3, 2].reshape([1, 3]).tolist()
-        p0 = m_img_copy[:3, -1].reshape([1, 3]).tolist()
-        p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
-        m_tract = m_img_copy.copy()
-        m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+        # m_img_copy = m_img.copy()
+        # m_img_copy[:3, -1] = np.asmatrix(bases.flip_x_m((m_img_copy[0, -1], m_img_copy[1, -1], m_img_copy[2, -1]))).reshape([3, 1])
+        # norm_vec = m_img_copy[:3, 2].reshape([1, 3]).tolist()
+        # p0 = m_img_copy[:3, -1].reshape([1, 3]).tolist()
+        # p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
+        # m_tract = m_img_copy.copy()
+        # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
+
+        m_img[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
+
+        # translate coregistered coordinate to display a marker where Trekker seed is computed
+        m_tract = m_img.copy()
+        m_tract[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
+        m_tract[:3, -1] = m_tract[:3, -1] - self.seed_offset * m_tract[:3, 2]
+
         # print("m_img copy in viewer_vol: {}".format(m_img_copy))
 
         # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -1383,7 +1391,7 @@ class Viewer(wx.Panel):
 
         for row in range(0, 4):
             for col in range(0, 4):
-                m_img_vtk.SetElement(row, col, m_img_copy[row, col])
+                m_img_vtk.SetElement(row, col, m_img[row, col])
                 m_tract_vtk.SetElement(row, col, m_tract[row, col])
 
         self.obj_actor.SetUserMatrix(m_img_vtk)

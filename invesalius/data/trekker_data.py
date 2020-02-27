@@ -6,19 +6,20 @@ import numpy as np
 import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
-import math
 
 import invesalius.data.bases as db
 
 
 def compute_seed(position, affine):
-    pos_world_aux = np.ones([4, 1])
-    # pos_world_aux[:3, -1] = db.flip_x(self.position)[:3]
-    pos_world_aux[:3, -1] = position[:3]
+    # pos_world_aux = np.ones([4, 1])
+    # pos_world_aux[:3, -1] = position[:3]
+    pos_world_aux = np.hstack((position, 1.)).reshape([4, 1])
     pos_world = np.linalg.inv(affine) @ pos_world_aux
-    seed = pos_world.reshape([1, 4])[0, :3]
+    # seed = pos_world.reshape([1, 4])[0, :3]
+    # seed = pos_world.T[np.newaxis, 0, :3]
+    seed = pos_world.T[0, :3]
 
-    return seed[np.newaxis, :]
+    return seed
 
 
 def simple_direction(trk_n):
@@ -31,41 +32,35 @@ def simple_direction(trk_n):
     return direction.astype(int)
 
 
-def compute_tubes_vtk(trk, direc):
+def compute_tubes_vtk(trk, direction):
     numb_points = trk.shape[0]
     points = vtk.vtkPoints()
     lines = vtk.vtkCellArray()
 
-    # colors = vtk.vtkFloatArray()
     colors = vtk.vtkUnsignedCharArray()
     colors.SetNumberOfComponents(3)
-    # colors.SetName("tangents")
 
     k = 0
     lines.InsertNextCell(numb_points)
     for j in range(numb_points):
         points.InsertNextPoint(trk[j, :])
+        colors.InsertNextTuple(direction[j, :])
         lines.InsertCellPoint(k)
         k += 1
 
-        # if j < (numb_points - 1):
-        colors.InsertNextTuple(direc[j, :])
-        # else:
-        #     colors.InsertNextTuple(direc[j, :])
-
-    trkData = vtk.vtkPolyData()
-    trkData.SetPoints(points)
-    trkData.SetLines(lines)
-    trkData.GetPointData().SetScalars(colors)
+    trk_data = vtk.vtkPolyData()
+    trk_data.SetPoints(points)
+    trk_data.SetLines(lines)
+    trk_data.GetPointData().SetScalars(colors)
 
     # make it a tube
-    trkTube = vtk.vtkTubeFilter()
-    trkTube.SetRadius(0.5)
-    trkTube.SetNumberOfSides(4)
-    trkTube.SetInputData(trkData)
-    trkTube.Update()
+    trk_tube = vtk.vtkTubeFilter()
+    trk_tube.SetRadius(0.5)
+    trk_tube.SetNumberOfSides(4)
+    trk_tube.SetInputData(trk_data)
+    trk_tube.Update()
 
-    return trkTube
+    return trk_tube
 
 
 def tracts_root(out_list, root, n_tracts):
@@ -73,9 +68,9 @@ def tracts_root(out_list, root, n_tracts):
     # print("Len outlist in root: ", len(out_list))
     if not out_list.count(None) == len(out_list):
         for n, tube in enumerate(out_list):
+            #TODO: substitute to try + except (better to ask forgiveness than please)
             if tube:
                 root.SetBlock(n_tracts + n, tube.GetOutput())
-                # root.SetBlock(n_tracts + n, tube)
 
     return root
 
@@ -113,11 +108,11 @@ class ComputeVisualizeParallel(threading.Thread):
 
     def run(self):
 
-        tracker, affine, offset, n_tracts_total, seed_radius = self.inp
+        tracker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
-        ncores = psutil.cpu_count()
-        chunck_size = 2*ncores
+        # ncores = psutil.cpu_count()
+        # chunck_size = 2*ncores
         root = vtk.vtkMultiBlockDataSet()
         # Compute the tracts
         while not self.event.is_set():
@@ -127,17 +122,21 @@ class ComputeVisualizeParallel(threading.Thread):
 
                 if np.any(m_img):
                     #TODO: Refactor and create a function for the offset computation
-                    m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-                    norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-                    p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-                    p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
+                    m_img[:, -1] = db.flip_x_m(m_img[:3, -1])[:, 0]
+                    # norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+                    # p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+                    # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # translate the coordinate along the normal vector of the object/coil
+                    p_new = m_img[:3, -1] - offset * m_img[:3, 2]
                     # p_new = [-8.49, -8.39, 2.5]
-                    dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
-                    p_old = np.asarray(p_new)
+                    dist = np.linalg.norm(p_old - p_new)
+                    # p_old = np.asarray(p_new)
 
                     seed = compute_seed(p_new, affine)
                     # seed = np.array([[-8.49, -8.39, 2.5]])
-                    tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
+                    # tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
+                    tracker.seed_coordinates(np.tile(seed, (n_threads, 1)))
 
                     if tracker.run():
                         wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
@@ -165,11 +164,5 @@ class ComputeVisualizeParallel(threading.Thread):
                         # to check the distance and update actors in viewer volume, but that would require that each
                         # loop outputs one actor which is a fiber bundle, and if the dist is < 3 and n_tract > n_total
                         # do nothing
-
-
-                        # root = tracts_computation(trk_list, root, n_tracts)
-                        # print("Total tracts: ", n_tracts)
-                        # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                        #              affine_vtk=self.affine_vtk)
 
             time.sleep(self.sle)

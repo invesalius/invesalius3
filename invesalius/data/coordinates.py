@@ -20,6 +20,7 @@
 from math import sin, cos
 import numpy as np
 
+import invesalius.data.bases as db
 import invesalius.data.transformations as tr
 import invesalius.constants as const
 
@@ -428,22 +429,13 @@ def str2float(data):
     return data
 
 
-# def offset_coordinate():
-#     # v1 in task_navigator
-#     m_img2 = arg.copy()
-#     m_img2[:3, -1] = np.asmatrix(db.flip_x_m((m_img2[0, -1], m_img2[1, -1], m_img2[2, -1]))).reshape([3, 1])
-#     norm_vec = m_img2[:3, 2].reshape([1, 3]).tolist()
-#     p0 = m_img2[:3, -1].reshape([1, 3]).tolist()
-#     p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
-#     wx, wy, wz = p2
-#
-#     #v2 in trekker_data
-#     m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-#     norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-#     p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-#     p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
-#     # p_new = [-8.49, -8.39, 2.5]
-#     dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
-#     p_old = np.asarray(p_new)
-#
-#     return
+def offset_coordinate(p_old, norm_vec, offset):
+    """
+    Translate the coordinates of a point along a vector
+    :param p_old: (x, y, z) array with current point coordinates
+    :param norm_vec: (vx, vy, vz) array with normal vector coordinates
+    :param offset: double representing the magnitude of offset
+    :return: (x_new, y_new, z_new) array of offset coordinates
+    """
+    p_offset = p_old - offset * norm_vec
+    return p_offset
