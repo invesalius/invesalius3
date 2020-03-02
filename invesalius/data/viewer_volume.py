@@ -575,11 +575,11 @@ class Viewer(wx.Panel):
         Markers created by navigation tools and rendered in volume viewer.
         """
         self.ball_id = ball_id
-        x, y, z = bases.flip_x(coord)
+        coord_flip = bases.flip_x_m(coord)[:3, 0]
 
         ball_ref = vtk.vtkSphereSource()
         ball_ref.SetRadius(size)
-        ball_ref.SetCenter(x, y, z)
+        ball_ref.SetCenter(coord_flip)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
@@ -1185,29 +1185,13 @@ class Viewer(wx.Panel):
     #         self.ball_actor = None
 
     def UpdateCameraBallPosition(self, arg, position):
-        # if self._to_show_ball:
-        #     if not self.ball_actor:
-        #         self.ActivateBallReference()
-
-        # coord = position
-        coord_flip = bases.flip_x(position[:3])
-        self.ball_actor.SetPosition(*coord_flip)
-
-        self.SetVolumeCamera(np.array(coord_flip))
-
-        # self.Refresh()
+        coord_flip = bases.flip_x_m(position[:3])[:3, 0]
+        self.ball_actor.SetPosition(coord_flip)
+        self.SetVolumeCamera(coord_flip)
 
     def SetBallReferencePosition(self, position):
-        # if self._to_show_ball:
-        #     if not self.ball_actor:
-        #         self.ActivateBallReference()
-
-        # coord = position
-        x, y, z = bases.flip_x(position)
-        self.ball_actor.SetPosition(x, y, z)
-
-        # else:
-        #     self.RemoveBallReference()
+        coord_flip = bases.flip_x_m(position[:3])[:3, 0]
+        self.ball_actor.SetPosition(coord_flip)
 
     def CreateObjectPolyData(self, filename):
         """

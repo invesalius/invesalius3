@@ -460,6 +460,18 @@ class NeuronavigationPanel(wx.Panel):
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
+    def UpdateFRE(self, fiducials):
+        # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
+        # compute fiducial registration error (FRE)
+        # this is the old way to compute the fre, left here to recheck if new works fine.
+        # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
+        fre = db.calculate_fre_m(fiducials)
+        self.txtctrl_fre.SetValue(str(round(fre, 2)))
+        if fre <= 3:
+            self.txtctrl_fre.SetBackgroundColour('GREEN')
+        else:
+            self.txtctrl_fre.SetBackgroundColour('RED')
+
     def UpdateTrekkerObject(self, data):
         # self.trk_inp = data
         self.trekker = data
@@ -694,24 +706,17 @@ class NeuronavigationPanel(wx.Panel):
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
                 tracts_info = seed, self.trekker, affine, affine_vtk
 
+                # this old base creation was used to compute the fre, still here to check if the new version
+                # is working fine. delete soon!
+                # m, q1, minv = db.base_creation_old(self.fiducials[:3, :])
+                # n, q2, ninv = db.base_creation_old(self.fiducials[3:, :])
                 # compute coordinate transformation matrices
-                #TODO: use array instead of matrix
-                m, q1, minv = db.base_creation_old(self.fiducials[:3, :])
-                n, q2, ninv = db.base_creation_old(self.fiducials[3:, :])
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
                 # initialize spatial tracker parameters
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 
-                # compute fiducial registration error (FRE)
-                # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
-                # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
-                fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
-                self.txtctrl_fre.SetValue(str(round(fre, 2)))
-                if fre <= 3:
-                    self.txtctrl_fre.SetBackgroundColour('GREEN')
-                else:
-                    self.txtctrl_fre.SetBackgroundColour('RED')
+                self.UpdateFRE(self.fiducials)
 
                 # initialize trigger thread to synchronize with external devices
                 if self.trigger_state:
@@ -1701,22 +1706,7 @@ class TractographyPanel(wx.Panel):
         # try:
 
         self.trekker = Trekker.tracker(filename.encode('utf-8'))
-        self.trekker.seed_maxTrials(self.trekker_cfg['seed_max'])
-        self.trekker.stepSize(self.trekker_cfg['step_size'])
-        self.trekker.minFODamp(self.trekker_cfg['min_fod'])
-        self.trekker.probeQuality(self.trekker_cfg['probe_quality'])
-        self.trekker.maxEstInterval(self.trekker_cfg['max_interval'])
-        self.trekker.minRadiusOfCurvature(self.trekker_cfg['min_radius_curv'])
-        self.trekker.probeLength(self.trekker_cfg['probe_length'])
-        self.trekker.writeInterval(self.trekker_cfg['write_interval'])
-
-        # check number if number of cores is valid in configuration file,
-        # otherwise use the maximum number of threads which is usually 2*N_CPUS
-        n_threads = 2 * const.N_CPU
-        if isinstance((self.trekker_cfg['numb_threads']), int) and self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
-            n_threads = self.trekker_cfg['numb_threads']
-
-        self.trekker.numberOfThreads(n_threads)
+        self.trekker, n_threads = dti.SetTrekkerParameters(self.trekker, self.trekker_cfg)
 
         self.checktracts.Enable(1)
         self.checktracts.SetValue(True)
@@ -1742,6 +1732,11 @@ class TractographyPanel(wx.Panel):
                 with open(filename) as json_file:
                     self.trekker_cfg = json.load(json_file)
                 assert all(name in self.trekker_cfg for name in const.TREKKER_CONFIG)
+                if self.trekker:
+                    self.trekker, n_threads = dti.SetTrekkerParameters(self.trekker, self.trekker_cfg)
+                    Publisher.sendMessage('Update Trekker object', data=self.trekker)
+                    Publisher.sendMessage('Update number of threads', data=n_threads)
+
                 Publisher.sendMessage('Update status text in GUI', label=_("Trekker config loaded"))
 
         except (AssertionError, json.decoder.JSONDecodeError):
@@ -1750,13 +1745,23 @@ class TractographyPanel(wx.Panel):
             wx.MessageBox(_("File incompatible, using default configuration."), _("InVesalius 3"))
 
     def OnUpdateTracts(self, arg, position):
-        # Miniaml working version of tract computation
+        """
+        Minimal working version of tract computation. Updates when cross sends Pubsub message to update.
+        Position refers to the coordinates in InVesalius 2D space. To represent the same coordinates in the 3D space,
+        flip_x the coordinates and multiply the z coordinate by -1. This is all done in the flix_x function.
+
+        :param arg: event for pubsub
+        :param position: list or array with the x, y, and z coordinates in InVesalius space
+        """
+        # Minimal working version of tract computation
         # It updates when cross updates
 
         if self.view_tracts:
             x, y, z = db.flip_x_m(position[:3])[:3, 0]
             dti.ComputeTracts(self.trekker, (x, y, z), self.affine, self.affine_vtk,
-                          self.n_tracts, self.seed_radius)
+                              self.n_tracts, self.seed_radius)
+        else:
+            Publisher.sendMessage('Remove tracts')
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)
@@ -1770,6 +1775,8 @@ class TractographyPanel(wx.Panel):
 
         self.peel_depth = const.PEEL_DEPTH
         self.n_tracts = const.N_TRACTS
+
+        Publisher.sendMessage('Remove tracts')
 
 
 class PipelineSimple:
