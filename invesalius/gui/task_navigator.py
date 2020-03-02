@@ -1451,7 +1451,9 @@ class TractographyPanel(wx.Panel):
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
         self.sleep_nav = const.SLEEP_NAVIGATION
+        self.brain_opacity = const.BRAIN_OPACITY
         self.brain_peel = None
+        self.brain_actor = None
         self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0., 0., 0.]])
         self.tracts_run = None
@@ -1461,12 +1463,12 @@ class TractographyPanel(wx.Panel):
         self.__bind_events()
 
         # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load brain"))
-        btn_new = wx.Button(self, -1, _("Load brain"), size=wx.Size(65, 23))
-        btn_new.SetToolTip(tooltip)
-        btn_new.Enable(1)
-        btn_new.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
-        self.btn_new = btn_new
+        tooltip = wx.ToolTip(_("Load brain visualization"))
+        btn_mask = wx.Button(self, -1, _("Load brain"), size=wx.Size(65, 23))
+        btn_mask.SetToolTip(tooltip)
+        btn_mask.Enable(1)
+        btn_mask.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
+        # self.btn_new = btn_new
 
         # Button for import config coil file
         tooltip = wx.ToolTip(_("Load FOD"))
@@ -1474,21 +1476,21 @@ class TractographyPanel(wx.Panel):
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLinkFOD)
-        self.btn_load = btn_load
+        # self.btn_load = btn_load
 
         # Save button for object registration
-        tooltip = wx.ToolTip(_(u"Load parameters"))
-        btn_load_cfg = wx.Button(self, -1, _(u"Load"), size=wx.Size(65, 23))
+        tooltip = wx.ToolTip(_(u"Load Trekker configuration parameters"))
+        btn_load_cfg = wx.Button(self, -1, _(u"Configure"), size=wx.Size(65, 23))
         btn_load_cfg.SetToolTip(tooltip)
         btn_load_cfg.Enable(1)
         btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
-        self.btn_load_cfg = btn_load_cfg
+        # self.btn_load_cfg = btn_load_cfg
 
         # Create a horizontal sizer to represent button save
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_new, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_btns.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_btns.Add(btn_load_cfg, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_btns.Add(btn_mask, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
 
         # Change peeling depth
         text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
@@ -1528,7 +1530,7 @@ class TractographyPanel(wx.Panel):
         spin_radius.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectRadius, ctrl=spin_radius))
         # self.spin_radius = spin_radius
 
-        # Change seed radius for computing tracts
+        # Change sleep pause between navigation loops
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
         spin_sleep.Enable(1)
@@ -1536,6 +1538,16 @@ class TractographyPanel(wx.Panel):
         spin_sleep.SetValue(self.sleep_nav)
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
         spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
+
+        # Change opacity of brain mask visualization
+        text_opacity = wx.StaticText(self, -1, _("Brain opacity:"))
+        spin_opacity = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
+        spin_opacity.Enable(0)
+        spin_opacity.SetRange(0, 1.0)
+        spin_opacity.SetValue(self.brain_opacity)
+        spin_opacity.Bind(wx.EVT_TEXT, partial(self.OnSelectOpacity, ctrl=spin_opacity))
+        spin_opacity.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectOpacity, ctrl=spin_opacity))
+        self.spin_opacity = spin_opacity
 
         # Create a horizontal sizer to threshold configs
         border = 1
@@ -1558,6 +1570,10 @@ class TractographyPanel(wx.Panel):
         line_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_sleep.AddMany([(text_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        line_opacity = wx.BoxSizer(wx.HORIZONTAL)
+        line_opacity.AddMany([(text_opacity, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                            (spin_opacity, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
 
         # Check box to enable tract visualization
         checktracts = wx.CheckBox(self, -1, _('Enable tracts'))
@@ -1588,6 +1604,7 @@ class TractographyPanel(wx.Panel):
         main_sizer.Add(line_offset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_radius, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
+        main_sizer.Add(line_opacity, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_checks, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, border_last)
         main_sizer.Fit(self)
 
@@ -1624,6 +1641,10 @@ class TractographyPanel(wx.Panel):
         # self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
+    def OnSelectOpacity(self, evt, ctrl):
+        self.brain_actor.GetProperty().SetOpacity(ctrl.GetValue())
+        Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
@@ -1653,10 +1674,12 @@ class TractographyPanel(wx.Panel):
 
         try:
             self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-            actor = self.brain_peel.get_actor(self.peel_depth)
-            Publisher.sendMessage('Update peel', flag=True, actor=actor)
+            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
+            self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+            Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
             self.checkpeeling.Enable(1)
             self.checkpeeling.SetValue(True)
+            self.spin_opacity.Enable(1)
             Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
         except:
             wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))

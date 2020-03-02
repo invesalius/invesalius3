@@ -748,6 +748,7 @@ MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 30
 SEED_RADIUS = 3
 SLEEP_NAVIGATION = 0.3
+BRAIN_OPACITY = 0.5
 N_CPU = psutil.cpu_count()
 TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_quality': 3,
                   'max_interval': 5, 'min_radius_curv': 0.8, 'probe_length': 0.4,
