@@ -93,7 +93,7 @@ class CoregistrationDynamic(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, coreg_data, nav_id, trck_info, tracts_info):
+    def __init__(self, coreg_data, nav_id, trck_info):
         threading.Thread.__init__(self)
         self.coreg_data = coreg_data
         self.nav_id = nav_id
@@ -376,7 +376,7 @@ class CoregistrationObjectDynamic(threading.Thread):
 
             # TODO: Optimize the value of sleep for each tracking device.
             #sleep(2.175)
-            sleep(2.775)
+            sleep(0.175)
 
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.

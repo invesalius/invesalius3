@@ -641,33 +641,33 @@ def ShowSaveRegistrationDialog(default_filename=None):
     return filename
 
 
-def ShowLoadRegistrationDialog():
-    current_dir = os.path.abspath(".")
-
-    dlg = wx.FileDialog(None, message=_("Load object registration"),
-                        defaultDir="",
-                        defaultFile="",
-                        wildcard=_("Registration files (*.obr)|*.obr"),
-                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
-
-    # Show the dialog and retrieve the user response. If it is the OK response,
-    # process the data.
-    filepath = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            # This returns a Python list of files that were selected.
-            filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError):  # FIX: win64
-        filepath = dlg.GetPath()
-
-    # Destroy the dialog. Don't do this until you are done with it!
-    # BAD things can happen otherwise!
-    dlg.Destroy()
-    os.chdir(current_dir)
-    return filepath
+# def ShowLoadRegistrationDialog():
+#     current_dir = os.path.abspath(".")
+#
+#     dlg = wx.FileDialog(None, message=_("Load object registration"),
+#                         defaultDir="",
+#                         defaultFile="",
+#                         wildcard=_("Registration files (*.obr)|*.obr"),
+#                         style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
+#
+#     # inv3 filter is default
+#     dlg.SetFilterIndex(0)
+#
+#     # Show the dialog and retrieve the user response. If it is the OK response,
+#     # process the data.
+#     filepath = None
+#     try:
+#         if dlg.ShowModal() == wx.ID_OK:
+#             # This returns a Python list of files that were selected.
+#             filepath = dlg.GetPath()
+#     except(wx._core.PyAssertionError):  # FIX: win64
+#         filepath = dlg.GetPath()
+#
+#     # Destroy the dialog. Don't do this until you are done with it!
+#     # BAD things can happen otherwise!
+#     dlg.Destroy()
+#     os.chdir(current_dir)
+#     return filepath
 
 
 def ShowLoadDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,

@@ -117,7 +117,7 @@ class ComputeVisualizeParallel(threading.Thread):
 
     def run(self):
 
-        tracker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
+        trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
         # ncores = psutil.cpu_count()
@@ -156,33 +156,36 @@ class ComputeVisualizeParallel(threading.Thread):
                     norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
                     p0 = m_img[:3, -1].reshape([1, 3]).tolist()
                     p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
-                    # p_new = [-8.49, -8.39, 2.5]
+                    # p_new = np.array([[27.53, -77.37, 46.42]])
                     dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
                     p_old = np.asarray(p_new)
 
                     seed = compute_seed_old(p_new, affine)
+                    # Juuso's
                     # seed = np.array([[-8.49, -8.39, 2.5]])
-                    tracker.seed_coordinates(np.repeat(seed, n_threads, axis=0))
+                    # Baran M1
+                    # seed = np.array([[27.53, -77.37, 46.42]])
+                    trekker.seed_coordinates(np.repeat(seed, n_threads, axis=0))
 
-                    if tracker.run():
-                        if dist < seed_radius and n_tracts < n_tracts_total:
-                            # Compute the tracts
-                            trk_list.extend(tracker.run())
-                            # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
-                            root = tracts_computation(trk_list, root, n_tracts)
-                            n_tracts = len(trk_list)
-                            print("Total new tracts: ", n_tracts)
-                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
-                            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                                         affine_vtk=self.affine_vtk)
-                        elif dist >= seed_radius:
+                    if trekker.run():
+                        if dist >= seed_radius:
                             n_tracts = 0
-                            trk_list = tracker.run()
+                            trk_list = trekker.run()
                             print("trk list len: ", len(trk_list))
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
                             # print("Total tracts: ", n_tracts)
-                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+                            # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+                            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                                         affine_vtk=self.affine_vtk)
+                        elif dist < seed_radius and n_tracts < n_tracts_total:
+                            # Compute the tracts
+                            trk_list.extend(trekker.run())
+                            # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
+                            root = tracts_computation(trk_list, root, n_tracts)
+                            n_tracts = len(trk_list)
+                            print("Total new tracts: ", n_tracts)
+                            # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                                          affine_vtk=self.affine_vtk)
 
@@ -219,7 +222,7 @@ def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
     if trekker.run():
         trk_list = trekker.run()
         root = tracts_computation(trk_list, root, 0)
-        wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+        # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
         wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                      affine_vtk=affine_vtk)
     else:

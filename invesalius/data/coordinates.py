@@ -233,10 +233,23 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :return: six coordinates x, y, z, alfa, beta and gama
     """
 
-    sleep(0.05)
+    # Started to ake a more reasonable, limited random coordinate generator based on
+    # the collected fiducials, but it is more complicated than this. It should account for the
+    # dynamic reference computation
+    # if trk_init:
+    #     fiducials = trk_init[3:, :]
+    #     fids_max = fiducials.max(axis=0)
+    #     fids_min = fiducials.min(axis=0)
+    #     fids_lim = np.hstack((fids_min[np.newaxis, :].T, fids_max[np.newaxis, :].T))
+    #
+    #     dx = fids_max[]
+    #     dt = [-180, 180]
+    #
+    # else:
 
     dx = [-70, 70]
     dt = [-180, 180]
+
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                       uniform(*dt), uniform(*dt), uniform(*dt)])
@@ -246,6 +259,8 @@ def DebugCoord(trk_init, trck_id, ref_mode):
                        uniform(*dt), uniform(*dt), uniform(*dt)])
     coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                        uniform(*dt), uniform(*dt), uniform(*dt)])
+
+    sleep(0.05)
 
     # coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
@@ -311,18 +326,29 @@ def dynamic_reference_m(probe, reference):
     :return: rotated and translated coordinates
     """
 
+    # TODO: Clean code. Comments are left for reference to previous working version
+    # Needs to check if during real navigation works properly
     a, b, g = np.radians(reference[3:6])
 
     T = tr.translation_matrix(reference[:3])
     R = tr.euler_matrix(a, b, g, 'rzyx')
-    M = np.asmatrix(tr.concatenate_matrices(T, R))
+    # M = np.asmatrix(tr.concatenate_matrices(T, R))
+    M = tr.concatenate_matrices(T, R)
     # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
     # print M
-    probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
-    coord_rot = M.I * probe_4
-    coord_rot = np.squeeze(np.asarray(coord_rot))
+    # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+    probe_4 = np.vstack((probe[:3].reshape([3, 1]), 1.))
+    # coord_rot = M.I * probe_4
 
-    return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+    coord_rot = np.linalg.inv(M) @ probe_4
+    # coord_rot = np.squeeze(np.asarray(coord_rot))
+    # minus sign to the z coordinate
+    coord_rot[2, 0] = -coord_rot[2, 0]
+    coord_rot = coord_rot[:3, 0].tolist()
+    coord_rot.extend(probe[3:])
+
+    # return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+    return coord_rot
 
 def dynamic_reference_m2(probe, reference):
     """

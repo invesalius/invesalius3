@@ -654,6 +654,7 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav = btn[0]
         choice_trck = btn[1]
         choice_ref = btn[2]
+        errors = False
 
         nav_id = btn_nav.GetValue()
         if not nav_id:
@@ -698,13 +699,13 @@ class NeuronavigationPanel(wx.Panel):
                     btn_c.Enable(False)
 
                 # initialize Trekker parameters
-                seed = [0., 0., 0.]
+                # seed = [0., 0., 0.]
                 slic = sl.Slice()
                 affine = slic.affine
                 affine_vtk = image_utils.compute_affine_vtk(affine)
                 # self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
-                tracts_info = seed, self.trekker, affine, affine_vtk
+                # tracts_info = seed, self.trekker, affine, affine_vtk
 
                 # this old base creation was used to compute the fre, still here to check if the new version
                 # is working fine. delete soon!
@@ -716,11 +717,17 @@ class NeuronavigationPanel(wx.Panel):
                 # initialize spatial tracker parameters
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 
+                # update fiducial registration error
                 self.UpdateFRE(self.fiducials)
 
                 # initialize trigger thread to synchronize with external devices
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
+
+                # sle = self.sleep_nav
+                pipeline = PipelineSimple()
+                if self.event.is_set():
+                    self.event.clear()
 
                 if self.track_obj:
                     if self.obj_reg_status:
@@ -736,44 +743,58 @@ class NeuronavigationPanel(wx.Panel):
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
-                                if self.event.is_set():
-                                    self.event.clear()
-
-                                sle = self.sleep_nav
-                                pipeline = PipelineSimple()
-
                                 # this works with sleep of 0.25 for each thread
                                 jobs_list = [
-                                    dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event, sle)]
-
-                                if self.view_tracts:
-                                    jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
-                                                                                  self.event, sle))
-
-                                for jobs in jobs_list:
-                                    jobs.start()
+                                    dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                                                                self.sleep_nav)]
 
                             else:
+                                # TODO: not properly tested, please check that all possible navigation modes work in the new
+                                #  thread management scheme
                                 coord_raw = np.array([None])
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
                                 self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
+                                # jobs_list = [
+                                #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                                #                                 self.sleep_nav)]
 
                         else:
                             dlg.ShowNavigationTrackerWarning(0, 'choose')
+                            errors = True
 
                     else:
                         wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
+                        errors = True
 
                 else:
                     coreg_data = [m_change, 0]
                     if self.ref_mode_id:
+                        # TODO: not properly tested, please check that all possible navigation modes work in the new
+                        #  thread management scheme
                         # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
-                        self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode, tracts_info)
+                        self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)
                         self.correg.start()
+                        # jobs_list = [
+                        #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                        #                                 self.sleep_nav)]
                     else:
+                        # TODO: not properly tested, please check that all possible navigation modes work in the new
+                        #  thread management scheme
                         self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
+                        # jobs_list = [dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                        #                                          self.sleep_nav)]
+
+                if not errors:
+                    #TODO: Similarly to the tracts, add also the trigger thread here
+                    if self.view_tracts:
+                        print("Appending the tract computation thread!")
+                        jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
+                                                                      self.event, self.sleep_nav))
+
+                    for jobs in jobs_list:
+                        jobs.start()
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -1000,30 +1021,39 @@ class ObjectRegistrationPanel(wx.Panel):
             dlg.ShowNavigationTrackerWarning(0, 'choose')
 
     def OnLinkLoad(self, event=None):
-        filename = dlg.ShowLoadRegistrationDialog()
+        # filename = dlg.ShowLoadRegistrationDialog()
+        filename = dlg.ShowLoadDialog(message=_(u"Load object registration"),
+                                      wildcard=_("Registration files (*.obr)|*.obr"))
 
-        if filename:
-            data = np.loadtxt(filename, delimiter='\t')
-            self.obj_fiducials = data[:, :3]
-            self.obj_orients = data[:, 3:]
+        try:
+            if filename:
+                #TODO: Improve method to read the file, using "with" similar to OnLoadParameters
+                data = np.loadtxt(filename, delimiter='\t')
+                self.obj_fiducials = data[:, :3]
+                self.obj_orients = data[:, 3:]
 
-            text_file = open(filename, "r")
-            header = text_file.readline().split('\t')
-            text_file.close()
+                text_file = open(filename, "r")
+                header = text_file.readline().split('\t')
+                text_file.close()
 
-            self.obj_name = header[1]
-            self.obj_ref_mode = int(header[-1])
+                self.obj_name = header[1]
+                self.obj_ref_mode = int(header[-1])
 
-            self.checktrack.Enable(1)
-            Publisher.sendMessage('Update object registration',
-                                  data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
-            self.checktrack.SetValue(True)
-            Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
-            Publisher.sendMessage('Change camera checkbox', status=False)
-            wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+                self.checktrack.Enable(1)
+                self.checktrack.SetValue(True)
+                Publisher.sendMessage('Update object registration',
+                                      data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                Publisher.sendMessage('Update status text in GUI',
+                                      label=_("Object file successfully loaded"))
+                Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                Publisher.sendMessage('Change camera checkbox', status=False)
+                # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+        except:
+            wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
+            Publisher.sendMessage('Update status text in GUI', label="")
 
     def ShowSaveObjectDialog(self, evt):
+        # TODO: Generalize the ShowSave dialog similar to the Load
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
@@ -1463,6 +1493,7 @@ class TractographyPanel(wx.Panel):
         self.p_old = np.array([[0., 0., 0.]])
         self.tracts_run = None
         self.trekker_cfg = const.TREKKER_CONFIG
+        self.nav_status = False
 
         self.SetAutoLayout(1)
         self.__bind_events()
@@ -1619,6 +1650,7 @@ class TractographyPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
@@ -1661,6 +1693,11 @@ class TractographyPanel(wx.Panel):
     def OnEnableTracts(self, evt, ctrl):
         self.view_tracts = ctrl.GetValue()
         Publisher.sendMessage('Update tracts visualization', data=self.view_tracts)
+        if not self.view_tracts:
+            Publisher.sendMessage('Remove tracts')
+
+    def UpdateNavigationStatus(self, status):
+        self.nav_status = status
 
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
@@ -1743,6 +1780,7 @@ class TractographyPanel(wx.Panel):
             # Inform user that file is not compatible
             self.trekker_cfg = const.TREKKER_CONFIG
             wx.MessageBox(_("File incompatible, using default configuration."), _("InVesalius 3"))
+            Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnUpdateTracts(self, arg, position):
         """
@@ -1756,12 +1794,10 @@ class TractographyPanel(wx.Panel):
         # Minimal working version of tract computation
         # It updates when cross updates
 
-        if self.view_tracts:
-            x, y, z = db.flip_x_m(position[:3])[:3, 0]
-            dti.ComputeTracts(self.trekker, (x, y, z), self.affine, self.affine_vtk,
+        if self.view_tracts and not self.nav_status:
+            coord_flip = db.flip_x_m(position[:3])[:3, 0]
+            dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
                               self.n_tracts, self.seed_radius)
-        else:
-            Publisher.sendMessage('Remove tracts')
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)

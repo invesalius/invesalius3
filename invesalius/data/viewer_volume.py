@@ -1426,6 +1426,8 @@ class Viewer(wx.Panel):
             #     self.Refresh()
             # if root:
         # https://lorensen.github.io/VTKExamples/site/Python/CompositeData/CompositePolyDataMapper/
+        self.ren.RemoveActor(self.actor_tracts)
+
         mapper = vtk.vtkCompositePolyDataMapper2()
         mapper.SetInputDataObject(root)
 
