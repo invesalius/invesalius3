@@ -1336,16 +1336,12 @@ class Viewer(wx.Panel):
         return actor
 
     def AddPeeledSurface(self, flag, actor):
-        if flag:
-            if self.actor_peel:
-                self.ren.RemoveActor(self.actor_peel)
-            if actor:
-                self.ren.AddActor(actor)
-                self.actor_peel = actor
-        else:
-            if self.actor_peel:
-                self.ren.RemoveActor(self.actor_peel)
-                self.actor_peel = None
+        if self.actor_peel:
+            self.ren.RemoveActor(self.actor_peel)
+            self.actor_peel = None
+        if flag and actor:
+            self.ren.AddActor(actor)
+            self.actor_peel = actor
         self.Refresh()
 
     def OnNavigationStatus(self, status):

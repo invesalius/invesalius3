@@ -1764,9 +1764,12 @@ class TractographyPanel(wx.Panel):
         self.checkpeeling.SetValue(False)
         self.checkpeeling.Enable(0)
 
+        self.spin_opacity.SetValue(const.BRAIN_OPACITY)
+        self.spin_opacity.Enable(0)
+        Publisher.sendMessage('Update peel', flag=False, actor=self.brain_actor)
+
         self.peel_depth = const.PEEL_DEPTH
         self.n_tracts = const.N_TRACTS
-        self.timestamp = const.TIMESTAMP
 
 
 class PipelineSimple:
