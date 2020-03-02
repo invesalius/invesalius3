@@ -17,7 +17,7 @@ def compute_seed(position, affine):
     pos_world = np.linalg.inv(affine) @ pos_world_aux
     # seed = pos_world.reshape([1, 4])[0, :3]
     # seed = pos_world.T[np.newaxis, 0, :3]
-    seed = pos_world.T[0, :3]
+    seed = pos_world.T[np.newaxis, 0, :3]
 
     return seed
 
@@ -196,44 +196,54 @@ class ComputeVisualizeParallel(threading.Thread):
 
 def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
     """
-    Thread to update the coordinates with the fiducial points
-    co-registration method while the Navigation Button is pressed.
-    Sleep function in run method is used to avoid blocking GUI and
-    for better real-time navigation
+    Compute tractograms using the Trekker library.
+
+    :param trekker: Trekker library instance
+    :param position: 3 double coordinates (x, y, z) in list or array
+    :param affine: 4 x 4 numpy double array
+    :param affine_vtk: vtkMatrix4x4 isntance with affine transformation matrix
+    :param n_tracts: number of tracts to compute
+    :param seed_radius: radius that current coordinate should exceed to recompute tracts
     """
-
-    ncores = psutil.cpu_count()
-    n_threads = 2*ncores
+    # during neuronavigation, root needs to be initialized outisde the while loop so the new tracts
+    # can be appended to the root block set
     root = vtk.vtkMultiBlockDataSet()
-    # Compute the tracts
-    trk_list = []
-    seed_trk = compute_seed_old(position, affine)
     # Juuso's
-    # seed = np.array([[-8.49, -8.a39, 2.5]])
+    # seed = np.array([[-8.49, -8.39, 2.5]])
     # Baran M1
-    # seed = np.array([[-8.49, -8.a39, 2.5]])
-
-    print("seed example: {}".format(seed_trk))
+    # seed = np.array([[27.53, -77.37, 46.42]])
+    seed_trk = compute_seed(position, affine)
+    # print("seed example: {}".format(seed_trk))
     trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
-
-    print("trk list len: ", len(trekker.run()))
+    # print("trk list len: ", len(trekker.run()))
     if trekker.run():
-        # if dist < seed_radius and n_tracts < n_tracts_total:
-        #     # Compute the tracts
-        #     trk_list.extend(trekker.run())
-        #     # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
-        #     root = tracts_computation(trk_list, root, n_tracts)
-        #     n_tracts = len(trk_list)
-        #     print("Total new tracts: ", n_tracts)
-        #     wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
-        #     wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-        #                  affine_vtk=affine_vtk)
-        # elif dist >= seed_radius:
-        # n_tracts = 0
         trk_list = trekker.run()
         root = tracts_computation(trk_list, root, 0)
-        # n_tracts = len(trk_list)
-        # print("Total tracts: ", n_tracts)
         wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
         wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                      affine_vtk=affine_vtk)
+    else:
+        wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+
+
+def SetTrekkerParameters(trekker, params):
+    import invesalius.constants as const
+
+    trekker.seed_maxTrials(params['seed_max'])
+    trekker.stepSize(params['step_size'])
+    trekker.minFODamp(params['min_fod'])
+    trekker.probeQuality(params['probe_quality'])
+    trekker.maxEstInterval(params['max_interval'])
+    trekker.minRadiusOfCurvature(params['min_radius_curv'])
+    trekker.probeLength(params['probe_length'])
+    trekker.writeInterval(params['write_interval'])
+
+    # check number if number of cores is valid in configuration file,
+    # otherwise use the maximum number of threads which is usually 2*N_CPUS
+    n_threads = 2 * const.N_CPU
+    if isinstance((params['numb_threads']), int) and params['numb_threads'] <= 2*const.N_CPU:
+        n_threads = params['numb_threads']
+
+    trekker.numberOfThreads(n_threads)
+    print("Trekker config updated: n_threads, {}; seed_max, {}".format(n_threads, params['seed_max']))
+    return trekker, n_threads
