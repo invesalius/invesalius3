@@ -1377,7 +1377,7 @@ class Viewer(wx.Panel):
 
         # translate coregistered coordinate to display a marker where Trekker seed is computed
         m_tract = m_img.copy()
-        m_tract[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
+        # m_tract[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
         m_tract[:3, -1] = m_tract[:3, -1] - self.seed_offset * m_tract[:3, 2]
 
         # print("m_img copy in viewer_vol: {}".format(m_img_copy))

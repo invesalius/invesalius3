@@ -405,10 +405,10 @@ def corregistrate_final(inp, coord_raw):
     as1, bs1, gs1 = radians(coord_raw[obj_ref_mode, 3:])
     r_probe = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
     t_probe_raw = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
-    t_offset_aux = r_s0_raw.I @ r_probe @ t_obj_raw
+    t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
     t_offset = identity(4)
     t_offset[:, -1] = t_offset_aux[:, -1]
-    t_probe = s0_raw @ t_offset @ s0_raw.I @ t_probe_raw
+    t_probe = s0_raw @ t_offset @ np.linalg.inv(s0_raw) @ t_probe_raw
     m_probe = tr.concatenate_matrices(t_probe, r_probe)
 
     a, b, g = radians(coord_raw[1, 3:])
@@ -416,11 +416,11 @@ def corregistrate_final(inp, coord_raw):
     t_ref = tr.translation_matrix(coord_raw[1, :3])
     m_ref = tr.concatenate_matrices(t_ref, r_ref)
 
-    m_dyn = m_ref.I @ m_probe
+    m_dyn = np.linalg.inv(m_ref) @ m_probe
     m_dyn[2, -1] = -m_dyn[2, -1]
 
     m_img = m_change @ m_dyn
-    r_obj = r_obj_img @ m_obj_raw.I @ s0_dyn.I @ m_dyn @ m_obj_raw
+    r_obj = r_obj_img @ np.linalg.inv(m_obj_raw) @ np.linalg.inv(s0_dyn) @ m_dyn @ m_obj_raw
 
     m_img[:3, :3] = r_obj[:3, :3]
 

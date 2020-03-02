@@ -660,7 +660,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.trigger.stop()
 
             Publisher.sendMessage("Navigation status", status=False)
-            Publisher.sendMessage("Remove tracts")
+            # Publisher.sendMessage("Remove tracts")
 
         else:
 
@@ -1444,7 +1444,7 @@ class TractographyPanel(wx.Panel):
 
         self.affine = None
         self.affine_vtk = None
-        self.tracker = None
+        self.trekker = None
         self.n_tracts = const.N_TRACTS
         self.peel_depth = const.PEEL_DEPTH
         self.view_tracts = False
@@ -1596,7 +1596,7 @@ class TractographyPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        # Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
+        Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
 
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
@@ -1670,33 +1670,40 @@ class TractographyPanel(wx.Panel):
         # FOD_path = 'sub-P0_dwi_FOD.nii'
         # filename = os.path.join(data_dir, FOD_path)
 
-        try:
-            self.tracker = Trekker.tracker(filename.encode('utf-8'))
-            self.tracker.seed_maxTrials(self.trekker_cfg['seed_max'])
-            self.tracker.stepSize(self.trekker_cfg['step_size'])
-            self.tracker.minFODamp(self.trekker_cfg['min_fod'])
-            self.tracker.probeQuality(self.trekker_cfg['probe_quality'])
-            self.tracker.maxEstInterval(self.trekker_cfg['max_interval'])
-            self.tracker.minRadiusOfCurvature(self.trekker_cfg['min_radius_curv'])
-            self.tracker.probeLength(self.trekker_cfg['probe_length'])
-            self.tracker.writeInterval(self.trekker_cfg['write_interval'])
+        if not self.affine_vtk:
+            slic = sl.Slice()
+            self.affine = slic.affine
+            self.affine_vtk = image_utils.compute_affine_vtk(self.affine)
 
-            # check number if number of cores is valid in configuration file,
-            # otherwise use the maximum number of threads which is usually 2*N_CPUS
-            n_threads = 2 * const.N_CPU
-            if isinstance((self.trekker_cfg['numb_threads']), int) and self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
-                n_threads = self.trekker_cfg['numb_threads']
+        # try:
 
-            self.tracker.numberOfThreads(n_threads)
+        self.trekker = Trekker.tracker(filename.encode('utf-8'))
+        self.trekker.seed_maxTrials(self.trekker_cfg['seed_max'])
+        self.trekker.stepSize(self.trekker_cfg['step_size'])
+        self.trekker.minFODamp(self.trekker_cfg['min_fod'])
+        self.trekker.probeQuality(self.trekker_cfg['probe_quality'])
+        self.trekker.maxEstInterval(self.trekker_cfg['max_interval'])
+        self.trekker.minRadiusOfCurvature(self.trekker_cfg['min_radius_curv'])
+        self.trekker.probeLength(self.trekker_cfg['probe_length'])
+        self.trekker.writeInterval(self.trekker_cfg['write_interval'])
 
-            self.checktracts.Enable(1)
-            self.checktracts.SetValue(True)
-            Publisher.sendMessage('Update Trekker object', data=self.tracker)
-            Publisher.sendMessage('Update number of threads', data=n_threads)
-            Publisher.sendMessage('Update tracts visualization', data=1)
-            Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
-        except:
-            wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
+        # check number if number of cores is valid in configuration file,
+        # otherwise use the maximum number of threads which is usually 2*N_CPUS
+        n_threads = 2 * const.N_CPU
+        if isinstance((self.trekker_cfg['numb_threads']), int) and self.trekker_cfg['numb_threads'] <= 2*const.N_CPU:
+            n_threads = self.trekker_cfg['numb_threads']
+
+        self.trekker.numberOfThreads(n_threads)
+
+        self.checktracts.Enable(1)
+        self.checktracts.SetValue(True)
+        self.view_tracts = True
+        Publisher.sendMessage('Update Trekker object', data=self.trekker)
+        Publisher.sendMessage('Update number of threads', data=n_threads)
+        Publisher.sendMessage('Update tracts visualization', data=1)
+        Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
+        # except:
+        #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
 
@@ -1719,6 +1726,15 @@ class TractographyPanel(wx.Panel):
             self.trekker_cfg = const.TREKKER_CONFIG
             wx.MessageBox(_("File incompatible, using default configuration."), _("InVesalius 3"))
 
+    def OnUpdateTracts(self, arg, position):
+        # Miniaml working version of tract computation
+        # It updates when cross updates
+
+        if self.view_tracts:
+            x, y, z = db.flip_x_m(position[:3])[:3, 0]
+            dti.ComputeTracts(self.trekker, (x, y, z), self.affine, self.affine_vtk,
+                          self.n_tracts, self.seed_radius)
+
     def OnCloseProject(self):
         self.checktracts.SetValue(False)
         self.checktracts.Enable(0)
@@ -1728,320 +1744,6 @@ class TractographyPanel(wx.Panel):
         self.peel_depth = const.PEEL_DEPTH
         self.n_tracts = const.N_TRACTS
         self.timestamp = const.TIMESTAMP
-
-
-class Pipeline:
-    """Class to allow a single element pipeline between producer and consumer.
-    """
-
-    def __init__(self):
-        self.message = 0
-        self.producer_lock = threading.Lock()
-        self.consumer_lock = threading.Lock()
-        self.consumer_lock.acquire(timeout=1)
-
-    def get_message(self):
-        print("Getting message")
-        self.consumer_lock.acquire(timeout=1)
-        message = self.message
-        self.producer_lock.release()
-        return message
-
-    def set_message(self, message):
-        print("Setting message")
-        self.producer_lock.acquire(timeout=1)
-        self.message = message
-        self.consumer_lock.release()
-
-
-class PipelineTracts:
-    """Class to allow a single element pipeline between producer and consumer.
-    """
-
-    def __init__(self):
-        self.message = 0
-        self.coord_coreg = 0
-        self.tracts_list = 0
-        # self.producer_lock = threading.Lock()
-        # self.consumer_lock = threading.Lock()
-        # self.prod_coreg_lock = threading.Lock()
-        # self.cons_coreg_lock = threading.Lock()
-        # self.prod_tract_lock = threading.Lock()
-        # self.cons_tract_lock = threading.Lock()
-        self.locks = [threading.Lock() for _ in range(6)]
-        self.locks[1].acquire(timeout=1)
-        # self.consumer_lock.acquire(timeout=1)
-
-    def get_message(self):
-        print("Getting message")
-        # self.consumer_lock.acquire(timeout=1)
-        self.locks[1].acquire(timeout=1)
-        message = self.message
-        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 1]
-
-        # self.cons_coreg_lock.release()
-        # self.cons_tract_lock.release()
-        #
-        # self.producer_lock.release()
-        # self.prod_coreg_lock.release()
-        # self.prod_tract_lock.release()
-        return message
-
-    def set_message(self, message):
-        print("Setting message")
-        # self.producer_lock.acquire(timeout=1)
-        self.locks[0].acquire(timeout=1)
-        self.message = message
-        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 0]
-
-        # self.prod_coreg_lock.release()
-        # self.prod_tract_lock.release()
-        #
-        # self.consumer_lock.release()
-        # self.cons_coreg_lock.release()
-        # self.cons_tract_lock.release()
-
-    def get_coord_coreg(self):
-        print("Getting tracts")
-        self.locks[3].acquire(timeout=1)
-        # self.cons_coreg_lock.acquire(timeout=1)
-        coord_coreg = self.coord_coreg
-        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 3]
-
-        # self.consumer_lock.release()
-        # self.cons_tract_lock.release()
-        #
-        # self.producer_lock.release()
-        # self.prod_coreg_lock.release()
-        # self.prod_tract_lock.release()
-        return coord_coreg
-
-    def set_coord_coreg(self, coord_coreg):
-        print("Setting tracts")
-        # self.prod_coreg_lock.acquire(timeout=1)
-        self.locks[2].acquire(timeout=1)
-        self.coord_coreg = coord_coreg
-        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 2]
-
-        # self.producer_lock.release()
-        # self.prod_tract_lock.release()
-        #
-        # self.consumer_lock.release()
-        # self.cons_coreg_lock.release()
-        # self.cons_tract_lock.release()
-
-    def get_tracts_list(self):
-        print("Getting tracts")
-        # self.cons_tract_lock.acquire(timeout=1)
-        self.locks[5].acquire(timeout=1)
-        tracts_list = self.tracts_list
-        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 5]
-        # self.consumer_lock.release()
-        # self.cons_coreg_lock.release()
-        #
-        # self.producer_lock.release()
-        # self.prod_coreg_lock.release()
-        # self.prod_tract_lock.release()
-        return tracts_list
-
-    def set_tracts_list(self, tracts_list):
-        print("Setting tracts")
-        # self.prod_tract_lock.acquire(timeout=1)
-        self.locks[4].acquire(timeout=1)
-        self.tracts_list = tracts_list
-        [item.release() for n, item in enumerate(self.locks) if item.locked() and n != 4]
-        # self.producer_lock.release()
-        # self.prod_coreg_lock.release()
-        #
-        # self.consumer_lock.release()
-        # self.cons_coreg_lock.release()
-        # self.cons_tract_lock.release()
-
-
-class PipelineTractsSimple:
-    """Class to allow a single element pipeline between producer and consumer.
-    """
-
-    def __init__(self):
-        self.message = 0
-        self.coord_coreg = 0
-        self.tracts_list = 0
-
-        self.locks = threading.Lock()
-
-    def get_message(self):
-        print("Getting message")
-        with self.locks:
-            message = self.message
-        return message
-
-    def set_message(self, message):
-        print("Setting message")
-        with self.locks:
-            self.message = message
-
-    def get_coord_coreg(self):
-        print("Getting coreg")
-        with self.locks:
-            coord_coreg = self.coord_coreg
-        return coord_coreg
-
-    def set_coord_coreg(self, coord_coreg):
-        print("Setting coreg")
-        # self.prod_coreg_lock.acquire(timeout=1)
-        with self.locks:
-            self.coord_coreg = coord_coreg
-
-    def get_tracts_list(self):
-        print("Getting tracts")
-        with self.locks:
-            tracts_list = self.tracts_list
-        return tracts_list
-
-    def set_tracts_list(self, tracts_list):
-        print("Setting tracts")
-        # self.prod_tract_lock.acquire(timeout=1)
-        with self.locks:
-            self.tracts_list = tracts_list
-
-
-class PipelineTractsCondition:
-    """Class to allow a single element pipeline between producer and consumer.
-    """
-
-    def __init__(self):
-        self.message = False
-        self.coord_coreg = False
-        self.tracts_list = False
-
-        self.locks = threading.Lock()
-        self.event_coord = threading.Event()
-        self.event_coreg = threading.Event()
-        self.event_tracts = threading.Event()
-
-    def get_message(self):
-        print("Getting message")
-        with self.locks:
-            if self.event_coord.is_set():
-                return self.message
-            else:
-                return False
-
-    def set_message(self, message):
-        print("Setting message")
-        with self.locks:
-            self.message = message
-            self.event_coord.set()
-
-    def get_coord_coreg(self):
-        print("Getting coreg")
-        with self.locks:
-            if self.event_coreg.is_set():
-                return self.coord_coreg
-            else:
-                return False
-
-    def set_coord_coreg(self, coord_coreg):
-        print("Setting coreg")
-        # self.prod_coreg_lock.acquire(timeout=1)
-        with self.locks:
-            self.coord_coreg = coord_coreg
-            self.event_coreg.set()
-
-    def get_tracts_list(self):
-        print("Getting tracts")
-        with self.locks:
-            # if self.event_tracts.is_set():
-            return self.tracts_list
-            # else:
-            #     return False
-
-    def set_tracts_list(self, tracts_list):
-        print("Setting tracts")
-        # self.prod_tract_lock.acquire(timeout=1)
-        with self.locks:
-            self.tracts_list = tracts_list
-            self.event_tracts.set()
-
-
-class PipelineTractsCondition:
-    """Class to allow a single element pipeline between producer and consumer.
-    """
-
-    def __init__(self):
-        self.message = False
-        self.coord_coreg = False
-        self.tracts_list = False
-
-        self.locks = threading.Lock()
-        self.event_coord = threading.Event()
-        self.event_coreg = threading.Event()
-        self.event_tracts = threading.Event()
-
-    def get_message(self):
-        print("Getting message")
-        with self.locks:
-            if self.event_coord.is_set():
-                return self.message
-            else:
-                return False
-
-    def set_message(self, message):
-        print("Setting message")
-        with self.locks:
-            self.message = message
-            self.event_coord.set()
-
-    def get_coord_coreg(self):
-        print("Getting coreg")
-        with self.locks:
-            if self.event_coreg.is_set():
-                return self.coord_coreg
-            else:
-                return False
-
-    def set_coord_coreg(self, coord_coreg):
-        print("Setting coreg")
-        # self.prod_coreg_lock.acquire(timeout=1)
-        with self.locks:
-            self.coord_coreg = coord_coreg
-            self.event_coreg.set()
-
-    def get_tracts_list(self):
-        print("Getting tracts")
-        with self.locks:
-            # if self.event_tracts.is_set():
-            return self.tracts_list
-            # else:
-            #     return False
-
-    def set_tracts_list(self, tracts_list):
-        print("Setting tracts")
-        # self.prod_tract_lock.acquire(timeout=1)
-        with self.locks:
-            self.tracts_list = tracts_list
-            self.event_tracts.set()
-
-
-class NavThreadPool:
-    """
-    Thread to update the coordinates with the fiducial points
-    co-registration method while the Navigation Button is pressed.
-    Sleep function in run method is used to avoid blocking GUI and
-    for better real-time navigation
-    """
-
-    def __init__(self, threads):
-        self.threads = threads
-
-    def __enter__(self):
-        # self.start()
-        for th in self.threads:
-            th.start()
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        print('Force set Thread stop_event')
 
 
 class PipelineSimple:

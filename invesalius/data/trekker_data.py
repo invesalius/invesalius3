@@ -21,6 +21,15 @@ def compute_seed(position, affine):
 
     return seed
 
+def compute_seed_old(position, affine):
+    pos_world_aux = np.ones([4, 1])
+    # pos_world_aux[:3, -1] = db.flip_x(self.position)[:3]
+    pos_world_aux[:3, -1] = position[:3]
+    pos_world = np.linalg.inv(affine) @ pos_world_aux
+    seed = pos_world.reshape([1, 4])[0, :3]
+
+    return seed[np.newaxis, :]
+
 
 def simple_direction(trk_n):
     # trk_d = np.diff(trk_n, axis=0, append=2*trk_n[np.newaxis, -1, :])
@@ -113,6 +122,7 @@ class ComputeVisualizeParallel(threading.Thread):
         n_tracts = 0
         # ncores = psutil.cpu_count()
         # chunck_size = 2*ncores
+        trk_list = []
         root = vtk.vtkMultiBlockDataSet()
         # Compute the tracts
         while not self.event.is_set():
@@ -121,42 +131,58 @@ class ComputeVisualizeParallel(threading.Thread):
                 position, m_img = self.pipeline.get_message()
 
                 if np.any(m_img):
-                    #TODO: Refactor and create a function for the offset computation
-                    # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
+                    # #TODO: Refactor and create a function for the offset computation
+                    # # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
                     m_img[:, -1] = db.flip_x_m(m_img[:3, -1])[:, 0]
-                    # norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-                    # p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-                    # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
-                    # translate the coordinate along the normal vector of the object/coil
-                    p_new = m_img[:3, -1] - offset * m_img[:3, 2]
-                    # p_new = [-8.49, -8.39, 2.5]
-                    dist = np.linalg.norm(p_old - p_new)
-                    # p_old = np.asarray(p_new)
+                    # # norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+                    # # p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+                    # # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # # translate the coordinate along the normal vector of the object/coil
+                    # # p_new = np.array([[-8.49, -8.39, 2.5]])
+                    # p_new = m_img[:3, -1] - offset * m_img[:3, 2]
+                    # dist = np.linalg.norm(p_old - p_new)
+                    # print("Distance: {}".format(dist))
+                    # p_old = p_new.copy()
+                    #
+                    # seed = compute_seed(p_new, affine)
+                    # print("Seed: {}".format(seed))
+                    # # seed = np.array([[-8.49, -8.39, 2.5]])
+                    # # tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
+                    # tracker.seed_coordinates(np.tile(seed, (n_threads, 1)))
+                    #
+                    # print("Trekker run: {}".format(tracker.run()))
 
-                    seed = compute_seed(p_new, affine)
+                    # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
+                    norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
+                    p0 = m_img[:3, -1].reshape([1, 3]).tolist()
+                    p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # p_new = [-8.49, -8.39, 2.5]
+                    dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
+                    p_old = np.asarray(p_new)
+
+                    seed = compute_seed_old(p_new, affine)
                     # seed = np.array([[-8.49, -8.39, 2.5]])
-                    # tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
-                    tracker.seed_coordinates(np.tile(seed, (n_threads, 1)))
+                    tracker.seed_coordinates(np.repeat(seed, n_threads, axis=0))
 
                     if tracker.run():
-                        wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
-
                         if dist < seed_radius and n_tracts < n_tracts_total:
                             # Compute the tracts
                             trk_list.extend(tracker.run())
                             # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
-                            # print("Total new tracts: ", n_tracts)
+                            print("Total new tracts: ", n_tracts)
+                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                                          affine_vtk=self.affine_vtk)
                         elif dist >= seed_radius:
                             n_tracts = 0
                             trk_list = tracker.run()
-                            # print(">>> que seed_radius com n tracts: ", len(trk_list))
+                            print("trk list len: ", len(trk_list))
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
                             # print("Total tracts: ", n_tracts)
+                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
                                          affine_vtk=self.affine_vtk)
 
@@ -166,3 +192,48 @@ class ComputeVisualizeParallel(threading.Thread):
                         # do nothing
 
             time.sleep(self.sle)
+
+
+def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    ncores = psutil.cpu_count()
+    n_threads = 2*ncores
+    root = vtk.vtkMultiBlockDataSet()
+    # Compute the tracts
+    trk_list = []
+    seed_trk = compute_seed_old(position, affine)
+    # Juuso's
+    # seed = np.array([[-8.49, -8.a39, 2.5]])
+    # Baran M1
+    # seed = np.array([[-8.49, -8.a39, 2.5]])
+
+    print("seed example: {}".format(seed_trk))
+    trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
+
+    print("trk list len: ", len(trekker.run()))
+    if trekker.run():
+        # if dist < seed_radius and n_tracts < n_tracts_total:
+        #     # Compute the tracts
+        #     trk_list.extend(trekker.run())
+        #     # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
+        #     root = tracts_computation(trk_list, root, n_tracts)
+        #     n_tracts = len(trk_list)
+        #     print("Total new tracts: ", n_tracts)
+        #     wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+        #     wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+        #                  affine_vtk=affine_vtk)
+        # elif dist >= seed_radius:
+        # n_tracts = 0
+        trk_list = trekker.run()
+        root = tracts_computation(trk_list, root, 0)
+        # n_tracts = len(trk_list)
+        # print("Total tracts: ", n_tracts)
+        wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+        wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                     affine_vtk=affine_vtk)

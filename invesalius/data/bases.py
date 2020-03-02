@@ -213,7 +213,7 @@ def flip_x_m(point):
     :return: rotated coordinates
     """
 
-    point_4 = np.hstack((point, 1.)).T
+    point_4 = np.hstack((point, 1.)).reshape(4, 1)
     point_4[2, 0] = -point_4[2, 0]
 
     m_rot = tr.euler_matrix(pi, 0, 0)
