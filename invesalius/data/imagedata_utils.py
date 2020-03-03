@@ -465,13 +465,13 @@ def img2memmap(group):
 
     data = group.get_data()
     # Normalize image pixel values and convert to int16
-    data = imgnormalize(data)
+    #  data = imgnormalize(data)
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = numpy.swapaxes(data, 0, 2)
     data = numpy.fliplr(data)
 
-    matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=data.shape)
+    matrix = numpy.memmap(temp_file, mode='w+', dtype=np.int16, shape=data.shape)
     matrix[:] = data[:]
     matrix.flush()
 
