@@ -724,11 +724,6 @@ class NeuronavigationPanel(wx.Panel):
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
 
-                # sle = self.sleep_nav
-                pipeline = PipelineSimple()
-                if self.event.is_set():
-                    self.event.clear()
-
                 if self.track_obj:
                     if self.obj_reg_status:
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
@@ -743,10 +738,22 @@ class NeuronavigationPanel(wx.Panel):
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
+                                # sle = self.sleep_nav
+                                if self.event.is_set():
+                                    self.event.clear()
+
+                                pipeline = PipelineSimple()
+                                jobs_list = []
                                 # this works with sleep of 0.25 for each thread
-                                jobs_list = [
-                                    dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                                                                self.sleep_nav)]
+                                jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                                                                             self.sleep_nav))
+                                if self.view_tracts:
+                                    # print("Appending the tract computation thread!")
+                                    jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
+                                                                                  self.event, self.sleep_nav))
+
+                                for jobs in jobs_list:
+                                    jobs.start()
 
                             else:
                                 # TODO: not properly tested, please check that all possible navigation modes work in the new
@@ -786,15 +793,15 @@ class NeuronavigationPanel(wx.Panel):
                         # jobs_list = [dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
                         #                                          self.sleep_nav)]
 
-                if not errors:
-                    #TODO: Similarly to the tracts, add also the trigger thread here
-                    if self.view_tracts:
-                        print("Appending the tract computation thread!")
-                        jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
-                                                                      self.event, self.sleep_nav))
-
-                    for jobs in jobs_list:
-                        jobs.start()
+                # if not errors:
+                #     #TODO: Similarly to the tracts, add also the trigger thread here
+                #     if self.view_tracts:
+                #         print("Appending the tract computation thread!")
+                #         jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
+                #                                                       self.event, self.sleep_nav))
+                #
+                #     for jobs in jobs_list:
+                #         jobs.start()
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -1793,11 +1800,11 @@ class TractographyPanel(wx.Panel):
         """
         # Minimal working version of tract computation
         # It updates when cross updates
-
-        if self.view_tracts and not self.nav_status:
-            coord_flip = db.flip_x_m(position[:3])[:3, 0]
-            dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
-                              self.n_tracts, self.seed_radius)
+        pass
+        # if self.view_tracts and not self.nav_status:
+        #     coord_flip = db.flip_x_m(position[:3])[:3, 0]
+        #     dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
+        #                       self.n_tracts, self.seed_radius)
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)

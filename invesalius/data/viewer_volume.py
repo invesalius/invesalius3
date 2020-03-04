@@ -1353,10 +1353,12 @@ class Viewer(wx.Panel):
         # m_tract = m_img_copy.copy()
         # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
 
-        m_img[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
+        m_img_flip = m_img.copy()
+        # m_img_flip[:, -1] = bases.flip_x_m(m_img_flip[:3, -1])[:, 0]
+        m_img_flip[1, -1] = -m_img_flip[1, -1]
 
         # translate coregistered coordinate to display a marker where Trekker seed is computed
-        m_tract = m_img.copy()
+        m_tract = m_img_flip.copy()
         # m_tract[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
         m_tract[:3, -1] = m_tract[:3, -1] - self.seed_offset * m_tract[:3, 2]
 
@@ -1371,7 +1373,7 @@ class Viewer(wx.Panel):
 
         for row in range(0, 4):
             for col in range(0, 4):
-                m_img_vtk.SetElement(row, col, m_img[row, col])
+                m_img_vtk.SetElement(row, col, m_img_flip[row, col])
                 m_tract_vtk.SetElement(row, col, m_tract[row, col])
 
         self.obj_actor.SetUserMatrix(m_img_vtk)
@@ -1416,7 +1418,7 @@ class Viewer(wx.Panel):
     # def UpdateAffineWorld2Inv(self, affine, status):
     #     self.affine = affine
 
-    def OnUpdateTracts(self, evt=None, flag=None, actor=None, root=None, affine_vtk=None):
+    def OnUpdateTracts(self, evt=None, flag=None, actor=None, root=None, affine_vtk=None, count=0):
         # TODO: Remove tracts also when cross button is untoogled
 
         # new method to update real time the actor
@@ -1426,7 +1428,7 @@ class Viewer(wx.Panel):
             #     self.Refresh()
             # if root:
         # https://lorensen.github.io/VTKExamples/site/Python/CompositeData/CompositePolyDataMapper/
-        self.ren.RemoveActor(self.actor_tracts)
+        # self.ren.RemoveActor(self.actor_tracts)
 
         mapper = vtk.vtkCompositePolyDataMapper2()
         mapper.SetInputDataObject(root)
@@ -1435,10 +1437,12 @@ class Viewer(wx.Panel):
         self.actor_tracts.SetMapper(mapper)
         self.actor_tracts.SetUserMatrix(affine_vtk)
 
+        # print("Add count: ", count)
         self.ren.AddActor(self.actor_tracts)
         self.Refresh()
 
-    def OnRemoveTracts(self, evt=None):
+    def OnRemoveTracts(self, evt=None, count=0):
+        # print("Remove count: ", count)
         self.ren.RemoveActor(self.actor_tracts)
         self.Refresh()
 

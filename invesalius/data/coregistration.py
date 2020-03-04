@@ -453,11 +453,11 @@ class CoordinateCorregistrate(threading.Thread):
             coord, m_img = corregistrate_final(coreg_data, coord_raw)
             self.pipeline.set_message((coord, m_img))
 
-            # print(f"Pubsub the coregistered coordinate: {coord}")
+            # # print(f"Pubsub the coregistered coordinate: {coord}")
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-
-            # The sleep has to be in both threads
+            #
+            # # The sleep has to be in both threads
             sleep(self.sle)
 
 # def GetCoordinatesProducer(trck_info, queue, event):

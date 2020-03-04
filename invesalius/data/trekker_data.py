@@ -120,6 +120,7 @@ class ComputeVisualizeParallel(threading.Thread):
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
+        count = 0
         # ncores = psutil.cpu_count()
         # chunck_size = 2*ncores
         trk_list = []
@@ -133,7 +134,15 @@ class ComputeVisualizeParallel(threading.Thread):
                 if np.any(m_img):
                     # #TODO: Refactor and create a function for the offset computation
                     # # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-                    m_img[:, -1] = db.flip_x_m(m_img[:3, -1])[:, 0]
+
+                    # in this new refactored version the m_img comes different than the position
+                    # the new version m_img is already flixped in y, which means that Y is negative
+                    # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
+                    # but check all pipeline before why now the m_img comes different than position
+                    m_img_flip = m_img.copy()
+                    # m_img_flip[:, -1] = db.flip_x_m(m_img_flip[:3, -1])[:, 0]
+                    m_img_flip[1, -1] = -m_img_flip[1, -1]
+
                     # # norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
                     # # p0 = m_img[:3, -1].reshape([1, 3]).tolist()
                     # # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
@@ -151,43 +160,51 @@ class ComputeVisualizeParallel(threading.Thread):
                     # tracker.seed_coordinates(np.tile(seed, (n_threads, 1)))
                     #
                     # print("Trekker run: {}".format(tracker.run()))
-
+                    p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
                     # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-                    norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-                    p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-                    p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
+                    # norm_vec = m_img_flip[:3, 2].reshape([1, 3]).tolist()
+                    # p0 = m_img_flip[:3, -1].reshape([1, 3]).tolist()
+                    # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
                     # p_new = np.array([[27.53, -77.37, 46.42]])
                     dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
-                    p_old = np.asarray(p_new)
+                    p_old = p_new.copy()
 
-                    seed = compute_seed_old(p_new, affine)
+                    # seed = compute_seed_old(p_new, affine)
+                    seed = compute_seed(p_new, affine)
                     # Juuso's
                     # seed = np.array([[-8.49, -8.39, 2.5]])
                     # Baran M1
                     # seed = np.array([[27.53, -77.37, 46.42]])
+                    # print("Seed: {}".format(seed))
                     trekker.seed_coordinates(np.repeat(seed, n_threads, axis=0))
 
+                    # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=position)
+                    # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=position)
+
                     if trekker.run():
+                        # print("dist: {}".format(dist))
                         if dist >= seed_radius:
                             n_tracts = 0
                             trk_list = trekker.run()
-                            print("trk list len: ", len(trk_list))
+                            # print("New tracts: ", len(trk_list))
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
                             # print("Total tracts: ", n_tracts)
-                            # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+                            count += 1
+                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                                         affine_vtk=self.affine_vtk)
+                                         affine_vtk=self.affine_vtk, count=count)
                         elif dist < seed_radius and n_tracts < n_tracts_total:
                             # Compute the tracts
                             trk_list.extend(trekker.run())
                             # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
-                            print("Total new tracts: ", n_tracts)
-                            # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+                            # print("Adding tracts: ", n_tracts)
+                            count += 1
+                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                                         affine_vtk=self.affine_vtk)
+                                         affine_vtk=self.affine_vtk, count=count)
 
                         # this logic is a bit stupid because it has to compute the actors every loop, better would be
                         # to check the distance and update actors in viewer volume, but that would require that each
