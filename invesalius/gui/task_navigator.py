@@ -1802,7 +1802,7 @@ class TractographyPanel(wx.Panel):
         # It updates when cross updates
         # pass
         if self.view_tracts and not self.nav_status:
-            print("Running during navigation")
+            # print("Running during navigation")
             coord_flip = db.flip_x_m(position[:3])[:3, 0]
             dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
                               self.n_tracts, self.seed_radius)
