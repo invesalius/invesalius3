@@ -197,10 +197,13 @@ def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
         trk_list = trekker.run()
         root = tracts_computation(trk_list, root, 0)
         # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
-        wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+        # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+        #              affine_vtk=affine_vtk)
+        Publisher.sendMessage('Remove tracts')
+        Publisher.sendMessage('Update tracts', flag=True, root=root,
                      affine_vtk=affine_vtk)
     else:
-        wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+        Publisher.sendMessage('Remove tracts')
 
 
 def SetTrekkerParameters(trekker, params):
@@ -221,5 +224,5 @@ def SetTrekkerParameters(trekker, params):
         n_threads = params['numb_threads']
 
     trekker.numberOfThreads(n_threads)
-    print("Trekker config updated: n_threads, {}; seed_max, {}".format(n_threads, params['seed_max']))
+    # print("Trekker config updated: n_threads, {}; seed_max, {}".format(n_threads, params['seed_max']))
     return trekker, n_threads
