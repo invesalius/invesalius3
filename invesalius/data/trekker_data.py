@@ -1,4 +1,4 @@
-import psutil
+# import psutil
 import threading
 import time
 
@@ -7,28 +7,12 @@ import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
 
-import invesalius.data.bases as db
+import invesalius.constants as const
+import invesalius.data.imagedata_utils as img_utils
 
-
-def compute_seed(position, affine):
-    # pos_world_aux = np.ones([4, 1])
-    # pos_world_aux[:3, -1] = position[:3]
-    pos_world_aux = np.hstack((position, 1.)).reshape([4, 1])
-    pos_world = np.linalg.inv(affine) @ pos_world_aux
-    # seed = pos_world.reshape([1, 4])[0, :3]
-    # seed = pos_world.T[np.newaxis, 0, :3]
-    seed = pos_world.T[np.newaxis, 0, :3]
-
-    return seed
-
-def compute_seed_old(position, affine):
-    pos_world_aux = np.ones([4, 1])
-    # pos_world_aux[:3, -1] = db.flip_x(self.position)[:3]
-    pos_world_aux[:3, -1] = position[:3]
-    pos_world = np.linalg.inv(affine) @ pos_world_aux
-    seed = pos_world.reshape([1, 4])[0, :3]
-
-    return seed[np.newaxis, :]
+# Nice print for arrays
+# np.set_printoptions(precision=2)
+# np.set_printoptions(suppress=True)
 
 
 def simple_direction(trk_n):
@@ -99,7 +83,7 @@ def tracts_computation(trk_list, root, n_tracts):
     return root
 
 
-class ComputeVisualizeParallel(threading.Thread):
+class ComputeTractsThread(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -108,7 +92,7 @@ class ComputeVisualizeParallel(threading.Thread):
     """
 
     def __init__(self, inp, affine_vtk, pipeline, event, sle):
-        threading.Thread.__init__(self, name='CompVisTractsParallel')
+        threading.Thread.__init__(self, name='ComputeTractsThread')
         self.inp = inp
         self.affine_vtk = affine_vtk
         self.pipeline = pipeline
@@ -121,62 +105,37 @@ class ComputeVisualizeParallel(threading.Thread):
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
         count = 0
-        # ncores = psutil.cpu_count()
-        # chunck_size = 2*ncores
         trk_list = []
         root = vtk.vtkMultiBlockDataSet()
+
         # Compute the tracts
         while not self.event.is_set():
             if self.pipeline.event.is_set():
                 # print("Computing tracts")
-                position, m_img = self.pipeline.get_message()
+                m_img_flip = self.pipeline.get_message()
 
-                if np.any(m_img):
-                    # #TODO: Refactor and create a function for the offset computation
-                    # # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
+                if np.any(m_img_flip):
 
-                    # in this new refactored version the m_img comes different than the position
+                    # 20200402: in this new refactored version the m_img comes different than the position
                     # the new version m_img is already flixped in y, which means that Y is negative
                     # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
                     # but check all pipeline before why now the m_img comes different than position
-                    m_img_flip = m_img.copy()
-                    # m_img_flip[:, -1] = db.flip_x_m(m_img_flip[:3, -1])[:, 0]
-                    m_img_flip[1, -1] = -m_img_flip[1, -1]
+                    # 20200403: indeed flip_x is just a -1 multiplication to the Y coordinate, remove function flip_x
+                    # m_img_flip = m_img.copy()
+                    # m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                    # # norm_vec = m_img[:3, 2].reshape([1, 3]).tolist()
-                    # # p0 = m_img[:3, -1].reshape([1, 3]).tolist()
-                    # # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
-                    # # translate the coordinate along the normal vector of the object/coil
-                    # # p_new = np.array([[-8.49, -8.39, 2.5]])
-                    # p_new = m_img[:3, -1] - offset * m_img[:3, 2]
-                    # dist = np.linalg.norm(p_old - p_new)
-                    # print("Distance: {}".format(dist))
-                    # p_old = p_new.copy()
-                    #
-                    # seed = compute_seed(p_new, affine)
-                    # print("Seed: {}".format(seed))
-                    # # seed = np.array([[-8.49, -8.39, 2.5]])
-                    # # tracker.seed_coordinates(np.repeat(seed, chunck_size, axis=0))
-                    # tracker.seed_coordinates(np.tile(seed, (n_threads, 1)))
-                    #
-                    # print("Trekker run: {}".format(tracker.run()))
+                    # translate the coordinate along the normal vector of the object/coil
                     p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
-                    # m_img[:3, -1] = np.asmatrix(db.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
-                    # norm_vec = m_img_flip[:3, 2].reshape([1, 3]).tolist()
-                    # p0 = m_img_flip[:3, -1].reshape([1, 3]).tolist()
-                    # p_new = [x - offset * y for x, y in zip(p0[0], norm_vec[0])]
-                    # p_new = np.array([[27.53, -77.37, 46.42]])
                     dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
                     p_old = p_new.copy()
 
-                    # seed = compute_seed_old(p_new, affine)
-                    seed = compute_seed(p_new, affine)
+                    seed_trk = img_utils.convert_world_to_voxel(p_new, affine)
                     # Juuso's
                     # seed = np.array([[-8.49, -8.39, 2.5]])
                     # Baran M1
                     # seed = np.array([[27.53, -77.37, 46.42]])
                     # print("Seed: {}".format(seed))
-                    trekker.seed_coordinates(np.repeat(seed, n_threads, axis=0))
+                    trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
 
                     # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=position)
                     # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=position)
@@ -184,12 +143,11 @@ class ComputeVisualizeParallel(threading.Thread):
                     if trekker.run():
                         # print("dist: {}".format(dist))
                         if dist >= seed_radius:
-                            n_tracts = 0
+                            # n_tracts = 0
                             trk_list = trekker.run()
-                            # print("New tracts: ", len(trk_list))
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
-                            # print("Total tracts: ", n_tracts)
+                            # print("New tracts: ", n_tracts)
                             count += 1
                             wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
                             wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
@@ -197,7 +155,6 @@ class ComputeVisualizeParallel(threading.Thread):
                         elif dist < seed_radius and n_tracts < n_tracts_total:
                             # Compute the tracts
                             trk_list.extend(trekker.run())
-                            # print("Menor que seed_radius com n tracts and dist: ", n_tracts, dist)
                             root = tracts_computation(trk_list, root, n_tracts)
                             n_tracts = len(trk_list)
                             # print("Adding tracts: ", n_tracts)
@@ -232,7 +189,7 @@ def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
     # seed = np.array([[-8.49, -8.39, 2.5]])
     # Baran M1
     # seed = np.array([[27.53, -77.37, 46.42]])
-    seed_trk = compute_seed(position, affine)
+    seed_trk = img_utils.convert_world_to_voxel(position, affine)
     # print("seed example: {}".format(seed_trk))
     trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
     # print("trk list len: ", len(trekker.run()))
@@ -247,7 +204,6 @@ def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
 
 
 def SetTrekkerParameters(trekker, params):
-    import invesalius.constants as const
 
     trekker.seed_maxTrials(params['seed_max'])
     trekker.stepSize(params['step_size'])
