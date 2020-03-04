@@ -20,7 +20,7 @@
 from functools import partial
 import sys
 import os
-import psutil
+# import psutil
 
 import numpy as np
 import wx
@@ -35,9 +35,9 @@ except ImportError:
 import wx.lib.masked.numctrl
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
-import wx.lib.platebtn as pbtn
+# import wx.lib.platebtn as pbtn
 
-from math import cos, sin, pi
+# from math import cos, sin, pi
 from time import sleep, time
 
 import invesalius.data.transformations as tr
@@ -52,13 +52,13 @@ import invesalius.gui.dialogs as dlg
 from invesalius import utils
 
 import invesalius.data.slice_ as sl
-import invesalius.data.imagedata_utils as image_utils
-import invesalius.reader.others_reader as oth
-import vtk
+import invesalius.data.vtk_utils as vtk_utils
+# import invesalius.reader.others_reader as oth
+# import vtk
 import Trekker
 import invesalius.data.brainmesh_handler as brain
-import concurrent.futures
-import queue
+# import concurrent.futures
+# import queue
 import threading
 
 # import invesalius.data.trekker_nothread as dti
@@ -702,7 +702,7 @@ class NeuronavigationPanel(wx.Panel):
                 # seed = [0., 0., 0.]
                 slic = sl.Slice()
                 affine = slic.affine
-                affine_vtk = image_utils.compute_affine_vtk(affine)
+                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
                 # self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
                 # tracts_info = seed, self.trekker, affine, affine_vtk
@@ -749,8 +749,8 @@ class NeuronavigationPanel(wx.Panel):
                                                                              self.sleep_nav))
                                 if self.view_tracts:
                                     # print("Appending the tract computation thread!")
-                                    jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
-                                                                                  self.event, self.sleep_nav))
+                                    jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, pipeline,
+                                                                             self.event, self.sleep_nav))
 
                                 for jobs in jobs_list:
                                     jobs.start()
@@ -1719,7 +1719,7 @@ class TractographyPanel(wx.Panel):
         if not self.affine_vtk:
             slic = sl.Slice()
             self.affine = slic.affine
-            self.affine_vtk = image_utils.compute_affine_vtk(self.affine)
+            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
         try:
             self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
@@ -1745,7 +1745,7 @@ class TractographyPanel(wx.Panel):
         if not self.affine_vtk:
             slic = sl.Slice()
             self.affine = slic.affine
-            self.affine_vtk = image_utils.compute_affine_vtk(self.affine)
+            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
         # try:
 
@@ -1800,11 +1800,12 @@ class TractographyPanel(wx.Panel):
         """
         # Minimal working version of tract computation
         # It updates when cross updates
-        pass
-        # if self.view_tracts and not self.nav_status:
-        #     coord_flip = db.flip_x_m(position[:3])[:3, 0]
-        #     dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
-        #                       self.n_tracts, self.seed_radius)
+        # pass
+        if self.view_tracts and not self.nav_status:
+            print("Running during navigation")
+            coord_flip = db.flip_x_m(position[:3])[:3, 0]
+            dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
+                              self.n_tracts, self.seed_radius)
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)

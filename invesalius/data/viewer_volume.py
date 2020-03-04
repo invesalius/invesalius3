@@ -1345,22 +1345,12 @@ class Viewer(wx.Panel):
 
     def UpdateObjectOrientation(self, m_img, coord):
         # print("Update object orientation")
-        # m_img_copy = m_img.copy()
-        # m_img_copy[:3, -1] = np.asmatrix(bases.flip_x_m((m_img_copy[0, -1], m_img_copy[1, -1], m_img_copy[2, -1]))).reshape([3, 1])
-        # norm_vec = m_img_copy[:3, 2].reshape([1, 3]).tolist()
-        # p0 = m_img_copy[:3, -1].reshape([1, 3]).tolist()
-        # p2 = [x - self.seed_offset * y for x, y in zip(p0[0], norm_vec[0])]
-        # m_tract = m_img_copy.copy()
-        # m_tract[:3, -1] = np.reshape(np.asarray(p2)[np.newaxis, :], [3, 1])
 
         m_img_flip = m_img.copy()
-        # m_img_flip[:, -1] = bases.flip_x_m(m_img_flip[:3, -1])[:, 0]
         m_img_flip[1, -1] = -m_img_flip[1, -1]
 
         # translate coregistered coordinate to display a marker where Trekker seed is computed
-        m_tract = m_img_flip.copy()
-        # m_tract[:, -1] = bases.flip_x_m(m_img[:3, -1])[:, 0]
-        m_tract[:3, -1] = m_tract[:3, -1] - self.seed_offset * m_tract[:3, 2]
+        coord_offset = m_img_flip[:3, -1] - self.seed_offset * m_img_flip[:3, 2]
 
         # print("m_img copy in viewer_vol: {}".format(m_img_copy))
 
@@ -1368,20 +1358,14 @@ class Viewer(wx.Panel):
         # m_img[:3, 1] is from left to right direction of the coil
         # m_img[:3, 2] is from bottom to up direction of the coil
 
-        m_img_vtk = vtk.vtkMatrix4x4()
-        m_tract_vtk = vtk.vtkMatrix4x4()
-
-        for row in range(0, 4):
-            for col in range(0, 4):
-                m_img_vtk.SetElement(row, col, m_img_flip[row, col])
-                m_tract_vtk.SetElement(row, col, m_tract[row, col])
+        m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
 
         self.obj_actor.SetUserMatrix(m_img_vtk)
         # self.obj_axes.SetUserMatrix(m_rot_vtk)
         self.x_actor.SetUserMatrix(m_img_vtk)
         self.y_actor.SetUserMatrix(m_img_vtk)
         self.z_actor.SetUserMatrix(m_img_vtk)
-        self.mark_actor.SetUserMatrix(m_tract_vtk)
+        self.mark_actor.SetPosition(coord_offset)
 
         self.Refresh()
 

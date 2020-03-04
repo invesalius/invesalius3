@@ -575,19 +575,19 @@ def get_LUT_value_255(data, window, level):
     return data
 
 
-def compute_affine_vtk(affine=np.identity(4)):
+def convert_world_to_voxel(xyz, affine):
     """
-    Convert a numpy 4x4 array to a vtk 4x4 matrix
-    :param affine: 4x4 array
-    :return: vtkMatrix4x4 object representing the affine
+    Convert a coordinate from the world space ((x, y, z); scanner space; millimeters) to the
+    voxel space ((i, j, k)). This is achieved by multiplying a coordinate by the inverse
+    of the affine transformation.
+    More information: https://nipy.org/nibabel/coordinate_systems.html
+    :param xyz: a list or array of 3 coordinates (x, y, z) in the world coordinates
+    :param affine: a 4x4 array containing the image affine transformation in homogeneous coordinates
+    :return: a 1x3 array with the point coordinates in image space (i, j, k)
     """
-    # test for type and shape of affine matrix
-    assert isinstance(affine, np.ndarray)
-    assert affine.shape == (4, 4)
+    # convert xyz coordinate to 1x4 homogeneous coordinates array
+    xyz_homo = np.hstack((xyz, 1.)).reshape([4, 1])
+    ijk_homo = np.linalg.inv(affine) @ xyz_homo
+    ijk = ijk_homo.T[np.newaxis, 0, :3]
 
-    affine_vtk = vtk.vtkMatrix4x4()
-    for row in range(0, 4):
-        for col in range(0, 4):
-            affine_vtk.SetElement(row, col, affine[row, col])
-
-    return affine_vtk
+    return ijk

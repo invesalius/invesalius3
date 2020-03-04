@@ -451,13 +451,15 @@ class CoordinateCorregistrate(threading.Thread):
             # print(f"Set the coordinate")
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord, m_img = corregistrate_final(coreg_data, coord_raw)
-            self.pipeline.set_message((coord, m_img))
+            m_img_flip = m_img.copy()
+            m_img_flip[1, -1] = -m_img_flip[1, -1]
+            self.pipeline.set_message(m_img_flip)
 
-            # # print(f"Pubsub the coregistered coordinate: {coord}")
+            # print(f"Pubsub the coregistered coordinate: {coord}")
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-            #
-            # # The sleep has to be in both threads
+
+            # The sleep has to be in both threads
             sleep(self.sle)
 
 # def GetCoordinatesProducer(trck_info, queue, event):
