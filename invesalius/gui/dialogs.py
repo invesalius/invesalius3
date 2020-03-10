@@ -58,6 +58,7 @@ import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius.data.bases as bases
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
@@ -3592,6 +3593,218 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(self):
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata
 
+class ICPCorregistrationDialog(wx.Dialog):
+
+    def __init__(self, nav_prop):
+        import invesalius.project as prj
+        import vtk
+
+        self.__bind_events()
+
+
+        self.tracker_id = nav_prop[0]
+        self.trk_init = nav_prop[1]
+        self.obj_ref_id = 2
+        self.obj_name = None
+        self.polydata = None
+        self.m_icp = None
+        self.icp_mode = 0
+        self.staticballs = []
+        self.point_coord = []
+        self.transformed_points = []
+
+        self.obj_fiducials = np.full([5, 3], np.nan)
+        self.obj_orients = np.full([5, 3], np.nan)
+
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"ICP Corregistration"), size=(450, 440),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        proj = prj.Project()
+        #todo: dialog to select surface
+        self.surface = proj.surface_dict[1].polydata
+
+        self._init_gui()
+        self.LoadObject()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
+
+    def UpdateCurrentCoord(self, arg, position):
+        self.current_coord = position[:]
+
+    def _init_gui(self):
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.Enable(1)
+        self.ren = vtk.vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(self.ren)
+
+        create_point = wx.Button(self, -1, label=_('Create point'))
+        create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+
+        icp = wx.Button(self, -1, label=_('icp'))
+        icp.Bind(wx.EVT_BUTTON, self.OnICP)
+
+        # Buttons to finish or cancel object registration
+        tooltip = wx.ToolTip(_(u"Registration done"))
+        # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
+        btn_ok.SetToolTip(tooltip)
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        # ComboBox for tracker reference mode
+        tooltip = wx.ToolTip(_("Choose the ICP method"))
+        choice_icp_method = wx.ComboBox(self, -1, "",
+                                        choices=([_("Affine"), _("Similarity"), _("RigidBody")]), style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        choice_icp_method.SetSelection(0)
+        choice_icp_method.SetToolTip(tooltip)
+        choice_icp_method.Bind(wx.EVT_COMBOBOX, self.OnChoiceICPMethod)
+
+        extra_sizer = wx.FlexGridSizer(rows=4, cols=1, hgap=50, vgap=30)
+        extra_sizer.AddMany([create_point,
+                             choice_icp_method,
+                             icp,
+                             btnsizer])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.interactor, 0, wx.EXPAND)
+        main_sizer.Add(extra_sizer, 0,
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def LoadObject(self):
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(self.surface)
+        #mapper.ScalarVisibilityOff()
+        #mapper.ImmediateModeRenderingOn()
+
+        obj_actor = vtk.vtkActor()
+        obj_actor.SetMapper(mapper)
+
+        self.ren.AddActor(obj_actor)
+        self.ren.ResetCamera()
+
+        self.interactor.Render()
+
+    def AddMarker(self, size, colour, coord):
+        """
+        Markers created by navigation tools and rendered in volume viewer.
+        """
+
+        x, y, z = bases.flip_x(coord)
+
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(size)
+        ball_ref.SetCenter(x, y, z)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_ref.GetOutputPort())
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(colour[0:3])
+
+        #adding a new actor for the present ball
+        sphere_actor = vtk.vtkActor()
+
+        sphere_actor.SetMapper(mapper)
+        sphere_actor.SetProperty(prop)
+
+        self.ren.AddActor(sphere_actor)
+        self.point_coord.append([x, y, z])
+
+        self.Refresh()
+
+    def vtkmatrix_to_numpy(self, matrix):
+        """
+        Copies the elements of a vtkMatrix4x4 into a numpy array.
+
+        :param matrix: The matrix to be copied into an array.
+        :type matrix: vtk.vtkMatrix4x4
+        :rtype: numpy.ndarray
+        """
+        m = np.ones((4, 4))
+        for i in range(4):
+            for j in range(4):
+                m[i, j] = matrix.GetElement(i, j)
+        return m
+
+    def OnChoiceICPMethod(self, evt):
+        self.icp_mode = evt.GetSelection()
+
+    def OnICP(self, evt):
+        sourcePoints = np.array(self.point_coord)
+        sourcePoints_vtk = vtk.vtkPoints()
+
+        for i in range(len(sourcePoints)):
+            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
+
+        source = vtk.vtkPolyData()
+        source.SetPoints(sourcePoints_vtk)
+
+        icp = vtk.vtkIterativeClosestPointTransform()
+        icp.SetSource(source)
+        icp.SetTarget(self.surface)
+
+        if self.icp_mode == 0:
+            print("Affine mode")
+            icp.GetLandmarkTransform().SetModeToAffine()
+        elif self.icp_mode == 1:
+            print("Similarity mode")
+            icp.GetLandmarkTransform().SetModeToSimilarity()
+        elif self.icp_mode == 2:
+            print("Rigid mode")
+            icp.GetLandmarkTransform().SetModeToRigidBody()
+
+        icp.DebugOn()
+        icp.SetMaximumNumberOfIterations(5000)
+
+        icp.Modified()
+
+        icp.Update()
+
+        self.m_icp = self.vtkmatrix_to_numpy(icp.GetMatrix())
+
+        icpTransformFilter = vtk.vtkTransformPolyDataFilter()
+        icpTransformFilter.SetInputData(source)
+
+        icpTransformFilter.SetTransform(icp)
+        icpTransformFilter.Update()
+
+        transformedSource = icpTransformFilter.GetOutput()
+
+        for i in range(transformedSource.GetNumberOfPoints()):
+            p = [0, 0, 0]
+            transformedSource.GetPoint(i, p)
+            self.transformed_points.append(p)
+            point = vtk.vtkSphereSource()
+            point.SetCenter(p)
+            point.SetRadius(3)
+            point.SetPhiResolution(3)
+            point.SetThetaResolution(3)
+
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(point.GetOutputPort())
+
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor((0,1,0))
+
+            self.ren.AddActor(actor)
+        self.Refresh()
+
+    def OnCreatePoint(self, evt):
+        self.AddMarker(3,(1,0,0),self.current_coord[:3])
+
+    def GetValue(self):
+        return self.m_icp, self.point_coord, self.transformed_points
 
 class SurfaceProgressWindow(object):
     def __init__(self):

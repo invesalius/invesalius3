@@ -23,9 +23,11 @@ from time import sleep
 from numpy import asmatrix, mat, degrees, radians, identity
 import wx
 from wx.lib.pubsub import pub as Publisher
+import numpy as np
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
+import invesalius.data.bases as bases
 
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
 
@@ -91,14 +93,24 @@ class CoregistrationDynamic(threading.Thread):
 
     def __init__(self, coreg_data, nav_id, trck_info):
         threading.Thread.__init__(self)
+        self.__bind_events()
         self.coreg_data = coreg_data
         self.nav_id = nav_id
         self.trck_info = trck_info
+        self.m_icp = None
+        self.icp = False
         self._pause_ = False
         self.start()
 
     def stop(self):
         self._pause_ = True
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateICP, 'Update ICP matrix')
+
+    def UpdateICP(self, m_icp, flag):
+        self.m_icp = m_icp
+        self.icp = flag
 
     def run(self):
         m_change, obj_ref_mode = self.coreg_data
@@ -120,7 +132,14 @@ class CoregistrationDynamic(threading.Thread):
             m_dyn = m_ref.I * m_probe
             m_dyn[2, -1] = -m_dyn[2, -1]
 
+            #a multiplicacao nao pode ser direta m_icp * m_change * m_dyn, deve ser feita separadamente  m_icp * (m_change * m_dyn)
             m_img = m_change * m_dyn
+            if self.icp:
+                flip = m_img[0, -1], m_img[1, -1], m_img[2, -1]
+                m_img[0, -1], m_img[1, -1], m_img[2, -1] = bases.flip_x(flip)
+                coord_img = np.transpose(np.array([m_img[0, -1], m_img[1, -1], m_img[2, -1], m_img[3, -1]]))
+                m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = self.m_icp @ coord_img
+                m_img[1, -1] = -m_img[1, -1]
 
             scale, shear, angles, trans, persp = tr.decompose_matrix(m_img)
 

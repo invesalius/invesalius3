@@ -290,11 +290,13 @@ class NeuronavigationPanel(wx.Panel):
         self.correg = None
         self.current_coord = 0, 0, 0
         self.trk_init = None
+        self.nav_status = False
         self.trigger = None
         self.trigger_state = False
         self.obj_reg = None
         self.obj_reg_status = False
         self.track_obj = False
+        self.m_icp = None
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -360,6 +362,16 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.SetToolTip(tooltip)
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
+        icp_button = wx.Button(self, -1,_("icp"))
+        icp_button.Bind(wx.EVT_BUTTON, self.OnICP)
+        self.icp_button = icp_button
+
+        checkicp = wx.CheckBox(self, -1, _(' '))
+        checkicp.SetValue(False)
+        checkicp.Enable(0)
+        checkicp.Bind(wx.EVT_CHECKBOX, partial(self.Oncheckicp, ctrl=checkicp))
+        self.checkicp = checkicp
+
         # Image and tracker coordinates number controls
         for m in range(len(self.btns_coord)):
             for n in range(3):
@@ -380,10 +392,12 @@ class NeuronavigationPanel(wx.Panel):
                 if m in range(1, 6):
                     self.numctrls_coord[m][n].SetEditable(False)
 
-        nav_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        nav_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=5, vgap=5)
         nav_sizer.AddMany([(txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
-                           (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+                           (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                           (icp_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                           (checkicp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
         group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
         group_sizer.AddGrowableCol(0, 1)
@@ -409,6 +423,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -419,6 +434,13 @@ class NeuronavigationPanel(wx.Panel):
                 self.fiducials[btn_id, :] = coord[0:3]
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
+
+    def UpdateNavigationStatus(self, status):
+        self.nav_status = status
+        if status:
+            self.checkicp.Enable(True)
+        else:
+            self.checkicp.Enable(False)
 
     def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
@@ -564,6 +586,28 @@ class NeuronavigationPanel(wx.Panel):
             self.fiducials[btn_id, :] = coord[0:3]
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
+
+    def OnICP(self, evt):
+        dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
+        if dialog.ShowModal() == wx.ID_OK:
+            self.m_icp, point_coord, transformed_points = dialog.GetValue()
+            #create markers
+            for i in range(len(point_coord)):
+                img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
+                transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
+                Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
+                Publisher.sendMessage('Create marker',  coord=transf_coord, marker_id=None, colour=(0,0,1))
+        else:
+            self.m_icp = None
+
+    def Oncheckicp(self, evt, ctrl):
+        if ctrl.GetValue() and evt and (self.m_icp is not None):
+            self.icp = True
+            self.icp_button.Enable(0)
+        else:
+            self.icp_button.Enable(1)
+            self.icp = False
+        Publisher.sendMessage("Update ICP matrix", m_icp=self.m_icp, flag=self.icp)
 
     def OnNavigate(self, evt, btn):
         btn_nav = btn[0]
@@ -1201,16 +1245,18 @@ class MarkersPanel(wx.Panel):
             self.marker_ind -= 1
         Publisher.sendMessage('Remove marker', index=index)
 
-    def OnCreateMarker(self, evt=None, coord=None, marker_id=None):
+    def OnCreateMarker(self, evt=None, coord=None, marker_id=None, colour=None):
         # OnCreateMarker is used for both pubsub and button click events
         # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
+        if not colour:
+            colour = self.marker_colour
+        if not coord:
+            coord = self.current_coord
+
         if evt is None:
-            if coord:
-                self.CreateMarker(coord, (0.0, 1.0, 0.0), self.marker_size, marker_id)
-            else:
-                self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
+            self.CreateMarker(coord, colour, self.marker_size, marker_id)
         else:
-            self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
+            self.CreateMarker(self.current_coord, colour, self.marker_size, marker_id)
 
     def OnLoadMarkers(self, evt):
         filepath = dlg.ShowLoadMarkersDialog()
@@ -1299,7 +1345,8 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Add marker', ball_id=self.marker_ind, size=size, colour=colour,  coord=coord[0:3])
 
         self.marker_ind += 1
-
+        if not marker_id:
+            marker_id = ""
         # List of lists with coordinates and properties of a marker
 
         line = [coord[0], coord[1], coord[2], coord[3], coord[4], coord[5], colour[0], colour[1], colour[2], size, marker_id]

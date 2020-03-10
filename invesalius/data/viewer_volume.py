@@ -165,6 +165,8 @@ class Viewer(wx.Panel):
         self.obj_state = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
+        self.m_icp = None
+        self.icp = False
         #self.pTarget = [0., 0., 0.]
 
         # self.obj_axes = None
@@ -278,6 +280,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
+        Publisher.subscribe(self.UpdateICP, 'Update ICP matrix')
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
@@ -1269,6 +1272,10 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.obj_actor)
                 self.obj_actor = None
         self.Refresh()
+
+    def UpdateICP(self, m_icp, flag):
+        self.m_icp = m_icp
+        self.icp = flag
 
     def UpdateShowObjectState(self, state):
         self.obj_state = state
