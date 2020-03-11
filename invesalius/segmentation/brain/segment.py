@@ -59,7 +59,7 @@ class BrainSegmenter:
         self.mask = None
         self.propability_array = None
 
-    def segment(self, image, prob_threshold, backend, use_gpu):
+    def segment(self, image, prob_threshold, backend, use_gpu, progress_callback=None):
         if backend.lower() == 'plaidml':
             os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
             os.environ["RUNFILES_DIR"] = str(pathlib.Path("~/.local/share/plaidml/").expanduser().absolute())
@@ -89,6 +89,8 @@ class BrainSegmenter:
         msk = np.zeros_like(image, dtype="float32")
         sums = np.zeros_like(image)
         for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+            if progress_callback is not None:
+                progress_callback(completion)
             print("completion", completion)
             (iz, ez), (iy, ey), (ix, ex) = patch
             sub_mask = predict_patch(sub_image, patch, model, SIZE)

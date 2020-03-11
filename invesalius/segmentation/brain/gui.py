@@ -47,6 +47,7 @@ class MyDialog(wx.Dialog):
         self.txt_threshold = wx.TextCtrl(self, wx.ID_ANY, "")
         w, h = self.CalcSizeFromTextSize("MMMMM")
         self.txt_threshold.SetMinClientSize((w, -1))
+        self.progress = wx.Gauge(self, -1)
         self.btn_segment = wx.Button(self, wx.ID_ANY, "Segment")
 
         self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
@@ -72,6 +73,7 @@ class MyDialog(wx.Dialog):
         sizer_3.Add(self.sld_threshold, 1, wx.ALIGN_CENTER | wx.BOTTOM | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer_3.Add(self.txt_threshold, 0, wx.ALL, 5)
         main_sizer.Add(sizer_3, 0, wx.EXPAND, 0)
+        main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5)
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -111,9 +113,13 @@ class MyDialog(wx.Dialog):
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
         seg = segment.BrainSegmenter()
-        seg.segment(image, prob_threshold, backend, use_gpu)
+        seg.segment(image, prob_threshold, backend, use_gpu, self.SetProgress)
 
         Publisher.sendMessage('Reload actual slice')
+
+    def SetProgress(self, progress):
+        self.progress.SetValue(progress * 100)
+        self.Refresh()
 
 
 
