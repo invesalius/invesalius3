@@ -508,15 +508,11 @@ class Frame(wx.Frame):
             self.OnFFillSegmentation()
 
         elif id == const.ID_SEGMENTATION_BRAIN:
-            import invesalius.data.slice_ as slc
-            from invesalius.segmentation.brain import segment
+            from invesalius.segmentation.brain import gui
+            dlg = gui.MyDialog(self, -1)
+            dlg.ShowModal()
+            dlg.Destroy()
 
-            mask = slc.Slice().create_new_mask()
-            mask.was_edited = True
-            image = slc.Slice().matrix
-
-            segment.segment(image, mask)
-            Publisher.sendMessage('Reload actual slice')
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)

@@ -5,6 +5,7 @@ import os
 import pathlib
 
 import wx
+from wx.lib.pubsub import pub as Publisher
 
 HAS_THEANO = True
 HAS_PLAIDML = True
@@ -24,11 +25,12 @@ try:
 except ImportError:
     HAS_PLAIDML = False
 
+from . import segment
+
 
 
 class MyDialog(wx.Dialog):
     def __init__(self, *args, **kwds):
-        kwds["style"] = kwds.get("style", 0) | wx.DEFAULT_DIALOG_STYLE
         wx.Dialog.__init__(self, *args, **kwds)
         backends = []
         if HAS_PLAIDML:
@@ -80,6 +82,7 @@ class MyDialog(wx.Dialog):
     def __set_events(self):
         self.sld_threshold.Bind(wx.EVT_SCROLL, self.OnScrollThreshold)
         self.txt_threshold.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        self.btn_segment.Bind(wx.EVT_BUTTON, self.OnSegment)
 
     def CalcSizeFromTextSize(self, text):
         dc = wx.WindowDC(self)
@@ -100,6 +103,19 @@ class MyDialog(wx.Dialog):
             value = self.sld_threshold.GetValue()
         self.sld_threshold.SetValue(value)
         self.txt_threshold.SetValue("{:3d}%".format(value))
+
+    def OnSegment(self, evt):
+        import invesalius.data.slice_ as slc
+        image = slc.Slice().matrix
+        backend = self.cb_backends.GetValue()
+        use_gpu = self.chk_use_gpu.GetValue()
+        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        seg = segment.BrainSegmenter()
+        seg.segment(image, prob_threshold, backend, use_gpu)
+
+        Publisher.sendMessage('Reload actual slice')
+
+
 
 class MyApp(wx.App):
     def OnInit(self):
