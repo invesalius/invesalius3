@@ -91,11 +91,12 @@ class ComputeTractsThread(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, inp, affine_vtk, pipeline, event, sle):
+    def __init__(self, inp, affine_vtk, pipeline, visualization_queue, event, sle):
         threading.Thread.__init__(self, name='ComputeTractsThread')
         self.inp = inp
         self.affine_vtk = affine_vtk
         self.pipeline = pipeline
+        self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
 
@@ -109,64 +110,110 @@ class ComputeTractsThread(threading.Thread):
         root = vtk.vtkMultiBlockDataSet()
 
         # Compute the tracts
+        # while True:
+        print('ComputeTractsThread: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
-            if self.pipeline.event.is_set():
-                # print("Computing tracts")
-                m_img_flip = self.pipeline.get_message()
+            # if self.pipeline.event.is_set():
+            # print("Computing tracts")
+            print('ComputeTractsThread: get {}'.format(count))
+            coord, m_img, m_img_flip = self.pipeline.get()
+            # m_img_flip = self.pipeline.get_message()
 
-                if np.any(m_img_flip):
+            # if np.any(m_img_flip):
 
-                    # 20200402: in this new refactored version the m_img comes different than the position
-                    # the new version m_img is already flixped in y, which means that Y is negative
-                    # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
-                    # but check all pipeline before why now the m_img comes different than position
-                    # 20200403: indeed flip_x is just a -1 multiplication to the Y coordinate, remove function flip_x
-                    # m_img_flip = m_img.copy()
-                    # m_img_flip[1, -1] = -m_img_flip[1, -1]
+            # 20200402: in this new refactored version the m_img comes different than the position
+            # the new version m_img is already flixped in y, which means that Y is negative
+            # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
+            # but check all pipeline before why now the m_img comes different than position
+            # 20200403: indeed flip_x is just a -1 multiplication to the Y coordinate, remove function flip_x
+            # m_img_flip = m_img.copy()
+            # m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                    # translate the coordinate along the normal vector of the object/coil
-                    p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
-                    dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
-                    p_old = p_new.copy()
+            # translate the coordinate along the normal vector of the object/coil
+            p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+            dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
+            p_old = p_new.copy()
 
-                    seed_trk = img_utils.convert_world_to_voxel(p_new, affine)
-                    # Juuso's
-                    # seed = np.array([[-8.49, -8.39, 2.5]])
-                    # Baran M1
-                    # seed = np.array([[27.53, -77.37, 46.42]])
-                    # print("Seed: {}".format(seed))
-                    trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
+            # seed_trk = img_utils.convert_world_to_voxel(p_new, affine)
+            # Juuso's
+            # seed_trk = np.array([[-8.49, -8.39, 2.5]])
+            # Baran M1
+            seed_trk = np.array([[27.53, -77.37, 46.42]])
+            # print("Seed: {}".format(seed))
+            trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
 
-                    # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=position)
-                    # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=position)
+            # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=position)
+            # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=position)
 
-                    if trekker.run():
-                        # print("dist: {}".format(dist))
-                        if dist >= seed_radius:
-                            # n_tracts = 0
-                            trk_list = trekker.run()
-                            root = tracts_computation(trk_list, root, n_tracts)
-                            n_tracts = len(trk_list)
-                            # print("New tracts: ", n_tracts)
-                            count += 1
-                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
-                            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                                         affine_vtk=self.affine_vtk, count=count)
-                        elif dist < seed_radius and n_tracts < n_tracts_total:
-                            # Compute the tracts
-                            trk_list.extend(trekker.run())
-                            root = tracts_computation(trk_list, root, n_tracts)
-                            n_tracts = len(trk_list)
-                            # print("Adding tracts: ", n_tracts)
-                            count += 1
-                            wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
-                            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                                         affine_vtk=self.affine_vtk, count=count)
+            if trekker.run():
+                # print("dist: {}".format(dist))
+                if dist >= seed_radius:
+                    # n_tracts = 0
+                    trk_list = trekker.run()
+                    root = tracts_computation(trk_list, root, n_tracts)
+                    n_tracts = len(trk_list)
+                    # print("New tracts: ", n_tracts)
+                    # count += 1
+                    # wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
+                    # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                    #              affine_vtk=self.affine_vtk, count=count)
+                elif dist < seed_radius and n_tracts < n_tracts_total:
+                    # Compute the tracts
+                    trk_list.extend(trekker.run())
+                    root = tracts_computation(trk_list, root, n_tracts)
+                    n_tracts = len(trk_list)
+                    # print("Adding tracts: ", n_tracts)
+                    # count += 1
+                else:
+                    root = None
+                    # wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
+                    # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                    #              affine_vtk=self.affine_vtk, count=count)
+                # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
+                # maybe use a flag that indicates the existence or not of the root and in the update scene check for it
+                print('ComputeTractsThread: put {}'.format(count))
+                self.visualization_queue.put([coord, m_img, root])
+                print('ComputeTractsThread: done {}'.format(count))
+                self.pipeline.task_done()
+                count += 1
+                # this logic is a bit stupid because it has to compute the actors every loop, better would be
+                # to check the distance and update actors in viewer volume, but that would require that each
+                # loop outputs one actor which is a fiber bundle, and if the dist is < 3 and n_tract > n_total
+                # do nothing
 
-                        # this logic is a bit stupid because it has to compute the actors every loop, better would be
-                        # to check the distance and update actors in viewer volume, but that would require that each
-                        # loop outputs one actor which is a fiber bundle, and if the dist is < 3 and n_tract > n_total
-                        # do nothing
+            time.sleep(self.sle)
+
+
+class UpdateNavigationScene(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, affine_vtk, visualization_queue, event, sle):
+        threading.Thread.__init__(self, name='UpdateScene')
+        self.visualization_queue = visualization_queue
+        self.affine_vtk = affine_vtk
+        self.sle = sle
+        self.event = event
+
+    def run(self):
+        count = 0
+        while not self.event.is_set():
+            print('UpdateScene: get {}'.format(count))
+            coord, m_img, root = self.visualization_queue.get()
+
+            wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=0)
+            wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                         affine_vtk=self.affine_vtk, count=0)
+            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+
+            print('UpdateScene: done {}'.format(count))
+            self.visualization_queue.task_done()
+            count += 1
 
             time.sleep(self.sle)
 
