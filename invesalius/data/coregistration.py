@@ -445,19 +445,26 @@ class CoordinateCorregistrate(threading.Thread):
         # event = self.event
         trck_info = self.trck_info
         coreg_data = self.coreg_data
+        count = 0
 
         trck_init, trck_id, trck_mode = trck_info
+        print('CoordCoreg: event {}'.format(self.event.is_set()))
+        # while True:
         while not self.event.is_set():
             # print(f"Set the coordinate")
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord, m_img = corregistrate_final(coreg_data, coord_raw)
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
-            self.pipeline.set_message(m_img_flip)
+            # self.pipeline.set_message(m_img_flip)
+            print('CoordCoreg: put {}'.format(count))
+            self.pipeline.put([coord, m_img, m_img_flip])
+            count += 1
+            # self.pipeline.task_done()
 
             # print(f"Pubsub the coregistered coordinate: {coord}")
-            wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
-            wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+            # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+            # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
             # The sleep has to be in both threads
             sleep(self.sle)

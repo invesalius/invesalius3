@@ -20,6 +20,7 @@
 from functools import partial
 import sys
 import os
+import queue
 # import psutil
 
 import numpy as np
@@ -317,6 +318,14 @@ class NeuronavigationPanel(wx.Panel):
         self.obj_reg_status = False
         self.track_obj = False
         self.event = threading.Event()
+
+        # self.coord_queue = queue.Queue()
+        # self.tracts_queue = queue.Queue()
+        # self.visualization_queue = queue.Queue()
+
+        self.coord_queue = QueueCustom(maxsize=4)
+        # self.tracts_queue = QueueCustom()
+        self.visualization_queue = QueueCustom(maxsize=4)
 
         # Tractography parameters
         self.trk_inp = None
@@ -660,6 +669,21 @@ class NeuronavigationPanel(wx.Panel):
         if not nav_id:
             self.event.set()
 
+            print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+            print("vis unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            self.coord_queue.clear()
+            self.visualization_queue.clear()
+            # self.tracts_queue.clear()
+
+            print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+            print("vis after unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            self.coord_queue.join()
+            # self.tracts_queue.join()
+            self.visualization_queue.join()
+
+            print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+            print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
 
@@ -742,18 +766,27 @@ class NeuronavigationPanel(wx.Panel):
                                 if self.event.is_set():
                                     self.event.clear()
 
-                                pipeline = PipelineSimple()
+                                # pipeline = PipelineSimple()
                                 jobs_list = []
                                 # this works with sleep of 0.25 for each thread
-                                jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                                                                             self.sleep_nav))
+                                # jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                                #                                              self.sleep_nav))
+                                jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, self.coord_queue,
+                                                                             self.event, self.sleep_nav))
                                 if self.view_tracts:
                                     # print("Appending the tract computation thread!")
-                                    jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, pipeline,
-                                                                             self.event, self.sleep_nav))
+                                    # jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, pipeline,
+                                    #                                          self.event, self.sleep_nav))
+                                    jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, self.coord_queue,
+                                                                             self.visualization_queue, self.event,
+                                                                             self.sleep_nav))
+                                jobs_list.append(dti.UpdateNavigationScene(affine_vtk, self.visualization_queue,
+                                                                           self.event, self.sleep_nav))
 
                                 for jobs in jobs_list:
+                                    # jobs.daemon = True
                                     jobs.start()
+                                    # del jobs
 
                             else:
                                 # TODO: not properly tested, please check that all possible navigation modes work in the new
@@ -1737,10 +1770,14 @@ class TractographyPanel(wx.Panel):
 
     def OnLinkFOD(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
-        filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_FOD)
+        # filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_FOD)
+        # Juuso
         # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
         # FOD_path = 'sub-P0_dwi_FOD.nii'
-        # filename = os.path.join(data_dir, FOD_path)
+        # Baran
+        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
+        FOD_path = 'Baran_FOD.nii'
+        filename = os.path.join(data_dir, FOD_path)
 
         if not self.affine_vtk:
             slic = sl.Slice()
@@ -1846,3 +1883,29 @@ class PipelineSimple:
         with self.locks:
             self.message = message
             self.event.set()
+
+
+class QueueCustom(queue.LifoQueue):
+    """
+    A custom queue subclass that provides a :meth:`clear` method.
+    https://stackoverflow.com/questions/6517953/clear-all-items-from-the-queue
+    Modified to a LIFO Queue type (Last-in-first-out). Seems to make sense for the navigation
+    threads, as the last added coordinate should be the first to be processed.
+    In the first tests in a short run, seems to increase the coord queue size considerably,
+    possibly limiting the queue size is good.
+    """
+
+    def clear(self):
+        """
+        Clears all items from the queue.
+        """
+
+        with self.mutex:
+            unfinished = self.unfinished_tasks - len(self.queue)
+            if unfinished <= 0:
+                if unfinished < 0:
+                    raise ValueError('task_done() called too many times')
+                self.all_tasks_done.notify_all()
+            self.unfinished_tasks = unfinished
+            self.queue.clear()
+            self.not_full.notify_all()
