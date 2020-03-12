@@ -199,6 +199,13 @@ def flip_x_m(point):
 
     return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
 
+def transform_icp(m_img, m_icp):
+    coord_img = np.hstack((flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]]), 1.)).reshape([4, 1])
+    m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
+    m_img[0, -1], m_img[1, -1], m_img[2, -1] = flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]])
+
+    return m_img
+
 
 def object_registration(fiducials, orients, coord_raw, m_change):
     """
