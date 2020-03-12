@@ -23,6 +23,7 @@ import os
 import random
 import sys
 import time
+from functools import partial
 
 from concurrent import futures
 
@@ -63,6 +64,7 @@ from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
+from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
 
@@ -3597,17 +3599,17 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def __init__(self, nav_prop):
         import invesalius.project as prj
-        import vtk
 
         self.__bind_events()
-
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
         self.obj_ref_id = 2
         self.obj_name = None
+        self.obj_actor = None
         self.polydata = None
         self.m_icp = None
+        self.initial_focus = None
         self.icp_mode = 0
         self.staticballs = []
         self.point_coord = []
@@ -3619,12 +3621,9 @@ class ICPCorregistrationDialog(wx.Dialog):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"ICP Corregistration"), size=(450, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
-        proj = prj.Project()
-        #todo: dialog to select surface
-        self.surface = proj.surface_dict[1].polydata
+        self.proj = prj.Project()
 
         self._init_gui()
-        self.LoadObject()
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
@@ -3638,27 +3637,40 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren = vtk.vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
+        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+
+        combo_surface_name = wx.ComboBox(self, -1,
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        for n in range(len(self.proj.surface_dict)):
+            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        self.combo_surface_name = combo_surface_name
+
+        init_surface = 0
+        combo_surface_name.SetSelection(init_surface)
+        self.surface = self.proj.surface_dict[init_surface].polydata
+        self.LoadActor()
+
         create_point = wx.Button(self, -1, label=_('Create point'))
         create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
 
-        icp = wx.Button(self, -1, label=_('icp'))
+        cont_point = wx.ToggleButton(self, -1, label=_('Continuous acquisition'))
+        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+
+        btn_acqui_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btn_acqui_sizer.AddMany([(create_point, wx.LEFT),
+                                 (cont_point, wx.RIGHT)])
+
+        icp = wx.Button(self, -1, label=_('Apply registration'))
         icp.Bind(wx.EVT_BUTTON, self.OnICP)
 
-        # Buttons to finish or cancel object registration
-        tooltip = wx.ToolTip(_(u"Registration done"))
-        # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
-        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
-        btn_ok.SetToolTip(tooltip)
-
-        btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        btn_cancel.SetHelpText("")
-
-        btnsizer = wx.StdDialogButtonSizer()
-        btnsizer.AddButton(btn_ok)
-        btnsizer.AddButton(btn_cancel)
-        btnsizer.Realize()
-
-        # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_("Choose the ICP method"))
         choice_icp_method = wx.ComboBox(self, -1, "",
                                         choices=([_("Affine"), _("Similarity"), _("RigidBody")]), style=wx.CB_DROPDOWN|wx.CB_READONLY)
@@ -3666,13 +3678,35 @@ class ICPCorregistrationDialog(wx.Dialog):
         choice_icp_method.SetToolTip(tooltip)
         choice_icp_method.Bind(wx.EVT_COMBOBOX, self.OnChoiceICPMethod)
 
-        extra_sizer = wx.FlexGridSizer(rows=4, cols=1, hgap=50, vgap=30)
-        extra_sizer.AddMany([create_point,
-                             choice_icp_method,
-                             icp,
+        btn_icp_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btn_icp_sizer.AddMany([(choice_icp_method, wx.LEFT),
+                               (icp, wx.RIGHT)])
+
+
+        # Buttons to finish or cancel object registration
+        tooltip = wx.ToolTip(_(u"ICP done"))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
+        btn_ok.SetToolTip(tooltip)
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btnsizer.AddMany([(btn_ok, wx.LEFT),
+                          (btn_cancel, wx.RIGHT)])
+
+
+        top_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=5)
+        top_sizer.AddMany([txt_surface,
+                           combo_surface_name])
+
+        extra_sizer = wx.FlexGridSizer(rows=3, cols=1, hgap=50, vgap=10)
+        extra_sizer.AddMany([btn_acqui_sizer,
+                             btn_icp_sizer,
                              btnsizer])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(top_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(extra_sizer, 0,
                        wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
@@ -3680,7 +3714,15 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def LoadObject(self):
+    def OnComboName(self, evt):
+        surface_name = evt.GetString()
+        surface_index = evt.GetSelection()
+        self.surface = self.proj.surface_dict[surface_index].polydata
+        if self.obj_actor:
+            self.RemoveActor()
+        self.LoadActor()
+
+    def LoadActor(self):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         #mapper.ScalarVisibilityOff()
@@ -3688,10 +3730,17 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)
+        self.obj_actor = obj_actor
 
         self.ren.AddActor(obj_actor)
         self.ren.ResetCamera()
+        self.interactor.Render()
 
+    def RemoveActor(self):
+        #self.ren.RemoveActor(self.obj_actor)
+        self.ren.RemoveAllViewProps()
+        self.point_coord = []
+        self.ren.ResetCamera()
         self.interactor.Render()
 
     def AddMarker(self, size, colour, coord):
@@ -3800,8 +3849,43 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.ren.AddActor(actor)
         self.Refresh()
 
+    def SetCameraVolume(self, position):
+        cam_focus = np.array(bases.flip_x(position[:3]))
+        cam = self.ren.GetActiveCamera()
+
+        if self.initial_focus is None:
+            self.initial_focus = np.array(cam.GetFocalPoint())
+
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus - self.initial_focus)
+
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1/v1n)*v0n + cam_focus
+
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
+        self.Refresh()
+
+    def OnContinuousAcquisition(self, evt, btn):
+        value = btn.GetValue()
+        if value:
+            self.timer.Start(500)
+        else:
+            self.timer.Stop()
+
+    def OnUpdate(self, event):
+        self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
+        self.SetCameraVolume(self.current_coord[:3])
+
     def OnCreatePoint(self, evt):
         self.AddMarker(3,(1,0,0),self.current_coord[:3])
+        self.SetCameraVolume(self.current_coord[:3])
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.transformed_points
