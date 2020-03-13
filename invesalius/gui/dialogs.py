@@ -3660,6 +3660,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         cont_point = wx.ToggleButton(self, -1, label=_('Continuous acquisition'))
         cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
+        self.cont_point = cont_point
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
@@ -3774,7 +3775,6 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.Refresh()
 
-
     def SetProgress(self, progress):
         self.progress.SetValue(progress * 100)
         self.Refresh()
@@ -3798,6 +3798,9 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def OnICP(self, evt):
         self.SetProgress(0.3)
+        if self.cont_point:
+            self.cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
         sourcePoints = np.array(self.point_coord)
         sourcePoints_vtk = vtk.vtkPoints()
 
@@ -3883,7 +3886,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         cam.SetPosition(cam_pos)
         self.Refresh()
 
-    def OnContinuousAcquisition(self, evt, btn):
+    def OnContinuousAcquisition(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(500)
