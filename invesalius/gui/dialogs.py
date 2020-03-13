@@ -3705,11 +3705,14 @@ class ICPCorregistrationDialog(wx.Dialog):
                              btn_icp_sizer,
                              btnsizer])
 
+        self.progress = wx.Gauge(self, -1)
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(top_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(extra_sizer, 0,
                        wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+        main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -3771,6 +3774,11 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.Refresh()
 
+
+    def SetProgress(self, progress):
+        self.progress.SetValue(progress * 100)
+        self.Refresh()
+
     def vtkmatrix_to_numpy(self, matrix):
         """
         Copies the elements of a vtkMatrix4x4 into a numpy array.
@@ -3789,6 +3797,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.icp_mode = evt.GetSelection()
 
     def OnICP(self, evt):
+        self.SetProgress(0.3)
         sourcePoints = np.array(self.point_coord)
         sourcePoints_vtk = vtk.vtkPoints()
 
@@ -3812,8 +3821,8 @@ class ICPCorregistrationDialog(wx.Dialog):
             print("Rigid mode")
             icp.GetLandmarkTransform().SetModeToRigidBody()
 
-        icp.DebugOn()
-        icp.SetMaximumNumberOfIterations(5000)
+        #icp.DebugOn()
+        icp.SetMaximumNumberOfIterations(1000)
 
         icp.Modified()
 
@@ -3828,6 +3837,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         icpTransformFilter.Update()
 
         transformedSource = icpTransformFilter.GetOutput()
+
+        self.SetProgress(1)
 
         for i in range(transformedSource.GetNumberOfPoints()):
             p = [0, 0, 0]
