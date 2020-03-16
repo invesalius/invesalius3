@@ -288,6 +288,16 @@ def create_dicom_thumbnails(image, window=None, level=None):
         return thumbnail_path
 
 
+
+def array2memmap(arr, filename=None):
+    if filename is None:
+        filename = tempfile.mktemp(prefix='inv3_', suffix='.dat')
+    matrix = numpy.memmap(filename, mode='w+', dtype=arr.dtype, shape=arr.shape)
+    matrix[:] = arr[:]
+    matrix.flush()
+    return matrix
+
+
 def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and

@@ -758,6 +758,34 @@ class UpdateMessageDialog(wx.Dialog):
         self.Destroy()
 
 
+class MessageBox(wx.Dialog):
+    def __init__(self, parent, title, message, caption="InVesalius3 Error"):
+        wx.Dialog.__init__(self, parent, title=caption, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+
+        title_label = wx.StaticText(self, -1, title)
+
+        text = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.BORDER_NONE)
+        text.SetValue(message)
+        text.SetBackgroundColour(wx.SystemSettings.GetColour(4))
+
+        width, height = text.GetTextExtent("O"*30)
+        text.SetMinSize((width, -1))
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.Realize()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(title_label, 0, wx.ALIGN_CENTRE|wx.ALL|wx.EXPAND, 5)
+        sizer.Add(text, 1, wx.ALIGN_CENTRE|wx.ALL|wx.EXPAND, 5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.ALL, 5)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Center()
+        self.ShowModal()
+
+
 def SaveChangesDialog__Old(filename):
     message = _("The project %s has been modified.\nSave changes?")%filename
     dlg = MessageDialog(message)
