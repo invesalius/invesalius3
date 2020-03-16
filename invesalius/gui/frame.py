@@ -20,6 +20,7 @@
 import math
 import os.path
 import platform
+import subprocess
 import sys
 import webbrowser
 
@@ -534,6 +535,9 @@ class Frame(wx.Frame):
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage('New mask from shortcut')
 
+        elif id == const.ID_PLUGINS_SHOW_PATH:
+            self.ShowPluginsFolder()
+
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
         Publisher.sendMessage('Deactive target button')
@@ -742,6 +746,19 @@ class Frame(wx.Frame):
     def OnCropMask(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
 
+    def ShowPluginsFolder(self):
+        """
+        Show getting started window.
+        """
+        inv_paths.create_conf_folders()
+        path = str(inv_paths.USER_PLUGINS_DIRECTORY)
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -755,6 +772,7 @@ class MenuBar(wx.MenuBar):
         wx.MenuBar.__init__(self)
 
         self.parent = parent
+        self._plugins_menu_ids = {}
 
         # Used to enable/disable menu items if project is opened or
         # not. Eg. save should only be available if a project is open
@@ -808,6 +826,8 @@ class MenuBar(wx.MenuBar):
         sub(self.OnShowMask, "Show mask")
         sub(self.OnUpdateSliceInterpolation, "Update Slice Interpolation MenuBar")
         sub(self.OnUpdateNavigationMode, "Update Navigation Mode MenuBar")
+
+        sub(self.AddPluginsItems, "Add plugins menu items")
 
         self.num_masks = 0
 
@@ -1003,6 +1023,10 @@ class MenuBar(wx.MenuBar):
 
         self.actived_navigation_mode = self.mode_menu
 
+        plugins_menu = wx.Menu()
+        plugins_menu.Append(const.ID_PLUGINS_SHOW_PATH, _("Open Plugins folder"))
+        self.plugins_menu = plugins_menu
+
         # HELP
         help_menu = wx.Menu()
         help_menu.Append(const.ID_START, _("Getting started..."))
@@ -1020,11 +1044,24 @@ class MenuBar(wx.MenuBar):
         self.Append(file_edit, _("Edit"))
         self.Append(view_menu, _(u"View"))
         self.Append(tools_menu, _(u"Tools"))
+        self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
+        plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
+
+    def OnPluginMenu(self, evt):
+        id = evt.GetId()
+        if id != const.ID_PLUGINS_SHOW_PATH:
+            try:
+                plugin_name = self._plugins_menu_ids[id]["name"]
+                print("Loading plugin:", plugin_name)
+                Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
+            except KeyError:
+                print("Invalid plugin")
+        evt.Skip()
 
     def SliceInterpolationStatus(self):
         
@@ -1052,6 +1089,18 @@ class MenuBar(wx.MenuBar):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
+    def AddPluginsItems(self, items):
+        for menu_item in self.plugins_menu.GetMenuItems():
+            if menu_item.GetId() != const.ID_PLUGINS_SHOW_PATH:
+                self.plugins_menu.DestroyItem(menu_item)
+
+        for item in items:
+            _new_id = wx.NewId()
+            self._plugins_menu_ids[_new_id] = items[item]
+            menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
+            menu_item.Enable(items[item]["enable_startup"])
+            print(">>> menu", item)
+
     def OnEnableState(self, state):
         """
         Based on given state, enables or disables menu items which
@@ -1069,12 +1118,22 @@ class MenuBar(wx.MenuBar):
         for item in self.enable_items:
             self.Enable(item, False)
 
+        # Disabling plugins menus that needs a project open
+        for item in self._plugins_menu_ids:
+            if not self._plugins_menu_ids[item]["enable_startup"]:
+                self.Enable(item, False)
+
     def SetStateProjectOpen(self):
         """
         Enable menu items (e.g. save) when project is opened.
         """
         for item in self.enable_items:
             self.Enable(item, True)
+
+        # Enabling plugins menus that needs a project open
+        for item in self._plugins_menu_ids:
+            if not self._plugins_menu_ids[item]["enable_startup"]:
+                self.Enable(item, True)
 
     def OnEnableUndo(self, value):
         if value:

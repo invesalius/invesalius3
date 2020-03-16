@@ -18,7 +18,12 @@
 #--------------------------------------------------------------------------
 import os
 import plistlib
+import tempfile
+import textwrap
+
 import wx
+import numpy as np
+
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -43,6 +48,7 @@ import subprocess
 import sys
 
 from invesalius import inv_paths
+from invesalius import plugins
 
 DEFAULT_THRESH_MODE = 0
 
@@ -51,6 +57,7 @@ class Controller():
     def __init__(self, frame):
         self.surface_manager = srf.SurfaceManager()
         self.volume = volume.Volume()
+        self.plugin_manager = plugins.PluginManager()
         self.__bind_events()
         self.frame = frame
         self.progress_dialog = None
@@ -69,9 +76,12 @@ class Controller():
 
         Publisher.sendMessage('Load Preferences')
 
+        self.plugin_manager.find_plugins()
+
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnImportGroup, 'Import group')
+        Publisher.subscribe(self.OnImportFolder, 'Import folder')
         Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
@@ -112,6 +122,8 @@ class Controller():
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
         Publisher.subscribe(self.Send_affine, 'Get affine matrix')
+
+        Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -492,7 +504,32 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    #-------------------------------------------------------------------------------------
+    def OnImportFolder(self, folder):
+        Publisher.sendMessage('Begin busy cursor')
+        folder = os.path.abspath(folder)
+
+        proj = prj.Project()
+        proj.load_from_folder(folder)
+
+        self.Slice = sl.Slice()
+        self.Slice._open_image_matrix(proj.matrix_filename,
+                                      tuple(proj.matrix_shape),
+                                      proj.matrix_dtype)
+
+        self.Slice.window_level = proj.level
+        self.Slice.window_width = proj.window
+
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=proj.threshold_range)
+
+        session = ses.Session()
+        filename = proj.name+".inv3"
+        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
+        dirpath = session.CreateProject(filename)
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", state=True)
+
+        Publisher.sendMessage('End busy cursor')
 
     def LoadProject(self):
         proj = prj.Project()
@@ -672,6 +709,83 @@ class Controller():
         filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
 
         dirpath = session.CreateProject(filename)
+
+
+    def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False):
+        """
+        Creates a new project from a Numpy 3D array.
+
+        name: Name of the project.
+        matrix: A Numpy 3D array. It only works with int16 arrays.
+        spacing: The spacing between the center of the voxels in X, Y and Z direction.
+        modality: Imaging modality.
+        """
+        if window_width is None:
+            window_width = (matrix.max() - matrix.min())
+        if window_level is None:
+            window_level = (matrix.max() + matrix.min()) // 2
+
+        window_width = int(window_width)
+        window_level = int(window_level)
+
+        name_to_const = {"AXIAL": const.AXIAL,
+                         "CORONAL": const.CORONAL,
+                         "SAGITTAL": const.SAGITAL}
+
+        if new_instance:
+            self.start_new_inv_instance(matrix, name, spacing, modality, name_to_const[orientation], window_width, window_level)
+        else:
+            # Verifying if there is a project open
+            s = ses.Session()
+            if s.IsOpen():
+                Publisher.sendMessage('Close Project')
+                Publisher.sendMessage('Disconnect tracker')
+
+            # Check if user really closed the project, if not, stop project creation
+            if s.IsOpen():
+                return
+
+            mmap_matrix = image_utils.array2memmap(matrix)
+
+            self.Slice = sl.Slice()
+            self.Slice.matrix = mmap_matrix
+            self.Slice.matrix_filename = mmap_matrix.filename
+            self.Slice.spacing = spacing
+
+            self.Slice.window_width = window_width
+            self.Slice.window_level = window_level
+
+            proj = prj.Project()
+            proj.name = name
+            proj.modality = modality
+            proj.SetAcquisitionModality(modality)
+            proj.matrix_shape = matrix.shape
+            proj.matrix_dtype = matrix.dtype.name
+            proj.matrix_filename = self.Slice.matrix_filename
+            proj.window = window_width
+            proj.level = window_level
+
+
+            proj.original_orientation =\
+                name_to_const[orientation]
+
+            proj.threshold_range = int(matrix.min()), int(matrix.max())
+            proj.spacing = self.Slice.spacing
+
+            Publisher.sendMessage('Update threshold limits list',
+                                  threshold_range=proj.threshold_range)
+
+            ######
+            session = ses.Session()
+            filename = proj.name + ".inv3"
+
+            filename = filename.replace("/", "")
+
+            dirpath = session.CreateProject(filename)
+
+            self.LoadProject()
+            Publisher.sendMessage("Enable state project", state=True)
+
 
     def OnOpenBitmapFiles(self, rec_data):
         bmp_data = bmp.BitmapData()
@@ -954,3 +1068,24 @@ class Controller():
 
     def ApplyReorientation(self):
         self.Slice.apply_reorientation()
+
+    def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
+        p = prj.Project()
+        project_folder = tempfile.mkdtemp()
+        p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
+        err_msg = ''
+        try:
+            sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
+        except Exception as err:
+            err_msg = str(err)
+        else:
+            try:
+                if sp.wait(2):
+                    err_msg = sp.stderr.read().decode('utf8')
+                    sp.terminate()
+            except subprocess.TimeoutExpired:
+                pass
+
+        if err_msg:
+            dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)

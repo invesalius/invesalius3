@@ -1,3 +1,21 @@
+# --------------------------------------------------------------------
+# Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
+# Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
+# Homepage:     http://www.softwarepublico.gov.br
+# Contact:      invesalius@cti.gov.br
+# License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
+# --------------------------------------------------------------------
+#    Este programa e software livre; voce pode redistribui-lo e/ou
+#    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
+#    publicada pela Free Software Foundation; de acordo com a versao 2
+#    da Licenca.
+#
+#    Este programa eh distribuido na expectativa de ser util, mas SEM
+#    QUALQUER GARANTIA; sem mesmo a garantia implicita de
+#    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
+#    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
+#    detalhes.
+# --------------------------------------------------------------------
 import os
 import pathlib
 import shutil
@@ -12,6 +30,8 @@ USER_LOG_DIR = USER_INV_DIR.joinpath("logs")
 USER_RAYCASTING_PRESETS_DIRECTORY = USER_PRESET_DIR.joinpath("raycasting")
 TEMP_DIR = tempfile.gettempdir()
 
+USER_PLUGINS_DIRECTORY = USER_INV_DIR.joinpath("plugins")
+
 OLD_USER_INV_DIR = USER_DIR.joinpath(".invesalius")
 OLD_USER_PRESET_DIR = OLD_USER_INV_DIR.joinpath("presets")
 OLD_USER_LOG_DIR = OLD_USER_INV_DIR.joinpath("logs")
@@ -25,6 +45,7 @@ RAYCASTING_PRESETS_DIRECTORY = INV_TOP_DIR.joinpath("presets", "raycasting")
 RAYCASTING_PRESETS_COLOR_DIRECTORY = INV_TOP_DIR.joinpath(
     "presets", "raycasting", "color_list"
 )
+
 
 # Inside the windows executable
 if hasattr(sys, "frozen") and (
@@ -71,6 +92,7 @@ def create_conf_folders():
     USER_INV_DIR.mkdir(parents=True, exist_ok=True)
     USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
     USER_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    USER_PLUGINS_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
 def copy_old_files():

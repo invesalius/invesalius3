@@ -303,8 +303,8 @@ class Viewer(wx.Panel):
             self.style.CleanUp()
 
         del self.style
-        
-        style = styles.get_style(state)(self)
+
+        style = styles.Styles.get_style(state)(self)
 
         setup = getattr(style, 'SetUp', None)
         if setup:
@@ -1539,3 +1539,39 @@ class Viewer(wx.Panel):
                 renderer.RemoveActor(actor)
                 # and remove the actor from the actor's list
                 self.actors_by_slice_number[slice_number].remove(actor)
+
+    def get_actual_mask(self):
+        # Returns actual mask. Returns None if there is not a mask or no mask
+        # visible.
+        mask = self.slice_.current_mask
+        return mask
+
+    def get_slice(self):
+        return self.slice_
+
+    def discard_slice_cache(self, all_orientations=False, vtk_cache=True):
+        if all_orientations:
+            for orientation in self.slice_.buffer_slices:
+                buffer_ = self.slice_.buffer_slices[orientation]
+                buffer_.discard_image()
+                if vtk_cache:
+                    buffer_.discard_vtk_image()
+        else:
+            buffer_ = self.slice_.buffer_slices[self.orientation]
+            buffer_.discard_image()
+            if vtk_cache:
+                buffer_.discard_vtk_image()
+
+    def discard_mask_cache(self, all_orientations=False, vtk_cache=True):
+        if all_orientations:
+            for orientation in self.slice_.buffer_slices:
+                buffer_ = self.slice_.buffer_slices[orientation]
+                buffer_.discard_mask()
+                if vtk_cache:
+                    buffer_.discard_vtk_mask()
+
+        else:
+            buffer_ = self.slice_.buffer_slices[self.orientation]
+            buffer_.discard_mask()
+            if vtk_cache:
+                buffer_.discard_vtk_mask()
