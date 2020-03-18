@@ -30,13 +30,15 @@ from . import segment
 
 
 class MyDialog(wx.Dialog):
-    def __init__(self, *args, **kwds):
-        wx.Dialog.__init__(self, *args, **kwds)
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, -1, _(u"Brain segmentation"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
         backends = []
         if HAS_PLAIDML:
             backends.append("PlaidML")
         if HAS_THEANO:
             backends.append("Theano")
+        self.segmenter = segment.BrainSegmenter()
+
         self.cb_backends = wx.ComboBox(self, wx.ID_ANY, choices=backends, value=backends[0], style=wx.CB_DROPDOWN | wx.CB_READONLY)
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in backends)))
         self.cb_backends.SetMinClientSize((w, -1))
@@ -49,15 +51,13 @@ class MyDialog(wx.Dialog):
         self.txt_threshold.SetMinClientSize((w, -1))
         self.progress = wx.Gauge(self, -1)
         self.btn_segment = wx.Button(self, wx.ID_ANY, "Segment")
+        self.btn_stop = wx.Button(self, wx.ID_ANY, _("Stop"))
+        self.btn_stop.Disable()
 
         self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
 
-        self.__set_properties()
         self.__do_layout()
         self.__set_events()
-
-    def __set_properties(self):
-        self.SetTitle("Brain Segmentation")
 
     def __do_layout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -74,7 +74,10 @@ class MyDialog(wx.Dialog):
         sizer_3.Add(self.txt_threshold, 0, wx.ALL, 5)
         main_sizer.Add(sizer_3, 0, wx.EXPAND, 0)
         main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
-        main_sizer.Add(self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5)
+        sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_buttons.Add(self.btn_stop, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5)
+        sizer_buttons.Add(self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5)
+        main_sizer.Add(sizer_buttons, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 0)
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
         main_sizer.SetSizeHints(self)
@@ -85,6 +88,8 @@ class MyDialog(wx.Dialog):
         self.sld_threshold.Bind(wx.EVT_SCROLL, self.OnScrollThreshold)
         self.txt_threshold.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
         self.btn_segment.Bind(wx.EVT_BUTTON, self.OnSegment)
+        self.btn_stop.Bind(wx.EVT_BUTTON, self.OnStop)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def CalcSizeFromTextSize(self, text):
         dc = wx.WindowDC(self)
@@ -112,15 +117,29 @@ class MyDialog(wx.Dialog):
         backend = self.cb_backends.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
-        seg = segment.BrainSegmenter()
-        seg.segment(image, prob_threshold, backend, use_gpu, self.SetProgress)
+        self.btn_stop.Enable()
+        self.btn_segment.Disable()
+        self.segmenter.segment(image, prob_threshold, backend, use_gpu, self.SetProgress, self.AfterSegment)
 
+    def OnStop(self, evt):
+        self.segmenter.stop = True
+        self.btn_stop.Disable()
+        self.btn_segment.Enable()
+        self.progress.SetValue(0)
+
+    def AfterSegment(self):
         Publisher.sendMessage('Reload actual slice')
 
     def SetProgress(self, progress):
         self.progress.SetValue(progress * 100)
-        self.Refresh()
+        wx.GetApp().Yield()
 
+    def OnClose(self, evt):
+        self.segmenter.stop = True
+        self.btn_stop.Disable()
+        self.btn_segment.Enable()
+        self.progress.SetValue(0)
+        self.Destroy()
 
 
 class MyApp(wx.App):

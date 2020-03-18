@@ -509,10 +509,8 @@ class Frame(wx.Frame):
 
         elif id == const.ID_SEGMENTATION_BRAIN:
             from invesalius.segmentation.brain import gui
-            dlg = gui.MyDialog(self, -1)
-            dlg.ShowModal()
-            dlg.Destroy()
-
+            dlg = gui.MyDialog(self)
+            dlg.Show()
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
