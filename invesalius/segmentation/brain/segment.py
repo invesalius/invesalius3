@@ -3,24 +3,13 @@ import os
 import pathlib
 import sys
 
-from . import utils
-
-os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-os.environ["RUNFILES_DIR"] = str(pathlib.Path("~/.local/share/plaidml/").expanduser().absolute())
-os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("~/.local/lib/libplaidml.so").expanduser().absolute())
-
-device = utils.get_plaidml_devices(True)
-
-os.environ["PLAIDML_DEVICE_IDS"] = device.id.decode("utf8")
-os.environ["PLAIDML_STRIPE_JIT"] = "1"
-os.environ["PLAIDML_USE_STRIPE"] = "1"
-
-import keras
 import numpy as np
 from skimage.transform import resize
 
 from invesalius.data import imagedata_utils
 from invesalius.utils import timing
+
+from . import utils
 
 SIZE = 48
 OVERLAP = SIZE // 2 + 1
@@ -61,14 +50,11 @@ class BrainSegmenter:
         self.stop = False
 
     def segment(self, image, prob_threshold, backend, use_gpu, progress_callback=None, after_segment=None):
+        print("backend", backend)
         if backend.lower() == 'plaidml':
             os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-            os.environ["RUNFILES_DIR"] = str(pathlib.Path("~/.local/share/plaidml/").expanduser().absolute())
-            os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("~/.local/lib/libplaidml.so").expanduser().absolute())
             device = utils.get_plaidml_devices(use_gpu)
             os.environ["PLAIDML_DEVICE_IDS"] = device.id.decode("utf8")
-            os.environ["PLAIDML_STRIPE_JIT"] = "1"
-            os.environ["PLAIDML_USE_STRIPE"] = "1"
         elif backend.lower() == 'theano':
             os.environ["KERAS_BACKEND"] = "theano"
         else:
