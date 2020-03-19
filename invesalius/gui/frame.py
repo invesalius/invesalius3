@@ -508,9 +508,7 @@ class Frame(wx.Frame):
             self.OnFFillSegmentation()
 
         elif id == const.ID_SEGMENTATION_BRAIN:
-            from invesalius.segmentation.brain import gui
-            dlg = gui.MyDialog(self)
-            dlg.Show()
+            self.OnBrainSegmentation()
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
@@ -740,6 +738,11 @@ class Frame(wx.Frame):
 
     def OnFFillSegmentation(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
+
+    def OnBrainSegmentation(self):
+        from invesalius.gui.brain_seg_dialog import BrainSegmenterDialog
+        dlg = BrainSegmenterDialog(self)
+        dlg.Show()
 
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)

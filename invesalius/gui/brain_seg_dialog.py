@@ -25,11 +25,11 @@ try:
 except ImportError:
     HAS_PLAIDML = False
 
-from . import segment
+from invesalius.segmentation.brain import segment
 
 
 
-class MyDialog(wx.Dialog):
+class BrainSegmenterDialog(wx.Dialog):
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, -1, _(u"Brain segmentation"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
         backends = []
