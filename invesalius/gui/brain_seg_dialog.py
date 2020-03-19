@@ -25,6 +25,7 @@ try:
 except ImportError:
     HAS_PLAIDML = False
 
+import invesalius.data.slice_ as slc
 from invesalius.segmentation.brain import segment
 
 
@@ -101,6 +102,11 @@ class BrainSegmenterDialog(wx.Dialog):
     def OnScrollThreshold(self, evt):
         value = self.sld_threshold.GetValue()
         self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
+        if self.segmenter.segmented:
+            threshold = value / 100.0
+            self.segmenter.set_threshold(threshold)
+            image = slc.Slice().discard_all_buffers()
+            Publisher.sendMessage('Reload actual slice')
 
     def OnKillFocus(self, evt):
         value = self.txt_threshold.GetValue()
@@ -112,8 +118,13 @@ class BrainSegmenterDialog(wx.Dialog):
         self.sld_threshold.SetValue(value)
         self.txt_threshold.SetValue("{:3d}%".format(value))
 
+        if self.segmenter.segmented:
+            threshold = value / 100.0
+            self.segmenter.set_threshold(threshold)
+            image = slc.Slice().discard_all_buffers()
+            Publisher.sendMessage('Reload actual slice')
+
     def OnSegment(self, evt):
-        import invesalius.data.slice_ as slc
         image = slc.Slice().matrix
         backend = self.cb_backends.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()

@@ -48,6 +48,7 @@ class BrainSegmenter:
         self.mask = None
         self.propability_array = None
         self.stop = False
+        self.segmented = False
 
     def segment(self, image, prob_threshold, backend, use_gpu, progress_callback=None, after_segment=None):
         print("backend", backend)
@@ -93,10 +94,18 @@ class BrainSegmenter:
         mask = slc.Slice().create_new_mask()
         mask.was_edited = True
         mask.matrix[:] = 1
-        mask.matrix[1:, 1:, 1:] = ((msk / sums) > prob_threshold) * 255
+        mask.matrix[1:, 1:, 1:] = (propability_array >= prob_threshold) * 255
 
         self.mask = mask
         self.propability_array = propability_array
-
+        self.segmented = True
         if after_segment is not None:
             after_segment()
+
+    def set_threshold(self, threshold):
+        if threshold < 0:
+            threshold = 0
+        elif threshold > 1:
+            threshold = 1
+        self.mask.matrix[:] = 1
+        self.mask.matrix[1:, 1:, 1:] = (self.propability_array >= threshold) * 255
