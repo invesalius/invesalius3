@@ -166,7 +166,8 @@ class BrainSegmenterDialog(wx.Dialog):
         #  self.btn_stop.Disable()
         self.btn_segment.Enable()
         #  self.progress.SetValue(0)
-        self.pg_dialog.Destroy()
+        if self.pg_dialog is not None:
+            self.pg_dialog.Destroy()
         self.Destroy()
 
 
