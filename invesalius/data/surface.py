@@ -59,9 +59,9 @@ import invesalius.utils as utl
 import invesalius.data.vtk_utils as vu
 
 from invesalius.gui import dialogs
+from invesalius_cy import cy_mesh
 
-from invesalius.data import cy_mesh
-# TODO: Verificar ReleaseDataFlagOn and SetSource 
+# TODO: Verificar ReleaseDataFlagOn and SetSource
 
 
 class Surface():

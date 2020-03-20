@@ -28,13 +28,13 @@ from wx.lib.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.imagedata_utils as iu
-import invesalius.data.transformations as transformations
 import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
-from invesalius.data import mips, transforms
+from invesalius.data import transformations
 from invesalius.data.mask import Mask
 from invesalius.project import Project
+from invesalius_cy import mips, transforms
 
 OTHER = 0
 PLIST = 1

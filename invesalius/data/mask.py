@@ -30,7 +30,7 @@ import invesalius.constants as const
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 
-from . import floodfill
+from invesalius_cy import floodfill
 
 from wx.lib.pubsub import pub as Publisher
 from scipy import ndimage

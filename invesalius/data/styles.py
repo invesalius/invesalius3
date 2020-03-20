@@ -46,7 +46,7 @@ import invesalius.utils as utils
 from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
                                       PolygonDensityMeasure)
 
-from . import floodfill
+from invesalius_cy import floodfill
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,

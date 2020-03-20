@@ -13,7 +13,7 @@ import vtk
 
 import invesalius.i18n as i18n
 import invesalius.data.converters as converters
-from invesalius.data import cy_mesh
+from invesalius_cy import cy_mesh
 
 import weakref
 from scipy import ndimage
