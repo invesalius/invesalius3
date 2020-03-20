@@ -946,7 +946,7 @@ class MenuBar(wx.MenuBar):
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
-        segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation"))
+        segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
