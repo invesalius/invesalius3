@@ -517,12 +517,6 @@ if __name__ == '__main__':
         path = inv_paths.USER_LOG_DIR.join("stderr.log")
         sys.stderr = open(path, "w")
 
-    # Add current directory to PYTHONPATH, so other classes can
-    # import modules as they were on root invesalius folder
-    sys.path.insert(0, '.')
-    sys.path.append(".")
-
-
     # Init application
     main()
 
