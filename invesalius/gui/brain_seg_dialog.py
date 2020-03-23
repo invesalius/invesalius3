@@ -182,20 +182,15 @@ class BrainSegmenterDialog(wx.Dialog):
             device_id = "llvm_cpu.0"
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
+        self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
-
-        print(device_id)
-        #  self.pg_dialog = wx.ProgressDialog(_("Brain segmenter"), _("Segmenting brain"), parent=self, style= wx.FRAME_FLOAT_ON_PARENT | wx.PD_CAN_ABORT | wx.PD_AUTO_HIDE | wx.PD_ELAPSED_TIME)
-        #  self.pg_dialog.Bind(wx.EVT_BUTTON, self.OnStop)
-        #  self.pg_dialog.Show()
         self.segmenter.segment(image, prob_threshold, backend, device_id, use_gpu, self.SetProgress, self.AfterSegment)
 
     def OnStop(self, evt):
         self.segmenter.stop = True
+        self.btn_close.Enable()
         self.btn_stop.Disable()
-        #  self.pg_dialog.Hide()
-        #  self.pg_dialog = None
         self.btn_segment.Enable()
         evt.Skip()
 
@@ -203,6 +198,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.Close()
 
     def AfterSegment(self):
+        self.btn_close.Enable()
         self.btn_stop.Disable()
         self.btn_segment.Disable()
         Publisher.sendMessage('Reload actual slice')
