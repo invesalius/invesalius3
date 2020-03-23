@@ -744,9 +744,18 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
     def OnBrainSegmentation(self):
-        from invesalius.gui.brain_seg_dialog import BrainSegmenterDialog
-        dlg = BrainSegmenterDialog(self)
-        dlg.Show()
+        from invesalius.gui import brain_seg_dialog
+        if brain_seg_dialog.HAS_PLAIDML or brain_seg_dialog.HAS_THEANO:
+            dlg = brain_seg_dialog.BrainSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(self,
+                                   _("It's not possible to run brain segmenter because your system doesn't have the following modules installed:") \
+                                   + " PlaidML or Theano" ,
+                                   "InVesalius 3 - Brain segmenter",
+                                   wx.ICON_INFORMATION | wx.OK)
+            dlg.ShowModal()
+            dlg.Destroy()
 
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)
