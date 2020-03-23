@@ -9,9 +9,6 @@ import sys
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-HAS_THEANO = bool(importlib.util.find_spec("theano"))
-HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
-
 # Linux if installed plaidml with pip3 install --user
 if sys.platform.startswith("linux"):
     local_user_plaidml = pathlib.Path("~/.local/share/plaidml/").expanduser().absolute()
@@ -25,11 +22,29 @@ elif sys.platform == "darwin":
         os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
         os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("/usr/local/lib/libplaidml.dylib").expanduser().absolute())
 
+HAS_THEANO = bool(importlib.util.find_spec("theano"))
+HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
+PLAIDML_DEVICES = {}
 
 import invesalius.data.slice_ as slc
 from invesalius.segmentation.brain import segment
 from invesalius.segmentation.brain import utils
 
+try:
+    import theano
+except ImportError:
+    HAS_THEANO = False
+
+try:
+    import plaidml
+except ImportError:
+    HAS_PLAIDML = False
+
+if HAS_PLAIDML:
+    try:
+        PLAIDML_DEVICES = utils.get_plaidml_devices()
+    except OSError:
+        HAS_PLAIDML = False
 
 
 class BrainSegmenterDialog(wx.Dialog):
@@ -42,13 +57,14 @@ class BrainSegmenterDialog(wx.Dialog):
             backends.append("Theano")
         self.segmenter = segment.BrainSegmenter()
         #  self.pg_dialog = None
-        self.plaidml_devices = utils.get_plaidml_devices()
+        self.plaidml_devices = PLAIDML_DEVICES
         self.cb_backends = wx.ComboBox(self, wx.ID_ANY, choices=backends, value=backends[0], style=wx.CB_DROPDOWN | wx.CB_READONLY)
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in backends)))
         self.cb_backends.SetMinClientSize((w, -1))
         self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
-        self.lbl_device = wx.StaticText(self, -1, _("Device"))
-        self.cb_devices = wx.ComboBox(self, wx.ID_ANY, choices=list(self.plaidml_devices.keys()), value=list(self.plaidml_devices.keys())[0],style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        if HAS_PLAIDML:
+            self.lbl_device = wx.StaticText(self, -1, _("Device"))
+            self.cb_devices = wx.ComboBox(self, wx.ID_ANY, choices=list(self.plaidml_devices.keys()), value=list(self.plaidml_devices.keys())[0],style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.sld_threshold = wx.Slider(self, wx.ID_ANY, 75, 0, 100)
         w, h = self.CalcSizeFromTextSize("M" * 20)
         self.sld_threshold.SetMinClientSize((w, -1))
@@ -76,8 +92,9 @@ class BrainSegmenterDialog(wx.Dialog):
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.chk_use_gpu, 0, wx.ALL, 5)
         sizer_devices = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
-        sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
+        if HAS_PLAIDML:
+            sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
+            sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
         label_5 = wx.StaticText(self, wx.ID_ANY, _("Level of certainty"))
         main_sizer.Add(label_5, 0, wx.ALL, 5)
@@ -118,12 +135,14 @@ class BrainSegmenterDialog(wx.Dialog):
 
     def OnSetBackend(self, evt=None):
         if self.cb_backends.GetValue().lower() == "plaidml":
-            self.lbl_device.Show()
-            self.cb_devices.Show()
+            if HAS_PLAIDML:
+                self.lbl_device.Show()
+                self.cb_devices.Show()
             self.chk_use_gpu.Hide()
         else:
-            self.lbl_device.Hide()
-            self.cb_devices.Hide()
+            if HAS_PLAIDML:
+                self.lbl_device.Hide()
+                self.cb_devices.Hide()
             self.chk_use_gpu.Show()
 
         self.main_sizer.Fit(self)
@@ -159,7 +178,7 @@ class BrainSegmenterDialog(wx.Dialog):
         backend = self.cb_backends.GetValue()
         try:
             device_id = self.plaidml_devices[self.cb_devices.GetValue()]
-        except KeyError:
+        except (KeyError, AttributeError):
             device_id = "llvm_cpu.0"
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
