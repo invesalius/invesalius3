@@ -5,6 +5,7 @@ import importlib
 import os
 import pathlib
 import sys
+import time
 
 import wx
 from wx.lib.pubsub import pub as Publisher
@@ -72,12 +73,16 @@ class BrainSegmenterDialog(wx.Dialog):
         w, h = self.CalcSizeFromTextSize("MMMMM")
         self.txt_threshold.SetMinClientSize((w, -1))
         self.progress = wx.Gauge(self, -1)
+        self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
+        self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
         self.btn_segment = wx.Button(self, wx.ID_ANY, _("Segment"))
         self.btn_stop = wx.Button(self, wx.ID_ANY, _("Stop"))
         self.btn_stop.Disable()
         self.btn_close = wx.Button(self, wx.ID_CLOSE)
 
         self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
+
+        self.elapsed_time_timer = wx.Timer()
 
         self.__do_layout()
         self.__set_events()
@@ -102,6 +107,10 @@ class BrainSegmenterDialog(wx.Dialog):
         sizer_3.Add(self.txt_threshold, 0, wx.ALL, 5)
         main_sizer.Add(sizer_3, 0, wx.EXPAND, 0)
         main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
+        time_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        time_sizer.Add(self.lbl_progress_caption, 0, wx.EXPAND, 0)
+        time_sizer.Add(self.lbl_time, 1, wx.EXPAND | wx.LEFT, 5)
+        main_sizer.Add(time_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
         sizer_buttons.Add(self.btn_close, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5)
         sizer_buttons.Add(self.btn_stop, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5)
@@ -114,6 +123,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.main_sizer = main_sizer
 
         self.OnSetBackend()
+        self.HideProgress()
 
         self.Layout()
         self.Centre()
@@ -125,6 +135,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_segment.Bind(wx.EVT_BUTTON, self.OnSegment)
         self.btn_stop.Bind(wx.EVT_BUTTON, self.OnStop)
         self.btn_close.Bind(wx.EVT_BUTTON, self.OnBtnClose)
+        self.elapsed_time_timer.Bind(wx.EVT_TIMER, self.OnTickTimer)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def CalcSizeFromTextSize(self, text):
@@ -174,6 +185,9 @@ class BrainSegmenterDialog(wx.Dialog):
             Publisher.sendMessage('Reload actual slice')
 
     def OnSegment(self, evt):
+        self.ShowProgress()
+        self.t0 = time.time()
+        self.elapsed_time_timer.Start(1000)
         image = slc.Slice().matrix
         backend = self.cb_backends.GetValue()
         try:
@@ -192,6 +206,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_close.Enable()
         self.btn_stop.Disable()
         self.btn_segment.Enable()
+        self.elapsed_time_timer.Stop()
         evt.Skip()
 
     def OnBtnClose(self, evt):
@@ -202,11 +217,15 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_segment.Disable()
         Publisher.sendMessage('Reload actual slice')
+        self.elapsed_time_timer.Stop()
 
     def SetProgress(self, progress):
         self.progress.SetValue(progress * 100)
-        #  self.pg_dialog.Update(progress * 100)
         wx.GetApp().Yield()
+
+    def OnTickTimer(self, evt):
+        fmt='%H:%M:%S'
+        self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time()-self.t0)))
 
     def OnClose(self, evt):
         self.segmenter.stop = True
@@ -214,6 +233,20 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_segment.Enable()
         self.progress.SetValue(0)
         self.Destroy()
+
+    def HideProgress(self):
+        self.progress.Hide()
+        self.lbl_progress_caption.Hide()
+        self.lbl_time.Hide()
+        self.main_sizer.Fit(self)
+        self.main_sizer.SetSizeHints(self)
+
+    def ShowProgress(self):
+        self.progress.Show()
+        self.lbl_progress_caption.Show()
+        self.lbl_time.Show()
+        self.main_sizer.Fit(self)
+        self.main_sizer.SetSizeHints(self)
 
 
 class MyApp(wx.App):
