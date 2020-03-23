@@ -5,13 +5,18 @@ def get_plaidml_devices(gpu=False):
     plaidml.settings._setup_for_test(plaidml.settings.user_settings)
     plaidml.settings.experimental = True
     devices, _ = plaidml.devices(ctx, limit=100, return_all=True)
-    if gpu:
-        for device in devices:
-            if b"cuda" in device.description.lower():
-                return device
-        for device in devices:
-            if b"opencl" in device.description.lower():
-                return device
+    out_devices = []
     for device in devices:
-        if b"llvm" in device.description.lower():
-            return device
+        points = 0
+        if b"cuda" in device.description.lower():
+            points += 1
+        if b"opencl" in device.description.lower():
+            points += 1
+        if b"nvidia" in device.description.lower():
+            points += 1
+        if b"amd" in device.description.lower():
+            points += 1
+        out_devices.append((points, device))
+
+    out_devices.sort(reverse=True)
+    return {device.description.decode("utf8"): device.id.decode("utf8") for points, device in out_devices }

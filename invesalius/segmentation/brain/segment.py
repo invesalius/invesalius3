@@ -50,14 +50,18 @@ class BrainSegmenter:
         self.stop = False
         self.segmented = False
 
-    def segment(self, image, prob_threshold, backend, use_gpu, progress_callback=None, after_segment=None):
+    def segment(self, image, prob_threshold, backend, device_id, use_gpu, progress_callback=None, after_segment=None):
         print("backend", backend)
         if backend.lower() == 'plaidml':
             os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-            device = utils.get_plaidml_devices(use_gpu)
-            os.environ["PLAIDML_DEVICE_IDS"] = device.id.decode("utf8")
+            os.environ["PLAIDML_DEVICE_IDS"] = device_id
         elif backend.lower() == 'theano':
             os.environ["KERAS_BACKEND"] = "theano"
+            if use_gpu:
+                os.environ["THEANO_FLAGS"] = "device=cuda0"
+                print("Use GPU theano", os.environ["THEANO_FLAGS"])
+            else:
+                os.environ["THEANO_FLAGS"] = "device=cpu"
         else:
             raise TypeError("Wrong backend")
 
