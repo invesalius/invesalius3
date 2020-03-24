@@ -386,4 +386,5 @@ class Mask():
     def __del__(self):
         if self.is_shown:
             self.history._config_undo_redo(False)
+        del self.matrix
         os.remove(self.temp_file)
