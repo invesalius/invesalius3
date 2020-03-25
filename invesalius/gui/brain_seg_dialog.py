@@ -93,7 +93,7 @@ class BrainSegmenterDialog(wx.Dialog):
         sizer_backends = wx.BoxSizer(wx.HORIZONTAL)
         label_1 = wx.StaticText(self, wx.ID_ANY, _("Backend"))
         sizer_backends.Add(label_1, 0, wx.ALIGN_CENTER, 0)
-        sizer_backends.Add(self.cb_backends, 1, wx.LEFT, 0)
+        sizer_backends.Add(self.cb_backends, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.chk_use_gpu, 0, wx.ALL, 5)
         sizer_devices = wx.BoxSizer(wx.HORIZONTAL)
