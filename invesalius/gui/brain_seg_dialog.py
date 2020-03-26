@@ -8,23 +8,11 @@ import subprocess
 import sys
 import tempfile
 import time
+import multiprocessing
 
 import numpy as np
 import wx
 from wx.lib.pubsub import pub as Publisher
-
-# Linux if installed plaidml with pip3 install --user
-if sys.platform.startswith("linux"):
-    local_user_plaidml = pathlib.Path("~/.local/share/plaidml/").expanduser().absolute()
-    if local_user_plaidml.exists():
-        os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
-        os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("~/.local/lib/libplaidml.so").expanduser().absolute())
-# Mac if using python3 from homebrew
-elif sys.platform == "darwin":
-    local_user_plaidml = pathlib.Path("/usr/local/share/plaidml")
-    if local_user_plaidml.exists():
-        os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
-        os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("/usr/local/lib/libplaidml.dylib").expanduser().absolute())
 
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
@@ -34,21 +22,14 @@ import invesalius.data.slice_ as slc
 from invesalius.segmentation.brain import segment
 from invesalius.segmentation.brain import utils
 
-try:
-    import theano
-except ImportError:
-    HAS_THEANO = False
-
-try:
-    import plaidml
-except ImportError:
-    HAS_PLAIDML = False
-
 if HAS_PLAIDML:
-    try:
-        PLAIDML_DEVICES = utils.get_plaidml_devices()
-    except OSError:
-        HAS_PLAIDML = False
+    with multiprocessing.Pool(1) as p:
+        try:
+            PLAIDML_DEVICES = p.apply(utils.get_plaidml_devices)
+        except Exception as err:
+            print(err)
+            PLAIDML_DEVICES = {}
+            HAS_PLAIDML = False
 
 
 class BrainSegmenterDialog(wx.Dialog):
@@ -152,6 +133,7 @@ class BrainSegmenterDialog(wx.Dialog):
         threshold = self.sld_threshold.GetValue() / 100.0
         if self.mask is None:
             self.mask = slc.Slice().create_new_mask()
+        self.mask.was_edited = True
         self.mask.matrix[:] = 1
         self.mask.matrix[1:, 1:, 1:] = (self.probability_array >= threshold) * 255
 
@@ -213,7 +195,6 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
-        #  self.segmenter.segment(image, prob_threshold, backend, device_id, use_gpu, self.SetProgress, self.AfterSegment)
 
         if self.probability_array is None:
             self.probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
@@ -229,8 +210,6 @@ class BrainSegmenterDialog(wx.Dialog):
                                    "Brain segmentation error",
                                    wx.ICON_ERROR | wx.OK)
             dlg.ShowModal()
-
-
 
     def OnStop(self, evt):
         if self.ps is not None:
@@ -286,7 +265,9 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_segment.Enable()
         self.progress.SetValue(0)
 
-        self.ps = None
+        if self.ps is not None:
+            self.ps.terminate()
+            self.ps = None
         if self.probability_array is not None:
             prob_arr_filename = self.probability_array.filename
             self.probability_array = None

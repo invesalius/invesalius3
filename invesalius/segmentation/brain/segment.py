@@ -7,7 +7,8 @@ import sys
 import numpy as np
 from skimage.transform import resize
 
-#  from . import utils
+sys.path.append(str(pathlib.Path(os.getcwd())))
+from invesalius.segmentation.brain import utils
 
 SIZE = 48
 OVERLAP = SIZE // 2 + 1
@@ -118,33 +119,6 @@ class BrainSegmenter:
         self.mask.matrix[1:, 1:, 1:] = (self.propability_array >= threshold) * 255
 
 
-def prepare_ambient(backend, device_id, use_gpu):
-    if backend.lower() == 'plaidml':
-        os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-        os.environ["PLAIDML_DEVICE_IDS"] = device_id
-    elif backend.lower() == 'theano':
-        os.environ["KERAS_BACKEND"] = "theano"
-        if use_gpu:
-            os.environ["THEANO_FLAGS"] = "device=cuda0"
-            print("Use GPU theano", os.environ["THEANO_FLAGS"])
-        else:
-            os.environ["THEANO_FLAGS"] = "device=cpu"
-    else:
-        raise TypeError("Wrong backend")
-
-    # Linux if installed plaidml with pip3 install --user
-    if sys.platform.startswith("linux"):
-        local_user_plaidml = pathlib.Path("~/.local/share/plaidml/").expanduser().absolute()
-        if local_user_plaidml.exists():
-            os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
-            os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("~/.local/lib/libplaidml.so").expanduser().absolute())
-    # Mac if using python3 from homebrew
-    elif sys.platform == "darwin":
-        local_user_plaidml = pathlib.Path("/usr/local/share/plaidml")
-        if local_user_plaidml.exists():
-            os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
-            os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("/usr/local/lib/libplaidml.dylib").expanduser().absolute())
-
 
 def brain_segment(image, probability_array, comm_array):
     import keras
@@ -186,7 +160,7 @@ def main():
     probability_array = np.memmap(prob_arr_filename, dtype=np.float32, shape=(sz, sy, sx), mode="r+")
     comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="r+")
 
-    prepare_ambient(backend, device_id, use_gpu)
+    utils.prepare_ambient(backend, device_id, use_gpu)
     brain_segment(image, probability_array, comm_array)
 
 if __name__ == "__main__":
