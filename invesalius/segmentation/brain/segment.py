@@ -184,7 +184,7 @@ def main():
 
     image = np.memmap(image_filename, dtype=image_dtype, shape=(sz, sy, sx), mode="r")
     probability_array = np.memmap(prob_arr_filename, dtype=np.float32, shape=(sz, sy, sx), mode="r+")
-    comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="w+")
+    comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="r+")
 
     prepare_ambient(backend, device_id, use_gpu)
     brain_segment(image, probability_array, comm_array)
