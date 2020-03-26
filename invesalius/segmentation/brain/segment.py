@@ -3,16 +3,19 @@ import os
 import pathlib
 import sys
 
+
 import numpy as np
 from skimage.transform import resize
 
-from invesalius.data import imagedata_utils
-from invesalius.utils import timing
-
-from . import utils
+#  from . import utils
 
 SIZE = 48
 OVERLAP = SIZE // 2 + 1
+
+
+def image_normalize(image, min_=0.0, max_=1.0):
+    imin, imax = image.min(), image.max()
+    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_
 
 
 def gen_patches(image, patch_size, overlap):
@@ -113,3 +116,78 @@ class BrainSegmenter:
             threshold = 1
         self.mask.matrix[:] = 1
         self.mask.matrix[1:, 1:, 1:] = (self.propability_array >= threshold) * 255
+
+
+def prepare_ambient(backend, device_id, use_gpu):
+    if backend.lower() == 'plaidml':
+        os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
+        os.environ["PLAIDML_DEVICE_IDS"] = device_id
+    elif backend.lower() == 'theano':
+        os.environ["KERAS_BACKEND"] = "theano"
+        if use_gpu:
+            os.environ["THEANO_FLAGS"] = "device=cuda0"
+            print("Use GPU theano", os.environ["THEANO_FLAGS"])
+        else:
+            os.environ["THEANO_FLAGS"] = "device=cpu"
+    else:
+        raise TypeError("Wrong backend")
+
+    # Linux if installed plaidml with pip3 install --user
+    if sys.platform.startswith("linux"):
+        local_user_plaidml = pathlib.Path("~/.local/share/plaidml/").expanduser().absolute()
+        if local_user_plaidml.exists():
+            os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
+            os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("~/.local/lib/libplaidml.so").expanduser().absolute())
+    # Mac if using python3 from homebrew
+    elif sys.platform == "darwin":
+        local_user_plaidml = pathlib.Path("/usr/local/share/plaidml")
+        if local_user_plaidml.exists():
+            os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
+            os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("/usr/local/lib/libplaidml.dylib").expanduser().absolute())
+
+
+def brain_segment(image, probability_array, comm_array):
+    import keras
+    # Loading model
+    folder = pathlib.Path(__file__).parent.resolve()
+    with open(folder.joinpath("model.json"), "r") as json_file:
+        model = keras.models.model_from_json(json_file.read())
+    model.load_weights(str(folder.joinpath("model.h5")))
+    model.compile("Adam", "binary_crossentropy")
+
+    image = image_normalize(image, 0.0, 1.0)
+    sums = np.zeros_like(image)
+    # segmenting by patches
+    for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+        comm_array[0] = completion
+        print("completion", completion)
+        (iz, ez), (iy, ey), (ix, ex) = patch
+        sub_mask = predict_patch(sub_image, patch, model, SIZE)
+        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
+        sums[iz:ez, iy:ey, ix:ex] += 1
+
+    probability_array /= sums
+    comm_array[0] = np.Inf
+
+
+def main():
+    image_filename = sys.argv[1]
+    image_dtype = sys.argv[2]
+    sz = int(sys.argv[3])
+    sy = int(sys.argv[4])
+    sx = int(sys.argv[5])
+    prob_arr_filename = sys.argv[6]
+    comm_arr_filename = sys.argv[7]
+    backend = sys.argv[8]
+    device_id = sys.argv[9]
+    use_gpu = bool(int(sys.argv[10]))
+
+    image = np.memmap(image_filename, dtype=image_dtype, shape=(sz, sy, sx), mode="r")
+    probability_array = np.memmap(prob_arr_filename, dtype=np.float32, shape=(sz, sy, sx), mode="r+")
+    comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="w+")
+
+    prepare_ambient(backend, device_id, use_gpu)
+    brain_segment(image, probability_array, comm_array)
+
+if __name__ == "__main__":
+    main()

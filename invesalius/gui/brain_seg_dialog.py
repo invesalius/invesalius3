@@ -4,9 +4,12 @@
 import importlib
 import os
 import pathlib
+import subprocess
 import sys
+import tempfile
 import time
 
+import numpy as np
 import wx
 from wx.lib.pubsub import pub as Publisher
 
@@ -56,9 +59,16 @@ class BrainSegmenterDialog(wx.Dialog):
             backends.append("PlaidML")
         if HAS_THEANO:
             backends.append("Theano")
-        self.segmenter = segment.BrainSegmenter()
+        #  self.segmenter = segment.BrainSegmenter()
         #  self.pg_dialog = None
         self.plaidml_devices = PLAIDML_DEVICES
+
+        self.ps = None
+        self.probability_array = None
+        self.comm_array = None
+        self.segmented = False
+        self.mask = None
+
         self.cb_backends = wx.ComboBox(self, wx.ID_ANY, choices=backends, value=backends[0], style=wx.CB_DROPDOWN | wx.CB_READONLY)
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in backends)))
         self.cb_backends.SetMinClientSize((w, -1))
@@ -138,6 +148,16 @@ class BrainSegmenterDialog(wx.Dialog):
         self.elapsed_time_timer.Bind(wx.EVT_TIMER, self.OnTickTimer)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+    def apply_segment_threshold(self):
+        threshold = self.sld_threshold.GetValue() / 100.0
+        if self.mask is None:
+            self.mask = slc.Slice().create_new_mask()
+        self.mask.matrix[:] = 1
+        self.mask.matrix[1:, 1:, 1:] = (self.probability_array >= threshold) * 255
+
+        slc.Slice().discard_all_buffers()
+        Publisher.sendMessage('Reload actual slice')
+
     def CalcSizeFromTextSize(self, text):
         dc = wx.WindowDC(self)
         dc.SetFont(self.GetFont())
@@ -162,11 +182,8 @@ class BrainSegmenterDialog(wx.Dialog):
     def OnScrollThreshold(self, evt):
         value = self.sld_threshold.GetValue()
         self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
-        if self.segmenter.segmented:
-            threshold = value / 100.0
-            self.segmenter.set_threshold(threshold)
-            image = slc.Slice().discard_all_buffers()
-            Publisher.sendMessage('Reload actual slice')
+        if self.segmented:
+            self.apply_segment_threshold()
 
     def OnKillFocus(self, evt):
         value = self.txt_threshold.GetValue()
@@ -178,11 +195,8 @@ class BrainSegmenterDialog(wx.Dialog):
         self.sld_threshold.SetValue(value)
         self.txt_threshold.SetValue("{:3d}%".format(value))
 
-        if self.segmenter.segmented:
-            threshold = value / 100.0
-            self.segmenter.set_threshold(threshold)
-            image = slc.Slice().discard_all_buffers()
-            Publisher.sendMessage('Reload actual slice')
+        if self.segmented:
+            self.apply_segment_threshold()
 
     def OnSegment(self, evt):
         self.ShowProgress()
@@ -199,10 +213,18 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
-        self.segmenter.segment(image, prob_threshold, backend, device_id, use_gpu, self.SetProgress, self.AfterSegment)
+        #  self.segmenter.segment(image, prob_threshold, backend, device_id, use_gpu, self.SetProgress, self.AfterSegment)
+
+        probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
+        comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
+        self.ps = subprocess.Popen([sys.executable, segment.__file__, image.filename, str(image.dtype), str(image.shape[0]), str(image.shape[1]), str(image.shape[2]), probability_array.filename, comm_array.filename, backend, device_id, str(int(use_gpu))])
+
+        self.probability_array = probability_array
+        self.comm_array = comm_array
 
     def OnStop(self, evt):
-        self.segmenter.stop = True
+        if self.ps is not None:
+            self.ps.terminate()
         self.btn_close.Enable()
         self.btn_stop.Disable()
         self.btn_segment.Enable()
@@ -213,25 +235,49 @@ class BrainSegmenterDialog(wx.Dialog):
         self.Close()
 
     def AfterSegment(self):
+        self.segmented = True
         self.btn_close.Enable()
         self.btn_stop.Disable()
         self.btn_segment.Disable()
-        Publisher.sendMessage('Reload actual slice')
         self.elapsed_time_timer.Stop()
+        self.apply_segment_threshold()
 
     def SetProgress(self, progress):
+        print(progress)
         self.progress.SetValue(progress * 100)
         wx.GetApp().Yield()
 
     def OnTickTimer(self, evt):
         fmt='%H:%M:%S'
         self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time()-self.t0)))
+        if self.comm_array is not None:
+            progress = self.comm_array[0]
+            if progress == np.Inf:
+                progress = 1
+                self.AfterSegment()
+            if progress < 0:
+                progress = 0
+            if progress > 1:
+                progress = 1
+            self.SetProgress(float(progress))
 
     def OnClose(self, evt):
-        self.segmenter.stop = True
+        #  self.segmenter.stop = True
         self.btn_stop.Disable()
         self.btn_segment.Enable()
         self.progress.SetValue(0)
+
+        self.ps = None
+        if self.probability_array is not None:
+            prob_arr_filename = self.probability_array.filename
+            self.probability_array = None
+            os.remove(prob_arr_filename)
+
+        if self.comm_array is not None:
+            comm_arr_filename = self.comm_array.filename
+            self.comm_array = None
+            os.remove(comm_arr_filename)
+
         self.Destroy()
 
     def HideProgress(self):
