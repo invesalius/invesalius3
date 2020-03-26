@@ -215,12 +215,22 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_segment.Disable()
         #  self.segmenter.segment(image, prob_threshold, backend, device_id, use_gpu, self.SetProgress, self.AfterSegment)
 
-        probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
-        comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
-        self.ps = subprocess.Popen([sys.executable, segment.__file__, image.filename, str(image.dtype), str(image.shape[0]), str(image.shape[1]), str(image.shape[2]), probability_array.filename, comm_array.filename, backend, device_id, str(int(use_gpu))])
+        if self.probability_array is None:
+            self.probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
 
-        self.probability_array = probability_array
-        self.comm_array = comm_array
+        if self.comm_array is None:
+            self.comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
+        try:
+            self.ps = subprocess.Popen([sys.executable, segment.__file__, image.filename, str(image.dtype), str(image.shape[0]), str(image.shape[1]), str(image.shape[2]), self.probability_array.filename, self.comm_array.filename, backend, device_id, str(int(use_gpu))], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except (subprocess.SubprocessError, OSError, ValueError)  as err:
+            self.OnStop(None)
+            self.HideProgress()
+            dlg = wx.MessageDialog(None, "It was not possible to start brain segmentation because:" + "\n" + str(err),
+                                   "Brain segmentation error",
+                                   wx.ICON_ERROR | wx.OK)
+            dlg.ShowModal()
+
+
 
     def OnStop(self, evt):
         if self.ps is not None:
@@ -229,7 +239,6 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_segment.Enable()
         self.elapsed_time_timer.Stop()
-        evt.Skip()
 
     def OnBtnClose(self, evt):
         self.Close()
@@ -250,6 +259,16 @@ class BrainSegmenterDialog(wx.Dialog):
     def OnTickTimer(self, evt):
         fmt='%H:%M:%S'
         self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time()-self.t0)))
+        if self.ps is not None:
+            if self.ps.poll() is not None and self.ps.poll() != 0:
+                self.OnStop(None)
+                self.HideProgress()
+                dlg = wx.MessageDialog(None, "It was not possible to start brain segmentation because:" + "\n" + self.ps.stdout.read().decode("utf8"),
+                                       "Brain segmentation error",
+                                       wx.ICON_ERROR | wx.OK)
+                dlg.ShowModal()
+                return
+
         if self.comm_array is not None:
             progress = self.comm_array[0]
             if progress == np.Inf:
