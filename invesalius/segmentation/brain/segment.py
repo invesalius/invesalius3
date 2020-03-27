@@ -6,20 +6,16 @@ import sys
 import tempfile
 import traceback
 
-
 import numpy as np
 from skimage.transform import resize
 
-from . import utils
+import invesalius.data.slice_ as slc
+from invesalius.data import imagedata_utils
 
+from . import utils
 
 SIZE = 48
 OVERLAP = SIZE // 2 + 1
-
-
-def image_normalize(image, min_=0.0, max_=1.0):
-    imin, imax = image.min(), image.max()
-    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_
 
 
 def gen_patches(image, patch_size, overlap):
@@ -50,79 +46,6 @@ def predict_patch(sub_image, patch, nn_model, patch_size=SIZE):
     return sub_mask.reshape(patch_size, patch_size, patch_size)[0:ez-iz, 0:ey-iy, 0:ex-ix]
 
 
-class BrainSegmenter:
-    def __init__(self):
-        self.mask = None
-        self.propability_array = None
-        self.stop = False
-        self.segmented = False
-
-    def segment(self, image, prob_threshold, backend, device_id, use_gpu, progress_callback=None, after_segment=None):
-        print("backend", backend)
-        if backend.lower() == 'plaidml':
-            os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-            os.environ["PLAIDML_DEVICE_IDS"] = device_id
-        elif backend.lower() == 'theano':
-            os.environ["KERAS_BACKEND"] = "theano"
-            if use_gpu:
-                os.environ["THEANO_FLAGS"] = "device=cuda0"
-                print("Use GPU theano", os.environ["THEANO_FLAGS"])
-            else:
-                os.environ["THEANO_FLAGS"] = "device=cpu"
-        else:
-            raise TypeError("Wrong backend")
-
-        import keras
-        import invesalius.data.slice_ as slc
-
-        image = imagedata_utils.image_normalize(image, 0.0, 1.0)
-
-        # Loading model
-        folder = pathlib.Path(__file__).parent.resolve()
-        with open(folder.joinpath("model.json"), "r") as json_file:
-            model = keras.models.model_from_json(json_file.read())
-        model.load_weights(str(folder.joinpath("model.h5")))
-        model.compile("Adam", "binary_crossentropy")
-
-        # segmenting by patches
-        msk = np.zeros_like(image, dtype="float32")
-        sums = np.zeros_like(image)
-        for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
-            if self.stop:
-                self.stop = False
-                return
-
-            if progress_callback is not None:
-                progress_callback(completion)
-            print("completion", completion)
-            (iz, ez), (iy, ey), (ix, ex) = patch
-            sub_mask = predict_patch(sub_image, patch, model, SIZE)
-            msk[iz:ez, iy:ey, ix:ex] += sub_mask
-            sums[iz:ez, iy:ey, ix:ex] += 1
-
-        propability_array = msk / sums
-
-        mask = slc.Slice().create_new_mask()
-        mask.was_edited = True
-        mask.matrix[:] = 1
-        mask.matrix[1:, 1:, 1:] = (propability_array >= prob_threshold) * 255
-
-        self.mask = mask
-        self.propability_array = propability_array
-        self.segmented = True
-        if after_segment is not None:
-            after_segment()
-
-    def set_threshold(self, threshold):
-        if threshold < 0:
-            threshold = 0
-        elif threshold > 1:
-            threshold = 1
-        self.mask.matrix[:] = 1
-        self.mask.matrix[1:, 1:, 1:] = (self.propability_array >= threshold) * 255
-
-
-
 def brain_segment(image, probability_array, comm_array):
     import keras
     # Loading model
@@ -132,7 +55,7 @@ def brain_segment(image, probability_array, comm_array):
     model.load_weights(str(folder.joinpath("model.h5")))
     model.compile("Adam", "binary_crossentropy")
 
-    image = image_normalize(image, 0.0, 1.0)
+    image = imagedata_utils.image_normalize(image, 0.0, 1.0)
     sums = np.zeros_like(image)
     # segmenting by patches
     for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
@@ -148,13 +71,15 @@ def brain_segment(image, probability_array, comm_array):
 
 
 class SegmentProcess(multiprocessing.Process):
-    def __init__(self, image, probability_array, backend, device_id, use_gpu):
+    def __init__(self, image, backend, device_id, use_gpu):
         multiprocessing.Process.__init__(self)
 
         self._image_filename = image.filename
         self._image_dtype = image.dtype
         self._image_shape = image.shape
-        self._prob_arr_filename = probability_array.filename
+
+        self._probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
+        self._prob_array_filename = self._probability_array.filename
 
         self._comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
         self._comm_array_filename = self._comm_array.filename
@@ -166,6 +91,8 @@ class SegmentProcess(multiprocessing.Process):
         self._pconn, self._cconn = multiprocessing.Pipe()
         self._exception = None
 
+        self.mask = None
+
     def run(self):
         try:
             self._run_segmentation()
@@ -176,7 +103,7 @@ class SegmentProcess(multiprocessing.Process):
 
     def _run_segmentation(self):
         image = np.memmap(self._image_filename, dtype=self._image_dtype, shape=self._image_shape, mode="r")
-        probability_array = np.memmap(self._prob_arr_filename, dtype=np.float32, shape=self._image_shape, mode="r+")
+        probability_array = np.memmap(self._prob_array_filename, dtype=np.float32, shape=self._image_shape, mode="r+")
         comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
         utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
@@ -184,9 +111,17 @@ class SegmentProcess(multiprocessing.Process):
 
     @property
     def exception(self):
+        # Based on https://stackoverflow.com/a/33599967
         if self._pconn.poll():
             self._exception = self._pconn.recv()
         return self._exception
+
+    def apply_segment_threshold(self, threshold):
+        if self.mask is None:
+            self.mask = slc.Slice().create_new_mask()
+        self.mask.was_edited = True
+        self.mask.matrix[:] = 1
+        self.mask.matrix[1:, 1:, 1:] = (self._probability_array >= threshold) * 255
 
     def get_completion(self):
         return self._comm_array[0]
@@ -195,33 +130,5 @@ class SegmentProcess(multiprocessing.Process):
         del self._comm_array
         os.remove(self._comm_array_filename)
 
-def segment_multiprocessing(image_filename, image_dtype, image_shape, prob_arr_filename, comm_arr_filename, backend, device_id, use_gpu):
-    image = np.memmap(image_filename, dtype=image_dtype, shape=image_shape, mode="r")
-    probability_array = np.memmap(prob_arr_filename, dtype=np.float32, shape=image_shape, mode="r+")
-    comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="r+")
-
-    utils.prepare_ambient(backend, device_id, use_gpu)
-    brain_segment(image, probability_array, comm_array)
-
-
-def main():
-    image_filename = sys.argv[1]
-    image_dtype = sys.argv[2]
-    sz = int(sys.argv[3])
-    sy = int(sys.argv[4])
-    sx = int(sys.argv[5])
-    prob_arr_filename = sys.argv[6]
-    comm_arr_filename = sys.argv[7]
-    backend = sys.argv[8]
-    device_id = sys.argv[9]
-    use_gpu = bool(int(sys.argv[10]))
-
-    image = np.memmap(image_filename, dtype=image_dtype, shape=(sz, sy, sx), mode="r")
-    probability_array = np.memmap(prob_arr_filename, dtype=np.float32, shape=(sz, sy, sx), mode="r+")
-    comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="r+")
-
-    utils.prepare_ambient(backend, device_id, use_gpu)
-    brain_segment(image, probability_array, comm_array)
-
-if __name__ == "__main__":
-    main()
+        del self._probability_array
+        os.remove(self._prob_array_filename)

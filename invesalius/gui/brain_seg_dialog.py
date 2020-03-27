@@ -45,8 +45,6 @@ class BrainSegmenterDialog(wx.Dialog):
         self.plaidml_devices = PLAIDML_DEVICES
 
         self.ps = None
-        self.probability_array = None
-        self.comm_array = None
         self.segmented = False
         self.mask = None
 
@@ -131,14 +129,10 @@ class BrainSegmenterDialog(wx.Dialog):
 
     def apply_segment_threshold(self):
         threshold = self.sld_threshold.GetValue() / 100.0
-        if self.mask is None:
-            self.mask = slc.Slice().create_new_mask()
-        self.mask.was_edited = True
-        self.mask.matrix[:] = 1
-        self.mask.matrix[1:, 1:, 1:] = (self.probability_array >= threshold) * 255
-
-        slc.Slice().discard_all_buffers()
-        Publisher.sendMessage('Reload actual slice')
+        if self.ps is not None:
+            self.ps.apply_segment_threshold(threshold)
+            slc.Slice().discard_all_buffers()
+            Publisher.sendMessage('Reload actual slice')
 
     def CalcSizeFromTextSize(self, text):
         dc = wx.WindowDC(self)
@@ -196,13 +190,8 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_stop.Enable()
         self.btn_segment.Disable()
 
-        if self.probability_array is None:
-            self.probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
-
-        if self.comm_array is None:
-            self.comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
         try:
-            self.ps = segment.SegmentProcess(image, self.probability_array, backend, device_id, use_gpu)
+            self.ps = segment.SegmentProcess(image, backend, device_id, use_gpu)
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError)  as err:
             self.OnStop(None)
@@ -269,11 +258,6 @@ class BrainSegmenterDialog(wx.Dialog):
         if self.ps is not None:
             self.ps.terminate()
             self.ps = None
-
-        if self.probability_array is not None:
-            prob_arr_filename = self.probability_array.filename
-            self.probability_array = None
-            os.remove(prob_arr_filename)
 
         self.Destroy()
 
