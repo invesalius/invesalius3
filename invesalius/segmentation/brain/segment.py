@@ -1,13 +1,17 @@
 import itertools
+import multiprocessing
 import os
 import pathlib
 import sys
+import tempfile
+import traceback
 
 
 import numpy as np
 from skimage.transform import resize
 
 from . import utils
+
 
 SIZE = 48
 OVERLAP = SIZE // 2 + 1
@@ -142,6 +146,54 @@ def brain_segment(image, probability_array, comm_array):
     probability_array /= sums
     comm_array[0] = np.Inf
 
+
+class SegmentProcess(multiprocessing.Process):
+    def __init__(self, image, probability_array, backend, device_id, use_gpu):
+        multiprocessing.Process.__init__(self)
+
+        self._image_filename = image.filename
+        self._image_dtype = image.dtype
+        self._image_shape = image.shape
+        self._prob_arr_filename = probability_array.filename
+
+        self._comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
+        self._comm_array_filename = self._comm_array.filename
+
+        self.backend = backend
+        self.device_id = device_id
+        self.use_gpu = use_gpu
+
+        self._pconn, self._cconn = multiprocessing.Pipe()
+        self._exception = None
+
+    def run(self):
+        try:
+            self._run_segmentation()
+            self._cconn.send(None)
+        except Exception as e:
+            tb = traceback.format_exc()
+            self._cconn.send((e, tb))
+
+    def _run_segmentation(self):
+        image = np.memmap(self._image_filename, dtype=self._image_dtype, shape=self._image_shape, mode="r")
+        probability_array = np.memmap(self._prob_arr_filename, dtype=np.float32, shape=self._image_shape, mode="r+")
+        comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
+
+        utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
+        brain_segment(image, probability_array, comm_array)
+
+    @property
+    def exception(self):
+        if self._pconn.poll():
+            self._exception = self._pconn.recv()
+        return self._exception
+
+    def get_completion(self):
+        return self._comm_array[0]
+
+    def __del__(self):
+        del self._comm_array
+        os.remove(self._comm_array_filename)
 
 def segment_multiprocessing(image_filename, image_dtype, image_shape, prob_arr_filename, comm_arr_filename, backend, device_id, use_gpu):
     image = np.memmap(image_filename, dtype=image_dtype, shape=image_shape, mode="r")

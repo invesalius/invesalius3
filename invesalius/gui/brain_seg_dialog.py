@@ -202,12 +202,9 @@ class BrainSegmenterDialog(wx.Dialog):
         if self.comm_array is None:
             self.comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
         try:
-            #  self.ps = subprocess.Popen([sys.executable, segment.__file__, image.filename, str(image.dtype), str(image.shape[0]), str(image.shape[1]), str(image.shape[2]), self.probability_array.filename, self.comm_array.filename, backend, device_id, str(int(use_gpu))], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            #  with multiprocessing.Pool(1) as p:
-                #  p.
-            self.ps = multiprocessing.Process(target=segment.segment_multiprocessing, args=(image.filename, image.dtype, image.shape, self.probability_array.filename, self.comm_array.filename, backend, device_id, use_gpu))
+            self.ps = segment.SegmentProcess(image, self.probability_array, backend, device_id, use_gpu)
             self.ps.start()
-        except (subprocess.SubprocessError, OSError, ValueError)  as err:
+        except (multiprocessing.ProcessError, OSError, ValueError)  as err:
             self.OnStop(None)
             self.HideProgress()
             dlg = wx.MessageDialog(None, "It was not possible to start brain segmentation because:" + "\n" + str(err),
@@ -242,18 +239,18 @@ class BrainSegmenterDialog(wx.Dialog):
     def OnTickTimer(self, evt):
         fmt='%H:%M:%S'
         self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time()-self.t0)))
-        #  if self.ps is not None:
-            #  if self.ps.poll() is not None and self.ps.poll() != 0:
-                #  self.OnStop(None)
-                #  self.HideProgress()
-                #  dlg = wx.MessageDialog(None, "It was not possible to start brain segmentation because:" + "\n" + self.ps.stdout.read().decode("utf8"),
-                                       #  "Brain segmentation error",
-                                       #  wx.ICON_ERROR | wx.OK)
-                #  dlg.ShowModal()
-                #  return
+        if self.ps is not None:
+            if not self.ps.is_alive() and self.ps.exception is not None:
+                error, traceback = self.ps.exception
+                self.OnStop(None)
+                self.HideProgress()
+                dlg = wx.MessageDialog(None, "It was not possible to start brain segmentation because:" + "\n" + str(error) + "\n" + traceback,
+                                       "Brain segmentation error",
+                                       wx.ICON_ERROR | wx.OK)
+                dlg.ShowModal()
+                return
 
-        if self.comm_array is not None:
-            progress = self.comm_array[0]
+            progress = self.ps.get_completion()
             if progress == np.Inf:
                 progress = 1
                 self.AfterSegment()
@@ -272,15 +269,11 @@ class BrainSegmenterDialog(wx.Dialog):
         if self.ps is not None:
             self.ps.terminate()
             self.ps = None
+
         if self.probability_array is not None:
             prob_arr_filename = self.probability_array.filename
             self.probability_array = None
             os.remove(prob_arr_filename)
-
-        if self.comm_array is not None:
-            comm_arr_filename = self.comm_array.filename
-            self.comm_array = None
-            os.remove(comm_arr_filename)
 
         self.Destroy()
 
