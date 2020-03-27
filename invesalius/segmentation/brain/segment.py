@@ -7,8 +7,7 @@ import sys
 import numpy as np
 from skimage.transform import resize
 
-sys.path.append(str(pathlib.Path(os.getcwd())))
-from invesalius.segmentation.brain import utils
+from . import utils
 
 SIZE = 48
 OVERLAP = SIZE // 2 + 1
