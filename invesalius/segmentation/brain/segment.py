@@ -20,11 +20,13 @@ OVERLAP = SIZE // 2 + 1
 
 def gen_patches(image, patch_size, overlap):
     sz, sy, sx = image.shape
-    i_cuts = list(itertools.product(
-        range(0, sz, patch_size - OVERLAP),
-        range(0, sy, patch_size - OVERLAP),
-        range(0, sx, patch_size - OVERLAP),
-    ))
+    i_cuts = list(
+        itertools.product(
+            range(0, sz, patch_size - OVERLAP),
+            range(0, sy, patch_size - OVERLAP),
+            range(0, sx, patch_size - OVERLAP),
+        )
+    )
     sub_image = np.empty(shape=(patch_size, patch_size, patch_size), dtype="float32")
     for idx, (iz, iy, ix) in enumerate(i_cuts):
         sub_image[:] = 0
@@ -37,17 +39,22 @@ def gen_patches(image, patch_size, overlap):
         ey = iy + sy
         ex = ix + sx
 
-        yield (idx + 1.0)/len(i_cuts), sub_image, ((iz, ez), (iy, ey), (ix, ex))
+        yield (idx + 1.0) / len(i_cuts), sub_image, ((iz, ez), (iy, ey), (ix, ex))
 
 
 def predict_patch(sub_image, patch, nn_model, patch_size=SIZE):
     (iz, ez), (iy, ey), (ix, ex) = patch
-    sub_mask = nn_model.predict(sub_image.reshape(1, patch_size, patch_size, patch_size, 1))
-    return sub_mask.reshape(patch_size, patch_size, patch_size)[0:ez-iz, 0:ey-iy, 0:ex-ix]
+    sub_mask = nn_model.predict(
+        sub_image.reshape(1, patch_size, patch_size, patch_size, 1)
+    )
+    return sub_mask.reshape(patch_size, patch_size, patch_size)[
+        0 : ez - iz, 0 : ey - iy, 0 : ex - ix
+    ]
 
 
 def brain_segment(image, probability_array, comm_array):
     import keras
+
     # Loading model
     folder = pathlib.Path(__file__).parent.resolve()
     with open(folder.joinpath("model.json"), "r") as json_file:
@@ -60,7 +67,6 @@ def brain_segment(image, probability_array, comm_array):
     # segmenting by patches
     for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
         comm_array[0] = completion
-        print("completion", completion)
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch(sub_image, patch, model, SIZE)
         probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
@@ -78,10 +84,14 @@ class SegmentProcess(multiprocessing.Process):
         self._image_dtype = image.dtype
         self._image_shape = image.shape
 
-        self._probability_array = np.memmap(tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+")
+        self._probability_array = np.memmap(
+            tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+"
+        )
         self._prob_array_filename = self._probability_array.filename
 
-        self._comm_array = np.memmap(tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+")
+        self._comm_array = np.memmap(
+            tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+"
+        )
         self._comm_array_filename = self._comm_array.filename
 
         self.backend = backend
@@ -102,9 +112,21 @@ class SegmentProcess(multiprocessing.Process):
             self._cconn.send((e, tb))
 
     def _run_segmentation(self):
-        image = np.memmap(self._image_filename, dtype=self._image_dtype, shape=self._image_shape, mode="r")
-        probability_array = np.memmap(self._prob_array_filename, dtype=np.float32, shape=self._image_shape, mode="r+")
-        comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
+        image = np.memmap(
+            self._image_filename,
+            dtype=self._image_dtype,
+            shape=self._image_shape,
+            mode="r",
+        )
+        probability_array = np.memmap(
+            self._prob_array_filename,
+            dtype=np.float32,
+            shape=self._image_shape,
+            mode="r+",
+        )
+        comm_array = np.memmap(
+            self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+        )
 
         utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
         brain_segment(image, probability_array, comm_array)
