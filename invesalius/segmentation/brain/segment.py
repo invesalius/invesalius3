@@ -144,6 +144,15 @@ def brain_segment(image, probability_array, comm_array):
     comm_array[0] = np.Inf
 
 
+def segment_multiprocessing(image_filename, image_dtype, image_shape, prob_arr_filename, comm_arr_filename, backend, device_id, use_gpu):
+    image = np.memmap(image_filename, dtype=image_dtype, shape=image_shape, mode="r")
+    probability_array = np.memmap(prob_arr_filename, dtype=np.float32, shape=image_shape, mode="r+")
+    comm_array = np.memmap(comm_arr_filename, dtype=np.float32, shape=(1,), mode="r+")
+
+    utils.prepare_ambient(backend, device_id, use_gpu)
+    brain_segment(image, probability_array, comm_array)
+
+
 def main():
     image_filename = sys.argv[1]
     image_dtype = sys.argv[2]
