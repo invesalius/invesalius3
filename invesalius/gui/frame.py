@@ -478,6 +478,10 @@ class Frame(wx.Frame):
             ddlg = dlg.MaskDensityDialog(self)
             ddlg.Show()
 
+        elif id == const.ID_MANUAL_WWWL:
+            wwwl_dlg = dlg.ManualWWWLDialog(self)
+            wwwl_dlg.Show()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
@@ -818,7 +822,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
-                             const.ID_GOTO_SLICE]
+                             const.ID_GOTO_SLICE,
+                             const.ID_MANUAL_WWWL]
         self.__init_items()
         self.__bind_events()
 
@@ -981,6 +986,7 @@ class MenuBar(wx.MenuBar):
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         reorient_menu.Enable(False)
         tools_menu.Append(-1, _(u'Image'), image_menu)

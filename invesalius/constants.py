@@ -519,6 +519,8 @@ ID_CREATE_MASK = wx.NewId()
 ID_GOTO_SLICE = wx.NewId()
 ID_GOTO_COORD = wx.NewId()
 
+ID_MANUAL_WWWL = wx.NewId()
+
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001
