@@ -21,7 +21,7 @@ import importlib.util
 import json
 import sys
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as consts
 from invesalius import inv_paths

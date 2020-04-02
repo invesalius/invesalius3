@@ -22,7 +22,7 @@ from time import sleep
 
 from numpy import asmatrix, mat, degrees, radians, identity
 import wx
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr

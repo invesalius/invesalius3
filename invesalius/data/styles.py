@@ -32,7 +32,7 @@ from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
 from six import with_metaclass
 from skimage.morphology import watershed
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters

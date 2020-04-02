@@ -23,7 +23,7 @@ import numpy as np
 import vtk
 from scipy import ndimage
 from six import with_metaclass
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters

@@ -41,7 +41,7 @@ import wx.lib.agw.toasterbox as TB
 import wx.lib.popupctl as pc
 from invesalius import inv_paths
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon

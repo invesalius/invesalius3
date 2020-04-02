@@ -32,7 +32,7 @@ import invesalius.session as ses
 
 from invesalius_cy import floodfill
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 from scipy import ndimage
 
 class EditionHistoryNode(object):

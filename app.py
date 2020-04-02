@@ -46,11 +46,8 @@ try:
     from wx.adv import SplashScreen
 except ImportError:
     from wx import SplashScreen
-#from wx.lib.pubsub import setupv1 #new wx
-#  from wx.lib.pubsub import setuparg1# as psv1
-#from wx.lib.pubsub import Publisher 
-#import wx.lib.pubsub as ps
-from wx.lib.pubsub import pub as Publisher
+
+from pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
 #if sys.platform.startswith('linux'):

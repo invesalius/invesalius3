@@ -30,7 +30,8 @@ import numpy as np
 import vtk
 import wx
 from six import with_metaclass
-from wx.lib.pubsub import pub as Publisher
+
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu

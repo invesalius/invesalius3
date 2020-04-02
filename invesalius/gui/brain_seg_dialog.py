@@ -8,7 +8,7 @@ import sys
 import time
 
 import wx
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 # Linux if installed plaidml with pip3 install --user
 if sys.platform.startswith("linux"):
