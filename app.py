@@ -219,7 +219,7 @@ class Inv3SplashScreen(SplashScreen):
                                   id=-1,
                                   parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
-            wx.Yield()
+            wx.GetApp().Yield()
             wx.CallLater(200, self.Startup)
 
     def Startup(self):
