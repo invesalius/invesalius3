@@ -22,7 +22,6 @@ import tempfile
 import numpy as np
 import vtk
 from scipy import ndimage
-from six import with_metaclass
 from pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -77,7 +76,7 @@ class SliceBuffer(object):
 # Only one slice will be initialized per time (despite several viewers
 # show it from distinct perspectives).
 # Therefore, we use Singleton design pattern for implementing it.
-class Slice(with_metaclass(utils.Singleton, object)):
+class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.current_mask = None
         self.blend_filter = None

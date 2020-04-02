@@ -1,7 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-from six import with_metaclass
-
 import math
 import random
 import sys
@@ -57,7 +55,7 @@ else:
 
 DEBUG_DENSITY = False
 
-class MeasureData(with_metaclass(utils.Singleton)):
+class MeasureData(metaclass=utils.Singleton):
     """
     Responsible to keep measures data.
     """

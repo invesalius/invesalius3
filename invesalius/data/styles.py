@@ -30,7 +30,6 @@ import wx
 from scipy import ndimage
 from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
-from six import with_metaclass
 from skimage.morphology import watershed
 from pubsub import pub as Publisher
 
@@ -1127,7 +1126,7 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         self.last_position = position[1]
 
 
-class EditorConfig(with_metaclass(utils.Singleton, object)):
+class EditorConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.operation = const.BRUSH_THRESH
         self.cursor_type = const.BRUSH_CIRCLE
@@ -1394,7 +1393,7 @@ class WatershedProgressWindow(object):
         self.dlg.Destroy()
 
 
-class WatershedConfig(with_metaclass(utils.Singleton, object)):
+class WatershedConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.algorithm = "Watershed"
         self.con_2d = 4
@@ -2174,7 +2173,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             buffer_.discard_image()
 
 
-class FFillConfig(with_metaclass(utils.Singleton, object)):
+class FFillConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"
@@ -2310,7 +2309,7 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
         self._progr_title = _(u"Remove part")
         self._progr_msg = _(u"Removing part ...")
 
-class CropMaskConfig(with_metaclass(utils.Singleton, object)):
+class CropMaskConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.dlg_visible = False
 
@@ -2411,7 +2410,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Reload actual slice')
 
 
-class SelectPartConfig(with_metaclass(utils.Singleton, object)):
+class SelectPartConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.mask = None
         self.con_3d = 6
@@ -2517,7 +2516,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.config.mask = mask
 
 
-class FFillSegmentationConfig(with_metaclass(utils.Singleton, object)):
+class FFillSegmentationConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"
