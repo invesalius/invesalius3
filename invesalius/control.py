@@ -872,13 +872,11 @@ class Controller():
     def OnOpenOtherFiles(self, filepath):
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if not(filepath) == None:
-            name = filepath.rpartition('\\')[-1].split('.')
-
+            name = os.path.basename(filepath).split(".")[0]
             group = oth.ReadOthers(filepath)
-            
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
-                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
+                self.CreateOtherProject(name, matrix, matrix_filename)
                 self.LoadProject()
                 Publisher.sendMessage("Enable state project", state=True)
             else:
