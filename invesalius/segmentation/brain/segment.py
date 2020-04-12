@@ -11,6 +11,7 @@ from skimage.transform import resize
 
 import invesalius.data.slice_ as slc
 from invesalius.data import imagedata_utils
+from invesalius import inv_paths
 
 from . import utils
 
@@ -56,7 +57,7 @@ def brain_segment(image, probability_array, comm_array):
     import keras
 
     # Loading model
-    folder = pathlib.Path(__file__).parent.resolve()
+    folder = inv_paths.MODELS_DIR.joinpath("brain_mri_t1")
     with open(folder.joinpath("model.json"), "r") as json_file:
         model = keras.models.model_from_json(json_file.read())
     model.load_weights(str(folder.joinpath("model.h5")))
