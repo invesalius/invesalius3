@@ -421,7 +421,7 @@ def check_for_export(options, suffix='', remove_surfaces=False):
         try:
             from invesalius.project import Project
 
-            for threshold_name, threshold_range in Project().presets.thresh_ct.iteritems():
+            for threshold_name, threshold_range in Project().presets.thresh_ct.items():
                 if isinstance(threshold_range[0], int):
                     path_ = u'{}-{}-{}.stl'.format(options.export_to_all, suffix, threshold_name)
                     export(path_, threshold_range, remove_surface=True)
