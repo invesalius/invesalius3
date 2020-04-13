@@ -81,6 +81,16 @@ if sys.platform in ('linux2', 'linux', 'win32'):
         del tmp_var
 
 
+if multiprocessing.current_process().name != "MainProcess":
+    session = ses.Session()
+    session.ReadSession()
+    install_lang = 0
+    lang = session.GetLanguage()
+    if not lang:
+        lang = 'en'
+    _ = i18n.InstallLanguage(lang)
+
+
 class InVesalius(wx.App):
     """
     InVesalius wxPython application class.

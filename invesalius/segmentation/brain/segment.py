@@ -77,7 +77,8 @@ def brain_segment(image, probability_array, comm_array):
     comm_array[0] = np.Inf
 
 
-class SegmentProcess(multiprocessing.Process):
+ctx = multiprocessing.get_context('spawn')
+class SegmentProcess(ctx.Process):
     def __init__(self, image, backend, device_id, use_gpu):
         multiprocessing.Process.__init__(self)
 
