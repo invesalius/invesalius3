@@ -79,6 +79,8 @@ class BrainSegmenterDialog(wx.Dialog):
         self.txt_threshold = wx.TextCtrl(self, wx.ID_ANY, "")
         w, h = self.CalcSizeFromTextSize("MMMMM")
         self.txt_threshold.SetMinClientSize((w, -1))
+        self.chk_new_mask = wx.CheckBox(self, wx.ID_ANY, _("Create new mask"))
+        self.chk_new_mask.SetValue(True)
         self.progress = wx.Gauge(self, -1)
         self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
         self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
@@ -118,6 +120,7 @@ class BrainSegmenterDialog(wx.Dialog):
         )
         sizer_3.Add(self.txt_threshold, 0, wx.ALL, 5)
         main_sizer.Add(sizer_3, 0, wx.EXPAND, 0)
+        main_sizer.Add(self.chk_new_mask, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
         time_sizer = wx.BoxSizer(wx.HORIZONTAL)
         time_sizer.Add(self.lbl_progress_caption, 0, wx.EXPAND, 0)
@@ -213,14 +216,16 @@ class BrainSegmenterDialog(wx.Dialog):
             device_id = self.plaidml_devices[self.cb_devices.GetValue()]
         except (KeyError, AttributeError):
             device_id = "llvm_cpu.0"
+        create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
         self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
 
         try:
-            self.ps = segment.SegmentProcess(image, backend, device_id, use_gpu)
+            self.ps = segment.SegmentProcess(image, create_new_mask, backend, device_id, use_gpu)
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
             self.OnStop(None)
@@ -241,6 +246,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_close.Enable()
         self.btn_stop.Disable()
         self.btn_segment.Enable()
+        self.chk_new_mask.Enable()
         self.elapsed_time_timer.Stop()
 
     def OnBtnClose(self, evt):
@@ -251,6 +257,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_close.Enable()
         self.btn_stop.Disable()
         self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
         self.elapsed_time_timer.Stop()
         self.apply_segment_threshold()
 
@@ -293,6 +300,7 @@ class BrainSegmenterDialog(wx.Dialog):
         #  self.segmenter.stop = True
         self.btn_stop.Disable()
         self.btn_segment.Enable()
+        self.chk_new_mask.Enable()
         self.progress.SetValue(0)
 
         if self.ps is not None:

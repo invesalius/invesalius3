@@ -10,8 +10,9 @@ import numpy as np
 from skimage.transform import resize
 
 import invesalius.data.slice_ as slc
-from invesalius.data import imagedata_utils
 from invesalius import inv_paths
+from invesalius.data import imagedata_utils
+from invesalius.utils import new_name_by_pattern
 
 from . import utils
 
@@ -79,7 +80,7 @@ def brain_segment(image, probability_array, comm_array):
 
 ctx = multiprocessing.get_context('spawn')
 class SegmentProcess(ctx.Process):
-    def __init__(self, image, backend, device_id, use_gpu):
+    def __init__(self, image, create_new_mask, backend, device_id, use_gpu):
         multiprocessing.Process.__init__(self)
 
         self._image_filename = image.filename
@@ -96,6 +97,7 @@ class SegmentProcess(ctx.Process):
         )
         self._comm_array_filename = self._comm_array.filename
 
+        self.create_new_mask = create_new_mask
         self.backend = backend
         self.device_id = device_id
         self.use_gpu = use_gpu
@@ -141,8 +143,16 @@ class SegmentProcess(ctx.Process):
         return self._exception
 
     def apply_segment_threshold(self, threshold):
-        if self.mask is None:
-            self.mask = slc.Slice().create_new_mask()
+        if self.create_new_mask:
+            if self.mask is None:
+                name = new_name_by_pattern("brainseg_mri_t1")
+                self.mask = slc.Slice().create_new_mask(name=name)
+        else:
+            self.mask = slc.Slice().current_mask
+            if self.mask is None:
+                name = new_name_by_pattern("brainseg_mri_t1")
+                self.mask = slc.Slice().create_new_mask(name=name)
+
         self.mask.was_edited = True
         self.mask.matrix[:] = 1
         self.mask.matrix[1:, 1:, 1:] = (self._probability_array >= threshold) * 255
