@@ -876,7 +876,14 @@ class SurfaceManager():
                 os.remove(_temp_file)
 
             temp_file = utl.decode(temp_file, const.FS_ENCODE)
-            self._export_surface(temp_file, filetype)
+            try:
+                self._export_surface(temp_file, filetype)
+            except ValueError:
+                if wx.GetApp() is None:
+                    print("It was not possible to export the surface because the surface is empty")
+                else:
+                    wx.MessageBox(_("It was not possible to export the surface because the surface is empty"), _("Export surface error"))
+                return
 
             shutil.move(temp_file, filename)
 
@@ -902,6 +909,9 @@ class SurfaceManager():
                 polydata = polydata_list[0]
             else:
                 polydata = pu.Merge(polydata_list)
+
+            if polydata.GetNumberOfPoints() == 0:
+                raise ValueError
 
             # Having a polydata that represents all surfaces
             # selected, we write it, according to filetype
