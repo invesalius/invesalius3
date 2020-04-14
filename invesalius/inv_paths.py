@@ -46,7 +46,7 @@ RAYCASTING_PRESETS_COLOR_DIRECTORY = INV_TOP_DIR.joinpath(
     "presets", "raycasting", "color_list"
 )
 
-MODELS_DIR = INV_TOP_DIR.joinpath("models")
+MODELS_DIR = INV_TOP_DIR.joinpath("ai")
 
 # Inside the windows executable
 if hasattr(sys, "frozen") and (
