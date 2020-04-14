@@ -68,6 +68,7 @@ import invesalius.utils as utils
 from invesalius import inv_paths
 
 FS_ENCODE = sys.getfilesystemencoding()
+LANG = None
 
 # ------------------------------------------------------------------
 
@@ -81,14 +82,15 @@ if sys.platform in ('linux2', 'linux', 'win32'):
         del tmp_var
 
 
-if multiprocessing.current_process().name != "MainProcess":
-    session = ses.Session()
-    session.ReadSession()
-    install_lang = 0
+session = ses.Session()
+if session.ReadSession():
     lang = session.GetLanguage()
-    if not lang:
-        lang = 'en'
-    _ = i18n.InstallLanguage(lang)
+    if lang:
+        LANG = lang
+        try:
+            _ = i18n.InstallLanguage(lang)
+        except FileNotFoundError:
+            LANG = None
 
 
 class InVesalius(wx.App):
@@ -132,26 +134,18 @@ class Inv3SplashScreen(SplashScreen):
     """
     def __init__(self):
         # Splash screen image will depend on currently language
-        lang = False
-
+        lang = LANG
         self.locale = wx.Locale(wx.LANGUAGE_DEFAULT)
 
         # Language information is available in session configuration
         # file. First we need to check if this file exist, if now, it
         # should be created
-        create_session = False
-        session = ses.Session()
-        if not (session.ReadSession()):
-            create_session = True
+        create_session = LANG is None
 
         install_lang = 0
-        lang = session.GetLanguage()
         if lang:
-            if (lang != "False"):
-                _ = i18n.InstallLanguage(lang)
-                install_lang = 1
-            else:
-                install_lang = 0
+            _ = i18n.InstallLanguage(lang)
+            install_lang = 1
         else:
             install_lang = 0
 
@@ -275,7 +269,10 @@ class Inv3SplashScreen(SplashScreen):
 
 
 def non_gui_startup(options, args):
-    lang = 'en'
+    if LANG:
+        lang = LANG
+    else:
+        lang = 'en'
     _ = i18n.InstallLanguage(lang)
 
     from invesalius.control import Controller
