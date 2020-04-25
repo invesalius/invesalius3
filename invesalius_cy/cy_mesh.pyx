@@ -1,4 +1,5 @@
 # distutils: language = c++
+# cython: language_level=3str
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: initializedcheck=False
@@ -21,7 +22,7 @@ from libcpp cimport bool
 from libcpp.deque cimport deque as cdeque
 from cython.parallel import prange
 
-from cy_my_types cimport vertex_t, normal_t, vertex_id_t
+from .cy_my_types cimport vertex_t, normal_t, vertex_id_t
 
 import numpy as np
 import vtk
@@ -451,16 +452,16 @@ def ca_smoothing(Mesh mesh, double T, double tmax, double bmin, int n_iters):
 
     t0 = time.time()
     cdef vector[vertex_id_t]* vertices_staircase =  find_staircase_artifacts(mesh, stack_orientation, T)
-    print "vertices staircase", time.time() - t0
+    print("vertices staircase", time.time() - t0)
 
     t0 = time.time()
     cdef vector[weight_t]* weights = calc_artifacts_weight(mesh, deref(vertices_staircase), tmax, bmin)
-    print "Weights", time.time() - t0
+    print("Weights", time.time() - t0)
 
     del vertices_staircase
 
     t0 = time.time()
     taubin_smooth(mesh, deref(weights), 0.5, -0.53, n_iters)
-    print "taubin", time.time() - t0
+    print("taubin", time.time() - t0)
 
     del weights

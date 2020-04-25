@@ -1,3 +1,4 @@
+#cython: language_level=3str
 # from interpolation cimport interpolate
 
 import numpy as np

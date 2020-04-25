@@ -1,3 +1,5 @@
+#cython: language_level=3str
+
 import numpy as np
 cimport numpy as np
 cimport cython
@@ -10,7 +12,7 @@ from libcpp cimport bool
 from libcpp.deque cimport deque as cdeque
 from libcpp.vector cimport vector
 
-from cy_my_types cimport image_t, mask_t
+from .cy_my_types cimport image_t, mask_t
 
 cdef struct s_coord:
     int x
@@ -117,9 +119,9 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
     cdef cdeque[coord] stack
     cdef coord c
 
-    offset_z = odz / 2
-    offset_y = ody / 2
-    offset_x = odx / 2
+    offset_z = odz // 2
+    offset_y = ody // 2
+    offset_x = odx // 2
 
     for i, j, k in seeds:
         if data[k, j, i] >= t0 and data[k, j, i] <= t1:
@@ -191,13 +193,13 @@ def floodfill_auto_threshold(np.ndarray[image_t, ndim=3] data, list seeds, float
     for i, j, k in seeds:
         append_queue(stack, i, j, k, d, h, w)
         out[k, j, i] = fill
-        print i, j, k, d, h, w
+        print(i, j, k, d, h, w)
 
     with nogil:
         while stack.size():
             pop_queue(stack, &x, &y, &z, d, h, w)
 
-            #  print x, y, z, d, h, w
+            #  print(x, y, z, d, h, w)
 
             xo = x
             yo = y

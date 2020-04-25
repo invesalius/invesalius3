@@ -1,3 +1,5 @@
+#cython: language_level=3str
+
 #http://en.wikipedia.org/wiki/Local_maximum_intensity_projection
 import numpy as np
 cimport numpy as np
@@ -90,8 +92,8 @@ def lmip(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t tmin,
 
 cdef DTYPE16_t get_colour(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww):
     cdef DTYPE16_t out_colour
-    cdef DTYPE16_t min_value = wl - (ww / 2)
-    cdef DTYPE16_t max_value = wl + (ww / 2)
+    cdef DTYPE16_t min_value = wl - (ww // 2)
+    cdef DTYPE16_t max_value = wl + (ww // 2)
     if vl < min_value:
         out_colour = min_value
     elif vl > max_value:
@@ -105,8 +107,8 @@ cdef DTYPE16_t get_colour(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww):
 @cython.cdivision(True)
 cdef float get_opacity(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
     cdef float out_opacity
-    cdef DTYPE16_t min_value = wl - (ww / 2)
-    cdef DTYPE16_t max_value = wl + (ww / 2)
+    cdef DTYPE16_t min_value = wl - (ww // 2)
+    cdef DTYPE16_t max_value = wl + (ww // 2)
     if vl < min_value:
         out_opacity = 0.0
     elif vl > max_value:
@@ -120,8 +122,8 @@ cdef float get_opacity(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
 @cython.cdivision(True)
 cdef float get_opacity_f32(DTYPEF32_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
     cdef float out_opacity
-    cdef DTYPE16_t min_value = wl - (ww / 2)
-    cdef DTYPE16_t max_value = wl + (ww / 2)
+    cdef DTYPE16_t min_value = wl - (ww // 2)
+    cdef DTYPE16_t max_value = wl + (ww // 2)
     if vl < min_value:
         out_opacity = 0.0
     elif vl > max_value:
@@ -144,8 +146,8 @@ def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
     cdef DTYPE16_t max = image.max()
     cdef DTYPE16_t vl
 
-    cdef DTYPE16_t min_value = wl - (ww / 2)
-    cdef DTYPE16_t max_value = wl + (ww / 2)
+    cdef DTYPE16_t min_value = wl - (ww // 2)
+    cdef DTYPE16_t max_value = wl + (ww // 2)
 
     cdef float fmax=0.0
     cdef float fpi
