@@ -2056,16 +2056,16 @@ class MaskBooleanDialog(wx.Dialog):
 
         gsizer = wx.FlexGridSizer(rows=3, cols=2, hgap=5, vgap=5)
 
-        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 1")))
+        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 1")), 0, wx.ALIGN_CENTER_VERTICAL)
         gsizer.Add(self.mask1, 1, wx.EXPAND)
-        gsizer.Add(wx.StaticText(self, -1, _(u"Operation")))
+        gsizer.Add(wx.StaticText(self, -1, _(u"Operation")), 0, wx.ALIGN_CENTER_VERTICAL)
         gsizer.Add(self.op_boolean, 1, wx.EXPAND)
-        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 2")))
+        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 2")), 0, wx.ALIGN_CENTER_VERTICAL)
         gsizer.Add(self.mask2, 1, wx.EXPAND)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(gsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
-        sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+        sizer.Add(gsizer, 0, wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALL, border=5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2794,8 +2794,8 @@ class SelectPartsOptionsDialog(wx.Dialog):
         sizer.AddSpacer(5)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.Add(self.btn_ok, 0, flag=wx.ALIGN_RIGHT, border=5)
-        btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_ok, 0)# flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT, border=5)
 
         sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
         sizer.AddSpacer(5)
@@ -3198,8 +3198,8 @@ class FillHolesAutoDialog(wx.Dialog):
         sizer.AddSpacer(5)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT, border=5)
-        btn_sizer.Add(self.close_btn, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.apply_btn, 0)# flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.close_btn, 0, flag=wx.LEFT, border=5)
 
         sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
 

@@ -49,13 +49,13 @@ class Preferences(wx.Dialog):
         self.book.AddPage(self.pnl_language, _("Language"))
 
         line = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
-        sizer.Add(line, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 5)
+        sizer.Add(line, 0, wx.GROW | wx.RIGHT | wx.TOP, 5)
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         sizer.Add(
             btnsizer,
             0,
-            wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP | wx.BOTTOM,
+            wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM,
             5,
         )
 
