@@ -1947,17 +1947,17 @@ class WatershedOptionsPanel(wx.Panel):
                                          min_value=1, max_value=10)
 
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, "Conectivity"), wx.VERTICAL)
-        box_sizer.Add(self.choice_2dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
-        box_sizer.Add(self.choice_3dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
+        box_sizer.Add(self.choice_2dcon, 0, wx.ALL, 5)
+        box_sizer.Add(self.choice_3dcon, 0, wx.ALL, 5)
 
         g_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        g_sizer.Add(wx.StaticText(self, -1, _("Gaussian sigma")), 0, wx.ALIGN_RIGHT | wx.ALL, 5)
-        g_sizer.Add(self.gaussian_size, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        g_sizer.Add(wx.StaticText(self, -1, _("Gaussian sigma")), 0, wx.ALIGN_CENTER | wx.ALL, 5)
+        g_sizer.Add(self.gaussian_size, 0, wx.ALL, 5)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.choice_algorithm, 0, wx.ALIGN_CENTER_VERTICAL,2)
-        sizer.Add(box_sizer, 1, wx.EXPAND,2)
-        sizer.Add(g_sizer, 0, wx.ALIGN_LEFT, 2)
+        sizer.Add(self.choice_algorithm, 0, wx.ALL, 5)
+        sizer.Add(box_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(g_sizer, 0, wx.ALL, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1995,8 +1995,7 @@ class WatershedOptionsDialog(wx.Dialog):
         btnsizer.Realize()
 
         sizer.Add(wop, 0, wx.EXPAND)
-        sizer.Add(btnsizer, 0, wx.EXPAND)
-        sizer.AddSpacer(5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT | wx.BOTTOM, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
