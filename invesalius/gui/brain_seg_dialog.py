@@ -115,7 +115,7 @@ class BrainSegmenterDialog(wx.Dialog):
         sizer_3.Add(
             self.sld_threshold,
             1,
-            wx.ALIGN_CENTER | wx.BOTTOM | wx.EXPAND | wx.LEFT | wx.RIGHT,
+            wx.BOTTOM | wx.EXPAND | wx.LEFT | wx.RIGHT,
             5,
         )
         sizer_3.Add(self.txt_threshold, 0, wx.ALL, 5)
@@ -128,15 +128,15 @@ class BrainSegmenterDialog(wx.Dialog):
         main_sizer.Add(time_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
         sizer_buttons.Add(
-            self.btn_close, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5
+            self.btn_close, 0, wx.ALIGN_BOTTOM | wx.ALL, 5
         )
         sizer_buttons.Add(
-            self.btn_stop, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5
+            self.btn_stop, 0, wx.ALIGN_BOTTOM | wx.ALL, 5
         )
         sizer_buttons.Add(
-            self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 5
+            self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALL, 5
         )
-        main_sizer.Add(sizer_buttons, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT | wx.ALL, 0)
+        main_sizer.Add(sizer_buttons, 0, wx.ALIGN_RIGHT | wx.ALL, 0)
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
         main_sizer.SetSizeHints(self)
