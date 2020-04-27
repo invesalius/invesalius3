@@ -604,7 +604,7 @@ class VolumeToolPanel(wx.Panel):
         id = evt.GetId()
         item = ID_TO_ITEMSLICEMENU[id]
         checked = item.IsChecked()
-        label = item.GetLabel()
+        label = item.GetItemLabelText()
 
         if not (checked):
             Publisher.sendMessage('Disable plane', plane_label=label)

@@ -205,7 +205,7 @@ class SliceMenu(wx.Menu):
     def OnPopup(self, evt):
         id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
-        key = item.GetLabel()
+        key = item.GetItemLabelText()
         if(key in const.WINDOW_LEVEL.keys()):
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage('Bright and contrast adjustment image',
