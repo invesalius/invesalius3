@@ -111,7 +111,7 @@ class Panel(wx.Panel):
         p3.SetPopupMenu(menu)
 
 
-        if sys.platform == 'win32':
+        if sys.platform == 'win32' or wx.VERSION >= (4, 1):
             self.aui_manager.AddPane(p1, s1)
             self.aui_manager.AddPane(p2, s2)
             self.aui_manager.AddPane(p3, s3)
