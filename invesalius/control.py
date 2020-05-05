@@ -18,9 +18,13 @@
 #--------------------------------------------------------------------------
 import os
 import plistlib
+import tempfile
+import textwrap
+
 import wx
-from wx.lib.pubsub import pub as Publisher
 import numpy as np
+
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as image_utils
@@ -44,6 +48,7 @@ import subprocess
 import sys
 
 from invesalius import inv_paths
+from invesalius import plugins
 
 DEFAULT_THRESH_MODE = 0
 
@@ -330,14 +335,6 @@ class Controller():
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
 
-        ## tracts
-        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
-        # FOD_path = b"sub-P0_dwi_FOD.nii"
-        # # FOD_path = b"test_fod.nii"
-        # full_path = os.path.join(data_dir, FOD_path)
-        # self.Slice.tracker = Trekker.tracker(full_path)
-        ##
-
         self.LoadProject()
 
         session = ses.Session()
@@ -517,15 +514,6 @@ class Controller():
         self.Slice = sl.Slice()
         self.Slice.spacing = proj.spacing
 
-        ## tracts
-        # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
-        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
-        # FOD_path = 'sub-P0_dwi_FOD.nii'
-        # FOD_path = b"test_fod.nii"
-        # full_path = os.path.join(data_dir, FOD_path)
-        # self.Slice.tracker = Trekker.tracker(full_path.encode('utf-8'))
-        ##
-
         Publisher.sendMessage('Load slice to viewer',
                               mask_dict=proj.mask_dict)
 
@@ -693,6 +681,83 @@ class Controller():
         filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
 
         dirpath = session.CreateProject(filename)
+
+
+    def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False):
+        """
+        Creates a new project from a Numpy 3D array.
+
+        name: Name of the project.
+        matrix: A Numpy 3D array. It only works with int16 arrays.
+        spacing: The spacing between the center of the voxels in X, Y and Z direction.
+        modality: Imaging modality.
+        """
+        if window_width is None:
+            window_width = (matrix.max() - matrix.min())
+        if window_level is None:
+            window_level = (matrix.max() + matrix.min()) // 2
+
+        window_width = int(window_width)
+        window_level = int(window_level)
+
+        name_to_const = {"AXIAL": const.AXIAL,
+                         "CORONAL": const.CORONAL,
+                         "SAGITTAL": const.SAGITAL}
+
+        if new_instance:
+            self.start_new_inv_instance(matrix, name, spacing, modality, name_to_const[orientation], window_width, window_level)
+        else:
+            # Verifying if there is a project open
+            s = ses.Session()
+            if s.IsOpen():
+                Publisher.sendMessage('Close Project')
+                Publisher.sendMessage('Disconnect tracker')
+
+            # Check if user really closed the project, if not, stop project creation
+            if s.IsOpen():
+                return
+
+            mmap_matrix = image_utils.array2memmap(matrix)
+
+            self.Slice = sl.Slice()
+            self.Slice.matrix = mmap_matrix
+            self.Slice.matrix_filename = mmap_matrix.filename
+            self.Slice.spacing = spacing
+
+            self.Slice.window_width = window_width
+            self.Slice.window_level = window_level
+
+            proj = prj.Project()
+            proj.name = name
+            proj.modality = modality
+            proj.SetAcquisitionModality(modality)
+            proj.matrix_shape = matrix.shape
+            proj.matrix_dtype = matrix.dtype.name
+            proj.matrix_filename = self.Slice.matrix_filename
+            proj.window = window_width
+            proj.level = window_level
+
+
+            proj.original_orientation =\
+                name_to_const[orientation]
+
+            proj.threshold_range = int(matrix.min()), int(matrix.max())
+            proj.spacing = self.Slice.spacing
+
+            Publisher.sendMessage('Update threshold limits list',
+                                  threshold_range=proj.threshold_range)
+
+            ######
+            session = ses.Session()
+            filename = proj.name + ".inv3"
+
+            filename = filename.replace("/", "")
+
+            dirpath = session.CreateProject(filename)
+
+            self.LoadProject()
+            Publisher.sendMessage("Enable state project", state=True)
+
 
     def OnOpenBitmapFiles(self, rec_data):
         bmp_data = bmp.BitmapData()
@@ -890,6 +955,10 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
+        # if group.affine.any():
+        #     self.affine = group.affine
+        #     Publisher.sendMessage('Update affine matrix',
+        #                           affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])

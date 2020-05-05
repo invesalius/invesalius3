@@ -76,10 +76,12 @@ class InvSpinCtrl(wx.Panel):
     def SetMin(self, min_value):
         self._min_value = min_value
         self.SetValue(self._value)
+        self.CalcSizeFromTextSize()
 
     def SetMax(self, max_value):
         self._max_value = max_value
         self.SetValue(self._value)
+        self.CalcSizeFromTextSize()
 
     def SetRange(self, min_value, max_value):
         self.SetMin(min_value)
@@ -108,7 +110,7 @@ class InvSpinCtrl(wx.Panel):
         # To calculate best width to spinctrl
         if text is None:
             text = "{}".format(
-                max(len(str(self._max_value)), len(str(self._min_value))) * "M"
+                max(len(str(self._max_value)), len(str(self._min_value)), 5) * "M"
             )
 
         dc = wx.WindowDC(self)

@@ -20,6 +20,7 @@
 import math
 import os.path
 import platform
+import subprocess
 import sys
 import webbrowser
 
@@ -40,7 +41,7 @@ import wx.lib.agw.toasterbox as TB
 import wx.lib.popupctl as pc
 from invesalius import inv_paths
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -477,6 +478,10 @@ class Frame(wx.Frame):
             ddlg = dlg.MaskDensityDialog(self)
             ddlg.Show()
 
+        elif id == const.ID_MANUAL_WWWL:
+            wwwl_dlg = dlg.ManualWWWLDialog(self)
+            wwwl_dlg.Show()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
@@ -507,6 +512,9 @@ class Frame(wx.Frame):
         elif id == const.ID_FLOODFILL_SEGMENTATION:
             self.OnFFillSegmentation()
 
+        elif id == const.ID_SEGMENTATION_BRAIN:
+            self.OnBrainSegmentation()
+
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
             if st:
@@ -533,6 +541,9 @@ class Frame(wx.Frame):
 
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage('New mask from shortcut')
+
+        elif id == const.ID_PLUGINS_SHOW_PATH:
+            self.ShowPluginsFolder()
 
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
@@ -736,11 +747,38 @@ class Frame(wx.Frame):
     def OnFFillSegmentation(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
+    def OnBrainSegmentation(self):
+        from invesalius.gui import brain_seg_dialog
+        if brain_seg_dialog.HAS_PLAIDML or brain_seg_dialog.HAS_THEANO:
+            dlg = brain_seg_dialog.BrainSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(self,
+                                   _("It's not possible to run brain segmenter because your system doesn't have the following modules installed:") \
+                                   + " PlaidML or Theano" ,
+                                   "InVesalius 3 - Brain segmenter",
+                                   wx.ICON_INFORMATION | wx.OK)
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)
 
     def OnCropMask(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
+
+    def ShowPluginsFolder(self):
+        """
+        Show getting started window.
+        """
+        inv_paths.create_conf_folders()
+        path = str(inv_paths.USER_PLUGINS_DIRECTORY)
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -755,6 +793,7 @@ class MenuBar(wx.MenuBar):
         wx.MenuBar.__init__(self)
 
         self.parent = parent
+        self._plugins_menu_ids = {}
 
         # Used to enable/disable menu items if project is opened or
         # not. Eg. save should only be available if a project is open
@@ -779,10 +818,12 @@ class MenuBar(wx.MenuBar):
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
+                             const.ID_SEGMENTATION_BRAIN,
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
-                             const.ID_GOTO_SLICE]
+                             const.ID_GOTO_SLICE,
+                             const.ID_MANUAL_WWWL]
         self.__init_items()
         self.__bind_events()
 
@@ -808,6 +849,8 @@ class MenuBar(wx.MenuBar):
         sub(self.OnShowMask, "Show mask")
         sub(self.OnUpdateSliceInterpolation, "Update Slice Interpolation MenuBar")
         sub(self.OnUpdateNavigationMode, "Update Navigation Mode MenuBar")
+
+        sub(self.AddPluginsItems, "Add plugins menu items")
 
         self.num_masks = 0
 
@@ -916,6 +959,8 @@ class MenuBar(wx.MenuBar):
         self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed\tCtrl+Shift+W"))
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
+        segmentation_menu.AppendSeparator()
+        segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
@@ -941,6 +986,7 @@ class MenuBar(wx.MenuBar):
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         reorient_menu.Enable(False)
         tools_menu.Append(-1, _(u'Image'), image_menu)
@@ -1003,6 +1049,10 @@ class MenuBar(wx.MenuBar):
 
         self.actived_navigation_mode = self.mode_menu
 
+        plugins_menu = wx.Menu()
+        plugins_menu.Append(const.ID_PLUGINS_SHOW_PATH, _("Open Plugins folder"))
+        self.plugins_menu = plugins_menu
+
         # HELP
         help_menu = wx.Menu()
         help_menu.Append(const.ID_START, _("Getting started..."))
@@ -1020,11 +1070,24 @@ class MenuBar(wx.MenuBar):
         self.Append(file_edit, _("Edit"))
         self.Append(view_menu, _(u"View"))
         self.Append(tools_menu, _(u"Tools"))
+        self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
+        plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
+
+    def OnPluginMenu(self, evt):
+        id = evt.GetId()
+        if id != const.ID_PLUGINS_SHOW_PATH:
+            try:
+                plugin_name = self._plugins_menu_ids[id]["name"]
+                print("Loading plugin:", plugin_name)
+                Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
+            except KeyError:
+                print("Invalid plugin")
+        evt.Skip()
 
     def SliceInterpolationStatus(self):
         
@@ -1052,6 +1115,18 @@ class MenuBar(wx.MenuBar):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
+    def AddPluginsItems(self, items):
+        for menu_item in self.plugins_menu.GetMenuItems():
+            if menu_item.GetId() != const.ID_PLUGINS_SHOW_PATH:
+                self.plugins_menu.DestroyItem(menu_item)
+
+        for item in items:
+            _new_id = wx.NewId()
+            self._plugins_menu_ids[_new_id] = items[item]
+            menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
+            menu_item.Enable(items[item]["enable_startup"])
+            print(">>> menu", item)
+
     def OnEnableState(self, state):
         """
         Based on given state, enables or disables menu items which
@@ -1069,12 +1144,22 @@ class MenuBar(wx.MenuBar):
         for item in self.enable_items:
             self.Enable(item, False)
 
+        # Disabling plugins menus that needs a project open
+        for item in self._plugins_menu_ids:
+            if not self._plugins_menu_ids[item]["enable_startup"]:
+                self.Enable(item, False)
+
     def SetStateProjectOpen(self):
         """
         Enable menu items (e.g. save) when project is opened.
         """
         for item in self.enable_items:
             self.Enable(item, True)
+
+        # Enabling plugins menus that needs a project open
+        for item in self._plugins_menu_ids:
+            if not self._plugins_menu_ids[item]["enable_startup"]:
+                self.Enable(item, True)
 
     def OnEnableUndo(self, value):
         if value:

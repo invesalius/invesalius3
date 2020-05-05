@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,40 +15,37 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
-from six import with_metaclass
-
+# --------------------------------------------------------------------------
 import os
 import tempfile
 
 import numpy as np
 import vtk
-
 from scipy import ndimage
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.imagedata_utils as iu
-import invesalius.style as st
 import invesalius.session as ses
+import invesalius.style as st
 import invesalius.utils as utils
+from invesalius.data import transformations
 from invesalius.data.mask import Mask
 from invesalius.project import Project
-from invesalius.data import mips
+from invesalius_cy import mips, transforms
 
-from invesalius.data import transforms
-import invesalius.data.transformations as transformations
-OTHER=0
-PLIST=1
-WIDGET=2
+OTHER = 0
+PLIST = 1
+WIDGET = 2
 
 
 class SliceBuffer(object):
-    """ 
+    """
     This class is used as buffer that mantains the vtkImageData and numpy array
     from actual slices from each orientation.
     """
+
     def __init__(self):
         self.index = -1
         self.image = None
@@ -79,7 +76,7 @@ class SliceBuffer(object):
 # Only one slice will be initialized per time (despite several viewers
 # show it from distinct perspectives).
 # Therefore, we use Singleton design pattern for implementing it.
-class Slice(with_metaclass(utils.Singleton, object)):
+class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.current_mask = None
         self.blend_filter = None
@@ -89,9 +86,10 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self._n_tracts = 0
         self._tracker = None
         self.aux_matrices = {}
+        self.aux_matrices_colours = {}
         self.state = const.STATE_DEFAULT
 
-        self.to_show_aux = ''
+        self.to_show_aux = ""
 
         self._type_projection = const.PROJECTION_NORMAL
         self.n_border = const.PROJECTION_BORDER_SIZE
@@ -108,9 +106,11 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.hue_range = (0, 0)
         self.value_range = (0, 1)
 
-        self.buffer_slices = {"AXIAL": SliceBuffer(),
-                              "CORONAL": SliceBuffer(),
-                              "SAGITAL": SliceBuffer()}
+        self.buffer_slices = {
+            "AXIAL": SliceBuffer(),
+            "CORONAL": SliceBuffer(),
+            "SAGITAL": SliceBuffer(),
+        }
 
         self.num_gradient = 0
         self.interaction_style = st.StyleStateManager()
@@ -132,7 +132,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
         i, e = value.min(), value.max()
         r = int(e) - int(i)
         self.histogram = np.histogram(self._matrix, r, (i, e))[0]
-        self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+        self.center = [
+            (s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)
+        ]
 
     @property
     def spacing(self):
@@ -141,7 +143,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
     @spacing.setter
     def spacing(self, value):
         self._spacing = value
-        self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+        self.center = [
+            (s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)
+        ]
 
     @property
     def affine(self):
@@ -169,81 +173,87 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
     def __bind_events(self):
         # General slice control
-        Publisher.subscribe(self.CreateSurfaceFromIndex,
-                                 'Create surface from index')
+        Publisher.subscribe(self.CreateSurfaceFromIndex, "Create surface from index")
         # Mask control
-        Publisher.subscribe(self.__add_mask_thresh, 'Create new mask')
-        Publisher.subscribe(self.__select_current_mask,
-                                 'Change mask selected')
+        Publisher.subscribe(self.__add_mask_thresh, "Create new mask")
+        Publisher.subscribe(self.__select_current_mask, "Change mask selected")
         # Mask properties
-        Publisher.subscribe(self.__set_current_mask_edition_threshold,
-                                 'Set edition threshold values')
-        Publisher.subscribe(self.__set_current_mask_threshold,
-                                 'Set threshold values')
-        Publisher.subscribe(self.__set_current_mask_threshold_actual_slice,
-                                 'Changing threshold values')
-        Publisher.subscribe(self.__set_current_mask_colour,
-                                'Change mask colour')
-        Publisher.subscribe(self.__set_mask_name, 'Change mask name')
-        Publisher.subscribe(self.__show_mask, 'Show mask')
-        Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
-        Publisher.subscribe(self.__show_current_mask, 'Show current mask')
-        Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
+        Publisher.subscribe(
+            self.__set_current_mask_edition_threshold, "Set edition threshold values"
+        )
+        Publisher.subscribe(self.__set_current_mask_threshold, "Set threshold values")
+        Publisher.subscribe(
+            self.__set_current_mask_threshold_actual_slice, "Changing threshold values"
+        )
+        Publisher.subscribe(self.__set_current_mask_colour, "Change mask colour")
+        Publisher.subscribe(self.__set_mask_name, "Change mask name")
+        Publisher.subscribe(self.__show_mask, "Show mask")
+        Publisher.subscribe(self.__hide_current_mask, "Hide current mask")
+        Publisher.subscribe(self.__show_current_mask, "Show current mask")
+        Publisher.subscribe(self.__clean_current_mask, "Clean current mask")
 
-        Publisher.subscribe(self.__export_slice, 'Export slice')
-        Publisher.subscribe(self.__export_actual_mask, 'Export actual mask')
+        Publisher.subscribe(self.__export_slice, "Export slice")
+        Publisher.subscribe(self.__export_actual_mask, "Export actual mask")
 
-        Publisher.subscribe(self.__set_current_mask_threshold_limits,
-                                        'Update threshold limits')
+        Publisher.subscribe(
+            self.__set_current_mask_threshold_limits, "Update threshold limits"
+        )
 
-        Publisher.subscribe(self.UpdateWindowLevelBackground,\
-                                 'Bright and contrast adjustment image')
+        Publisher.subscribe(
+            self.UpdateWindowLevelBackground, "Bright and contrast adjustment image"
+        )
 
-        Publisher.subscribe(self.UpdateColourTableBackground,\
-                                 'Change colour table from background image')
+        Publisher.subscribe(
+            self.UpdateColourTableBackground,
+            "Change colour table from background image",
+        )
 
-        Publisher.subscribe(self.UpdateColourTableBackgroundPlist,\
-                                 'Change colour table from background image from plist')
+        Publisher.subscribe(
+            self.UpdateColourTableBackgroundPlist,
+            "Change colour table from background image from plist",
+        )
 
-        Publisher.subscribe(self.UpdateColourTableBackgroundWidget,\
-                                 'Change colour table from background image from widget')
+        Publisher.subscribe(
+            self.UpdateColourTableBackgroundWidget,
+            "Change colour table from background image from widget",
+        )
 
-        Publisher.subscribe(self._set_projection_type, 'Set projection type')
+        Publisher.subscribe(self._set_projection_type, "Set projection type")
 
-        Publisher.subscribe(self._do_boolean_op, 'Do boolean operation')
+        Publisher.subscribe(self._do_boolean_op, "Do boolean operation")
 
-        Publisher.subscribe(self.OnExportMask,'Export mask to file')
+        Publisher.subscribe(self.OnExportMask, "Export mask to file")
 
-        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
 
-        Publisher.subscribe(self.OnEnableStyle, 'Enable style')
-        Publisher.subscribe(self.OnDisableStyle, 'Disable style')
-        Publisher.subscribe(self.OnDisableActualStyle, 'Disable actual style')
+        Publisher.subscribe(self.OnEnableStyle, "Enable style")
+        Publisher.subscribe(self.OnDisableStyle, "Disable style")
+        Publisher.subscribe(self.OnDisableActualStyle, "Disable actual style")
 
-        Publisher.subscribe(self.OnRemoveMasks, 'Remove masks')
-        Publisher.subscribe(self.OnDuplicateMasks, 'Duplicate masks')
-        Publisher.subscribe(self.UpdateSlice3D,'Update slice 3D')
+        Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
+        Publisher.subscribe(self.OnDuplicateMasks, "Duplicate masks")
+        Publisher.subscribe(self.UpdateSlice3D, "Update slice 3D")
 
-        Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
-        Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
+        Publisher.subscribe(self.OnFlipVolume, "Flip volume")
+        Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
-        Publisher.subscribe(self.__undo_edition, 'Undo edition')
-        Publisher.subscribe(self.__redo_edition, 'Redo edition')
+        Publisher.subscribe(self.__undo_edition, "Undo edition")
+        Publisher.subscribe(self.__redo_edition, "Redo edition")
 
-        Publisher.subscribe(self._fill_holes_auto, 'Fill holes automatically')
+        Publisher.subscribe(self._fill_holes_auto, "Fill holes automatically")
 
-        Publisher.subscribe(self._set_interpolation_method, 'Set interpolation method')
+        Publisher.subscribe(self._set_interpolation_method, "Set interpolation method")
 
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
 
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             return shape[0] - 1
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             return shape[1] - 1
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             return shape[2] - 1
 
     def discard_all_buffers(self):
@@ -260,13 +270,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
             # and discard from buffer all datas related to mask.
             if self.current_mask is not None and item == self.current_mask.index:
                 self.current_mask = None
-                
+
                 for buffer_ in self.buffer_slices.values():
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
 
-                Publisher.sendMessage('Show mask', index=item, value=False)
-                Publisher.sendMessage('Reload actual slice')
+                Publisher.sendMessage("Show mask", index=item, value=False)
+                Publisher.sendMessage("Reload actual slice")
 
     def OnDuplicateMasks(self, mask_indexes):
         proj = Project()
@@ -282,28 +292,28 @@ class Slice(with_metaclass(utils.Singleton, object)):
             self._add_mask_into_proj(copy_mask)
 
     def OnEnableStyle(self, style):
-        if (style in const.SLICE_STYLES):
+        if style in const.SLICE_STYLES:
             new_state = self.interaction_style.AddState(style)
-            Publisher.sendMessage('Set slice interaction style', style=new_state)
+            Publisher.sendMessage("Set slice interaction style", style=new_state)
         self.state = style
 
     def OnDisableStyle(self, style):
-        if (style in const.SLICE_STYLES):
+        if style in const.SLICE_STYLES:
             new_state = self.interaction_style.RemoveState(style)
-            Publisher.sendMessage('Set slice interaction style', style=new_state)
+            Publisher.sendMessage("Set slice interaction style", style=new_state)
 
-            if (style == const.SLICE_STATE_EDITOR):
-                Publisher.sendMessage('Set interactor default cursor')
+            if style == const.SLICE_STATE_EDITOR:
+                Publisher.sendMessage("Set interactor default cursor")
             self.state = new_state
 
     def OnDisableActualStyle(self):
         actual_state = self.interaction_style.GetActualState()
         if actual_state != const.STATE_DEFAULT:
             new_state = self.interaction_style.RemoveState(actual_state)
-            Publisher.sendMessage('Set slice interaction style', style=new_state)
+            Publisher.sendMessage("Set slice interaction style", style=new_state)
 
             #  if (actual_state == const.SLICE_STATE_EDITOR):
-                #  Publisher.sendMessage('Set interactor default cursor')
+            #  Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
 
     def OnCloseProject(self):
@@ -312,7 +322,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def CloseProject(self):
         f = self._matrix.filename
         self._matrix._mmap.close()
-        self._matrix  = None
+        self._matrix = None
         os.remove(f)
         self.current_mask = None
 
@@ -326,7 +336,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         self.values = None
         self.nodes = None
-        self.from_= OTHER
+        self.from_ = OTHER
         self.state = const.STATE_DEFAULT
 
         self.number_of_colours = 256
@@ -336,7 +346,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         self.interaction_style.Reset()
 
-        Publisher.sendMessage('Select first item from slice menu')
+        Publisher.sendMessage("Select first item from slice menu")
 
     def __set_current_mask_threshold_limits(self, threshold_range):
         thresh_min = threshold_range[0]
@@ -353,11 +363,11 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
         self.SelectCurrentMask(self.current_mask.index)
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def __select_current_mask(self, index):
         self.SelectCurrentMask(index)
-    
+
     def __set_current_mask_edition_threshold(self, threshold_range):
         if self.current_mask:
             index = self.current_mask.index
@@ -374,9 +384,12 @@ class Slice(with_metaclass(utils.Singleton, object)):
             to_reload = True
             for orientation in self.buffer_slices:
                 self.buffer_slices[orientation].discard_vtk_mask()
-                self.SetMaskThreshold(index, threshold_range,
-                                      self.buffer_slices[orientation].index,
-                                      orientation)
+                self.SetMaskThreshold(
+                    index,
+                    threshold_range,
+                    self.buffer_slices[orientation].index,
+                    orientation,
+                )
 
         # TODO: merge this code with apply_slice_buffer_to_mask
         b_mask = self.buffer_slices["AXIAL"].mask
@@ -398,24 +411,27 @@ class Slice(with_metaclass(utils.Singleton, object)):
             self.current_mask.matrix[0, 0, n] = 1
 
         if to_reload:
-            Publisher.sendMessage('Reload actual slice')
+            Publisher.sendMessage("Reload actual slice")
 
     def __set_current_mask_threshold_actual_slice(self, threshold_range):
         index = self.current_mask.index
         for orientation in self.buffer_slices:
             self.buffer_slices[orientation].discard_vtk_mask()
-            self.SetMaskThreshold(index, threshold_range,
-                                  self.buffer_slices[orientation].index,
-                                  orientation)
+            self.SetMaskThreshold(
+                index,
+                threshold_range,
+                self.buffer_slices[orientation].index,
+                orientation,
+            )
         self.num_gradient += 1
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def __set_current_mask_colour(self, colour):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         if self.current_mask:
-            colour_vtk = [c/255.0 for c in colour]
+            colour_vtk = [c / 255.0 for c in colour]
             self.SetMaskColour(self.current_mask.index, colour_vtk)
 
     def __set_mask_name(self, index, name):
@@ -427,23 +443,23 @@ class Slice(with_metaclass(utils.Singleton, object)):
         if self.current_mask:
             self.ShowMask(index, value)
             if not value:
-                Publisher.sendMessage('Select mask name in combo', index=-1)
+                Publisher.sendMessage("Select mask name in combo", index=-1)
 
             if self._type_projection != const.PROJECTION_NORMAL:
                 self.SetTypeProjection(const.PROJECTION_NORMAL)
-                Publisher.sendMessage('Reload actual slice')
+                Publisher.sendMessage("Reload actual slice")
 
     def __hide_current_mask(self):
         if self.current_mask:
             index = self.current_mask.index
             value = False
-            Publisher.sendMessage('Show mask', index=index, value=value)
+            Publisher.sendMessage("Show mask", index=index, value=value)
 
     def __show_current_mask(self):
         if self.current_mask:
             index = self.current_mask.index
             value = True
-            Publisher.sendMessage('Show mask', index=index, value=value)
+            Publisher.sendMessage("Show mask", index=index, value=value)
 
     def __clean_current_mask(self):
         if self.current_mask:
@@ -460,25 +476,27 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
     def __export_slice(self, filename):
         import h5py
-        f = h5py.File(filename, 'w')
-        f['data'] = self.matrix
-        f['spacing'] = self.spacing
+
+        f = h5py.File(filename, "w")
+        f["data"] = self.matrix
+        f["spacing"] = self.spacing
         f.flush()
         f.close()
 
     def __export_actual_mask(self, filename):
         import h5py
-        f = h5py.File(filename, 'w')
+
+        f = h5py.File(filename, "w")
         self.do_threshold_to_all_slices()
-        f['data'] = self.current_mask.matrix[1:, 1:, 1:]
-        f['spacing'] = self.spacing
+        f["data"] = self.current_mask.matrix[1:, 1:, 1:]
+        f["spacing"] = self.spacing
         f.flush()
         f.close()
 
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
         shape = self.matrix.shape
-        matrix = np.memmap(temp_file, mode='w+', dtype='uint8', shape=shape)
+        matrix = np.memmap(temp_file, mode="w+", dtype="uint8", shape=shape)
         return temp_file, matrix
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
@@ -486,32 +504,30 @@ class Slice(with_metaclass(utils.Singleton, object)):
         image = self.buffer_slices[orientation].image
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
 
-        print("Threshold", thresh_min, thresh_max)
-
-        if hasattr(position, '__iter__'):
+        if hasattr(position, "__iter__"):
             px, py = position
-            if orientation == 'AXIAL':
+            if orientation == "AXIAL":
                 sx = self.spacing[0]
                 sy = self.spacing[1]
-            elif orientation == 'CORONAL':
+            elif orientation == "CORONAL":
                 sx = self.spacing[0]
                 sy = self.spacing[2]
-            elif orientation == 'SAGITAL':
+            elif orientation == "SAGITAL":
                 sx = self.spacing[2]
                 sy = self.spacing[1]
 
         else:
-            if orientation == 'AXIAL':
+            if orientation == "AXIAL":
                 sx = self.spacing[0]
                 sy = self.spacing[1]
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
-            elif orientation == 'CORONAL':
+            elif orientation == "CORONAL":
                 sx = self.spacing[0]
                 sy = self.spacing[2]
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
-            elif orientation == 'SAGITAL':
+            elif orientation == "SAGITAL":
                 sx = self.spacing[2]
                 sy = self.spacing[1]
                 py = position / mask.shape[1]
@@ -525,26 +541,26 @@ class Slice(with_metaclass(utils.Singleton, object)):
         yf = int(yi + index.shape[0])
 
         if yi < 0:
-            index = index[abs(yi):,:]
+            index = index[abs(yi) :, :]
             yi = 0
         if yf > image.shape[0]:
-            index = index[:index.shape[0]-(yf-image.shape[0]), :]
+            index = index[: index.shape[0] - (yf - image.shape[0]), :]
             yf = image.shape[0]
 
         if xi < 0:
-            index = index[:,abs(xi):]
+            index = index[:, abs(xi) :]
             xi = 0
         if xf > image.shape[1]:
-            index = index[:,:index.shape[1]-(xf-image.shape[1])]
+            index = index[:, : index.shape[1] - (xf - image.shape[1])]
             xf = image.shape[1]
 
         # Verifying if the points is over the image array.
-        if (not 0 <= xi <= image.shape[1] and not 0 <= xf <= image.shape[1]) or \
-           (not 0 <= yi <= image.shape[0] and not 0 <= yf <= image.shape[0]):
+        if (not 0 <= xi <= image.shape[1] and not 0 <= xf <= image.shape[1]) or (
+            not 0 <= yi <= image.shape[0] and not 0 <= yf <= image.shape[0]
+        ):
             return
 
-
-        roi_m = mask[yi:yf,xi:xf]
+        roi_m = mask[yi:yf, xi:xf]
         roi_i = image[yi:yf, xi:xf]
 
         # Checking if roi_i has at least one element.
@@ -552,11 +568,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
             if operation == const.BRUSH_THRESH:
                 # It's a trick to make points between threshold gets value 254
                 # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
-                roi_m[index] = (((roi_i[index] >= thresh_min)
-                                 & (roi_i[index] <= thresh_max)) * 253) + 1
+                roi_m[index] = (
+                    ((roi_i[index] >= thresh_min) & (roi_i[index] <= thresh_max)) * 253
+                ) + 1
             elif operation == const.BRUSH_THRESH_ERASE:
-                roi_m[index] = (((roi_i[index] < thresh_min)
-                                 | (roi_i[index] > thresh_max)) * 253) + 1
+                roi_m[index] = (
+                    ((roi_i[index] < thresh_min) | (roi_i[index] > thresh_max)) * 253
+                ) + 1
             elif operation == const.BRUSH_THRESH_ADD_ONLY:
                 roi_m[((index) & (roi_i >= thresh_min) & (roi_i <= thresh_max))] = 254
             elif operation == const.BRUSH_THRESH_ERASE_ONLY:
@@ -571,18 +589,22 @@ class Slice(with_metaclass(utils.Singleton, object)):
         session = ses.Session()
         session.ChangeProject()
 
-
-    def GetSlices(self, orientation, slice_number, number_slices,
-                  inverted=False, border_size=1.0):
-        if self.buffer_slices[orientation].index == slice_number and \
-           self._type_projection == const.PROJECTION_NORMAL:
+    def GetSlices(
+        self, orientation, slice_number, number_slices, inverted=False, border_size=1.0
+    ):
+        if (
+            self.buffer_slices[orientation].index == slice_number
+            and self._type_projection == const.PROJECTION_NORMAL
+        ):
             if self.buffer_slices[orientation].vtk_image:
                 image = self.buffer_slices[orientation].vtk_image
             else:
-                n_image = self.get_image_slice(orientation, slice_number,
-                                               number_slices, inverted,
-                                               border_size)
-                image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
+                n_image = self.get_image_slice(
+                    orientation, slice_number, number_slices, inverted, border_size
+                )
+                image = converters.to_vtk(
+                    n_image, self.spacing, slice_number, orientation
+                )
                 ww_wl_image = self.do_ww_wl(image)
                 image = self.do_colour_image(ww_wl_image)
             if self.current_mask and self.current_mask.is_shown:
@@ -594,7 +616,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     # Prints that during navigation causes delay in update
                     # print "Do not getting from buffer"
                     n_mask = self.get_mask_slice(orientation, slice_number)
-                    mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                    mask = converters.to_vtk(
+                        n_mask, self.spacing, slice_number, orientation
+                    )
                     mask = self.do_colour_mask(mask, self.opacity)
                     self.buffer_slices[orientation].mask = n_mask
                 final_image = self.do_blend(image, mask)
@@ -603,15 +627,18 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 final_image = image
             self.buffer_slices[orientation].vtk_image = image
         else:
-            n_image = self.get_image_slice(orientation, slice_number,
-                                           number_slices, inverted, border_size)
+            n_image = self.get_image_slice(
+                orientation, slice_number, number_slices, inverted, border_size
+            )
             image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
             ww_wl_image = self.do_ww_wl(image)
             image = self.do_colour_image(ww_wl_image)
 
             if self.current_mask and self.current_mask.is_shown:
                 n_mask = self.get_mask_slice(orientation, slice_number)
-                mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                mask = converters.to_vtk(
+                    n_mask, self.spacing, slice_number, orientation
+                )
                 mask = self.do_colour_mask(mask, self.opacity)
                 final_image = self.do_blend(image, mask)
             else:
@@ -624,20 +651,34 @@ class Slice(with_metaclass(utils.Singleton, object)):
             self.buffer_slices[orientation].vtk_image = image
             self.buffer_slices[orientation].vtk_mask = mask
 
-        if self.to_show_aux == 'watershed' and self.current_mask.is_shown:
-            m = self.get_aux_slice('watershed', orientation, slice_number)
+        if self.to_show_aux == "watershed" and self.current_mask.is_shown:
+            m = self.get_aux_slice("watershed", orientation, slice_number)
             tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
-            cimage = self.do_custom_colour(tmp_vimage, {0: (0.0, 0.0, 0.0, 0.0),
-                                                        1: (0.0, 1.0, 0.0, 1.0),
-                                                        2: (1.0, 0.0, 0.0, 1.0)})
+            cimage = self.do_custom_colour(
+                tmp_vimage,
+                {
+                    0: (0.0, 0.0, 0.0, 0.0),
+                    1: (0.0, 1.0, 0.0, 1.0),
+                    2: (1.0, 0.0, 0.0, 1.0),
+                },
+            )
             final_image = self.do_blend(final_image, cimage)
         elif self.to_show_aux and self.current_mask:
             m = self.get_aux_slice(self.to_show_aux, orientation, slice_number)
             tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
-            aux_image = self.do_custom_colour(tmp_vimage, {0: (0.0, 0.0, 0.0, 0.0),
-                                                           1: (0.0, 0.0, 0.0, 0.0),
-                                                           254: (1.0, 0.0, 0.0, 1.0),
-                                                           255: (1.0, 0.0, 0.0, 1.0)})
+            try:
+                colour_table =  self.aux_matrices_colours[self.to_show_aux]
+            except KeyError:
+                colour_table = {
+                    0: (0.0, 0.0, 0.0, 0.0),
+                    1: (0.0, 0.0, 0.0, 0.0),
+                    254: (1.0, 0.0, 0.0, 1.0),
+                    255: (1.0, 0.0, 0.0, 1.0),
+                }
+            aux_image = self.do_custom_colour(
+                tmp_vimage,
+                colour_table
+            )
             final_image = self.do_blend(final_image, aux_image)
         return final_image
 
@@ -671,11 +712,21 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 T1 = transformations.translation_matrix((cz, cy, cx))
                 M = transformations.concatenate_matrices(T1, R.T, T0)
 
-
-            if orientation == 'AXIAL':
-                tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
+            if orientation == "AXIAL":
+                tmp_array = np.array(
+                    self.matrix[slice_number : slice_number + number_slices]
+                )
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(
+                        self.matrix,
+                        self.spacing,
+                        M,
+                        slice_number,
+                        orientation,
+                        self.interp_method,
+                        self.matrix.min(),
+                        tmp_array,
+                    )
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.reshape(dy, dx)
                 else:
@@ -689,48 +740,89 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     elif self._type_projection == const.PROJECTION_MeanIP:
                         n_image = np.array(tmp_array).mean(0)
                     elif self._type_projection == const.PROJECTION_LMIP:
-                        n_image = np.empty(shape=(tmp_array.shape[1],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.lmip(tmp_array, 0, self.window_level, self.window_level, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[1], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.lmip(
+                            tmp_array, 0, self.window_level, self.window_level, n_image
+                        )
                     elif self._type_projection == const.PROJECTION_MIDA:
-                        n_image = np.empty(shape=(tmp_array.shape[1],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.mida(tmp_array, 0, self.window_level, self.window_level, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[1], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.mida(
+                            tmp_array, 0, self.window_level, self.window_level, n_image
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
-                        n_image = np.empty(shape=(tmp_array.shape[1],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
-                                               self.window_level, 0, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[1], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            0,
+                            self.window_level,
+                            self.window_level,
+                            0,
+                            n_image,
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
-                        n_image = np.empty(shape=(tmp_array.shape[1],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
-                                               self.window_level, 1, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[1], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            0,
+                            self.window_level,
+                            self.window_level,
+                            1,
+                            n_image,
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
-                        n_image = np.empty(shape=(tmp_array.shape[1],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
-                                               self.window_level, 2, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[1], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            0,
+                            self.window_level,
+                            self.window_level,
+                            2,
+                            n_image,
+                        )
                     else:
                         n_image = np.array(self.matrix[slice_number])
 
-            elif orientation == 'CORONAL':
-                tmp_array = np.array(self.matrix[:, slice_number: slice_number + number_slices, :])
+            elif orientation == "CORONAL":
+                tmp_array = np.array(
+                    self.matrix[:, slice_number : slice_number + number_slices, :]
+                )
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(
+                        self.matrix,
+                        self.spacing,
+                        M,
+                        slice_number,
+                        orientation,
+                        self.interp_method,
+                        self.matrix.min(),
+                        tmp_array,
+                    )
 
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.reshape(dz, dx)
                 else:
-                    #if slice_number == 0:
-                        #slice_number = 1
-                    #if slice_number - number_slices < 0:
-                        #number_slices = slice_number
+                    # if slice_number == 0:
+                    # slice_number = 1
+                    # if slice_number - number_slices < 0:
+                    # number_slices = slice_number
                     if inverted:
                         tmp_array = tmp_array[:, ::-1, :]
                     if self._type_projection == const.PROJECTION_MaxIP:
@@ -740,39 +832,80 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     elif self._type_projection == const.PROJECTION_MeanIP:
                         n_image = np.array(tmp_array).mean(1)
                     elif self._type_projection == const.PROJECTION_LMIP:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.lmip(tmp_array, 1, self.window_level, self.window_level, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.lmip(
+                            tmp_array, 1, self.window_level, self.window_level, n_image
+                        )
                     elif self._type_projection == const.PROJECTION_MIDA:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.mida(tmp_array, 1, self.window_level, self.window_level, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.mida(
+                            tmp_array, 1, self.window_level, self.window_level, n_image
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
-                                               self.window_level, 0, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            1,
+                            self.window_level,
+                            self.window_level,
+                            0,
+                            n_image,
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
-                                               self.window_level, 1, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            1,
+                            self.window_level,
+                            self.window_level,
+                            1,
+                            n_image,
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[2]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
-                                               self.window_level, 2, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[2]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            1,
+                            self.window_level,
+                            self.window_level,
+                            2,
+                            n_image,
+                        )
                     else:
                         n_image = np.array(self.matrix[:, slice_number, :])
-            elif orientation == 'SAGITAL':
-                tmp_array = np.array(self.matrix[:, :, slice_number: slice_number + number_slices])
+            elif orientation == "SAGITAL":
+                tmp_array = np.array(
+                    self.matrix[:, :, slice_number : slice_number + number_slices]
+                )
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(
+                        self.matrix,
+                        self.spacing,
+                        M,
+                        slice_number,
+                        orientation,
+                        self.interp_method,
+                        self.matrix.min(),
+                        tmp_array,
+                    )
 
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.reshape(dz, dy)
@@ -786,34 +919,64 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     elif self._type_projection == const.PROJECTION_MeanIP:
                         n_image = np.array(tmp_array).mean(2)
                     elif self._type_projection == const.PROJECTION_LMIP:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[1]),
-                                              dtype=tmp_array.dtype)
-                        mips.lmip(tmp_array, 2, self.window_level, self.window_level, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[1]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.lmip(
+                            tmp_array, 2, self.window_level, self.window_level, n_image
+                        )
                     elif self._type_projection == const.PROJECTION_MIDA:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[1]),
-                                              dtype=tmp_array.dtype)
-                        mips.mida(tmp_array, 2, self.window_level, self.window_level, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[1]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.mida(
+                            tmp_array, 2, self.window_level, self.window_level, n_image
+                        )
 
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[1]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
-                                               self.window_level, 0, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[1]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            2,
+                            self.window_level,
+                            self.window_level,
+                            0,
+                            n_image,
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[1]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
-                                               self.window_level, 1, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[1]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            2,
+                            self.window_level,
+                            self.window_level,
+                            1,
+                            n_image,
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
-                        n_image = np.empty(shape=(tmp_array.shape[0],
-                                                     tmp_array.shape[1]),
-                                              dtype=tmp_array.dtype)
-                        mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
-                                               self.window_level, 2, n_image)
+                        n_image = np.empty(
+                            shape=(tmp_array.shape[0], tmp_array.shape[1]),
+                            dtype=tmp_array.dtype,
+                        )
+                        mips.fast_countour_mip(
+                            tmp_array,
+                            border_size,
+                            2,
+                            self.window_level,
+                            self.window_level,
+                            2,
+                            n_image,
+                        )
                     else:
                         n_image = np.array(self.matrix[:, :, slice_number])
 
@@ -821,63 +984,71 @@ class Slice(with_metaclass(utils.Singleton, object)):
         return n_image
 
     def get_mask_slice(self, orientation, slice_number):
-        """ 
+        """
         It gets the from actual mask the given slice from given orientation
         """
         # It's necessary because the first position for each dimension from
         # mask matrix is used as flags to control if the mask in the
         # slice_number position has been generated.
-        if self.buffer_slices[orientation].index == slice_number \
-           and self.buffer_slices[orientation].mask is not None:
+        if (
+            self.buffer_slices[orientation].index == slice_number
+            and self.buffer_slices[orientation].mask is not None
+        ):
             return self.buffer_slices[orientation].mask
         n = slice_number + 1
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             if self.current_mask.matrix[n, 0, 0] == 0:
                 mask = self.current_mask.matrix[n, 1:, 1:]
-                mask[:] = self.do_threshold_to_a_slice(self.get_image_slice(orientation,
-                                                                         slice_number),
-                                                                            mask)
+                mask[:] = self.do_threshold_to_a_slice(
+                    self.get_image_slice(orientation, slice_number), mask
+                )
                 self.current_mask.matrix[n, 0, 0] = 1
-            n_mask = np.array(self.current_mask.matrix[n, 1:, 1:],
-                                dtype=self.current_mask.matrix.dtype)
+            n_mask = np.array(
+                self.current_mask.matrix[n, 1:, 1:],
+                dtype=self.current_mask.matrix.dtype,
+            )
 
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             if self.current_mask.matrix[0, n, 0] == 0:
                 mask = self.current_mask.matrix[1:, n, 1:]
-                mask[:] = self.do_threshold_to_a_slice(self.get_image_slice(orientation,
-                                                                         slice_number),
-                                                                            mask)
+                mask[:] = self.do_threshold_to_a_slice(
+                    self.get_image_slice(orientation, slice_number), mask
+                )
                 self.current_mask.matrix[0, n, 0] = 1
-            n_mask = np.array(self.current_mask.matrix[1:, n, 1:],
-                                dtype=self.current_mask.matrix.dtype)
+            n_mask = np.array(
+                self.current_mask.matrix[1:, n, 1:],
+                dtype=self.current_mask.matrix.dtype,
+            )
 
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             if self.current_mask.matrix[0, 0, n] == 0:
                 mask = self.current_mask.matrix[1:, 1:, n]
-                mask[:] = self.do_threshold_to_a_slice(self.get_image_slice(orientation,
-                                                                         slice_number),
-                                                                            mask)
+                mask[:] = self.do_threshold_to_a_slice(
+                    self.get_image_slice(orientation, slice_number), mask
+                )
                 self.current_mask.matrix[0, 0, n] = 1
-            n_mask = np.array(self.current_mask.matrix[1:, 1:, n],
-                                dtype=self.current_mask.matrix.dtype)
+            n_mask = np.array(
+                self.current_mask.matrix[1:, 1:, n],
+                dtype=self.current_mask.matrix.dtype,
+            )
 
         return n_mask
 
     def get_aux_slice(self, name, orientation, n):
         m = self.aux_matrices[name]
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             return np.array(m[n])
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             return np.array(m[:, n, :])
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             return np.array(m[:, :, n])
 
     def GetNumberOfSlices(self, orientation):
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             return self.matrix.shape[0]
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             return self.matrix.shape[1]
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             return self.matrix.shape[2]
 
     def SetMaskColour(self, index, colour, update=True):
@@ -885,16 +1056,17 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj = Project()
         proj.mask_dict[index].colour = colour
 
-        (r,g,b) = colour[:3]
-        colour_wx = [r*255, g*255, b*255]
-        Publisher.sendMessage('Change mask colour in notebook',
-                                    index=index, colour=(r,g,b))
-        Publisher.sendMessage('Set GUI items colour', colour=colour_wx)
+        (r, g, b) = colour[:3]
+        colour_wx = [r * 255, g * 255, b * 255]
+        Publisher.sendMessage(
+            "Change mask colour in notebook", index=index, colour=(r, g, b)
+        )
+        Publisher.sendMessage("Set GUI items colour", colour=colour_wx)
         if update:
             # Updating mask colour on vtkimagedata.
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
-            Publisher.sendMessage('Reload actual slice')
+            Publisher.sendMessage("Reload actual slice")
 
         session = ses.Session()
         session.ChangeProject()
@@ -912,8 +1084,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj = Project()
         proj.mask_dict[index].edition_threshold_range = threshold_range
 
-    def SetMaskThreshold(self, index, threshold_range, slice_number=None,
-                         orientation=None):
+    def SetMaskThreshold(
+        self, index, threshold_range, slice_number=None, orientation=None
+    ):
         """
         Set a mask threshold range given its index and tuple of min and max
         threshold values.
@@ -932,19 +1105,23 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
                     m[m == 1] = 255
-                    self.current_mask.matrix[n+1, 1:, 1:] = m
+                    self.current_mask.matrix[n + 1, 1:, 1:] = m
             else:
                 slice_ = self.buffer_slices[orientation].image
                 if slice_ is not None:
-                    self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
+                    self.buffer_slices[orientation].mask = (
+                        255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
+                    ).astype("uint8")
 
             # Update viewer
-            #Publisher.sendMessage('Update slice viewer')
+            # Publisher.sendMessage('Update slice viewer')
 
             # Update data notebook (GUI)
-            Publisher.sendMessage('Set mask threshold in notebook',
-                                  index=self.current_mask.index,
-                                  threshold_range=self.current_mask.threshold_range)
+            Publisher.sendMessage(
+                "Set mask threshold in notebook",
+                index=self.current_mask.index,
+                threshold_range=self.current_mask.threshold_range,
+            )
         else:
             proj = Project()
             proj.mask_dict[index].threshold_range = threshold_range
@@ -959,15 +1136,18 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj.mask_dict[index].on_show()
 
         if value:
-            threshold_range = proj.mask_dict[index].edition_threshold_range
-            Publisher.sendMessage('Set edition threshold gui', threshold_range=threshold_range)
+            threshold_range = proj.mask_dict[index].threshold_range
+            Publisher.sendMessage(
+                "Set edition threshold gui", threshold_range=threshold_range
+            )
 
-        if (index == self.current_mask.index):
+        if index == self.current_mask.index:
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
                 buffer_.discard_mask()
-            Publisher.sendMessage('Reload actual slice')
-    #---------------------------------------------------------------------------
+            Publisher.sendMessage("Reload actual slice")
+
+    # ---------------------------------------------------------------------------
 
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
@@ -979,27 +1159,37 @@ class Slice(with_metaclass(utils.Singleton, object)):
         colour = future_mask.colour
         self.SetMaskColour(index, colour, update=False)
 
-        self.buffer_slices = {"AXIAL": SliceBuffer(),
-                              "CORONAL": SliceBuffer(),
-                              "SAGITAL": SliceBuffer()}
+        self.buffer_slices = {
+            "AXIAL": SliceBuffer(),
+            "CORONAL": SliceBuffer(),
+            "SAGITAL": SliceBuffer(),
+        }
 
-        Publisher.sendMessage('Set mask threshold in notebook',
-                              index=index,
-                              threshold_range=self.current_mask.threshold_range)
-        Publisher.sendMessage('Set threshold values in gradient',
-                              threshold_range=self.current_mask.threshold_range)
-        Publisher.sendMessage('Select mask name in combo', index=index)
-        Publisher.sendMessage('Update slice viewer')
-    #---------------------------------------------------------------------------
+        Publisher.sendMessage(
+            "Set mask threshold in notebook",
+            index=index,
+            threshold_range=self.current_mask.threshold_range,
+        )
+        Publisher.sendMessage(
+            "Set threshold values in gradient",
+            threshold_range=self.current_mask.threshold_range,
+        )
+        Publisher.sendMessage("Select mask name in combo", index=index)
+        Publisher.sendMessage("Update slice viewer")
+
+    # ---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, surface_parameters):
         proj = Project()
-        mask = proj.mask_dict[surface_parameters['options']['index']]
+        mask = proj.mask_dict[surface_parameters["options"]["index"]]
 
         self.do_threshold_to_all_slices(mask)
-        Publisher.sendMessage('Create surface',
-                              slice_=self, mask=mask,
-                              surface_parameters=surface_parameters)
+        Publisher.sendMessage(
+            "Create surface",
+            slice_=self,
+            mask=mask,
+            surface_parameters=surface_parameters,
+        )
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()
@@ -1013,69 +1203,73 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def SetTypeProjection(self, tprojection):
         if self._type_projection != tprojection:
             if self._type_projection == const.PROJECTION_NORMAL:
-                Publisher.sendMessage('Hide current mask')
+                Publisher.sendMessage("Hide current mask")
 
             if tprojection == const.PROJECTION_NORMAL:
-                Publisher.sendMessage('Show MIP interface', flag=False)
+                Publisher.sendMessage("Show MIP interface", flag=False)
             else:
-                Publisher.sendMessage('Show MIP interface', flag=True)
+                Publisher.sendMessage("Show MIP interface", flag=True)
 
             self._type_projection = tprojection
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
 
-            Publisher.sendMessage('Check projection menu', projection_id=tprojection)
+            Publisher.sendMessage("Check projection menu", projection_id=tprojection)
 
     def SetInterpolationMethod(self, interp_method):
         if self.interp_method != interp_method:
             self.interp_method = interp_method
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
-            Publisher.sendMessage('Reload actual slice')
+            Publisher.sendMessage("Reload actual slice")
 
     def UpdateWindowLevelBackground(self, window, level):
         self.window_width = window
         self.window_level = level
 
         for buffer_ in self.buffer_slices.values():
-            if self._type_projection in (const.PROJECTION_NORMAL,
-                                         const.PROJECTION_MaxIP,
-                                         const.PROJECTION_MinIP,
-                                         const.PROJECTION_MeanIP,
-                                         const.PROJECTION_LMIP):
+            if self._type_projection in (
+                const.PROJECTION_NORMAL,
+                const.PROJECTION_MaxIP,
+                const.PROJECTION_MinIP,
+                const.PROJECTION_MeanIP,
+                const.PROJECTION_LMIP,
+            ):
                 buffer_.discard_vtk_image()
             else:
                 buffer_.discard_buffer()
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def UpdateColourTableBackground(self, values):
-        self.from_= OTHER
-        self.number_of_colours= values[0]
+        self.from_ = OTHER
+        self.number_of_colours = values[0]
         self.saturation_range = values[1]
         self.hue_range = values[2]
         self.value_range = values[3]
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def UpdateColourTableBackgroundPlist(self, values):
         self.values = values
-        self.from_= PLIST
+        self.from_ = PLIST
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def UpdateColourTableBackgroundWidget(self, nodes):
         self.nodes = nodes
-        self.from_= WIDGET
+        self.from_ = WIDGET
         for buffer_ in self.buffer_slices.values():
-            if self._type_projection in (const.PROJECTION_NORMAL,
-                                         const.PROJECTION_MaxIP,
-                                         const.PROJECTION_MinIP,
-                                         const.PROJECTION_MeanIP,
-                                         const.PROJECTION_LMIP):
+            if self._type_projection in (
+                const.PROJECTION_NORMAL,
+                const.PROJECTION_MaxIP,
+                const.PROJECTION_MinIP,
+                const.PROJECTION_MeanIP,
+                const.PROJECTION_LMIP,
+            ):
                 buffer_.discard_vtk_image()
             else:
                 buffer_.discard_buffer()
@@ -1087,34 +1281,37 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.window_width = pn - p0
         self.window_level = (pn + p0) / 2
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def UpdateSlice3D(self, widget, orientation):
         img = self.buffer_slices[orientation].vtk_image
         original_orientation = Project().original_orientation
         cast = vtk.vtkImageCast()
         cast.SetInputData(img)
-        cast.SetOutputScalarTypeToDouble() 
+        cast.SetOutputScalarTypeToDouble()
         cast.ClampOverflowOn()
         cast.Update()
 
-        #if (original_orientation == const.AXIAL):
+        # if (original_orientation == const.AXIAL):
         flip = vtk.vtkImageFlip()
         flip.SetInputConnection(cast.GetOutputPort())
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.Update()
         widget.SetInputConnection(flip.GetOutputPort())
-        #else:
-            #widget.SetInput(cast.GetOutput())
+        # else:
+        # widget.SetInput(cast.GetOutput())
 
-    def create_new_mask(self, name=None,
-                        colour=None,
-                        opacity=None,
-                        threshold_range=None,
-                        edition_threshold_range=None,
-                        add_to_project=True,
-                        show=True):
+    def create_new_mask(
+        self,
+        name=None,
+        colour=None,
+        opacity=None,
+        threshold_range=None,
+        edition_threshold_range=None,
+        add_to_project=True,
+        show=True,
+    ):
         """
         Creates a new mask and add it to project.
 
@@ -1153,7 +1350,6 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         return future_mask
 
-
     def _add_mask_into_proj(self, mask, show=True):
         """
         Insert a new mask into project and retrieve its index.
@@ -1167,14 +1363,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
         mask.index = index
 
         ## update gui related to mask
-        Publisher.sendMessage('Add mask',
-                              mask=mask)
+        Publisher.sendMessage("Add mask", mask=mask)
 
         if show:
             self.current_mask = mask
-            Publisher.sendMessage('Show mask', index=mask.index, value=True)
-            Publisher.sendMessage('Change mask selected', index=mask.index)
-            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage("Show mask", index=mask.index, value=True)
+            Publisher.sendMessage("Change mask selected", index=mask.index)
+            Publisher.sendMessage("Update slice viewer")
 
     def do_ww_wl(self, image):
         if self.from_ == PLIST:
@@ -1185,7 +1380,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
             i = 0
             for r, g, b in self.values:
-                lut.SetTableValue(i, r/255.0, g/255.0, b/255.0, 1.0)
+                lut.SetTableValue(i, r / 255.0, g / 255.0, b / 255.0, 1.0)
                 i += 1
 
             colorer = vtk.vtkImageMapToColors()
@@ -1194,11 +1389,11 @@ class Slice(with_metaclass(utils.Singleton, object)):
             colorer.SetOutputFormatToRGB()
             colorer.Update()
         elif self.from_ == WIDGET:
-            lut  = vtk.vtkColorTransferFunction()
+            lut = vtk.vtkColorTransferFunction()
 
             for n in self.nodes:
                 r, g, b = n.colour
-                lut.AddRGBPoint(n.value, r/255.0, g/255.0, b/255.0)
+                lut.AddRGBPoint(n.value, r / 255.0, g / 255.0, b / 255.0)
 
             lut.Build()
 
@@ -1218,7 +1413,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         return colorer.GetOutput()
 
     def _update_wwwl_widget_nodes(self, ww, wl):
-        if self.from_ == WIDGET: 
+        if self.from_ == WIDGET:
             knodes = sorted(self.nodes)
 
             p1 = knodes[0]
@@ -1244,7 +1439,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     node.value += shiftWW * factor
 
     def do_threshold_to_a_slice(self, slice_matrix, mask, threshold=None):
-        """ 
+        """
         Based on the current threshold bounds generates a threshold mask to
         given slice_matrix.
         """
@@ -1253,12 +1448,12 @@ class Slice(with_metaclass(utils.Singleton, object)):
         else:
             thresh_min, thresh_max = self.current_mask.threshold_range
 
-        m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
+        m = ((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255
         m[mask == 1] = 1
         m[mask == 2] = 2
         m[mask == 253] = 253
         m[mask == 254] = 254
-        return m.astype('uint8')
+        return m.astype("uint8")
 
     def do_threshold_to_all_slices(self, mask=None):
         """
@@ -1273,7 +1468,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
         for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
-                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m, mask.threshold_range)
+                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(
+                    self.matrix[n - 1], m, mask.threshold_range
+                )
 
         mask.matrix.flush()
 
@@ -1345,7 +1542,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         lut_mask.SetNumberOfTableValues(ncolours)
 
         for v in map_colours:
-            r,g, b,a = map_colours[v]
+            r, g, b, a = map_colours[v]
             lut_mask.SetTableValue(v, r, g, b, a)
 
         lut_mask.SetRampToLinear()
@@ -1379,13 +1576,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def _do_boolean_op(self, operation, mask1, mask2):
         self.do_boolean_op(operation, mask1, mask2)
 
-
     def do_boolean_op(self, op, m1, m2):
-        name_ops = {const.BOOLEAN_UNION: _(u"Union"), 
-                    const.BOOLEAN_DIFF: _(u"Diff"),
-                    const.BOOLEAN_AND: _(u"Intersection"),
-                    const.BOOLEAN_XOR: _(u"XOR")}
-
+        name_ops = {
+            const.BOOLEAN_UNION: _(u"Union"),
+            const.BOOLEAN_DIFF: _(u"Diff"),
+            const.BOOLEAN_AND: _(u"Intersection"),
+            const.BOOLEAN_XOR: _(u"XOR"),
+        }
 
         name = u"%s_%s_%s" % (name_ops[op], m1.name, m2.name)
         proj = Project()
@@ -1433,32 +1630,32 @@ class Slice(with_metaclass(utils.Singleton, object)):
         index = self.buffer_slices[orientation].index
 
         # TODO: Voltar a usar marcacao na mascara
-        if orientation == 'AXIAL':
-            #if self.current_mask.matrix[index+1, 0, 0] != 2:
-            #self.current_mask.save_history(index, orientation,
-                                           #self.current_mask.matrix[index+1,1:,1:],
-                                               #clean=True)
-            p_mask = self.current_mask.matrix[index+1,1:,1:].copy()
-            self.current_mask.matrix[index+1,1:,1:] = b_mask
-            self.current_mask.matrix[index+1, 0, 0] = 2
+        if orientation == "AXIAL":
+            # if self.current_mask.matrix[index+1, 0, 0] != 2:
+            # self.current_mask.save_history(index, orientation,
+            # self.current_mask.matrix[index+1,1:,1:],
+            # clean=True)
+            p_mask = self.current_mask.matrix[index + 1, 1:, 1:].copy()
+            self.current_mask.matrix[index + 1, 1:, 1:] = b_mask
+            self.current_mask.matrix[index + 1, 0, 0] = 2
 
-        elif orientation == 'CORONAL':
-            #if self.current_mask.matrix[0, index+1, 0] != 2:
-            #self.current_mask.save_history(index, orientation,
-                                           #self.current_mask.matrix[1:, index+1, 1:],
-                                           #clean=True)
-            p_mask = self.current_mask.matrix[1:, index+1, 1:].copy()
-            self.current_mask.matrix[1:, index+1, 1:] = b_mask
-            self.current_mask.matrix[0, index+1, 0] = 2
+        elif orientation == "CORONAL":
+            # if self.current_mask.matrix[0, index+1, 0] != 2:
+            # self.current_mask.save_history(index, orientation,
+            # self.current_mask.matrix[1:, index+1, 1:],
+            # clean=True)
+            p_mask = self.current_mask.matrix[1:, index + 1, 1:].copy()
+            self.current_mask.matrix[1:, index + 1, 1:] = b_mask
+            self.current_mask.matrix[0, index + 1, 0] = 2
 
-        elif orientation == 'SAGITAL':
-            #if self.current_mask.matrix[0, 0, index+1] != 2:
-            #self.current_mask.save_history(index, orientation,
-                                           #self.current_mask.matrix[1:, 1:, index+1],
-                                           #clean=True)
-            p_mask = self.current_mask.matrix[1:, 1:, index+1].copy()
-            self.current_mask.matrix[1:, 1:, index+1] = b_mask
-            self.current_mask.matrix[0, 0, index+1] = 2
+        elif orientation == "SAGITAL":
+            # if self.current_mask.matrix[0, 0, index+1] != 2:
+            # self.current_mask.save_history(index, orientation,
+            # self.current_mask.matrix[1:, 1:, index+1],
+            # clean=True)
+            p_mask = self.current_mask.matrix[1:, 1:, index + 1].copy()
+            self.current_mask.matrix[1:, 1:, index + 1] = b_mask
+            self.current_mask.matrix[0, 0, index + 1] = 2
 
         self.current_mask.save_history(index, orientation, b_mask, p_mask)
         self.current_mask.was_edited = True
@@ -1467,11 +1664,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
             if o != orientation:
                 self.buffer_slices[o].discard_mask()
                 self.buffer_slices[o].discard_vtk_mask()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def apply_reorientation(self):
         temp_file = tempfile.mktemp()
-        mcopy = np.memmap(temp_file, shape=self.matrix.shape, dtype=self.matrix.dtype, mode='w+')
+        mcopy = np.memmap(
+            temp_file, shape=self.matrix.shape, dtype=self.matrix.dtype, mode="w+"
+        )
         mcopy[:] = self.matrix
 
         cx, cy, cz = self.center
@@ -1480,13 +1679,24 @@ class Slice(with_metaclass(utils.Singleton, object)):
         T1 = transformations.translation_matrix((cz, cy, cx))
         M = transformations.concatenate_matrices(T1, R.T, T0)
 
-        transforms.apply_view_matrix_transform(mcopy, self.spacing, M, 0, 'AXIAL', self.interp_method, mcopy.min(), self.matrix)
+        transforms.apply_view_matrix_transform(
+            mcopy,
+            self.spacing,
+            M,
+            0,
+            "AXIAL",
+            self.interp_method,
+            mcopy.min(),
+            self.matrix,
+        )
 
         del mcopy
         os.remove(temp_file)
 
         self.q_orientation = np.array((1, 0, 0, 0))
-        self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+        self.center = [
+            (s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)
+        ]
 
         self.__clean_current_mask()
         if self.current_mask:
@@ -1496,35 +1706,39 @@ class Slice(with_metaclass(utils.Singleton, object)):
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_buffer()
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def __undo_edition(self):
         buffer_slices = self.buffer_slices
-        actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
-                         "CORONAL": buffer_slices["CORONAL"].index,
-                         "SAGITAL": buffer_slices["SAGITAL"].index,
-                         "VOLUME": 0}
+        actual_slices = {
+            "AXIAL": buffer_slices["AXIAL"].index,
+            "CORONAL": buffer_slices["CORONAL"].index,
+            "SAGITAL": buffer_slices["SAGITAL"].index,
+            "VOLUME": 0,
+        }
         self.current_mask.undo_history(actual_slices)
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_mask()
             self.buffer_slices[o].discard_vtk_mask()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def __redo_edition(self):
         buffer_slices = self.buffer_slices
-        actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
-                         "CORONAL": buffer_slices["CORONAL"].index,
-                         "SAGITAL": buffer_slices["SAGITAL"].index,
-                         "VOLUME": 0}
+        actual_slices = {
+            "AXIAL": buffer_slices["AXIAL"].index,
+            "CORONAL": buffer_slices["CORONAL"].index,
+            "SAGITAL": buffer_slices["SAGITAL"].index,
+            "VOLUME": 0,
+        }
         self.current_mask.redo_history(actual_slices)
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_mask()
             self.buffer_slices[o].discard_vtk_mask()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def _open_image_matrix(self, filename, shape, dtype):
         self.matrix_filename = filename
-        self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
+        self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
     def OnFlipVolume(self, axis):
         if axis == 0:
@@ -1553,16 +1767,16 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def OnExportMask(self, filename, filetype):
         imagedata = self.current_mask.imagedata
         #  imagedata = self.imagedata
-        if (filetype == const.FILETYPE_IMAGEDATA):
+        if filetype == const.FILETYPE_IMAGEDATA:
             iu.Export(imagedata, filename)
 
     def _fill_holes_auto(self, parameters):
-        target = parameters['target']
-        conn = parameters['conn']
-        orientation = parameters['orientation']
-        size = parameters['size']
+        target = parameters["target"]
+        conn = parameters["conn"]
+        orientation = parameters["orientation"]
+        size = parameters["size"]
 
-        if target == '2D':
+        if target == "2D":
             index = self.buffer_slices[orientation].index
         else:
             index = 0
@@ -1570,15 +1784,15 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         self.current_mask.fill_holes_auto(target, conn, orientation, index, size)
 
-        self.buffer_slices['AXIAL'].discard_mask()
-        self.buffer_slices['CORONAL'].discard_mask()
-        self.buffer_slices['SAGITAL'].discard_mask()
+        self.buffer_slices["AXIAL"].discard_mask()
+        self.buffer_slices["CORONAL"].discard_mask()
+        self.buffer_slices["SAGITAL"].discard_mask()
 
-        self.buffer_slices['AXIAL'].discard_vtk_mask()
-        self.buffer_slices['CORONAL'].discard_vtk_mask()
-        self.buffer_slices['SAGITAL'].discard_vtk_mask()
+        self.buffer_slices["AXIAL"].discard_vtk_mask()
+        self.buffer_slices["CORONAL"].discard_vtk_mask()
+        self.buffer_slices["SAGITAL"].discard_vtk_mask()
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def calc_image_density(self, mask=None):
         if mask is None:
@@ -1600,25 +1814,26 @@ class Slice(with_metaclass(utils.Singleton, object)):
             mask = self.current_mask
 
         self.do_threshold_to_all_slices(mask)
-        bin_img = (mask.matrix[1:, 1:, 1:] > 127)
+        bin_img = mask.matrix[1:, 1:, 1:] > 127
 
         sx, sy, sz = self.spacing
 
         kernel = np.zeros((3, 3, 3))
         kernel[1, 1, 1] = 2 * sx * sy + 2 * sx * sz + 2 * sy * sz
-        kernel[0, 1, 1] = - (sx * sy)
-        kernel[2, 1, 1] = - (sx * sy)
+        kernel[0, 1, 1] = -(sx * sy)
+        kernel[2, 1, 1] = -(sx * sy)
 
-        kernel[1, 0, 1] = - (sx * sz)
-        kernel[1, 2, 1] = - (sx * sz)
+        kernel[1, 0, 1] = -(sx * sz)
+        kernel[1, 2, 1] = -(sx * sz)
 
-        kernel[1, 1, 0] = - (sy * sz)
-        kernel[1, 1, 2] = - (sy * sz)
+        kernel[1, 1, 0] = -(sy * sz)
+        kernel[1, 1, 2] = -(sy * sz)
 
         #  area = ndimage.generic_filter(bin_img * 1.0, _conv_area, size=(3, 3, 3), mode='constant', cval=1, extra_arguments=(sx, sy, sz)).sum()
         area = transforms.convolve_non_zero(bin_img * 1.0, kernel, 1).sum()
 
         return area
+
 
 def _conv_area(x, sx, sy, sz):
     x = x.reshape((3, 3, 3))

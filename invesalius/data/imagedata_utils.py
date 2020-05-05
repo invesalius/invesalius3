@@ -27,7 +27,7 @@ import imageio
 import numpy
 import numpy as np
 import vtk
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 from scipy.ndimage import shift, zoom
 from vtk.util import numpy_support
@@ -290,6 +290,16 @@ def create_dicom_thumbnails(image, window=None, level=None):
         return thumbnail_path
 
 
+
+def array2memmap(arr, filename=None):
+    if filename is None:
+        filename = tempfile.mktemp(prefix='inv3_', suffix='.dat')
+    matrix = numpy.memmap(filename, mode='w+', dtype=arr.dtype, shape=arr.shape)
+    matrix[:] = arr[:]
+    matrix.flush()
+    return matrix
+
+
 def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -477,13 +487,13 @@ def img2memmap(group):
 
     data = group.get_data()
     # Normalize image pixel values and convert to int16
-    data = imgnormalize(data)
+    #  data = imgnormalize(data)
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = numpy.swapaxes(data, 0, 2)
     data = numpy.fliplr(data)
 
-    matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=data.shape)
+    matrix = numpy.memmap(temp_file, mode='w+', dtype=np.int16, shape=data.shape)
     matrix[:] = data[:]
     matrix.flush()
 
@@ -573,6 +583,11 @@ def get_LUT_value_255(data, window, level):
                         [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
     data.shape = shape
     return data
+
+
+def image_normalize(image, min_=0.0, max_=1.0):
+    imin, imax = image.min(), image.max()
+    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_
 
 
 def convert_world_to_voxel(xyz, affine):

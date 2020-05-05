@@ -17,7 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 
 # mode.py

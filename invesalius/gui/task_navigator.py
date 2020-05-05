@@ -34,7 +34,7 @@ except ImportError:
     import wx.lib.foldpanelbar as fpb
 
 import wx.lib.masked.numctrl
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 # import wx.lib.platebtn as pbtn
 

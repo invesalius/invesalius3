@@ -46,7 +46,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 try:
     from wx.adv import AboutDialogInfo, AboutBox
@@ -784,6 +784,34 @@ class UpdateMessageDialog(wx.Dialog):
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()
+
+
+class MessageBox(wx.Dialog):
+    def __init__(self, parent, title, message, caption="InVesalius3 Error"):
+        wx.Dialog.__init__(self, parent, title=caption, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+
+        title_label = wx.StaticText(self, -1, title)
+
+        text = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.BORDER_NONE)
+        text.SetValue(message)
+        text.SetBackgroundColour(wx.SystemSettings.GetColour(4))
+
+        width, height = text.GetTextExtent("O"*30)
+        text.SetMinSize((width, -1))
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.Realize()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(title_label, 0, wx.ALIGN_CENTRE|wx.ALL|wx.EXPAND, 5)
+        sizer.Add(text, 1, wx.ALIGN_CENTRE|wx.ALL|wx.EXPAND, 5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.ALL, 5)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Center()
+        self.ShowModal()
 
 
 def SaveChangesDialog__Old(filename):
@@ -3934,3 +3962,73 @@ class SetCOMport(wx.Dialog):
 
     def GetValue(self):
         return self.com_ports.GetString(self.com_ports.GetSelection())
+
+
+class ManualWWWLDialog(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, -1, _("Set WW&WL manually"))
+        self._init_gui()
+
+    def _init_gui(self):
+        import invesalius.data.slice_ as slc
+        ww = slc.Slice().window_width
+        wl = slc.Slice().window_level
+
+        self.txt_wl = wx.TextCtrl(self, -1, str(int(wl)))
+        wl_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        wl_sizer.Add(wx.StaticText(self, -1, _("Window Level")), 0, wx.ALIGN_CENTER_VERTICAL)
+        wl_sizer.Add(self.txt_wl, 1, wx.ALL | wx.EXPAND, 5)
+        wl_sizer.Add(wx.StaticText(self, -1, _("WL")), 0, wx.ALIGN_CENTER_VERTICAL)
+
+        self.txt_ww = wx.TextCtrl(self, -1, str(int(ww)))
+        ww_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ww_sizer.Add(wx.StaticText(self, -1, _("Window Width")), 0, wx.ALIGN_CENTER_VERTICAL)
+        ww_sizer.Add(self.txt_ww, 1, wx.ALL | wx.EXPAND, 5)
+        ww_sizer.Add(wx.StaticText(self, -1, _("WW")), 0, wx.ALIGN_CENTER_VERTICAL)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(wl_sizer, 1, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(ww_sizer, 1, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(btnsizer, 1, wx.ALL | wx.EXPAND, 5)
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOK)
+        btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+        main_sizer.SetSizeHints(self)
+
+        self.Layout()
+        self.Center()
+
+    def OnOK(self, evt):
+        try:
+            ww = int(self.txt_ww.GetValue())
+            wl = int(self.txt_wl.GetValue())
+        except ValueError:
+            self.Close()
+            return
+
+        Publisher.sendMessage('Bright and contrast adjustment image', window=ww, level=wl)
+        const.WINDOW_LEVEL['Manual'] = (ww, wl)
+        Publisher.sendMessage('Check window and level other')
+        Publisher.sendMessage('Update window level value', window=ww, level=wl)
+        #Necessary update the slice plane in the volume case exists
+        Publisher.sendMessage('Update slice viewer')
+        Publisher.sendMessage('Render volume viewer')
+
+        self.Close()
+
+    def OnCancel(self, evt):
+        self.Close()
+
+    def OnClose(self, evt):
+        self.Destroy()

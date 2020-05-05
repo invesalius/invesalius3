@@ -17,8 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from six import with_metaclass
-
 try:
     import configparser as ConfigParser
 except(ImportError):
@@ -33,8 +31,7 @@ import codecs
 import collections
 import json
 
-#import wx.lib.pubsub as ps
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import wx
 
 from invesalius.utils import Singleton, debug, decode
@@ -52,7 +49,7 @@ SESSION_ENCODING = 'utf8'
 
 # Only one session will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
-class Session(with_metaclass(Singleton, object)):
+class Session(metaclass=Singleton):
 
     def __init__(self):
         self.project_path = ()

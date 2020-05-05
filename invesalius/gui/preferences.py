@@ -2,7 +2,7 @@ import invesalius.constants as const
 import invesalius.session as ses
 import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 try:
     from agw import flatnotebook as fnb

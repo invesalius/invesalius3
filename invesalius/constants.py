@@ -487,6 +487,7 @@ ID_ABOUT = wx.ID_ABOUT
     [wx.NewId() for number in range(3)]
 
 ID_START = wx.NewId()
+ID_PLUGINS_SHOW_PATH = wx.NewId()
 
 ID_FLIP_X = wx.NewId()
 ID_FLIP_Y = wx.NewId()
@@ -508,6 +509,8 @@ ID_MANUAL_SEGMENTATION = wx.NewId()
 ID_WATERSHED_SEGMENTATION = wx.NewId()
 ID_THRESHOLD_SEGMENTATION = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
+ID_FLOODFILL_SEGMENTATION = wx.NewId()
+ID_SEGMENTATION_BRAIN = wx.NewId()
 ID_CROP_MASK = wx.NewId()
 ID_DENSITY_MEASURE = wx.NewId()
 ID_MASK_DENSITY_MEASURE = wx.NewId()
@@ -516,6 +519,8 @@ ID_CREATE_MASK = wx.NewId()
 
 ID_GOTO_SLICE = wx.NewId()
 ID_GOTO_COORD = wx.NewId()
+
+ID_MANUAL_WWWL = wx.NewId()
 
 # Tractography with Trekker
 ID_TREKKER_MASK = wx.NewId()

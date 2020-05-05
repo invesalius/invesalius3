@@ -17,8 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from six import with_metaclass
-
 import datetime
 import glob
 import os
@@ -29,17 +27,18 @@ import tarfile
 import tempfile
 
 import numpy as np
-import wx
-from wx.lib.pubsub import pub as Publisher
 import vtk
+import wx
+
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
-from invesalius.presets import Presets 
-from invesalius.utils import Singleton, debug, touch, decode
 import invesalius.version as version
-
 from invesalius import inv_paths
+from invesalius.data import imagedata_utils
+from invesalius.presets import Presets
+from invesalius.utils import Singleton, debug, decode, touch
 
 if sys.platform == 'win32':
     try:
@@ -52,7 +51,7 @@ else:
 
 # Only one project will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
-class Project(with_metaclass(Singleton, object)):
+class Project(metaclass=Singleton):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''
@@ -277,20 +276,24 @@ class Project(with_metaclass(Singleton, object)):
                 os.remove(f)
 
     def OpenPlistProject(self, filename):
-        import invesalius.data.measures as ms
-        import invesalius.data.mask as msk
-        import invesalius.data.surface as srf
-        
         if not const.VTK_WARNING:
             log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path.encode(const.FS_ENCODE))
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
-            
+
         filelist = Extract(filename, tempfile.mkdtemp())
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
+        self.load_from_folder(dirpath)
 
+    def load_from_folder(self, dirpath):
+        """
+        Loads invesalius3 project files from dipath.
+        """
+        import invesalius.data.measures as ms
+        import invesalius.data.mask as msk
+        import invesalius.data.surface as srf
         # Opening the main file from invesalius 3 project
         main_plist =  os.path.join(dirpath ,'main.plist')
         project = plistlib.readPlist(main_plist)
@@ -308,8 +311,9 @@ class Project(with_metaclass(Singleton, object)):
         self.level = project["window_level"]
         self.threshold_range = project["scalar_range"]
         self.spacing = project["spacing"]
-        if project.get("affine"):
-            self.affine = project.get("affine")
+        if project.get("affine", ""):
+            self.affine = project["affine"]
+            # self.affine = project.get("affine")
             Publisher.sendMessage('Update affine matrix',
                                   affine=np.asarray(self.affine).reshape(4, 4), status=True)
 
@@ -323,7 +327,7 @@ class Project(with_metaclass(Singleton, object)):
 
         # Opening the masks
         self.mask_dict = {}
-        for index in project["masks"]:
+        for index in project.get("masks", []):
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
@@ -332,7 +336,7 @@ class Project(with_metaclass(Singleton, object)):
 
         # Opening the surfaces
         self.surface_dict = {}
-        for index in project["surfaces"]:
+        for index in project.get("surfaces", []):
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
             s = srf.Surface(int(index))
@@ -341,15 +345,50 @@ class Project(with_metaclass(Singleton, object)):
 
         # Opening the measurements
         self.measurement_dict = {}
-        measurements = plistlib.readPlist(os.path.join(dirpath,
-                                                       project["measurements"]))
-        for index in measurements:
-            if measurements[index]["type"] in (const.DENSITY_ELLIPSE, const.DENSITY_POLYGON):
-                measure = ms.DensityMeasurement()
-            else:
-                measure = ms.Measurement()
-            measure.Load(measurements[index])
-            self.measurement_dict[int(index)] = measure
+        measures_file = os.path.join(dirpath, project.get("measurements", "measurements.plist"))
+        if os.path.exists(measures_file):
+            measurements = plistlib.readPlist(measures_file)
+            for index in measurements:
+                if measurements[index]["type"] in (const.DENSITY_ELLIPSE, const.DENSITY_POLYGON):
+                    measure = ms.DensityMeasurement()
+                else:
+                    measure = ms.Measurement()
+                measure.Load(measurements[index])
+                self.measurement_dict[int(index)] = measure
+
+    def create_project_file(self, name, spacing, modality, orientation, window_width, window_level, image, affine='', folder=None):
+        if folder is None:
+            folder = tempfile.mkdtemp()
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        image_file = os.path.join(folder, 'matrix.dat')
+        image_mmap = imagedata_utils.array2memmap(image, image_file)
+        matrix = {
+            'filename': 'matrix.dat',
+            'shape': image.shape,
+            'dtype': str(image.dtype)
+        }
+        project = {
+                   # Format info
+                   "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
+                   "invesalius_version": const.INVESALIUS_VERSION,
+                   "date": datetime.datetime.now().isoformat(),
+                   "compress": True,
+
+                   # case info
+                   "name": name, # patient's name
+                   "modality": modality, # CT, RMI, ...
+                   "orientation": orientation,
+                   "window_width": window_width,
+                   "window_level": window_level,
+                   "scalar_range": (int(image.min()), int(image.max())),
+                   "spacing": spacing,
+                   "affine": affine,
+
+                   "matrix": matrix,
+                  }
+        plistlib.writePlist(project, os.path.join(folder, 'main.plist'))
+
 
     def export_project(self, filename, save_masks=True):
         if filename.lower().endswith('.hdf5') or filename.lower().endswith('.h5'):

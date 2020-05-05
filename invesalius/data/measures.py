@@ -1,12 +1,10 @@
 # -*- coding: UTF-8 -*-
 
-from six import with_metaclass
-
 import math
 import random
 import sys
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import numpy as np
 import vtk
@@ -57,7 +55,7 @@ else:
 
 DEBUG_DENSITY = False
 
-class MeasureData(with_metaclass(utils.Singleton)):
+class MeasureData(metaclass=utils.Singleton):
     """
     Responsible to keep measures data.
     """
