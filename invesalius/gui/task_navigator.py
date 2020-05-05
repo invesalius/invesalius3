@@ -323,9 +323,9 @@ class NeuronavigationPanel(wx.Panel):
         # self.tracts_queue = queue.Queue()
         # self.visualization_queue = queue.Queue()
 
-        self.coord_queue = QueueCustom(maxsize=4)
+        self.coord_queue = QueueCustom(maxsize=1)
         # self.tracts_queue = QueueCustom()
-        self.visualization_queue = QueueCustom(maxsize=4)
+        self.visualization_queue = QueueCustom(maxsize=1)
 
         # Tractography parameters
         self.trk_inp = None
@@ -709,6 +709,9 @@ class NeuronavigationPanel(wx.Panel):
                 dlg.ShowNavigationTrackerWarning(0, 'choose')
 
             else:
+                if self.event.is_set():
+                    self.event.clear()
+
                 # prepare GUI for navigation
                 Publisher.sendMessage("Navigation status", status=True)
                 Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
@@ -763,8 +766,6 @@ class NeuronavigationPanel(wx.Panel):
                                 coreg_data.extend(obj_data)
 
                                 # sle = self.sleep_nav
-                                if self.event.is_set():
-                                    self.event.clear()
 
                                 # pipeline = PipelineSimple()
                                 jobs_list = []
@@ -1581,7 +1582,7 @@ class TractographyPanel(wx.Panel):
         text_ntracts = wx.StaticText(self, -1, _("Number tracts:"))
         spin_ntracts = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
         spin_ntracts.Enable(1)
-        spin_ntracts.SetRange(1, 200)
+        spin_ntracts.SetRange(1, 2000)
         spin_ntracts.SetValue(const.N_TRACTS)
         spin_ntracts.Bind(wx.EVT_TEXT, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
         spin_ntracts.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
@@ -1786,7 +1787,7 @@ class TractographyPanel(wx.Panel):
 
         # try:
 
-        self.trekker = Trekker.tracker(filename.encode('utf-8'))
+        self.trekker = Trekker.initialize(filename.encode('utf-8'))
         self.trekker, n_threads = dti.SetTrekkerParameters(self.trekker, self.trekker_cfg)
 
         self.checktracts.Enable(1)
@@ -1885,7 +1886,7 @@ class PipelineSimple:
             self.event.set()
 
 
-class QueueCustom(queue.LifoQueue):
+class QueueCustom(queue.Queue):
     """
     A custom queue subclass that provides a :meth:`clear` method.
     https://stackoverflow.com/questions/6517953/clear-all-items-from-the-queue

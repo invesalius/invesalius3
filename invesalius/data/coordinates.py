@@ -75,7 +75,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((trans_obj, angles_obj))
 
     coord = np.vstack([coord1, coord2, coord3])
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+    # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
 
     return coord
 

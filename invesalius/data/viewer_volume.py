@@ -1427,8 +1427,11 @@ class Viewer(wx.Panel):
 
     def OnRemoveTracts(self, evt=None, count=0):
         # print("Remove count: ", count)
-        self.ren.RemoveActor(self.actor_tracts)
-        self.Refresh()
+        if self.actor_tracts:
+            self.ren.RemoveActor(self.actor_tracts)
+            self.actor_tracts = None
+            # del count, self.actor_tracts
+            self.Refresh()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)

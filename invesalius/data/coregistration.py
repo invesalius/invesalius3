@@ -29,6 +29,7 @@ import invesalius.data.transformations as tr
 import invesalius.data.trekker_data as dtr
 import invesalius.data.bases as db
 import numpy as np
+import queue
 
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
 # TODO: Optimize the navigation speed by replacing all matrix multiplications with @ opperator (about 4 times faster)
@@ -448,26 +449,29 @@ class CoordinateCorregistrate(threading.Thread):
         count = 0
 
         trck_init, trck_id, trck_mode = trck_info
-        print('CoordCoreg: event {}'.format(self.event.is_set()))
+        # print('CoordCoreg: event {}'.format(self.event.is_set()))
         # while True:
         while not self.event.is_set():
-            # print(f"Set the coordinate")
-            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-            coord, m_img = corregistrate_final(coreg_data, coord_raw)
-            m_img_flip = m_img.copy()
-            m_img_flip[1, -1] = -m_img_flip[1, -1]
-            # self.pipeline.set_message(m_img_flip)
-            print('CoordCoreg: put {}'.format(count))
-            self.pipeline.put([coord, m_img, m_img_flip])
-            count += 1
-            # self.pipeline.task_done()
+            try:
+                # print(f"Set the coordinate")
+                coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+                coord, m_img = corregistrate_final(coreg_data, coord_raw)
+                m_img_flip = m_img.copy()
+                m_img_flip[1, -1] = -m_img_flip[1, -1]
+                # self.pipeline.set_message(m_img_flip)
+                self.pipeline.put_nowait([coord, m_img, m_img_flip])
+                # print('CoordCoreg: put {}'.format(count))
+                # count += 1
 
-            # print(f"Pubsub the coregistered coordinate: {coord}")
-            # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
-            # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+                # self.pipeline.task_done()
+                # print(f"Pubsub the coregistered coordinate: {coord}")
+                # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+                # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+                # The sleep has to be in both threads
 
-            # The sleep has to be in both threads
-            sleep(self.sle)
+                sleep(self.sle)
+            except queue.Full:
+                pass
 
 # def GetCoordinatesProducer(trck_info, queue, event):
 #     trck_init, trck_id, trck_mode = trck_info
