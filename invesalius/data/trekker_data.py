@@ -5,7 +5,7 @@ import time
 import numpy as np
 import queue
 import wx
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import vtk
 
 import invesalius.constants as const
@@ -237,8 +237,6 @@ class UpdateNavigationScene(threading.Thread):
                 pass
 
 
-
-
 def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
     """
     Compute tractograms using the Trekker library.
@@ -284,9 +282,9 @@ def SetTrekkerParameters(trekker, params):
     # trekker.minRadiusOfCurvature(params['min_radius_curv'])
     # trekker.probeLength(params['probe_length'])
     trekker.writeInterval(params['write_interval'])
-    trekker.maxLength(200)
-    trekker.minLength(20)
-    trekker.maxSamplingPerStep(100)
+    trekker.maxLength(params['max_lenth'])
+    trekker.minLength(params['min_lenth'])
+    trekker.maxSamplingPerStep(params['max_sampling_step'])
 
     # check number if number of cores is valid in configuration file,
     # otherwise use the maximum number of threads which is usually 2*N_CPUS
