@@ -1063,8 +1063,11 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def OnLinkLoad(self, event=None):
         # filename = dlg.ShowLoadRegistrationDialog()
-        filename = dlg.ShowLoadDialog(message=_(u"Load object registration"),
-                                      wildcard=_("Registration files (*.obr)|*.obr"))
+        # filename = dlg.ShowLoadDialog(message=_(u"Load object registration"),
+        #                               wildcard=_("Registration files (*.obr)|*.obr"))
+        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
+        coil_path = 'magstim_coil_dell_laptop.obr'
+        filename = os.path.join(data_dir, coil_path)
 
         try:
             if filename:
@@ -1381,12 +1384,17 @@ class MarkersPanel(wx.Panel):
             self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
 
     def OnLoadMarkers(self, evt):
-        filepath = dlg.ShowLoadMarkersDialog()
+        # filepath = dlg.ShowLoadMarkersDialog()
+        # filename = dlg.ShowLoadDialog(message=_(u"Load object registration"),
+        #                               wildcard=_("Registration files (*.obr)|*.obr"))
+        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
+        coil_path = 'markers.mks'
+        filename = os.path.join(data_dir, coil_path)
 
-        if filepath:
+        if filename:
             try:
                 count_line = self.lc.GetItemCount()
-                content = [s.rstrip() for s in open(filepath)]
+                content = [s.rstrip() for s in open(filename)]
                 for data in content:
                     target = None
                     line = [s for s in data.split()]
