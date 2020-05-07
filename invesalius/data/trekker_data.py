@@ -57,16 +57,29 @@ def compute_tubes_vtk(trk, direction):
     return trk_tube
 
 
-def tracts_root(out_list, root, n_tracts):
+def tracts_root(out_list, root, n_block):
     # create tracts only when at least one was computed
     # print("Len outlist in root: ", len(out_list))
     if not out_list.count(None) == len(out_list):
         for n, tube in enumerate(out_list):
             #TODO: substitute to try + except (better to ask forgiveness than please)
             if tube:
-                root.SetBlock(n_tracts + n, tube.GetOutput())
+                root.SetBlock(n_block + n, tube.GetOutput())
 
     return root
+
+
+def tracts_branch(out_list):
+    branch = vtk.vtkMultiBlockDataSet()
+    # create tracts only when at least one was computed
+    # print("Len outlist in root: ", len(out_list))
+    if not out_list.count(None) == len(out_list):
+        for n, tube in enumerate(out_list):
+            #TODO: substitute to try + except (better to ask forgiveness than please)
+            # if tube:
+            branch.SetBlock(n, tube.GetOutput())
+
+    return branch
 
 
 def tracts_computation(trk_list, root, n_tracts):
@@ -82,6 +95,18 @@ def tracts_computation(trk_list, root, n_tracts):
     root = tracts_root(out_list, root, n_tracts)
 
     return root
+
+
+def tracts_computation_branch(trk_list):
+    # Transform tracts to array
+    trk_arr = [np.asarray(trk_n).T if trk_n else None for trk_n in trk_list]
+    # Compute the directions
+    trk_dir = [simple_direction(trk_n) for trk_n in trk_arr]
+    # Compute the vtk tubes
+    tube_list = [compute_tubes_vtk(trk_arr_n, trk_dir_n) for trk_arr_n, trk_dir_n in zip(trk_arr, trk_dir)]
+    branch = tracts_branch(tube_list)
+
+    return branch
 
 
 class ComputeTractsThread(threading.Thread):
@@ -104,7 +129,126 @@ class ComputeTractsThread(threading.Thread):
     def run(self):
 
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
-        n_threads = n_tracts_total
+        # n_threads = n_tracts_total
+        p_old = np.array([[0., 0., 0.]])
+        n_tracts = 0
+        count = 0
+        trk_list = []
+        tube_list = []
+
+        # Compute the tracts
+        # while True:
+        # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
+        while not self.event.is_set():
+            try:
+                # if self.pipeline.event.is_set():
+                # print("Computing tracts")
+                coord, m_img, m_img_flip = self.pipeline.get_nowait()
+                # print('ComputeTractsThread: get {}'.format(count))
+                # m_img_flip = self.pipeline.get_message()
+
+                # if np.any(m_img_flip):
+
+                # 20200402: in this new refactored version the m_img comes different than the position
+                # the new version m_img is already flixped in y, which means that Y is negative
+                # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
+                # but check all pipeline before why now the m_img comes different than position
+                # 20200403: indeed flip_x is just a -1 multiplication to the Y coordinate, remove function flip_x
+                # m_img_flip = m_img.copy()
+                # m_img_flip[1, -1] = -m_img_flip[1, -1]
+
+                # translate the coordinate along the normal vector of the object/coil
+                p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+                # p_new = np.array([[27.53, -77.37, 46.42]])
+                dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
+                p_old = p_new.copy()
+
+                seed_trk = img_utils.convert_world_to_voxel(p_new, affine)
+                # Juuso's
+                # seed_trk = np.array([[-8.49, -8.39, 2.5]])
+                # Baran M1
+                # seed_trk = np.array([[27.53, -77.37, 46.42]])
+                # print("Seed: {}".format(seed))
+                trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
+
+                # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=position)
+                # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=position)
+
+                trk_list = trekker.run()
+
+                if trk_list:
+                    # print("dist: {}".format(dist))
+                    if dist >= seed_radius:
+                        bundle = vtk.vtkMultiBlockDataSet()
+                        n_branches = 0
+                        # trk_list = trekker.run()
+                        branch = tracts_computation_branch(trk_list)
+                        bundle.SetBlock(n_branches, branch)
+
+                        # print("New tracts: ", n_tracts)
+                        n_branches += 1
+                        n_tracts = branch.GetNumberOfBlocks()
+                        # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
+                        # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=bundle,
+                        #              affine_vtk=self.affine_vtk)
+
+                    # TODO: keep computing even if reaches the maximum
+                    elif dist < seed_radius and n_tracts < n_tracts_total:
+                        # Compute the tracts
+                        branch = tracts_computation_branch(trk_list)
+                        bundle.SetBlock(n_branches, branch)
+                        n_tracts += branch.GetNumberOfBlocks()
+                        n_branches += 1
+
+
+
+                        # print("Adding tracts: ", n_tracts)
+                        # count += 1
+                    # else:
+                    #     root = None
+                        # wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
+                        # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                        #              affine_vtk=self.affine_vtk, count=count)
+                    # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
+                    # maybe use a flag that indicates the existence or not of the root and in the update scene check for it
+                    self.visualization_queue.put_nowait([coord, m_img, bundle])
+                    # print('ComputeTractsThread: put {}'.format(count))
+                    # count += 1
+                    # this logic is a bit stupid because it has to compute the actors every loop, better would be
+                    # to check the distance and update actors in viewer volume, but that would require that each
+                    # loop outputs one actor which is a fiber bundle, and if the dist is < 3 and n_tract > n_total
+                    # do nothing
+
+                self.pipeline.task_done()
+                # print('ComputeTractsThread: done {}'.format(count))
+                time.sleep(self.sle)
+            except queue.Empty:
+                pass
+            except queue.Full:
+                self.pipeline.task_done()
+
+
+class ComputeTractsThread_SingleBlock(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, inp, affine_vtk, pipeline, visualization_queue, event, sle):
+        threading.Thread.__init__(self, name='ComputeTractsThread')
+        self.inp = inp
+        self.affine_vtk = affine_vtk
+        self.pipeline = pipeline
+        self.visualization_queue = visualization_queue
+        self.event = event
+        self.sle = sle
+
+    def run(self):
+
+        trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
+        # n_threads = n_tracts_total
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
         count = 0
@@ -149,11 +293,13 @@ class ComputeTractsThread(threading.Thread):
                 # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=position)
                 # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=position)
 
-                if trekker.run():
+                trk_list = trekker.run()
+
+                if trk_list:
                     # print("dist: {}".format(dist))
                     if dist >= seed_radius:
                         n_tracts = 0
-                        trk_list = trekker.run()
+                        # trk_list = trekker.run()
                         root = tracts_computation(trk_list, root, n_tracts)
                         n_tracts = len(trk_list)
 
@@ -174,13 +320,13 @@ class ComputeTractsThread(threading.Thread):
 
 
 
-                        # print("Adding tracts: ", n_tracts)
-                        # count += 1
+                    # print("Adding tracts: ", n_tracts)
+                    # count += 1
                     # else:
                     #     root = None
-                        # wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
-                        # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                        #              affine_vtk=self.affine_vtk, count=count)
+                    # wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=count)
+                    # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                    #              affine_vtk=self.affine_vtk, count=count)
                     # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
                     # maybe use a flag that indicates the existence or not of the root and in the update scene check for it
                     self.visualization_queue.put_nowait([coord, m_img, root])
@@ -224,7 +370,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=root)
                 wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                             affine_vtk=self.affine_vtk, count=0)
+                             affine_vtk=self.affine_vtk)
                 wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
@@ -259,8 +405,9 @@ def ComputeTracts(trekker, position, affine, affine_vtk, n_tracts, seed_radius):
     # print("seed example: {}".format(seed_trk))
     trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
     # print("trk list len: ", len(trekker.run()))
-    if trekker.run():
-        trk_list = trekker.run()
+    trk_list = trekker.run()
+    if trk_list:
+        # trk_list = trekker.run()
         root = tracts_computation(trk_list, root, 0)
         # wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
         # wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
