@@ -434,11 +434,13 @@ def corregistrate_final(inp, coord_raw):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, trck_info, coreg_data, pipeline, event, sle):
+    def __init__(self, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle):
         threading.Thread.__init__(self, name='CoordCoreg')
         self.trck_info = trck_info
         self.coreg_data = coreg_data
-        self.pipeline = pipeline
+        self.coord_queue = coord_queue
+        self.view_tracts = view_tracts
+        self.coord_tracts_queue = coord_tracts_queue
         self.event = event
         self.sle = sle
 
@@ -459,9 +461,12 @@ class CoordinateCorregistrate(threading.Thread):
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
-                self.pipeline.put_nowait([coord, m_img, m_img_flip])
+                self.coord_queue.put_nowait([coord, m_img])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
+
+                if self.view_tracts:
+                    self.coord_tracts_queue.put_nowait(m_img_flip)
 
                 # self.pipeline.task_done()
                 # print(f"Pubsub the coregistered coordinate: {coord}")

@@ -319,14 +319,11 @@ class NeuronavigationPanel(wx.Panel):
         self.track_obj = False
         self.event = threading.Event()
 
-        # self.coord_queue = queue.Queue()
-        # self.tracts_queue = queue.Queue()
-        # self.visualization_queue = queue.Queue()
-
         self.coord_queue = QueueCustom(maxsize=1)
-        # self.tracts_queue = QueueCustom()
-        self.visualization_queue = QueueCustom(maxsize=1)
+        # self.visualization_queue = QueueCustom(maxsize=1)
         self.trigger_queue = QueueCustom(maxsize=1)
+        self.coord_tracts_queue = QueueCustom(maxsize=1)
+        self.tracts_queue = QueueCustom(maxsize=1)
 
         # Tractography parameters
         self.trk_inp = None
@@ -667,16 +664,26 @@ class NeuronavigationPanel(wx.Panel):
             self.event.set()
 
             # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("vis unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            # print("coord_tracts unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
+            # print("tracts unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
             self.coord_queue.clear()
-            self.visualization_queue.clear()
-            self.trigger_queue.clear()
+            # self.visualization_queue.clear()
+            if self.trigger_state:
+                self.trigger_queue.clear()
+            if self.view_tracts:
+                self.coord_tracts_queue.clear()
+                self.tracts_queue.clear()
 
             # print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("vis after unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            # print("coord_tracts after unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
+            # print("tracts after unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
             self.coord_queue.join()
-            self.visualization_queue.join()
-            self.trigger_queue.join()
+            # self.visualization_queue.join()
+            if self.trigger_state:
+                self.trigger_queue.join()
+            if self.view_tracts:
+                self.coord_tracts_queue.join()
+                self.tracts_queue.join()
 
             # print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
             # print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
@@ -694,7 +701,6 @@ class NeuronavigationPanel(wx.Panel):
             #     self.trigger.stop()
 
             Publisher.sendMessage("Navigation status", status=False)
-            # Publisher.sendMessage("Remove tracts")
 
         else:
 
@@ -723,14 +729,12 @@ class NeuronavigationPanel(wx.Panel):
                     btn_c.Enable(False)
 
                 # initialize Trekker parameters
-                # seed = [0., 0., 0.]
                 slic = sl.Slice()
                 affine = slic.affine
                 affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-                # self.trk_inp = tracker, affine, tract.seed_offset, tract.n_tracts
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
-                # tracts_info = seed, self.trekker, affine, affine_vtk
 
+                # fiducials matrix
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
                 # initialize spatial tracker parameters
@@ -742,9 +746,11 @@ class NeuronavigationPanel(wx.Panel):
                 fre = db.calculate_fre_m(self.fiducials)
                 self.UpdateFRE(fre)
 
+                # initialize jobs list
                 jobs_list = []
                 vis_components = [self.trigger_state, self.view_tracts]
-                vis_queues = [self.trigger_queue, self.visualization_queue]
+                vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue]
+
                 # initialize trigger thread to synchronize with external devices
                 if self.trigger_state:
                     # self.trigger = trig.Trigger(nav_id)
@@ -765,12 +771,13 @@ class NeuronavigationPanel(wx.Panel):
                                 coreg_data.extend(obj_data)
 
                                 jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, self.coord_queue,
+                                                                             self.view_tracts, self.coord_tracts_queue,
                                                                              self.event, self.sleep_nav))
                                 if self.view_tracts:
                                     # print("Appending the tract computation thread!")
-                                    jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, self.coord_queue,
-                                                                             self.visualization_queue, self.event,
-                                                                             self.sleep_nav))
+                                    jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk,
+                                                                             self.coord_tracts_queue, self.tracts_queue,
+                                                                             self.event, self.sleep_nav))
 
                                 jobs_list.append(UpdateNavigationScene(affine_vtk, vis_queues, vis_components,
                                                                        self.event, self.sleep_nav))
@@ -1905,7 +1912,7 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.trigger_state, self.view_tracts = vis_components
-        self.trigger_queue, self.visualization_queue = vis_queues
+        self.coord_queue, self.trigger_queue, self.tracts_queue = vis_queues
         self.affine_vtk = affine_vtk
         self.sle = sle
         self.event = event
@@ -1913,15 +1920,20 @@ class UpdateNavigationScene(threading.Thread):
     def run(self):
         # count = 0
         while not self.event.is_set():
+            got_coords = False
             try:
-                coord, m_img, root = self.visualization_queue.get_nowait()
+                coord, m_img = self.coord_queue.get_nowait()
+                got_coords = True
+
                 # print('UpdateScene: get {}'.format(count))
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
-                    wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=root)
-                    wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                    bundle = self.tracts_queue.get_nowait()
+                    wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=bundle)
+                    wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=bundle,
                                  affine_vtk=self.affine_vtk)
+                    self.tracts_queue.task_done()
 
                 if self.trigger_state:
                     trigger_on = self.trigger_queue.get_nowait()
@@ -1932,10 +1944,11 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
-                self.visualization_queue.task_done()
+                self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
 
                 sleep(self.sle)
             except queue.Empty:
-                pass
+                if got_coords:
+                    self.coord_queue.task_done()

@@ -192,7 +192,7 @@ def tracts_computation_branch(trk_list):
 
 class ComputeTractsThread(threading.Thread):
 
-    def __init__(self, inp, affine_vtk, coord_queue, visualization_queue, event, sle):
+    def __init__(self, inp, affine_vtk, coord_tracts_queue, tracts_queue, event, sle):
         """Class (threading) to compute real time tractography data for visualization.
 
         Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
@@ -220,8 +220,10 @@ class ComputeTractsThread(threading.Thread):
         threading.Thread.__init__(self, name='ComputeTractsThread')
         self.inp = inp
         self.affine_vtk = affine_vtk
-        self.coord_queue = coord_queue
-        self.visualization_queue = visualization_queue
+        # self.coord_queue = coord_queue
+        self.coord_tracts_queue = coord_tracts_queue
+        self.tracts_queue = tracts_queue
+        # self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
 
@@ -238,7 +240,8 @@ class ComputeTractsThread(threading.Thread):
             try:
                 # print("Computing tracts")
                 # get from the queue the coordinates, coregistration transformation matrix, and flipped matrix
-                coord, m_img, m_img_flip = self.coord_queue.get_nowait()
+                m_img_flip = self.coord_tracts_queue.get_nowait()
+                # coord, m_img, m_img_flip = self.coord_queue.get_nowait()
                 # print('ComputeTractsThread: get {}'.format(count))
 
                 # 20200402: in this new refactored version the m_img comes different than the position
@@ -298,20 +301,24 @@ class ComputeTractsThread(threading.Thread):
                 # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
-                self.visualization_queue.put_nowait([coord, m_img, bundle])
+                # self.visualization_queue.put_nowait([coord, m_img, bundle])
+                self.tracts_queue.put_nowait(bundle)
                 # print('ComputeTractsThread: put {}'.format(count))
 
-                self.coord_queue.task_done()
+                self.coord_tracts_queue.task_done()
+                # self.coord_queue.task_done()
                 # print('ComputeTractsThread: done {}'.format(count))
 
                 # sleep required to prevent user interface from being unresponsive
                 time.sleep(self.sle)
             # if no coordinates pass
             except queue.Empty:
+                # print("Empty queue in tractography")
                 pass
             # if queue is full mark as done (may not be needed in this new "nowait" method)
             except queue.Full:
-                self.coord_queue.task_done()
+                # self.coord_queue.task_done()
+                self.coord_tracts_queue.task_done()
 
 
 class ComputeTractsThreadSingleBlock(threading.Thread):
