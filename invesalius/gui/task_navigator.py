@@ -326,6 +326,7 @@ class NeuronavigationPanel(wx.Panel):
         self.coord_queue = QueueCustom(maxsize=1)
         # self.tracts_queue = QueueCustom()
         self.visualization_queue = QueueCustom(maxsize=1)
+        self.trigger_queue = QueueCustom(maxsize=1)
 
         # Tractography parameters
         self.trk_inp = None
@@ -469,12 +470,8 @@ class NeuronavigationPanel(wx.Panel):
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
-    def UpdateFRE(self, fiducials):
+    def UpdateFRE(self, fre):
         # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
-        # compute fiducial registration error (FRE)
-        # this is the old way to compute the fre, left here to recheck if new works fine.
-        # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
-        fre = db.calculate_fre_m(fiducials)
         self.txtctrl_fre.SetValue(str(round(fre, 2)))
         if fre <= 3:
             self.txtctrl_fre.SetBackgroundColour('GREEN')
@@ -669,20 +666,20 @@ class NeuronavigationPanel(wx.Panel):
         if not nav_id:
             self.event.set()
 
-            print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            print("vis unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+            # print("vis unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
             self.coord_queue.clear()
             self.visualization_queue.clear()
-            # self.tracts_queue.clear()
+            self.trigger_queue.clear()
 
-            print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            print("vis after unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            # print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+            # print("vis after unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
             self.coord_queue.join()
-            # self.tracts_queue.join()
             self.visualization_queue.join()
+            self.trigger_queue.join()
 
-            print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            # print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+            # print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
 
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
@@ -693,8 +690,8 @@ class NeuronavigationPanel(wx.Panel):
             for btn_c in self.btns_coord:
                 btn_c.Enable(True)
 
-            if self.trigger_state:
-                self.trigger.stop()
+            # if self.trigger_state:
+            #     self.trigger.stop()
 
             Publisher.sendMessage("Navigation status", status=False)
             # Publisher.sendMessage("Remove tracts")
@@ -734,22 +731,24 @@ class NeuronavigationPanel(wx.Panel):
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
                 # tracts_info = seed, self.trekker, affine, affine_vtk
 
-                # this old base creation was used to compute the fre, still here to check if the new version
-                # is working fine. delete soon!
-                # m, q1, minv = db.base_creation_old(self.fiducials[:3, :])
-                # n, q2, ninv = db.base_creation_old(self.fiducials[3:, :])
-                # compute coordinate transformation matrices
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
                 # initialize spatial tracker parameters
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 
-                # update fiducial registration error
-                self.UpdateFRE(self.fiducials)
+                # compute fiducial registration error (FRE)
+                # this is the old way to compute the fre, left here to recheck if new works fine.
+                # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
+                fre = db.calculate_fre_m(self.fiducials)
+                self.UpdateFRE(fre)
 
+                jobs_list = []
+                vis_components = [self.trigger_state, self.view_tracts]
+                vis_queues = [self.trigger_queue, self.visualization_queue]
                 # initialize trigger thread to synchronize with external devices
                 if self.trigger_state:
-                    self.trigger = trig.Trigger(nav_id)
+                    # self.trigger = trig.Trigger(nav_id)
+                    jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
 
                 if self.track_obj:
                     if self.obj_reg_status:
@@ -765,24 +764,16 @@ class NeuronavigationPanel(wx.Panel):
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
 
-                                # sle = self.sleep_nav
-
-                                # pipeline = PipelineSimple()
-                                jobs_list = []
-                                # this works with sleep of 0.25 for each thread
-                                # jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                                #                                              self.sleep_nav))
                                 jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, self.coord_queue,
                                                                              self.event, self.sleep_nav))
                                 if self.view_tracts:
                                     # print("Appending the tract computation thread!")
-                                    # jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, pipeline,
-                                    #                                          self.event, self.sleep_nav))
                                     jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk, self.coord_queue,
                                                                              self.visualization_queue, self.event,
                                                                              self.sleep_nav))
-                                jobs_list.append(dti.UpdateNavigationScene(affine_vtk, self.visualization_queue,
-                                                                           self.event, self.sleep_nav))
+
+                                jobs_list.append(UpdateNavigationScene(affine_vtk, vis_queues, vis_components,
+                                                                       self.event, self.sleep_nav))
 
                                 for jobs in jobs_list:
                                     # jobs.daemon = True
@@ -790,8 +781,8 @@ class NeuronavigationPanel(wx.Panel):
                                     # del jobs
 
                             else:
-                                # TODO: not properly tested, please check that all possible navigation modes work in the new
-                                #  thread management scheme
+                                # TODO: not properly tested, please check that all possible navigation modes work in
+                                #  the new thread management scheme
                                 coord_raw = np.array([None])
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
@@ -1869,31 +1860,6 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Remove tracts')
 
 
-class PipelineSimple:
-    """Class to allow a single element pipeline between producer and consumer.
-    """
-
-    def __init__(self):
-        self.message = False
-
-        self.locks = threading.Lock()
-        self.event = threading.Event()
-
-    def get_message(self):
-        # print("Getting message")
-        with self.locks:
-            if self.event.is_set():
-                return self.message
-            else:
-                return False
-
-    def set_message(self, message):
-        # print("Setting message")
-        with self.locks:
-            self.message = message
-            self.event.set()
-
-
 class QueueCustom(queue.Queue):
     """
     A custom queue subclass that provides a :meth:`clear` method.
@@ -1918,3 +1884,58 @@ class QueueCustom(queue.Queue):
             self.unfinished_tasks = unfinished
             self.queue.clear()
             self.not_full.notify_all()
+
+
+class UpdateNavigationScene(threading.Thread):
+
+    def __init__(self, affine_vtk, vis_queues, vis_components, event, sle):
+        """Class (threading) to update the navigation scene with all graphical elements.
+
+        Sleep function in run method is used to avoid blocking GUI and more fluent, real-time navigation
+
+        :param affine_vtk: Affine matrix in vtkMatrix4x4 instance to update objects position in 3D scene
+        :type affine_vtk: vtkMatrix4x4
+        :param visualization_queue: Queue instance that manage coordinates to be visualized
+        :type visualization_queue: queue.Queue
+        :param event: Threading event to coordinate when tasks as done and allow UI release
+        :type event: threading.Event
+        :param sle: Sleep pause in seconds
+        :type sle: float
+        """
+
+        threading.Thread.__init__(self, name='UpdateScene')
+        self.trigger_state, self.view_tracts = vis_components
+        self.trigger_queue, self.visualization_queue = vis_queues
+        self.affine_vtk = affine_vtk
+        self.sle = sle
+        self.event = event
+
+    def run(self):
+        # count = 0
+        while not self.event.is_set():
+            try:
+                coord, m_img, root = self.visualization_queue.get_nowait()
+                # print('UpdateScene: get {}'.format(count))
+
+                # use of CallAfter is mandatory otherwise crashes the wx interface
+                if self.view_tracts:
+                    wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=root)
+                    wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
+                                 affine_vtk=self.affine_vtk)
+
+                if self.trigger_state:
+                    trigger_on = self.trigger_queue.get_nowait()
+                    if trigger_on:
+                        wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                    self.trigger_queue.task_done()
+
+                wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+                wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+
+                self.visualization_queue.task_done()
+                # print('UpdateScene: done {}'.format(count))
+                # count += 1
+
+                sleep(self.sle)
+            except queue.Empty:
+                pass

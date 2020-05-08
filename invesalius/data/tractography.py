@@ -286,16 +286,20 @@ class ComputeTractsThread(threading.Thread):
                     elif dist < seed_radius and n_tracts < n_tracts_total:
                         # compute tracts blocks and add to bungle until reaches the maximum number of tracts
                         branch = tracts_computation_branch(trk_list)
-                        bundle.SetBlock(n_branches, branch)
-                        n_tracts += branch.GetNumberOfBlocks()
-                        n_branches += 1
+                        if bundle:
+                            bundle.SetBlock(n_branches, branch)
+                            n_tracts += branch.GetNumberOfBlocks()
+                            n_branches += 1
 
-                    # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
-                    # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
-                    # be more evident in slow computer or for heavier tract computations, it is better slow update
-                    # than visualizing old data
-                    self.visualization_queue.put_nowait([coord, m_img, bundle])
-                    # print('ComputeTractsThread: put {}'.format(count))
+                else:
+                    bundle = None
+
+                # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
+                # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
+                # be more evident in slow computer or for heavier tract computations, it is better slow update
+                # than visualizing old data
+                self.visualization_queue.put_nowait([coord, m_img, bundle])
+                # print('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_queue.task_done()
                 # print('ComputeTractsThread: done {}'.format(count))
@@ -393,52 +397,6 @@ class ComputeTractsThreadSingleBlock(threading.Thread):
                 pass
             except queue.Full:
                 self.coord_queue.task_done()
-
-
-class UpdateNavigationScene(threading.Thread):
-
-    def __init__(self, affine_vtk, visualization_queue, event, sle):
-        """Class (threading) to update the navigation scene with all graphical elements.
-
-        Sleep function in run method is used to avoid blocking GUI and more fluent, real-time navigation
-
-        :param affine_vtk: Affine matrix in vtkMatrix4x4 instance to update objects position in 3D scene
-        :type affine_vtk: vtkMatrix4x4
-        :param visualization_queue: Queue instance that manage coordinates to be visualized
-        :type visualization_queue: queue.Queue
-        :param event: Threading event to coordinate when tasks as done and allow UI release
-        :type event: threading.Event
-        :param sle: Sleep pause in seconds
-        :type sle: float
-        """
-
-        threading.Thread.__init__(self, name='UpdateScene')
-        self.visualization_queue = visualization_queue
-        self.affine_vtk = affine_vtk
-        self.sle = sle
-        self.event = event
-
-    def run(self):
-        # count = 0
-        while not self.event.is_set():
-            try:
-                coord, m_img, root = self.visualization_queue.get_nowait()
-                # print('UpdateScene: get {}'.format(count))
-
-                # use of CallAfter is mandatory otherwise crashes the wx interface
-                wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=root)
-                wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=root,
-                             affine_vtk=self.affine_vtk)
-                wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-
-                self.visualization_queue.task_done()
-                # print('UpdateScene: done {}'.format(count))
-                # count += 1
-
-                time.sleep(self.sle)
-            except queue.Empty:
-                pass
 
 
 def compute_tracts(trekker, position, affine, affine_vtk, n_tracts):
