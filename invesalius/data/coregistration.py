@@ -26,7 +26,7 @@ from pubsub import pub as Publisher
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
-import invesalius.data.trekker_data as dtr
+import invesalius.data.tractography as dtr
 import invesalius.data.bases as db
 import numpy as np
 import queue
@@ -142,7 +142,7 @@ class CoregistrationDynamic(threading.Thread):
             # seed_aux = pos_world.reshape([1, 4])[0, :3]
             # seed = seed_aux[np.newaxis, :]
             #
-            # self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
+            # self.tracts = dtr.compute_tracts(tracker, seed, affine_vtk, True)
 
             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
@@ -369,7 +369,7 @@ class CoregistrationObjectDynamic(threading.Thread):
             # seed_aux = pos_world.reshape([1, 4])[0, :3]
             # seed = seed_aux[np.newaxis, :]
 
-            # self.tracts = dtr.ComputeTracts(tracker, seed, affine_vtk, True)
+            # self.tracts = dtr.compute_tracts(tracker, seed, affine_vtk, True)
 
             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)

@@ -63,7 +63,7 @@ import invesalius.data.brainmesh_handler as brain
 import threading
 
 # import invesalius.data.trekker_nothread as dti
-import invesalius.data.trekker_data as dti
+import invesalius.data.tractography as dti
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -1796,7 +1796,7 @@ class TractographyPanel(wx.Panel):
         # try:
 
         self.trekker = Trekker.initialize(filename.encode('utf-8'))
-        self.trekker, n_threads = dti.SetTrekkerParameters(self.trekker, self.trekker_cfg)
+        self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
 
         self.checktracts.Enable(1)
         self.checktracts.SetValue(True)
@@ -1823,7 +1823,7 @@ class TractographyPanel(wx.Panel):
                     self.trekker_cfg = json.load(json_file)
                 assert all(name in self.trekker_cfg for name in const.TREKKER_CONFIG)
                 if self.trekker:
-                    self.trekker, n_threads = dti.SetTrekkerParameters(self.trekker, self.trekker_cfg)
+                    self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
                     Publisher.sendMessage('Update Trekker object', data=self.trekker)
                     Publisher.sendMessage('Update number of threads', data=n_threads)
 
@@ -1850,8 +1850,8 @@ class TractographyPanel(wx.Panel):
         if self.view_tracts and not self.nav_status:
             # print("Running during navigation")
             coord_flip = db.flip_x_m(position[:3])[:3, 0]
-            dti.ComputeTracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
-                              self.n_tracts, self.seed_radius)
+            dti.compute_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
+                               self.n_tracts, self.seed_radius)
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)

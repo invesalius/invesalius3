@@ -48,7 +48,7 @@ from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
 from invesalius_cy import floodfill
 
 # For tracts
-import invesalius.data.trekker_data as dtr
+import invesalius.data.tractography as dtr
 # import invesalius.project as prj
 import invesalius.data.slice_ as sl
 import invesalius.data.bases as bases
@@ -599,7 +599,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
 
     def OnTractsMouseClick(self, obj, evt):
         # print("Single mouse click")
-        # self.tracts = dtr.ComputeTracts(self.tracker, self.seed, self.left_pressed)
+        # self.tracts = dtr.compute_tracts(self.tracker, self.seed, self.left_pressed)
         self.ChangeTracts(True)
 
     def OnTractsReleaseLeftButton(self, obj, evt):
@@ -609,7 +609,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
 
     def ChangeTracts(self, pressed):
         # print("Trying to compute tracts")
-        self.tracts = dtr.ComputeTracts(self.tracker, self.seed, self.affine_vtk, pressed)
+        self.tracts = dtr.compute_tracts(self.tracker, self.seed, self.affine_vtk, pressed)
         # mouse_x, mouse_y = iren.GetEventPosition()
         # wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         # px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
