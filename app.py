@@ -46,11 +46,8 @@ try:
     from wx.adv import SplashScreen
 except ImportError:
     from wx import SplashScreen
-#from wx.lib.pubsub import setupv1 #new wx
-#  from wx.lib.pubsub import setuparg1# as psv1
-#from wx.lib.pubsub import Publisher 
-#import wx.lib.pubsub as ps
-from wx.lib.pubsub import pub as Publisher
+
+from pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
 #if sys.platform.startswith('linux'):
@@ -68,6 +65,7 @@ import invesalius.utils as utils
 from invesalius import inv_paths
 
 FS_ENCODE = sys.getfilesystemencoding()
+LANG = None
 
 # ------------------------------------------------------------------
 
@@ -79,6 +77,17 @@ if sys.platform in ('linux2', 'linux', 'win32'):
         wx.GetXDisplay = lambda: None
     else:
         del tmp_var
+
+
+session = ses.Session()
+if session.ReadSession():
+    lang = session.GetLanguage()
+    if lang:
+        LANG = lang
+        try:
+            _ = i18n.InstallLanguage(lang)
+        except FileNotFoundError:
+            LANG = None
 
 
 class InVesalius(wx.App):
@@ -122,26 +131,18 @@ class Inv3SplashScreen(SplashScreen):
     """
     def __init__(self):
         # Splash screen image will depend on currently language
-        lang = False
-
+        lang = LANG
         self.locale = wx.Locale(wx.LANGUAGE_DEFAULT)
 
         # Language information is available in session configuration
         # file. First we need to check if this file exist, if now, it
         # should be created
-        create_session = False
-        session = ses.Session()
-        if not (session.ReadSession()):
-            create_session = True
+        create_session = LANG is None
 
         install_lang = 0
-        lang = session.GetLanguage()
         if lang:
-            if (lang != "False"):
-                _ = i18n.InstallLanguage(lang)
-                install_lang = 1
-            else:
-                install_lang = 0
+            _ = i18n.InstallLanguage(lang)
+            install_lang = 1
         else:
             install_lang = 0
 
@@ -222,7 +223,7 @@ class Inv3SplashScreen(SplashScreen):
                                   id=-1,
                                   parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
-            wx.Yield()
+            wx.GetApp().Yield()
             wx.CallLater(200, self.Startup)
 
     def Startup(self):
@@ -265,7 +266,10 @@ class Inv3SplashScreen(SplashScreen):
 
 
 def non_gui_startup(options, args):
-    lang = 'en'
+    if LANG:
+        lang = LANG
+    else:
+        lang = 'en'
     _ = i18n.InstallLanguage(lang)
 
     from invesalius.control import Controller
@@ -424,7 +428,7 @@ def check_for_export(options, suffix='', remove_surfaces=False):
         try:
             from invesalius.project import Project
 
-            for threshold_name, threshold_range in Project().presets.thresh_ct.iteritems():
+            for threshold_name, threshold_range in Project().presets.thresh_ct.items():
                 if isinstance(threshold_range[0], int):
                     path_ = u'{}-{}-{}.stl'.format(options.export_to_all, suffix, threshold_name)
                     export(path_, threshold_range, remove_surface=True)
@@ -516,12 +520,6 @@ if __name__ == '__main__':
         # Set system standard error output to file
         path = inv_paths.USER_LOG_DIR.join("stderr.log")
         sys.stderr = open(path, "w")
-
-    # Add current directory to PYTHONPATH, so other classes can
-    # import modules as they were on root invesalius folder
-    sys.path.insert(0, '.')
-    sys.path.append(".")
-
 
     # Init application
     main()

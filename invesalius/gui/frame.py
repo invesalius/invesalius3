@@ -41,7 +41,7 @@ import wx.lib.agw.toasterbox as TB
 import wx.lib.popupctl as pc
 from invesalius import inv_paths
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -478,6 +478,10 @@ class Frame(wx.Frame):
             ddlg = dlg.MaskDensityDialog(self)
             ddlg.Show()
 
+        elif id == const.ID_MANUAL_WWWL:
+            wwwl_dlg = dlg.ManualWWWLDialog(self)
+            wwwl_dlg.Show()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
@@ -507,6 +511,9 @@ class Frame(wx.Frame):
 
         elif id == const.ID_FLOODFILL_SEGMENTATION:
             self.OnFFillSegmentation()
+
+        elif id == const.ID_SEGMENTATION_BRAIN:
+            self.OnBrainSegmentation()
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
@@ -740,6 +747,20 @@ class Frame(wx.Frame):
     def OnFFillSegmentation(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
+    def OnBrainSegmentation(self):
+        from invesalius.gui import brain_seg_dialog
+        if brain_seg_dialog.HAS_PLAIDML or brain_seg_dialog.HAS_THEANO:
+            dlg = brain_seg_dialog.BrainSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(self,
+                                   _("It's not possible to run brain segmenter because your system doesn't have the following modules installed:") \
+                                   + " PlaidML or Theano" ,
+                                   "InVesalius 3 - Brain segmenter",
+                                   wx.ICON_INFORMATION | wx.OK)
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)
 
@@ -797,10 +818,12 @@ class MenuBar(wx.MenuBar):
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
+                             const.ID_SEGMENTATION_BRAIN,
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
-                             const.ID_GOTO_SLICE]
+                             const.ID_GOTO_SLICE,
+                             const.ID_MANUAL_WWWL]
         self.__init_items()
         self.__bind_events()
 
@@ -936,6 +959,8 @@ class MenuBar(wx.MenuBar):
         self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed\tCtrl+Shift+W"))
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
+        segmentation_menu.AppendSeparator()
+        segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
@@ -961,6 +986,7 @@ class MenuBar(wx.MenuBar):
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         reorient_menu.Enable(False)
         tools_menu.Append(-1, _(u'Image'), image_menu)

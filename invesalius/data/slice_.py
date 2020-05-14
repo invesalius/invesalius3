@@ -22,19 +22,18 @@ import tempfile
 import numpy as np
 import vtk
 from scipy import ndimage
-from six import with_metaclass
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.imagedata_utils as iu
-import invesalius.data.transformations as transformations
 import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
-from invesalius.data import mips, transforms
+from invesalius.data import transformations
 from invesalius.data.mask import Mask
 from invesalius.project import Project
+from invesalius_cy import mips, transforms
 
 OTHER = 0
 PLIST = 1
@@ -77,7 +76,7 @@ class SliceBuffer(object):
 # Only one slice will be initialized per time (despite several viewers
 # show it from distinct perspectives).
 # Therefore, we use Singleton design pattern for implementing it.
-class Slice(with_metaclass(utils.Singleton, object)):
+class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.current_mask = None
         self.blend_filter = None

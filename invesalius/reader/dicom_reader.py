@@ -28,7 +28,7 @@ import gdcm
 # Not showing GDCM warning and debug messages
 gdcm.Trace_DebugOff()
 gdcm.Trace_WarningOff()
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom

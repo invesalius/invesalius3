@@ -30,9 +30,9 @@ import invesalius.constants as const
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 
-from . import floodfill
+from invesalius_cy import floodfill
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 from scipy import ndimage
 
 class EditionHistoryNode(object):
@@ -386,4 +386,5 @@ class Mask():
     def __del__(self):
         if self.is_shown:
             self.history._config_undo_redo(False)
+        del self.matrix
         os.remove(self.temp_file)

@@ -508,6 +508,8 @@ ID_MANUAL_SEGMENTATION = wx.NewId()
 ID_WATERSHED_SEGMENTATION = wx.NewId()
 ID_THRESHOLD_SEGMENTATION = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
+ID_FLOODFILL_SEGMENTATION = wx.NewId()
+ID_SEGMENTATION_BRAIN = wx.NewId()
 ID_CROP_MASK = wx.NewId()
 ID_DENSITY_MEASURE = wx.NewId()
 ID_MASK_DENSITY_MEASURE = wx.NewId()
@@ -516,6 +518,8 @@ ID_CREATE_MASK = wx.NewId()
 
 ID_GOTO_SLICE = wx.NewId()
 ID_GOTO_COORD = wx.NewId()
+
+ID_MANUAL_WWWL = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

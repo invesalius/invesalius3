@@ -126,7 +126,16 @@ def next_copy_name(original_name, names_list):
         if not (next_copy in names_list):
             got_new_name = True
             return next_copy
-                
+
+
+def new_name_by_pattern(pattern):
+    from invesalius.project import Project
+    proj = Project()
+    mask_dict = proj.mask_dict
+    names_list = [i.name for i in mask_dict.values() if i.name.startswith(pattern + "_")]
+    count = len(names_list) + 1
+    return "{}_{}".format(pattern, count)
+
 
 def VerifyInvalidPListCharacter(text):
     #print text

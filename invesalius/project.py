@@ -29,8 +29,8 @@ import tempfile
 import numpy as np
 import vtk
 import wx
-from six import with_metaclass
-from wx.lib.pubsub import pub as Publisher
+
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
@@ -51,7 +51,7 @@ else:
 
 # Only one project will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
-class Project(with_metaclass(Singleton, object)):
+class Project(metaclass=Singleton):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''

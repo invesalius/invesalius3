@@ -27,7 +27,7 @@ import imageio
 import numpy
 import numpy as np
 import vtk
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 from scipy.ndimage import shift, zoom
 from vtk.util import numpy_support
@@ -485,13 +485,13 @@ def img2memmap(group):
 
     data = group.get_data()
     # Normalize image pixel values and convert to int16
-    data = imgnormalize(data)
+    #  data = imgnormalize(data)
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = numpy.swapaxes(data, 0, 2)
     data = numpy.fliplr(data)
 
-    matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=data.shape)
+    matrix = numpy.memmap(temp_file, mode='w+', dtype=np.int16, shape=data.shape)
     matrix[:] = data[:]
     matrix.flush()
 
@@ -537,3 +537,8 @@ def get_LUT_value_255(data, window, level):
                         [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
     data.shape = shape
     return data
+
+
+def image_normalize(image, min_=0.0, max_=1.0):
+    imin, imax = image.min(), image.max()
+    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_

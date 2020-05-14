@@ -22,14 +22,13 @@ import math
 
 import numpy as np
 import vtk
-from six import with_metaclass
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.utils as utils
 
 
-class Box(with_metaclass(utils.Singleton, object)):
+class Box(metaclass=utils.Singleton):
     """
     This class is a data structure for storing the
     coordinates (min and max) of box used in crop-mask.

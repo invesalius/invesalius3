@@ -25,7 +25,7 @@ import re
 import invesalius.constants as const
 import wx
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 from multiprocessing import cpu_count
 
 from vtk.util import numpy_support

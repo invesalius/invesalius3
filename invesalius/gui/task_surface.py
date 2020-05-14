@@ -28,7 +28,7 @@ except ImportError:
     import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
-from wx.lib.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
 import invesalius.constants as const

@@ -40,25 +40,25 @@ setup(
     ext_modules=cythonize(
         [
             Extension(
-                "invesalius.data.mips",
-                ["invesalius/data/mips.pyx"],
+                "invesalius_cy.mips",
+                ["invesalius_cy/mips.pyx"],
             ),
             Extension(
-                "invesalius.data.interpolation",
-                ["invesalius/data/interpolation.pyx"],
+                "invesalius_cy.interpolation",
+                ["invesalius_cy/interpolation.pyx"],
             ),
             Extension(
-                "invesalius.data.transforms",
-                ["invesalius/data/transforms.pyx"],
+                "invesalius_cy.transforms",
+                ["invesalius_cy/transforms.pyx"],
             ),
             Extension(
-                "invesalius.data.floodfill",
-                ["invesalius/data/floodfill.pyx"],
+                "invesalius_cy.floodfill",
+                ["invesalius_cy/floodfill.pyx"],
                 language="c++",
             ),
             Extension(
-                "invesalius.data.cy_mesh",
-                ["invesalius/data/cy_mesh.pyx"],
+                "invesalius_cy.cy_mesh",
+                ["invesalius_cy/cy_mesh.pyx"],
                 language="c++",
             ),
         ]
