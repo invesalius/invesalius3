@@ -351,18 +351,19 @@ class ButtonControlPanel(wx.Panel):
         else:
            dlg.MaskSelectionRequiredForDuplication()
 
-class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
+class MasksListCtrlPanel(wx.ListCtrl):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
 
         # native look and feel for MacOS
         #if wx.Platform == "__WXMAC__":
         #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
 
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        #  self.EnableCheckBoxes()
+        #listmix.TextEditMixin.__init__(self)
+        #listmix.CheckListCtrlMixin.__init__(self)
         self.mask_list_index = {}
         self.current_index = 0
         self.__init_columns()
@@ -375,6 +376,23 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemChecked)
+
+    def OnItemChecked(self, evt):
+        #  self.EditLabel(evt.GetItem())
+        print("ID", evt.GetItem().GetId())
+        print("Column", evt.GetItem().GetColumn())
+        item = self.GetItem(evt.GetItem().GetId(), 1)
+        print("ID", item.GetId())
+        print("Column", item.GetColumn())
+        print("Size", self.GetColumnWidth(1))
+        ctrl = self.EditLabel(item.GetId())
+        w, h = ctrl.GetClientSize()
+        w = self.GetColumnWidth(1)
+        ctrl.SetClientSize(w, h)
+        ctrl.SetValue(item.GetText())
+        ctrl.SelectAll()
+        evt.Skip()
 
 
     def __bind_events(self):
@@ -492,19 +510,24 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
     def OnBeginLabelEdit(self, evt):
-        if evt.GetColumn() == 1:
-            evt.Skip()
-        else:
-            evt.Veto()
+        print("KKKKKKKKKKKK", evt.GetColumn())
+        evt.Skip()
+        #  if evt.GetColumn() == 1:
+            #  evt.Skip()
+        #  else:
+            #  evt.Veto()
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change mask name',
-                              index=evt.GetIndex(), name=evt.GetLabel())
+        if not evt.IsEditCancelled():
+            index = evt.GetIndex()
+            self.SetItem(index, 1, evt.GetLabel())
+            Publisher.sendMessage('Change mask name',
+                                  index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):
-        self.ToggleItem(evt.Index)
-        #  pass
+        #  self.ToggleItem(evt.Index)
+        pass
 
     def OnCheckItem(self, index, flag):
         if flag:
