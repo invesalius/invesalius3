@@ -377,6 +377,15 @@ class MasksListCtrlPanel(wx.ListCtrl):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemChecked)
+        self.Bind(wx.EVT_LEFT_UP, self.OnItemFocus)
+
+    def OnItemFocus(self, evt):
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        if flag == wx.LIST_HITTEST_ONITEMICON:
+            item = self.GetItem(item_idx, 0)
+            flag = not bool(item.GetImage())
+            self.SetItemImage(item_idx, int(flag))
+            self.OnCheckItem(item_idx, flag)
 
     def OnItemChecked(self, evt):
         #  self.EditLabel(evt.GetItem())
