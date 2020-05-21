@@ -360,6 +360,7 @@ class MasksListCtrlPanel(wx.ListCtrl):
         #if wx.Platform == "__WXMAC__":
         #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
 
+        self._click_check = False
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
         #  self.EnableCheckBoxes()
         #listmix.TextEditMixin.__init__(self)
@@ -380,28 +381,26 @@ class MasksListCtrlPanel(wx.ListCtrl):
         self.Bind(wx.EVT_LEFT_UP, self.OnItemFocus)
 
     def OnItemFocus(self, evt):
+        self._click_check = False
         item_idx, flag = (self.HitTest(evt.GetPosition()))
         if flag == wx.LIST_HITTEST_ONITEMICON:
+            self._click_check = True
             item = self.GetItem(item_idx, 0)
             flag = not bool(item.GetImage())
             self.SetItemImage(item_idx, int(flag))
             self.OnCheckItem(item_idx, flag)
+        evt.Skip()
 
     def OnItemChecked(self, evt):
-        #  self.EditLabel(evt.GetItem())
-        print("ID", evt.GetItem().GetId())
-        print("Column", evt.GetItem().GetColumn())
-        item = self.GetItem(evt.GetItem().GetId(), 1)
-        print("ID", item.GetId())
-        print("Column", item.GetColumn())
-        print("Size", self.GetColumnWidth(1))
-        ctrl = self.EditLabel(item.GetId())
-        w, h = ctrl.GetClientSize()
-        w = self.GetColumnWidth(1)
-        ctrl.SetClientSize(w, h)
-        ctrl.SetValue(item.GetText())
-        ctrl.SelectAll()
-        evt.Skip()
+        if not self._click_check:
+            item = self.GetItem(evt.GetItem().GetId(), 1)
+            ctrl = self.EditLabel(item.GetId())
+            w, h = ctrl.GetClientSize()
+            w = self.GetColumnWidth(1)
+            ctrl.SetClientSize(w, h)
+            ctrl.SetValue(item.GetText())
+            ctrl.SelectAll()
+            evt.Skip()
 
 
     def __bind_events(self):
