@@ -352,7 +352,6 @@ class ButtonControlPanel(wx.Panel):
            dlg.MaskSelectionRequiredForDuplication()
 
 class MasksListCtrlPanel(wx.ListCtrl):
-
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
@@ -369,7 +368,6 @@ class MasksListCtrlPanel(wx.ListCtrl):
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
-
 
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
@@ -726,19 +724,11 @@ class SurfaceButtonControlPanel(wx.Panel):
     def AffineStatus(self, affine, status):
         self.affinestatus = status
 
-class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
-
+class SurfacesListCtrlPanel(wx.ListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
-
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        self._click_check = False
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
@@ -760,11 +750,33 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         Publisher.subscribe(self.OnShowMultiple, 'Show multiple surfaces')
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        if flag == wx.LIST_HITTEST_ONITEMICON:
+            self._click_check = True
+            item = self.GetItem(item_idx, 0)
+            flag = not bool(item.GetImage())
+            self.SetItemImage(item_idx, int(flag))
+            self.OnCheckItem(item_idx, flag)
+        evt.Skip()
+
+    def OnItemActivated(self, evt):
+        if not self._click_check:
+            item = self.GetItem(evt.GetItem().GetId(), 1)
+            ctrl = self.EditLabel(item.GetId())
+            w, h = ctrl.GetClientSize()
+            w = self.GetColumnWidth(1)
+            ctrl.SetClientSize(w, h)
+            ctrl.SetValue(item.GetText())
+            ctrl.SelectAll()
+            evt.Skip()
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -872,11 +884,10 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
             evt.Veto()
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
-        evt.Skip()
-
-    def OnItemActivated(self, evt):
-        self.ToggleItem(evt.Index)
+        if not evt.IsEditCancelled():
+            index = evt.GetIndex()
+            self.SetItem(index, 1, evt.GetLabel())
+            Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
@@ -993,19 +1004,12 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 #-------------------------------------------------
 #-------------------------------------------------
 
-class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
+class MeasuresListCtrlPanel(wx.ListCtrl):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
-
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        self._click_check = False
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
@@ -1025,11 +1029,33 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         Publisher.subscribe(self.OnRemoveGUIMeasure, 'Remove GUI measurement')
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        if flag == wx.LIST_HITTEST_ONITEMICON:
+            self._click_check = True
+            item = self.GetItem(item_idx, 0)
+            flag = not bool(item.GetImage())
+            self.SetItemImage(item_idx, int(flag))
+            self.OnCheckItem(item_idx, flag)
+        evt.Skip()
+
+    def OnItemActivated(self, evt):
+        if not self._click_check:
+            item = self.GetItem(evt.GetItem().GetId(), 1)
+            ctrl = self.EditLabel(item.GetId())
+            w, h = ctrl.GetClientSize()
+            w = self.GetColumnWidth(1)
+            ctrl.SetClientSize(w, h)
+            ctrl.SetValue(item.GetText())
+            ctrl.SelectAll()
+            evt.Skip()
 
 
     def OnKeyEvent(self, event):
@@ -1147,13 +1173,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
             evt.Veto()
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
+        if not evt.IsEditCancelled():
+            index = evt.GetIndex()
+            self.SetItem(index, 1, evt.GetLabel())
+            Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
-
-    def OnItemActivated(self, evt):
-        self.ToggleItem(evt.Index)
-        evt.Skip()
-
 
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage('Show measurement', index=index, visibility=flag)
@@ -1281,19 +1305,12 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 #*******************************************************************
 
 
-class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
+class AnnotationsListCtrlPanel(wx.ListCtrl):
     # TODO: Remove edimixin, allow only visible and invisible
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
-
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        self._click_check = False
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
