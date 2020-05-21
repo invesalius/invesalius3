@@ -214,7 +214,7 @@ class Frame(wx.Frame):
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
         # compared to linux2 & darwin
-        if sys.platform == 'win32':
+        if sys.platform == 'win32' or wx.VERSION >= (4, 1):
             t1 = ProjectToolBar(self)
             t2 = HistoryToolBar(self)
             t3 = LayoutToolBar(self)

@@ -111,7 +111,7 @@ class Panel(wx.Panel):
         p3.SetPopupMenu(menu)
 
 
-        if sys.platform == 'win32':
+        if sys.platform == 'win32' or wx.VERSION >= (4, 1):
             self.aui_manager.AddPane(p1, s1)
             self.aui_manager.AddPane(p2, s2)
             self.aui_manager.AddPane(p3, s3)
@@ -604,7 +604,7 @@ class VolumeToolPanel(wx.Panel):
         id = evt.GetId()
         item = ID_TO_ITEMSLICEMENU[id]
         checked = item.IsChecked()
-        label = item.GetLabel()
+        label = item.GetItemLabelText()
 
         if not (checked):
             Publisher.sendMessage('Disable plane', plane_label=label)

@@ -40,7 +40,11 @@ if sys.platform == 'win32':
         #  #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
         #  #wxversion.select('2.8-unicode', optionsRequired=True)
         #  #  wxversion.ensureMinimal('4.0')
-        
+
+# Forcing to use X11, OpenGL in wxPython doesn't work with Wayland.
+if sys.platform not in ("win32", "darwin"):
+    os.environ["GDK_BACKEND"] = "x11"
+
 import wx
 try:
     from wx.adv import SplashScreen
