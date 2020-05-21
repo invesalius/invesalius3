@@ -355,16 +355,8 @@ class MasksListCtrlPanel(wx.ListCtrl):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        self._click_check = False
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
-        #  self.EnableCheckBoxes()
-        #listmix.TextEditMixin.__init__(self)
-        #listmix.CheckListCtrlMixin.__init__(self)
+        self._click_check = False
         self.mask_list_index = {}
         self.current_index = 0
         self.__init_columns()
@@ -373,34 +365,10 @@ class MasksListCtrlPanel(wx.ListCtrl):
         self.__bind_events()
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemChecked)
-        self.Bind(wx.EVT_LEFT_UP, self.OnItemFocus)
-
-    def OnItemFocus(self, evt):
-        self._click_check = False
-        item_idx, flag = (self.HitTest(evt.GetPosition()))
-        if flag == wx.LIST_HITTEST_ONITEMICON:
-            self._click_check = True
-            item = self.GetItem(item_idx, 0)
-            flag = not bool(item.GetImage())
-            self.SetItemImage(item_idx, int(flag))
-            self.OnCheckItem(item_idx, flag)
-        evt.Skip()
-
-    def OnItemChecked(self, evt):
-        if not self._click_check:
-            item = self.GetItem(evt.GetItem().GetId(), 1)
-            ctrl = self.EditLabel(item.GetId())
-            w, h = ctrl.GetClientSize()
-            w = self.GetColumnWidth(1)
-            ctrl.SetClientSize(w, h)
-            ctrl.SetValue(item.GetText())
-            ctrl.SelectAll()
-            evt.Skip()
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
 
 
     def __bind_events(self):
@@ -464,7 +432,6 @@ class MasksListCtrlPanel(wx.ListCtrl):
                 self.current_index -= 1
                 self.SetItemImage(self.current_index, 1)
 
-
     def OnCloseProject(self):
         self.DeleteAllItems()
         self.mask_list_index = {}
@@ -517,14 +484,6 @@ class MasksListCtrlPanel(wx.ListCtrl):
 
         self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
-    def OnBeginLabelEdit(self, evt):
-        print("KKKKKKKKKKKK", evt.GetColumn())
-        evt.Skip()
-        #  if evt.GetColumn() == 1:
-            #  evt.Skip()
-        #  else:
-            #  evt.Veto()
-
     def OnEditLabel(self, evt):
         if not evt.IsEditCancelled():
             index = evt.GetIndex()
@@ -532,10 +491,6 @@ class MasksListCtrlPanel(wx.ListCtrl):
             Publisher.sendMessage('Change mask name',
                                   index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
-
-    def OnItemActivated(self, evt):
-        #  self.ToggleItem(evt.Index)
-        pass
 
     def OnCheckItem(self, index, flag):
         if flag:
@@ -545,6 +500,28 @@ class MasksListCtrlPanel(wx.ListCtrl):
             Publisher.sendMessage('Change mask selected', index=index)
             self.current_index = index
         Publisher.sendMessage('Show mask', index=index, value=flag)
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        if flag == wx.LIST_HITTEST_ONITEMICON:
+            self._click_check = True
+            item = self.GetItem(item_idx, 0)
+            flag = not bool(item.GetImage())
+            self.SetItemImage(item_idx, int(flag))
+            self.OnCheckItem(item_idx, flag)
+        evt.Skip()
+
+    def OnItemActivated(self, evt):
+        if not self._click_check:
+            item = self.GetItem(evt.GetItem().GetId(), 1)
+            ctrl = self.EditLabel(item.GetId())
+            w, h = ctrl.GetClientSize()
+            w = self.GetColumnWidth(1)
+            ctrl.SetClientSize(w, h)
+            ctrl.SetValue(item.GetText())
+            ctrl.SelectAll()
+            evt.Skip()
 
     def CreateColourBitmap(self, colour):
         """
