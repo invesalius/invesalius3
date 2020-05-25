@@ -366,8 +366,9 @@ class MasksListCtrlPanel(wx.ListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        #  self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
@@ -482,6 +483,16 @@ class MasksListCtrlPanel(wx.ListCtrl):
 
         self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
+    def get_column_clicked(self, position):
+        epx, epy = position
+        wpx, wpy = self.GetPosition()
+        width_sum = 0
+        for i in range(self.GetColumnCount()):
+            width_sum += self.GetColumnWidth(i)
+            if (epx - wpx) <= width_sum:
+                return i
+        return -1
+
     def OnEditLabel(self, evt):
         if not evt.IsEditCancelled():
             index = evt.GetIndex()
@@ -502,7 +513,8 @@ class MasksListCtrlPanel(wx.ListCtrl):
     def OnClickItem(self, evt):
         self._click_check = False
         item_idx, flag = (self.HitTest(evt.GetPosition()))
-        if flag == wx.LIST_HITTEST_ONITEMICON:
+        column_clicked = self.get_column_clicked(evt.GetPosition())
+        if column_clicked == 0:
             self._click_check = True
             item = self.GetItem(item_idx, 0)
             flag = not bool(item.GetImage())
@@ -510,16 +522,23 @@ class MasksListCtrlPanel(wx.ListCtrl):
             self.OnCheckItem(item_idx, flag)
         evt.Skip()
 
-    def OnItemActivated(self, evt):
-        if not self._click_check:
-            item = self.GetItem(evt.GetItem().GetId(), 1)
-            ctrl = self.EditLabel(item.GetId())
-            w, h = ctrl.GetClientSize()
-            w = self.GetColumnWidth(1)
-            ctrl.SetClientSize(w, h)
-            ctrl.SetValue(item.GetText())
-            ctrl.SelectAll()
-            evt.Skip()
+    def OnDblClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        column_clicked = self.get_column_clicked(evt.GetPosition())
+        if column_clicked == 1:
+            item = self.GetItem(item_idx, 1)
+            self.enter_edition(item)
+        evt.Skip()
+
+    def enter_edition(self, item):
+        print("Enter edition")
+        ctrl = self.EditLabel(item.GetId())
+        w, h = ctrl.GetClientSize()
+        w = self.GetColumnWidth(1)
+        ctrl.SetClientSize(w, h)
+        ctrl.SetValue(item.GetText())
+        ctrl.SelectAll()
 
     def CreateColourBitmap(self, colour):
         """
