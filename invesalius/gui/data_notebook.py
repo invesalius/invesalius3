@@ -351,10 +351,84 @@ class ButtonControlPanel(wx.Panel):
         else:
            dlg.MaskSelectionRequiredForDuplication()
 
-class MasksListCtrlPanel(wx.ListCtrl):
+
+class InvListCtrl(wx.ListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        self.__bind_events_wx()
+
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
+
+    def CreateColourBitmap(self, colour):
+        """
+        Create a wx Image with a mask colour.
+        colour: colour in rgb format(0 - 1)
+        """
+        image = self.image_gray
+        new_image = Image.new("RGB", image.size)
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
+                pixel_colour = [int(i*image.getpixel((x,y)))
+                                for i in colour]
+                new_image.putpixel((x,y), tuple(pixel_colour))
+
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
+        try:
+            wx_image.SetData(new_image.tostring())
+        except Exception:
+            wx_image.SetData(new_image.tobytes())
+        return wx.Bitmap(wx_image.Scale(16, 16))
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        column_clicked = self.get_column_clicked(evt.GetPosition())
+        if column_clicked == 0:
+            self._click_check = True
+            item = self.GetItem(item_idx, 0)
+            flag = not bool(item.GetImage())
+            self.SetItemImage(item_idx, int(flag))
+            self.OnCheckItem(item_idx, flag)
+        evt.Skip()
+
+    def OnDblClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        column_clicked = self.get_column_clicked(evt.GetPosition())
+        if column_clicked == 1:
+            item = self.GetItem(item_idx, 1)
+            self.enter_edition(item)
+        evt.Skip()
+
+    def enter_edition(self, item):
+        ctrl = self.EditLabel(item.GetId())
+        w, h = ctrl.GetClientSize()
+        w = self.GetColumnWidth(1)
+        ctrl.SetClientSize(w, h)
+        ctrl.SetValue(item.GetText())
+        ctrl.SelectAll()
+
+
+    def get_column_clicked(self, position):
+        epx, epy = position
+        wpx, wpy = self.GetPosition()
+        width_sum = 0
+        for i in range(self.GetColumnCount()):
+            width_sum += self.GetColumnWidth(i)
+            if (epx - wpx) <= width_sum:
+                return i
+        return -1
+
+
+
+class MasksListCtrlPanel(InvListCtrl):
+    def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
         self.mask_list_index = {}
         self.current_index = 0
@@ -366,9 +440,6 @@ class MasksListCtrlPanel(wx.ListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        #  self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
-        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
@@ -483,16 +554,6 @@ class MasksListCtrlPanel(wx.ListCtrl):
 
         self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
 
-    def get_column_clicked(self, position):
-        epx, epy = position
-        wpx, wpy = self.GetPosition()
-        width_sum = 0
-        for i in range(self.GetColumnCount()):
-            width_sum += self.GetColumnWidth(i)
-            if (epx - wpx) <= width_sum:
-                return i
-        return -1
-
     def OnEditLabel(self, evt):
         if not evt.IsEditCancelled():
             index = evt.GetIndex()
@@ -510,56 +571,7 @@ class MasksListCtrlPanel(wx.ListCtrl):
             self.current_index = index
         Publisher.sendMessage('Show mask', index=index, value=flag)
 
-    def OnClickItem(self, evt):
-        self._click_check = False
-        item_idx, flag = (self.HitTest(evt.GetPosition()))
-        column_clicked = self.get_column_clicked(evt.GetPosition())
-        if column_clicked == 0:
-            self._click_check = True
-            item = self.GetItem(item_idx, 0)
-            flag = not bool(item.GetImage())
-            self.SetItemImage(item_idx, int(flag))
-            self.OnCheckItem(item_idx, flag)
-        evt.Skip()
 
-    def OnDblClickItem(self, evt):
-        self._click_check = False
-        item_idx, flag = (self.HitTest(evt.GetPosition()))
-        column_clicked = self.get_column_clicked(evt.GetPosition())
-        if column_clicked == 1:
-            item = self.GetItem(item_idx, 1)
-            self.enter_edition(item)
-        evt.Skip()
-
-    def enter_edition(self, item):
-        print("Enter edition")
-        ctrl = self.EditLabel(item.GetId())
-        w, h = ctrl.GetClientSize()
-        w = self.GetColumnWidth(1)
-        ctrl.SetClientSize(w, h)
-        ctrl.SetValue(item.GetText())
-        ctrl.SelectAll()
-
-    def CreateColourBitmap(self, colour):
-        """
-        Create a wx Image with a mask colour.
-        colour: colour in rgb format(0 - 1)
-        """
-        image = self.image_gray
-        new_image = Image.new("RGB", image.size)
-        for x in range(image.size[0]):
-            for y in range(image.size[1]):
-                pixel_colour = [int(i*image.getpixel((x,y)))
-                                for i in colour]
-                new_image.putpixel((x,y), tuple(pixel_colour))
-
-        wx_image = wx.Image(new_image.size[0],
-                            new_image.size[1])
-        try:
-            wx_image.SetData(new_image.tostring())
-        except Exception:
-            wx_image.SetData(new_image.tobytes())
-        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
@@ -743,10 +755,10 @@ class SurfaceButtonControlPanel(wx.Panel):
     def AffineStatus(self, affine, status):
         self.affinestatus = status
 
-class SurfacesListCtrlPanel(wx.ListCtrl):
+class SurfacesListCtrlPanel(InvListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
         self.__init_columns()
         self.__init_image_list()
@@ -772,30 +784,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
-
-    def OnClickItem(self, evt):
-        self._click_check = False
-        item_idx, flag = (self.HitTest(evt.GetPosition()))
-        if flag == wx.LIST_HITTEST_ONITEMICON:
-            self._click_check = True
-            item = self.GetItem(item_idx, 0)
-            flag = not bool(item.GetImage())
-            self.SetItemImage(item_idx, int(flag))
-            self.OnCheckItem(item_idx, flag)
-        evt.Skip()
-
-    def OnItemActivated(self, evt):
-        if not self._click_check:
-            item = self.GetItem(evt.GetItem().GetId(), 1)
-            ctrl = self.EditLabel(item.GetId())
-            w, h = ctrl.GetClientSize()
-            w = self.GetColumnWidth(1)
-            ctrl.SetClientSize(w, h)
-            ctrl.SetValue(item.GetText())
-            ctrl.SelectAll()
-            evt.Skip()
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -982,28 +970,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl):
         self.SetItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
-    def CreateColourBitmap(self, colour):
-        """
-        Create a wx Image with a mask colour.
-        colour: colour in rgb format(0 - 1)
-        """
-        image = self.image_gray
-        new_image = Image.new("RGB", image.size)
-        for x in range(image.size[0]):
-            for y in range(image.size[1]):
-                pixel_colour = [int(i*image.getpixel((x,y)))
-                                for i in colour]
-                new_image.putpixel((x,y), tuple(pixel_colour))
-
-        wx_image = wx.Image(new_image.size[0],
-                            new_image.size[1])
-        try:
-            wx_image.SetData(new_image.tostring())
-        except Exception:
-            wx_image.SetData(new_image.tobytes())
-
-        return wx.Bitmap(wx_image.Scale(16, 16))
-
     def EditSurfaceTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
@@ -1023,11 +989,10 @@ class SurfacesListCtrlPanel(wx.ListCtrl):
 #-------------------------------------------------
 #-------------------------------------------------
 
-class MeasuresListCtrlPanel(wx.ListCtrl):
-
+class MeasuresListCtrlPanel(InvListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
         self.__init_columns()
         self.__init_image_list()
@@ -1051,31 +1016,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
-
-    def OnClickItem(self, evt):
-        self._click_check = False
-        item_idx, flag = (self.HitTest(evt.GetPosition()))
-        if flag == wx.LIST_HITTEST_ONITEMICON:
-            self._click_check = True
-            item = self.GetItem(item_idx, 0)
-            flag = not bool(item.GetImage())
-            self.SetItemImage(item_idx, int(flag))
-            self.OnCheckItem(item_idx, flag)
-        evt.Skip()
-
-    def OnItemActivated(self, evt):
-        if not self._click_check:
-            item = self.GetItem(evt.GetItem().GetId(), 1)
-            ctrl = self.EditLabel(item.GetId())
-            w, h = ctrl.GetClientSize()
-            w = self.GetColumnWidth(1)
-            ctrl.SetClientSize(w, h)
-            ctrl.SetValue(item.GetText())
-            ctrl.SelectAll()
-            evt.Skip()
-
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -1288,27 +1228,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl):
         self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
-
-    def CreateColourBitmap(self, colour):
-        """
-        Create a wx Image with a mask colour.
-        colour: colour in rgb format(0 - 1)
-        """
-        image = self.image_gray
-        new_image = Image.new("RGB", image.size)
-        for x in range(image.size[0]):
-            for y in range(image.size[1]):
-                pixel_colour = [int(i*image.getpixel((x,y)))
-                                for i in colour]
-                new_image.putpixel((x,y), tuple(pixel_colour))
-
-        wx_image = wx.Image(new_image.size[0],
-                            new_image.size[1])
-        try:
-            wx_image.SetData(new_image.tostring())
-        except:
-            wx_image.SetData(new_image.tobytes())
-        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def EditItemColour(self, measure_index, colour):
         """
