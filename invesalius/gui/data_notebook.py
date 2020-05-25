@@ -386,22 +386,24 @@ class InvListCtrl(wx.ListCtrl):
     def OnClickItem(self, evt):
         self._click_check = False
         item_idx, flag = (self.HitTest(evt.GetPosition()))
-        column_clicked = self.get_column_clicked(evt.GetPosition())
-        if column_clicked == 0:
-            self._click_check = True
-            item = self.GetItem(item_idx, 0)
-            flag = not bool(item.GetImage())
-            self.SetItemImage(item_idx, int(flag))
-            self.OnCheckItem(item_idx, flag)
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 0:
+                self._click_check = True
+                item = self.GetItem(item_idx, 0)
+                flag = not bool(item.GetImage())
+                self.SetItemImage(item_idx, int(flag))
+                self.OnCheckItem(item_idx, flag)
         evt.Skip()
 
     def OnDblClickItem(self, evt):
         self._click_check = False
         item_idx, flag = (self.HitTest(evt.GetPosition()))
-        column_clicked = self.get_column_clicked(evt.GetPosition())
-        if column_clicked == 1:
-            item = self.GetItem(item_idx, 1)
-            self.enter_edition(item)
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 1:
+                item = self.GetItem(item_idx, 1)
+                self.enter_edition(item)
         evt.Skip()
 
     def enter_edition(self, item):
