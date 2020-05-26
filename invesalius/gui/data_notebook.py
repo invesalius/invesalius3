@@ -359,7 +359,7 @@ class InvListCtrl(wx.ListCtrl):
         self.__bind_events_wx()
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LEFT_UP, self.OnClickItem)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnClickItem)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
 
     def CreateColourBitmap(self, colour):
@@ -394,6 +394,7 @@ class InvListCtrl(wx.ListCtrl):
                 flag = not bool(item.GetImage())
                 self.SetItemImage(item_idx, int(flag))
                 self.OnCheckItem(item_idx, flag)
+                return
         evt.Skip()
 
     def OnDblClickItem(self, evt):
@@ -404,6 +405,7 @@ class InvListCtrl(wx.ListCtrl):
             if column_clicked == 1:
                 item = self.GetItem(item_idx, 1)
                 self.enter_edition(item)
+                return
         evt.Skip()
 
     def enter_edition(self, item):
