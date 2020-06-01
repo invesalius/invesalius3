@@ -708,8 +708,9 @@ class NeuronavigationPanel(wx.Panel):
                 wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
                 btn_nav.SetValue(False)
 
-            elif not self.trk_init[0]:
+            elif not self.trk_init[0] or not self.tracker_id:
                 dlg.ShowNavigationTrackerWarning(0, 'choose')
+                errors = True
 
             else:
                 if self.event.is_set():
@@ -728,12 +729,6 @@ class NeuronavigationPanel(wx.Panel):
                 for btn_c in self.btns_coord:
                     btn_c.Enable(False)
 
-                # initialize Trekker parameters
-                slic = sl.Slice()
-                affine = slic.affine
-                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-                self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
-
                 # fiducials matrix
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
@@ -751,61 +746,35 @@ class NeuronavigationPanel(wx.Panel):
                 vis_components = [self.trigger_state, self.view_tracts]
                 vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue]
 
-                # initialize trigger thread to synchronize with external devices
-                if self.trigger_state:
-                    # self.trigger = trig.Trigger(nav_id)
-                    jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
-
                 if self.track_obj:
-                    if self.obj_reg_status:
+                    # if object tracking is selected
+                    if not self.obj_reg_status:
+                        # check if object registration was performed
+                        wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
+                        errors = True
+                    else:
+                        # if object registration was correctly performed continue with navigation
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                         obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
 
-                        if self.trk_init and self.tracker_id:
+                        coreg_data = [m_change, obj_ref_mode]
 
-                            coreg_data = [m_change, obj_ref_mode]
-
-                            if self.ref_mode_id:
-                                coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-                                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
-                                coreg_data.extend(obj_data)
-
-                                jobs_list.append(dcr.CoordinateCorregistrate(tracker_mode, coreg_data, self.coord_queue,
-                                                                             self.view_tracts, self.coord_tracts_queue,
-                                                                             self.event, self.sleep_nav))
-                                if self.view_tracts:
-                                    # print("Appending the tract computation thread!")
-                                    jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk,
-                                                                             self.coord_tracts_queue, self.tracts_queue,
-                                                                             self.event, self.sleep_nav))
-
-                                jobs_list.append(UpdateNavigationScene(affine_vtk, vis_queues, vis_components,
-                                                                       self.event, self.sleep_nav))
-
-                                for jobs in jobs_list:
-                                    # jobs.daemon = True
-                                    jobs.start()
-                                    # del jobs
-
-                            else:
-                                # TODO: not properly tested, please check that all possible navigation modes work in
-                                #  the new thread management scheme
-                                coord_raw = np.array([None])
-                                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
-                                coreg_data.extend(obj_data)
-
-                                self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
-                                # jobs_list = [
-                                #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                                #                                 self.sleep_nav)]
-
+                        if self.ref_mode_id:
+                            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
                         else:
-                            dlg.ShowNavigationTrackerWarning(0, 'choose')
-                            errors = True
+                            coord_raw = np.array([None])
 
-                    else:
-                        wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
-                        errors = True
+                        obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
+                        coreg_data.extend(obj_data)
+
+                        jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data, self.coord_queue,
+                                                                     self.view_tracts, self.coord_tracts_queue,
+                                                                     self.event, self.sleep_nav))
+
+                            # self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
+                            # jobs_list = [
+                            #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                            #                                 self.sleep_nav)]
 
                 else:
                     coreg_data = [m_change, 0]
@@ -825,15 +794,31 @@ class NeuronavigationPanel(wx.Panel):
                         # jobs_list = [dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
                         #                                          self.sleep_nav)]
 
-                # if not errors:
-                #     #TODO: Similarly to the tracts, add also the trigger thread here
-                #     if self.view_tracts:
-                #         print("Appending the tract computation thread!")
-                #         jobs_list.append(dti.ComputeVisualizeParallel(self.trk_inp, affine_vtk, pipeline,
-                #                                                       self.event, self.sleep_nav))
-                #
-                #     for jobs in jobs_list:
-                #         jobs.start()
+                if not errors:
+                    #TODO: Similarly to the tracts, add also the trigger thread here
+                    # initialize trigger thread to synchronize with external devices
+                    if self.trigger_state:
+                        # self.trigger = trig.Trigger(nav_id)
+                        jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
+
+                    if self.view_tracts:
+                        # initialize Trekker parameters
+                        slic = sl.Slice()
+                        affine = slic.affine
+                        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                        self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
+                        # print("Appending the tract computation thread!")
+                        jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk,
+                                                                 self.coord_tracts_queue, self.tracts_queue,
+                                                                 self.event, self.sleep_nav))
+
+                    jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
+                                                           self.event, self.sleep_nav))
+
+                    for jobs in jobs_list:
+                        # jobs.daemon = True
+                        jobs.start()
+                        # del jobs
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -1615,9 +1600,9 @@ class TractographyPanel(wx.Panel):
 
         # Change sleep pause between navigation loops
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
-        spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
+        spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
         spin_sleep.Enable(1)
-        spin_sleep.SetRange(0, 10.0)
+        spin_sleep.SetRange(0.01, 10.0)
         spin_sleep.SetValue(self.sleep_nav)
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
         spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
@@ -1849,7 +1834,7 @@ class TractographyPanel(wx.Panel):
             # print("Running during navigation")
             coord_flip = db.flip_x_m(position[:3])[:3, 0]
             dti.compute_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
-                               self.n_tracts, self.seed_radius)
+                               self.n_tracts)
 
     def OnCloseProject(self):
         self.checktracts.SetValue(False)
@@ -1895,7 +1880,7 @@ class QueueCustom(queue.Queue):
 
 class UpdateNavigationScene(threading.Thread):
 
-    def __init__(self, affine_vtk, vis_queues, vis_components, event, sle):
+    def __init__(self, vis_queues, vis_components, event, sle):
         """Class (threading) to update the navigation scene with all graphical elements.
 
         Sleep function in run method is used to avoid blocking GUI and more fluent, real-time navigation
@@ -1913,7 +1898,6 @@ class UpdateNavigationScene(threading.Thread):
         threading.Thread.__init__(self, name='UpdateScene')
         self.trigger_state, self.view_tracts = vis_components
         self.coord_queue, self.trigger_queue, self.tracts_queue = vis_queues
-        self.affine_vtk = affine_vtk
         self.sle = sle
         self.event = event
 
@@ -1929,10 +1913,10 @@ class UpdateNavigationScene(threading.Thread):
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
-                    bundle = self.tracts_queue.get_nowait()
+                    bundle, affine_vtk = self.tracts_queue.get_nowait()
                     wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=bundle)
                     wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=bundle,
-                                 affine_vtk=self.affine_vtk)
+                                 affine_vtk=affine_vtk)
                     self.tracts_queue.task_done()
 
                 if self.trigger_state:
@@ -1952,3 +1936,13 @@ class UpdateNavigationScene(threading.Thread):
             except queue.Empty:
                 if got_coords:
                     self.coord_queue.task_done()
+
+
+class InputAttributes(object):
+    # taken from https://stackoverflow.com/questions/2466191/set-attributes-from-dictionary-in-python
+    def __init__(self, *initial_data, **kwargs):
+        for dictionary in initial_data:
+            for key in dictionary:
+                setattr(self, key, dictionary[key])
+        for key in kwargs:
+            setattr(self, key, kwargs[key])

@@ -233,7 +233,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :return: six coordinates x, y, z, alfa, beta and gama
     """
 
-    # Started to ake a more reasonable, limited random coordinate generator based on
+    # Started to take a more reasonable, limited random coordinate generator based on
     # the collected fiducials, but it is more complicated than this. It should account for the
     # dynamic reference computation
     # if trk_init:
@@ -249,7 +249,6 @@ def DebugCoord(trk_init, trck_id, ref_mode):
 
     dx = [-70, 70]
     dt = [-180, 180]
-
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                       uniform(*dt), uniform(*dt), uniform(*dt)])
@@ -325,30 +324,20 @@ def dynamic_reference_m(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
-
-    # TODO: Clean code. Comments are left for reference to previous working version
-    # Needs to check if during real navigation works properly
     a, b, g = np.radians(reference[3:6])
 
-    T = tr.translation_matrix(reference[:3])
-    R = tr.euler_matrix(a, b, g, 'rzyx')
-    # M = np.asmatrix(tr.concatenate_matrices(T, R))
-    M = tr.concatenate_matrices(T, R)
-    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
-    # print M
-    # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+    trans = tr.translation_matrix(reference[:3])
+    rot = tr.euler_matrix(a, b, g, 'rzyx')
+    affine = tr.concatenate_matrices(trans, rot)
     probe_4 = np.vstack((probe[:3].reshape([3, 1]), 1.))
-    # coord_rot = M.I * probe_4
-
-    coord_rot = np.linalg.inv(M) @ probe_4
-    # coord_rot = np.squeeze(np.asarray(coord_rot))
+    coord_rot = np.linalg.inv(affine) @ probe_4
     # minus sign to the z coordinate
     coord_rot[2, 0] = -coord_rot[2, 0]
     coord_rot = coord_rot[:3, 0].tolist()
     coord_rot.extend(probe[3:])
 
-    # return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
     return coord_rot
+
 
 def dynamic_reference_m2(probe, reference):
     """
@@ -370,69 +359,17 @@ def dynamic_reference_m2(probe, reference):
     T_p = tr.translation_matrix(probe[:3])
     R = tr.euler_matrix(a, b, g, 'rzyx')
     R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-    M = np.asmatrix(tr.concatenate_matrices(T, R))
-    M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
-    # print M
+    M = tr.concatenate_matrices(T, R)
+    M_p = tr.concatenate_matrices(T_p, R_p)
 
-    M_dyn = M.I * M_p
+    M_dyn = np.linalg.inv(M) @ M_p
 
     al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
     coord_rot = tr.translation_from_matrix(M_dyn)
 
     coord_rot = np.squeeze(coord_rot)
 
-    # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
-    # coord_rot_test = M.I * probe_4
-    # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
-    #
-    # print "coord_rot: ", coord_rot
-    # print "coord_rot_test: ", coord_rot_test
-    # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
-
     return coord_rot[0], coord_rot[1], coord_rot[2], np.degrees(al), np.degrees(be), np.degrees(ga)
-
-# def dynamic_reference_m3(probe, reference):
-#     """
-#     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
-#     rotation angles of reference to rotate the probe coordinate and returns the x, y, z
-#     difference between probe and reference. Angles sequences and equation was extracted from
-#     Polhemus manual and Attitude matrix in Wikipedia.
-#     General equation is:
-#     coord = Mrot * (probe - reference)
-#     :param probe: sensor one defined as probe
-#     :param reference: sensor two defined as reference
-#     :return: rotated and translated coordinates
-#     """
-#
-#     a, b, g = np.radians(reference[3:6])
-#     a_p, b_p, g_p = np.radians(probe[3:6])
-#
-#     T = tr.translation_matrix(reference[:3])
-#     T_p = tr.translation_matrix(probe[:3])
-#     R = tr.euler_matrix(a, b, g, 'rzyx')
-#     R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-#     M = np.asmatrix(tr.concatenate_matrices(T, R))
-#     M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-#     # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
-#     # print M
-#
-#     M_dyn = M.I * M_p
-#
-#     # al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
-#     # coord_rot = tr.translation_from_matrix(M_dyn)
-#     #
-#     # coord_rot = np.squeeze(coord_rot)
-#
-#     # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
-#     # coord_rot_test = M.I * probe_4
-#     # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
-#     #
-#     # print "coord_rot: ", coord_rot
-#     # print "coord_rot_test: ", coord_rot_test
-#     # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
-#
-#     return M_dyn
 
 
 def str2float(data):

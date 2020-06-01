@@ -37,6 +37,7 @@ from imageio import imsave
 
 import invesalius.constants as const
 import invesalius.data.bases as bases
+import invesalius.data.slice_ as sl
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
@@ -206,6 +207,11 @@ class Viewer(wx.Panel):
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
         # Publisher.sendMessage('Get affine matrix')
+
+        # initialize Trekker parameters
+        slic = sl.Slice()
+        affine = slic.affine
+        self.affine_vtk = vtku.numpy_to_vtkMatrix4x4(affine)
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -1169,6 +1175,8 @@ class Viewer(wx.Panel):
         self.ball_actor.GetProperty().SetColor(1, 0, 0)
 
         self.ren.AddActor(self.ball_actor)
+
+        print("The affine vtk: ", self.affine_vtk)
 
     # def ActivateBallReference(self):
     #     self._mode_cross = True

@@ -401,7 +401,104 @@ class CoregistrationObjectDynamic(threading.Thread):
                 return
 
 
-def corregistrate_final(inp, coord_raw):
+def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw):
+    """Translate and rotate the raw coordinate given by the tracking device to the reference system created during
+    the object registration.
+
+    :param coord_raw: Coordinates returned by the tracking device
+    :type coord_raw: numpy.ndarray
+    :param obj_ref_mode:
+    :type obj_ref_mode: int
+    :param t_obj_raw:
+    :type t_obj_raw: numpy.ndarray
+    :param s0_raw:
+    :type s0_raw: numpy.ndarray
+    :param r_s0_raw: rotation transformation from marker to object basis
+    :type r_s0_raw: numpy.ndarray
+    :return: 4 x 4 numpy double array
+    :rtype: numpy.ndarray
+    """
+
+    as1, bs1, gs1 = radians(coord_raw[obj_ref_mode, 3:])
+    r_probe = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
+    t_probe_raw = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
+    t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
+    t_offset = identity(4)
+    t_offset[:, -1] = t_offset_aux[:, -1]
+    t_probe = s0_raw @ t_offset @ np.linalg.inv(s0_raw) @ t_probe_raw
+    m_probe = tr.concatenate_matrices(t_probe, r_probe)
+
+    return m_probe
+
+
+def object_to_reference(coord_raw, m_probe):
+    """Compute affine transformation matrix to the reference basis
+
+    :param coord_raw: Coordinates returned by the tracking device
+    :type coord_raw: numpy.ndarray
+    :param coord_raw: Probe coordinates
+    :type coord_raw: numpy.ndarray
+    :return: 4 x 4 numpy double array
+    :rtype: numpy.ndarray
+    """
+
+    a, b, g = radians(coord_raw[1, 3:])
+    r_ref = tr.euler_matrix(a, b, g, 'rzyx')
+    t_ref = tr.translation_matrix(coord_raw[1, :3])
+    m_ref = tr.concatenate_matrices(t_ref, r_ref)
+
+    m_dyn = np.linalg.inv(m_ref) @ m_probe
+    return m_dyn
+
+
+def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
+    """Compute affine transformation matrix to the reference basis
+
+    :param m_change: Corregistration transformation obtained from fiducials
+    :type m_change: numpy.ndarray
+    :param m_probe_ref: Object or probe in reference coordinate system
+    :type m_probe_ref: numpy.ndarray
+    :param r_obj_img: Object coordinate system in image space (3d model)
+    :type r_obj_img: numpy.ndarray
+    :param m_obj_raw: Object basis in raw coordinates from tacker
+    :type m_obj_raw: numpy.ndarray
+    :param s0_dyn:
+    :type s0_dyn: numpy.ndarray
+    :return: 4 x 4 numpy double array
+    :rtype: numpy.ndarray
+    """
+
+    m_img = m_change @ m_probe_ref
+    r_obj = r_obj_img @ np.linalg.inv(m_obj_raw) @ np.linalg.inv(s0_dyn) @ m_probe_ref @ m_obj_raw
+    m_img[:3, :3] = r_obj[:3, :3]
+    return m_img
+
+
+def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id):
+
+    m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
+
+    # transform raw marker coordinate to object center
+    m_probe = object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw)
+    # transform object center to reference marker if specified as dynamic reference
+    if ref_mode_id:
+        m_probe_ref = object_to_reference(coord_raw, m_probe)
+    else:
+        m_probe_ref = m_probe
+    # invert y coordinate
+    m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+    # corregistrate from tracker to image space
+    m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
+    # compute rotation angles
+    _, _, angles, _, _ = tr.decompose_matrix(m_img)
+    # create output coordiante list
+    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
+            degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
+
+    return coord, m_img
+
+
+def corregistrate_object(inp, coord_raw):
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
     as1, bs1, gs1 = radians(coord_raw[obj_ref_mode, 3:])
     r_probe = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
@@ -434,8 +531,9 @@ def corregistrate_final(inp, coord_raw):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle):
         threading.Thread.__init__(self, name='CoordCoreg')
+        self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
         self.coreg_data = coreg_data
         self.coord_queue = coord_queue
@@ -457,7 +555,7 @@ class CoordinateCorregistrate(threading.Thread):
             try:
                 # print(f"Set the coordinate")
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-                coord, m_img = corregistrate_final(coreg_data, coord_raw)
+                coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)

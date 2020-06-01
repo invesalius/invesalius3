@@ -309,17 +309,15 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         if coord_raw.any():
             # compute object fiducials in reference frame
             fids_dyn[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coord_raw[1, :])
-            fids_dyn[ic, 2] = -fids_dyn[ic, 2]
         else:
             # compute object fiducials in source frame
             fids_dyn[ic, :] = coords[ic, :]
+        fids_dyn[ic, 2] = -fids_dyn[ic, 2]
 
         # compute object fiducials in vtk head frame
         a, b, g = np.radians(fids_dyn[ic, 3:])
         T_p = tr.translation_matrix(fids_dyn[ic, :3])
         R_p = tr.euler_matrix(a, b, g, 'rzyx')
-        # M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-        # M_img = np.asmatrix(m_change) * M_p
         M_p = tr.concatenate_matrices(T_p, R_p)
         M_img = m_change @ M_p
 

@@ -302,7 +302,7 @@ class ComputeTractsThread(threading.Thread):
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
                 # self.visualization_queue.put_nowait([coord, m_img, bundle])
-                self.tracts_queue.put_nowait(bundle)
+                self.tracts_queue.put_nowait((bundle, self.affine_vtk))
                 # print('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_tracts_queue.task_done()
@@ -396,7 +396,7 @@ class ComputeTractsThreadSingleBlock(threading.Thread):
                     # if the seed is outside the defined radius, restart the bundle computation
                     if dist >= seed_radius:
                         root = tracts_computation(trk_list, root, 0)
-                    self.visualization_queue.put_nowait([coord, m_img, root])
+                    self.visualization_queue.put_nowait((coord, m_img, root))
 
                 self.coord_queue.task_done()
                 time.sleep(self.sle)
