@@ -328,7 +328,10 @@ class Slice(metaclass=utils.Singleton):
 
         for name in self.aux_matrices:
             m = self.aux_matrices[name]
-            f = m.filename
+            try:
+                f = m.filename
+            except AttributeError:
+                continue
             m._mmap.close()
             m = None
             os.remove(f)

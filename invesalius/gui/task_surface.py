@@ -30,6 +30,7 @@ except ImportError:
 
 from pubsub import pub as Publisher
 import wx.lib.colourselect as csel
+import wx.lib.scrolledpanel as scrolled
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -74,9 +75,9 @@ class TaskPanel(wx.Panel):
         # Contour - slider
         # enable / disable Fill holes
 
-class InnerTaskPanel(wx.Panel):
+class InnerTaskPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        scrolled.ScrolledPanel.__init__(self, parent)
         default_colour = self.GetBackgroundColour()
         backgroud_colour = wx.Colour(255,255,255)
         self.SetBackgroundColour(backgroud_colour)
@@ -133,6 +134,13 @@ class InnerTaskPanel(wx.Panel):
         #self.SetAutoLayout(1)
 
         self.sizer = main_sizer
+
+        self.SetupScrolling()
+
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+
+    def OnSize(self, evt):
+        self.SetupScrolling()
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -437,9 +445,9 @@ class SurfaceTools(wx.Panel):
 
 
 
-class SurfaceProperties(wx.Panel):
+class SurfaceProperties(scrolled.ScrolledPanel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        scrolled.ScrolledPanel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
@@ -507,7 +515,15 @@ class SurfaceProperties(wx.Panel):
         self.Update()
         #self.SetAutoLayout(1)
 
+        self.SetupScrolling()
+
+        self.Bind(wx.EVT_SIZE, self.OnResize)
+
         self.__bind_events()
+
+    def OnResize(self, evt):
+        print("Resize")
+        self.SetupScrolling()
 
     def __bind_events(self):
         Publisher.subscribe(self.InsertNewSurface,

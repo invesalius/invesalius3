@@ -233,7 +233,7 @@ class InnerFoldPanel(wx.Panel):
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Add(checktrigger, 0, wx.ALIGN_CENTER)
-        line_sizer.Add(checkobj, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Add(checkobj, 0, wx.RIGHT | wx.LEFT, 5)
         line_sizer.Fit(self)
 
         # Panel sizer to expand fold panel
@@ -435,7 +435,7 @@ class NeuronavigationPanel(wx.Panel):
                              (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        main_sizer.Add(group_sizer, 1, wx.ALIGN_CENTER_HORIZONTAL, 10)
+        main_sizer.Add(group_sizer, 1)# wx.ALIGN_CENTER_HORIZONTAL, 10)
         self.sizer = main_sizer
         self.SetSizer(main_sizer)
         self.Fit()
@@ -952,7 +952,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
         line_checks = wx.BoxSizer(wx.HORIZONTAL)
         line_checks.Add(checkrecordcoords, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
-        line_checks.Add(checktrack, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
+        line_checks.Add(checktrack, 0, wx.RIGHT | wx.LEFT, 5)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1194,7 +1194,7 @@ class MarkersPanel(wx.Panel):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(self.lc, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Add(self.lc, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
         self.SetSizer(group_sizer)

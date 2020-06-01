@@ -40,7 +40,11 @@ if sys.platform == 'win32':
         #  #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
         #  #wxversion.select('2.8-unicode', optionsRequired=True)
         #  #  wxversion.ensureMinimal('4.0')
-        
+
+# Forcing to use X11, OpenGL in wxPython doesn't work with Wayland.
+if sys.platform not in ("win32", "darwin"):
+    os.environ["GDK_BACKEND"] = "x11"
+
 import wx
 try:
     from wx.adv import SplashScreen
@@ -98,7 +102,7 @@ class InVesalius(wx.App):
         """
         Initialize splash screen and main frame.
         """
-        
+
         from multiprocessing import freeze_support
         freeze_support()
 
@@ -179,18 +183,18 @@ class Inv3SplashScreen(SplashScreen):
 
         #  session.SaveConfigFileBackup()
 
-           
+
         # Only after language was defined, splash screen will be
         # shown
         if lang:
-            
+
             #import locale
             #try:
             #    locale.setlocale(locale.LC_ALL, '')
             #except locale.Error:
             #    pass
-            
-            
+
+
             # For pt_BR, splash_pt.png should be used
             if (lang.startswith('pt')):
                 icon_file = "splash_pt.png"
@@ -202,13 +206,13 @@ class Inv3SplashScreen(SplashScreen):
                 abs_file_path = os.path.abspath(".." + os.sep)
                 path = abs_file_path
                 path = os.path.join(path, 'icons', icon_file)
-            
+
             else:
 
                 path = os.path.join(".","icons", icon_file)
                 if not os.path.exists(path):
                     path = os.path.join(".", "icons", "splash_en.png")
-				
+
             bmp = wx.Image(path).ConvertToBitmap()
 
             try:
@@ -232,10 +236,10 @@ class Inv3SplashScreen(SplashScreen):
         from invesalius.gui.frame import Frame
         from invesalius.control import Controller
         from invesalius.project import Project
-        
+
         self.main = Frame(None)
         self.control = Controller(self.main)
-        
+
         self.fc = wx.CallLater(200, self.ShowMain)
         options, args = parse_comand_line()
         wx.CallLater(1, use_cmd_optargs, options, args)
@@ -498,7 +502,7 @@ def main():
 if __name__ == '__main__':
     #Is needed because of pyinstaller
     multiprocessing.freeze_support()
-    
+
     #Needed in win 32 exe
     if hasattr(sys,"frozen") and sys.platform.startswith('win'):
 
@@ -523,4 +527,3 @@ if __name__ == '__main__':
 
     # Init application
     main()
-

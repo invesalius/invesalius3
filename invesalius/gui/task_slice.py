@@ -141,7 +141,7 @@ class InnerTaskPanel(wx.Panel):
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(check_box, 0, wx.ALIGN_LEFT|wx.RIGHT|wx.LEFT, 5)
-        line_sizer.Add(next_btn_sizer, 1, wx.EXPAND|wx.ALIGN_RIGHT|wx.RIGHT|wx.LEFT, 5)
+        line_sizer.Add(next_btn_sizer, 1, wx.EXPAND|wx.RIGHT|wx.LEFT, 5)
         line_sizer.Fit(self)
 
         # Add line sizers into main sizer

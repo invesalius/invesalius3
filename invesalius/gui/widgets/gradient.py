@@ -26,7 +26,12 @@ from wx.lib import intctrl
 
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 
-PUSH_WIDTH = 7
+dc = wx.MemoryDC()
+font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+dc.SetFont(font)
+PUSH_WIDTH = dc.GetTextExtent("M")[0] // 2 + 1
+del dc
+del font
 
 myEVT_SLIDER_CHANGED = wx.NewEventType()
 EVT_SLIDER_CHANGED = wx.PyEventBinder(myEVT_SLIDER_CHANGED, 1)
@@ -69,6 +74,8 @@ class GradientSlider(wx.Panel):
         self.maximun = maxValue
         self.colour = colour
         self.selected = 0
+
+        self._gradient_colours = None
 
         self.CalculateControlPositions()
 
@@ -131,27 +138,43 @@ class GradientSlider(wx.Panel):
 
         width_transparency = self.max_position - self.min_position
 
-        # Drawing the left blank area.
-        pen = wx.Pen((0, 0, 0))
-        brush = wx.Brush((0, 0, 0))
-        dc.SetPen(pen)
-        dc.SetBrush(brush)
-        dc.DrawRectangle(0, 0, PUSH_WIDTH, h)
+        gc = wx.GraphicsContext.Create(dc)
 
-        # Drawing the right blank area.
-        pen = wx.Pen((255, 255, 255))
-        brush = wx.Brush((255, 255, 255))
-        dc.SetPen(pen)
-        dc.SetBrush(brush)
-        dc.DrawRectangle(x_init_gradient + width_gradient, 0, PUSH_WIDTH, h)
+        points = ((0, PUSH_WIDTH, (0, 0, 0), (0, 0, 0)),
+                  (PUSH_WIDTH, w - PUSH_WIDTH, (0, 0, 0), (255, 255, 255)),
+                  (w - PUSH_WIDTH, w, (255, 255, 255), (255, 255, 255)))
 
-        # Drawing the gradient.
-        dc.GradientFillLinear(
-            (x_init_gradient, y_init_gradient, width_gradient, height_gradient),
-            (0, 0, 0),
-            (255, 255, 255),
-        )
+        # Drawing the gradient background
+        for p1, p2, c1, c2 in points:
+            brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
+            gc.SetBrush(brush)
+            path = gc.CreatePath()
+            path.AddRectangle(p1, 0, p2 - p1, h)
+            gc.StrokePath(path)
+            gc.FillPath(path)
 
+        # Drawing the transparent coloured overlay
+        if self._gradient_colours is None:
+            brush = wx.Brush(wx.Colour(*self.colour))
+            pen = wx.Pen(wx.Colour(*self.colour))
+            gc.SetBrush(brush)
+            gc.SetPen(pen)
+            path = gc.CreatePath()
+            path.AddRectangle(self.min_position, 0, width_transparency, h)
+            gc.FillPath(path)
+            gc.StrokePath(path)
+        else:
+            for i, (c1, c2) in enumerate(zip(self._gradient_colours, self._gradient_colours[1:])):
+                p1 = self.min_position + i * width_transparency / len(self._gradient_colours)
+                p2 = self.min_position + (i + 1) * width_transparency / len(self._gradient_colours)
+                brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
+                gc.SetBrush(brush)
+                path = gc.CreatePath()
+                path.AddRectangle(p1, 0, p2 - p1, h)
+                gc.StrokePath(path)
+                gc.FillPath(path)
+
+        # Drawing the pushes
         try:
             n = wx.RendererNative.Get()
         except AttributeError:
@@ -161,14 +184,14 @@ class GradientSlider(wx.Panel):
         n.DrawPushButton(self, dc, (x_init_push1, 0, PUSH_WIDTH, h))
         n.DrawPushButton(self, dc, (x_init_push2, 0, PUSH_WIDTH, h))
 
-        # Drawing the transparent slider.
-        bytes = numpy.array(self.colour * width_transparency * h, "B")
-        try:
-            slider = wx.Bitmap.FromBufferRGBA(width_transparency, h, bytes)
-        except:
-            pass
-        else:
-            dc.DrawBitmap(slider, self.min_position, 0, True)
+        #  # Drawing the transparent slider.
+        #  bytes = numpy.array(self.colour * width_transparency * h, "B")
+        #  try:
+            #  slider = wx.Bitmap.FromBufferRGBA(width_transparency, h, bytes)
+        #  except:
+            #  pass
+        #  else:
+            #  dc.DrawBitmap(slider, self.min_position, 0, True)
 
     def OnEraseBackGround(self, evt):
         # Only to avoid this widget to flick.
@@ -315,6 +338,9 @@ class GradientSlider(wx.Panel):
 
     def SetColour(self, colour):
         self.colour = colour
+
+    def SetGradientColours(self, colors):
+        self._gradient_colours = colors
 
     def SetMinRange(self, min_range):
         self.min_range = min_range
@@ -484,6 +510,9 @@ class GradientCtrl(wx.Panel):
         self.colour = colour
         self.gradient_slider.SetColour(colour)
         self.gradient_slider.Refresh()
+
+    def SetGradientColours(self, colors):
+        self.gradient_slider.SetGradientColours(colors)
 
     def SetMaxRange(self, value):
         self.spin_min.SetMax(value)
