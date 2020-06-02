@@ -498,6 +498,40 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id):
     return coord, m_img
 
 
+def compute_marker_transformation(coord_raw, obj_ref_mode):
+    psi, theta, phi = radians(coord_raw[obj_ref_mode, 3:])
+    r_probe = tr.euler_matrix(psi, theta, phi, 'rzyx')
+    t_probe = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
+    m_probe = tr.concatenate_matrices(t_probe, r_probe)
+    return m_probe
+
+
+def corregistrate_dynamic(inp, coord_raw, ref_mode_id):
+
+    m_change, obj_ref_mode = inp
+
+    # transform raw marker coordinate to object center
+    m_probe = compute_marker_transformation(coord_raw, obj_ref_mode)
+    # transform object center to reference marker if specified as dynamic reference
+    if ref_mode_id:
+        m_ref = compute_marker_transformation(coord_raw, 1)
+        m_probe_ref = np.linalg.inv(m_ref) @ m_probe
+    else:
+        m_probe_ref = m_probe
+
+    # invert y coordinate
+    m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+    # corregistrate from tracker to image space
+    m_img = m_change @ m_probe_ref
+    # compute rotation angles
+    _, _, angles, _, _ = tr.decompose_matrix(m_img)
+    # create output coordiante list
+    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
+            degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
+
+    return coord, m_img
+
+
 def corregistrate_object(inp, coord_raw):
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
     as1, bs1, gs1 = radians(coord_raw[obj_ref_mode, 3:])
@@ -546,7 +580,8 @@ class CoordinateCorregistrate(threading.Thread):
         # event = self.event
         trck_info = self.trck_info
         coreg_data = self.coreg_data
-        count = 0
+        # count = 0
+        view_obj = 1
 
         trck_init, trck_id, trck_mode = trck_info
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
@@ -559,9 +594,59 @@ class CoordinateCorregistrate(threading.Thread):
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
-                self.coord_queue.put_nowait([coord, m_img])
+                self.coord_queue.put_nowait([coord, m_img, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
+
+                if self.view_tracts:
+                    self.coord_tracts_queue.put_nowait(m_img_flip)
+
+                # self.pipeline.task_done()
+                # print(f"Pubsub the coregistered coordinate: {coord}")
+                # wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+                # wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+                # The sleep has to be in both threads
+
+                sleep(self.sle)
+            except queue.Full:
+                pass
+
+
+class CoordinateCorregistrateNoObject(threading.Thread):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle):
+        threading.Thread.__init__(self, name='CoordCoregNoObject')
+        self.ref_mode_id = ref_mode_id
+        self.trck_info = trck_info
+        self.coreg_data = coreg_data
+        self.coord_queue = coord_queue
+        self.view_tracts = view_tracts
+        self.coord_tracts_queue = coord_tracts_queue
+        self.event = event
+        self.sle = sle
+
+    def run(self):
+        # event = self.event
+        trck_info = self.trck_info
+        coreg_data = self.coreg_data
+        # count = 0
+        view_obj = 0
+
+        trck_init, trck_id, trck_mode = trck_info
+        # print('CoordCoreg: event {}'.format(self.event.is_set()))
+        # while True:
+        while not self.event.is_set():
+            try:
+                # print(f"Set the coordinate")
+                coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+                coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id)
+                # print("Coord: ", coord)
+                m_img_flip = m_img.copy()
+                m_img_flip[1, -1] = -m_img_flip[1, -1]
+                # self.pipeline.set_message(m_img_flip)
+                self.coord_queue.put_nowait([coord, m_img, view_obj])
+                # print('CoordCoreg: put {}'.format(count))
+                # count += 1
+                # print("shape: ", m_img_flip.shape)
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)

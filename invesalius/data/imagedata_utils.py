@@ -600,6 +600,8 @@ def convert_world_to_voxel(xyz, affine):
     :param affine: a 4x4 array containing the image affine transformation in homogeneous coordinates
     :return: a 1x3 array with the point coordinates in image space (i, j, k)
     """
+
+    # print("xyz: ", xyz, "\naffine", affine)
     # convert xyz coordinate to 1x4 homogeneous coordinates array
     xyz_homo = np.hstack((xyz, 1.)).reshape([4, 1])
     ijk_homo = np.linalg.inv(affine) @ xyz_homo

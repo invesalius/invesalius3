@@ -253,12 +253,14 @@ class ComputeTractsThread(threading.Thread):
                 # m_img_flip[1, -1] = -m_img_flip[1, -1]
 
                 # translate the coordinate along the normal vector of the object/coil
-                p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
-                # p_new = np.array([[27.53, -77.37, 46.42]])
-                dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
-                p_old = p_new.copy()
+                coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+                # coord_offset = np.array([[27.53, -77.37, 46.42]])
+                dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
+                p_old = coord_offset.copy()
 
-                seed_trk = img_utils.convert_world_to_voxel(p_new, affine)
+                # print("p_new_shape", coord_offset.shape)
+                # print("m_img_flip_shape", m_img_flip.shape)
+                seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
@@ -302,7 +304,7 @@ class ComputeTractsThread(threading.Thread):
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
                 # self.visualization_queue.put_nowait([coord, m_img, bundle])
-                self.tracts_queue.put_nowait((bundle, self.affine_vtk))
+                self.tracts_queue.put_nowait((bundle, self.affine_vtk, coord_offset))
                 # print('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_tracts_queue.task_done()
@@ -373,11 +375,11 @@ class ComputeTractsThreadSingleBlock(threading.Thread):
                 coord, m_img, m_img_flip = self.coord_queue.get_nowait()
 
                 # translate the coordinate along the normal vector of the object/coil
-                p_new = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
-                # p_new = np.array([[27.53, -77.37, 46.42]])
-                dist = abs(np.linalg.norm(p_old - np.asarray(p_new)))
-                p_old = p_new.copy()
-                seed_trk = img_utils.convert_world_to_voxel(p_new, affine)
+                coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+                # coord_offset = np.array([[27.53, -77.37, 46.42]])
+                dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
+                p_old = coord_offset.copy()
+                seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1

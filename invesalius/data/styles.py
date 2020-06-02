@@ -530,8 +530,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
         Publisher.sendMessage('Update cross position', arg=None, position=(wx, wy, wz, 0., 0., 0.))
         self.ScrollSlice(coord)
-        # Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
-        # Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
 
         # iren.Render()
 

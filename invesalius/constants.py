@@ -658,6 +658,8 @@ BOOLEAN_XOR = 4
 
 #------------ Navigation defaults -------------------
 
+MARKER_COLOUR = (1.0, 1.0, 0.)
+MARKER_SIZE = 2
 SELECT = 0
 MTC = 1
 FASTRAK = 2

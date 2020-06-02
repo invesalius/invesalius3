@@ -261,8 +261,8 @@ class InnerFoldPanel(wx.Panel):
     def OnHideDbs(self):
         self.dbs_item.Hide()
 
-    def OnCheckStatus(self, status):
-        if status:
+    def OnCheckStatus(self, nav_status, vis_status):
+        if nav_status:
             self.checktrigger.Enable(False)
             self.checkobj.Enable(False)
         else:
@@ -445,7 +445,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Update cross position')
-        # Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -659,6 +658,11 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         errors = False
 
+        # initialize jobs list
+        jobs_list = []
+        vis_components = [self.trigger_state, self.view_tracts]
+        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue]
+
         nav_id = btn_nav.GetValue()
         if not nav_id:
             self.event.set()
@@ -700,7 +704,7 @@ class NeuronavigationPanel(wx.Panel):
             # if self.trigger_state:
             #     self.trigger.stop()
 
-            Publisher.sendMessage("Navigation status", status=False)
+            Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
         else:
 
@@ -717,7 +721,7 @@ class NeuronavigationPanel(wx.Panel):
                     self.event.clear()
 
                 # prepare GUI for navigation
-                Publisher.sendMessage("Navigation status", status=True)
+                Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
                 Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
@@ -740,11 +744,6 @@ class NeuronavigationPanel(wx.Panel):
                 # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
                 fre = db.calculate_fre_m(self.fiducials)
                 self.UpdateFRE(fre)
-
-                # initialize jobs list
-                jobs_list = []
-                vis_components = [self.trigger_state, self.view_tracts]
-                vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue]
 
                 if self.track_obj:
                     # if object tracking is selected
@@ -771,32 +770,31 @@ class NeuronavigationPanel(wx.Panel):
                                                                      self.view_tracts, self.coord_tracts_queue,
                                                                      self.event, self.sleep_nav))
 
-                            # self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
-                            # jobs_list = [
-                            #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                            #                                 self.sleep_nav)]
-
                 else:
-                    coreg_data = [m_change, 0]
-                    if self.ref_mode_id:
+                    coreg_data = (m_change, 0)
+                    # if self.ref_mode_id:
                         # TODO: not properly tested, please check that all possible navigation modes work in the new
                         #  thread management scheme
                         # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
-                        self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)
-                        self.correg.start()
+                    jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
+                                                                         self.coord_queue,
+                                                                         self.view_tracts, self.coord_tracts_queue,
+                                                                         self.event, self.sleep_nav))
+
+                        # self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)
+                        # self.correg.start()
                         # jobs_list = [
                         #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
                         #                                 self.sleep_nav)]
-                    else:
-                        # TODO: not properly tested, please check that all possible navigation modes work in the new
-                        #  thread management scheme
-                        self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
-                        # jobs_list = [dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                        #                                          self.sleep_nav)]
+                    # else:
+                    #     # TODO: not properly tested, please check that all possible navigation modes work in the new
+                    #     #  thread management scheme
+                    #     self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
+                    #     # jobs_list = [dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
+                    #     #                                          self.sleep_nav)]
 
                 if not errors:
-                    #TODO: Similarly to the tracts, add also the trigger thread here
-                    # initialize trigger thread to synchronize with external devices
+                    #TODO: Test the trigger thread
                     if self.trigger_state:
                         # self.trigger = trig.Trigger(nav_id)
                         jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
@@ -806,6 +804,7 @@ class NeuronavigationPanel(wx.Panel):
                         slic = sl.Slice()
                         affine = slic.affine
                         affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                        Publisher.sendMessage("Update marker offset state", create=True)
                         self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
                         # print("Appending the tract computation thread!")
                         jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk,
@@ -843,6 +842,8 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update object registration')
         Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
         Publisher.sendMessage('Delete all markers')
+        Publisher.sendMessage("Update marker offset state", create=False)
+        Publisher.sendMessage("Remove tracts")
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
 
@@ -974,8 +975,7 @@ class ObjectRegistrationPanel(wx.Panel):
     def UpdateTrackerInit(self, nav_prop):
         self.nav_prop = nav_prop
 
-    def UpdateNavigationStatus(self, status):
-        nav_status = status
+    def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
             self.checkrecordcoords.Enable(1)
             self.checktrack.Enable(0)
@@ -1125,8 +1125,8 @@ class MarkersPanel(wx.Panel):
         self.tgt_flag = self.tgt_index = None
         self.nav_status = False
 
-        self.marker_colour = (1.0, 1.0, 0.)
-        self.marker_size = 3
+        self.marker_colour = const.MARKER_COLOUR
+        self.marker_size = const.MARKER_SIZE
 
         # Change marker size
         spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
@@ -1212,8 +1212,8 @@ class MarkersPanel(wx.Panel):
         self.current_coord = position[:]
         #self.current_angle = pubsub_evt.data[1][3:]
 
-    def UpdateNavigationStatus(self, status):
-        if not status:
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        if not nav_status:
             sleep(0.5)
             #self.current_coord[3:] = 0, 0, 0
             self.nav_status = False
@@ -1230,6 +1230,9 @@ class MarkersPanel(wx.Panel):
         menu_id.AppendSeparator()
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        # TODO: Create the remove target option so the user can disable the target without removing the marker
+        # target_menu_rem = menu_id.Append(3, _('Remove target'))
+        # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
 
         target_menu.Enable(True)
         self.PopupMenu(menu_id)
@@ -1727,9 +1730,10 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Update tracts visualization', data=self.view_tracts)
         if not self.view_tracts:
             Publisher.sendMessage('Remove tracts')
+            Publisher.sendMessage("Update marker offset state", create=False)
 
-    def UpdateNavigationStatus(self, status):
-        self.nav_status = status
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
 
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
@@ -1906,17 +1910,18 @@ class UpdateNavigationScene(threading.Thread):
         while not self.event.is_set():
             got_coords = False
             try:
-                coord, m_img = self.coord_queue.get_nowait()
+                coord, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
-                    bundle, affine_vtk = self.tracts_queue.get_nowait()
-                    wx.CallAfter(Publisher.sendMessage, 'Remove tracts', count=bundle)
+                    bundle, affine_vtk, coord_offset = self.tracts_queue.get_nowait()
+                    wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
                     wx.CallAfter(Publisher.sendMessage, 'Update tracts', flag=True, root=bundle,
                                  affine_vtk=affine_vtk)
+                    wx.CallAfter(Publisher.sendMessage, 'Update marker offset', coord_offset=coord_offset)
                     self.tracts_queue.task_done()
 
                 if self.trigger_state:
@@ -1925,8 +1930,12 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(Publisher.sendMessage, 'Create marker')
                     self.trigger_queue.task_done()
 
+                # TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
+                # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+
+                if view_obj:
+                    wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
 
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
