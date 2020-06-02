@@ -500,34 +500,6 @@ def img2memmap(group):
     return matrix, scalar_range, temp_file
 
 
-def imgnormalize(data, srange=(0, 255)):
-    """
-    Normalize image pixel intensity for int16 gray scale values.
-
-    :param data: image matrix
-    :param srange: range for normalization, default is 0 to 255
-    :return: normalized pixel intensity matrix
-    """
-
-    dataf = numpy.asarray(data)
-    rangef = numpy.asarray(srange)
-    faux = numpy.ravel(dataf).astype(float)
-    minimum = numpy.min(faux)
-    maximum = numpy.max(faux)
-    lower = rangef[0]
-    upper = rangef[1]
-
-    if minimum == maximum:
-        datan = numpy.ones(dataf.shape)*(upper + lower) / 2.
-    else:
-        datan = (faux-minimum)*(upper-lower) / (maximum-minimum) + lower
-
-    datan = numpy.reshape(datan, dataf.shape)
-    datan = datan.astype(numpy.int16)
-
-    return datan
-
-
 def get_LUT_value_255(data, window, level):
     shape = data.shape
     data_ = data.ravel()
@@ -539,6 +511,8 @@ def get_LUT_value_255(data, window, level):
     return data
 
 
-def image_normalize(image, min_=0.0, max_=1.0):
+def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
+    output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
-    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_
+    output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
+    return output
