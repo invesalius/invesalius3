@@ -519,79 +519,11 @@ def ShowSaveAsProjectDialog(default_filename=None):
     return filename, wildcard == INV_COMPRESSED
 
 
-# Dialog for neuronavigation markers
-def ShowSaveMarkersDialog(default_filename=None):
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None,
-                        _("Save markers as..."),  # title
-                        "",  # last used directory
-                        default_filename,
-                        _("Markers files (*.mks)|*.mks"),
-                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-    # dlg.SetFilterIndex(0) # default is VTI
+def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
 
-    filename = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ok = 1
-        else:
-            ok = 0
-    except(wx._core.PyAssertionError):  # TODO: fix win64
-        filename = dlg.GetPath()
-        ok = 1
-
-    if (ok):
-        extension = "mks"
-        if sys.platform != 'win32':
-            if filename.split(".")[-1] != extension:
-                filename = filename + "." + extension
-
-    os.chdir(current_dir)
-    return filename
-
-def ShowSaveCoordsDialog(default_filename=None):
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None,
-                        _("Save coords as..."),  # title
-                        "",  # last used directory
-                        default_filename,
-                        _("Coordinates files (*.csv)|*.csv"),
-                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-    # dlg.SetFilterIndex(0) # default is VTI
-
-    filename = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ok = 1
-        else:
-            ok = 0
-    except(wx._core.PyAssertionError):  # TODO: fix win64
-        filename = dlg.GetPath()
-        ok = 1
-
-    if (ok):
-        extension = "csv"
-        if sys.platform != 'win32':
-            if filename.split(".")[-1] != extension:
-                filename = filename + "." + extension
-
-    os.chdir(current_dir)
-    return filename
-
-
-def ShowLoadMarkersDialog():
-    current_dir = os.path.abspath(".")
-
-    dlg = wx.FileDialog(None, message=_("Load markers"),
-                        defaultDir="",
-                        defaultFile="",
-                        wildcard=_("Markers files (*.mks)|*.mks"),
-                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
+    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
+                        wildcard=wildcard, style=style)
 
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
@@ -600,95 +532,25 @@ def ShowLoadMarkersDialog():
         if dlg.ShowModal() == wx.ID_OK:
             # This returns a Python list of files that were selected.
             filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError):  # FIX: win64
-        filepath = dlg.GetPath()
-
-    # Destroy the dialog. Don't do this until you are done with it!
-    # BAD things can happen otherwise!
-    dlg.Destroy()
-    os.chdir(current_dir)
-    return filepath
-
-
-def ShowSaveRegistrationDialog(default_filename=None):
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None,
-                        _("Save object registration as..."),  # title
-                        "",  # last used directory
-                        default_filename,
-                        _("Registration files (*.obr)|*.obr"),
-                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-    # dlg.SetFilterIndex(0) # default is VTI
-
-    filename = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ok = 1
+            ok_press = 1
         else:
-            ok = 0
-    except(wx._core.PyAssertionError):  # TODO: fix win64
-        filename = dlg.GetPath()
-        ok = 1
-
-    if (ok):
-        extension = "obr"
-        if sys.platform != 'win32':
-            if filename.split(".")[-1] != extension:
-                filename = filename + "." + extension
-
-    os.chdir(current_dir)
-    return filename
-
-
-# def ShowLoadRegistrationDialog():
-#     current_dir = os.path.abspath(".")
-#
-#     dlg = wx.FileDialog(None, message=_("Load object registration"),
-#                         defaultDir="",
-#                         defaultFile="",
-#                         wildcard=_("Registration files (*.obr)|*.obr"),
-#                         style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-#
-#     # inv3 filter is default
-#     dlg.SetFilterIndex(0)
-#
-#     # Show the dialog and retrieve the user response. If it is the OK response,
-#     # process the data.
-#     filepath = None
-#     try:
-#         if dlg.ShowModal() == wx.ID_OK:
-#             # This returns a Python list of files that were selected.
-#             filepath = dlg.GetPath()
-#     except(wx._core.PyAssertionError):  # FIX: win64
-#         filepath = dlg.GetPath()
-#
-#     # Destroy the dialog. Don't do this until you are done with it!
-#     # BAD things can happen otherwise!
-#     dlg.Destroy()
-#     os.chdir(current_dir)
-#     return filepath
-
-
-def ShowLoadDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
-                   wildcard=_("Registration files (*.obr)|*.obr")):
-
-    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile="", wildcard=wildcard, style=style)
-
-    # Show the dialog and retrieve the user response. If it is the OK response,
-    # process the data.
-    filepath = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            # This returns a Python list of files that were selected.
-            filepath = dlg.GetPath()
+            ok_press = 0
     except(wx._core.PyAssertionError):  # FIX: win64
         filepath = dlg.GetPath()
+        ok_press = 1
+
+    # fix the extension if set different than expected
+    if save_ext and ok_press:
+        extension = save_ext
+        if sys.platform != 'win32':
+            if filepath.split(".")[-1] != extension:
+                filepath = filepath + "." + extension
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
     os.chdir(current_dir)
+
     return filepath
 
 

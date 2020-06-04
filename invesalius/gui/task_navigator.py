@@ -1029,12 +1029,11 @@ class ObjectRegistrationPanel(wx.Panel):
             dlg.ShowNavigationTrackerWarning(0, 'choose')
 
     def OnLinkLoad(self, event=None):
-        # filename = dlg.ShowLoadRegistrationDialog()
-        # filename = dlg.ShowLoadDialog(message=_(u"Load object registration"),
-        #                               wildcard=_("Registration files (*.obr)|*.obr"))
-        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
-        coil_path = 'magstim_coil_dell_laptop.obr'
-        filename = os.path.join(data_dir, coil_path)
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Load object registration"),
+                                          wildcard=_("Registration files (*.obr)|*.obr"))
+        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
+        # coil_path = 'magstim_coil_dell_laptop.obr'
+        # filename = os.path.join(data_dir, coil_path)
 
         try:
             if filename:
@@ -1064,11 +1063,13 @@ class ObjectRegistrationPanel(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def ShowSaveObjectDialog(self, evt):
-        # TODO: Generalize the ShowSave dialog similar to the Load
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
-            filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save object registration as..."),
+                                              wildcard=_("Registration files (*.obr)|*.obr"),
+                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                              default_filename="object_registration.obr", save_ext="obr")
             if filename:
                 hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
                 data = np.hstack([self.obj_fiducials, self.obj_orients])
@@ -1354,12 +1355,11 @@ class MarkersPanel(wx.Panel):
             self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
 
     def OnLoadMarkers(self, evt):
-        # filepath = dlg.ShowLoadMarkersDialog()
-        # filename = dlg.ShowLoadDialog(message=_(u"Load object registration"),
-        #                               wildcard=_("Registration files (*.obr)|*.obr"))
-        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
-        coil_path = 'markers.mks'
-        filename = os.path.join(data_dir, coil_path)
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
+                                          wildcard=_("Markers files (*.mks)|*.mks"))
+        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
+        # marker_path = 'markers.mks'
+        # filename = os.path.join(data_dir, marker_path)
 
         if filename:
             try:
@@ -1412,7 +1412,11 @@ class MarkersPanel(wx.Panel):
             ctrl.SetLabel('Hide')
 
     def OnSaveMarkers(self, evt):
-        filename = dlg.ShowSaveMarkersDialog("markers.mks")
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                          wildcard=_("Marker files (*.mks)|*.mks"),
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename="markers.mks", save_ext="mks")
+
         if filename:
             if self.list_coord:
                 text_file = open(filename, "w")
@@ -1720,6 +1724,7 @@ class TractographyPanel(wx.Panel):
         self.nav_status = nav_status
 
     def OnLinkBrain(self, event=None):
+        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_MASK)
         img_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_IMG)
@@ -1749,15 +1754,16 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
+        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
-        # filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_FOD)
+        filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_FOD)
         # Juuso
         # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
         # FOD_path = 'sub-P0_dwi_FOD.nii'
         # Baran
-        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
-        FOD_path = 'Baran_FOD.nii'
-        filename = os.path.join(data_dir, FOD_path)
+        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\pilot_20200131'
+        # FOD_path = 'Baran_FOD.nii'
+        # filename = os.path.join(data_dir, FOD_path)
 
         if not self.affine_vtk:
             slic = sl.Slice()
@@ -1783,8 +1789,8 @@ class TractographyPanel(wx.Panel):
 
     def OnLoadParameters(self, event=None):
         import json
-        filename = dlg.ShowLoadDialog(message=_(u"Load Trekker configuration"),
-                                      wildcard=_("JSON file (*.json)|*.json"))
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Load Trekker configuration"),
+                                          wildcard=_("JSON file (*.json)|*.json"))
         try:
             # Check if filename exists, read the JSON file and check if all parameters match
             # with the required list defined in the constants module
