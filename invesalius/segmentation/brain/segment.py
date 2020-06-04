@@ -64,7 +64,7 @@ def brain_segment(image, probability_array, comm_array):
     model.load_weights(str(folder.joinpath("model.h5")))
     model.compile("Adam", "binary_crossentropy")
 
-    image = imagedata_utils.image_normalize(image, 0.0, 1.0)
+    image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
     for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):

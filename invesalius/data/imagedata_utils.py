@@ -502,32 +502,22 @@ def img2memmap(group):
     return matrix, scalar_range, temp_file
 
 
-def imgnormalize(data, srange=(0, 255)):
-    """
-    Normalize image pixel intensity for int16 gray scale values.
+def get_LUT_value_255(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
+    data.shape = shape
+    return data
 
-    :param data: image matrix
-    :param srange: range for normalization, default is 0 to 255
-    :return: normalized pixel intensity matrix
-    """
 
-    dataf = numpy.asarray(data)
-    rangef = numpy.asarray(srange)
-    faux = numpy.ravel(dataf).astype(float)
-    minimum = numpy.min(faux)
-    maximum = numpy.max(faux)
-    lower = rangef[0]
-    upper = rangef[1]
-
-    if minimum == maximum:
-        datan = numpy.ones(dataf.shape)*(upper + lower) / 2.
-    else:
-        datan = (faux-minimum)*(upper-lower) / (maximum-minimum) + lower
-
-    datan = numpy.reshape(datan, dataf.shape)
-    datan = datan.astype(numpy.int16)
-
-    return datan
+def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
+    output = np.empty(shape=image.shape, dtype=output_dtype)
+    imin, imax = image.min(), image.max()
+    output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
+    return output
 
 
 def world2invspace(shape=None, affine=None):
@@ -571,23 +561,7 @@ def world2invspace(shape=None, affine=None):
     # PreMultiplty: M = M*A where M is current transformation and A is applied transformation
     # user_matrix = np.linalg.inv(user_matrix) @ repos_mat
 
-    return np.linalg.inv(affine_noscale) @ repos_mat
-
-
-def get_LUT_value_255(data, window, level):
-    shape = data.shape
-    data_ = data.ravel()
-    data = np.piecewise(data_,
-                        [data_ <= (level - 0.5 - (window-1)/2),
-                         data_ > (level - 0.5 + (window-1)/2)],
-                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
-    data.shape = shape
-    return data
-
-
-def image_normalize(image, min_=0.0, max_=1.0):
-    imin, imax = image.min(), image.max()
-    return (image - imin) * ((max_ - min_) / (imax - imin)) + min_
+    return np.linalg.inv(affine_noscale)
 
 
 def convert_world_to_voxel(xyz, affine):

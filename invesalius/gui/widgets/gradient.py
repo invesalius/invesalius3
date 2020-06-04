@@ -26,12 +26,15 @@ from wx.lib import intctrl
 
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 
-dc = wx.MemoryDC()
-font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-dc.SetFont(font)
-PUSH_WIDTH = dc.GetTextExtent("M")[0] // 2 + 1
-del dc
-del font
+try:
+    dc = wx.MemoryDC()
+    font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+    dc.SetFont(font)
+    PUSH_WIDTH = dc.GetTextExtent("M")[0] // 2 + 1
+    del dc
+    del font
+except Exception:
+    PUSH_WIDTH = 7
 
 myEVT_SLIDER_CHANGED = wx.NewEventType()
 EVT_SLIDER_CHANGED = wx.PyEventBinder(myEVT_SLIDER_CHANGED, 1)
