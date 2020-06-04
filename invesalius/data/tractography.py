@@ -28,7 +28,6 @@ import time
 
 import numpy as np
 import queue
-import wx
 from pubsub import pub as Publisher
 import vtk
 
@@ -116,9 +115,7 @@ def combine_tracts_root(out_list, root, n_block):
     # print("Len outlist in root: ", len(out_list))
     if not out_list.count(None) == len(out_list):
         for n, tube in enumerate(out_list):
-            #TODO: substitute to try + except (better to ask forgiveness than please)
-            if tube:
-                root.SetBlock(n_block + n, tube.GetOutput())
+            root.SetBlock(n_block + n, tube.GetOutput())
 
     return root
 
@@ -137,8 +134,6 @@ def combine_tracts_branch(out_list):
     # print("Len outlist in root: ", len(out_list))
     if not out_list.count(None) == len(out_list):
         for n, tube in enumerate(out_list):
-            #TODO: substitute to try + except (better to ask forgiveness than please)
-            # if tube:
             branch.SetBlock(n, tube.GetOutput())
 
     return branch
@@ -169,6 +164,41 @@ def tracts_computation(trk_list, root, n_tracts):
     root = combine_tracts_root(out_list, root, n_tracts)
 
     return root
+
+
+def compute_tracts(trekker, position, affine, affine_vtk, n_tracts):
+    """ Compute tractograms using the Trekker library.
+
+    :param trekker: Trekker library instance
+    :type trekker: Trekker.T
+    :param position: 3 double coordinates (x, y, z) in list or array
+    :type position: list
+    :param affine: 4 x 4 numpy double array
+    :type affine: numpy.ndarray
+    :param affine_vtk: vtkMatrix4x4 isntance with affine transformation matrix
+    :type affine_vtk: vtkMatrix4x4
+    :param n_tracts: number of tracts to compute
+    :type n_tracts: int
+    """
+
+    # during neuronavigation, root needs to be initialized outside the while loop so the new tracts
+    # can be appended to the root block set
+    root = vtk.vtkMultiBlockDataSet()
+    # Juuso's
+    # seed = np.array([[-8.49, -8.39, 2.5]])
+    # Baran M1
+    # seed = np.array([[27.53, -77.37, 46.42]])
+    seed_trk = img_utils.convert_world_to_voxel(position, affine)
+    # print("seed example: {}".format(seed_trk))
+    trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
+    # print("trk list len: ", len(trekker.run()))
+    trk_list = trekker.run()
+    if trk_list:
+        root = tracts_computation(trk_list, root, 0)
+        Publisher.sendMessage('Remove tracts')
+        Publisher.sendMessage('Update tracts', flag=True, root=root, affine_vtk=affine_vtk)
+    else:
+        Publisher.sendMessage('Remove tracts')
 
 
 def tracts_computation_branch(trk_list):
@@ -287,7 +317,7 @@ class ComputeTractsThread(threading.Thread):
                         n_branches += 1
                         n_tracts = branch.GetNumberOfBlocks()
 
-                    # TODO: keep computing even if reaches the maximum
+                    # TODO: maybe keep computing even if reaches the maximum
                     elif dist < seed_radius and n_tracts < n_tracts_total:
                         # compute tracts blocks and add to bungle until reaches the maximum number of tracts
                         branch = tracts_computation_branch(trk_list)
@@ -406,41 +436,6 @@ class ComputeTractsThreadSingleBlock(threading.Thread):
                 pass
             except queue.Full:
                 self.coord_queue.task_done()
-
-
-def compute_tracts(trekker, position, affine, affine_vtk, n_tracts):
-    """ Compute tractograms using the Trekker library.
-
-    :param trekker: Trekker library instance
-    :type trekker: Trekker.T
-    :param position: 3 double coordinates (x, y, z) in list or array
-    :type position: list
-    :param affine: 4 x 4 numpy double array
-    :type affine: numpy.ndarray
-    :param affine_vtk: vtkMatrix4x4 isntance with affine transformation matrix
-    :type affine_vtk: vtkMatrix4x4
-    :param n_tracts: number of tracts to compute
-    :type n_tracts: int
-    """
-
-    # during neuronavigation, root needs to be initialized outside the while loop so the new tracts
-    # can be appended to the root block set
-    root = vtk.vtkMultiBlockDataSet()
-    # Juuso's
-    # seed = np.array([[-8.49, -8.39, 2.5]])
-    # Baran M1
-    # seed = np.array([[27.53, -77.37, 46.42]])
-    seed_trk = img_utils.convert_world_to_voxel(position, affine)
-    # print("seed example: {}".format(seed_trk))
-    trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
-    # print("trk list len: ", len(trekker.run()))
-    trk_list = trekker.run()
-    if trk_list:
-        root = tracts_computation(trk_list, root, 0)
-        Publisher.sendMessage('Remove tracts')
-        Publisher.sendMessage('Update tracts', flag=True, root=root, affine_vtk=affine_vtk)
-    else:
-        Publisher.sendMessage('Remove tracts')
 
 
 def set_trekker_parameters(trekker, params):

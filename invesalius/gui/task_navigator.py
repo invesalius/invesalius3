@@ -772,26 +772,10 @@ class NeuronavigationPanel(wx.Panel):
 
                 else:
                     coreg_data = (m_change, 0)
-                    # if self.ref_mode_id:
-                        # TODO: not properly tested, please check that all possible navigation modes work in the new
-                        #  thread management scheme
-                        # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
                     jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
                                                                          self.coord_queue,
                                                                          self.view_tracts, self.coord_tracts_queue,
                                                                          self.event, self.sleep_nav))
-
-                        # self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)
-                        # self.correg.start()
-                        # jobs_list = [
-                        #     dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                        #                                 self.sleep_nav)]
-                    # else:
-                    #     # TODO: not properly tested, please check that all possible navigation modes work in the new
-                    #     #  thread management scheme
-                    #     self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
-                    #     # jobs_list = [dcr.CoordinateCorregistrate(tracker_mode, coreg_data, pipeline, self.event,
-                    #     #                                          self.sleep_nav)]
 
                 if not errors:
                     #TODO: Test the trigger thread

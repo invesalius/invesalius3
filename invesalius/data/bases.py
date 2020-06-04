@@ -92,15 +92,10 @@ def base_creation(fiducials):
     g2 = g2/np.sqrt(np.dot(g2, g2))
     g3 = g3/np.sqrt(np.dot(g3, g3))
 
-    m = np.array([[g1[0], g2[0], g3[0]],
-                  [g1[1], g2[1], g3[1]],
-                  [g1[2], g2[2], g3[2]]])
-
-    # TODO: lines above can be replaced with this, test with navigation running
-    # m = np.zeros([3, 3])
-    # m[:, 0] = g1/np.sqrt(np.dot(g1, g1))
-    # m[:, 1] = g2/np.sqrt(np.dot(g2, g2))
-    # m[:, 2] = g3/np.sqrt(np.dot(g3, g3))
+    m = np.zeros([3, 3])
+    m[:, 0] = g1/np.sqrt(np.dot(g1, g1))
+    m[:, 1] = g2/np.sqrt(np.dot(g2, g2))
+    m[:, 2] = g3/np.sqrt(np.dot(g3, g3))
 
     return m, q
 
