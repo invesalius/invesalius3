@@ -654,7 +654,7 @@ class Slice(metaclass=utils.Singleton):
             self.buffer_slices[orientation].vtk_image = image
             self.buffer_slices[orientation].vtk_mask = mask
 
-        if self.to_show_aux == "watershed" and self.current_mask.is_shown:
+        if self.to_show_aux == "watershed" and self.current_mask is not None and self.current_mask.is_shown:
             m = self.get_aux_slice("watershed", orientation, slice_number)
             tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
             cimage = self.do_custom_colour(

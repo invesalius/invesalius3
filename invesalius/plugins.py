@@ -25,6 +25,7 @@ from pubsub import pub as Publisher
 
 import invesalius.constants as consts
 from invesalius import inv_paths
+from itertools import chain
 
 
 def import_source(module_name, module_file_path):
@@ -44,7 +45,8 @@ class PluginManager:
 
     def find_plugins(self):
         self.plugins = {}
-        for p in sorted(inv_paths.USER_PLUGINS_DIRECTORY.glob("*")):
+        for p in sorted(chain(inv_paths.USER_PLUGINS_DIRECTORY.glob("*"),\
+                inv_paths.PLUGIN_DIRECTORY.glob("*"))):
             if p.is_dir():
                 try:
                     with p.joinpath("plugin.json").open() as f:

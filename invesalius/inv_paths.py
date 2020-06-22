@@ -38,6 +38,8 @@ OLD_USER_LOG_DIR = OLD_USER_INV_DIR.joinpath("logs")
 
 INV_TOP_DIR = pathlib.Path(__file__).parent.parent.resolve()
 
+PLUGIN_DIRECTORY = INV_TOP_DIR.joinpath("plugins") 
+
 ICON_DIR = INV_TOP_DIR.joinpath("icons")
 SAMPLE_DIR = INV_TOP_DIR.joinpath("samples")
 DOC_DIR = INV_TOP_DIR.joinpath("docs")
