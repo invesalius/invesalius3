@@ -383,7 +383,6 @@ class SurfaceManager():
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        print("I set to back culling in CreateSurfaceFromPolydata")
         actor.GetProperty().SetBackfaceCulling(1)
 
         print("BOunds", actor.GetBounds())
@@ -496,7 +495,6 @@ class SurfaceManager():
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtk.vtkActor()
-            print("I set to back culling in OnLoadSurfaceDict")
             actor.GetProperty().SetBackfaceCulling(1)
             actor.SetMapper(mapper)
 
@@ -540,7 +538,6 @@ class SurfaceManager():
 
         # Represent an object (geometry & properties) in the rendered scene
         actor = vtk.vtkActor()
-        print("I set to back culling in _show_surface")
         actor.GetProperty().SetBackfaceCulling(1)
         actor.SetMapper(mapper)
         del mapper
