@@ -32,6 +32,7 @@ import invesalius.data.mask as msk
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
+import invesalius.data.transformations as tr
 import invesalius.data.volume as volume
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
@@ -330,7 +331,10 @@ class Controller():
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
-        self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+        if proj.affine:
+            self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+        else:
+            self.Slice.affine = None
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
@@ -975,8 +979,12 @@ class Controller():
         self.Slice.window_width = ww
 
         if group.affine.any():
+            # TODO: replace the inverse of the affine by the actual affine in the whole code
             # remove scaling factor for non-unitary voxel dimensions
-            self.affine = image_utils.world2invspace(shape=group.shape, affine=group.affine)
+            # self.affine = image_utils.world2invspace(affine=group.affine)
+            scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
+            self.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
+                                                          angles=angs, translate=trans, perspective=persp))
             # print("repos_img: {}".format(repos_img))
             self.Slice.affine = self.affine
             Publisher.sendMessage('Update affine matrix',
