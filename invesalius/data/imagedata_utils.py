@@ -587,7 +587,7 @@ def convert_world_to_voxel(xyz, affine):
 def create_grid():
     x = np.arange(-4, 5, 2)
     y = np.arange(-4, 5, 2)
-    z = 10 + np.arange(0, 31, 3)
+    z = 20 + np.arange(0, 21, 2)
     xv, yv, zv = np.meshgrid(x, y, - z)
     coord_grid = np.array([xv, yv, zv])
     # create grid of points

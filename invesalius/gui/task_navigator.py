@@ -52,6 +52,7 @@ import invesalius.data.trigger as trig
 import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
+import invesalius.project as prj
 from invesalius import utils
 
 BTN_NEW = wx.NewId()
@@ -319,6 +320,7 @@ class NeuronavigationPanel(wx.Panel):
         self.trekker = None
         self.n_threads = None
         self.view_tracts = False
+        self.act_data = None
         self.n_tracts = const.N_TRACTS
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
@@ -444,6 +446,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSleep, 'Update sleep')
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
+        Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -484,6 +487,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateTractsVisualization(self, data):
         self.view_tracts = data
+
+    def UpdateACTData(self, data):
+        self.act_data = data
 
     def UpdateImageCoordinates(self, arg, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
@@ -775,14 +781,17 @@ class NeuronavigationPanel(wx.Panel):
                     if self.view_tracts:
                         # initialize Trekker parameters
                         slic = sl.Slice()
-                        affine = slic.affine
+                        prj_data = prj.Project()
+                        matrix_shape = tuple(prj_data.matrix_shape)
+                        affine = slic.affine.copy()
+                        affine[1, -1] -= matrix_shape[1]
                         affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
                         Publisher.sendMessage("Update marker offset state", create=True)
-                        self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius, self.n_threads
+                        self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
+                                       self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
                         # print("Appending the tract computation thread!")
-                        jobs_list.append(dti.ComputeTractsThread(self.trk_inp, affine_vtk,
-                                                                 self.coord_tracts_queue, self.tracts_queue,
-                                                                 self.event, self.sleep_nav))
+                        jobs_list.append(dti.ComputeTractsThread(self.trk_inp, self.coord_tracts_queue,
+                                                                 self.tracts_queue, self.event, self.sleep_nav))
 
                     jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
                                                            self.event, self.sleep_nav))
@@ -1722,6 +1731,7 @@ class TractographyPanel(wx.Panel):
         self.nav_status = nav_status
 
     def OnLinkBrain(self, event=None):
+
         Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_MASK)
@@ -1734,7 +1744,10 @@ class TractographyPanel(wx.Panel):
 
         if not self.affine_vtk:
             slic = sl.Slice()
-            self.affine = slic.affine
+            prj_data = prj.Project()
+            matrix_shape = tuple(prj_data.matrix_shape)
+            self.affine = slic.affine.copy()
+            self.affine[1, -1] -= matrix_shape[1]
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
         try:
@@ -1763,9 +1776,17 @@ class TractographyPanel(wx.Panel):
         # FOD_path = 'Baran_FOD.nii'
         # filename = os.path.join(data_dir, FOD_path)
 
+        # if not self.affine_vtk:
+        #     slic = sl.Slice()
+        #     self.affine = slic.affine
+        #     self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+
         if not self.affine_vtk:
             slic = sl.Slice()
-            self.affine = slic.affine
+            prj_data = prj.Project()
+            matrix_shape = tuple(prj_data.matrix_shape)
+            self.affine = slic.affine.copy()
+            self.affine[1, -1] -= matrix_shape[1]
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
         # try:
@@ -1801,9 +1822,16 @@ class TractographyPanel(wx.Panel):
         act_data.update_header()
         act_data_arr = act_data.get_fdata()
 
-        slic = sl.Slice()
+        if not self.affine_vtk:
+            slic = sl.Slice()
+            prj_data = prj.Project()
+            matrix_shape = tuple(prj_data.matrix_shape)
+            self.affine = slic.affine.copy()
+            self.affine[1, -1] -= matrix_shape[1]
+            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        Publisher.sendMessage('Create grid', data=act_data_arr, affine=slic.affine)
+        Publisher.sendMessage('Update ACT data', data=act_data_arr)
+        Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
         # Publisher.sendMessage('Update number of threads', data=n_threads)
         # Publisher.sendMessage('Update tracts visualization', data=1)
         # Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))

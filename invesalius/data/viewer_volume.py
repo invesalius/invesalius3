@@ -55,7 +55,6 @@ else:
     _has_win32api = False
 
 import invesalius.data.imagedata_utils as imu
-import nibabel as nb
 
 PROP_MEASURE = 0.8
 
@@ -196,19 +195,9 @@ class Viewer(wx.Panel):
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
 
-        # for DTI support tests
-        # self.ntimes = False
-        # self._to_show_stream = True
-        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
-        # nii_path = b'sub-P0_dwi_FOD.nii'
-        # trk_path = os.path.join(data_dir, nii_path)
-        # self.tracker_FOD = Trekker.tracker(trk_path)
-        # proj = prj.Project()
-        # self.affine = np.identity(4)
         self.actor_tracts = None
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
-        # Publisher.sendMessage('Get affine matrix')
 
         # initialize Trekker parameters
         slic = sl.Slice()
@@ -579,6 +568,9 @@ class Viewer(wx.Panel):
         print("Creating grid")
 
         coord_list_w = imu.create_grid()
+        prj_data = prj.Project()
+        matrix_shape = tuple(prj_data.matrix_shape)
+        img_shift = matrix_shape[1]
 
         pos = [40.17, 152.28, 235.78, -18.22, -25.27, 64.99]
         pos[1] = -pos[1]
@@ -590,12 +582,12 @@ class Viewer(wx.Panel):
         # apply the coil transformation matrix
         coord_list_w_tr = m_coil @ coord_list_w
         # convert to int so coordinates can be used as indices in the MRI image space
-        coord_list_w_tr_mri = coord_list_w_tr[:3, :].T.astype(int) + np.array([[0, 255, 0]])
+        coord_list_w_tr_mri = coord_list_w_tr[:3, :].T.astype(int) + np.array([[0, img_shift, 0]])
         coord_list_w_tr_inv = coord_list_w_tr[:3, :].T.astype(int)
+        coord_list_w_tr_inv_0 = coord_list_w[:3, :].T.astype(int)
 
-        for n in coord_list_w_tr_inv.tolist():
-            mark_actor = self.add_marker(n, color=[1., 1., 1.])
-            self.ren.AddActor(mark_actor)
+        actor_grid = self.create_actor_grid(coord_list_w_tr_inv_0, m_coil)
+        self.ren.AddActor(actor_grid)
 
         # extract the first occurrence of a specific label from the MRI image
         labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
@@ -603,17 +595,42 @@ class Viewer(wx.Panel):
         if labs[lab_first] == 1:
             pt_found = coord_list_w_tr_mri[lab_first, :]
             # convert coordinate back to invesalius 3D space
-            pt_found_inv = pt_found - np.array([0., 255., 0.])
+            pt_found_inv = pt_found - np.array([0., img_shift, 0.])
             # _ = add_marker(pt_found, ren, [0., 0., 1.], radius=1)
             mark_actor = self.add_marker(pt_found_inv, color=[0., 1., 1.])
             self.ren.AddActor(mark_actor)
 
         # convert to world coordinate space to use as seed for fiber tracking
-        # pt_found_tr = np.append(pt_found, 1)[np.newaxis, :].T
-        # pt_found_tr = affine @ pt_found_tr
-        # pt_found_tr = pt_found_tr[:3, 0, np.newaxis].T
+        pt_found_tr = np.append(pt_found_inv, 1)[np.newaxis, :].T
+        # default affine in invesalius is actually the affine inverse
+        pt_found_tr = np.linalg.inv(affine) @ pt_found_tr
+        pt_found_tr = pt_found_tr[:3, 0, np.newaxis].T
+        print("pt_found_tr: {}".format(pt_found_tr))
 
         self.Refresh()
+
+    def create_actor_grid(self, coord_list_w_tr_inv_0, m_coil):
+        branch = vtk.vtkMultiBlockDataSet()
+        m_coil_vtk = vtku.numpy_to_vtkMatrix4x4(m_coil)
+        for n, center in enumerate(coord_list_w_tr_inv_0.tolist()):
+            ball_ref = vtk.vtkSphereSource()
+            ball_ref.SetRadius(1)
+            ball_ref.SetCenter(center)
+            ball_ref.Update()
+
+            # mark_actors.append(self.add_marker(n, color=[1., 1., 1.]))
+            # for n, tube in enumerate(mark_actors):
+            branch.SetBlock(n, ball_ref.GetOutput())
+
+        mapper = vtk.vtkCompositePolyDataMapper2()
+        mapper.SetInputDataObject(branch)
+
+        actor_grid = vtk.vtkActor()
+        actor_grid.SetMapper(mapper)
+        actor_grid.SetUserMatrix(m_coil_vtk)
+        actor_grid.GetProperty().SetOpacity(.5)
+
+        return actor_grid
 
     def AddMarker(self, ball_id, size, colour, coord):
         """

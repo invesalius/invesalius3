@@ -34,6 +34,8 @@ import vtk
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as img_utils
 
+import invesalius.project as prj
+
 # Nice print for arrays
 # np.set_printoptions(precision=2)
 # np.set_printoptions(suppress=True)
@@ -222,7 +224,7 @@ def tracts_computation_branch(trk_list):
 
 class ComputeTractsThread(threading.Thread):
 
-    def __init__(self, inp, affine_vtk, coord_tracts_queue, tracts_queue, event, sle):
+    def __init__(self, inp, coord_tracts_queue, tracts_queue, event, sle):
         """Class (threading) to compute real time tractography data for visualization.
 
         Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
@@ -249,17 +251,22 @@ class ComputeTractsThread(threading.Thread):
 
         threading.Thread.__init__(self, name='ComputeTractsThread')
         self.inp = inp
-        self.affine_vtk = affine_vtk
         # self.coord_queue = coord_queue
         self.coord_tracts_queue = coord_tracts_queue
         self.tracts_queue = tracts_queue
+        self.coord_list_w = img_utils.create_grid()
         # self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
 
+        # prj_data = prj.Project()
+        # matrix_shape = tuple(prj_data.matrix_shape)
+        # self.img_shift = matrix_shape[1]
+
     def run(self):
 
-        trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
+        # trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
+        trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
 
         # n_threads = n_tracts_total
         p_old = np.array([[0., 0., 0.]])
@@ -282,8 +289,15 @@ class ComputeTractsThread(threading.Thread):
                 # m_img_flip = m_img.copy()
                 # m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                # translate the coordinate along the normal vector of the object/coil
-                coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+                try:
+                    coord_list_w_tr = m_img_flip @ self.coord_list_w
+                    coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
+                    print("ha")
+                except:
+                    # translate the coordinate along the normal vector of the object/coil
+                    # apply the coil transformation matrix
+                    coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+
                 # coord_offset = np.array([[27.53, -77.37, 46.42]])
                 dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
                 p_old = coord_offset.copy()
@@ -291,6 +305,7 @@ class ComputeTractsThread(threading.Thread):
                 # print("p_new_shape", coord_offset.shape)
                 # print("m_img_flip_shape", m_img_flip.shape)
                 seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
+                print("seed_trk: ", seed_trk)
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
@@ -334,7 +349,7 @@ class ComputeTractsThread(threading.Thread):
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
                 # self.visualization_queue.put_nowait([coord, m_img, bundle])
-                self.tracts_queue.put_nowait((bundle, self.affine_vtk, coord_offset))
+                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset))
                 # print('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_tracts_queue.task_done()
@@ -469,3 +484,24 @@ def set_trekker_parameters(trekker, params):
     trekker.numberOfThreads(n_threads)
     # print("Trekker config updated: n_threads, {}; seed_max, {}".format(n_threads, params['seed_max']))
     return trekker, n_threads
+
+
+def grid_offset(data, coord_list_w_tr, img_shift):
+    # convert to int so coordinates can be used as indices in the MRI image space
+    coord_list_w_tr_mri = coord_list_w_tr[:3, :].T.astype(int) + np.array([[0, img_shift, 0]])
+
+    # extract the first occurrence of a specific label from the MRI image
+    labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
+    lab_first = np.argmax(labs == 1)
+    if labs[lab_first] == 1:
+        pt_found = coord_list_w_tr_mri[lab_first, :]
+        # convert coordinate back to invesalius 3D space
+        pt_found_inv = pt_found - np.array([0., img_shift, 0.])
+
+    # # convert to world coordinate space to use as seed for fiber tracking
+    # pt_found_tr = np.append(pt_found, 1)[np.newaxis, :].T
+    # # default affine in invesalius is actually the affine inverse
+    # pt_found_tr = np.linalg.inv(affine) @ pt_found_tr
+    # pt_found_tr = pt_found_tr[:3, 0, np.newaxis].T
+
+    return pt_found_inv
