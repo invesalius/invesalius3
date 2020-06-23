@@ -18,12 +18,13 @@
 #--------------------------------------------------------------------------
 
 from functools import partial
-import sys
-import os
+# import os
 import queue
-# import psutil
+import sys
+import threading
 
 import numpy as np
+# import Trekker
 import wx
 
 try:
@@ -33,37 +34,25 @@ except ImportError:
     import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
+import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
 from pubsub import pub as Publisher
-import wx.lib.colourselect as csel
-# import wx.lib.platebtn as pbtn
+from time import sleep
 
-# from math import cos, sin, pi
-from time import sleep, time
-
-import invesalius.data.transformations as tr
 import invesalius.constants as const
 import invesalius.data.bases as db
+# import invesalius.data.brainmesh_handler as brain
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.slice_ as sl
 import invesalius.data.trackers as dt
+import invesalius.data.tractography as dti
+import invesalius.data.transformations as tr
 import invesalius.data.trigger as trig
 import invesalius.data.record_coords as rec
+import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 from invesalius import utils
-
-import invesalius.data.slice_ as sl
-import invesalius.data.vtk_utils as vtk_utils
-# import invesalius.reader.others_reader as oth
-# import vtk
-import Trekker
-import invesalius.data.brainmesh_handler as brain
-# import concurrent.futures
-# import queue
-import threading
-
-# import invesalius.data.trekker_nothread as dti
-import invesalius.data.tractography as dti
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -190,6 +179,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
                                       leftSpacing=0, rightSpacing=0)
+        item.Hide()
 
         # Fold 5 - DBS
         self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
