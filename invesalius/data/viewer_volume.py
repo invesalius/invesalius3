@@ -19,7 +19,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-# from math import cos, sin
 import os
 import sys
 import time
@@ -54,6 +53,9 @@ if sys.platform == 'win32':
         _has_win32api = False
 else:
     _has_win32api = False
+
+import invesalius.data.imagedata_utils as imu
+import nibabel as nb
 
 PROP_MEASURE = 0.8
 
@@ -320,6 +322,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateMarkerOffsetPosition, 'Update marker offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
 
+        Publisher.subscribe(self.CreateGrid, 'Create grid')
+
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
 
@@ -571,12 +575,53 @@ class Viewer(wx.Panel):
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
 
+    def CreateGrid(self, data, affine):
+        print("Creating grid")
+
+        coord_list_w = imu.create_grid()
+
+        pos = [40.17, 152.28, 235.78, -18.22, -25.27, 64.99]
+        pos[1] = -pos[1]
+        a, b, g = np.radians(pos[3:])
+        r_ref = tr.euler_matrix(a, b, g, 'sxyz')
+        t_ref = tr.translation_matrix(pos[:3])
+        m_coil = tr.concatenate_matrices(t_ref, r_ref)
+
+        # apply the coil transformation matrix
+        coord_list_w_tr = m_coil @ coord_list_w
+        # convert to int so coordinates can be used as indices in the MRI image space
+        coord_list_w_tr_mri = coord_list_w_tr[:3, :].T.astype(int) + np.array([[0, 255, 0]])
+        coord_list_w_tr_inv = coord_list_w_tr[:3, :].T.astype(int)
+
+        for n in coord_list_w_tr_inv.tolist():
+            mark_actor = self.add_marker(n, color=[1., 1., 1.])
+            self.ren.AddActor(mark_actor)
+
+        # extract the first occurrence of a specific label from the MRI image
+        labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
+        lab_first = np.argmax(labs == 1)
+        if labs[lab_first] == 1:
+            pt_found = coord_list_w_tr_mri[lab_first, :]
+            # convert coordinate back to invesalius 3D space
+            pt_found_inv = pt_found - np.array([0., 255., 0.])
+            # _ = add_marker(pt_found, ren, [0., 0., 1.], radius=1)
+            mark_actor = self.add_marker(pt_found_inv, color=[0., 1., 1.])
+            self.ren.AddActor(mark_actor)
+
+        # convert to world coordinate space to use as seed for fiber tracking
+        # pt_found_tr = np.append(pt_found, 1)[np.newaxis, :].T
+        # pt_found_tr = affine @ pt_found_tr
+        # pt_found_tr = pt_found_tr[:3, 0, np.newaxis].T
+
+        self.Refresh()
+
     def AddMarker(self, ball_id, size, colour, coord):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
         self.ball_id = ball_id
-        coord_flip = bases.flip_x_m(coord)[:3, 0]
+        coord_flip = list(coord)
+        coord_flip[1] = -coord_flip[1]
 
         ball_ref = vtk.vtkSphereSource()
         ball_ref.SetRadius(size)
@@ -1199,13 +1244,10 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.ball_actor)
 
     def UpdateCameraBallPosition(self, arg, position):
-        coord_flip = bases.flip_x_m(position[:3])[:3, 0]
+        coord_flip = list(position[:3])
+        coord_flip[1] = -coord_flip[1]
         self.ball_actor.SetPosition(coord_flip)
         self.SetVolumeCamera(coord_flip)
-
-    def SetBallReferencePosition(self, position):
-        coord_flip = bases.flip_x_m(position[:3])[:3, 0]
-        self.ball_actor.SetPosition(coord_flip)
 
     def CreateObjectPolyData(self, filename):
         """
