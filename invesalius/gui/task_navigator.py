@@ -24,7 +24,7 @@ import sys
 import threading
 
 import numpy as np
-# import Trekker
+import Trekker
 import wx
 
 try:
@@ -41,7 +41,7 @@ from time import sleep
 
 import invesalius.constants as const
 import invesalius.data.bases as db
-# import invesalius.data.brainmesh_handler as brain
+import invesalius.data.brainmesh_handler as brain
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.slice_ as sl
@@ -179,7 +179,6 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
                                       leftSpacing=0, rightSpacing=0)
-        item.Hide()
 
         # Fold 5 - DBS
         self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
