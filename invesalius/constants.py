@@ -529,6 +529,7 @@ ID_MANUAL_WWWL = wx.NewId()
 ID_TREKKER_MASK = wx.NewId()
 ID_TREKKER_IMG = wx.NewId()
 ID_TREKKER_FOD = wx.NewId()
+ID_TREKKER_ACT = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

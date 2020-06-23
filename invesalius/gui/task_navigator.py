@@ -1510,14 +1510,6 @@ class TractographyPanel(wx.Panel):
         self.SetAutoLayout(1)
         self.__bind_events()
 
-        # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load brain visualization"))
-        btn_mask = wx.Button(self, -1, _("Load brain"), size=wx.Size(65, 23))
-        btn_mask.SetToolTip(tooltip)
-        btn_mask.Enable(1)
-        btn_mask.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
-        # self.btn_new = btn_new
-
         # Button for import config coil file
         tooltip = wx.ToolTip(_("Load FOD"))
         btn_load = wx.Button(self, -1, _("Load FOD"), size=wx.Size(65, 23))
@@ -1534,11 +1526,28 @@ class TractographyPanel(wx.Panel):
         btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
         # self.btn_load_cfg = btn_load_cfg
 
+        # Button for creating new coil
+        tooltip = wx.ToolTip(_("Load brain visualization"))
+        btn_mask = wx.Button(self, -1, _("Load brain"), size=wx.Size(65, 23))
+        btn_mask.SetToolTip(tooltip)
+        btn_mask.Enable(1)
+        btn_mask.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
+        # self.btn_new = btn_new
+
+        # Button for creating new coil
+        tooltip = wx.ToolTip(_("Load anatomical labels"))
+        btn_act = wx.Button(self, -1, _("Load ACT"), size=wx.Size(65, 23))
+        btn_act.SetToolTip(tooltip)
+        btn_act.Enable(1)
+        btn_act.Bind(wx.EVT_BUTTON, self.OnLoadACT)
+        # self.btn_new = btn_new
+
         # Create a horizontal sizer to represent button save
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_btns.Add(btn_load_cfg, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_btns.Add(btn_mask, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
 
         # Change peeling depth
         text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
@@ -1776,6 +1785,31 @@ class TractographyPanel(wx.Panel):
 
         Publisher.sendMessage('End busy cursor')
 
+    def OnLoadACT(self, event=None):
+        import os
+        import nibabel as nb
+        # Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+        # Publisher.sendMessage('Begin busy cursor')
+        # filename = dlg.ShowImportOtherFilesDialog(const.ID_TREKKER_ACT)
+        # Baran
+        data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
+        act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
+        filename = os.path.join(data_dir, act_path)
+
+        act_data = nb.squeeze_image(nb.load(filename))
+        act_data = nb.as_closest_canonical(act_data)
+        act_data.update_header()
+        act_data_arr = act_data.get_fdata()
+
+        slic = sl.Slice()
+
+        Publisher.sendMessage('Create grid', data=act_data_arr, affine=slic.affine)
+        # Publisher.sendMessage('Update number of threads', data=n_threads)
+        # Publisher.sendMessage('Update tracts visualization', data=1)
+        # Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
+
+        # Publisher.sendMessage('End busy cursor')
+
     def OnLoadParameters(self, event=None):
         import json
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load Trekker configuration"),
@@ -1815,7 +1849,8 @@ class TractographyPanel(wx.Panel):
         # pass
         if self.view_tracts and not self.nav_status:
             # print("Running during navigation")
-            coord_flip = db.flip_x_m(position[:3])[:3, 0]
+            coord_flip = list(position[:3])
+            coord_flip[1] = -coord_flip[1]
             dti.compute_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
                                self.n_tracts)
 

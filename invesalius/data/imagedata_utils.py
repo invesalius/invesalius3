@@ -582,3 +582,20 @@ def convert_world_to_voxel(xyz, affine):
     ijk = ijk_homo.T[np.newaxis, 0, :3]
 
     return ijk
+
+
+def create_grid():
+    x = np.arange(-4, 5, 2)
+    y = np.arange(-4, 5, 2)
+    z = 10 + np.arange(0, 31, 3)
+    xv, yv, zv = np.meshgrid(x, y, - z)
+    coord_grid = np.array([xv, yv, zv])
+    # create grid of points
+    grid_number = x.shape[0]*y.shape[0]*z.shape[0]
+    coord_grid = coord_grid.reshape([3, grid_number]).T
+    # sort grid from distance to the origin/coil center
+    coord_list = coord_grid[np.argsort(np.linalg.norm(coord_grid, axis=1)), :]
+    # make the coordinates homogeneous
+    coord_list_w = np.append(coord_list.T, np.ones([1, grid_number]), axis=0)
+
+    return coord_list_w

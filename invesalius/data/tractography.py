@@ -260,10 +260,10 @@ class ComputeTractsThread(threading.Thread):
     def run(self):
 
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
+
         # n_threads = n_tracts_total
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
-
         # Compute the tracts
         # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
