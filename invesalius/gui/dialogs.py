@@ -242,9 +242,7 @@ WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" \
 WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" \
                    "All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii)|*.nii|" \
-                 "Compressed NIfTI (*.nii.gz)|*.nii.gz|" \
-                 "HDR NIfTI (*.hdr)|*.hdr|" \
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" \
                  "All files (*.*)|*.*"
 #".[jJ][pP][gG]"
 WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" \
