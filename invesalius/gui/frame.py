@@ -259,6 +259,8 @@ class Frame(wx.Frame):
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
 
+        self.Layout()
+
     def _BeginBusyCursor(self):
         """
         Start busy cursor.
