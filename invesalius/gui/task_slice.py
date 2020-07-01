@@ -423,6 +423,7 @@ class InnerFoldPanel(wx.Panel):
         try:
             _id = panel_seg_id[panel_id]
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(_id))
+            self.Layout()
         except KeyError:
             pass
 
