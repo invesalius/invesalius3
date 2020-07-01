@@ -102,13 +102,13 @@ class ContourMIPConfig(wx.Panel):
         self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(txt_mip_size, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0)
         try:
             sizer.Add(10, 0)
         except TypeError:
             sizer.Add((10, 0))
-        sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.txt_mip_border, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
         try:
             sizer.Add(10, 0)
