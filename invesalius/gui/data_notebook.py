@@ -542,13 +542,13 @@ class MasksListCtrlPanel(InvListCtrl):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -556,7 +556,7 @@ class MasksListCtrlPanel(InvListCtrl):
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnEditLabel(self, evt):
         if not evt.IsEditCancelled():
@@ -872,13 +872,13 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -886,7 +886,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -1113,13 +1113,13 @@ class MeasuresListCtrlPanel(InvListCtrl):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -1127,7 +1127,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -1278,19 +1278,19 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)

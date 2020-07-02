@@ -1943,11 +1943,11 @@ class LayoutToolBar(AuiToolBar):
         d = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only_original.gif")
-            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_data_only_original.png")
+            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "layout_full_original.gif")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_full_original.png")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
             # Bitmaps for show/hide task item
             p = os.path.join(d, "text_inverted_original.png")
@@ -1958,11 +1958,11 @@ class LayoutToolBar(AuiToolBar):
 
         else:
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only.gif")
-            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_data_only.png")
+            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "layout_full.gif")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_full.png")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
             # Bitmaps for show/hide task item
             p = os.path.join(d, "text_inverted.png")

@@ -689,11 +689,11 @@ class EditionTools(wx.Panel):
         ## LINE 2
         menu = wx.Menu()
 
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
         item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
@@ -804,8 +804,8 @@ class EditionTools(wx.Panel):
                                   threshold_range=(thresh_min, thresh_max))
 
     def OnMenu(self, evt):
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
 
         brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
                  MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}
@@ -853,11 +853,11 @@ class WatershedTool(EditionTools):
         ## LINE 2
         menu = wx.Menu()
 
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
         item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
@@ -974,8 +974,8 @@ class WatershedTool(EditionTools):
         self.gradient_thresh.SetMaxValue(thresh_max)
 
     def OnMenu(self, evt):
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
 
         brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
                  MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}
