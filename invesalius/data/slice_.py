@@ -350,6 +350,8 @@ class Slice(metaclass=utils.Singleton):
             self.SetMaskEditionThreshold(index, threshold_range)
 
     def __set_current_mask_threshold(self, threshold_range):
+        if self.current_mask is None:
+            return
         index = self.current_mask.index
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
@@ -390,6 +392,8 @@ class Slice(metaclass=utils.Singleton):
             Publisher.sendMessage("Reload actual slice")
 
     def __set_current_mask_threshold_actual_slice(self, threshold_range):
+        if self.current_mask is None:
+            return
         index = self.current_mask.index
         for orientation in self.buffer_slices:
             self.buffer_slices[orientation].discard_vtk_mask()
