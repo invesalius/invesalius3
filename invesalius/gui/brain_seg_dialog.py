@@ -81,6 +81,8 @@ class BrainSegmenterDialog(wx.Dialog):
         self.txt_threshold.SetMinClientSize((w, -1))
         self.chk_new_mask = wx.CheckBox(self, wx.ID_ANY, _("Create new mask"))
         self.chk_new_mask.SetValue(True)
+        self.chk_apply_wwwl = wx.CheckBox(self, wx.ID_ANY, _("Apply WW&WL"))
+        self.chk_apply_wwwl.SetValue(False)
         self.progress = wx.Gauge(self, -1)
         self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
         self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
@@ -120,6 +122,7 @@ class BrainSegmenterDialog(wx.Dialog):
         )
         sizer_3.Add(self.txt_threshold, 0, wx.ALL, 5)
         main_sizer.Add(sizer_3, 0, wx.EXPAND, 0)
+        main_sizer.Add(self.chk_apply_wwwl, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(self.chk_new_mask, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
         time_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -216,6 +219,7 @@ class BrainSegmenterDialog(wx.Dialog):
             device_id = self.plaidml_devices[self.cb_devices.GetValue()]
         except (KeyError, AttributeError):
             device_id = "llvm_cpu.0"
+        apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
@@ -224,8 +228,11 @@ class BrainSegmenterDialog(wx.Dialog):
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
 
+        window_width = slc.Slice().window_width
+        window_level = slc.Slice().window_level
+
         try:
-            self.ps = segment.SegmentProcess(image, create_new_mask, backend, device_id, use_gpu)
+            self.ps = segment.SegmentProcess(image, create_new_mask, backend, device_id, use_gpu, apply_wwwl, window_width, window_level)
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
             self.OnStop(None)
