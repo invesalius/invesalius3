@@ -82,15 +82,15 @@ def SelectLargerDicomGroup(patient_group):
 def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
-    if (dicom.image.orientation_label != "CORONAL"):
-        ##Organize reversed image
-        sorter = gdcm.IPPSorter()
-        sorter.SetComputeZSpacing(True)
-        sorter.SetZSpacingTolerance(1e-10)
-        sorter.Sort(filelist)
+    # if (dicom.image.orientation_label != "CORONAL"):
+    ##Organize reversed image
+    sorter = gdcm.IPPSorter()
+    sorter.SetComputeZSpacing(True)
+    sorter.SetZSpacingTolerance(1e-10)
+    sorter.Sort(filelist)
 
-        #Getting organized image
-        filelist = sorter.GetFilenames()
+    #Getting organized image
+    filelist = sorter.GetFilenames()
 
     return filelist
 

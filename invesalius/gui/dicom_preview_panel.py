@@ -789,8 +789,8 @@ class SingleImagePreview(wx.Panel):
         in_sizer.Add(checkbox, 0)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.panel, 20, wx.GROW|wx.EXPAND)
-        sizer.Add(in_sizer, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(self.panel, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(in_sizer, 0, wx.GROW|wx.EXPAND)
         sizer.Fit(self)
 
         self.SetSizer(sizer)

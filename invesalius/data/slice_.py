@@ -301,7 +301,10 @@ class Slice(metaclass=utils.Singleton):
 
         for name in self.aux_matrices:
             m = self.aux_matrices[name]
-            f = m.filename
+            try:
+                f = m.filename
+            except AttributeError:
+                continue
             m._mmap.close()
             m = None
             os.remove(f)
@@ -347,6 +350,8 @@ class Slice(metaclass=utils.Singleton):
             self.SetMaskEditionThreshold(index, threshold_range)
 
     def __set_current_mask_threshold(self, threshold_range):
+        if self.current_mask is None:
+            return
         index = self.current_mask.index
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
@@ -387,6 +392,8 @@ class Slice(metaclass=utils.Singleton):
             Publisher.sendMessage("Reload actual slice")
 
     def __set_current_mask_threshold_actual_slice(self, threshold_range):
+        if self.current_mask is None:
+            return
         index = self.current_mask.index
         for orientation in self.buffer_slices:
             self.buffer_slices[orientation].discard_vtk_mask()
@@ -624,7 +631,7 @@ class Slice(metaclass=utils.Singleton):
             self.buffer_slices[orientation].vtk_image = image
             self.buffer_slices[orientation].vtk_mask = mask
 
-        if self.to_show_aux == "watershed" and self.current_mask.is_shown:
+        if self.to_show_aux == "watershed" and self.current_mask is not None and self.current_mask.is_shown:
             m = self.get_aux_slice("watershed", orientation, slice_number)
             tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
             cimage = self.do_custom_colour(

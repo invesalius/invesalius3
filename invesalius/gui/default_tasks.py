@@ -123,6 +123,7 @@ class Panel(wx.Panel):
 
         #self.SetSizerAndFit(sizer)
         self.SetSizer(sizer)
+        self.Layout()
 
 
 # Lower fold panel

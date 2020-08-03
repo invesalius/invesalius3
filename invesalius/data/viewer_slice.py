@@ -102,13 +102,13 @@ class ContourMIPConfig(wx.Panel):
         self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(txt_mip_size, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0)
         try:
             sizer.Add(10, 0)
         except TypeError:
             sizer.Add((10, 0))
-        sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.txt_mip_border, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
         try:
             sizer.Add(10, 0)
@@ -1438,8 +1438,12 @@ class Viewer(wx.Panel):
             index = max_slice_number - 1
         inverted = self.mip_ctrls.inverted.GetValue()
         border_size = self.mip_ctrls.border_spin.GetValue()
-        image = self.slice_.GetSlices(self.orientation, index,
-                                      self.number_slices, inverted, border_size)
+        try:
+            image = self.slice_.GetSlices(self.orientation, index,
+                                          self.number_slices, inverted,
+                                          border_size)
+        except IndexError:
+            return
         self.slice_data.actor.SetInputData(image)
         for actor in self.actors_by_slice_number[self.slice_data.number]:
             self.slice_data.renderer.RemoveActor(actor)

@@ -104,7 +104,7 @@ class InnerPanel(wx.Panel):
 
         inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
         inner_sizer.Add(btnsizer, 0, wx.LEFT|wx.TOP, 5)
-        inner_sizer.Add(self.combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        inner_sizer.Add(self.combo_interval, 0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         panel.SetSizer(inner_sizer)
         inner_sizer.Fit(panel)
 

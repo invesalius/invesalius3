@@ -20,6 +20,17 @@ SIZE = 48
 OVERLAP = SIZE // 2 + 1
 
 
+def get_LUT_value(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
+    data.shape = shape
+    return data
+
+
 def gen_patches(image, patch_size, overlap):
     sz, sy, sx = image.shape
     i_cuts = list(
@@ -63,8 +74,10 @@ def brain_segment(image, probability_array, comm_array):
         model = keras.models.model_from_json(json_file.read())
     model.load_weights(str(folder.joinpath("model.h5")))
     model.compile("Adam", "binary_crossentropy")
+    
+    keras.utils.plot_model(model, "model.png", show_shapes=True, show_layer_names=True)
 
-    image = imagedata_utils.image_normalize(image, 0.0, 1.0)
+    image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
     for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
@@ -80,7 +93,7 @@ def brain_segment(image, probability_array, comm_array):
 
 ctx = multiprocessing.get_context('spawn')
 class SegmentProcess(ctx.Process):
-    def __init__(self, image, create_new_mask, backend, device_id, use_gpu):
+    def __init__(self, image, create_new_mask, backend, device_id, use_gpu, apply_wwwl=False, window_width=255, window_level=127):
         multiprocessing.Process.__init__(self)
 
         self._image_filename = image.filename
@@ -102,6 +115,10 @@ class SegmentProcess(ctx.Process):
         self.device_id = device_id
         self.use_gpu = use_gpu
 
+        self.apply_wwwl = apply_wwwl
+        self.window_width = window_width
+        self.window_level = window_level
+
         self._pconn, self._cconn = multiprocessing.Pipe()
         self._exception = None
 
@@ -122,6 +139,12 @@ class SegmentProcess(ctx.Process):
             shape=self._image_shape,
             mode="r",
         )
+
+        print(image.min(), image.max())
+        if self.apply_segment_threshold:
+            print("Applying window level")
+            image = get_LUT_value(image, self.window_width, self.window_level)
+
         probability_array = np.memmap(
             self._prob_array_filename,
             dtype=np.float32,

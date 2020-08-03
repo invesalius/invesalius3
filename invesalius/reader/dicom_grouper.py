@@ -130,23 +130,23 @@ class DicomGroup:
         else:
             filelist = [dicom.image.file for dicom in
                         self.slices_dict.values()]
-       
+
         # Sort slices using GDCM
-        if (self.dicom.image.orientation_label != "CORONAL"):
-            #Organize reversed image
-            sorter = gdcm.IPPSorter()
-            sorter.SetComputeZSpacing(True)
-            sorter.SetZSpacingTolerance(1e-10)
-            try:
-                sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
-            except TypeError:
-                sorter.Sort(filelist)
-            filelist = sorter.GetFilenames()
+        #if (self.dicom.image.orientation_label != "CORONAL"):
+        #Organize reversed image
+        sorter = gdcm.IPPSorter()
+        sorter.SetComputeZSpacing(True)
+        sorter.SetZSpacingTolerance(1e-10)
+        try:
+            sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
+        except TypeError:
+            sorter.Sort(filelist)
+        filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)
         if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
             filelist.sort()
-        
+
         return filelist
 
     def GetHandSortedList(self):

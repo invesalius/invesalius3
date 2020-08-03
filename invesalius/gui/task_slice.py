@@ -141,7 +141,7 @@ class InnerTaskPanel(wx.Panel):
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(check_box, 0, wx.ALIGN_LEFT|wx.RIGHT|wx.LEFT, 5)
-        line_sizer.Add(next_btn_sizer, 1, wx.EXPAND|wx.ALIGN_RIGHT|wx.RIGHT|wx.LEFT, 5)
+        line_sizer.Add(next_btn_sizer, 1, wx.EXPAND|wx.RIGHT|wx.LEFT, 5)
         line_sizer.Fit(self)
 
         # Add line sizers into main sizer
@@ -423,6 +423,7 @@ class InnerFoldPanel(wx.Panel):
         try:
             _id = panel_seg_id[panel_id]
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(_id))
+            self.Layout()
         except KeyError:
             pass
 
@@ -688,11 +689,11 @@ class EditionTools(wx.Panel):
         ## LINE 2
         menu = wx.Menu()
 
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
         item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
@@ -803,8 +804,8 @@ class EditionTools(wx.Panel):
                                   threshold_range=(thresh_min, thresh_max))
 
     def OnMenu(self, evt):
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
 
         brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
                  MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}
@@ -852,11 +853,11 @@ class WatershedTool(EditionTools):
         ## LINE 2
         menu = wx.Menu()
 
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
         item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
         item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
@@ -973,8 +974,8 @@ class WatershedTool(EditionTools):
         self.gradient_thresh.SetMaxValue(thresh_max)
 
     def OnMenu(self, evt):
-        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.jpg"), wx.BITMAP_TYPE_JPEG)
+        SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
+        CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
 
         brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
                  MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}

@@ -214,7 +214,7 @@ class Frame(wx.Frame):
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
         # compared to linux2 & darwin
-        if sys.platform == 'win32':
+        if sys.platform == 'win32' or wx.VERSION >= (4, 1):
             t1 = ProjectToolBar(self)
             t2 = HistoryToolBar(self)
             t3 = LayoutToolBar(self)
@@ -258,6 +258,8 @@ class Frame(wx.Frame):
 
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
+
+        self.Layout()
 
     def _BeginBusyCursor(self):
         """
@@ -1941,11 +1943,11 @@ class LayoutToolBar(AuiToolBar):
         d = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only_original.gif")
-            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_data_only_original.png")
+            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "layout_full_original.gif")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_full_original.png")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
             # Bitmaps for show/hide task item
             p = os.path.join(d, "text_inverted_original.png")
@@ -1956,11 +1958,11 @@ class LayoutToolBar(AuiToolBar):
 
         else:
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only.gif")
-            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_data_only.png")
+            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "layout_full.gif")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_GIF)
+            p = os.path.join(d, "layout_full.png")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
             # Bitmaps for show/hide task item
             p = os.path.join(d, "text_inverted.png")

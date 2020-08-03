@@ -71,8 +71,8 @@ class ComboBoxLanguage:
         self.bitmapCmb = bitmapCmb = BitmapComboBox(parent, style=wx.CB_READONLY)
         for key in self.locales_key:
             # Based on composed flag filename, get bitmap
-            filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
-            bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_BMP)
+            filepath =  os.path.join(ICON_DIR, "%s.png" % (key))
+            bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_PNG)
             # Add bitmap and info to Combo
             bitmapCmb.Append(dict_locales[key], bmp, key)
             # Set default combo item if available on the list
@@ -123,8 +123,8 @@ class LanguageDialog(wx.Dialog):
     #    self.bitmapCmb = bitmapCmb = BitmapComboBox(self, style=wx.CB_READONLY)
     #    for key in self.locales_key:
     #        # Based on composed flag filename, get bitmap
-    #        filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
-    #        bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_BMP)
+    #        filepath =  os.path.join(ICON_DIR, "%s.png"%(key))
+    #        bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_PNG)
     #        # Add bitmap and info to Combo
     #        bitmapCmb.Append(dict_locales[key], bmp, key)
     #        # Set default combo item if available on the list

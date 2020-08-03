@@ -351,18 +351,89 @@ class ButtonControlPanel(wx.Panel):
         else:
            dlg.MaskSelectionRequiredForDuplication()
 
-class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
 
+class InvListCtrl(wx.ListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        self.__bind_events_wx()
 
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnClickItem)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
 
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
+    def CreateColourBitmap(self, colour):
+        """
+        Create a wx Image with a mask colour.
+        colour: colour in rgb format(0 - 1)
+        """
+        image = self.image_gray
+        new_image = Image.new("RGB", image.size)
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
+                pixel_colour = [int(i*image.getpixel((x,y)))
+                                for i in colour]
+                new_image.putpixel((x,y), tuple(pixel_colour))
+
+        wx_image = wx.Image(new_image.size[0],
+                            new_image.size[1])
+        try:
+            wx_image.SetData(new_image.tostring())
+        except Exception:
+            wx_image.SetData(new_image.tobytes())
+        return wx.Bitmap(wx_image.Scale(16, 16))
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 0:
+                self._click_check = True
+                item = self.GetItem(item_idx, 0)
+                flag = not bool(item.GetImage())
+                self.SetItemImage(item_idx, int(flag))
+                self.OnCheckItem(item_idx, flag)
+                return
+        evt.Skip()
+
+    def OnDblClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = (self.HitTest(evt.GetPosition()))
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 1:
+                item = self.GetItem(item_idx, 1)
+                self.enter_edition(item)
+                return
+        evt.Skip()
+
+    def enter_edition(self, item):
+        ctrl = self.EditLabel(item.GetId())
+        w, h = ctrl.GetClientSize()
+        w = self.GetColumnWidth(1)
+        ctrl.SetClientSize(w, h)
+        ctrl.SetValue(item.GetText())
+        ctrl.SelectAll()
+
+
+    def get_column_clicked(self, position):
+        epx, epy = position
+        wpx, wpy = self.GetPosition()
+        width_sum = 0
+        for i in range(self.GetColumnCount()):
+            width_sum += self.GetColumnWidth(i)
+            if (epx - wpx) <= width_sum:
+                return i
+        return -1
+
+
+
+class MasksListCtrlPanel(InvListCtrl):
+    def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        super().__init__(parent, ID, pos, size, style=style)
+        self._click_check = False
         self.mask_list_index = {}
         self.current_index = 0
         self.__init_columns()
@@ -371,11 +442,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
         self.__bind_events()
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-
 
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
@@ -438,7 +506,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
                 self.current_index -= 1
                 self.SetItemImage(self.current_index, 1)
 
-
     def OnCloseProject(self):
         self.DeleteAllItems()
         self.mask_list_index = {}
@@ -475,13 +542,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -489,22 +556,15 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
-
-    def OnBeginLabelEdit(self, evt):
-        if evt.GetColumn() == 1:
-            evt.Skip()
-        else:
-            evt.Veto()
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change mask name',
-                              index=evt.GetIndex(), name=evt.GetLabel())
+        if not evt.IsEditCancelled():
+            index = evt.GetIndex()
+            self.SetItem(index, 1, evt.GetLabel())
+            Publisher.sendMessage('Change mask name',
+                                  index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
-
-    def OnItemActivated(self, evt):
-        self.ToggleItem(evt.Index)
-        #  pass
 
     def OnCheckItem(self, index, flag):
         if flag:
@@ -515,26 +575,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCt
             self.current_index = index
         Publisher.sendMessage('Show mask', index=index, value=flag)
 
-    def CreateColourBitmap(self, colour):
-        """
-        Create a wx Image with a mask colour.
-        colour: colour in rgb format(0 - 1)
-        """
-        image = self.image_gray
-        new_image = Image.new("RGB", image.size)
-        for x in range(image.size[0]):
-            for y in range(image.size[1]):
-                pixel_colour = [int(i*image.getpixel((x,y)))
-                                for i in colour]
-                new_image.putpixel((x,y), tuple(pixel_colour))
 
-        wx_image = wx.Image(new_image.size[0],
-                            new_image.size[1])
-        try:
-            wx_image.SetData(new_image.tostring())
-        except Exception:
-            wx_image.SetData(new_image.tobytes())
-        return wx.Bitmap(wx_image.Scale(16, 16))
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
@@ -718,19 +759,11 @@ class SurfaceButtonControlPanel(wx.Panel):
     def AffineStatus(self, affine, status):
         self.affinestatus = status
 
-class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
-
+class SurfacesListCtrlPanel(InvListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
-
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        super().__init__(parent, ID, pos, size, style=style)
+        self._click_check = False
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
@@ -752,8 +785,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         Publisher.subscribe(self.OnShowMultiple, 'Show multiple surfaces')
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
@@ -841,13 +872,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -855,7 +886,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -864,11 +895,10 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
             evt.Veto()
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
-        evt.Skip()
-
-    def OnItemActivated(self, evt):
-        self.ToggleItem(evt.Index)
+        if not evt.IsEditCancelled():
+            index = evt.GetIndex()
+            self.SetItem(index, 1, evt.GetLabel())
+            Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
@@ -944,28 +974,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         self.SetItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
-    def CreateColourBitmap(self, colour):
-        """
-        Create a wx Image with a mask colour.
-        colour: colour in rgb format(0 - 1)
-        """
-        image = self.image_gray
-        new_image = Image.new("RGB", image.size)
-        for x in range(image.size[0]):
-            for y in range(image.size[1]):
-                pixel_colour = [int(i*image.getpixel((x,y)))
-                                for i in colour]
-                new_image.putpixel((x,y), tuple(pixel_colour))
-
-        wx_image = wx.Image(new_image.size[0],
-                            new_image.size[1])
-        try:
-            wx_image.SetData(new_image.tostring())
-        except Exception:
-            wx_image.SetData(new_image.tobytes())
-
-        return wx.Bitmap(wx_image.Scale(16, 16))
-
     def EditSurfaceTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
@@ -985,19 +993,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 #-------------------------------------------------
 #-------------------------------------------------
 
-class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
-
+class MeasuresListCtrlPanel(InvListCtrl):
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
-
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        super().__init__(parent, ID, pos, size, style=style)
+        self._click_check = False
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
@@ -1017,12 +1017,9 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         Publisher.subscribe(self.OnRemoveGUIMeasure, 'Remove GUI measurement')
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -1116,13 +1113,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -1130,7 +1127,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnBeginLabelEdit(self, evt):
         if evt.GetColumn() == 1:
@@ -1139,13 +1136,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
             evt.Veto()
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
+        if not evt.IsEditCancelled():
+            index = evt.GetIndex()
+            self.SetItem(index, 1, evt.GetLabel())
+            Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
-
-    def OnItemActivated(self, evt):
-        self.ToggleItem(evt.Index)
-        evt.Skip()
-
 
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage('Show measurement', index=index, visibility=flag)
@@ -1238,27 +1233,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
         self.SetItemImage(index, 1)
         self.Refresh()
 
-    def CreateColourBitmap(self, colour):
-        """
-        Create a wx Image with a mask colour.
-        colour: colour in rgb format(0 - 1)
-        """
-        image = self.image_gray
-        new_image = Image.new("RGB", image.size)
-        for x in range(image.size[0]):
-            for y in range(image.size[1]):
-                pixel_colour = [int(i*image.getpixel((x,y)))
-                                for i in colour]
-                new_image.putpixel((x,y), tuple(pixel_colour))
-
-        wx_image = wx.Image(new_image.size[0],
-                            new_image.size[1])
-        try:
-            wx_image.SetData(new_image.tostring())
-        except:
-            wx_image.SetData(new_image.tobytes())
-        return wx.Bitmap(wx_image.Scale(16, 16))
-
     def EditItemColour(self, measure_index, colour):
         """
         """
@@ -1273,19 +1247,12 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckLis
 #*******************************************************************
 
 
-class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
+class AnnotationsListCtrlPanel(wx.ListCtrl):
     # TODO: Remove edimixin, allow only visible and invisible
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.LC_REPORT):
-
-        # native look and feel for MacOS
-        #if wx.Platform == "__WXMAC__":
-        #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-
-        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
-        listmix.TextEditMixin.__init__(self)
-        listmix.CheckListCtrlMixin.__init__(self)
-
+                 size=wx.DefaultSize, style=wx.LC_REPORT | wx.LC_EDIT_LABELS):
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
+        self._click_check = False
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
@@ -1311,19 +1278,19 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.Check
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_colour.jpg"))
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
