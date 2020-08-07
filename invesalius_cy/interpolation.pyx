@@ -172,28 +172,28 @@ cdef double lanczos3(image_t[:, :, :] V, double x, double y, double z) nogil:
     cdef int m, n, o
 
     m = 0
-    for k in xrange(zi, zf):
+    for k in range(zi, zf):
         n = 0
-        for j in xrange(yi, yf):
+        for j in range(yi, yf):
             lx = 0
-            for i in xrange(xi, xf):
+            for i in range(xi, xf):
                 lx += _G(V, i, j, k) * lanczos3_L(x - i, a)
             temp_x[m][n] = lx
             n += 1
         m += 1
 
     m = 0
-    for k in xrange(zi, zf):
+    for k in range(zi, zf):
         n = 0
         ly = 0
-        for j in xrange(yi, yf):
+        for j in range(yi, yf):
             ly += temp_x[m][n] * lanczos3_L(y - j, a)
             n += 1
         temp_y[m] = ly
         m += 1
 
     m = 0
-    for k in xrange(zi, zf):
+    for k in range(zi, zf):
         lz += temp_y[m] * lanczos3_L(z - k, a)
         m += 1
 
@@ -309,7 +309,7 @@ cdef void calc_coef_tricub(image_t[:, :, :] V, double x, double y, double z, dou
 
     for j in prange(64):
         coef[j] = 0.0
-        for i in xrange(64):
+        for i in range(64):
                 coef[j] += (temp[j][i] * _x[i])
 
 
@@ -328,9 +328,9 @@ cdef double tricub_interpolate(image_t[:, :, :] V, double x, double y, double z)
     cdef int yi = <int>floor(y)
     cdef int zi = <int>floor(z)
 
-    for i in xrange(4):
-        for j in xrange(4):
-            for k in xrange(4):
+    for i in range(4):
+        for j in range(4):
+            for k in range(4):
                 result += (coef[i+4*j+16*k] * ((x-xi)**i) * ((y-yi)**j) * ((z-zi)**k))
     # return V[<int>z, <int>y, <int>x]
     # with gil:
@@ -370,9 +370,9 @@ cdef double tricubicInterpolate(image_t[:, :, :] V, double x, double y, double z
 
     cdef int i, j, k
 
-    for i in xrange(4):
-        for j in xrange(4):
-            for k in xrange(4):
+    for i in range(4):
+        for j in range(4):
+            for k in range(4):
                 p[i][j][k] = _G(V, xi + i -1, yi + j -1, zi + k - 1)
 
     cdef double arr[4]

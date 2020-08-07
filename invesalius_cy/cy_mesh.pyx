@@ -6,6 +6,7 @@
 #cython: cdivision=True
 #cython: nonecheck=False
 
+import os
 import sys
 import time
 cimport numpy as np
@@ -68,7 +69,7 @@ cdef class Mesh:
             self.faces = _faces
             self.normals = _normals
 
-            for i in xrange(_faces.shape[0]):
+            for i in range(_faces.shape[0]):
                 self.map_vface[self.faces[i, 1]].push_back(i)
                 self.map_vface[self.faces[i, 2]].push_back(i)
                 self.map_vface[self.faces[i, 3]].push_back(i)
@@ -201,12 +202,12 @@ cdef class Mesh:
             idfaces = self.get_faces_by_vertex(v_id)
             nf = idfaces.size()
 
-            for nid in xrange(nf):
+            for nid in range(nf):
                 f_id = deref(idfaces)[nid]
                 if status_f.find(f_id) == status_f.end():
                     status_f[f_id] = True
 
-                    for j in xrange(3):
+                    for j in range(3):
                         vj = self.faces[f_id, j+1]
                         if status_v.find(vj) == status_v.end():
                             status_v[vj] = True
@@ -255,7 +256,7 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
         near_vertices = mesh.get_near_vertices_to_v(vi_id, tmax)
         nnv = near_vertices.size()
 
-        for j in xrange(nnv):
+        for j in range(nnv):
             vj_id = deref(near_vertices)[j]
             vj = &mesh.vertices[vj_id, 0]
 
@@ -269,13 +270,13 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
 
         del near_vertices
 
-    #  for i in xrange(msize):
+    #  for i in range(msize):
         #  if mesh.is_border(i):
             #  deref(weights)[i] = 0.0
 
     #  cdef vertex_id_t v0, v1, v2
-    #  for i in xrange(mesh.faces.shape[0]):
-        #  for j in xrange(1, 4):
+    #  for i in range(mesh.faces.shape[0]):
+        #  for j in range(1, 4):
             #  v0 = mesh.faces[i, j]
             #  vi = &mesh.vertices[v0, 0]
             #  if mesh.is_border(v0):
@@ -361,7 +362,7 @@ cdef vector[vertex_id_t]* find_staircase_artifacts(Mesh mesh, double[3] stack_or
 
     nv = mesh.vertices.shape[0]
 
-    for v_id in xrange(nv):
+    for v_id in range(nv):
         max_z = -10000
         min_z = 10000
         max_y = -10000
@@ -372,7 +373,7 @@ cdef vector[vertex_id_t]* find_staircase_artifacts(Mesh mesh, double[3] stack_or
         f_ids = mesh.get_faces_by_vertex(v_id)
         nf = deref(f_ids).size()
 
-        for i in xrange(nf):
+        for i in range(nf):
             f_id = deref(f_ids)[i]
             normal = &mesh.normals[f_id, 0]
 
@@ -415,7 +416,7 @@ cdef void taubin_smooth(Mesh mesh, vector[weight_t]& weights, float l, float m, 
     nvertices = mesh.vertices.shape[0]
     cdef vector[Point] D = vector[Point](nvertices)
     cdef vertex_t* vi
-    for s in xrange(steps):
+    for s in range(steps):
         for i in prange(nvertices, nogil=True):
             D[i] = calc_d(mesh, i)
 

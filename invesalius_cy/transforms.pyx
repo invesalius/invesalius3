@@ -116,23 +116,23 @@ def apply_view_matrix_transform(image_t[:, :, :] volume,
         f_interp = lanczos3
 
     if orientation == 'AXIAL':
-        for z in xrange(n, n+odz):
+        for z in range(n, n+odz):
             for y in prange(dy, nogil=True):
-                for x in xrange(dx):
+                for x in range(dx):
                     out[count, y, x] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1
 
     elif orientation == 'CORONAL':
-        for y in xrange(n, n+ody):
+        for y in range(n, n+ody):
             for z in prange(dz, nogil=True):
-                for x in xrange(dx):
+                for x in range(dx):
                     out[z, count, x] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1
 
     elif orientation == 'SAGITAL':
-        for x in xrange(n, n+odx):
+        for x in range(n, n+odx):
             for z in prange(dz, nogil=True):
-                for y in xrange(dy):
+                for y in range(dy):
                     out[z, y, count] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1
 
@@ -157,14 +157,14 @@ def convolve_non_zero(image_t[:, :, :] volume,
     skx = kernel.shape[2]
 
     for z in prange(sz, nogil=True):
-        for y in xrange(sy):
-            for x in xrange(sx):
+        for y in range(sy):
+            for x in range(sx):
                 if volume[z, y, x] != 0:
-                    for k in xrange(skz):
+                    for k in range(skz):
                         kz = z - skz // 2 + k
-                        for j in xrange(sky):
+                        for j in range(sky):
                             ky = y - sky // 2 + j
-                            for i in xrange(skx):
+                            for i in range(skx):
                                 kx = x - skx // 2 + i
 
                                 if 0 <= kz < sz and 0 <= ky < sy and 0 <= kx < sx:
