@@ -665,7 +665,8 @@ class SurfaceManager():
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
         filenames = []
-        pool = multiprocessing.Pool(processes=min(n_pieces, n_processors))
+        ctx = multiprocessing.get_context('spawn')
+        pool = ctx.Pool(processes=min(n_pieces, n_processors))
         manager = multiprocessing.Manager()
         msg_queue = manager.Queue(1)
 
