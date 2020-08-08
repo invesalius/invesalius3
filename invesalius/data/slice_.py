@@ -1117,8 +1117,14 @@ class Slice(metaclass=utils.Singleton):
 
         if value:
             threshold_range = proj.mask_dict[index].threshold_range
+            edition_threshold_range = proj.mask_dict[index].edition_threshold_range
             Publisher.sendMessage(
-                "Set edition threshold gui", threshold_range=threshold_range
+                "Set edition threshold gui",
+                threshold_range=edition_threshold_range
+            )
+            Publisher.sendMessage(
+                "Set threshold values in gradient",
+                threshold_range=threshold_range
             )
 
         if index == self.current_mask.index:
