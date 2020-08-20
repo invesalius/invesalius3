@@ -58,6 +58,7 @@ class Controller():
     def __init__(self, frame):
         self.surface_manager = srf.SurfaceManager()
         self.volume = volume.Volume()
+        self.plugin_manager = plugins.PluginManager()
         self.__bind_events()
         self.frame = frame
         self.progress_dialog = None
@@ -76,9 +77,12 @@ class Controller():
 
         Publisher.sendMessage('Load Preferences')
 
+        self.plugin_manager.find_plugins()
+
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnImportGroup, 'Import group')
+        Publisher.subscribe(self.OnImportFolder, 'Import folder')
         Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
@@ -119,6 +123,8 @@ class Controller():
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
         Publisher.subscribe(self.Send_affine, 'Get affine matrix')
+
+        Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -503,6 +509,33 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
+    def OnImportFolder(self, folder):
+        Publisher.sendMessage('Begin busy cursor')
+        folder = os.path.abspath(folder)
+
+        proj = prj.Project()
+        proj.load_from_folder(folder)
+
+        self.Slice = sl.Slice()
+        self.Slice._open_image_matrix(proj.matrix_filename,
+                                      tuple(proj.matrix_shape),
+                                      proj.matrix_dtype)
+
+        self.Slice.window_level = proj.level
+        self.Slice.window_width = proj.window
+
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=proj.threshold_range)
+
+        session = ses.Session()
+        filename = proj.name+".inv3"
+        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
+        dirpath = session.CreateProject(filename)
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", state=True)
+
+        Publisher.sendMessage('End busy cursor')
+
     #-------------------------------------------------------------------------------------
 
     def LoadProject(self):
@@ -848,13 +881,11 @@ class Controller():
     def OnOpenOtherFiles(self, filepath):
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if not(filepath) == None:
-            name = filepath.rpartition('\\')[-1].split('.')
-
+            name = os.path.basename(filepath).split(".")[0]
             group = oth.ReadOthers(filepath)
-            
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
-                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
+                self.CreateOtherProject(name, matrix, matrix_filename)
                 self.LoadProject()
                 Publisher.sendMessage("Enable state project", state=True)
             else:
@@ -1056,3 +1087,24 @@ class Controller():
 
     def ApplyReorientation(self):
         self.Slice.apply_reorientation()
+
+    def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
+        p = prj.Project()
+        project_folder = tempfile.mkdtemp()
+        p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
+        err_msg = ''
+        try:
+            sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
+        except Exception as err:
+            err_msg = str(err)
+        else:
+            try:
+                if sp.wait(2):
+                    err_msg = sp.stderr.read().decode('utf8')
+                    sp.terminate()
+            except subprocess.TimeoutExpired:
+                pass
+
+        if err_msg:
+            dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
