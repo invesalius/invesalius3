@@ -32,6 +32,7 @@ import invesalius.data.mask as msk
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
+import invesalius.data.transformations as tr
 import invesalius.data.volume as volume
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
@@ -57,7 +58,6 @@ class Controller():
     def __init__(self, frame):
         self.surface_manager = srf.SurfaceManager()
         self.volume = volume.Volume()
-        self.plugin_manager = plugins.PluginManager()
         self.__bind_events()
         self.frame = frame
         self.progress_dialog = None
@@ -76,12 +76,9 @@ class Controller():
 
         Publisher.sendMessage('Load Preferences')
 
-        self.plugin_manager.find_plugins()
-
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnImportGroup, 'Import group')
-        Publisher.subscribe(self.OnImportFolder, 'Import folder')
         Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
@@ -122,8 +119,6 @@ class Controller():
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
         Publisher.subscribe(self.Send_affine, 'Get affine matrix')
-
-        Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -336,6 +331,10 @@ class Controller():
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
+        if proj.affine:
+            self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+        else:
+            self.Slice.affine = None
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
@@ -504,32 +503,7 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportFolder(self, folder):
-        Publisher.sendMessage('Begin busy cursor')
-        folder = os.path.abspath(folder)
-
-        proj = prj.Project()
-        proj.load_from_folder(folder)
-
-        self.Slice = sl.Slice()
-        self.Slice._open_image_matrix(proj.matrix_filename,
-                                      tuple(proj.matrix_shape),
-                                      proj.matrix_dtype)
-
-        self.Slice.window_level = proj.level
-        self.Slice.window_width = proj.window
-
-        Publisher.sendMessage('Update threshold limits list',
-                              threshold_range=proj.threshold_range)
-
-        session = ses.Session()
-        filename = proj.name+".inv3"
-        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
-        dirpath = session.CreateProject(filename)
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", state=True)
-
-        Publisher.sendMessage('End busy cursor')
+    #-------------------------------------------------------------------------------------
 
     def LoadProject(self):
         proj = prj.Project()
@@ -688,6 +662,9 @@ class Controller():
         proj.matrix_dtype = matrix.dtype.name
         proj.matrix_filename = matrix_filename
 
+        if self.affine is not None:
+            proj.affine = self.affine.tolist()
+
         # Orientation must be CORONAL in order to as_closes_canonical and
         # swap axis in img2memmap to work in a standardized way.
         # TODO: Create standard import image for all acquisition orientations
@@ -700,7 +677,6 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
-        proj.affine = self.affine.tolist()
 
         ######
         session = ses.Session()
@@ -872,11 +848,13 @@ class Controller():
     def OnOpenOtherFiles(self, filepath):
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if not(filepath) == None:
-            name = os.path.basename(filepath).split(".")[0]
+            name = filepath.rpartition('\\')[-1].split('.')
+
             group = oth.ReadOthers(filepath)
+            
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
-                self.CreateOtherProject(name, matrix, matrix_filename)
+                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
                 self.LoadProject()
                 Publisher.sendMessage("Enable state project", state=True)
             else:
@@ -981,10 +959,10 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
-        if group.affine.any():
-            self.affine = group.affine
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
+        # if group.affine.any():
+        #     self.affine = group.affine
+        #     Publisher.sendMessage('Update affine matrix',
+        #                           affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])
@@ -999,6 +977,18 @@ class Controller():
         self.Slice.spacing = dimsf
         self.Slice.window_level = wl
         self.Slice.window_width = ww
+
+        if group.affine.any():
+            # TODO: replace the inverse of the affine by the actual affine in the whole code
+            # remove scaling factor for non-unitary voxel dimensions
+            # self.affine = image_utils.world2invspace(affine=group.affine)
+            scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
+            self.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
+                                                          angles=angs, translate=trans, perspective=persp))
+            # print("repos_img: {}".format(repos_img))
+            self.Slice.affine = self.affine
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine, status=True)
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
         Publisher.sendMessage('Update threshold limits list',
@@ -1066,24 +1056,3 @@ class Controller():
 
     def ApplyReorientation(self):
         self.Slice.apply_reorientation()
-
-    def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
-        p = prj.Project()
-        project_folder = tempfile.mkdtemp()
-        p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
-        err_msg = ''
-        try:
-            sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder],
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
-        except Exception as err:
-            err_msg = str(err)
-        else:
-            try:
-                if sp.wait(2):
-                    err_msg = sp.stderr.read().decode('utf8')
-                    sp.terminate()
-            except subprocess.TimeoutExpired:
-                pass
-
-        if err_msg:
-            dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)

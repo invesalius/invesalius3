@@ -37,6 +37,8 @@ from invesalius.data import vtk_utils as vtk_utils
 import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 import invesalius.data.converters as converters
+import invesalius.data.slice_ as sl
+import invesalius.data.transformations as tr
 
 from invesalius import inv_paths
 
@@ -516,3 +518,67 @@ def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     imin, imax = image.min(), image.max()
     output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
     return output
+
+
+def world2invspace(affine=None):
+    """
+    Normalize image pixel intensity for int16 gray scale values.
+
+    :param repos: list of translation and rotation [trans_x, trans_y, trans_z, rot_x, rot_y, rot_z] to reposition the
+    vtk object prior to applying the affine matrix transformation. Note: rotation given in degrees
+    :param user_matrix: affine matrix from image header, prefered QForm matrix
+    :return: vtk transform filter for repositioning the polydata and affine matrix to be used as SetUserMatrix in actor
+    """
+
+    # remove scaling factor for non-unitary voxel dimensions
+    scale, shear, angs, trans, persp = tr.decompose_matrix(affine)
+    affine_noscale = tr.compose_matrix(scale=None, shear=shear, angles=angs, translate=trans, perspective=persp)
+    # repos_img = [0.] * 6
+    # repos_img[1] = -float(shape[1])
+    #
+    # repos_mat = np.identity(4)
+    # # translation
+    # repos_mat[:3, -1] = repos_img[:3]
+    # # rotation (in principle for invesalius space no rotation is needed)
+    # repos_mat[:3, :3] = tr.euler_matrix(*np.deg2rad(repos_img[3:]), axes='sxyz')[:3, :3]
+
+    # if repos:
+    #     transx, transy, transz, rotx, roty, rotz = repos
+    #     # create a transform that rotates the stl source
+    #     transform = vtk.vtkTransform()
+    #     transform.PostMultiply()
+    #     transform.RotateX(rotx)
+    #     transform.RotateY(roty)
+    #     transform.RotateZ(rotz)
+    #     transform.Translate(transx, transy, transz)
+    #
+    #     transform_filt = vtk.vtkTransformPolyDataFilter()
+    #     transform_filt.SetTransform(transform)
+    #     transform_filt.Update()
+
+    # assuming vtk default transformation order is PreMultiply, the user matrix is set so:
+    # 1. Replace the object -> 2. Transform the object to desired position/orientation
+    # PreMultiplty: M = M*A where M is current transformation and A is applied transformation
+    # user_matrix = np.linalg.inv(user_matrix) @ repos_mat
+
+    return np.linalg.inv(affine_noscale)
+
+
+def convert_world_to_voxel(xyz, affine):
+    """
+    Convert a coordinate from the world space ((x, y, z); scanner space; millimeters) to the
+    voxel space ((i, j, k)). This is achieved by multiplying a coordinate by the inverse
+    of the affine transformation.
+    More information: https://nipy.org/nibabel/coordinate_systems.html
+    :param xyz: a list or array of 3 coordinates (x, y, z) in the world coordinates
+    :param affine: a 4x4 array containing the image affine transformation in homogeneous coordinates
+    :return: a 1x3 array with the point coordinates in image space (i, j, k)
+    """
+
+    # print("xyz: ", xyz, "\naffine", affine)
+    # convert xyz coordinate to 1x4 homogeneous coordinates array
+    xyz_homo = np.hstack((xyz, 1.)).reshape([4, 1])
+    ijk_homo = np.linalg.inv(affine) @ xyz_homo
+    ijk = ijk_homo.T[np.newaxis, 0, :3]
+
+    return ijk

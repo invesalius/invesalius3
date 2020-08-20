@@ -82,6 +82,9 @@ class Slice(metaclass=utils.Singleton):
         self.blend_filter = None
         self.histogram = None
         self._matrix = None
+        self._affine = np.identity(4)
+        self._n_tracts = 0
+        self._tracker = None
         self.aux_matrices = {}
         self.aux_matrices_colours = {}
         self.state = const.STATE_DEFAULT
@@ -143,6 +146,30 @@ class Slice(metaclass=utils.Singleton):
         self.center = [
             (s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)
         ]
+
+    @property
+    def affine(self):
+        return self._affine
+
+    @affine.setter
+    def affine(self, value):
+        self._affine = value
+
+    @property
+    def n_tracts(self):
+        return self._n_tracts
+
+    @n_tracts.setter
+    def n_tracts(self, value):
+        self._n_tracts = value
+
+    @property
+    def tracker(self):
+        return self._tracker
+
+    @tracker.setter
+    def tracker(self, value):
+        self._tracker = value
 
     def __bind_events(self):
         # General slice control

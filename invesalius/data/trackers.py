@@ -62,6 +62,7 @@ def DefaultTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
+
 def PolarisTracker(tracker_id):
     from wx import ID_OK
     trck_init = None
@@ -91,6 +92,7 @@ def PolarisTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
 
+
 def CameraTracker(tracker_id):
     trck_init = None
     try:
@@ -104,6 +106,7 @@ def CameraTracker(tracker_id):
 
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
+
 
 def ClaronTracker(tracker_id):
     import invesalius.constants as const

@@ -1185,12 +1185,13 @@ class MenuBar(wx.MenuBar):
         else:
             self.FindItemById(const.ID_GOTO_COORD).Enable(False)
 
-    def OnEnableNavigation(self, status):
+    def OnEnableNavigation(self, nav_status, vis_status):
         """
         Disable mode menu when navigation is on.
-        :param status: Navigation status
+        :param nav_status: Navigation status
+        :param vis_status: Status of items visualization during navigation
         """
-        value = status
+        value = nav_status
         if value:
             self.FindItemById(const.ID_MODE_NAVIGATION).Enable(False)
         else:
