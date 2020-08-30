@@ -1831,7 +1831,7 @@ class TractographyPanel(wx.Panel):
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
         Publisher.sendMessage('Update ACT data', data=act_data_arr)
-        Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
+        # Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
         # Publisher.sendMessage('Update number of threads', data=n_threads)
         # Publisher.sendMessage('Update tracts visualization', data=1)
         # Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))

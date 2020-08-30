@@ -292,7 +292,7 @@ class ComputeTractsThread(threading.Thread):
                 try:
                     coord_list_w_tr = m_img_flip @ self.coord_list_w
                     coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
-                    print("ha")
+                    # print("ha")
                 except:
                     # translate the coordinate along the normal vector of the object/coil
                     # apply the coil transformation matrix
@@ -305,7 +305,7 @@ class ComputeTractsThread(threading.Thread):
                 # print("p_new_shape", coord_offset.shape)
                 # print("m_img_flip_shape", m_img_flip.shape)
                 seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
-                print("seed_trk: ", seed_trk)
+                # print("seed_trk: ", seed_trk)
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
