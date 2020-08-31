@@ -74,8 +74,6 @@ def brain_segment(image, probability_array, comm_array):
         model = keras.models.model_from_json(json_file.read())
     model.load_weights(str(folder.joinpath("model.h5")))
     model.compile("Adam", "binary_crossentropy")
-    
-    keras.utils.plot_model(model, "model.png", show_shapes=True, show_layer_names=True)
 
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
