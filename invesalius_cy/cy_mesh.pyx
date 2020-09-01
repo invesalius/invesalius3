@@ -22,6 +22,7 @@ from libcpp.pair cimport pair
 from libcpp cimport bool
 from libcpp.deque cimport deque as cdeque
 from cython.parallel import prange
+cimport openmp
 
 from .cy_my_types cimport vertex_t, normal_t, vertex_id_t
 
@@ -193,6 +194,7 @@ cdef class Mesh:
 
         vip = &self.vertices[v_id, 0]
         to_visit.push_back(v_id)
+        dmax = dmax * dmax
         while(not to_visit.empty()):
             v_id = to_visit.front()
             to_visit.pop_front()
@@ -212,9 +214,9 @@ cdef class Mesh:
                         if status_v.find(vj) == status_v.end():
                             status_v[vj] = True
                             vjp = &self.vertices[vj, 0]
-                            distance = sqrt((vip[0] - vjp[0]) * (vip[0] - vjp[0]) \
-                                          + (vip[1] - vjp[1]) * (vip[1] - vjp[1]) \
-                                          + (vip[2] - vjp[2]) * (vip[2] - vjp[2]))
+                            distance = (vip[0] - vjp[0]) * (vip[0] - vjp[0]) \
+                                + (vip[1] - vjp[1]) * (vip[1] - vjp[1]) \
+                                + (vip[2] - vjp[2]) * (vip[2] - vjp[2])
                             if distance <= dmax:
                                 near_vertices.push_back(vj)
                                 to_visit.push_back(vj)
@@ -248,7 +250,10 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
     cdef vector[weight_t]* weights = new vector[weight_t](msize)
     weights.assign(msize, bmin)
 
-    for i in prange(n_ids, nogil=True):
+    cdef openmp.omp_lock_t lock
+    openmp.omp_init_lock(&lock)
+
+    for i in prange(n_ids):
         vi_id = vertices_staircase[i]
         deref(weights)[vi_id] = 1.0
 
@@ -266,7 +271,9 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
             value = (1.0 - d/tmax) * (1.0 - bmin) + bmin
 
             if value > deref(weights)[vj_id]:
+                openmp.omp_set_lock(&lock)
                 deref(weights)[vj_id] = value
+                openmp.omp_unset_lock(&lock)
 
         del near_vertices
 
