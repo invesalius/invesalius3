@@ -189,11 +189,70 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
         self.viewer.interactor.Render()
 
 
+class WWWLInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for Window Level & Width functionality.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_WL
+
+        self.viewer =  viewer
+
+        self.last_x = 0
+        self.last_y = 0
+
+        self.changing_wwwl = False
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.RemoveObservers("LeftButtonReleaseEvent")
+
+        self.AddObserver("MouseMoveEvent", self.OnWindowLevelMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnWindowLevelClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnWindowLevelRelease)
+
+    def SetUp(self):
+        #  self.viewer.on_wl = True
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=True)
+        #  self.viewer.canvas.draw_list.append(self.viewer.wl_text)
+        #  self.viewer.UpdateCanvas()
+
+    def CleanUp(self):
+        #  self.viewer.on_wl = False
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=False)
+        #  if self.viewer.wl_text is not None:
+            #  self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
+            #  self.viewer.UpdateCanvas()
+
+    def OnWindowLevelMove(self, obj, evt):
+        if self.changing_wwwl:
+            iren = obj.GetInteractor()
+            mouse_x, mouse_y = iren.GetEventPosition()
+            diff_x = mouse_x - self.last_x
+            diff_y = mouse_y - self.last_y
+            self.last_x, self.last_y = mouse_x, mouse_y
+            Publisher.sendMessage('Set raycasting relative window and level',
+                                  diff_wl=diff_x, diff_ww=diff_y)
+            Publisher.sendMessage('Refresh raycasting widget points')
+            Publisher.sendMessage('Render volume viewer')
+
+    def OnWindowLevelClick(self, obj, evt):
+        iren = obj.GetInteractor()
+        self.last_x, self.last_y = iren.GetLastEventPosition()
+        self.changing_wwwl = True
+
+    def OnWindowLevelRelease(self, obj, evt):
+        self.changing_wwwl = False
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,
         const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
+        const.STATE_WL: WWWLInteractorStyle,
     }
 
     @classmethod
