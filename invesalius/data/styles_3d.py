@@ -18,8 +18,11 @@
 # --------------------------------------------------------------------------
 
 import vtk
+import wx
 
 import invesalius.constants as const
+
+from pubsub import pub as Publisher
 
 
 class Base3DInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
@@ -118,6 +121,42 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
     def OnScrollBackward(self, evt, obj):
         self.viewer.OnScrollBackward()
+
+
+class ZoomInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for zoom with movement of the mouse and the
+    left mouse button clicked.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.STATE_ZOOM
+
+        self.viewer = viewer
+
+        self.AddObserver("MouseMoveEvent", self.OnZoomMoveLeft)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=False)
+
+    def OnZoomMoveLeft(self, obj, evt):
+        if self.left_pressed:
+            obj.Dolly()
+            obj.OnRightButtonDown()
+
+    def OnUnZoom(self, evt):
+        ren = self.viewer.ren
+        ren.ResetCamera()
+        ren.ResetCameraClippingRange()
+        self.viewer.interactor.Render()
 
 
 class Styles:
