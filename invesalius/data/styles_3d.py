@@ -163,10 +163,37 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Render()
 
 
+class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
+    """
+    Interactor style responsible for zoom by selecting a region.
+    """
+    def __init__(self, viewer):
+        self.viewer = viewer
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+
+        self.state_code = const.STATE_ZOOM_SL
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=False)
+
+    def OnUnZoom(self, evt):
+        ren = self.viewer.ren
+        ren.ResetCamera()
+        ren.ResetCameraClippingRange()
+        self.viewer.interactor.Render()
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,
+        const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
     }
 
     @classmethod
