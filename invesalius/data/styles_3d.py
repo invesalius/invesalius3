@@ -75,10 +75,10 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.AddObserver("LeftButtonPressEvent",self.OnRotateLeftClick)
         self.AddObserver("LeftButtonReleaseEvent",self.OnRotateLeftRelease)
 
-        #  self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-        #  self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
+        self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+        self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
 
-        self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
+        self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
         self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
@@ -87,7 +87,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     def OnFocus(self, evt, obj):
         self.viewer.SetFocus()
 
-    def OnZoomRightMove(self, evt, obj):
+    def OnMouseMove(self, evt, obj):
         if self.left_pressed:
             evt.Rotate()
             evt.OnLeftButtonDown()
@@ -101,11 +101,9 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
             evt.OnMiddleButtonDown()
 
     def OnRotateLeftClick(self, evt, obj):
-        print("Start rotate")
         evt.StartRotate()
 
     def OnRotateLeftRelease(self, evt, obj):
-        print("End rotate")
         evt.OnLeftButtonUp()
         evt.EndRotate()
 
@@ -117,10 +115,10 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         evt.EndDolly()
 
     def OnScrollForward(self, evt, obj):
-        self.viewer.OnScrollForward()
+        self.OnMouseWheelForward()
 
     def OnScrollBackward(self, evt, obj):
-        self.viewer.OnScrollBackward()
+        self.OnMouseWheelBackward()
 
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
@@ -129,13 +127,18 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     left mouse button clicked.
     """
     def __init__(self, viewer):
-        DefaultInteractorStyle.__init__(self, viewer)
+        super().__init__(viewer)
 
         self.state_code = const.STATE_ZOOM
 
         self.viewer = viewer
 
-        self.AddObserver("MouseMoveEvent", self.OnZoomMoveLeft)
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.RemoveObservers("LeftButtonReleaseEvent")
+
+        self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
 
     def SetUp(self):
@@ -147,10 +150,11 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Toggle toolbar item',
                               _id=self.state_code, value=False)
 
-    def OnZoomMoveLeft(self, obj, evt):
-        if self.left_pressed:
-            obj.Dolly()
-            obj.OnRightButtonDown()
+    def OnPressLeftButton(self, evt, obj):
+        self.right_pressed = True
+
+    def OnReleaseLeftButton(self, obj, evt):
+        self.right_pressed = False
 
     def OnUnZoom(self, evt):
         ren = self.viewer.ren
@@ -162,6 +166,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
+        const.STATE_ZOOM: ZoomInteractorStyle,
     }
 
     @classmethod
