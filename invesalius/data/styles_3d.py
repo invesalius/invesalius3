@@ -38,19 +38,13 @@ class Base3DInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
         self.AddObserver("MiddleButtonReleaseEvent", self.OnMiddleButtonReleaseEvent)
 
     def OnPressLeftButton(self, evt, obj):
-        print("Left")
         self.left_pressed = True
 
     def OnReleaseLeftButton(self, evt, obj):
         self.left_pressed = False
 
     def OnPressRightButton(self, evt, obj):
-        print("Right")
-        self.left_pressed = True
         self.right_pressed = True
-        self.viewer.last_position_mouse_move = (
-            self.viewer.interactor.GetLastEventPosition()
-        )
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
@@ -63,7 +57,67 @@ class Base3DInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
 
 
 class DefaultInteractorStyle(Base3DInteractorStyle):
-    pass
+    """
+    Interactor style responsible for Default functionalities:
+    * Zoom moving mouse with right button pressed;
+    * Change the slices with the scroll.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_DEFAULT
+
+        self.viewer = viewer
+
+        # Zoom using right button
+        self.AddObserver("LeftButtonPressEvent",self.OnRotateLeftClick)
+        self.AddObserver("LeftButtonReleaseEvent",self.OnRotateLeftRelease)
+
+        #  self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+        #  self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
+
+        self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
+
+        self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+        self.AddObserver("EnterEvent", self.OnFocus)
+
+    def OnFocus(self, evt, obj):
+        self.viewer.SetFocus()
+
+    def OnZoomRightMove(self, evt, obj):
+        if self.left_pressed:
+            evt.Rotate()
+            evt.OnLeftButtonDown()
+
+        elif self.right_pressed:
+            evt.Dolly()
+            evt.OnRightButtonDown()
+
+        elif self.middle_pressed:
+            evt.Pan()
+            evt.OnMiddleButtonDown()
+
+    def OnRotateLeftClick(self, evt, obj):
+        print("Start rotate")
+        evt.StartRotate()
+
+    def OnRotateLeftRelease(self, evt, obj):
+        print("End rotate")
+        evt.OnLeftButtonUp()
+        evt.EndRotate()
+
+    def OnZoomRightClick(self, evt, obj):
+        evt.StartDolly()
+
+    def OnZoomRightRelease(self, evt, obj):
+        evt.OnRightButtonUp()
+        evt.EndDolly()
+
+    def OnScrollForward(self, evt, obj):
+        self.viewer.OnScrollForward()
+
+    def OnScrollBackward(self, evt, obj):
+        self.viewer.OnScrollBackward()
 
 
 class Styles:

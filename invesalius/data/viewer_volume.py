@@ -72,13 +72,13 @@ class Viewer(wx.Panel):
 
         self.staticballs = []
 
-        style = vtk.vtkInteractorStyleTrackballCamera()
-        self.style = style
+        self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
-        interactor.SetInteractorStyle(style)
         self.interactor = interactor
         self.interactor.SetRenderWhenDisabled(True)
+
+        self.enable_style(const.STATE_DEFAULT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.EXPAND)
@@ -257,7 +257,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
         Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
-        Publisher.subscribe(self.OnEnableStyle, 'Enable style')
+        Publisher.subscribe(self.enable_style, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
 
         Publisher.subscribe(self.OnHideText,
@@ -1601,7 +1601,8 @@ class Viewer(wx.Panel):
         if const.RAYCASTING_WWWL_BLUR:
             self.style.EndZoom()
 
-    def OnEnableStyle(self, style):
+    def enable_style(self, style):
+        print("Setting volume style")
         if (style in const.VOLUME_STYLES):
             new_state = self.interaction_style.AddState(style)
             self.SetInteractorStyle(new_state)
