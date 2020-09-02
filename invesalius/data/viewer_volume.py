@@ -38,6 +38,7 @@ from imageio import imsave
 import invesalius.constants as const
 import invesalius.data.bases as bases
 import invesalius.data.slice_ as sl
+import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
@@ -45,6 +46,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+
 
 if sys.platform == 'win32':
     try:
@@ -1441,6 +1443,25 @@ class Viewer(wx.Panel):
         imsave('/tmp/polygon.png', arr)
 
     def SetInteractorStyle(self, state):
+        cleanup = getattr(self.style, 'CleanUp', None)
+        if cleanup:
+            self.style.CleanUp()
+
+        del self.style
+
+        style = styles.Styles.get_style(state)(self)
+
+        setup = getattr(style, 'SetUp', None)
+        if setup:
+            style.SetUp()
+
+        self.style = style
+        self.interactor.SetInteractorStyle(style)
+        self.interactor.Render()
+
+        self.state = state
+
+    def _SetInteractorStyle(self, state):
         action = {
               const.STATE_PAN:
                     {
