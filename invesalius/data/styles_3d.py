@@ -230,6 +230,35 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Render()
 
 
+class SpinInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for spin the camera.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+        self.state_code = const.STATE_SPIN
+        self.viewer = viewer
+        self.spinning = False
+        self.AddObserver("MouseMoveEvent", self.OnSpinMove)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=False)
+
+    def OnPressLeftButton(self, evt, obj):
+        self.spinning = True
+
+    def OnReleaseLeftButton(self, evt, obj):
+        self.spinning = False
+
+    def OnSpinMove(self, evt, obj):
+        if self.spinning:
+            evt.Spin()
+            evt.OnRightButtonDown()
+
+
 class WWWLInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
@@ -294,6 +323,7 @@ class Styles:
         const.STATE_ZOOM: ZoomInteractorStyle,
         const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
+        const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
     }
 
