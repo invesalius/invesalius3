@@ -327,6 +327,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
     def __init__(self, viewer):
         super().__init__(viewer)
+        self.viewer = viewer
         self.state_code = const.STATE_MEASURE_DISTANCE
         self.measure_picker = vtk.vtkPropPicker()
 
@@ -367,6 +368,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
     def __init__(self, viewer):
         super().__init__(viewer)
+        self.viewer = viewer
         self.state_code = const.STATE_MEASURE_DISTANCE
         self.measure_picker = vtk.vtkPropPicker()
 
@@ -399,6 +401,29 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
             self.left_pressed = True
 
 
+class SeedInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for select sub surfaces.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.viewer = viewer
+        self.picker = vtk.vtkPointPicker()
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertSeed)
+
+    def OnInsertSeed(self, obj, evt):
+        x,y = self.viewer.interactor.GetEventPosition()
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+        point_id = self.picker.GetPointId()
+        if point_id > -1:
+            self.viewer.seed_points.append(point_id)
+            self.viewer.interactor.Render()
+        else:
+            self.left_pressed = True
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -409,6 +434,7 @@ class Styles:
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.VOLUME_STATE_SEED: SeedInteractorStyle,
     }
 
     @classmethod
