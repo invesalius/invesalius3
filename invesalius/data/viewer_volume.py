@@ -151,8 +151,6 @@ class Viewer(wx.Panel):
         #self.measure_picker.SetTolerance(0.005)
         self.measures = []
 
-        self._last_state = 0
-
         self.repositioned_axial_plan = 0
         self.repositioned_sagital_plan = 0
         self.repositioned_coronal_plan = 0
@@ -508,7 +506,6 @@ class Viewer(wx.Panel):
 
         self.interaction_style.Reset()
         self.SetInteractorStyle(const.STATE_DEFAULT)
-        self._last_state = const.STATE_DEFAULT
 
     def OnHideText(self):
         self.text.Hide()
@@ -1461,69 +1458,6 @@ class Viewer(wx.Panel):
 
         self.state = state
 
-    def _SetInteractorStyle(self, state):
-        action = {
-              const.STATE_PAN:
-                    {
-                    },
-              const.STATE_ZOOM:
-                    {
-                    },
-              const.STATE_SPIN:
-                    {
-                    },
-              const.STATE_WL:
-                    {
-                    },
-              const.STATE_DEFAULT:
-                    {
-                    },
-              const.VOLUME_STATE_SEED:
-                    {
-                    },
-              const.STATE_MEASURE_DISTANCE:
-                  {
-                  },
-              const.STATE_MEASURE_ANGLE:
-                  {
-                  }
-              }
-
-        if self._last_state in (const.STATE_MEASURE_DISTANCE,
-                const.STATE_MEASURE_ANGLE):
-            if self.measures and not self.measures[-1].text_actor:
-                del self.measures[-1]
-
-        if state == const.STATE_WL:
-            self.on_wl = True
-            if self.raycasting_volume:
-                self.text.Show()
-                self.interactor.Render()
-        else:
-            self.on_wl = False
-            self.text.Hide()
-            self.interactor.Render()
-
-        if state in (const.STATE_MEASURE_DISTANCE,
-                const.STATE_MEASURE_ANGLE):
-            self.interactor.SetPicker(self.measure_picker)
-
-        if (state == const.STATE_ZOOM_SL):
-            style = vtk.vtkInteractorStyleRubberBandZoom()
-            self.interactor.SetInteractorStyle(style)
-            self.style = style
-        else:
-            style = vtk.vtkInteractorStyleTrackballCamera()
-            self.interactor.SetInteractorStyle(style)
-            self.style = style
-
-            # Check each event available for each mode
-            for event in action.get(state, []):
-                # Bind event
-                style.AddObserver(event,action[state][event])
-
-        self._last_state = state
-
     def enable_style(self, style):
         print("Setting volume style")
         if (style in const.VOLUME_STYLES):
@@ -1793,40 +1727,6 @@ class Viewer(wx.Panel):
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
-
-    def OnInsertAngularMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        self.measure_picker.Pick(x, y, 0, self.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-
-        proj = prj.Project()
-        radius = min(proj.spacing) * PROP_MEASURE
-        if self.measure_picker.GetActor():
-            # if not self.measures or self.measures[-1].IsComplete():
-                # m = measures.AngularMeasure(self.ren)
-                # m.AddPoint(x, y, z)
-                # self.measures.append(m)
-            # else:
-                # m = self.measures[-1]
-                # m.AddPoint(x, y, z)
-                # if m.IsComplete():
-                    # index = len(self.measures) - 1
-                    # name = "M"
-                    # colour = m.colour
-                    # type_ = _("Angular")
-                    # location = u"3D"
-                    # value = u"%.2f˚"% m.GetValue()
-                    # msg =  'Update measurement info in GUI',
-                    # Publisher.sendMessage(msg,
-                                               # (index, name, colour,
-                                                # type_, location,
-                                                # value))
-            Publisher.sendMessage("Add measurement point",
-                                  position=(x, y,z),
-                                  type=const.ANGULAR,
-                                  location=const.SURFACE,
-                                  radius=radius)
-            self.interactor.Render()
 
     def Reposition3DPlane(self, plane_label):
         if not(self.added_actor) and not(self.raycasting_volume):
