@@ -21,8 +21,12 @@ import vtk
 import wx
 
 import invesalius.constants as const
+import invesalius.project as prj
 
 from pubsub import pub as Publisher
+
+
+PROP_MEASURE = 0.8
 
 
 class Base3DInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
@@ -317,6 +321,37 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
         self.changing_wwwl = False
 
 
+class LinearMeasureInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for insert linear measurements.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_DISTANCE
+        self.measure_picker = vtk.vtkPropPicker()
+
+        proj = prj.Project()
+        self._radius = min(proj.spacing) * PROP_MEASURE
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+
+    def OnInsertLinearMeasurePoint(self, obj, evt):
+        x,y = self.viewer.interactor.GetEventPosition()
+        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.measure_picker.GetPickPosition()
+        if self.measure_picker.GetActor():
+            self.left_pressed = False
+            Publisher.sendMessage("Add measurement point",
+                                  position=(x, y,z),
+                                  type=const.LINEAR,
+                                  location=const.SURFACE,
+                                  radius=self._radius)
+            self.viewer.interactor.Render()
+        else:
+            self.left_pressed = True
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -325,6 +360,7 @@ class Styles:
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
+        const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
     }
 
     @classmethod
