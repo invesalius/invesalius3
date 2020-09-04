@@ -1465,42 +1465,27 @@ class Viewer(wx.Panel):
         action = {
               const.STATE_PAN:
                     {
-                    "MouseMoveEvent": self.OnPanMove,
-                    "LeftButtonPressEvent": self.OnPanClick,
-                    "LeftButtonReleaseEvent": self.OnReleasePanClick
                     },
               const.STATE_ZOOM:
                     {
-                    "MouseMoveEvent": self.OnZoomMove,
-                    "LeftButtonPressEvent": self.OnZoomClick,
-                    "LeftButtonReleaseEvent": self.OnReleaseZoomClick,
                     },
               const.STATE_SPIN:
                     {
-                    "MouseMoveEvent": self.OnSpinMove,
-                    "LeftButtonPressEvent": self.OnSpinClick,
-                    "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
                     },
               const.STATE_WL:
                     {
-                    "MouseMoveEvent": self.OnWindowLevelMove,
-                    "LeftButtonPressEvent": self.OnWindowLevelClick,
-                    "LeftButtonReleaseEvent":self.OnWindowLevelRelease
                     },
               const.STATE_DEFAULT:
                     {
                     },
               const.VOLUME_STATE_SEED:
                     {
-                    "LeftButtonPressEvent": self.OnInsertSeed
                     },
               const.STATE_MEASURE_DISTANCE:
                   {
-                  "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
                   },
               const.STATE_MEASURE_ANGLE:
                   {
-                  "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
                   }
               }
 
@@ -1538,68 +1523,6 @@ class Viewer(wx.Panel):
                 style.AddObserver(event,action[state][event])
 
         self._last_state = state
-
-    def OnSpinMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Spin()
-            evt.OnRightButtonDown()
-
-    def OnSpinClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartSpin()
-
-    def OnReleaseSpinClick(self,evt,obj):
-        self.mouse_pressed = 0
-        evt.EndSpin()
-
-    def OnZoomMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Dolly()
-            evt.OnRightButtonDown()
-
-    def OnZoomClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartDolly()
-
-    def OnReleaseZoomClick(self,evt,obj):
-        self.mouse_pressed = 0
-        evt.EndDolly()
-
-    def OnPanMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Pan()
-            evt.OnRightButtonDown()
-
-    def OnPanClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartPan()
-
-    def OnReleasePanClick(self,evt,obj):
-        self.mouse_pressed = 0
-        evt.EndPan()
-
-    def OnWindowLevelMove(self, obj, evt):
-        if self.onclick and self.raycasting_volume:
-            mouse_x, mouse_y = self.interactor.GetEventPosition()
-            diff_x = mouse_x - self.last_x
-            diff_y = mouse_y - self.last_y
-            self.last_x, self.last_y = mouse_x, mouse_y
-            Publisher.sendMessage('Set raycasting relative window and level',
-                                  diff_wl=diff_x, diff_ww=diff_y)
-            Publisher.sendMessage('Refresh raycasting widget points')
-            self.interactor.Render()
-
-    def OnWindowLevelClick(self, obj, evt):
-        if const.RAYCASTING_WWWL_BLUR:
-            self.style.StartZoom()
-        self.onclick = True
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        self.last_x, self.last_y = mouse_x, mouse_y
-
-    def OnWindowLevelRelease(self, obj, evt):
-        self.onclick = False
-        if const.RAYCASTING_WWWL_BLUR:
-            self.style.EndZoom()
 
     def enable_style(self, style):
         print("Setting volume style")
@@ -1870,39 +1793,6 @@ class Viewer(wx.Panel):
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
-
-    def OnInsertSeed(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        #x,y = obj.GetLastEventPosition()
-        self.picker.Pick(x, y, 0, self.ren)
-        point_id = self.picker.GetPointId()
-        self.seed_points.append(point_id)
-        self.interactor.Render()
-
-    def OnInsertLinearMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        self.measure_picker.Pick(x, y, 0, self.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-
-        proj = prj.Project()
-        radius = min(proj.spacing) * PROP_MEASURE
-        if self.measure_picker.GetActor():
-            # if not self.measures or self.measures[-1].IsComplete():
-                # m = measures.LinearMeasure(self.ren)
-                # m.AddPoint(x, y, z)
-                # self.measures.append(m)
-            # else:
-                # m = self.measures[-1]
-                # m.AddPoint(x, y, z)
-                # if m.IsComplete():
-                    # Publisher.sendMessage("Add measure to list",
-                            # (u"3D", _(u"%.3f mm" % m.GetValue())))
-            Publisher.sendMessage("Add measurement point",
-                                  position=(x, y,z),
-                                  type=const.LINEAR,
-                                  location=const.SURFACE,
-                                  radius=radius)
-            self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
         x,y = self.interactor.GetEventPosition()
