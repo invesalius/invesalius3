@@ -336,6 +336,15 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.RemoveObservers("LeftButtonPressEvent")
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
 
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             _id=self.state_code, value=False)
+        Publisher.sendMessage("Remove incomplete measurements")
+
     def OnInsertLinearMeasurePoint(self, obj, evt):
         x,y = self.viewer.interactor.GetEventPosition()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
@@ -352,6 +361,44 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.left_pressed = True
 
 
+class AngularMeasureInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for insert linear measurements.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_DISTANCE
+        self.measure_picker = vtk.vtkPropPicker()
+
+        proj = prj.Project()
+        self._radius = min(proj.spacing) * PROP_MEASURE
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertAngularMeasurePoint)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=False)
+        Publisher.sendMessage("Remove incomplete measurements")
+
+    def OnInsertAngularMeasurePoint(self, obj, evt):
+        x,y = self.viewer.interactor.GetEventPosition()
+        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.measure_picker.GetPickPosition()
+        if self.measure_picker.GetActor():
+            self.left_pressed = False
+            Publisher.sendMessage("Add measurement point",
+                                  position=(x, y,z),
+                                  type=const.ANGULAR,
+                                  location=const.SURFACE,
+                                  radius=self._radius)
+            self.viewer.interactor.Render()
+        else:
+            self.left_pressed = True
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -361,6 +408,7 @@ class Styles:
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
+        const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
     }
 
     @classmethod
