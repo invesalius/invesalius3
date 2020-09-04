@@ -189,6 +189,47 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
         self.viewer.interactor.Render()
 
 
+class PanMoveInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for translate the camera.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+        self.state_code = const.STATE_PAN
+
+        self.viewer = viewer
+
+        self.panning = False
+
+        self.AddObserver("MouseMoveEvent", self.OnPanMove)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspan)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        Publisher.sendMessage('Toggle toolbar item',
+                             _id=self.state_code, value=False)
+
+    def OnPressLeftButton(self, evt, obj):
+        self.panning = True
+
+    def OnReleaseLeftButton(self, evt, obj):
+        self.panning = False
+
+    def OnPanMove(self, obj, evt):
+        if self.panning:
+            obj.Pan()
+            obj.OnRightButtonDown()
+
+    def OnUnspan(self, evt):
+        self.viewer.ren.ResetCamera()
+        self.viewer.interactor.Render()
+
+
 class WWWLInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
@@ -252,6 +293,7 @@ class Styles:
         const.STATE_DEFAULT: DefaultInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,
         const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
+        const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
     }
 
