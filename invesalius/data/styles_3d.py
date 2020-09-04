@@ -286,19 +286,17 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnWindowLevelRelease)
 
     def SetUp(self):
-        #  self.viewer.on_wl = True
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
-        #  self.viewer.canvas.draw_list.append(self.viewer.wl_text)
-        #  self.viewer.UpdateCanvas()
+        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=True)
+        self.viewer.on_wl = True
+        if self.viewer.raycasting_volume:
+            self.viewer.text.Show()
+            self.viewer.interactor.Render()
 
     def CleanUp(self):
-        #  self.viewer.on_wl = False
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
-        #  if self.viewer.wl_text is not None:
-            #  self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
-            #  self.viewer.UpdateCanvas()
+        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=False)
+        self.viewer.on_wl = True
+        self.viewer.text.Hide()
+        self.viewer.interactor.Render()
 
     def OnWindowLevelMove(self, obj, evt):
         if self.changing_wwwl:
