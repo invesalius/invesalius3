@@ -1459,8 +1459,7 @@ class Viewer(wx.Panel):
         self.state = state
 
     def enable_style(self, style):
-        print("Setting volume style")
-        if (style in const.VOLUME_STYLES):
+        if styles.Styles.has_style(style):
             new_state = self.interaction_style.AddState(style)
             self.SetInteractorStyle(new_state)
         else:

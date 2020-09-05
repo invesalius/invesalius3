@@ -440,13 +440,11 @@ class Styles:
         if style_cls in cls.styles.values():
             for style_id in cls.styles:
                 if cls.styles[style_id] == style_cls:
-                    const.SLICE_STYLES.append(style_id)
                     const.STYLE_LEVEL[style_id] = level
                     return style_id
 
         new_style_id = max(cls.styles) + 1
         cls.styles[new_style_id] = style_cls
-        const.SLICE_STYLES.append(new_style_id)
         const.STYLE_LEVEL[new_style_id] = level
         return new_style_id
 
@@ -457,3 +455,7 @@ class Styles:
     @classmethod
     def get_style(cls, style):
         return cls.styles[style]
+
+    @classmethod
+    def has_style(cls, style):
+        return style in cls.styles
