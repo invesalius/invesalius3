@@ -174,7 +174,7 @@ class Controller():
             #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
         dirpath = dialog.ShowImportBitmapDirDialog(self.frame)
@@ -198,7 +198,7 @@ class Controller():
             #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
         # Import project
         dirpath = dialog.ShowImportDirDialog(self.frame)
         if dirpath and not os.listdir(dirpath):
@@ -219,7 +219,7 @@ class Controller():
             # Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
         # Warning for limited support to Analyze format
         if id_type == const.ID_ANALYZE_IMPORT:
@@ -373,7 +373,7 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
-        Publisher.sendMessage('Set slice interaction style', style=const.STATE_DEFAULT)
+        Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
 

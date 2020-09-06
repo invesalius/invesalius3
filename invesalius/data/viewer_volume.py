@@ -38,6 +38,7 @@ from imageio import imsave
 import invesalius.constants as const
 import invesalius.data.bases as bases
 import invesalius.data.slice_ as sl
+import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
@@ -45,6 +46,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+
 
 if sys.platform == 'win32':
     try:
@@ -70,13 +72,13 @@ class Viewer(wx.Panel):
 
         self.staticballs = []
 
-        style = vtk.vtkInteractorStyleTrackballCamera()
-        self.style = style
+        self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
-        interactor.SetInteractorStyle(style)
         self.interactor = interactor
         self.interactor.SetRenderWhenDisabled(True)
+
+        self.enable_style(const.STATE_DEFAULT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.EXPAND)
@@ -148,8 +150,6 @@ class Viewer(wx.Panel):
         self.measure_picker = vtk.vtkPropPicker()
         #self.measure_picker.SetTolerance(0.005)
         self.measures = []
-
-        self._last_state = 0
 
         self.repositioned_axial_plan = 0
         self.repositioned_sagital_plan = 0
@@ -255,7 +255,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
         Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
-        Publisher.subscribe(self.OnEnableStyle, 'Enable style')
+        Publisher.subscribe(self.enable_style, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
 
         Publisher.subscribe(self.OnHideText,
@@ -506,7 +506,6 @@ class Viewer(wx.Panel):
 
         self.interaction_style.Reset()
         self.SetInteractorStyle(const.STATE_DEFAULT)
-        self._last_state = const.STATE_DEFAULT
 
     def OnHideText(self):
         self.text.Hide()
@@ -1441,147 +1440,26 @@ class Viewer(wx.Panel):
         imsave('/tmp/polygon.png', arr)
 
     def SetInteractorStyle(self, state):
-        action = {
-              const.STATE_PAN:
-                    {
-                    "MouseMoveEvent": self.OnPanMove,
-                    "LeftButtonPressEvent": self.OnPanClick,
-                    "LeftButtonReleaseEvent": self.OnReleasePanClick
-                    },
-              const.STATE_ZOOM:
-                    {
-                    "MouseMoveEvent": self.OnZoomMove,
-                    "LeftButtonPressEvent": self.OnZoomClick,
-                    "LeftButtonReleaseEvent": self.OnReleaseZoomClick,
-                    },
-              const.STATE_SPIN:
-                    {
-                    "MouseMoveEvent": self.OnSpinMove,
-                    "LeftButtonPressEvent": self.OnSpinClick,
-                    "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
-                    },
-              const.STATE_WL:
-                    {
-                    "MouseMoveEvent": self.OnWindowLevelMove,
-                    "LeftButtonPressEvent": self.OnWindowLevelClick,
-                    "LeftButtonReleaseEvent":self.OnWindowLevelRelease
-                    },
-              const.STATE_DEFAULT:
-                    {
-                    },
-              const.VOLUME_STATE_SEED:
-                    {
-                    "LeftButtonPressEvent": self.OnInsertSeed
-                    },
-              const.STATE_MEASURE_DISTANCE:
-                  {
-                  "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
-                  },
-              const.STATE_MEASURE_ANGLE:
-                  {
-                  "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
-                  }
-              }
+        cleanup = getattr(self.style, 'CleanUp', None)
+        if cleanup:
+            self.style.CleanUp()
 
-        if self._last_state in (const.STATE_MEASURE_DISTANCE,
-                const.STATE_MEASURE_ANGLE):
-            if self.measures and not self.measures[-1].text_actor:
-                del self.measures[-1]
+        del self.style
 
-        if state == const.STATE_WL:
-            self.on_wl = True
-            if self.raycasting_volume:
-                self.text.Show()
-                self.interactor.Render()
-        else:
-            self.on_wl = False
-            self.text.Hide()
-            self.interactor.Render()
+        style = styles.Styles.get_style(state)(self)
 
-        if state in (const.STATE_MEASURE_DISTANCE,
-                const.STATE_MEASURE_ANGLE):
-            self.interactor.SetPicker(self.measure_picker)
+        setup = getattr(style, 'SetUp', None)
+        if setup:
+            style.SetUp()
 
-        if (state == const.STATE_ZOOM_SL):
-            style = vtk.vtkInteractorStyleRubberBandZoom()
-            self.interactor.SetInteractorStyle(style)
-            self.style = style
-        else:
-            style = vtk.vtkInteractorStyleTrackballCamera()
-            self.interactor.SetInteractorStyle(style)
-            self.style = style
+        self.style = style
+        self.interactor.SetInteractorStyle(style)
+        self.interactor.Render()
 
-            # Check each event available for each mode
-            for event in action.get(state, []):
-                # Bind event
-                style.AddObserver(event,action[state][event])
+        self.state = state
 
-        self._last_state = state
-
-    def OnSpinMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Spin()
-            evt.OnRightButtonDown()
-
-    def OnSpinClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartSpin()
-
-    def OnReleaseSpinClick(self,evt,obj):
-        self.mouse_pressed = 0
-        evt.EndSpin()
-
-    def OnZoomMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Dolly()
-            evt.OnRightButtonDown()
-
-    def OnZoomClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartDolly()
-
-    def OnReleaseZoomClick(self,evt,obj):
-        self.mouse_pressed = 0
-        evt.EndDolly()
-
-    def OnPanMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Pan()
-            evt.OnRightButtonDown()
-
-    def OnPanClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartPan()
-
-    def OnReleasePanClick(self,evt,obj):
-        self.mouse_pressed = 0
-        evt.EndPan()
-
-    def OnWindowLevelMove(self, obj, evt):
-        if self.onclick and self.raycasting_volume:
-            mouse_x, mouse_y = self.interactor.GetEventPosition()
-            diff_x = mouse_x - self.last_x
-            diff_y = mouse_y - self.last_y
-            self.last_x, self.last_y = mouse_x, mouse_y
-            Publisher.sendMessage('Set raycasting relative window and level',
-                                  diff_wl=diff_x, diff_ww=diff_y)
-            Publisher.sendMessage('Refresh raycasting widget points')
-            self.interactor.Render()
-
-    def OnWindowLevelClick(self, obj, evt):
-        if const.RAYCASTING_WWWL_BLUR:
-            self.style.StartZoom()
-        self.onclick = True
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        self.last_x, self.last_y = mouse_x, mouse_y
-
-    def OnWindowLevelRelease(self, obj, evt):
-        self.onclick = False
-        if const.RAYCASTING_WWWL_BLUR:
-            self.style.EndZoom()
-
-    def OnEnableStyle(self, style):
-        if (style in const.VOLUME_STYLES):
+    def enable_style(self, style):
+        if styles.Styles.has_style(style):
             new_state = self.interaction_style.AddState(style)
             self.SetInteractorStyle(new_state)
         else:
@@ -1848,73 +1726,6 @@ class Viewer(wx.Panel):
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
-
-    def OnInsertSeed(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        #x,y = obj.GetLastEventPosition()
-        self.picker.Pick(x, y, 0, self.ren)
-        point_id = self.picker.GetPointId()
-        self.seed_points.append(point_id)
-        self.interactor.Render()
-
-    def OnInsertLinearMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        self.measure_picker.Pick(x, y, 0, self.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-
-        proj = prj.Project()
-        radius = min(proj.spacing) * PROP_MEASURE
-        if self.measure_picker.GetActor():
-            # if not self.measures or self.measures[-1].IsComplete():
-                # m = measures.LinearMeasure(self.ren)
-                # m.AddPoint(x, y, z)
-                # self.measures.append(m)
-            # else:
-                # m = self.measures[-1]
-                # m.AddPoint(x, y, z)
-                # if m.IsComplete():
-                    # Publisher.sendMessage("Add measure to list",
-                            # (u"3D", _(u"%.3f mm" % m.GetValue())))
-            Publisher.sendMessage("Add measurement point",
-                                  position=(x, y,z),
-                                  type=const.LINEAR,
-                                  location=const.SURFACE,
-                                  radius=radius)
-            self.interactor.Render()
-
-    def OnInsertAngularMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        self.measure_picker.Pick(x, y, 0, self.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-
-        proj = prj.Project()
-        radius = min(proj.spacing) * PROP_MEASURE
-        if self.measure_picker.GetActor():
-            # if not self.measures or self.measures[-1].IsComplete():
-                # m = measures.AngularMeasure(self.ren)
-                # m.AddPoint(x, y, z)
-                # self.measures.append(m)
-            # else:
-                # m = self.measures[-1]
-                # m.AddPoint(x, y, z)
-                # if m.IsComplete():
-                    # index = len(self.measures) - 1
-                    # name = "M"
-                    # colour = m.colour
-                    # type_ = _("Angular")
-                    # location = u"3D"
-                    # value = u"%.2f˚"% m.GetValue()
-                    # msg =  'Update measurement info in GUI',
-                    # Publisher.sendMessage(msg,
-                                               # (index, name, colour,
-                                                # type_, location,
-                                                # value))
-            Publisher.sendMessage("Add measurement point",
-                                  position=(x, y,z),
-                                  type=const.ANGULAR,
-                                  location=const.SURFACE,
-                                  radius=radius)
-            self.interactor.Render()
 
     def Reposition3DPlane(self, plane_label):
         if not(self.added_actor) and not(self.raycasting_volume):
