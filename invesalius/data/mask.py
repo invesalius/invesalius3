@@ -22,18 +22,18 @@ import plistlib
 import random
 import shutil
 import tempfile
-
-import numpy as np
-import vtk
+from distutils.version import LooseVersion
 
 import invesalius.constants as const
+import invesalius.data.converters as converters
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
-
+import numpy as np
+import vtk
 from invesalius_cy import floodfill
-
 from pubsub import pub as Publisher
 from scipy import ndimage
+
 
 class EditionHistoryNode(object):
     def __init__(self, index, orientation, array, clean=False):
@@ -189,6 +189,8 @@ class Mask():
     def __init__(self):
         Mask.general_index += 1
         self.index = Mask.general_index
+        self.matrix = None
+        self.spacing = (1.0, 1.0, 1.0)
         self.imagedata = ''
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
@@ -198,6 +200,8 @@ class Mask():
         self.is_shown = 1
         self.edited_points = {}
         self.was_edited = False
+        self._volume_mapper = None
+        self._3d_actor = None
         self.__bind_events()
 
         self.history = EditionHistory()
@@ -205,6 +209,9 @@ class Mask():
     def __bind_events(self):
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
+
+    def as_vtkimagedata(self):
+        converters.to_vtk(self.matrix, self.spacing)
 
     def save_history(self, index, orientation, array, p_array, clean=False):
         self.history.new_node(index, orientation, array, p_array, clean)
@@ -225,6 +232,34 @@ class Mask():
 
     def on_show(self):
         self.history._config_undo_redo(self.is_shown)
+
+    def create_3d_preview(self):
+        if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+            if int(ses.Session().rendering) == 0:
+                volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+                #volume_mapper.AutoAdjustSampleDistancesOff()
+                self._volume_mapper = volume_mapper
+                volume_mapper.IntermixIntersectingGeometryOn()
+            else:
+                volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+                volume_mapper.UseJitteringOn()
+                self._volume_mapper = volume_mapper
+
+            self._volume_mapper.SetBlendModeToIsoSurface()
+        else:
+            isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
+            isosurfaceFunc.SetIsoValue(127)
+
+            self._volume_mapper = vtk.vtkVolumeRayCastMapper()
+            self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
+
+        self._volume_mapper.SetInputData(self.as_vtkimagedata())
+        self._volume_mapper.Update()
+
+        self._3d_actor = vtk.vtkActor()
+        self._3d_actor.SetMapper(self._volume_mapper)
+
+        return self._3d_actor
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
@@ -334,6 +369,7 @@ class Mask():
 
         new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]
+        new_mask.spacing = self.spacing
 
         return new_mask
 

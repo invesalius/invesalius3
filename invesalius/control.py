@@ -1108,3 +1108,8 @@ class Controller():
 
         if err_msg:
             dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
+
+    def show_mask_preview(self):
+        if self.Slice.current_mask:
+            mask_3d_actor = self.Slice.current_mask.create_3d_preview()
+            Publisher.sendMessage("Load mask preview", mask_3d_actor)

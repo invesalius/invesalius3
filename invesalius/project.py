@@ -331,6 +331,7 @@ class Project(metaclass=Singleton):
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
+            m.spacing = self.spacing
             m.OpenPList(filepath)
             self.mask_dict[m.index] = m
 
