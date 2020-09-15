@@ -33,6 +33,7 @@ import vtk
 from invesalius_cy import floodfill
 from pubsub import pub as Publisher
 from scipy import ndimage
+from vtk.util import numpy_support
 
 
 class EditionHistoryNode(object):
@@ -191,7 +192,7 @@ class Mask():
         self.index = Mask.general_index
         self.matrix = None
         self.spacing = (1.0, 1.0, 1.0)
-        self.imagedata = ''
+        self.imagedata = None
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
@@ -211,7 +212,8 @@ class Mask():
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
     def as_vtkimagedata(self):
-        converters.to_vtk(self.matrix, self.spacing)
+        vimg = converters.to_vtk(self.matrix[1:, 1:, 1:], self.spacing)
+        return vimg
 
     def save_history(self, index, orientation, array, p_array, clean=False):
         self.history.new_node(index, orientation, array, p_array, clean)
@@ -234,32 +236,67 @@ class Mask():
         self.history._config_undo_redo(self.is_shown)
 
     def create_3d_preview(self):
-        if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
-            if int(ses.Session().rendering) == 0:
-                volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
-                #volume_mapper.AutoAdjustSampleDistancesOff()
-                self._volume_mapper = volume_mapper
-                volume_mapper.IntermixIntersectingGeometryOn()
+        if self._3d_actor is None:
+            if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                if int(ses.Session().rendering) == 0:
+                    volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+                    #volume_mapper.AutoAdjustSampleDistancesOff()
+                    self._volume_mapper = volume_mapper
+                    volume_mapper.IntermixIntersectingGeometryOn()
+                else:
+                    volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+                    volume_mapper.UseJitteringOn()
+                    self._volume_mapper = volume_mapper
+
+                #  self._volume_mapper.SetBlendModeToIsoSurface()
             else:
-                volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
-                volume_mapper.UseJitteringOn()
-                self._volume_mapper = volume_mapper
+                isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
+                isosurfaceFunc.SetIsoValue(127)
 
-            self._volume_mapper.SetBlendModeToIsoSurface()
-        else:
-            isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
-            isosurfaceFunc.SetIsoValue(127)
+                self._volume_mapper = vtk.vtkVolumeRayCastMapper()
+                self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
 
-            self._volume_mapper = vtk.vtkVolumeRayCastMapper()
-            self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
+            self.imagedata = self.as_vtkimagedata()
+            self._volume_mapper.SetInputData(self.imagedata)
+            self._volume_mapper.Update()
 
-        self._volume_mapper.SetInputData(self.as_vtkimagedata())
-        self._volume_mapper.Update()
+            r, g, b = self.colour
 
-        self._3d_actor = vtk.vtkActor()
-        self._3d_actor.SetMapper(self._volume_mapper)
+            cf = vtk.vtkColorTransferFunction()
+            cf.RemoveAllPoints()
+            cf.AddRGBPoint(0.0, 0, 0, 0)
+            cf.AddRGBPoint(255.0, r, g, b)
 
+            pf = vtk.vtkPiecewiseFunction()
+            pf.RemoveAllPoints()
+            pf.AddPoint(0.0, 0.0)
+            pf.AddPoint(127, 1.0)
+
+            vp= vtk.vtkVolumeProperty()
+            vp.SetColor(cf)
+            vp.SetScalarOpacity(pf)
+            vp.ShadeOn()
+            vp.SetInterpolationTypeToLinear()
+            vp.SetSpecular(1.75)
+            vp.SetSpecularPower(8)
+
+            self._3d_actor = vtk.vtkVolume()
+            self._3d_actor.SetMapper(self._volume_mapper)
+            self._3d_actor.SetProperty(vp)
+            self._3d_actor.Update()
+
+        print(self._volume_mapper)
         return self._3d_actor
+
+    def _update_imagedata(self):
+        if self.imagedata is not None:
+            np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
+            np_image[:] = self.matrix[1:, 1:, 1:].reshape(-1)
+            self.imagedata.Modified()
+            self._3d_actor.Update()
+
+            Publisher.sendMessage("Render volume viewer")
+
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}

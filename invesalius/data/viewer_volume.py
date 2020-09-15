@@ -1665,8 +1665,11 @@ class Viewer(wx.Panel):
         # self._to_show_ball -= 1
         # self._check_and_set_ball_visibility()
 
-    def load_mask_preview(self, mask_3d_actor):
-        self.ren.AddActor(mask_3d_actor)
+    def load_mask_preview(self, mask_3d_actor, flag=True):
+        if flag:
+            self.ren.AddActor(mask_3d_actor)
+        else:
+            self.ren.RemoveActor(mask_3d_actor)
 
     def OnSetViewAngle(self, view):
         self.SetViewAngle(view)

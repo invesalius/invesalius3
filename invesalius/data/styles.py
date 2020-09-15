@@ -1445,6 +1445,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer._flush_buffer = True
         self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
         self.viewer._flush_buffer = False
+        self.viewer.slice_.current_mask._update_imagedata()
 
     def EOnScrollForward(self, evt, obj):
         iren = self.viewer.interactor

@@ -126,6 +126,8 @@ class Controller():
 
         Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
+        Publisher.subscribe(self.show_mask_preview, 'Show mask preview')
+
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
         proj.spacing = spacing
@@ -1109,7 +1111,9 @@ class Controller():
         if err_msg:
             dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
 
-    def show_mask_preview(self):
-        if self.Slice.current_mask:
-            mask_3d_actor = self.Slice.current_mask.create_3d_preview()
-            Publisher.sendMessage("Load mask preview", mask_3d_actor)
+    def show_mask_preview(self, index, flag=True):
+        proj = prj.Project()
+        mask = proj.mask_dict[index]
+        slc = self.Slice.do_threshold_to_all_slices(mask)
+        mask_3d_actor = mask.create_3d_preview()
+        Publisher.sendMessage("Load mask preview", mask_3d_actor=mask_3d_actor, flag=flag)
