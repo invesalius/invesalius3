@@ -1667,9 +1667,13 @@ class Viewer(wx.Panel):
 
     def load_mask_preview(self, mask_3d_actor, flag=True):
         if flag:
-            self.ren.AddActor(mask_3d_actor)
+            self.ren.AddVolume(mask_3d_actor)
         else:
-            self.ren.RemoveActor(mask_3d_actor)
+            self.ren.RemoveVolume(mask_3d_actor)
+
+        if self.ren.GetActors().GetNumberOfItems() == 0 and self.ren.GetVolumes().GetNumberOfItems() == 1:
+            self.ren.ResetCamera()
+            self.ren.ResetCameraClippingRange()
 
     def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
