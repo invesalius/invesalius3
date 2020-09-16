@@ -558,7 +558,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 120)
         self.SetColumnWidth(2, 90)
-        self.SetColumnWidth(3, 25)
+        self.SetColumnWidth(3, 90)
 
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
