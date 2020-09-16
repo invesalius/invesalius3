@@ -292,8 +292,11 @@ class Mask():
 
     def _update_imagedata(self, update_volume_viewer=True):
         if self.imagedata is not None:
+            dz, dy, dx = self.matrix.shape
             np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
             np_image[:] = self.matrix[1:, 1:, 1:].reshape(-1)
+            self.imagedata.SetDimensions(dx - 1, dy - 1, dz - 1)
+            self.imagedata.SetSpacing(self.spacing)
             self.imagedata.Modified()
             self._3d_actor.Update()
 
@@ -358,10 +361,12 @@ class Mask():
         elif axis == 2:
             submatrix[:] = submatrix[:, :, ::-1]
             self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
+        self.modified()
 
     def OnSwapVolumeAxes(self, axes):
         axis0, axis1 = axes
         self.matrix = self.matrix.swapaxes(axis0, axis1)
+        self.modified()
 
     def _save_mask(self, filename):
         shutil.copyfile(self.temp_file, filename)
