@@ -175,8 +175,8 @@ class SegmentProcess(ctx.Process):
                 self.mask = slc.Slice().create_new_mask(name=name)
 
         self.mask.was_edited = True
-        self.mask.matrix[:] = 1
         self.mask.matrix[1:, 1:, 1:] = (self._probability_array >= threshold) * 255
+        self.mask.modified(True)
 
     def get_completion(self):
         return self._comm_array[0]
