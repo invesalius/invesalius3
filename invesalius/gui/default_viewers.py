@@ -361,7 +361,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane = pbtn.PlateButton(self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         self.button_target.Enable(0)
-        self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
+        #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
@@ -385,7 +385,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(self.button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(self.button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
-        sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
+        #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
         self.navigation_status = False
         self.status_target_select = False
