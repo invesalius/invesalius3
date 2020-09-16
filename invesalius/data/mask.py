@@ -288,15 +288,15 @@ class Mask():
         print(self._volume_mapper)
         return self._3d_actor
 
-    def _update_imagedata(self):
+    def _update_imagedata(self, update_volume_viewer=True):
         if self.imagedata is not None:
             np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
             np_image[:] = self.matrix[1:, 1:, 1:].reshape(-1)
             self.imagedata.Modified()
             self._3d_actor.Update()
 
-            Publisher.sendMessage("Render volume viewer")
-
+            if update_volume_viewer:
+                Publisher.sendMessage("Render volume viewer")
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
@@ -382,6 +382,13 @@ class Mask():
         self.temp_file = tempfile.mktemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = np.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
+
+    def modified(self, all_volume=False):
+        if all_volume:
+            self.matrix[0] = 1
+            self.matrix[:, 0, :] = 1
+            self.matrix[:, :, 0] = 1
+        self._update_imagedata()
 
     def clean(self):
         self.matrix[1:, 1:, 1:] = 0
