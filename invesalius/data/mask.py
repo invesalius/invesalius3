@@ -203,6 +203,7 @@ class Mask():
         self.was_edited = False
         self._volume_mapper = None
         self._3d_actor = None
+        self.auto_update_mask = True
         self.__bind_events()
 
         self.history = EditionHistory()

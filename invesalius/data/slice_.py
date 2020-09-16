@@ -384,9 +384,21 @@ class Slice(metaclass=utils.Singleton):
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
 
+        if self.current_mask.auto_update_mask and self.current_mask._3d_actor is not None:
+            to_reload = True
+            self.SetMaskThreshold(
+                index,
+                threshold_range,
+                slice_number = None,
+                orientation = None
+            )
+            self.discard_all_buffers()
+            Publisher.sendMessage("Reload actual slice")
+            self.current_mask.modified(all_volume=True)
+            return
+
         to_reload = False
         if threshold_range != self.current_mask.threshold_range:
-            to_reload = True
             for orientation in self.buffer_slices:
                 self.buffer_slices[orientation].discard_vtk_mask()
                 self.SetMaskThreshold(
@@ -1108,6 +1120,7 @@ class Slice(metaclass=utils.Singleton):
             # TODO: find out a better way to do threshold
             if slice_number is None:
                 for n, slice_ in enumerate(self.matrix):
+                    print(n)
                     m = np.ones(slice_.shape, self.current_mask.matrix.dtype)
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
