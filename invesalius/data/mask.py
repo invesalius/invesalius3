@@ -220,6 +220,7 @@ class Mask():
 
     def undo_history(self, actual_slices):
         self.history.undo(self.matrix, actual_slices)
+        self.modified()
 
         # Marking the project as changed
         session = ses.Session()
@@ -227,6 +228,7 @@ class Mask():
 
     def redo_history(self, actual_slices):
         self.history.redo(self.matrix, actual_slices)
+        self.modified()
 
         # Marking the project as changed
         session = ses.Session()
@@ -392,9 +394,7 @@ class Mask():
 
     def clean(self):
         self.matrix[1:, 1:, 1:] = 0
-        self.matrix[0, :, :] = 1
-        self.matrix[:, 0, :] = 1
-        self.matrix[:, :, 0] = 1
+        self.modified(all_volume=True)
 
     def copy(self, copy_name):
         """

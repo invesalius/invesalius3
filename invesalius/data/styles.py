@@ -2401,6 +2401,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
         self.viewer.slice_.current_mask.was_edited = True
+        self.viewer.slice_.current_mask.modified(True)
         Publisher.sendMessage('Reload actual slice')
 
 
@@ -2712,6 +2713,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
         self.viewer.slice_.current_mask.was_edited = True
+        self.viewer.slice_.current_mask.modified(self.config.target == '3D')
         Publisher.sendMessage('Reload actual slice')
 
     def do_2d_seg(self):

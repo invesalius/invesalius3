@@ -1807,6 +1807,7 @@ class Slice(metaclass=utils.Singleton):
         self.buffer_slices["CORONAL"].discard_vtk_mask()
         self.buffer_slices["SAGITAL"].discard_vtk_mask()
 
+        self.current_mask.modified(target == '3D')
         Publisher.sendMessage("Reload actual slice")
 
     def calc_image_density(self, mask=None):
