@@ -240,24 +240,25 @@ class Mask():
 
     def create_3d_preview(self):
         if self._3d_actor is None:
-            if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
-                if int(ses.Session().rendering) == 0:
-                    volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
-                    #volume_mapper.AutoAdjustSampleDistancesOff()
-                    self._volume_mapper = volume_mapper
-                    volume_mapper.IntermixIntersectingGeometryOn()
-                else:
-                    volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
-                    volume_mapper.UseJitteringOn()
-                    self._volume_mapper = volume_mapper
+            #  if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+
+            if int(ses.Session().rendering) == 0:
+                volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+                #volume_mapper.AutoAdjustSampleDistancesOff()
+                self._volume_mapper = volume_mapper
+                volume_mapper.IntermixIntersectingGeometryOn()
+            else:
+                volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+                volume_mapper.UseJitteringOn()
+                self._volume_mapper = volume_mapper
 
                 #  self._volume_mapper.SetBlendModeToIsoSurface()
-            else:
-                isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
-                isosurfaceFunc.SetIsoValue(127)
+            #  else:
+                #  isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
+                #  isosurfaceFunc.SetIsoValue(127)
 
-                self._volume_mapper = vtk.vtkVolumeRayCastMapper()
-                self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
+                #  self._volume_mapper = vtk.vtkVolumeRayCastMapper()
+                #  self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
 
             self.imagedata = self.as_vtkimagedata()
             self._volume_mapper.SetInputData(self.imagedata)
@@ -280,8 +281,8 @@ class Mask():
             vp.SetScalarOpacity(pf)
             vp.ShadeOn()
             vp.SetInterpolationTypeToLinear()
-            vp.SetSpecular(1.75)
-            vp.SetSpecularPower(8)
+            #vp.SetSpecular(1.75)
+            #vp.SetSpecularPower(8)
 
             self._3d_actor = vtk.vtkVolume()
             self._3d_actor.SetMapper(self._volume_mapper)
