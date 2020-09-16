@@ -261,7 +261,13 @@ class Mask():
                 #  self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
 
             self.imagedata = self.as_vtkimagedata()
-            self._volume_mapper.SetInputData(self.imagedata)
+
+            flip = vtk.vtkImageFlip()
+            flip.SetInputData(self.imagedata)
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+
+            self._volume_mapper.SetInputConnection(flip.GetOutputPort())
             self._volume_mapper.Update()
 
             r, g, b = self.colour
