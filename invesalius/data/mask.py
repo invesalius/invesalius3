@@ -311,8 +311,8 @@ class Mask():
     def _update_imagedata(self, update_volume_viewer=True):
         if self.imagedata is not None:
             dz, dy, dx = self.matrix.shape
-            np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
-            np_image[:] = self.matrix.reshape(-1)
+            #  np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
+            #  np_image[:] = self.matrix.reshape(-1)
             self.imagedata.SetDimensions(dx - 1, dy - 1, dz - 1)
             self.imagedata.SetSpacing(self.spacing)
             self.imagedata.SetExtent(0, dx - 1, 0, dy - 1,  0, dz - 1)

@@ -91,10 +91,10 @@ def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
     image.SetExtent(extent)
     image.GetPointData().SetScalars(v_image)
 
-    image_copy = vtk.vtkImageData()
-    image_copy.DeepCopy(image)
+    #  image_copy = vtk.vtkImageData()
+    #  image_copy.DeepCopy(image)
 
-    return image_copy
+    return image
 
 
 def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
