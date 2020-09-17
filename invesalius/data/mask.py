@@ -247,8 +247,12 @@ class Mask():
             if int(ses.Session().rendering) == 0:
                 volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
                 #volume_mapper.AutoAdjustSampleDistancesOff()
-                self._volume_mapper = volume_mapper
                 volume_mapper.IntermixIntersectingGeometryOn()
+                pix_diag = 2.0
+                volume_mapper.SetImageSampleDistance(0.25)
+                volume_mapper.SetSampleDistance(pix_diag / 5.0)
+
+                self._volume_mapper = volume_mapper
             else:
                 volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
                 volume_mapper.UseJitteringOn()
@@ -292,6 +296,9 @@ class Mask():
             vp.SetInterpolationTypeToLinear()
             #vp.SetSpecular(1.75)
             #vp.SetSpecularPower(8)
+
+            if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
+                vp.SetScalarOpacityUnitDistance(pix_diag)
 
             self._3d_actor = vtk.vtkVolume()
             self._3d_actor.SetMapper(self._volume_mapper)
