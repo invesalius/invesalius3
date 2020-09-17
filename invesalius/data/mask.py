@@ -213,7 +213,9 @@ class Mask():
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
     def as_vtkimagedata(self):
-        vimg = converters.to_vtk(self.matrix[1:, 1:, 1:], self.spacing)
+        print("Converting to VTK")
+        vimg = converters.to_vtk_mask(self.matrix, self.spacing)
+        print("Converted")
         return vimg
 
     def save_history(self, index, orientation, array, p_array, clean=False):
@@ -275,6 +277,7 @@ class Mask():
             cf = vtk.vtkColorTransferFunction()
             cf.RemoveAllPoints()
             cf.AddRGBPoint(0.0, 0, 0, 0)
+            cf.AddRGBPoint(254.0, r, g, b)
             cf.AddRGBPoint(255.0, r, g, b)
 
             pf = vtk.vtkPiecewiseFunction()
@@ -302,9 +305,10 @@ class Mask():
         if self.imagedata is not None:
             dz, dy, dx = self.matrix.shape
             np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
-            np_image[:] = self.matrix[1:, 1:, 1:].reshape(-1)
+            np_image[:] = self.matrix.reshape(-1)
             self.imagedata.SetDimensions(dx - 1, dy - 1, dz - 1)
             self.imagedata.SetSpacing(self.spacing)
+            self.imagedata.SetExtent(0, dx - 1, 0, dy - 1,  0, dz - 1)
             self.imagedata.Modified()
             self._3d_actor.Update()
 
