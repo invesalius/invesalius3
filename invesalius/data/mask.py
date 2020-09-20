@@ -258,7 +258,9 @@ class Mask():
                 volume_mapper.UseJitteringOn()
                 self._volume_mapper = volume_mapper
 
-                #  self._volume_mapper.SetBlendModeToIsoSurface()
+                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                    self._volume_mapper.SetBlendModeToIsoSurface()
+
             #  else:
                 #  isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
                 #  isosurfaceFunc.SetIsoValue(127)
@@ -299,6 +301,9 @@ class Mask():
 
             if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
                 vp.SetScalarOpacityUnitDistance(pix_diag)
+            else:
+                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                    vp.GetIsoSurfaceValues().SetValue(0, 127)
 
             self._3d_actor = vtk.vtkVolume()
             self._3d_actor.SetMapper(self._volume_mapper)
