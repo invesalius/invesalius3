@@ -1030,16 +1030,17 @@ class MeasuresListCtrlPanel(InvListCtrl):
             self.RemoveMeasurements()
 
     def OnRemoveGUIMeasure(self, measure_index):
-        self.DeleteItem(measure_index)
+        if measure_index in self._list_index:
+            self.DeleteItem(measure_index)
 
-        old_dict = self._list_index
-        new_dict = {}
-        j = 0
-        for i in old_dict:
-            if i != measure_index:
-                new_dict[j] = old_dict[i]
-                j+=1
-        self._list_index = new_dict
+            old_dict = self._list_index
+            new_dict = {}
+            j = 0
+            for i in old_dict:
+                if i != measure_index:
+                    new_dict[j] = old_dict[i]
+                    j+=1
+            self._list_index = new_dict
 
     def RemoveMeasurements(self):
         """

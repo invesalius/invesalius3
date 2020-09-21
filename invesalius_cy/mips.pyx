@@ -28,14 +28,14 @@ def lmip(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t tmin,
 
     # AXIAL
     if axis == 0:
-        for x in xrange(sx):
-            for y in xrange(sy):
+        for x in range(sx):
+            for y in range(sy):
                 max = image[0, y, x]
                 if max >= tmin and max <= tmax:
                     start = 1
                 else:
                     start = 0
-                for z in xrange(sz):
+                for z in range(sz):
                     if image[z, y, x] > max:
                         max = image[z, y, x]
 
@@ -49,14 +49,14 @@ def lmip(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t tmin,
 
     #CORONAL
     elif axis == 1:
-        for z in xrange(sz):
-            for x in xrange(sx):
+        for z in range(sz):
+            for x in range(sx):
                 max = image[z, 0, x]
                 if max >= tmin and max <= tmax:
                     start = 1
                 else:
                     start = 0
-                for y in xrange(sy):
+                for y in range(sy):
                     if image[z, y, x] > max:
                         max = image[z, y, x]
 
@@ -70,14 +70,14 @@ def lmip(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t tmin,
 
     #CORONAL
     elif axis == 2:
-        for z in xrange(sz):
-            for y in xrange(sy):
+        for z in range(sz):
+            for y in range(sy):
                 max = image[z, y, 0]
                 if max >= tmin and max <= tmax:
                     start = 1
                 else:
                     start = 0
-                for x in xrange(sx):
+                for x in range(sx):
                     if image[z, y, x] > max:
                         max = image[z, y, x]
 
@@ -164,11 +164,11 @@ def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
     # AXIAL
     if axis == 0:
         for x in prange(sx, nogil=True):
-            for y in xrange(sy):
+            for y in range(sy):
                 fmax = 0.0
                 alpha_p = 0.0
                 colour_p = 0.0
-                for z in xrange(sz):
+                for z in range(sz):
                     vl = image[z, y, x]
                     fpi = 1.0/(max - min) * (vl - min)
                     if fpi > fmax:
@@ -198,11 +198,11 @@ def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
     #CORONAL
     elif axis == 1:
         for z in prange(sz, nogil=True):
-            for x in xrange(sx):
+            for x in range(sx):
                 fmax = 0.0
                 alpha_p = 0.0
                 colour_p = 0.0
-                for y in xrange(sy):
+                for y in range(sy):
                     vl = image[z, y, x]
                     fpi = 1.0/(max - min) * (vl - min)
                     if fpi > fmax:
@@ -229,11 +229,11 @@ def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
     #AXIAL
     elif axis == 2:
         for z in prange(sz, nogil=True):
-            for y in xrange(sy):
+            for y in range(sy):
                 fmax = 0.0
                 alpha_p = 0.0
                 colour_p = 0.0
-                for x in xrange(sx):
+                for x in range(sx):
                     vl = image[z, y, x]
                     fpi = 1.0/(max - min) * (vl - min)
                     if fpi > fmax:

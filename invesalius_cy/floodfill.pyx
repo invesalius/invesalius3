@@ -142,11 +142,11 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
 
             out[z, y, x] = fill
 
-            for k in xrange(odz):
+            for k in range(odz):
                 zo = z + k - offset_z
-                for j in xrange(ody):
+                for j in range(ody):
                     yo = y + j - offset_y
-                    for i in xrange(odx):
+                    for i in range(odx):
                         if strct[k, j, i]:
                             xo = x + i - offset_x
                             if 0 <= xo < dx and 0 <= yo < dy and 0 <= zo < dz and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
@@ -254,13 +254,13 @@ def fill_holes_automatically(np.ndarray[mask_t, ndim=3] mask, np.ndarray[np.uint
     dy = mask.shape[1]
     dx = mask.shape[2]
 
-    for z in xrange(dz):
-        for y in xrange(dy):
-            for x in xrange(dx):
+    for z in range(dz):
+        for y in range(dy):
+            for x in range(dx):
                 sizes[labels[z, y, x]] += 1
 
     #Checking if any hole will be filled
-    for i in xrange(nlabels + 1):
+    for i in range(nlabels + 1):
         if sizes[i] <= max_size:
             modified = True
 
@@ -268,8 +268,8 @@ def fill_holes_automatically(np.ndarray[mask_t, ndim=3] mask, np.ndarray[np.uint
         return 0
 
     for z in prange(dz, nogil=True):
-        for y in xrange(dy):
-            for x in xrange(dx):
+        for y in range(dy):
+            for x in range(dx):
                 if sizes[labels[z, y, x]] <= max_size:
                     mask[z, y, x] = 254
 

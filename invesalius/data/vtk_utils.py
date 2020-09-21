@@ -287,3 +287,21 @@ class TextZero(object):
         #  font.SetWeight(wx.FONTWEIGHT_BOLD)
         font.SetSymbolicSize(self.symbolic_syze)
         canvas.draw_text(self.text, (x, y), font=font)
+
+
+def numpy_to_vtkMatrix4x4(affine):
+    """
+    Convert a numpy 4x4 array to a vtk 4x4 matrix
+    :param affine: 4x4 array
+    :return: vtkMatrix4x4 object representing the affine
+    """
+    # test for type and shape of affine matrix
+    # assert isinstance(affine, np.ndarray)
+    assert affine.shape == (4, 4)
+
+    affine_vtk = vtk.vtkMatrix4x4()
+    for row in range(0, 4):
+        for col in range(0, 4):
+            affine_vtk.SetElement(row, col, affine[row, col])
+
+    return affine_vtk

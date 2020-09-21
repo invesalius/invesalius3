@@ -390,6 +390,15 @@ def ShowImportOtherFilesDialog(id_type):
     if id_type == const.ID_NIFTI_IMPORT:
         dlg.SetMessage(_("Import NIFTi 1 file"))
         dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_TREKKER_MASK:
+        dlg.SetMessage(_("Import Trekker mask"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_TREKKER_IMG:
+        dlg.SetMessage(_("Import Trekker anatomical image"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_TREKKER_FOD:
+        dlg.SetMessage(_("Import Trekker FOD"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
     elif id_type == const.ID_PARREC_IMPORT:
         dlg.SetMessage(_("Import PAR/REC file"))
         dlg.SetWildcard(WILDCARD_PARREC)
@@ -511,79 +520,11 @@ def ShowSaveAsProjectDialog(default_filename=None):
     return filename, wildcard == INV_COMPRESSED
 
 
-# Dialog for neuronavigation markers
-def ShowSaveMarkersDialog(default_filename=None):
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None,
-                        _("Save markers as..."),  # title
-                        "",  # last used directory
-                        default_filename,
-                        _("Markers files (*.mks)|*.mks"),
-                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-    # dlg.SetFilterIndex(0) # default is VTI
+def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
 
-    filename = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ok = 1
-        else:
-            ok = 0
-    except(wx._core.PyAssertionError):  # TODO: fix win64
-        filename = dlg.GetPath()
-        ok = 1
-
-    if (ok):
-        extension = "mks"
-        if sys.platform != 'win32':
-            if filename.split(".")[-1] != extension:
-                filename = filename + "." + extension
-
-    os.chdir(current_dir)
-    return filename
-
-def ShowSaveCoordsDialog(default_filename=None):
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None,
-                        _("Save coords as..."),  # title
-                        "",  # last used directory
-                        default_filename,
-                        _("Coordinates files (*.csv)|*.csv"),
-                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-    # dlg.SetFilterIndex(0) # default is VTI
-
-    filename = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ok = 1
-        else:
-            ok = 0
-    except(wx._core.PyAssertionError):  # TODO: fix win64
-        filename = dlg.GetPath()
-        ok = 1
-
-    if (ok):
-        extension = "csv"
-        if sys.platform != 'win32':
-            if filename.split(".")[-1] != extension:
-                filename = filename + "." + extension
-
-    os.chdir(current_dir)
-    return filename
-
-
-def ShowLoadMarkersDialog():
-    current_dir = os.path.abspath(".")
-
-    dlg = wx.FileDialog(None, message=_("Load markers"),
-                        defaultDir="",
-                        defaultFile="",
-                        wildcard=_("Markers files (*.mks)|*.mks"),
-                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
+    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
+                        wildcard=wildcard, style=style)
 
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
@@ -592,73 +533,25 @@ def ShowLoadMarkersDialog():
         if dlg.ShowModal() == wx.ID_OK:
             # This returns a Python list of files that were selected.
             filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError):  # FIX: win64
-        filepath = dlg.GetPath()
-
-    # Destroy the dialog. Don't do this until you are done with it!
-    # BAD things can happen otherwise!
-    dlg.Destroy()
-    os.chdir(current_dir)
-    return filepath
-
-
-def ShowSaveRegistrationDialog(default_filename=None):
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None,
-                        _("Save object registration as..."),  # title
-                        "",  # last used directory
-                        default_filename,
-                        _("Registration files (*.obr)|*.obr"),
-                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-    # dlg.SetFilterIndex(0) # default is VTI
-
-    filename = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ok = 1
+            ok_press = 1
         else:
-            ok = 0
-    except(wx._core.PyAssertionError):  # TODO: fix win64
-        filename = dlg.GetPath()
-        ok = 1
-
-    if (ok):
-        extension = "obr"
-        if sys.platform != 'win32':
-            if filename.split(".")[-1] != extension:
-                filename = filename + "." + extension
-
-    os.chdir(current_dir)
-    return filename
-
-
-def ShowLoadRegistrationDialog():
-    current_dir = os.path.abspath(".")
-
-    dlg = wx.FileDialog(None, message=_("Load object registration"),
-                        defaultDir="",
-                        defaultFile="",
-                        wildcard=_("Registration files (*.obr)|*.obr"),
-                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
-
-    # Show the dialog and retrieve the user response. If it is the OK response,
-    # process the data.
-    filepath = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            # This returns a Python list of files that were selected.
-            filepath = dlg.GetPath()
+            ok_press = 0
     except(wx._core.PyAssertionError):  # FIX: win64
         filepath = dlg.GetPath()
+        ok_press = 1
+
+    # fix the extension if set different than expected
+    if save_ext and ok_press:
+        extension = save_ext
+        if sys.platform != 'win32':
+            if filepath.split(".")[-1] != extension:
+                filepath = filepath + "." + extension
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
     os.chdir(current_dir)
+
     return filepath
 
 
@@ -923,31 +816,9 @@ def SurfaceSelectionRequiredForDuplication():
 
 
 # Dialogs for neuronavigation mode
-def InvalidFiducials():
-    msg = _("Fiducials are invalid. Select all coordinates.")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
+# ----------------------------------
 
-
-def InvalidObjectRegistration():
-    msg = _("Perform coil registration before navigation.")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
-def NavigationTrackerWarning(trck_id, lib_mode):
+def ShowNavigationTrackerWarning(trck_id, lib_mode):
     """
     Spatial Tracker connection error
     """
@@ -979,76 +850,7 @@ def NavigationTrackerWarning(trck_id, lib_mode):
     dlg.Destroy()
 
 
-def InvalidMarkersFile():
-    msg = _("The TXT file is invalid.")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
-def NoMarkerSelected():
-    msg = _("No data selected")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
-def DeleteAllMarkers():
-    msg = _("Do you really want to delete all markers?")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
-    result = dlg.ShowModal()
-    dlg.Destroy()
-    return result
-
-def DeleteTarget():
-    msg = _("Target deleted")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-def NewTarget():
-    msg = _("New target selected")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-def InvalidTargetID():
-    msg = _("Sorry, you cannot use 'TARGET' ID")
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                                wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                                wx.ICON_INFORMATION | wx.OK)
-    dlg.ShowModal()
-    dlg.Destroy()
-
-def EnterMarkerID(default):
+def ShowEnterMarkerID(default):
     msg = _("Edit marker ID")
     if sys.platform == 'darwin':
         dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
@@ -1058,6 +860,36 @@ def EnterMarkerID(default):
     result = dlg.GetValue()
     dlg.Destroy()
     return result
+
+
+def ShowConfirmationDialog(msg=_('Proceed?')):
+    # msg = _("Do you want to delete all markers?")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+    result = dlg.ShowModal()
+    dlg.Destroy()
+    return result
+
+
+def ShowColorDialog(color_current):
+    cdata = wx.ColourData()
+    cdata.SetColour(wx.Colour(color_current))
+    dlg = wx.ColourDialog(None, data=cdata)
+    dlg.GetColourData().SetChooseFull(True)
+
+    if dlg.ShowModal() == wx.ID_OK:
+        color_new = dlg.GetColourData().GetColour().Get(includeAlpha=False)
+    else:
+        color_new = None
+
+    dlg.Destroy()
+    return color_new
+
+# ----------------------------------
 
 
 class NewMask(wx.Dialog):
@@ -3572,7 +3404,10 @@ class ObjectCalibrationDialog(wx.Dialog):
             else:
                 coord = coord_raw[0, :]
         else:
-            NavigationTrackerWarning(0, 'choose')
+            ShowNavigationTrackerWarning(0, 'choose')
+
+        if btn_id == 3:
+            coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
@@ -3585,7 +3420,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                     self.ball_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
             self.Refresh()
         else:
-            NavigationTrackerWarning(0, 'choose')
+            ShowNavigationTrackerWarning(0, 'choose')
 
     def OnChoiceRefMode(self, evt):
         # When ref mode is changed the tracker coordinates are set to nan

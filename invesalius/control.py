@@ -32,6 +32,7 @@ import invesalius.data.mask as msk
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
+import invesalius.data.transformations as tr
 import invesalius.data.volume as volume
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
@@ -173,7 +174,7 @@ class Controller():
             #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
         dirpath = dialog.ShowImportBitmapDirDialog(self.frame)
@@ -197,7 +198,7 @@ class Controller():
             #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
         # Import project
         dirpath = dialog.ShowImportDirDialog(self.frame)
         if dirpath and not os.listdir(dirpath):
@@ -218,7 +219,7 @@ class Controller():
             # Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
         # Warning for limited support to Analyze format
         if id_type == const.ID_ANALYZE_IMPORT:
@@ -336,6 +337,10 @@ class Controller():
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
+        if proj.affine:
+            self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+        else:
+            self.Slice.affine = None
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
@@ -368,7 +373,7 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
-        Publisher.sendMessage('Set slice interaction style', style=const.STATE_DEFAULT)
+        Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
 
@@ -531,6 +536,8 @@ class Controller():
 
         Publisher.sendMessage('End busy cursor')
 
+    #-------------------------------------------------------------------------------------
+
     def LoadProject(self):
         proj = prj.Project()
         
@@ -688,6 +695,9 @@ class Controller():
         proj.matrix_dtype = matrix.dtype.name
         proj.matrix_filename = matrix_filename
 
+        if self.affine is not None:
+            proj.affine = self.affine.tolist()
+
         # Orientation must be CORONAL in order to as_closes_canonical and
         # swap axis in img2memmap to work in a standardized way.
         # TODO: Create standard import image for all acquisition orientations
@@ -700,7 +710,6 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
-        proj.affine = self.affine.tolist()
 
         ######
         session = ses.Session()
@@ -981,10 +990,10 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
-        if group.affine.any():
-            self.affine = group.affine
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
+        # if group.affine.any():
+        #     self.affine = group.affine
+        #     Publisher.sendMessage('Update affine matrix',
+        #                           affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])
@@ -999,6 +1008,18 @@ class Controller():
         self.Slice.spacing = dimsf
         self.Slice.window_level = wl
         self.Slice.window_width = ww
+
+        if group.affine.any():
+            # TODO: replace the inverse of the affine by the actual affine in the whole code
+            # remove scaling factor for non-unitary voxel dimensions
+            # self.affine = image_utils.world2invspace(affine=group.affine)
+            scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
+            self.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
+                                                          angles=angs, translate=trans, perspective=persp))
+            # print("repos_img: {}".format(repos_img))
+            self.Slice.affine = self.affine
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine, status=True)
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
         Publisher.sendMessage('Update threshold limits list',

@@ -20,6 +20,7 @@
 from math import sin, cos
 import numpy as np
 
+import invesalius.data.bases as db
 import invesalius.data.transformations as tr
 import invesalius.constants as const
 
@@ -74,7 +75,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((trans_obj, angles_obj))
 
     coord = np.vstack([coord1, coord2, coord3])
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+    # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
 
     return coord
 
@@ -232,19 +233,45 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :return: six coordinates x, y, z, alfa, beta and gama
     """
 
+    # Started to take a more reasonable, limited random coordinate generator based on
+    # the collected fiducials, but it is more complicated than this. It should account for the
+    # dynamic reference computation
+    # if trk_init:
+    #     fiducials = trk_init[3:, :]
+    #     fids_max = fiducials.max(axis=0)
+    #     fids_min = fiducials.min(axis=0)
+    #     fids_lim = np.hstack((fids_min[np.newaxis, :].T, fids_max[np.newaxis, :].T))
+    #
+    #     dx = fids_max[]
+    #     dt = [-180, 180]
+    #
+    # else:
+
+    dx = [-70, 70]
+    dt = [-180, 180]
+
+    coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                      uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                      uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord3 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                       uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                       uniform(*dt), uniform(*dt), uniform(*dt)])
+
     sleep(0.05)
 
-    coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                      uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
-    coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
-    coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
-    coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    # coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    #
+    # coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    #
+    # coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    #
+    # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
     Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
 
@@ -297,19 +324,20 @@ def dynamic_reference_m(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
-
     a, b, g = np.radians(reference[3:6])
 
-    T = tr.translation_matrix(reference[:3])
-    R = tr.euler_matrix(a, b, g, 'rzyx')
-    M = np.asmatrix(tr.concatenate_matrices(T, R))
-    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
-    # print M
-    probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
-    coord_rot = M.I * probe_4
-    coord_rot = np.squeeze(np.asarray(coord_rot))
+    trans = tr.translation_matrix(reference[:3])
+    rot = tr.euler_matrix(a, b, g, 'rzyx')
+    affine = tr.concatenate_matrices(trans, rot)
+    probe_4 = np.vstack((probe[:3].reshape([3, 1]), 1.))
+    coord_rot = np.linalg.inv(affine) @ probe_4
+    # minus sign to the z coordinate
+    coord_rot[2, 0] = -coord_rot[2, 0]
+    coord_rot = coord_rot[:3, 0].tolist()
+    coord_rot.extend(probe[3:])
 
-    return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+    return coord_rot
+
 
 def dynamic_reference_m2(probe, reference):
     """
@@ -331,69 +359,17 @@ def dynamic_reference_m2(probe, reference):
     T_p = tr.translation_matrix(probe[:3])
     R = tr.euler_matrix(a, b, g, 'rzyx')
     R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-    M = np.asmatrix(tr.concatenate_matrices(T, R))
-    M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
-    # print M
+    M = tr.concatenate_matrices(T, R)
+    M_p = tr.concatenate_matrices(T_p, R_p)
 
-    M_dyn = M.I * M_p
+    M_dyn = np.linalg.inv(M) @ M_p
 
     al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
     coord_rot = tr.translation_from_matrix(M_dyn)
 
     coord_rot = np.squeeze(coord_rot)
 
-    # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
-    # coord_rot_test = M.I * probe_4
-    # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
-    #
-    # print "coord_rot: ", coord_rot
-    # print "coord_rot_test: ", coord_rot_test
-    # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
-
     return coord_rot[0], coord_rot[1], coord_rot[2], np.degrees(al), np.degrees(be), np.degrees(ga)
-
-# def dynamic_reference_m3(probe, reference):
-#     """
-#     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
-#     rotation angles of reference to rotate the probe coordinate and returns the x, y, z
-#     difference between probe and reference. Angles sequences and equation was extracted from
-#     Polhemus manual and Attitude matrix in Wikipedia.
-#     General equation is:
-#     coord = Mrot * (probe - reference)
-#     :param probe: sensor one defined as probe
-#     :param reference: sensor two defined as reference
-#     :return: rotated and translated coordinates
-#     """
-#
-#     a, b, g = np.radians(reference[3:6])
-#     a_p, b_p, g_p = np.radians(probe[3:6])
-#
-#     T = tr.translation_matrix(reference[:3])
-#     T_p = tr.translation_matrix(probe[:3])
-#     R = tr.euler_matrix(a, b, g, 'rzyx')
-#     R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-#     M = np.asmatrix(tr.concatenate_matrices(T, R))
-#     M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-#     # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
-#     # print M
-#
-#     M_dyn = M.I * M_p
-#
-#     # al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
-#     # coord_rot = tr.translation_from_matrix(M_dyn)
-#     #
-#     # coord_rot = np.squeeze(coord_rot)
-#
-#     # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
-#     # coord_rot_test = M.I * probe_4
-#     # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
-#     #
-#     # print "coord_rot: ", coord_rot
-#     # print "coord_rot_test: ", coord_rot_test
-#     # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
-#
-#     return M_dyn
 
 
 def str2float(data):
@@ -414,3 +390,15 @@ def str2float(data):
     data = [float(s) for s in data[1:len(data)]]
 
     return data
+
+
+def offset_coordinate(p_old, norm_vec, offset):
+    """
+    Translate the coordinates of a point along a vector
+    :param p_old: (x, y, z) array with current point coordinates
+    :param norm_vec: (vx, vy, vz) array with normal vector coordinates
+    :param offset: double representing the magnitude of offset
+    :return: (x_new, y_new, z_new) array of offset coordinates
+    """
+    p_offset = p_old - offset * norm_vec
+    return p_offset

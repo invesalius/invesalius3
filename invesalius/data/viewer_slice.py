@@ -573,7 +573,7 @@ class Viewer(wx.Panel):
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
+        self.interactor.Render()
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -817,9 +817,9 @@ class Viewer(wx.Panel):
                                  ('Set scroll position',
                                   self.orientation))
         Publisher.subscribe(self.__update_cross_position,
-                                'Update cross position')
-        Publisher.subscribe(self.UpdateSlicesNavigation,
-                            'Co-registered points')
+                            'Update cross position')
+        # Publisher.subscribe(self.UpdateSlicesNavigation,
+        #                     'Co-registered points')
         ###
         #  Publisher.subscribe(self.ChangeBrushColour,
                                  #  'Add mask')
@@ -1136,8 +1136,9 @@ class Viewer(wx.Panel):
 
         renderer.AddActor(cross_actor)
 
-    def __update_cross_position(self, position):
-        self.cross.SetFocalPoint(position)
+    def __update_cross_position(self, arg, position):
+        # self.cross.SetFocalPoint(position[:3])
+        self.UpdateSlicesNavigation(None, position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
@@ -1296,8 +1297,8 @@ class Viewer(wx.Panel):
         if self.state == const.SLICE_STATE_CROSS:
             # Update other slice's cross according to the new focal point from
             # the actual orientation.
-            focal_point = self.cross.GetFocalPoint()
-            Publisher.sendMessage('Update cross position', position=focal_point)
+            x, y, z = self.cross.GetFocalPoint()
+            Publisher.sendMessage('Update cross position', arg=None, position=(x, y, z, 0., 0., 0.))
             Publisher.sendMessage('Update slice viewer')
         else:
             self.interactor.Render()
@@ -1509,7 +1510,6 @@ class Viewer(wx.Panel):
 
     def UpdateCross(self, coord):
         self.cross.SetFocalPoint(coord)
-        Publisher.sendMessage('Set ball reference position', position=self.cross.GetFocalPoint())
         Publisher.sendMessage('Co-registered points',  arg=None, position=(coord[0], coord[1], coord[2], 0., 0., 0.))
         self.OnScrollBar()
         self.interactor.Render()

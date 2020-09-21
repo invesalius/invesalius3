@@ -42,7 +42,8 @@ class Record(threading.Thread):
         self.start()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoords, 'Co-registered points')
+        # Publisher.subscribe(self.UpdateCurrentCoords, 'Co-registered points')
+        Publisher.subscribe(self.UpdateCurrentCoords, 'Update cross position')
 
     def UpdateCurrentCoords(self, arg, position):
         self.coord = asarray(position)
@@ -50,7 +51,10 @@ class Record(threading.Thread):
     def stop(self):
         self._pause_ = True
         #save coords dialog
-        filename = dlg.ShowSaveCoordsDialog("coords.csv")
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save coords as..."),
+                                          wildcard=_("Coordinates files (*.csv)|*.csv"),
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename="coords.csv", save_ext="csv")
         if filename:
             savetxt(filename, self.coord_list, delimiter=',', fmt='%.4f', header="time, x, y, z, a, b, g", comments="")
 
