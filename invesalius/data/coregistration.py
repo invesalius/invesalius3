@@ -140,7 +140,7 @@ def compute_marker_transformation(coord_raw, obj_ref_mode):
     return m_probe
 
 
-def corregistrate_dynamic(inp, coord_raw, ref_mode_id):
+def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     m_change, obj_ref_mode = inp
 
@@ -157,8 +157,8 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id):
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
     # corregistrate from tracker to image space
     m_img = m_change @ m_probe_ref
-    if self.icp:
-        m_img = bases.transform_icp(m_img, self.m_icp)
+    if icp[0]:
+        m_img = bases.transform_icp(m_img, icp[1])
     # compute rotation angles
     _, _, angles, _, _ = tr.decompose_matrix(m_img)
     # create output coordiante list
@@ -247,7 +247,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
             try:
                 # print(f"Set the coordinate")
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-                coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id)
+                coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]

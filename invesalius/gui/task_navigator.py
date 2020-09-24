@@ -471,14 +471,14 @@ class NeuronavigationPanel(wx.Panel):
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
-    def UpdateNavigationStatus(self, status):
-        self.nav_status = status
-        if status:
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
+        if nav_status:
             self.checkicp.Enable(True)
         else:
             self.checkicp.Enable(False)
 
-    def UpdateImageCoordinates(self, position):
+    #def UpdateImageCoordinates(self, position):
     def UpdateFRE(self, fre):
         # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
         self.txtctrl_fre.SetValue(str(round(fre, 2)))

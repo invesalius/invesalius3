@@ -3486,7 +3486,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self._init_gui()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Update cross position')
 
     def UpdateCurrentCoord(self, arg, position):
         self.current_coord = position[:]
@@ -3612,7 +3612,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         Markers created by navigation tools and rendered in volume viewer.
         """
 
-        x, y, z = bases.flip_x(coord)
+        x, y, z = bases.flip_x_m(coord)[:3, 0]
 
         ball_ref = vtk.vtkSphereSource()
         ball_ref.SetRadius(size)
@@ -3724,7 +3724,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.Refresh()
 
     def SetCameraVolume(self, position):
-        cam_focus = np.array(bases.flip_x(position[:3]))
+        cam_focus = np.array(bases.flip_x_m(position[:3])[:3, 0])
         cam = self.ren.GetActiveCamera()
 
         if self.initial_focus is None:
