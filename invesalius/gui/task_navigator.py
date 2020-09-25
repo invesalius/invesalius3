@@ -308,6 +308,7 @@ class NeuronavigationPanel(wx.Panel):
         self.obj_reg = None
         self.obj_reg_status = False
         self.track_obj = False
+        self.m_icp = None
         self.event = threading.Event()
 
         self.coord_queue = QueueCustom(maxsize=1)
@@ -375,6 +376,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
+        txt_icp = wx.StaticText(self, -1, _('icp:'))
 
         # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
@@ -391,13 +393,9 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.SetToolTip(tooltip)
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
-        icp_button = wx.Button(self, -1,_("icp"))
-        icp_button.Bind(wx.EVT_BUTTON, self.OnICP)
-        self.icp_button = icp_button
-
         checkicp = wx.CheckBox(self, -1, _(' '))
         checkicp.SetValue(False)
-        checkicp.Enable(0)
+        checkicp.Enable(False)
         checkicp.Bind(wx.EVT_CHECKBOX, partial(self.Oncheckicp, ctrl=checkicp))
         self.checkicp = checkicp
 
@@ -425,7 +423,7 @@ class NeuronavigationPanel(wx.Panel):
         nav_sizer.AddMany([(txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
-                           (icp_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                           (txt_icp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (checkicp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
         group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
@@ -473,10 +471,11 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
-        if nav_status:
+        if nav_status and (self.m_icp is not None):
             self.checkicp.Enable(True)
         else:
             self.checkicp.Enable(False)
+            self.checkicp.SetValue(False)
 
     #def UpdateImageCoordinates(self, position):
     def UpdateFRE(self, fre):
@@ -675,23 +674,18 @@ class NeuronavigationPanel(wx.Panel):
                 transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
                 Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
                 Publisher.sendMessage('Create marker',  coord=transf_coord, marker_id=None, colour=(0,0,1))
+            self.checkicp.Enable(True)
         else:
             self.m_icp = None
 
     def Oncheckicp(self, evt, ctrl):
         if ctrl.GetValue() and evt and (self.m_icp is not None):
             self.icp = True
-            self.icp_button.Enable(0)
-            dcr.CoordinateCorregistrateNoObject.icp = True
-            dcr.CoordinateCorregistrateNoObject.m_icp = self.m_icp
         else:
-            self.icp_button.Enable(1)
             self.icp = False
-            dcr.CoordinateCorregistrateNoObject.icp = False
 
         self.icp_queue.put_nowait([self.icp, self.m_icp])
         print(self.icp, self.m_icp)
-        Publisher.sendMessage("Update ICP matrix", m_icp=self.m_icp, flag=self.icp)
 
     def OnNavigate(self, evt, btn):
         btn_nav = btn[0]
