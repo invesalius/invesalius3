@@ -850,7 +850,7 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
     dlg.Destroy()
 
 def ICPcorregistration(fre):
-    msg = _("The fiducial registration error is: ") + str(round(fre, 2)) + '\n' + \
+    msg = _("The fiducial registration error is: ") + str(round(fre, 2)) + '\n\n' + \
           _("Would you like to improve accuracy?")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,

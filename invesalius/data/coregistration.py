@@ -105,7 +105,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     return m_img
 
 
-def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id):
+def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
 
@@ -120,6 +120,8 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id):
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
     # corregistrate from tracker to image space
     m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
+    if icp[0]:
+        m_img = bases.transform_icp(m_img, icp[1])
     # compute rotation angles
     _, _, angles, _, _ = tr.decompose_matrix(m_img)
     # create output coordiante list
@@ -169,7 +171,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle, icp_queue):
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
@@ -179,8 +181,9 @@ class CoordinateCorregistrate(threading.Thread):
         self.coord_tracts_queue = coord_tracts_queue
         self.event = event
         self.sle = sle
+        self.icp_queue = icp_queue
+        self.icp = None
         self.m_icp = None
-        self.icp = False
 
     def run(self):
         trck_info = self.trck_info
@@ -191,9 +194,13 @@ class CoordinateCorregistrate(threading.Thread):
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
+                if self.icp_queue.empty():
+                    None
+                else:
+                    self.icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-                coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id)
+                coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
@@ -208,6 +215,9 @@ class CoordinateCorregistrate(threading.Thread):
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
+
+                if not self.icp_queue.empty():
+                    self.icp_queue.task_done()
 
                 # The sleep has to be in both threads
                 sleep(self.sle)
@@ -244,14 +254,13 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 else:
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
-                print(self.icp, self.m_icp)
+                #print(self.icp, self.m_icp)
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                #print(icp)
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 

@@ -809,7 +809,7 @@ class NeuronavigationPanel(wx.Panel):
 
                         jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data, self.coord_queue,
                                                                      self.view_tracts, self.coord_tracts_queue,
-                                                                     self.event, self.sleep_nav))
+                                                                     self.event, self.sleep_nav, self.icp_queue))
 
                 else:
                     coreg_data = (m_change, 0)
