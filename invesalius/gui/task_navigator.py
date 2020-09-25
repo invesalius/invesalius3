@@ -308,10 +308,10 @@ class NeuronavigationPanel(wx.Panel):
         self.obj_reg = None
         self.obj_reg_status = False
         self.track_obj = False
-        self.m_icp = None
         self.event = threading.Event()
 
         self.coord_queue = QueueCustom(maxsize=1)
+        self.icp_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.trigger_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -689,6 +689,7 @@ class NeuronavigationPanel(wx.Panel):
             self.icp = False
             dcr.CoordinateCorregistrateNoObject.icp = False
 
+        self.icp_queue.put_nowait([self.icp, self.m_icp])
         print(self.icp, self.m_icp)
         Publisher.sendMessage("Update ICP matrix", m_icp=self.m_icp, flag=self.icp)
 
@@ -701,7 +702,7 @@ class NeuronavigationPanel(wx.Panel):
         # initialize jobs list
         jobs_list = []
         vis_components = [self.trigger_state, self.view_tracts]
-        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue]
+        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
 
         nav_id = btn_nav.GetValue()
         if not nav_id:
@@ -815,7 +816,7 @@ class NeuronavigationPanel(wx.Panel):
                     jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
                                                                          self.coord_queue,
                                                                          self.view_tracts, self.coord_tracts_queue,
-                                                                         self.event, self.sleep_nav))
+                                                                         self.event, self.sleep_nav, self.icp_queue))
 
                 if not errors:
                     #TODO: Test the trigger thread
@@ -1937,7 +1938,7 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.trigger_state, self.view_tracts = vis_components
-        self.coord_queue, self.trigger_queue, self.tracts_queue = vis_queues
+        self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
 

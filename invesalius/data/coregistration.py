@@ -216,7 +216,7 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle, icp = None, m_icp = None):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle, icp_queue):
         threading.Thread.__init__(self, name='CoordCoregNoObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
@@ -226,16 +226,9 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         self.coord_tracts_queue = coord_tracts_queue
         self.event = event
         self.sle = sle
-        self.m_icp = m_icp
-        self.icp = icp
-
-    def __bind_events(self):
-        Publisher.subscribe(self.UpdateICP, 'Update ICP matrix')
-
-    def UpdateICP(self, m_icp, flag):
-        print('oi')
-        self.m_icp = m_icp
-        self.icp = flag
+        self.icp_queue = icp_queue
+        self.icp = None
+        self.m_icp = None
 
     def run(self):
         trck_info = self.trck_info
@@ -246,13 +239,19 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
+                if self.icp_queue.empty():
+                    None
+                else:
+                    self.icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
+                print(self.icp, self.m_icp)
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
-                print(self.icp)
+
+                #print(icp)
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
@@ -261,6 +260,8 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
 
+                if not self.icp_queue.empty():
+                    self.icp_queue.task_done()
                 # The sleep has to be in both threads
                 sleep(self.sle)
             except queue.Full:

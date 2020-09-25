@@ -264,9 +264,9 @@ def flip_x_m(point):
     return point_rot
 
 def transform_icp(m_img, m_icp):
-    coord_img = np.hstack((flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]]), 1.)).reshape([4, 1])
+    coord_img = flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]])
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
-    m_img[0, -1], m_img[1, -1], m_img[2, -1] = flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]])
+    m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]])
 
     return m_img
 
