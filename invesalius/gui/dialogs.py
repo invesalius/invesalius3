@@ -849,6 +849,23 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
     dlg.ShowModal()
     dlg.Destroy()
 
+def ICPcorregistration(fre):
+    msg = _("The fiducial registration error is: ") + str(round(fre, 2)) + '\n' + \
+          _("Would you like to improve accuracy?")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.YES_NO)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.YES_NO)
+
+    if dlg.ShowModal() == wx.ID_YES:
+        flag = True
+    else:
+        flag = False
+
+    dlg.Destroy()
+    return flag
 
 def ShowEnterMarkerID(default):
     msg = _("Edit marker ID")

@@ -216,7 +216,7 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle, icp = None, m_icp = None):
         threading.Thread.__init__(self, name='CoordCoregNoObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
@@ -226,13 +226,14 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         self.coord_tracts_queue = coord_tracts_queue
         self.event = event
         self.sle = sle
-        self.m_icp = None
-        self.icp = False
+        self.m_icp = m_icp
+        self.icp = icp
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateICP, 'Update ICP matrix')
 
     def UpdateICP(self, m_icp, flag):
+        print('oi')
         self.m_icp = m_icp
         self.icp = flag
 

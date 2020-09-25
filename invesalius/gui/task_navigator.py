@@ -665,7 +665,7 @@ class NeuronavigationPanel(wx.Panel):
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
 
-    def OnICP(self, evt):
+    def OnICP(self):
         dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         if dialog.ShowModal() == wx.ID_OK:
             self.m_icp, point_coord, transformed_points = dialog.GetValue()
@@ -682,9 +682,14 @@ class NeuronavigationPanel(wx.Panel):
         if ctrl.GetValue() and evt and (self.m_icp is not None):
             self.icp = True
             self.icp_button.Enable(0)
+            dcr.CoordinateCorregistrateNoObject.icp = True
+            dcr.CoordinateCorregistrateNoObject.m_icp = self.m_icp
         else:
             self.icp_button.Enable(1)
             self.icp = False
+            dcr.CoordinateCorregistrateNoObject.icp = False
+
+        print(self.icp, self.m_icp)
         Publisher.sendMessage("Update ICP matrix", m_icp=self.m_icp, flag=self.icp)
 
     def OnNavigate(self, evt, btn):
@@ -837,6 +842,9 @@ class NeuronavigationPanel(wx.Panel):
                         # jobs.daemon = True
                         jobs.start()
                         # del jobs
+
+                    if dlg.ICPcorregistration(fre):
+                        self.OnICP()
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
