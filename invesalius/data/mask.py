@@ -368,6 +368,16 @@ class Mask():
         self.matrix[1:, 1:, 1:] = 0
         self.modified(all_volume=True)
 
+    def cleanup(self):
+        if self.is_shown:
+            self.history._config_undo_redo(False)
+        if self.volume:
+            Publisher.sendMessage("Unload volume", volume=self.volume._actor)
+            Publisher.sendMessage("Render volume viewer")
+            self.imagedata = None
+            self.volume = None
+        del self.matrix
+
     def copy(self, copy_name):
         """
         creates and return a copy from the mask instance.
@@ -436,7 +446,4 @@ class Mask():
                 self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
-        if self.is_shown:
-            self.history._config_undo_redo(False)
-        del self.matrix
         os.remove(self.temp_file)

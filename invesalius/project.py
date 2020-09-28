@@ -120,6 +120,8 @@ class Project(metaclass=Singleton):
     def RemoveMask(self, index):
         new_dict = {}
         for i in self.mask_dict:
+            mask = self.mask_dict[i]
+            mask.cleanup()
             if i < index:
                 new_dict[i] = self.mask_dict[i]
             if i > index:
