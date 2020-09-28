@@ -714,6 +714,7 @@ class VolumeMask:
         self.mask = mask
         self.colour = mask.colour
         self._volume_mapper = None
+        self._flip = None
         self._color_transfer = None
         self._piecewise_function = None
         self._actor = None
@@ -741,12 +742,12 @@ class VolumeMask:
                 #  self._volume_mapper = vtk.vtkVolumeRayCastMapper()
                 #  self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
 
-            flip = vtk.vtkImageFlip()
-            flip.SetInputData(self.mask.imagedata)
-            flip.SetFilteredAxis(1)
-            flip.FlipAboutOriginOn()
+            self._flip = vtk.vtkImageFlip()
+            self._flip.SetInputData(self.mask.imagedata)
+            self._flip.SetFilteredAxis(1)
+            self._flip.FlipAboutOriginOn()
 
-            self._volume_mapper.SetInputConnection(flip.GetOutputPort())
+            self._volume_mapper.SetInputConnection(self._flip.GetOutputPort())
             self._volume_mapper.Update()
 
             r, g, b = self.colour
@@ -780,6 +781,9 @@ class VolumeMask:
             self._actor.SetMapper(self._volume_mapper)
             self._actor.SetProperty(self._volume_property)
             self._actor.Update()
+
+    def change_imagedata(self):
+        self._flip.SetInputData(self.mask.imagedata)
 
     def set_colour(self, colour):
         self.colour = colour

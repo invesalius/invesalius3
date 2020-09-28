@@ -330,6 +330,9 @@ class Mask():
     def OnSwapVolumeAxes(self, axes):
         axis0, axis1 = axes
         self.matrix = self.matrix.swapaxes(axis0, axis1)
+        if self.volume:
+            self.imagedata = self.as_vtkimagedata()
+            self.volume.change_imagedata()
         self.modified()
 
     def _save_mask(self, filename):
