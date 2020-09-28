@@ -1073,7 +1073,7 @@ class Slice(metaclass=utils.Singleton):
     def SetMaskColour(self, index, colour, update=True):
         "Set a mask colour given its index and colour (RGB 0-1 values)"
         proj = Project()
-        proj.mask_dict[index].colour = colour
+        proj.mask_dict[index].set_colour(colour)
 
         (r, g, b) = colour[:3]
         colour_wx = [r * 255, g * 255, b * 255]

@@ -712,6 +712,7 @@ class Volume():
 class VolumeMask:
     def __init__(self, mask):
         self.mask = mask
+        self.colour = mask.colour
         self._volume_mapper = None
         self._color_transfer = None
         self._piecewise_function = None
@@ -748,7 +749,7 @@ class VolumeMask:
             self._volume_mapper.SetInputConnection(flip.GetOutputPort())
             self._volume_mapper.Update()
 
-            r, g, b = self.mask.colour
+            r, g, b = self.colour
 
             self._color_transfer = vtk.vtkColorTransferFunction()
             self._color_transfer.RemoveAllPoints()
@@ -779,6 +780,14 @@ class VolumeMask:
             self._actor.SetMapper(self._volume_mapper)
             self._actor.SetProperty(self._volume_property)
             self._actor.Update()
+
+    def set_colour(self, colour):
+        self.colour = colour
+        r, g, b = self.colour
+        self._color_transfer.RemoveAllPoints()
+        self._color_transfer.AddRGBPoint(0.0, 0, 0, 0)
+        self._color_transfer.AddRGBPoint(254.0, r, g, b)
+        self._color_transfer.AddRGBPoint(255.0, r, g, b)
 
 
 class CutPlane:

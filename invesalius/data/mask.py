@@ -218,6 +218,12 @@ class Mask():
         print("Converted")
         return vimg
 
+    def set_colour(self, colour):
+        self.colour = colour
+        if self.volume is not None:
+            self.volume.set_colour(colour)
+            Publisher.sendMessage("Render volume viewer")
+
     def save_history(self, index, orientation, array, p_array, clean=False):
         self.history.new_node(index, orientation, array, p_array, clean)
 
