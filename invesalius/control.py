@@ -1115,6 +1115,6 @@ class Controller():
         proj = prj.Project()
         mask = proj.mask_dict[index]
         slc = self.Slice.do_threshold_to_all_slices(mask)
-        mask_3d_actor = mask.create_3d_preview()
-        Publisher.sendMessage("Load mask preview", mask_3d_actor=mask_3d_actor, flag=flag)
+        mask.create_3d_preview()
+        Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=flag)
         Publisher.sendMessage("Reload actual slice")

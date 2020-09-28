@@ -28,6 +28,7 @@ import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
+from invesalius.data.volume import VolumeMask
 import numpy as np
 import vtk
 from invesalius_cy import floodfill
@@ -201,8 +202,7 @@ class Mask():
         self.is_shown = 1
         self.edited_points = {}
         self.was_edited = False
-        self._volume_mapper = None
-        self._3d_actor = None
+        self.volume = None
         self.auto_update_mask = True
         self.__bind_events()
 
@@ -241,77 +241,11 @@ class Mask():
         self.history._config_undo_redo(self.is_shown)
 
     def create_3d_preview(self):
-        if self._3d_actor is None:
-            #  if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
-
-            if int(ses.Session().rendering) == 0:
-                volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
-                #volume_mapper.AutoAdjustSampleDistancesOff()
-                volume_mapper.IntermixIntersectingGeometryOn()
-                pix_diag = 2.0
-                volume_mapper.SetImageSampleDistance(0.25)
-                volume_mapper.SetSampleDistance(pix_diag / 5.0)
-
-                self._volume_mapper = volume_mapper
-            else:
-                volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
-                volume_mapper.UseJitteringOn()
-                self._volume_mapper = volume_mapper
-
-                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
-                    self._volume_mapper.SetBlendModeToIsoSurface()
-
-            #  else:
-                #  isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
-                #  isosurfaceFunc.SetIsoValue(127)
-
-                #  self._volume_mapper = vtk.vtkVolumeRayCastMapper()
-                #  self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
-
-            self.imagedata = self.as_vtkimagedata()
-
-            flip = vtk.vtkImageFlip()
-            flip.SetInputData(self.imagedata)
-            flip.SetFilteredAxis(1)
-            flip.FlipAboutOriginOn()
-
-            self._volume_mapper.SetInputConnection(flip.GetOutputPort())
-            self._volume_mapper.Update()
-
-            r, g, b = self.colour
-
-            cf = vtk.vtkColorTransferFunction()
-            cf.RemoveAllPoints()
-            cf.AddRGBPoint(0.0, 0, 0, 0)
-            cf.AddRGBPoint(254.0, r, g, b)
-            cf.AddRGBPoint(255.0, r, g, b)
-
-            pf = vtk.vtkPiecewiseFunction()
-            pf.RemoveAllPoints()
-            pf.AddPoint(0.0, 0.0)
-            pf.AddPoint(127, 1.0)
-
-            vp= vtk.vtkVolumeProperty()
-            vp.SetColor(cf)
-            vp.SetScalarOpacity(pf)
-            vp.ShadeOn()
-            vp.SetInterpolationTypeToLinear()
-            #vp.SetSpecular(1.75)
-            #vp.SetSpecularPower(8)
-
-            if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
-                vp.SetScalarOpacityUnitDistance(pix_diag)
-            else:
-                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
-                    vp.GetIsoSurfaceValues().SetValue(0, 127)
-
-            self._3d_actor = vtk.vtkVolume()
-            self._3d_actor.SetMapper(self._volume_mapper)
-            self._3d_actor.SetProperty(vp)
-            self._3d_actor.Update()
-
-        print(self._volume_mapper)
-        return self._3d_actor
+        if self.volume is None:
+            if self.imagedata is None:
+                self.imagedata = self.as_vtkimagedata()
+            self.volume = VolumeMask(self)
+            self.volume.create_volume()
 
     def _update_imagedata(self, update_volume_viewer=True):
         if self.imagedata is not None:
@@ -322,7 +256,7 @@ class Mask():
             self.imagedata.SetSpacing(self.spacing)
             self.imagedata.SetExtent(0, dx - 1, 0, dy - 1,  0, dz - 1)
             self.imagedata.Modified()
-            self._3d_actor.Update()
+            self.volume._actor.Update()
 
             if update_volume_viewer:
                 Publisher.sendMessage("Render volume viewer")

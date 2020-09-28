@@ -19,6 +19,7 @@
 import plistlib
 import os
 import weakref
+from distutils.version import LooseVersion
 
 import numpy
 import vtk
@@ -707,9 +708,80 @@ class Volume():
         #else:
         #    valor = value 
         return value - scale[0]
-   
-        
-class CutPlane: 
+
+class VolumeMask:
+    def __init__(self, mask):
+        self.mask = mask
+        self._volume_mapper = None
+        self._color_transfer = None
+        self._piecewise_function = None
+        self._actor = None
+
+    def create_volume(self):
+        if self._actor is None:
+            if int(ses.Session().rendering) == 0:
+                self._volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+                #volume_mapper.AutoAdjustSampleDistancesOff()
+                self._volume_mapper.IntermixIntersectingGeometryOn()
+                pix_diag = 2.0
+                self._volume_mapper.SetImageSampleDistance(0.25)
+                self._volume_mapper.SetSampleDistance(pix_diag / 5.0)
+            else:
+                self._volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+                self._volume_mapper.UseJitteringOn()
+
+                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                    self._volume_mapper.SetBlendModeToIsoSurface()
+
+            #  else:
+                #  isosurfaceFunc = vtk.vtkVolumeRayCastIsosurfaceFunction()
+                #  isosurfaceFunc.SetIsoValue(127)
+
+                #  self._volume_mapper = vtk.vtkVolumeRayCastMapper()
+                #  self._volume_mapper.SetVolumeRayCastFunction(isosurfaceFunc)
+
+            flip = vtk.vtkImageFlip()
+            flip.SetInputData(self.mask.imagedata)
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+
+            self._volume_mapper.SetInputConnection(flip.GetOutputPort())
+            self._volume_mapper.Update()
+
+            r, g, b = self.mask.colour
+
+            self._color_transfer = vtk.vtkColorTransferFunction()
+            self._color_transfer.RemoveAllPoints()
+            self._color_transfer.AddRGBPoint(0.0, 0, 0, 0)
+            self._color_transfer.AddRGBPoint(254.0, r, g, b)
+            self._color_transfer.AddRGBPoint(255.0, r, g, b)
+
+            self._piecewise_function = vtk.vtkPiecewiseFunction()
+            self._piecewise_function.RemoveAllPoints()
+            self._piecewise_function.AddPoint(0.0, 0.0)
+            self._piecewise_function.AddPoint(127, 1.0)
+
+            self._volume_property = vtk.vtkVolumeProperty()
+            self._volume_property.SetColor(self._color_transfer)
+            self._volume_property.SetScalarOpacity(self._piecewise_function)
+            self._volume_property.ShadeOn()
+            self._volume_property.SetInterpolationTypeToLinear()
+            #vp.SetSpecular(1.75)
+            #vp.SetSpecularPower(8)
+
+            if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
+                self._volume_property.SetScalarOpacityUnitDistance(pix_diag)
+            else:
+                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                    self._volume_property.GetIsoSurfaceValues().SetValue(0, 127)
+
+            self._actor = vtk.vtkVolume()
+            self._actor.SetMapper(self._volume_mapper)
+            self._actor.SetProperty(self._volume_property)
+            self._actor.Update()
+
+
+class CutPlane:
     def __init__(self, img, volume_mapper):
         self.img = img
         self.volume_mapper = volume_mapper
