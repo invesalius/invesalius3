@@ -384,7 +384,7 @@ class Slice(metaclass=utils.Singleton):
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
 
-        if self.current_mask.auto_update_mask and self.current_mask._3d_actor is not None:
+        if self.current_mask.auto_update_mask and self.current_mask.volume is not None:
             to_reload = True
             self.SetMaskThreshold(
                 index,
