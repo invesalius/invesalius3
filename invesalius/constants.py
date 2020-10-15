@@ -662,8 +662,9 @@ ISOTRAKII = 3
 PATRIOT = 4
 CAMERA = 5
 POLARIS = 6
-DEBUGTRACK = 7
-DISCTRACK = 8
+ELFIN = 7
+DEBUGTRACK = 8
+DISCTRACK = 9
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
@@ -671,7 +672,8 @@ NDICOMPORT = b'COM1'
 TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
-           _("NDI Polaris"), _("Debug tracker"), _("Disconnect tracker")]
+           _("NDI Polaris"), _("Elfin Robot"),
+           _("Debug tracker"), _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1

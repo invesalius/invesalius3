@@ -48,6 +48,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
+                    const.ELFIN: ElfinCoord,
                     const.DEBUGTRACK: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
@@ -76,6 +77,15 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     coord = np.vstack([coord1, coord2, coord3])
     # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+
+    return coord
+
+def ElfinCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+    probe = trck.Run()
+    ref = [0,0,0,0,0,0]
+    coord = np.vstack([probe, ref])
 
     return coord
 
