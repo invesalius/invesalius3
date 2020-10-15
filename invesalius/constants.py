@@ -677,7 +677,7 @@ NDICOMPORT = b'COM1'
 TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
-           _("NDI Polaris"), _("Elfin Robot"), _("Debug tracker"), _("Hybrid tracker"),_("Disconnect tracker")]
+           _("NDI Polaris"), _("Elfin Robot"), _("Debug tracker"), _("Hybrid tracker"), _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
