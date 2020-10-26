@@ -445,6 +445,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSleep, 'Update sleep')
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
+        Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -511,6 +512,10 @@ class NeuronavigationPanel(wx.Panel):
     def OnDisconnectTracker(self):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
+
+    def OnSendCoordinates(self, coord):
+        if self.tracker_id == const.ELFIN:
+            self.trk_init[0].SendCoordinates(coord)
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -726,6 +731,7 @@ class NeuronavigationPanel(wx.Panel):
                 # fiducials matrix
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
+                Publisher.sendMessage('Update matrix change', mchange=m_change)
                 # initialize spatial tracker parameters
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 
@@ -1099,6 +1105,7 @@ class MarkersPanel(wx.Panel):
         self.marker_ind = 0
         self.tgt_flag = self.tgt_index = None
         self.nav_status = False
+        self.mchange = None
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1182,6 +1189,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.UpdateMchange, 'Update matrix change')
 
     def UpdateCurrentCoord(self, arg, position):
         self.current_coord = position[:]
@@ -1195,6 +1203,9 @@ class MarkersPanel(wx.Panel):
         else:
             self.nav_status = True
 
+    def UpdateMchange(self, mchange):
+        self.mchange = mchange
+
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
@@ -1205,6 +1216,9 @@ class MarkersPanel(wx.Panel):
         menu_id.AppendSeparator()
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        menu_id.AppendSeparator()
+        send_coord_robot = menu_id.Append(3, _('Send coord to robot'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendCoord, send_coord_robot)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1272,6 +1286,20 @@ class MarkersPanel(wx.Panel):
                 self.list_coord[index][n+6] = col/255.0
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
+
+    def OnMenuSendCoord(self, evt):
+        if isinstance(evt, int):
+            self.lc.Focus(evt)
+        coord = self.list_coord[self.lc.GetFocusedItem()][:6]
+        psi, theta, phi = coord[3:6]
+        #if coord[3:] == [0, 0, 0]:
+        #   phi, theta, psi, _ = db.SetTargetOrientation([coord[0], -coord[1], coord[2]], cog_surface_index=0)
+        #  self.UpdateAngles([psi, theta, phi])
+        #  print(psi, theta, phi)
+        if self.mchange is not None:
+            t_probe_raw = np.linalg.inv(self.mchange) * np.asmatrix(tr.translation_matrix(coord[0:3]))
+            coord_inv = t_probe_raw[0, -1], t_probe_raw[1, -1], -t_probe_raw[2, -1], psi, theta, phi
+            Publisher.sendMessage('Send coord to robot', coord=coord_inv)
 
     def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:

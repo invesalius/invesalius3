@@ -26,11 +26,11 @@ class elfin_server():
         while status == 1009:
             time.sleep(2)
             print("moving...")
-            print(self.cobot.ReadPcsActualPos())
+            #print(self.cobot.ReadPcsActualPos())
             status = self.cobot.ReadMoveState()
             print(status)
         print("end move")
-        print(self.cobot.ReadPcsActualPos())
+        #print(self.cobot.ReadPcsActualPos())
 
     def Close(self):
         self.cobot.close()
