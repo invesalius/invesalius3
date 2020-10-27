@@ -175,6 +175,47 @@ def calculate_fre_m(fiducials):
 
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
+def calculate_fre_matrix(fiducials, m_change):
+
+    dist = np.zeros([3, 1])
+
+    p1 = np.hstack((fiducials[3, :], 1)).reshape(4, 1)
+    p2 = np.hstack((fiducials[4, :], 1)).reshape(4, 1)
+    p3 = np.hstack((fiducials[5, :], 1)).reshape(4, 1)
+
+    print(p1)
+
+    p1 = flip_x_m([p1[0,0],p1[1,0],p1[2,0]])
+    p2 = flip_x_m([p2[0,0],p2[1,0],p2[2,0]])
+    p3 = flip_x_m([p3[0,0],p3[1,0],p3[2,0]])
+    print(p1)
+
+    p1 = np.hstack([np.identity(3), p1[:3]])
+    p2 = np.hstack([np.identity(3), p2[:3]])
+    p3 = np.hstack([np.identity(3), p3[:3]])
+
+    p1 = np.vstack([p1,[0,0,0,1]])
+    p2 = np.vstack([p2,[0,0,0,1]])
+    p3 = np.vstack([p3,[0,0,0,1]])
+    print(p1)
+
+    p1_m = m_change @ p1
+    p2_m = m_change @ p2
+    p3_m = m_change @ p3
+
+    #p1_m = flip_x_m([p1_m[0,0],p1_m[1,0],p1_m[2,0]])
+    #p2_m = flip_x_m([p2_m[0,0],p2_m[1,0],p2_m[2,0]])
+    #p3_m = flip_x_m([p3_m[0,0],p3_m[1,0],p3_m[2,0]])
+
+    print(p1_m)
+    print(fiducials[0, :])
+
+    dist[0] = np.sqrt(np.sum(np.power((p1_m[:3] - fiducials[0, :]), 2)))
+    dist[1] = np.sqrt(np.sum(np.power((p2_m[:3] - fiducials[1, :]), 2)))
+    dist[2] = np.sqrt(np.sum(np.power((p3_m[:3] - fiducials[2, :]), 2)))
+
+    return float(np.sqrt(np.sum(dist ** 2) / 3))
+
 
 # def flip_x(point):
 #     """

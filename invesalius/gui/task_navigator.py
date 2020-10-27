@@ -779,6 +779,7 @@ class NeuronavigationPanel(wx.Panel):
                 # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
                 fre = db.calculate_fre_m(self.fiducials)
                 self.UpdateFRE(fre)
+                print(db.calculate_fre_matrix(self.fiducials, m_change))
 
                 if self.track_obj:
                     # if object tracking is selected

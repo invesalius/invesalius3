@@ -3606,7 +3606,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def LoadActor(self):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
-        #mapper.ScalarVisibilityOff()
+        mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
         obj_actor = vtk.vtkActor()
