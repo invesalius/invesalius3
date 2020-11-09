@@ -1,7 +1,7 @@
 import numpy as np
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
-
+import invesalius.data.coregistration as dcr
 
 def angle_calculation(ap_axis, coil_axis):
     """
@@ -175,37 +175,18 @@ def calculate_fre_m(fiducials):
 
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
-def calculate_fre_matrix(fiducials, m_change):
+def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change):
 
     dist = np.zeros([3, 1])
 
-    p1 = np.hstack((fiducials[3, :], 1)).reshape(4, 1)
-    p2 = np.hstack((fiducials[4, :], 1)).reshape(4, 1)
-    p3 = np.hstack((fiducials[5, :], 1)).reshape(4, 1)
+    p1 = np.vstack([fiducials_raw[0, :], fiducials_raw[1, :]])
+    p2 = np.vstack([fiducials_raw[2, :], fiducials_raw[3, :]])
+    p3 = np.vstack([fiducials_raw[4, :], fiducials_raw[5, :]])
 
-    print(p1)
-
-    p1 = flip_x_m([p1[0,0],p1[1,0],p1[2,0]])
-    p2 = flip_x_m([p2[0,0],p2[1,0],p2[2,0]])
-    p3 = flip_x_m([p3[0,0],p3[1,0],p3[2,0]])
-    print(p1)
-
-    p1 = np.hstack([np.identity(3), p1[:3]])
-    p2 = np.hstack([np.identity(3), p2[:3]])
-    p3 = np.hstack([np.identity(3), p3[:3]])
-
-    p1 = np.vstack([p1,[0,0,0,1]])
-    p2 = np.vstack([p2,[0,0,0,1]])
-    p3 = np.vstack([p3,[0,0,0,1]])
-    print(p1)
-
-    p1_m = m_change @ p1
-    p2_m = m_change @ p2
-    p3_m = m_change @ p3
-
-    #p1_m = flip_x_m([p1_m[0,0],p1_m[1,0],p1_m[2,0]])
-    #p2_m = flip_x_m([p2_m[0,0],p2_m[1,0],p2_m[2,0]])
-    #p3_m = flip_x_m([p3_m[0,0],p3_m[1,0],p3_m[2,0]])
+    coreg_data = (m_change, 0)
+    p1_m, m_img = dcr.corregistrate_dynamic(coreg_data, p1, ref_mode_id, [None, None])
+    p2_m, m_img = dcr.corregistrate_dynamic(coreg_data, p2, ref_mode_id, [None, None])
+    p3_m, m_img = dcr.corregistrate_dynamic(coreg_data, p3, ref_mode_id, [None, None])
 
     print(p1_m)
     print(fiducials[0, :])

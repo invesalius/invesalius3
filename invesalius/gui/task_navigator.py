@@ -299,6 +299,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Initialize global variables
         self.fiducials = np.full([6, 3], np.nan)
+        self.fiducials_raw = np.zeros((6, 6))
         self.correg = None
         self.current_coord = 0, 0, 0
         self.trk_init = None
@@ -661,6 +662,16 @@ class NeuronavigationPanel(wx.Panel):
         # Update number controls with tracker coordinates
         if coord is not None:
             self.fiducials[btn_id, :] = coord[0:3]
+            if btn_id == 3:
+                self.fiducials_raw[0, :] = coord_raw[0, :]
+                self.fiducials_raw[1, :] = coord_raw[1, :]
+            elif btn_id == 4:
+                self.fiducials_raw[2, :] = coord_raw[0, :]
+                self.fiducials_raw[3, :] = coord_raw[1, :]
+            else:
+                self.fiducials_raw[4, :] = coord_raw[0, :]
+                self.fiducials_raw[5, :] = coord_raw[1, :]
+
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
 
@@ -779,7 +790,7 @@ class NeuronavigationPanel(wx.Panel):
                 # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
                 fre = db.calculate_fre_m(self.fiducials)
                 self.UpdateFRE(fre)
-                print(db.calculate_fre_matrix(self.fiducials, m_change))
+                print(db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change))
 
                 if self.track_obj:
                     # if object tracking is selected
