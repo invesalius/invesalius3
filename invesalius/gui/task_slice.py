@@ -322,6 +322,17 @@ class InnerFoldPanel(wx.Panel):
         self.ResizeFPB()
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
+        preview_mask_box = wx.CheckBox(self, -1, _("Preview Mask 3D"))
+        preview_mask_box.SetValue(False)
+        auto_render_box = wx.CheckBox(self, -1, _("Auto Update"))
+        auto_render_box.SetValue(False)
+        if sys.platform != 'win32':
+            preview_mask_box.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            auto_render_box.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        sizer.Add(preview_mask_box, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(auto_render_box, 0, wx.EXPAND | wx.LEFT | wx.BOTTOM, 5)
+
         sizer.Layout()
         self.Fit()
 

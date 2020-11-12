@@ -22,7 +22,8 @@ import plistlib
 import random
 import shutil
 import tempfile
-from distutils.version import LooseVersion
+import time
+import weakref
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
@@ -204,7 +205,9 @@ class Mask():
         self.was_edited = False
         self.volume = None
         self.auto_update_mask = True
+        self.modified_time = 0
         self.__bind_events()
+        self._modified_callbacks = []
 
         self.history = EditionHistory()
 
@@ -346,6 +349,10 @@ class Mask():
     def _set_class_index(self, index):
         Mask.general_index = index
 
+    def add_modified_callback(self, callback):
+        ref = weakref.WeakMethod(callback)
+        self._modified_callbacks.append(ref)
+
     def create_mask(self, shape):
         """
         Creates a new mask object. This method do not append this new mask into the project.
@@ -363,6 +370,14 @@ class Mask():
             self.matrix[:, 0, :] = 1
             self.matrix[:, :, 0] = 1
         self._update_imagedata()
+        self.modified_time = time.monotonic()
+        callbacks = []
+        print(self._modified_callbacks)
+        for callback in self._modified_callbacks:
+            if callback() is not None:
+                callback()()
+                callbacks.append(callback)
+        self._modified_callbacks = callbacks
 
     def clean(self):
         self.matrix[1:, 1:, 1:] = 0

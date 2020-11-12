@@ -429,6 +429,7 @@ class Slice(metaclass=utils.Singleton):
 
         if to_reload:
             Publisher.sendMessage("Reload actual slice")
+        self.current_mask.modified(all_volume=False)
 
     def __set_current_mask_threshold_actual_slice(self, threshold_range):
         if self.current_mask is None:
