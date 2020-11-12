@@ -689,6 +689,8 @@ class NeuronavigationPanel(wx.Panel):
         else:
             self.m_icp = None
 
+        return self.m_icp
+
     def Oncheckicp(self, evt, ctrl):
         if ctrl.GetValue() and evt and (self.m_icp is not None):
             self.icp = True
@@ -786,11 +788,8 @@ class NeuronavigationPanel(wx.Panel):
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 
                 # compute fiducial registration error (FRE)
-                # this is the old way to compute the fre, left here to recheck if new works fine.
-                # fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
-                fre = db.calculate_fre_m(self.fiducials)
+                fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
                 self.UpdateFRE(fre)
-                print(db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change))
 
                 if self.track_obj:
                     # if object tracking is selected
@@ -851,7 +850,9 @@ class NeuronavigationPanel(wx.Panel):
                         # del jobs
 
                     if dlg.ICPcorregistration(fre):
-                        self.OnICP()
+                        m_icp = self.OnICP()
+                        fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change, m_icp)
+                        self.UpdateFRE(fre)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):

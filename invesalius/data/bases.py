@@ -175,7 +175,7 @@ def calculate_fre_m(fiducials):
 
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
-def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change):
+def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
 
     dist = np.zeros([3, 1])
 
@@ -187,6 +187,9 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change):
     p1_m, m_img = dcr.corregistrate_dynamic(coreg_data, p1, ref_mode_id, [None, None])
     p2_m, m_img = dcr.corregistrate_dynamic(coreg_data, p2, ref_mode_id, [None, None])
     p3_m, m_img = dcr.corregistrate_dynamic(coreg_data, p3, ref_mode_id, [None, None])
+
+    if m_icp:
+        m_img = transform_icp(m_img, m_icp)
 
     print(p1_m)
     print(fiducials[0, :])
