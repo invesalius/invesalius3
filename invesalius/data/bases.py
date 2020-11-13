@@ -183,13 +183,15 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
     p2 = np.vstack([fiducials_raw[2, :], fiducials_raw[3, :]])
     p3 = np.vstack([fiducials_raw[4, :], fiducials_raw[5, :]])
 
-    coreg_data = (m_change, 0)
-    p1_m, m_img = dcr.corregistrate_dynamic(coreg_data, p1, ref_mode_id, [None, None])
-    p2_m, m_img = dcr.corregistrate_dynamic(coreg_data, p2, ref_mode_id, [None, None])
-    p3_m, m_img = dcr.corregistrate_dynamic(coreg_data, p3, ref_mode_id, [None, None])
+    if m_icp is not None:
+        icp = [True, m_icp]
+    else:
+        icp = [False, None]
 
-    if m_icp:
-        m_img = transform_icp(m_img, m_icp)
+    coreg_data = (m_change, 0)
+    p1_m, m_img = dcr.corregistrate_dynamic(coreg_data, p1, ref_mode_id, icp)
+    p2_m, m_img = dcr.corregistrate_dynamic(coreg_data, p2, ref_mode_id, icp)
+    p3_m, m_img = dcr.corregistrate_dynamic(coreg_data, p3, ref_mode_id, icp)
 
     print(p1_m)
     print(fiducials[0, :])

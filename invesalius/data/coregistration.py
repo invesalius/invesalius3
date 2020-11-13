@@ -155,12 +155,10 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
     else:
         m_probe_ref = m_probe
 
-    print(m_probe_ref)
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
     # corregistrate from tracker to image space
     m_img = m_change @ m_probe_ref
-    print(m_img)
 
     if icp[0]:
         m_img = bases.transform_icp(m_img, icp[1])
