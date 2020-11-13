@@ -353,6 +353,18 @@ class Mask():
         ref = weakref.WeakMethod(callback)
         self._modified_callbacks.append(ref)
 
+    def remove_modified_callback(self, callback):
+        callbacks = []
+        removed = False
+        for cb in self._modified_callbacks:
+            if cb() is not None:
+                if cb() != callback:
+                    callbacks.append(cb)
+                else:
+                    removed = True
+        self._modified_callbacks = callbacks
+        return removed
+
     def create_mask(self, shape):
         """
         Creates a new mask object. This method do not append this new mask into the project.
