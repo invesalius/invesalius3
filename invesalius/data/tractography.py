@@ -237,12 +237,10 @@ class ComputeTractsThread(threading.Thread):
 
         :param inp: List of inputs: trekker instance, affine numpy array, seed_offset, seed_radius, n_threads
         :type inp: list
-        :param affine_vtk: Affine matrix in vtkMatrix4x4 instance to update objects position in 3D scene
-        :type affine_vtk: vtkMatrix4x4
-        :param coord_queue: Queue instance that manage coordinates read from tracking device and coregistered
-        :type coord_queue: queue.Queue
-        :param visualization_queue: Queue instance that manage coordinates to be visualized
-        :type visualization_queue: queue.Queue
+        :param coord_tracts_queue: Queue instance that manage co-registered coordinates
+        :type coord_tracts_queue: queue.Queue
+        :param tracts_queue: Queue instance that manage the tracts to be visualized
+        :type tracts_queue: queue.Queue
         :param event: Threading event to coordinate when tasks as done and allow UI release
         :type event: threading.Event
         :param sle: Sleep pause in seconds
@@ -254,23 +252,17 @@ class ComputeTractsThread(threading.Thread):
         # self.coord_queue = coord_queue
         self.coord_tracts_queue = coord_tracts_queue
         self.tracts_queue = tracts_queue
-        self.coord_list_w = img_utils.create_grid()
         # self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
 
-        # prj_data = prj.Project()
-        # matrix_shape = tuple(prj_data.matrix_shape)
-        # self.img_shift = matrix_shape[1]
-
     def run(self):
 
-        # trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
-
         # n_threads = n_tracts_total
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
+
         # Compute the tracts
         # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
@@ -281,6 +273,7 @@ class ComputeTractsThread(threading.Thread):
                 # coord, m_img, m_img_flip = self.coord_queue.get_nowait()
                 # print('ComputeTractsThread: get {}'.format(count))
 
+                # TODO: Remove this is not needed
                 # 20200402: in this new refactored version the m_img comes different than the position
                 # the new version m_img is already flixped in y, which means that Y is negative
                 # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
@@ -289,15 +282,8 @@ class ComputeTractsThread(threading.Thread):
                 # m_img_flip = m_img.copy()
                 # m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                try:
-                    coord_list_w_tr = m_img_flip @ self.coord_list_w
-                    coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
-                    # print("ha")
-                except:
-                    # translate the coordinate along the normal vector of the object/coil
-                    # apply the coil transformation matrix
-                    coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
-
+                # translate the coordinate along the normal vector of the object/coil
+                coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
                 # coord_offset = np.array([[27.53, -77.37, 46.42]])
                 dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
                 p_old = coord_offset.copy()
@@ -305,7 +291,6 @@ class ComputeTractsThread(threading.Thread):
                 # print("p_new_shape", coord_offset.shape)
                 # print("m_img_flip_shape", m_img_flip.shape)
                 seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
-                # print("seed_trk: ", seed_trk)
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
@@ -343,6 +328,180 @@ class ComputeTractsThread(threading.Thread):
 
                 else:
                     bundle = None
+
+                # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
+                # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
+                # be more evident in slow computer or for heavier tract computations, it is better slow update
+                # than visualizing old data
+                # self.visualization_queue.put_nowait([coord, m_img, bundle])
+                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset))
+                # print('ComputeTractsThread: put {}'.format(count))
+
+                self.coord_tracts_queue.task_done()
+                # self.coord_queue.task_done()
+                # print('ComputeTractsThread: done {}'.format(count))
+
+                # sleep required to prevent user interface from being unresponsive
+                time.sleep(self.sle)
+            # if no coordinates pass
+            except queue.Empty:
+                # print("Empty queue in tractography")
+                pass
+            # if queue is full mark as done (may not be needed in this new "nowait" method)
+            except queue.Full:
+                # self.coord_queue.task_done()
+                self.coord_tracts_queue.task_done()
+
+
+class ComputeTractsACTThread(threading.Thread):
+
+    def __init__(self, inp, coord_tracts_queue, tracts_queue, event, sle):
+        """Class (threading) to compute real time tractography data for visualization.
+
+        Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
+        For VTK visualization, each tract (fiber) is a constructed as a tube and many tubes combined in one
+        vtkMultiBlockDataSet named as a branch. Several branches are combined in another vtkMultiBlockDataSet named as
+        bundle, to obtain fast computation and visualization. The bundle dataset is mapped to a single vtkActor.
+        Mapper and Actor are computer in the data/viewer_volume.py module for easier handling in the invesalius 3D scene.
+
+        Sleep function in run method is used to avoid blocking GUI and more fluent, real-time navigation
+
+        :param inp: List of inputs: trekker instance, affine numpy array, seed_offset, seed_radius, n_threads
+        :type inp: list
+        :param coord_tracts_queue: Queue instance that manage co-registered coordinates
+        :type coord_tracts_queue: queue.Queue
+        :param tracts_queue: Queue instance that manage the tracts to be visualized
+        :type tracts_queue: queue.Queue
+        :param event: Threading event to coordinate when tasks as done and allow UI release
+        :type event: threading.Event
+        :param sle: Sleep pause in seconds
+        :type sle: float
+        """
+
+        threading.Thread.__init__(self, name='ComputeTractsThreadACT')
+        self.inp = inp
+        # self.coord_queue = coord_queue
+        self.coord_tracts_queue = coord_tracts_queue
+        self.tracts_queue = tracts_queue
+        self.coord_list_w = img_utils.create_grid((-4, 4), (0, 20), inp[2]-5, 1)
+        # self.visualization_queue = visualization_queue
+        self.event = event
+        self.sle = sle
+
+        # prj_data = prj.Project()
+        # matrix_shape = tuple(prj_data.matrix_shape)
+        # self.img_shift = matrix_shape[1]
+
+    def run(self):
+
+        # trekker, affine, offset, n_tracts_total, seed_radius, n_threads = self.inp
+        trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
+
+        # n_threads = n_tracts_total
+        p_old = np.array([[0., 0., 0.]])
+        p_old_pre = np.array([[0., 0., 0.]])
+        coord_offset = None
+        n_tracts = 0
+        n_branches = 0
+        bundle = None
+        # Compute the tracts
+        # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
+        while not self.event.is_set():
+            try:
+                # print("Computing tracts")
+                # get from the queue the coordinates, coregistration transformation matrix, and flipped matrix
+                m_img_flip = self.coord_tracts_queue.get_nowait()
+                # coord, m_img, m_img_flip = self.coord_queue.get_nowait()
+                # print('ComputeTractsThread: get {}'.format(count))
+
+                # TODO: Remove this is not needed
+                # 20200402: in this new refactored version the m_img comes different than the position
+                # the new version m_img is already flixped in y, which means that Y is negative
+                # if only the Y is negative maybe no need for the flip_x funtcion at all in the navigation
+                # but check all coord_queue before why now the m_img comes different than position
+                # 20200403: indeed flip_x is just a -1 multiplication to the Y coordinate, remove function flip_x
+                # m_img_flip = m_img.copy()
+                # m_img_flip[1, -1] = -m_img_flip[1, -1]
+
+                dist = abs(np.linalg.norm(p_old_pre - np.asarray(m_img_flip[:3, -1])))
+                p_old_pre = m_img_flip[:3, -1].copy()
+
+                if dist >= seed_radius:
+                    try:
+                        # TODO: Create a dialog error to say when the ACT data is not loaded and prevent
+                        # the interface from freezing. Give the user a chance to load it (maybe in task_navigator)
+                        coord_list_w_tr = m_img_flip @ self.coord_list_w
+                        coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
+                    except IndexError:
+                        # This error might be caused by the coordinate exceeding the image array dimensions.
+                        # Needs further verification.
+                        coord_offset = None
+
+                    if coord_offset is None:
+                        # translate the coordinate along the normal vector of the object/coil
+                        # apply the coil transformation matrix
+                        coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+
+                # coord_offset = np.array([[27.53, -77.37, 46.42]])
+                # dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
+                # p_old = coord_offset.copy()
+
+                # print("dist_pre: {}\n dist: {}".format(dist_pre, dist))
+
+                # print("p_new_shape", coord_offset.shape)
+                # print("m_img_flip_shape", m_img_flip.shape)
+                    seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
+                # print("seed_trk: ", seed_trk)
+                # Juuso's
+                # seed_trk = np.array([[-8.49, -8.39, 2.5]])
+                # Baran M1
+                # seed_trk = np.array([[27.53, -77.37, 46.42]])
+                # print("Seed: {}".format(seed))
+
+                # set the seeds for trekker, one seed is repeated n_threads times
+                # trekker has internal multiprocessing approach done in C. Here the number of available threads is give,
+                # but in case a large number of tracts is requested, it will compute all in parallel automatically
+                # for a more fluent navigation, better to compute the maximum number the computer handles
+                    trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
+
+                    # run the trekker, this is the slowest line of code, be careful to just use once!
+                    trk_list = trekker.run()
+
+                    if trk_list:
+                    # print("dist: {}".format(dist))
+                    # if dist >= seed_radius:
+                        # when moving the coil further than the seed_radius restart the bundle computation
+                        bundle = vtk.vtkMultiBlockDataSet()
+                        branch = tracts_computation_branch(trk_list)
+                        bundle.SetBlock(n_branches, branch)
+                        n_branches = 1
+                        n_tracts = branch.GetNumberOfBlocks()
+                    else:
+                        bundle = None
+                        n_branches = 0
+                        n_tracts = 0
+
+                        # TODO: maybe keep computing even if reaches the maximum
+                elif dist < seed_radius and n_tracts < n_tracts_total:
+                    trk_list = trekker.run()
+                    if trk_list:
+                        # compute tracts blocks and add to bungle until reaches the maximum number of tracts
+                        branch = tracts_computation_branch(trk_list)
+                        if bundle:
+                            bundle.SetBlock(n_branches, branch)
+                            n_tracts += branch.GetNumberOfBlocks()
+                            n_branches += 1
+                        else:
+                            bundle = vtk.vtkMultiBlockDataSet()
+                            branch = tracts_computation_branch(trk_list)
+                            bundle.SetBlock(n_branches, branch)
+                            n_branches = 1
+                            n_tracts = branch.GetNumberOfBlocks()
+                    # else:
+                    #     bundle = None
+
+                # else:
+                #     bundle = None
 
                 # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
                 # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
@@ -490,6 +649,10 @@ def grid_offset(data, coord_list_w_tr, img_shift):
     # convert to int so coordinates can be used as indices in the MRI image space
     coord_list_w_tr_mri = coord_list_w_tr[:3, :].T.astype(int) + np.array([[0, img_shift, 0]])
 
+    #FIX: IndexError: index 269 is out of bounds for axis 2 with size 256
+    # error occurs when running line "labs = data[coord..."
+    # need to check why there is a coordinate outside the MRI bounds
+
     # extract the first occurrence of a specific label from the MRI image
     labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
     lab_first = np.argmax(labs == 1)
@@ -497,6 +660,8 @@ def grid_offset(data, coord_list_w_tr, img_shift):
         pt_found = coord_list_w_tr_mri[lab_first, :]
         # convert coordinate back to invesalius 3D space
         pt_found_inv = pt_found - np.array([0., img_shift, 0.])
+    else:
+        pt_found_inv = None
 
     # # convert to world coordinate space to use as seed for fiber tracking
     # pt_found_tr = np.append(pt_found, 1)[np.newaxis, :].T
