@@ -375,30 +375,35 @@ def ShowImportBitmapDirDialog(self):
     return path
 
 
-def ShowImportOtherFilesDialog(id_type):
+def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     # Default system path
     session = ses.Session()
     last_directory = session.get('paths', 'last_directory_%d' % id_type, '')
-    dlg = wx.FileDialog(None, message=_("Import Analyze 7.5 file"),
-                        defaultDir=last_directory,
-                        defaultFile="", wildcard=WILDCARD_ANALYZE,
+    dlg = wx.FileDialog(None, message=msg, defaultDir=last_directory,
+                        defaultFile="", wildcard=WILDCARD_NIFTI,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
 
-    if id_type == const.ID_NIFTI_IMPORT:
-        dlg.SetMessage(_("Import NIFTi 1 file"))
-        dlg.SetWildcard(WILDCARD_NIFTI)
-    elif id_type == const.ID_TREKKER_MASK:
-        dlg.SetMessage(_("Import Trekker mask"))
-        dlg.SetWildcard(WILDCARD_NIFTI)
-    elif id_type == const.ID_TREKKER_IMG:
-        dlg.SetMessage(_("Import Trekker anatomical image"))
-        dlg.SetWildcard(WILDCARD_NIFTI)
-    elif id_type == const.ID_TREKKER_FOD:
-        dlg.SetMessage(_("Import Trekker FOD"))
-        dlg.SetWildcard(WILDCARD_NIFTI)
-    elif id_type == const.ID_PARREC_IMPORT:
+    # if id_type == const.ID_NIFTI_IMPORT:
+    #     dlg.SetMessage(_("Import NIFTi 1 file"))
+    #     dlg.SetWildcard(WILDCARD_NIFTI)
+    # elif id_type == const.ID_TREKKER_MASK:
+    #     dlg.SetMessage(_("Import Trekker mask"))
+    #     dlg.SetWildcard(WILDCARD_NIFTI)
+    # elif id_type == const.ID_TREKKER_IMG:
+    #     dlg.SetMessage(_("Import Trekker anatomical image"))
+    #     dlg.SetWildcard(WILDCARD_NIFTI)
+    # elif id_type == const.ID_TREKKER_FOD:
+    #     dlg.SetMessage(_("Import Trekker FOD"))
+    #     dlg.SetWildcard(WILDCARD_NIFTI)
+    # elif id_type == const.ID_TREKKER_ACT:
+    #     dlg.SetMessage(_("Import acantomical labels"))
+    #     dlg.SetWildcard(WILDCARD_NIFTI)
+    if id_type == const.ID_PARREC_IMPORT:
         dlg.SetMessage(_("Import PAR/REC file"))
         dlg.SetWildcard(WILDCARD_PARREC)
+    elif id_type == const.ID_ANALYZE_IMPORT:
+        dlg.SetMessage(_("Import Analyze 7.5 file"))
+        dlg.SetWildcard(WILDCARD_ANALYZE)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
