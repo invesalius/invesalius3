@@ -599,3 +599,17 @@ def create_grid(xy_range, z_range, z_offset, spacing):
     coord_list_w = np.append(coord_list.T, np.ones([1, grid_number]), axis=0)
 
     return coord_list_w
+
+
+def create_spherical_grid(radius=10, subdivision=1):
+    x = np.linspace(-radius, radius, int(2*radius/subdivision)+1)
+    xv, yv, zv = np.meshgrid(x, x, x)
+    coord_grid = np.array([xv, yv, zv])
+    # create grid of points
+    grid_number = x.shape[0]**3
+    coord_grid = coord_grid.reshape([3, grid_number]).T
+
+    sph_grid = coord_grid[np.linalg.norm(coord_grid, axis=1) < radius, :]
+    sph_sort = sph_grid[np.argsort(np.linalg.norm(sph_grid, axis=1)), :]
+
+    return sph_sort

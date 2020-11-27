@@ -29,6 +29,7 @@ import time
 import numpy as np
 import queue
 from pubsub import pub as Publisher
+from scipy.stats import norm
 import vtk
 
 import invesalius.constants as const
@@ -269,6 +270,7 @@ class ComputeTractsThread(threading.Thread):
             try:
                 # print("Computing tracts")
                 # get from the queue the coordinates, coregistration transformation matrix, and flipped matrix
+                print("Here")
                 m_img_flip = self.coord_tracts_queue.get_nowait()
                 # coord, m_img, m_img_flip = self.coord_queue.get_nowait()
                 # print('ComputeTractsThread: get {}'.format(count))
@@ -384,6 +386,10 @@ class ComputeTractsACTThread(threading.Thread):
         self.coord_tracts_queue = coord_tracts_queue
         self.tracts_queue = tracts_queue
         self.coord_list_w = img_utils.create_grid((-4, 4), (0, 20), inp[2]-5, 1)
+        self.coord_list_sph = img_utils.create_spherical_grid(10, 1)
+        x_norm = np.linspace(norm.ppf(0.01), norm.ppf(0.99), 2*self.coord_list_sph.shape[0])
+        self.pdf = np.flipud(norm.pdf(x_norm[:self.coord_list_sph.shape[0]], loc=0, scale=2.))
+        self.sph_idx = np.linspace(0, self.coord_list_sph.shape[0], num=self.coord_list_sph.shape[0], dtype=int)
         # self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
@@ -404,6 +410,8 @@ class ComputeTractsACTThread(threading.Thread):
         n_tracts = 0
         n_branches = 0
         bundle = None
+        # sph_sampling = False
+        # m_seed = np.identity(4)
         # Compute the tracts
         # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
@@ -442,26 +450,35 @@ class ComputeTractsACTThread(threading.Thread):
                         # apply the coil transformation matrix
                         coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
 
-                # coord_offset = np.array([[27.53, -77.37, 46.42]])
-                # dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
-                # p_old = coord_offset.copy()
+                    # coord_offset = np.array([[27.53, -77.37, 46.42]])
+                    # dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
+                    # p_old = coord_offset.copy()
 
-                # print("dist_pre: {}\n dist: {}".format(dist_pre, dist))
+                    # print("dist_pre: {}\n dist: {}".format(dist_pre, dist))
 
-                # print("p_new_shape", coord_offset.shape)
-                # print("m_img_flip_shape", m_img_flip.shape)
+                    # print("p_new_shape", coord_offset.shape)
+                    # print("m_img_flip_shape", m_img_flip.shape)
                     seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
-                # print("seed_trk: ", seed_trk)
-                # Juuso's
-                # seed_trk = np.array([[-8.49, -8.39, 2.5]])
-                # Baran M1
-                # seed_trk = np.array([[27.53, -77.37, 46.42]])
-                # print("Seed: {}".format(seed))
+                    # print("seed_trk: ", seed_trk)
+                    # Juuso's
+                    # seed_trk = np.array([[-8.49, -8.39, 2.5]])
+                    # Baran M1
+                    # seed_trk = np.array([[27.53, -77.37, 46.42]])
+                    # print("Seed: {}".format(seed))
 
-                # set the seeds for trekker, one seed is repeated n_threads times
-                # trekker has internal multiprocessing approach done in C. Here the number of available threads is give,
-                # but in case a large number of tracts is requested, it will compute all in parallel automatically
-                # for a more fluent navigation, better to compute the maximum number the computer handles
+                    # if sph_sampling:
+                    #     samples = np.random.choice(self.sph_idx, size=n_threads, p=self.pdf)
+                    #     m_seed[:-1, -1] = seed_trk
+                    #     sph_seed = m_seed @ self.coord_list_sph
+                    #     seed_trk_r = sph_seed[samples, :]
+                    # else:
+                    #     seed_trk_r = np.repeat(seed_trk, n_threads, axis=0)
+
+                    # set the seeds for trekker, one seed is repeated n_threads times
+                    # trekker has internal multiprocessing approach done in C. Here the number of available threads is give,
+                    # but in case a large number of tracts is requested, it will compute all in parallel automatically
+                    # for a more fluent navigation, better to compute the maximum number the computer handles
+                    # trekker.seed_coordinates(seed_trk_r)
                     trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
 
                     # run the trekker, this is the slowest line of code, be careful to just use once!
