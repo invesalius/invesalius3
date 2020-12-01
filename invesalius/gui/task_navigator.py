@@ -851,8 +851,9 @@ class NeuronavigationPanel(wx.Panel):
 
                     if dlg.ICPcorregistration(fre):
                         m_icp = self.OnICP()
-                        fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change, m_icp)
-                        self.UpdateFRE(fre)
+                        # calculate the FRE after ICP make no sense. Is there a way to quantify the new error?
+                        #fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change, m_icp)
+                        #self.UpdateFRE(fre)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
