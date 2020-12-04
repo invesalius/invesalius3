@@ -1706,7 +1706,7 @@ class TractographyPanel(wx.Panel):
         border_last = 1
         line_checks = wx.BoxSizer(wx.HORIZONTAL)
         line_checks.Add(checktracts, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, border_last)
-        line_checks.Add(checkpeeling, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, border_last)
+        line_checks.Add(checkpeeling, 0, wx.RIGHT | wx.LEFT, border_last)
 
         # Add line sizers into main sizer
         border = 1

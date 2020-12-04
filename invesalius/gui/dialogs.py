@@ -3295,7 +3295,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(group_sizer, 0,
-                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -3586,10 +3586,10 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.progress = wx.Gauge(self, -1)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(top_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+        main_sizer.Add(top_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(extra_sizer, 0,
-                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
         main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(main_sizer)
