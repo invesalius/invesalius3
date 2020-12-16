@@ -613,3 +613,13 @@ def create_spherical_grid(radius=10, subdivision=1):
     sph_sort = sph_grid[np.argsort(np.linalg.norm(sph_grid, axis=1)), :]
 
     return sph_sort
+
+
+def random_sample_sphere(radius=3, size=100):
+    uvw = np.random.normal(0, 1, (size, 3))
+    norm = np.linalg.norm(uvw, axis=1, keepdims=True)
+    # Change/remove **(1./3) to make samples more concentrated around the center
+    r = np.random.uniform(0, 1, (size, 1)) ** 1.5
+    scale = radius * np.divide(r, norm)
+    xyz = scale * uvw
+    return xyz
