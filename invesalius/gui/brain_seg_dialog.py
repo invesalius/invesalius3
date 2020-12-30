@@ -16,6 +16,7 @@ from pubsub import pub as Publisher
 
 import invesalius.data.slice_ as slc
 from invesalius.segmentation.brain import segment, utils
+from invesalius.gui import dialogs
 
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
@@ -237,13 +238,13 @@ class BrainSegmenterDialog(wx.Dialog):
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
             self.OnStop(None)
             self.HideProgress()
-            dlg = wx.MessageDialog(
+            dlg = dialogs.ErrorMessageBox(
                 None,
                 "It was not possible to start brain segmentation because:"
                 + "\n"
                 + str(err),
                 "Brain segmentation error",
-                wx.ICON_ERROR | wx.OK,
+                #  wx.ICON_ERROR | wx.OK,
             )
             dlg.ShowModal()
 
@@ -280,15 +281,15 @@ class BrainSegmenterDialog(wx.Dialog):
                 error, traceback = self.ps.exception
                 self.OnStop(None)
                 self.HideProgress()
-                dlg = wx.MessageDialog(
+                dlg = dialogs.ErrorMessageBox(
                     None,
+                    "Brain segmentation error",
                     "It was not possible to use brain segmentation because:"
                     + "\n"
                     + str(error)
                     + "\n"
                     + traceback,
-                    "Brain segmentation error",
-                    wx.ICON_ERROR | wx.OK,
+                    #  wx.ICON_ERROR | wx.OK,
                 )
                 dlg.ShowModal()
                 return
