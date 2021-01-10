@@ -202,7 +202,7 @@ def compute_tracts(trekker, position, affine, affine_vtk, n_tracts):
     if trk_list:
         root = tracts_computation(trk_list, root, 0)
         Publisher.sendMessage('Remove tracts')
-        Publisher.sendMessage('Update tracts', flag=True, root=root, affine_vtk=affine_vtk)
+        Publisher.sendMessage('Update tracts', root=root, affine_vtk=affine_vtk, coord_offset=position)
     else:
         Publisher.sendMessage('Remove tracts')
 
