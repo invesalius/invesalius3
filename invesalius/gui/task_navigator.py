@@ -1972,7 +1972,7 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(Publisher.sendMessage, 'Create marker')
                     self.trigger_queue.task_done()
 
-                # TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
+                #TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
 

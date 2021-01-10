@@ -42,11 +42,13 @@ import invesalius.project as prj
 # np.set_printoptions(suppress=True)
 
 
-def compute_directions(trk_n):
-    """Compute direction of a single tract in each point and return as an RGB color
+def compute_directions(trk_n, alpha=255):
+    """Compute direction of a single tract in each point and return as an RGBA color
 
     :param trk_n: nx3 array of doubles (x, y, z) point coordinates composing the tract
     :type trk_n: numpy.ndarray
+    :param alpha: opacity value in the interval [0, 255]. The 0 is no opacity (total transparency).
+    :type alpha: int
     :return: nx3 array of int (x, y, z) RGB colors in the range 0 - 255
     :rtype: numpy.ndarray
     """
@@ -57,6 +59,7 @@ def compute_directions(trk_n):
     # check that linalg norm makes second norm
     # https://stackoverflow.com/questions/21030391/how-to-normalize-an-array-in-numpy
     direction = 255 * np.absolute((trk_d / np.linalg.norm(trk_d, axis=1)[:, None]))
+    direction = np.hstack([direction, alpha * np.ones([direction.shape[0], 1])])
     return direction.astype(int)
 
 
@@ -76,7 +79,7 @@ def compute_tubes(trk, direction):
     lines = vtk.vtkCellArray()
 
     colors = vtk.vtkUnsignedCharArray()
-    colors.SetNumberOfComponents(3)
+    colors.SetNumberOfComponents(4)
 
     k = 0
     lines.InsertNextCell(numb_points)
@@ -204,18 +207,20 @@ def compute_tracts(trekker, position, affine, affine_vtk, n_tracts):
         Publisher.sendMessage('Remove tracts')
 
 
-def tracts_computation_branch(trk_list):
+def tracts_computation_branch(trk_list, alpha=255):
     """Convert the list of all computed tracts given by Trekker run and returns a vtkMultiBlockDataSet
 
     :param trk_list: List of lists containing the computed tracts and corresponding coordinates
     :type trk_list: list
+    :param alpha: opacity value in the interval [0, 255]. The 0 is no opacity (total transparency).
+    :type alpha: int
     :return: The collection of tracts as a vtkMultiBlockDataSet
     :rtype: vtkMultiBlockDataSet
     """
     # Transform tracts to array
     trk_arr = [np.asarray(trk_n).T if trk_n else None for trk_n in trk_list]
     # Compute the directions
-    trk_dir = [compute_directions(trk_n) for trk_n in trk_arr]
+    trk_dir = [compute_directions(trk_n, alpha) for trk_n in trk_arr]
     # Compute the vtk tubes
     tube_list = [compute_tubes(trk_arr_n, trk_dir_n) for trk_arr_n, trk_dir_n in zip(trk_arr, trk_dir)]
     branch = combine_tracts_branch(tube_list)
@@ -435,12 +440,31 @@ class ComputeTractsACTThread(threading.Thread):
                 # m_img_flip = m_img.copy()
                 # m_img_flip[1, -1] = -m_img_flip[1, -1]
 
+                # DEBUG: Uncomment the m_img_flip below so that distance is fixed and tracts keep computing
+                # m_img_flip[:3, -1] = (5., 10., 12.)
                 dist = abs(np.linalg.norm(p_old_pre - np.asarray(m_img_flip[:3, -1])))
                 p_old_pre = m_img_flip[:3, -1].copy()
 
+                # Uncertanity visualization  --
+                # each tract branch is computed with one set of parameters ajusted from 1 to 10
+                n_param = 1 + (n_branches % 10)
+                # rescale the alpha value that defines the opacity of the branch
+                # the n interval is [1, 10] and the new interval is [51, 255]
+                # the new interval is defined to have no 0 opacity (minimum is 51, i.e., 20%)
+                alpha = (n_param - 1) * (255 - 51) / (10 - 1) + 51
+                trekker.minFODamp(n_param * 0.01)
+                trekker.dataSupportExponent(n_param * 0.1)
+                # ---
+
+                # When moving the coil further than the seed_radius restart the bundle computation
+                # Currently, it stops to compute tracts when the maximum number of tracts is reached maybe keep
+                # computing even if reaches the maximum
                 if dist >= seed_radius:
+                    # Anatomic constrained seed computation ---
+                    # The original seed location is replaced by the gray-white  matter interface that is closest to
+                    # the coil center
                     try:
-                        # TODO: Create a dialog error to say when the ACT data is not loaded and prevent
+                        #TODO: Create a dialog error to say when the ACT data is not loaded and prevent
                         # the interface from freezing. Give the user a chance to load it (maybe in task_navigator)
                         coord_list_w_tr = m_img_flip @ self.coord_list_w
                         coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
@@ -448,31 +472,36 @@ class ComputeTractsACTThread(threading.Thread):
                         # This error might be caused by the coordinate exceeding the image array dimensions.
                         # Needs further verification.
                         coord_offset = None
+                    # ---
 
+                    # Translate the coordinate along the normal vector of the object/coil ---
                     if coord_offset is None:
-                        # translate the coordinate along the normal vector of the object/coil
                         # apply the coil transformation matrix
                         coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+                    # ---
 
-                    # coord_offset = np.array([[27.53, -77.37, 46.42]])
-                    # dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
-                    # p_old = coord_offset.copy()
-
-                    # print("dist_pre: {}\n dist: {}".format(dist_pre, dist))
-
-                    # print("p_new_shape", coord_offset.shape)
-                    # print("m_img_flip_shape", m_img_flip.shape)
+                    # convert the world coordinates to the voxel space for using as a seed in Trekker
                     # seed_trk.shape == [1, 3]
                     seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
+                    # print("Desired: {}".format(seed_trk.shape))
 
-                    # print("seed_trk: ", seed_trk)
+                    # DEBUG: uncomment the seed_trk below
                     # Juuso's
                     # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                     # Baran M1
                     # seed_trk = np.array([[27.53, -77.37, 46.42]])
+                    # print("Given: {}".format(seed_trk.shape))
                     # print("Seed: {}".format(seed))
 
+                    # Spherical sampling of seed coordinates ---
                     if sph_sampling:
+                        # CHECK: We use ACT only for the origin seed, but not for all the other coordinates.
+                        # Check how this can be solved. Applying ACT to all coordinates is maybe too much.
+                        # Maybe it doesn't matter because the ACT is just to help finding the closest location to
+                        # the TMS coil center. Also, note that the spherical sampling is applied only when the coil
+                        # location changes, all further iterations used the fixed n_threads samples to compute the
+                        # remaining tracts.
+
                         # samples = np.random.choice(self.sph_idx, size=n_threads, p=self.pdf)
                         # m_seed[:-1, -1] = seed_trk
                         # sph_seed = m_seed @ self.coord_list_sph
@@ -482,25 +511,26 @@ class ComputeTractsACTThread(threading.Thread):
                         seed_trk_r = m_seed @ coord_list_sph[:, samples]
                         seed_trk_r = seed_trk_r[:-1, :].T
                     else:
+                        # set the seeds for trekker, one seed is repeated n_threads times
                         # shape (24, 3)
                         seed_trk_r = np.repeat(seed_trk, n_threads, axis=0)
 
-                    # set the seeds for trekker, one seed is repeated n_threads times
-                    # trekker has internal multiprocessing approach done in C. Here the number of available threads is give,
-                    # but in case a large number of tracts is requested, it will compute all in parallel automatically
-                    # for a more fluent navigation, better to compute the maximum number the computer handles
+                    # ---
+
+                    # Trekker has internal multiprocessing approach done in C. Here the number of available threads is
+                    # given, but in case a large number of tracts is requested, it will compute all in parallel
+                    # automatically for a more fluent navigation, better to compute the maximum number the computer
+                    # handles
                     trekker.seed_coordinates(seed_trk_r)
                     # trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
 
                     # run the trekker, this is the slowest line of code, be careful to just use once!
                     trk_list = trekker.run()
 
+                    # check if any tract was found, otherwise doesn't count
                     if trk_list:
-                    # print("dist: {}".format(dist))
-                    # if dist >= seed_radius:
-                        # when moving the coil further than the seed_radius restart the bundle computation
                         bundle = vtk.vtkMultiBlockDataSet()
-                        branch = tracts_computation_branch(trk_list)
+                        branch = tracts_computation_branch(trk_list, alpha)
                         bundle.SetBlock(n_branches, branch)
                         n_branches = 1
                         n_tracts = branch.GetNumberOfBlocks()
@@ -509,19 +539,18 @@ class ComputeTractsACTThread(threading.Thread):
                         n_branches = 0
                         n_tracts = 0
 
-                        # TODO: maybe keep computing even if reaches the maximum
                 elif dist < seed_radius and n_tracts < n_tracts_total:
                     trk_list = trekker.run()
                     if trk_list:
-                        # compute tracts blocks and add to bungle until reaches the maximum number of tracts
-                        branch = tracts_computation_branch(trk_list)
+                        # compute tract blocks and add to bundle until reaches the maximum number of tracts
+                        # the alpha changes depending on the parameter set
+                        branch = tracts_computation_branch(trk_list, alpha)
                         if bundle:
                             bundle.SetBlock(n_branches, branch)
                             n_tracts += branch.GetNumberOfBlocks()
                             n_branches += 1
                         else:
                             bundle = vtk.vtkMultiBlockDataSet()
-                            branch = tracts_computation_branch(trk_list)
                             bundle.SetBlock(n_branches, branch)
                             n_branches = 1
                             n_tracts = branch.GetNumberOfBlocks()
