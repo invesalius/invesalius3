@@ -390,7 +390,8 @@ class ComputeTractsACTThread(threading.Thread):
         # self.coord_queue = coord_queue
         self.coord_tracts_queue = coord_tracts_queue
         self.tracts_queue = tracts_queue
-        self.coord_list_w = img_utils.create_grid((-4, 4), (0, 20), inp[2]-5, 1)
+        # on first pilots (january 12, 2021) used (-4, 4)
+        self.coord_list_w = img_utils.create_grid((-2, 2), (0, 20), inp[2]-5, 1)
         # self.coord_list_sph = img_utils.create_spherical_grid(10, 1)
         # self.coord_list_sph = img_utils.create_spherical_grid(10, 1)
         # x_norm = np.linspace(norm.ppf(0.01), norm.ppf(0.99), 2*self.coord_list_sph.shape[0])
