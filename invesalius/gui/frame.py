@@ -954,6 +954,21 @@ class MenuBar(wx.MenuBar):
         self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
         self.crop_mask_menu.Enable(False)
 
+        mask_menu.AppendSeparator()
+
+        mask_preview_menu = wx.Menu()
+
+        self.mask_preview = mask_preview_menu.Append(const.ID_MASK_3D_PREVIEW, _("Enable"), "", wx.ITEM_CHECK)
+        self.mask_preview.Enable(False)
+
+        self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload"), "", wx.ITEM_CHECK)
+        self.mask_auto_reload.Enable(False)
+
+        self.mask_preview_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Reload"))
+        self.mask_preview_reload.Enable(False)
+
+        mask_menu.Append(-1, _('Mask 3D Preview'), mask_preview_menu)
+
         # Segmentation Menu
         segmentation_menu = wx.Menu()
         self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold\tCtrl+Shift+T"))
