@@ -128,6 +128,8 @@ class Controller():
 
         Publisher.subscribe(self.show_mask_preview, 'Show mask preview')
 
+        Publisher.subscribe(self.enable_mask_preview, 'Enable mask 3D preview')
+
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
         proj.spacing = spacing
@@ -1118,3 +1120,11 @@ class Controller():
         mask.create_3d_preview()
         Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=flag)
         Publisher.sendMessage("Reload actual slice")
+
+    def enable_mask_preview(self):
+        mask = self.Slice.current_mask
+        if mask is not None:
+            self.Slice.do_threshold_to_all_slices(mask)
+            mask.create_3d_preview()
+            Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=True)
+            Publisher.sendMessage("Reload actual slice")

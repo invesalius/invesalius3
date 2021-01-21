@@ -538,6 +538,9 @@ class Frame(wx.Frame):
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
 
+        elif id == const.ID_MASK_3D_PREVIEW:
+            self.OnEnableMask3DPreview()
+
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage('Open create surface dialog')
 
@@ -768,6 +771,9 @@ class Frame(wx.Frame):
 
     def OnCropMask(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
+
+    def OnEnableMask3DPreview(self):
+        Publisher.sendMessage('Enable mask 3D preview')
 
     def ShowPluginsFolder(self):
         """
@@ -1215,6 +1221,9 @@ class MenuBar(wx.MenuBar):
     def OnAddMask(self, mask):
         self.num_masks += 1
         self.bool_op_menu.Enable(self.num_masks >= 2)
+        self.mask_preview.Enable(True)
+        self.mask_auto_reload.Enable(True)
+        self.mask_preview_reload.Enable(True)
 
     def OnRemoveMasks(self, mask_indexes):
         self.num_masks -= len(mask_indexes)
@@ -1223,6 +1232,9 @@ class MenuBar(wx.MenuBar):
     def OnShowMask(self, index, value):
         self.clean_mask_menu.Enable(value)
         self.crop_mask_menu.Enable(value)
+        self.mask_preview.Enable(value)
+        self.mask_auto_reload.Enable(value)
+        self.mask_preview_reload.Enable(value)
 
 
 # ------------------------------------------------------------------
