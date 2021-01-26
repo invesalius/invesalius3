@@ -257,7 +257,7 @@ class Mask():
             self.volume.create_volume()
 
     def _update_imagedata(self, update_volume_viewer=True):
-        if ses.Session().auto_reload_preview and self.imagedata is not None:
+        if self.imagedata is not None:
             dz, dy, dx = self.matrix.shape
             #  np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
             #  np_image[:] = self.matrix.reshape(-1)
@@ -381,7 +381,8 @@ class Mask():
             self.matrix[0] = 1
             self.matrix[:, 0, :] = 1
             self.matrix[:, :, 0] = 1
-        self._update_imagedata()
+        if ses.Session().auto_reload_preview:
+            self._update_imagedata()
         self.modified_time = time.monotonic()
         callbacks = []
         print(self._modified_callbacks)

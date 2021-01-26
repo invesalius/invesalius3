@@ -545,6 +545,9 @@ class Frame(wx.Frame):
         elif id == const.ID_MASK_3D_AUTO_RELOAD:
             ses.Session().auto_reload_preview = self.tools_menu.IsChecked(const.ID_MASK_3D_AUTO_RELOAD)
 
+        elif id == const.ID_MASK_3D_RELOAD:
+            self.OnUpdateMaskPreview()
+
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage('Open create surface dialog')
 
@@ -782,6 +785,9 @@ class Frame(wx.Frame):
         else:
             Publisher.sendMessage('Disable mask 3D preview')
 
+    def OnUpdateMaskPreview(self):
+        Publisher.sendMessage('Update mask 3D preview')
+
     def ShowPluginsFolder(self):
         """
         Show getting started window.
@@ -978,7 +984,7 @@ class MenuBar(wx.MenuBar):
         self.mask_auto_reload.Check(ses.Session().auto_reload_preview)
         self.mask_auto_reload.Enable(False)
 
-        self.mask_preview_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Reload") + "\tCtrl+Shift+R")
+        self.mask_preview_reload = mask_preview_menu.Append(const.ID_MASK_3D_RELOAD, _("Reload") + "\tCtrl+Shift+R")
         self.mask_preview_reload.Enable(False)
 
         mask_menu.Append(-1, _('Mask 3D Preview'), mask_preview_menu)

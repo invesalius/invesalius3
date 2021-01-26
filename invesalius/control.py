@@ -130,6 +130,7 @@ class Controller():
 
         Publisher.subscribe(self.enable_mask_preview, 'Enable mask 3D preview')
         Publisher.subscribe(self.disable_mask_preview, 'Disable mask 3D preview')
+        Publisher.subscribe(self.update_mask_preview, 'Update mask 3D preview')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
@@ -1135,3 +1136,8 @@ class Controller():
         if mask is not None:
             Publisher.sendMessage("Remove mask preview", mask_3d_actor=mask.volume._actor)
             Publisher.sendMessage("Render volume viewer")
+
+    def update_mask_preview(self):
+        mask = self.Slice.current_mask
+        if mask is not None:
+            mask._update_imagedata()
