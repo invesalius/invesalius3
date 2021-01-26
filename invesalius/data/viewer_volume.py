@@ -320,6 +320,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateMarkerOffsetPosition, 'Update marker offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
 
+        Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
+        Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
+
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
 
@@ -1663,6 +1666,19 @@ class Viewer(wx.Panel):
         # self._to_show_ball -= 1
         # self._check_and_set_ball_visibility()
 
+    def load_mask_preview(self, mask_3d_actor, flag=True):
+        if flag:
+            self.ren.AddVolume(mask_3d_actor)
+        else:
+            self.ren.RemoveVolume(mask_3d_actor)
+
+        if self.ren.GetActors().GetNumberOfItems() == 0 and self.ren.GetVolumes().GetNumberOfItems() == 1:
+            self.ren.ResetCamera()
+            self.ren.ResetCameraClippingRange()
+
+    def remove_mask_preview(self, mask_3d_actor):
+        self.ren.RemoveVolume(mask_3d_actor)
+
     def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
 
@@ -1893,11 +1909,9 @@ class SlicePlane:
         Publisher.sendMessage('Update slice 3D',
                               widget=self.plane_z,
                               orientation="AXIAL")
-               
 
     def DeletePlanes(self):
         del self.plane_x
         del self.plane_y
-        del self.plane_z 
-    
+        del self.plane_z
 

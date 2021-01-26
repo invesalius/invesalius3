@@ -576,12 +576,9 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.sendMessage('Show mask', index=index, value=flag)
 
 
-
-    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
-                      colour=None):
+    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
         self.InsertItem(index, "")
-        self.SetItem(index, 1, label,
-                           imageId=self.mask_list_index[index])
+        self.SetItem(index, 1, label, imageId=self.mask_list_index[index])
         self.SetItem(index, 2, threshold)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():

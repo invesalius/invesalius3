@@ -120,6 +120,8 @@ class Project(metaclass=Singleton):
     def RemoveMask(self, index):
         new_dict = {}
         for i in self.mask_dict:
+            mask = self.mask_dict[i]
+            mask.cleanup()
             if i < index:
                 new_dict[i] = self.mask_dict[i]
             if i > index:
@@ -331,6 +333,7 @@ class Project(metaclass=Singleton):
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
+            m.spacing = self.spacing
             m.OpenPList(filepath)
             self.mask_dict[m.index] = m
 
