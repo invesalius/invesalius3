@@ -321,6 +321,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
 
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
+        Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
 
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
@@ -1674,6 +1675,9 @@ class Viewer(wx.Panel):
         if self.ren.GetActors().GetNumberOfItems() == 0 and self.ren.GetVolumes().GetNumberOfItems() == 1:
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
+
+    def remove_mask_preview(self, mask_3d_actor):
+        self.ren.RemoveVolume(mask_3d_actor)
 
     def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
