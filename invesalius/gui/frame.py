@@ -980,7 +980,7 @@ class MenuBar(wx.MenuBar):
         self.mask_preview = mask_preview_menu.Append(const.ID_MASK_3D_PREVIEW, _("Enable") + "\tCtrl+Shift+M", "", wx.ITEM_CHECK)
         self.mask_preview.Enable(False)
 
-        self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+U", "", wx.ITEM_CHECK)
+        self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+D", "", wx.ITEM_CHECK)
         self.mask_auto_reload.Check(ses.Session().auto_reload_preview)
         self.mask_auto_reload.Enable(False)
 
