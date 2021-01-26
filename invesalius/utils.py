@@ -23,6 +23,7 @@ import re
 import locale
 import math
 import traceback
+import collections.abc
 
 from distutils.version import LooseVersion
 from functools import wraps
@@ -487,3 +488,13 @@ def log_traceback(ex):
     tb_lines = [line.rstrip('\n') for line in
         traceback.format_exception(ex.__class__, ex, ex_traceback)]
     return ''.join(tb_lines)
+
+
+
+def deep_merge_dict(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = deep_merge_dict(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
