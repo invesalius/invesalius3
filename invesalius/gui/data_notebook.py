@@ -444,7 +444,6 @@ class MasksListCtrlPanel(InvListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        self.Bind(wx.EVT_LEFT_DOWN, self._OnClickItem)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
@@ -457,24 +456,6 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
         Publisher.subscribe(self.__show_current_mask, 'Show current mask')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
-
-    def _OnClickItem(self, evt):
-        self._click_check = False
-        item_idx, flag = (self.HitTest(evt.GetPosition()))
-        if item_idx > -1:
-            column_clicked = self.get_column_clicked(evt.GetPosition())
-            if column_clicked == 3:
-                self._click_check = True
-                item = self.GetItem(item_idx, 3)
-                flag = not bool(item.GetImage())
-                self.SetItemColumnImage(item_idx, 3, int(flag))
-                self.show_mask_preview(item_idx, flag)
-                return
-        evt.Skip()
-
-    def show_mask_preview(self, index, flag):
-        Publisher.sendMessage('Show mask preview', index=index, flag=flag)
-        Publisher.sendMessage("Render volume viewer")
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -553,12 +534,10 @@ class MasksListCtrlPanel(InvListCtrl):
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _("Threshold"), wx.LIST_FORMAT_RIGHT)
-        self.InsertColumn(3, _("3D\nPreview"), wx.LIST_FORMAT_CENTER)
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 120)
         self.SetColumnWidth(2, 90)
-        self.SetColumnWidth(3, 90)
 
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
@@ -597,11 +576,10 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.sendMessage('Show mask', index=index, value=flag)
 
 
-    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None, preview_mask=False):
+    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
         self.InsertItem(index, "")
         self.SetItem(index, 1, label, imageId=self.mask_list_index[index])
         self.SetItem(index, 2, threshold)
-        self.SetItem(index, 3, "", int(preview_mask))
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
             #  if key != index:
