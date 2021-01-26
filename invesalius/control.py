@@ -1127,4 +1127,4 @@ class Controller():
             self.Slice.do_threshold_to_all_slices(mask)
             mask.create_3d_preview()
             Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=True)
-            Publisher.sendMessage("Reload actual slice")
+            Publisher.sendMessage("Render volume viewer")
