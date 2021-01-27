@@ -271,8 +271,7 @@ class Session(metaclass=Singleton):
     def _read_cfg_from_json(self, json_filename):
         with open(json_filename, 'r') as cfg_file:
             cfg_dict = json.load(cfg_file)
-            self._value = deep_merge_dict(self._values, cfg_dict)
-            print(self._values)
+            self._values = deep_merge_dict(self._values.copy(), cfg_dict)
 
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
@@ -306,15 +305,6 @@ class Session(metaclass=Singleton):
         self.random_id = config.getint('session','random_id')
 
     def ReadSession(self):
-        try:
-            self._read_cfg_from_json(USER_INV_CFG_PATH)
-        except Exception as e1:
-            debug(e1)
-            try:
-                self._read_cfg_from_ini(OLD_USER_INV_CFG_PATH)
-            except Exception as e2:
-                debug(e2)
-                return False
-
+        self._read_cfg_from_json(USER_INV_CFG_PATH)
         self.WriteSessionFile()
         return True
