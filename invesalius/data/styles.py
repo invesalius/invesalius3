@@ -1445,6 +1445,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer._flush_buffer = True
         self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
         self.viewer._flush_buffer = False
+        self.viewer.slice_.current_mask.modified()
 
     def EOnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
@@ -1822,7 +1823,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.current_mask.matrix[0 , 0, n+1]
             markers = self.matrix[:, :, n]
 
-
         ww = self.viewer.slice_.window_width
         wl = self.viewer.slice_.window_level
 
@@ -1866,6 +1866,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
 
             self.viewer.slice_.current_mask.was_edited = True
+            self.viewer.slice_.current_mask.modified()
             self.viewer.slice_.current_mask.clear_history()
 
             # Marking the project as changed
@@ -2017,10 +2018,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                 mask[(tmp_mask==2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
                 mask[(tmp_mask==1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
 
-            #mask[:] = tmp_mask
-            self.viewer.slice_.current_mask.matrix[0] = 1
-            self.viewer.slice_.current_mask.matrix[:, 0, :] = 1
-            self.viewer.slice_.current_mask.matrix[:, :, 0] = 1
+            self.viewer.slice_.current_mask.modified(True)
 
             self.viewer.slice_.discard_all_buffers()
             self.viewer.slice_.current_mask.clear_history()
@@ -2403,6 +2401,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
         self.viewer.slice_.current_mask.was_edited = True
+        self.viewer.slice_.current_mask.modified(True)
         Publisher.sendMessage('Reload actual slice')
 
 
@@ -2522,6 +2521,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
             self.viewer.slice_.current_mask.was_edited = True
+            self.viewer.slice_.current_mask.modified(True)
             Publisher.sendMessage('Reload actual slice')
 
 
@@ -2713,6 +2713,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
         self.viewer.slice_.current_mask.was_edited = True
+        self.viewer.slice_.current_mask.modified(self.config.target == '3D')
         Publisher.sendMessage('Reload actual slice')
 
     def do_2d_seg(self):

@@ -319,7 +319,6 @@ import wx.lib.buttons as btn
 from pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
-[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in range(5)]
 RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_NAME = {}
@@ -329,6 +328,8 @@ TOOL_STATE = {}
 ID_TO_ITEMSLICEMENU = {}
 ID_TO_ITEM_3DSTEREO = {}
 ID_TO_STEREO_NAME = {}
+
+ICON_SIZE = (32, 32)
 
 
 class VolumeViewerCover(wx.Panel):
@@ -349,47 +350,22 @@ class VolumeToolPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         # VOLUME RAYCASTING BUTTON
-        BMP_RAYCASTING = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "volume_raycasting.png"),
-                                    wx.BITMAP_TYPE_PNG)
+        BMP_RAYCASTING = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("volume_raycasting.png")), wx.BITMAP_TYPE_PNG)
+        BMP_SLICE_PLANE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("slice_plane.png")), wx.BITMAP_TYPE_PNG)
+        BMP_3D_STEREO = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG)
+        BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
+        BMP_3D_MASK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
 
-        BMP_SLICE_PLANE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "slice_plane.png"),
-                                    wx.BITMAP_TYPE_PNG)
-
-
-        BMP_3D_STEREO = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "3D_glasses.png"),
-                                    wx.BITMAP_TYPE_PNG)
-
-        BMP_TARGET = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "target.png"),
-                                    wx.BITMAP_TYPE_PNG)
-
-
-        button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
-                BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
-                size=(32,32))
-
-        button_stereo = pbtn.PlateButton(self, BUTTON_3D_STEREO,"",
-                BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE,
-                    size=(32,32))
-
-        button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
-        BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
-        size=(32,32))
-
-        button_target = self.button_target = pbtn.PlateButton(self, BUTTON_TARGET,"",
-        BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE,
-        size=(32,32))
+        self.button_raycasting = pbtn.PlateButton(self, -1,"", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_stereo = pbtn.PlateButton(self, -1,"", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_slice_plane = pbtn.PlateButton(self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         self.button_target.Enable(0)
-
-        self.button_raycasting = button_raycasting
-        self.button_stereo = button_stereo
+        #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
-        BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
-                              wx.BITMAP_TYPE_PNG)
-        button_view = pbtn.PlateButton(self, BUTTON_VIEW, "",
-                                        BMP_FRONT, size=(32,32),
-                                        style=pbtn.PB_STYLE_SQUARE)
-        self.button_view = button_view
+        BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
+        self.button_view = pbtn.PlateButton(self, -1, "", BMP_FRONT, size=(32,32), style=pbtn.PB_STYLE_SQUARE)
 
         # VOLUME COLOUR BUTTON
         if sys.platform.startswith('linux'):
@@ -399,18 +375,17 @@ class VolumeToolPanel(wx.Panel):
             size = (24,24)
             sp = 5
 
-        button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
-                                        size=size)
-        self.button_colour = button_colour
+        self.button_colour= csel.ColourSelect(self, -1, colour=(0,0,0), size=size)
 
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(button_colour, 0, wx.ALL, sp)
-        sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
-        sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
-        sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
-        sizer.Add(button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
-        sizer.Add(button_target, 0, wx.TOP | wx.BOTTOM, 1)
+        sizer.Add(self.button_colour, 0, wx.ALL, sp)
+        sizer.Add(self.button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(self.button_view, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(self.button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(self.button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
+        #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
         self.navigation_status = False
         self.status_target_select = False

@@ -682,6 +682,10 @@ class ErrorMessageBox(wx.Dialog):
         wx.Dialog.__init__(self, parent, title=caption, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
 
         title_label = wx.StaticText(self, -1, title)
+        title_width, title_height = title_label.GetSize()
+
+        icon = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_MESSAGE_BOX, (title_height * 2, title_height * 2))
+        bmp = wx.StaticBitmap(self, -1, icon)
 
         text = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.BORDER_NONE)
         text.SetValue(message)
@@ -690,13 +694,18 @@ class ErrorMessageBox(wx.Dialog):
         width, height = text.GetTextExtent("M"*60)
         text.SetMinSize((width, -1))
 
+
         btn_ok = wx.Button(self, wx.ID_OK)
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(btn_ok)
         btnsizer.Realize()
 
+        title_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        title_sizer.Add(bmp, 0, wx.ALL | wx.EXPAND, 5)
+        title_sizer.Add(title_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(title_label, 0, wx.ALL | wx.EXPAND, 5)
+        sizer.Add(title_sizer, 0, wx.ALL | wx.EXPAND, 5)
         sizer.Add(text, 1, wx.ALL | wx.EXPAND, 5)
         sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(sizer)

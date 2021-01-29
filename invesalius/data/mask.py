@@ -22,18 +22,21 @@ import plistlib
 import random
 import shutil
 import tempfile
-
-import numpy as np
-import vtk
+import time
+import weakref
 
 import invesalius.constants as const
+import invesalius.data.converters as converters
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
-
+from invesalius.data.volume import VolumeMask
+import numpy as np
+import vtk
 from invesalius_cy import floodfill
-
 from pubsub import pub as Publisher
 from scipy import ndimage
+from vtk.util import numpy_support
+
 
 class EditionHistoryNode(object):
     def __init__(self, index, orientation, array, clean=False):
@@ -189,7 +192,9 @@ class Mask():
     def __init__(self):
         Mask.general_index += 1
         self.index = Mask.general_index
-        self.imagedata = ''
+        self.matrix = None
+        self.spacing = (1.0, 1.0, 1.0)
+        self.imagedata = None
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
@@ -198,7 +203,11 @@ class Mask():
         self.is_shown = 1
         self.edited_points = {}
         self.was_edited = False
+        self.volume = None
+        self.auto_update_mask = True
+        self.modified_time = 0
         self.__bind_events()
+        self._modified_callbacks = []
 
         self.history = EditionHistory()
 
@@ -206,11 +215,24 @@ class Mask():
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
+    def as_vtkimagedata(self):
+        print("Converting to VTK")
+        vimg = converters.to_vtk_mask(self.matrix, self.spacing)
+        print("Converted")
+        return vimg
+
+    def set_colour(self, colour):
+        self.colour = colour
+        if self.volume is not None:
+            self.volume.set_colour(colour)
+            Publisher.sendMessage("Render volume viewer")
+
     def save_history(self, index, orientation, array, p_array, clean=False):
         self.history.new_node(index, orientation, array, p_array, clean)
 
     def undo_history(self, actual_slices):
         self.history.undo(self.matrix, actual_slices)
+        self.modified()
 
         # Marking the project as changed
         session = ses.Session()
@@ -218,6 +240,7 @@ class Mask():
 
     def redo_history(self, actual_slices):
         self.history.redo(self.matrix, actual_slices)
+        self.modified()
 
         # Marking the project as changed
         session = ses.Session()
@@ -225,6 +248,27 @@ class Mask():
 
     def on_show(self):
         self.history._config_undo_redo(self.is_shown)
+
+    def create_3d_preview(self):
+        if self.volume is None:
+            if self.imagedata is None:
+                self.imagedata = self.as_vtkimagedata()
+            self.volume = VolumeMask(self)
+            self.volume.create_volume()
+
+    def _update_imagedata(self, update_volume_viewer=True):
+        if self.imagedata is not None:
+            dz, dy, dx = self.matrix.shape
+            #  np_image = numpy_support.vtk_to_numpy(self.imagedata.GetPointData().GetScalars())
+            #  np_image[:] = self.matrix.reshape(-1)
+            self.imagedata.SetDimensions(dx - 1, dy - 1, dz - 1)
+            self.imagedata.SetSpacing(self.spacing)
+            self.imagedata.SetExtent(0, dx - 1, 0, dy - 1,  0, dz - 1)
+            self.imagedata.Modified()
+            self.volume._actor.Update()
+
+            if update_volume_viewer:
+                Publisher.sendMessage("Render volume viewer")
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
@@ -284,10 +328,15 @@ class Mask():
         elif axis == 2:
             submatrix[:] = submatrix[:, :, ::-1]
             self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
+        self.modified()
 
     def OnSwapVolumeAxes(self, axes):
         axis0, axis1 = axes
         self.matrix = self.matrix.swapaxes(axis0, axis1)
+        if self.volume:
+            self.imagedata = self.as_vtkimagedata()
+            self.volume.change_imagedata()
+        self.modified()
 
     def _save_mask(self, filename):
         shutil.copyfile(self.temp_file, filename)
@@ -300,6 +349,22 @@ class Mask():
     def _set_class_index(self, index):
         Mask.general_index = index
 
+    def add_modified_callback(self, callback):
+        ref = weakref.WeakMethod(callback)
+        self._modified_callbacks.append(ref)
+
+    def remove_modified_callback(self, callback):
+        callbacks = []
+        removed = False
+        for cb in self._modified_callbacks:
+            if cb() is not None:
+                if cb() != callback:
+                    callbacks.append(cb)
+                else:
+                    removed = True
+        self._modified_callbacks = callbacks
+        return removed
+
     def create_mask(self, shape):
         """
         Creates a new mask object. This method do not append this new mask into the project.
@@ -311,11 +376,35 @@ class Mask():
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = np.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
+    def modified(self, all_volume=False):
+        if all_volume:
+            self.matrix[0] = 1
+            self.matrix[:, 0, :] = 1
+            self.matrix[:, :, 0] = 1
+        if ses.Session().auto_reload_preview:
+            self._update_imagedata()
+        self.modified_time = time.monotonic()
+        callbacks = []
+        print(self._modified_callbacks)
+        for callback in self._modified_callbacks:
+            if callback() is not None:
+                callback()()
+                callbacks.append(callback)
+        self._modified_callbacks = callbacks
+
     def clean(self):
         self.matrix[1:, 1:, 1:] = 0
-        self.matrix[0, :, :] = 1
-        self.matrix[:, 0, :] = 1
-        self.matrix[:, :, 0] = 1
+        self.modified(all_volume=True)
+
+    def cleanup(self):
+        if self.is_shown:
+            self.history._config_undo_redo(False)
+        if self.volume:
+            Publisher.sendMessage("Unload volume", volume=self.volume._actor)
+            Publisher.sendMessage("Render volume viewer")
+            self.imagedata = None
+            self.volume = None
+        del self.matrix
 
     def copy(self, copy_name):
         """
@@ -334,6 +423,7 @@ class Mask():
 
         new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]
+        new_mask.spacing = self.spacing
 
         return new_mask
 
@@ -384,7 +474,4 @@ class Mask():
                 self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
-        if self.is_shown:
-            self.history._config_undo_redo(False)
-        del self.matrix
         os.remove(self.temp_file)

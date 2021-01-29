@@ -118,6 +118,7 @@ class Frame(wx.Frame):
         self.actived_interpolated_slices = main_menu.view_menu
         self.actived_navigation_mode = main_menu.mode_menu
         self.actived_dbs_mode = main_menu.mode_dbs
+        self.tools_menu = main_menu.tools_menu
 
         # Set menus, status and task bar
         self.SetMenuBar(main_menu)
@@ -538,6 +539,15 @@ class Frame(wx.Frame):
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
 
+        elif id == const.ID_MASK_3D_PREVIEW:
+            self.OnEnableMask3DPreview(value=self.tools_menu.IsChecked(const.ID_MASK_3D_PREVIEW))
+
+        elif id == const.ID_MASK_3D_AUTO_RELOAD:
+            ses.Session().auto_reload_preview = self.tools_menu.IsChecked(const.ID_MASK_3D_AUTO_RELOAD)
+
+        elif id == const.ID_MASK_3D_RELOAD:
+            self.OnUpdateMaskPreview()
+
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage('Open create surface dialog')
 
@@ -769,6 +779,15 @@ class Frame(wx.Frame):
     def OnCropMask(self):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
 
+    def OnEnableMask3DPreview(self, value):
+        if value:
+            Publisher.sendMessage('Enable mask 3D preview')
+        else:
+            Publisher.sendMessage('Disable mask 3D preview')
+
+    def OnUpdateMaskPreview(self):
+        Publisher.sendMessage('Update mask 3D preview')
+
     def ShowPluginsFolder(self):
         """
         Show getting started window.
@@ -954,6 +973,22 @@ class MenuBar(wx.MenuBar):
         self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
         self.crop_mask_menu.Enable(False)
 
+        mask_menu.AppendSeparator()
+
+        mask_preview_menu = wx.Menu()
+
+        self.mask_preview = mask_preview_menu.Append(const.ID_MASK_3D_PREVIEW, _("Enable") + "\tCtrl+Shift+M", "", wx.ITEM_CHECK)
+        self.mask_preview.Enable(False)
+
+        self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+D", "", wx.ITEM_CHECK)
+        self.mask_auto_reload.Check(ses.Session().auto_reload_preview)
+        self.mask_auto_reload.Enable(False)
+
+        self.mask_preview_reload = mask_preview_menu.Append(const.ID_MASK_3D_RELOAD, _("Reload") + "\tCtrl+Shift+R")
+        self.mask_preview_reload.Enable(False)
+
+        mask_menu.Append(-1, _('Mask 3D Preview'), mask_preview_menu)
+
         # Segmentation Menu
         segmentation_menu = wx.Menu()
         self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold\tCtrl+Shift+T"))
@@ -995,6 +1030,7 @@ class MenuBar(wx.MenuBar):
         tools_menu.Append(-1,  _(u"Mask"), mask_menu)
         tools_menu.Append(-1, _(u"Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _(u"Surface"), surface_menu)
+        self.tools_menu = tools_menu
 
         #View
         self.view_menu = view_menu = wx.Menu()
@@ -1200,6 +1236,9 @@ class MenuBar(wx.MenuBar):
     def OnAddMask(self, mask):
         self.num_masks += 1
         self.bool_op_menu.Enable(self.num_masks >= 2)
+        self.mask_preview.Enable(True)
+        self.mask_auto_reload.Enable(True)
+        self.mask_preview_reload.Enable(True)
 
     def OnRemoveMasks(self, mask_indexes):
         self.num_masks -= len(mask_indexes)
@@ -1208,6 +1247,9 @@ class MenuBar(wx.MenuBar):
     def OnShowMask(self, index, value):
         self.clean_mask_menu.Enable(value)
         self.crop_mask_menu.Enable(value)
+        self.mask_preview.Enable(value)
+        self.mask_auto_reload.Enable(value)
+        self.mask_preview_reload.Enable(value)
 
 
 # ------------------------------------------------------------------

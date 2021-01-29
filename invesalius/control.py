@@ -126,6 +126,12 @@ class Controller():
 
         Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
+        Publisher.subscribe(self.show_mask_preview, 'Show mask preview')
+
+        Publisher.subscribe(self.enable_mask_preview, 'Enable mask 3D preview')
+        Publisher.subscribe(self.disable_mask_preview, 'Disable mask 3D preview')
+        Publisher.subscribe(self.update_mask_preview, 'Update mask 3D preview')
+
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
         proj.spacing = spacing
@@ -1108,3 +1114,30 @@ class Controller():
 
         if err_msg:
             dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
+
+    def show_mask_preview(self, index, flag=True):
+        proj = prj.Project()
+        mask = proj.mask_dict[index]
+        slc = self.Slice.do_threshold_to_all_slices(mask)
+        mask.create_3d_preview()
+        Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=flag)
+        Publisher.sendMessage("Reload actual slice")
+
+    def enable_mask_preview(self):
+        mask = self.Slice.current_mask
+        if mask is not None:
+            self.Slice.do_threshold_to_all_slices(mask)
+            mask.create_3d_preview()
+            Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=True)
+            Publisher.sendMessage("Render volume viewer")
+
+    def disable_mask_preview(self):
+        mask = self.Slice.current_mask
+        if mask is not None:
+            Publisher.sendMessage("Remove mask preview", mask_3d_actor=mask.volume._actor)
+            Publisher.sendMessage("Render volume viewer")
+
+    def update_mask_preview(self):
+        mask = self.Slice.current_mask
+        if mask is not None:
+            mask._update_imagedata()
