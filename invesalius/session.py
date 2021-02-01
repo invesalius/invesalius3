@@ -305,6 +305,14 @@ class Session(metaclass=Singleton):
         self.random_id = config.getint('session','random_id')
 
     def ReadSession(self):
-        self._read_cfg_from_json(USER_INV_CFG_PATH)
+        try:
+            self._read_cfg_from_json(USER_INV_CFG_PATH)
+        except Exception as e1:
+            debug(e1)
+            try:
+                self._read_cfg_from_ini(OLD_USER_INV_CFG_PATH)
+            except Exception as e2:
+                debug(e2)
+                return False
         self.WriteSessionFile()
         return True
