@@ -215,10 +215,10 @@ class InnerFoldPanel(wx.Panel):
         checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowObject)
         self.checkobj = checkobj
 
-        if sys.platform != 'win32':
-            self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-            checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-            checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        #  if sys.platform != 'win32':
+        self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
@@ -1669,7 +1669,7 @@ class TractographyPanel(wx.Panel):
         border_last = 1
         line_checks = wx.BoxSizer(wx.HORIZONTAL)
         line_checks.Add(checktracts, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, border_last)
-        line_checks.Add(checkpeeling, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, border_last)
+        line_checks.Add(checkpeeling, 0, wx.RIGHT | wx.LEFT, border_last)
 
         # Add line sizers into main sizer
         border = 1

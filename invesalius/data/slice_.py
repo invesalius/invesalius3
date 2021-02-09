@@ -384,9 +384,21 @@ class Slice(metaclass=utils.Singleton):
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
 
+        if self.current_mask.auto_update_mask and self.current_mask.volume is not None:
+            to_reload = True
+            self.SetMaskThreshold(
+                index,
+                threshold_range,
+                slice_number = None,
+                orientation = None
+            )
+            self.discard_all_buffers()
+            Publisher.sendMessage("Reload actual slice")
+            self.current_mask.modified(all_volume=True)
+            return
+
         to_reload = False
         if threshold_range != self.current_mask.threshold_range:
-            to_reload = True
             for orientation in self.buffer_slices:
                 self.buffer_slices[orientation].discard_vtk_mask()
                 self.SetMaskThreshold(
@@ -417,6 +429,7 @@ class Slice(metaclass=utils.Singleton):
 
         if to_reload:
             Publisher.sendMessage("Reload actual slice")
+        self.current_mask.modified(all_volume=False)
 
     def __set_current_mask_threshold_actual_slice(self, threshold_range):
         if self.current_mask is None:
@@ -1061,7 +1074,7 @@ class Slice(metaclass=utils.Singleton):
     def SetMaskColour(self, index, colour, update=True):
         "Set a mask colour given its index and colour (RGB 0-1 values)"
         proj = Project()
-        proj.mask_dict[index].colour = colour
+        proj.mask_dict[index].set_colour(colour)
 
         (r, g, b) = colour[:3]
         colour_wx = [r * 255, g * 255, b * 255]
@@ -1108,6 +1121,7 @@ class Slice(metaclass=utils.Singleton):
             # TODO: find out a better way to do threshold
             if slice_number is None:
                 for n, slice_ in enumerate(self.matrix):
+                    print(n)
                     m = np.ones(slice_.shape, self.current_mask.matrix.dtype)
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
@@ -1346,6 +1360,7 @@ class Slice(metaclass=utils.Singleton):
         """
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
+        future_mask.spacing = self.spacing
 
         if name:
             future_mask.name = name
@@ -1605,6 +1620,7 @@ class Slice(metaclass=utils.Singleton):
 
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
+        future_mask.spacing = spacing
         future_mask.name = new_name
 
         future_mask.matrix[:] = 1
@@ -1805,6 +1821,7 @@ class Slice(metaclass=utils.Singleton):
         self.buffer_slices["CORONAL"].discard_vtk_mask()
         self.buffer_slices["SAGITAL"].discard_vtk_mask()
 
+        self.current_mask.modified(target == '3D')
         Publisher.sendMessage("Reload actual slice")
 
     def calc_image_density(self, mask=None):

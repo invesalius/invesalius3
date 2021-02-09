@@ -34,7 +34,7 @@ import json
 from pubsub import pub as Publisher
 import wx
 
-from invesalius.utils import Singleton, debug, decode
+from invesalius.utils import Singleton, debug, decode, deep_merge_dict
 from random import randint
 
 from invesalius import inv_paths
@@ -59,6 +59,7 @@ class Session(metaclass=Singleton):
             'session': {
                 'status': 3,
                 'language': '',
+                'auto_reload_preview': False,
             },
             'project': {
             },
@@ -76,6 +77,7 @@ class Session(metaclass=Singleton):
             'surface_interpolation': ('session', 'surface_interpolation'),
             'rendering': ('session', 'rendering'),
             'slice_interpolation': ('session', 'slice_interpolation'),
+            'auto_reload_preview': ('session', 'auto_reload_preview'),
             'recent_projects': ('project', 'recent_projects'),
             'homedir': ('paths', 'homedir'),
             'tempdir': ('paths', 'homedir'),
@@ -95,6 +97,7 @@ class Session(metaclass=Singleton):
                 'surface_interpolation': 1,
                 'rendering': 0,
                 'slice_interpolation': 0,
+                'auto_reload_preview': False,
             },
 
             'project': {
@@ -268,7 +271,7 @@ class Session(metaclass=Singleton):
     def _read_cfg_from_json(self, json_filename):
         with open(json_filename, 'r') as cfg_file:
             cfg_dict = json.load(cfg_file)
-            self._values.update(cfg_dict)
+            self._values = deep_merge_dict(self._values.copy(), cfg_dict)
 
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
@@ -311,6 +314,5 @@ class Session(metaclass=Singleton):
             except Exception as e2:
                 debug(e2)
                 return False
-
         self.WriteSessionFile()
         return True
