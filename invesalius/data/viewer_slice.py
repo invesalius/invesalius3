@@ -573,7 +573,6 @@ class Viewer(wx.Panel):
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        self.interactor.Render()
 
     def SetCrossFocalPoint(self, position):
         self.cross.SetFocalPoint(position)
