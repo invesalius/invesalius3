@@ -570,10 +570,14 @@ class Viewer(wx.Panel):
         ux, uy, uz = position[:3]
         px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
+        print(position, coord)
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
         self.interactor.Render()
+
+    def SetCrossFocalPoint(self, position):
+        self.cross.SetFocalPoint(position)
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -818,6 +822,9 @@ class Viewer(wx.Panel):
                                   self.orientation))
         Publisher.subscribe(self.__update_cross_position,
                             'Update cross position')
+        Publisher.subscribe(self.__update_cross_position,
+                            'Update cross position %s' % self.orientation)
+        Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
         # Publisher.subscribe(self.UpdateSlicesNavigation,
         #                     'Co-registered points')
         ###
@@ -1294,14 +1301,13 @@ class Viewer(wx.Panel):
         self.set_slice_number(pos)
         if update3D:
             self.UpdateSlice3D(pos)
-        if self.state == const.SLICE_STATE_CROSS:
-            # Update other slice's cross according to the new focal point from
-            # the actual orientation.
-            x, y, z = self.cross.GetFocalPoint()
-            Publisher.sendMessage('Update cross position', arg=None, position=(x, y, z, 0., 0., 0.))
-            Publisher.sendMessage('Update slice viewer')
-        else:
-            self.interactor.Render()
+
+        try:
+            self.style.OnScrollBar()
+        except AttributeError:
+            print("Do not have OnScrollBar")
+
+        self.interactor.Render()
         if evt:
             if self._flush_buffer:
                 self.slice_.apply_slice_buffer_to_mask(self.orientation)

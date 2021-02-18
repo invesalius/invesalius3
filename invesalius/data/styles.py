@@ -529,7 +529,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         #
 
         Publisher.sendMessage('Update cross position', arg=None, position=(wx, wy, wz, 0., 0., 0.))
-        self.ScrollSlice(coord)
+        #  self.ScrollSlice(coord)
 
         # iren.Render()
 
@@ -549,6 +549,14 @@ class CrossInteractorStyle(DefaultInteractorStyle):
                                        index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        index=coord[0])
+
+    def OnScrollBar(self, *args, **kwargs):
+        # Update other slice's cross according to the new focal point from
+        # the actual orientation.
+        x, y, z = self.viewer.cross.GetFocalPoint()
+        self.viewer.UpdateSlicesNavigation(None, (x, y, z, 0.0, 0.0, 0.0))
+        Publisher.sendMessage('Set cross focal point', position=(x, y, z))
+        Publisher.sendMessage('Update slice viewer')
 
 
 class TractsInteractorStyle(CrossInteractorStyle):
