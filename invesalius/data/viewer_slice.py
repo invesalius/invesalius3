@@ -570,7 +570,6 @@ class Viewer(wx.Panel):
         ux, uy, uz = position[:3]
         px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
-        print(position, coord)
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
