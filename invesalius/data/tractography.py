@@ -418,6 +418,7 @@ class ComputeTractsACTThread(threading.Thread):
         n_branches = 0
         bundle = None
         sph_sampling = True
+        dist_radius = 1.5
 
         xyz = img_utils.random_sample_sphere(radius=seed_radius, size=100)
         coord_list_sph = np.hstack([xyz, np.ones([xyz.shape[0], 1])]).T
@@ -460,7 +461,7 @@ class ComputeTractsACTThread(threading.Thread):
                 # When moving the coil further than the seed_radius restart the bundle computation
                 # Currently, it stops to compute tracts when the maximum number of tracts is reached maybe keep
                 # computing even if reaches the maximum
-                if dist >= seed_radius:
+                if dist >= dist_radius:
                     # Anatomic constrained seed computation ---
                     # The original seed location is replaced by the gray-white  matter interface that is closest to
                     # the coil center
@@ -540,7 +541,7 @@ class ComputeTractsACTThread(threading.Thread):
                         n_branches = 0
                         n_tracts = 0
 
-                elif dist < seed_radius and n_tracts < n_tracts_total:
+                elif dist < dist_radius and n_tracts < n_tracts_total:
                     trk_list = trekker.run()
                     if trk_list:
                         # compute tract blocks and add to bundle until reaches the maximum number of tracts
