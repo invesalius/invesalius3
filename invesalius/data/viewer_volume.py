@@ -272,6 +272,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.UpdateCameraBallPosition,
                             'Update cross position')
+        Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
@@ -1189,6 +1190,9 @@ class Viewer(wx.Panel):
         self.ball_actor.GetProperty().SetColor(1, 0, 0)
 
         self.ren.AddActor(self.ball_actor)
+
+    def SetCrossFocalPoint(self, position):
+        self.UpdateCameraBallPosition(None, position)
 
     def UpdateCameraBallPosition(self, arg, position):
         coord_flip = list(position[:3])
