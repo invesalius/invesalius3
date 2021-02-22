@@ -509,7 +509,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def OnCrossMove(self, obj, evt):
         # The user moved the mouse with left button pressed
         if self.left_pressed:
-            print("OnCrossMove interactor style")
             iren = obj.GetInteractor()
             self.ChangeCrossPosition(iren)
 
@@ -527,8 +526,9 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # self.seed = seed_aux[np.newaxis, :]
         # print("Check the seed: ", self.seed)
         #
-
-        Publisher.sendMessage('Update cross position', arg=None, position=(wx, wy, wz, 0., 0., 0.))
+        self.viewer.UpdateSlicesNavigation(None, (wx, wy, wz, 0.0, 0.0, 0.0))
+        Publisher.sendMessage('Set cross focal point', position=(wx, wy, wz))
+        Publisher.sendMessage('Update slice viewer')
         #  self.ScrollSlice(coord)
 
         # iren.Render()
