@@ -26,7 +26,11 @@ import threading
 
 import nibabel as nb
 import numpy as np
-import Trekker
+try:
+    import Trekker
+    has_trekker = True
+except ImportError:
+    has_trekker = False
 import wx
 
 try:
@@ -43,7 +47,10 @@ from time import sleep
 
 import invesalius.constants as const
 import invesalius.data.bases as db
-import invesalius.data.brainmesh_handler as brain
+
+if has_trekker:
+    import invesalius.data.brainmesh_handler as brain
+
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.slice_ as sl
@@ -176,12 +183,13 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 4 - Tractography panel
-        item = fold_panel.AddFoldPanel(_("Tractography"), collapsed=True)
-        otw = TractographyPanel(item)
+        if has_trekker:
+            item = fold_panel.AddFoldPanel(_("Tractography"), collapsed=True)
+            otw = TractographyPanel(item)
 
-        fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
-                                      leftSpacing=0, rightSpacing=0)
+            fold_panel.ApplyCaptionStyle(item, style)
+            fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
+                                          leftSpacing=0, rightSpacing=0)
 
         # Fold 5 - DBS
         self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
@@ -1710,7 +1718,7 @@ class TractographyPanel(wx.Panel):
         line_checks = wx.BoxSizer(wx.HORIZONTAL)
         line_checks.Add(checktracts, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, border_last)
         line_checks.Add(checkpeeling, 0, wx.ALIGN_CENTER | wx.RIGHT | wx.LEFT, border_last)
-        line_checks.Add(checkACT, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, border_last)
+        line_checks.Add(checkACT, 0, wx.RIGHT | wx.LEFT, border_last)
 
         # Add line sizers into main sizer
         border = 1
