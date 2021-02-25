@@ -176,45 +176,9 @@ def calculate_fre_m(fiducials):
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
 
-# def flip_x(point):
-#     """
-#     Flip coordinates of a vector according to X axis
-#     Coronal Images do not require this transformation - 1 tested
-#     and for this case, at navigation, the z axis is inverted
-#
-#     It's necessary to multiply the z coordinate by (-1). Possibly
-#     because the origin of coordinate system of imagedata is
-#     located in superior left corner and the origin of VTK scene coordinate
-#     system (polygonal surface) is in the interior left corner. Second
-#     possibility is the order of slice stacking
-#
-#     :param point: list of coordinates x, y and z
-#     :return: flipped coordinates
-#     """
-#
-#     # TODO: check if the Flip function is related to the X or Y axis
-#
-#     point = np.matrix(point + (0,))
-#     point[0, 2] = -point[0, 2]
-#
-#     m_rot = np.matrix([[1.0, 0.0, 0.0, 0.0],
-#                       [0.0, -1.0, 0.0, 0.0],
-#                       [0.0, 0.0, -1.0, 0.0],
-#                       [0.0, 0.0, 0.0, 1.0]])
-#     m_trans = np.matrix([[1.0, 0, 0, -point[0, 0]],
-#                         [0.0, 1.0, 0, -point[0, 1]],
-#                         [0.0, 0.0, 1.0, -point[0, 2]],
-#                         [0.0, 0.0, 0.0, 1.0]])
-#     m_trans_return = np.matrix([[1.0, 0, 0, point[0, 0]],
-#                                [0.0, 1.0, 0, point[0, 1]],
-#                                [0.0, 0.0, 1.0, point[0, 2]],
-#                                [0.0, 0.0, 0.0, 1.0]])
-#
-#     point_rot = point*m_trans*m_rot*m_trans_return
-#     x, y, z = point_rot.tolist()[0][:3]
-#
-#     return x, y, z
-
+# The function flip_x_m is deprecated and was replaced by a simple minus multiplication of the Y coordinate as follows:
+# coord_flip = list(coord)
+# coord_flip[1] = -coord_flip[1]
 
 # def flip_x_m(point):
 #     """
@@ -230,38 +194,14 @@ def calculate_fre_m(fiducials):
 #     :return: rotated coordinates
 #     """
 #
-#     point_4 = np.hstack((point, 1.)).reshape([4, 1])
+#     point_4 = np.hstack((point, 1.)).reshape(4, 1)
 #     point_4[2, 0] = -point_4[2, 0]
 #
-#     m_rot = tr.euler_matrix(pi, 0, 0)
+#     m_rot = tr.euler_matrix(np.pi, 0, 0)
 #
 #     point_rot = m_rot @ point_4
 #
-#     return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
-
-
-def flip_x_m(point):
-    """
-    Rotate coordinates of a vector by pi around X axis in static reference frame.
-
-    InVesalius also require to multiply the z coordinate by (-1). Possibly
-    because the origin of coordinate system of imagedata is
-    located in superior left corner and the origin of VTK scene coordinate
-    system (polygonal surface) is in the interior left corner. Second
-    possibility is the order of slice stacking
-
-    :param point: list of coordinates x, y and z
-    :return: rotated coordinates
-    """
-
-    point_4 = np.hstack((point, 1.)).reshape(4, 1)
-    point_4[2, 0] = -point_4[2, 0]
-
-    m_rot = tr.euler_matrix(np.pi, 0, 0)
-
-    point_rot = m_rot @ point_4
-
-    return point_rot
+#     return point_rot
 
 
 def object_registration(fiducials, orients, coord_raw, m_change):
@@ -317,9 +257,10 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         M_img = m_change @ M_p
 
         angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
-        coord_img = flip_x_m(tr.translation_from_matrix(M_img))
+        coord_img = list(M_img[:3, -1])
+        coord_img[1] = -coord_img[1]
 
-        fids_img[ic, :] = np.hstack((coord_img[:3, 0], angles_img))
+        fids_img[ic, :] = np.hstack((coord_img, angles_img))
 
     # compute object base change in vtk head frame
     base_obj_img, _ = base_creation(fids_img[:3, :3])

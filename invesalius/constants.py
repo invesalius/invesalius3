@@ -529,6 +529,7 @@ ID_MANUAL_WWWL = wx.NewId()
 ID_TREKKER_MASK = wx.NewId()
 ID_TREKKER_IMG = wx.NewId()
 ID_TREKKER_FOD = wx.NewId()
+ID_TREKKER_ACT = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
@@ -752,7 +753,7 @@ PEEL_DEPTH = 5
 MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 15
 SEED_RADIUS = 1.5
-SLEEP_NAVIGATION = 0.1
+SLEEP_NAVIGATION = 0.3
 BRAIN_OPACITY = 0.5
 N_CPU = psutil.cpu_count()
 TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_quality': 3,

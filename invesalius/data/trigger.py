@@ -118,7 +118,7 @@ class TriggerNew(threading.Thread):
         self.trigger_init = None
         self.stylusplh = False
         # self.COM = False
-        self.__bind_events()
+        # self.__bind_events()
         try:
             import serial
 

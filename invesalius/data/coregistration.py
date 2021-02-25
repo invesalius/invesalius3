@@ -183,6 +183,13 @@ class CoordinateCorregistrate(threading.Thread):
                 # print(f"Set the coordinate")
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id)
+                # m_img = np.array([[0.38, -0.8, -0.45, 40.17],
+                #                   [0.82, 0.52, -0.24, 152.28],
+                #                   [0.43, -0.28, 0.86, 235.78],
+                #                   [0., 0., 0., 1.]])
+                # angles = [-0.318, -0.441, 1.134]
+                # coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
+                #         np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
