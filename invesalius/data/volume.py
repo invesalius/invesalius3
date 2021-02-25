@@ -768,8 +768,8 @@ class VolumeMask:
             self._volume_property.SetScalarOpacity(self._piecewise_function)
             self._volume_property.ShadeOn()
             self._volume_property.SetInterpolationTypeToLinear()
-            #vp.SetSpecular(1.75)
-            #vp.SetSpecularPower(8)
+            self._volume_property.SetSpecular(0.75)
+            self._volume_property.SetSpecularPower(2)
 
             if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
                 self._volume_property.SetScalarOpacityUnitDistance(pix_diag)
