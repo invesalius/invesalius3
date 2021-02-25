@@ -553,6 +553,7 @@ class NeuronavigationPanel(wx.Panel):
                                   label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
             self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
+            Publisher.sendMessage('Remove object data')
             self.tracker_id = choice
             if not self.trk_init[0] and choice:
                 Publisher.sendMessage('Update status text in GUI',
@@ -571,6 +572,7 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
+                Publisher.sendMessage('Remove object data')
                 self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
                 if not self.trk_init[0]:
                     if evt is not False:
@@ -972,6 +974,7 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnRemoveObject, 'Remove object data')
 
     def UpdateTrackerInit(self, nav_prop):
         self.nav_prop = nav_prop
@@ -1094,6 +1097,9 @@ class ObjectRegistrationPanel(wx.Panel):
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
     def OnCloseProject(self):
+        self.OnRemoveObject()
+
+    def OnRemoveObject(self):
         self.checkrecordcoords.SetValue(False)
         self.checkrecordcoords.Enable(0)
         self.checktrack.SetValue(False)
@@ -1105,6 +1111,8 @@ class ObjectRegistrationPanel(wx.Panel):
         self.obj_ref_mode = None
         self.obj_name = None
         self.timestamp = const.TIMESTAMP
+
+        Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
 
 
 class MarkersPanel(wx.Panel):
