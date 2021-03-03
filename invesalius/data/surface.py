@@ -115,14 +115,16 @@ class Surface():
         plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_plist = tempfile.mktemp()
-        plistlib.writePlist(surface, temp_plist)
+        with open(temp_plist, 'w+b') as f:
+            plistlib.dump(surface, f)
 
         filelist[temp_plist] = plist_filename
 
         return plist_filename
 
     def OpenPList(self, filename):
-        sp = plistlib.readPlist(filename)
+        with open(filename, 'r+b') as f:
+            sp = plistlib.load(f, fmt=plistlib.FMT_XML)
         dirpath = os.path.abspath(os.path.split(filename)[0])
         self.index = sp['index']
         self.name = sp['name']

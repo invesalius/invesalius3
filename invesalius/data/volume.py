@@ -354,9 +354,11 @@ class Volume():
         color_transfer.RemoveAllPoints()
         color_preset = self.config['CLUT']
         if color_preset != "No CLUT":
-            p = plistlib.readPlist(
-                os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
-                             'color_list', color_preset + '.plist'))
+            path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
+                                'color_list', color_preset + '.plist')
+            with open(path, 'r+b') as f:
+                p = plistlib.load(f, fmt=plistlib.FMT_XML)
+
             r = p['Red']
             g = p['Green']
             b = p['Blue']
