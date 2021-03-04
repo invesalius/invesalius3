@@ -40,7 +40,8 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.PATRIOT: PolhemusTracker,    # PATRIOT
                     const.CAMERA: CameraTracker,      # CAMERA
                     const.POLARIS: PolarisTracker,      # POLARIS
-                    const.DEBUGTRACK: DebugTracker}
+                    const.DEBUGTRACK: DebugTracker,
+                    const.HYBRID: HybridTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
 
@@ -263,6 +264,11 @@ def PlhUSBConnection(tracker_id):
         print('Could not connect to Polhemus USB with error.')
 
     return trck_init
+
+def HybridTracker(tracker_id):
+    trck_init_mtc = ClaronTracker(1)
+    trck_init_plh = PolhemusTracker(3)
+    return [trck_init_mtc,trck_init_plh]
 
 
 def DisconnectTracker(tracker_id, trck_init):

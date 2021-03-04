@@ -48,7 +48,8 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
-                    const.DEBUGTRACK: DebugCoord}
+                    const.DEBUGTRACK: DebugCoord,
+                    const.HYBRID: HybridCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
@@ -277,7 +278,6 @@ def DebugCoord(trk_init, trck_id, ref_mode):
 
     return np.vstack([coord1, coord2, coord3, coord4])
 
-
 def dynamic_reference(probe, reference):
     """
     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
@@ -311,7 +311,6 @@ def dynamic_reference(probe, reference):
 
     return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
 
-
 def dynamic_reference_m(probe, reference):
     """
     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
@@ -337,6 +336,33 @@ def dynamic_reference_m(probe, reference):
     coord_rot.extend(probe[3:])
 
     return coord_rot
+
+
+def HybridCoord(trk_init, trck_id, ref_mode):
+    print(trk_init)
+    coord_mtc = ClaronCoord(trk_init[0], 1, ref_mode)
+    coord_plh = PolhemusCoord(trk_init[1], 3, ref_mode)
+
+    print('\nmtc:',coord_mtc)
+    print('\nplh:',coord_plh)
+    M_plh_in_mtc = [[ 9.16605401e-01 ,-5.00041261e-02, -3.96653660e-01, -2.70131503e+01],
+                     [ 3.94543688e-01 ,-4.71113835e-02 , 9.17668674e-01, -5.04448294e+02],
+                     [-6.45741228e-02, -9.97637261e-01, -2.34537363e-02 , 1.23903278e+03],
+                     [ 0.00000000e+00 , 0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
+
+    trans = tr.translation_matrix(coord_plh[0][:3])
+    a, b, g = np.radians(coord_plh[0][3:6])
+    rot = tr.euler_matrix(a, b, g, 'rzyx')
+    M_probe_plh = tr.concatenate_matrices(trans, rot)
+
+    probe_plh_in_mtc = M_plh_in_mtc @ M_probe_plh
+    scale, shear, angles, translate, perspective = tr.decompose_matrix(probe_plh_in_mtc)
+    probe_plh = [translate[0], translate[1], translate[2],\
+            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
+
+    print('\nprobe_plh:',probe_plh)
+
+    return np.vstack([probe_plh, coord_mtc[1], coord_mtc[2]])
 
 
 def dynamic_reference_m2(probe, reference):
