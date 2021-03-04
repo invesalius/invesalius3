@@ -48,6 +48,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
+                    const.ELFIN: ElfinCoord,
                     const.DEBUGTRACK: DebugCoord,
                     const.HYBRID: HybridCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
@@ -77,6 +78,15 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     coord = np.vstack([coord1, coord2, coord3])
     # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+
+    return coord
+
+def ElfinCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+    probe = trck.Run()
+    ref = [0,0,0,0,0,0]
+    coord = np.vstack([probe, ref])
 
     return coord
 
@@ -278,6 +288,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
 
     return np.vstack([coord1, coord2, coord3, coord4])
 
+
 def dynamic_reference(probe, reference):
     """
     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
@@ -310,6 +321,7 @@ def dynamic_reference(probe, reference):
     coord_rot = np.squeeze(np.asarray(coord_rot))
 
     return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+
 
 def dynamic_reference_m(probe, reference):
     """
