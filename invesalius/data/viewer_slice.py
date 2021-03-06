@@ -565,17 +565,22 @@ class Viewer(wx.Panel):
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def UpdateSlicesNavigation(self, arg, position):
+    def UpdateSlicesNavigation(self, position):
         # Get point from base change
-        ux, uy, uz = position[:3]
-        px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
+        px, py = self.get_slice_pixel_coord_by_world_pos(*position)
         coord = self.calcultate_scroll_position(px, py)
 
-        self.cross.SetFocalPoint((ux, uy, uz))
+        self.cross.SetFocalPoint(position)
         self.ScrollSlice(coord)
 
     def SetCrossFocalPoint(self, position):
-        self.cross.SetFocalPoint(position)
+        """
+        Sets the cross focal point for all slice panels (axial, coronal, sagittal). This function is also called via
+        pubsub messaging and may receive a list of 6 coordinates. Thus, limiting the number of list elements in the
+        SetFocalPoint call is required.
+        :param position: list of 6 coordinates in world coordinate system wx, wy, wz
+        """
+        self.cross.SetFocalPoint(position[:3])
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -818,10 +823,10 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ChangeSliceNumber,
                                  ('Set scroll position',
                                   self.orientation))
-        Publisher.subscribe(self.__update_cross_position,
-                            'Update cross position')
-        Publisher.subscribe(self.__update_cross_position,
-                            'Update cross position %s' % self.orientation)
+        # Publisher.subscribe(self.__update_cross_position,
+        #                     'Update cross position')
+        # Publisher.subscribe(self.__update_cross_position,
+        #                     'Update cross position %s' % self.orientation)
         Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
         # Publisher.subscribe(self.UpdateSlicesNavigation,
         #                     'Co-registered points')
@@ -1141,9 +1146,9 @@ class Viewer(wx.Panel):
 
         renderer.AddActor(cross_actor)
 
-    def __update_cross_position(self, arg, position):
-        # self.cross.SetFocalPoint(position[:3])
-        self.UpdateSlicesNavigation(None, position)
+    # def __update_cross_position(self, arg, position):
+    #     # self.cross.SetFocalPoint(position[:3])
+    #     self.UpdateSlicesNavigation(None, position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)

@@ -446,7 +446,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
-        Publisher.subscribe(self.UpdateImageCoordinates, 'Update cross position')
+        Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -506,7 +506,7 @@ class NeuronavigationPanel(wx.Panel):
     def EnableACT(self, data):
         self.enable_act = data
 
-    def UpdateImageCoordinates(self, arg, position):
+    def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = position
         for m in [0, 1, 2]:
@@ -1213,15 +1213,15 @@ class MarkersPanel(wx.Panel):
 
     def __bind_events(self):
         # Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Update cross position')
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
 
-    def UpdateCurrentCoord(self, arg, position):
-        self.current_coord = position[:]
+    def UpdateCurrentCoord(self, position):
+        self.current_coord = position
         #self.current_angle = pubsub_evt.data[1][3:]
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -1747,7 +1747,7 @@ class TractographyPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        Publisher.subscribe(self.OnUpdateTracts, 'Update cross position')
+        Publisher.subscribe(self.OnUpdateTracts, 'Set cross focal point')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
     def OnSelectPeelingDepth(self, evt, ctrl):
@@ -1941,7 +1941,7 @@ class TractographyPanel(wx.Panel):
             wx.MessageBox(_("File incompatible, using default configuration."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
 
-    def OnUpdateTracts(self, arg, position):
+    def OnUpdateTracts(self, position):
         """
         Minimal working version of tract computation. Updates when cross sends Pubsub message to update.
         Position refers to the coordinates in InVesalius 2D space. To represent the same coordinates in the 3D space,
@@ -2055,7 +2055,8 @@ class UpdateNavigationScene(threading.Thread):
 
                 #TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
                 # see the red cross in the position of the offset marker
-                wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
+                wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
+                wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)

@@ -270,9 +270,9 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-        Publisher.subscribe(self.UpdateCameraBallPosition,
-                            'Update cross position')
-        Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
+        # Publisher.subscribe(self.UpdateCameraBallPosition,
+        #                     'Update cross position')
+        Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
@@ -1191,10 +1191,10 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.ball_actor)
 
-    def SetCrossFocalPoint(self, position):
-        self.UpdateCameraBallPosition(None, position)
+    # def SetCrossFocalPoint(self, position):
+    #     self.UpdateCameraBallPosition(None, position)
 
-    def UpdateCameraBallPosition(self, arg, position):
+    def UpdateCameraBallPosition(self, position):
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
         self.ball_actor.SetPosition(coord_flip)

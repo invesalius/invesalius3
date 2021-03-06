@@ -473,18 +473,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
 
-        # tracts
-        # self.seed = [0., 0., 0.]
-        # slic = sl.Slice()
-        # self.affine = slic.affine
-        # self.tracker = slic.tracker
-        #
-        # self.affine_vtk = vtk.vtkMatrix4x4()
-        # for row in range(0, 4):
-        #     for col in range(0, 4):
-        #         self.affine_vtk.SetElement(row, col, self.affine[row, col])
-        # ---
-
         self.picker = vtk.vtkWorldPointPicker()
 
         self.AddObserver("MouseMoveEvent", self.OnCrossMove)
@@ -514,24 +502,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     def ChangeCrossPosition(self, iren):
         mouse_x, mouse_y = iren.GetEventPosition()
-        wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
-        px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
-        coord = self.viewer.calcultate_scroll_position(px, py)
+        x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
 
-        # Tracts
-        # pos_world_aux = np.ones([4, 1])
-        # pos_world_aux[:3, -1] = bases.flip_x((wx, wy, wz))[:3]
-        # pos_world = np.linalg.inv(self.affine) @ pos_world_aux
-        # seed_aux = pos_world.reshape([1, 4])[0, :3]
-        # self.seed = seed_aux[np.newaxis, :]
-        # print("Check the seed: ", self.seed)
-        #
-        self.viewer.UpdateSlicesNavigation(None, (wx, wy, wz, 0.0, 0.0, 0.0))
-        Publisher.sendMessage('Set cross focal point', position=(wx, wy, wz))
+        self.viewer.UpdateSlicesNavigation([x, y, z])
+        # This "Set cross" message is needed to update the cross in the other slices
+        Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
         Publisher.sendMessage('Update slice viewer')
-        #  self.ScrollSlice(coord)
-
-        # iren.Render()
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -554,8 +530,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # Update other slice's cross according to the new focal point from
         # the actual orientation.
         x, y, z = self.viewer.cross.GetFocalPoint()
-        self.viewer.UpdateSlicesNavigation(None, (x, y, z, 0.0, 0.0, 0.0))
-        Publisher.sendMessage('Set cross focal point', position=(x, y, z))
+        self.viewer.UpdateSlicesNavigation([x, y, z])
+        Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
         Publisher.sendMessage('Update slice viewer')
 
 
