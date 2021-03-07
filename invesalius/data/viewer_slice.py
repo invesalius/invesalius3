@@ -565,17 +565,21 @@ class Viewer(wx.Panel):
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def UpdateSlicesNavigation(self, position):
+    def UpdateSlices(self, position):
         # Get point from base change
         px, py = self.get_slice_pixel_coord_by_world_pos(*position)
         coord = self.calcultate_scroll_position(px, py)
-        print("\nPosition: {}".format(position))
-        print("Scroll position: {}".format(coord))
-        print("Slice actor bounds: {}".format(self.slice_data.actor.GetBounds()))
-        print("Scroll from int of position: {}\n".format([round(s) for s in position]))
+        # Debugging coordinates. For a 1.0 spacing axis the coord and position is the same,
+        # but for a spacing dimension =! 1, the coord and position are different
+        # print("\nPosition: {}".format(position))
+        # print("Scroll position: {}".format(coord))
+        # print("Slice actor bounds: {}".format(self.slice_data.actor.GetBounds()))
+        # print("Scroll from int of position: {}\n".format([round(s) for s in position]))
 
         # this call did not affect the working code
         # self.cross.SetFocalPoint(coord)
+
+        # update the image slices in all three orientations
         self.ScrollSlice(coord)
 
     def SetCrossFocalPoint(self, position):
@@ -583,9 +587,8 @@ class Viewer(wx.Panel):
         Sets the cross focal point for all slice panels (axial, coronal, sagittal). This function is also called via
         pubsub messaging and may receive a list of 6 coordinates. Thus, limiting the number of list elements in the
         SetFocalPoint call is required.
-        :param position: list of 6 coordinates in world coordinate system wx, wy, wz
+        :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
         """
-        print("SetFocalPoint: {}".format(position[:3]))
         self.cross.SetFocalPoint(position[:3])
 
     def ScrollSlice(self, coord):
@@ -834,7 +837,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.__update_cross_position,
         #                     'Update cross position %s' % self.orientation)
         Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
-        # Publisher.subscribe(self.UpdateSlicesNavigation,
+        # Publisher.subscribe(self.UpdateSlices,
         #                     'Co-registered points')
         ###
         #  Publisher.subscribe(self.ChangeBrushColour,
@@ -1154,7 +1157,7 @@ class Viewer(wx.Panel):
 
     # def __update_cross_position(self, arg, position):
     #     # self.cross.SetFocalPoint(position[:3])
-    #     self.UpdateSlicesNavigation(None, position)
+    #     self.UpdateSlices(None, position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
@@ -1307,7 +1310,6 @@ class Viewer(wx.Panel):
 
     def OnScrollBar(self, evt=None, update3D=True):
         pos = self.scroll.GetThumbPosition()
-        print("OnScrollBar viewer Position: {}".format(pos))
         self.set_slice_number(pos)
         if update3D:
             self.UpdateSlice3D(pos)
