@@ -197,11 +197,6 @@ class Viewer(wx.Panel):
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
 
-        # initialize Trekker parameters
-        slic = sl.Slice()
-        affine = slic.affine
-        self.affine_vtk = vtku.numpy_to_vtkMatrix4x4(affine)
-
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -239,9 +234,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, 'Load slice plane')
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
-        # Publisher.subscribe(self.SetVolumeCamera, 'Update cross position')
-        # Publisher.subscribe(self.SetVolumeCamera, 'Co-registered points')
-        # Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
+
         Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
         Publisher.subscribe(self.enable_style, 'Enable style')
@@ -270,8 +263,6 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-        # Publisher.subscribe(self.UpdateCameraBallPosition,
-        #                     'Update cross position')
         Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
