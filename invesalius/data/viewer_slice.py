@@ -569,8 +569,13 @@ class Viewer(wx.Panel):
         # Get point from base change
         px, py = self.get_slice_pixel_coord_by_world_pos(*position)
         coord = self.calcultate_scroll_position(px, py)
+        print("\nPosition: {}".format(position))
+        print("Scroll position: {}".format(coord))
+        print("Slice actor bounds: {}".format(self.slice_data.actor.GetBounds()))
+        print("Scroll from int of position: {}\n".format([round(s) for s in position]))
 
-        self.cross.SetFocalPoint(position)
+        # this call did not affect the working code
+        # self.cross.SetFocalPoint(coord)
         self.ScrollSlice(coord)
 
     def SetCrossFocalPoint(self, position):
@@ -580,6 +585,7 @@ class Viewer(wx.Panel):
         SetFocalPoint call is required.
         :param position: list of 6 coordinates in world coordinate system wx, wy, wz
         """
+        print("SetFocalPoint: {}".format(position[:3]))
         self.cross.SetFocalPoint(position[:3])
 
     def ScrollSlice(self, coord):
@@ -1301,16 +1307,21 @@ class Viewer(wx.Panel):
 
     def OnScrollBar(self, evt=None, update3D=True):
         pos = self.scroll.GetThumbPosition()
+        print("OnScrollBar viewer Position: {}".format(pos))
         self.set_slice_number(pos)
         if update3D:
             self.UpdateSlice3D(pos)
+
+        # This Render needs to come before the self.style.OnScrollBar, otherwise the GetFocalPoint will sometimes
+        # provide the non-updated coordinate and the cross focal point will lag one pixel behind the actual
+        # scroll position
+        self.interactor.Render()
 
         try:
             self.style.OnScrollBar()
         except AttributeError:
             print("Do not have OnScrollBar")
 
-        self.interactor.Render()
         if evt:
             if self._flush_buffer:
                 self.slice_.apply_slice_buffer_to_mask(self.orientation)

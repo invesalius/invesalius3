@@ -509,27 +509,11 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
         Publisher.sendMessage('Update slice viewer')
 
-    def ScrollSlice(self, coord):
-        if self.orientation == "AXIAL":
-            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       index=coord[0])
-            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       index=coord[1])
-        elif self.orientation == "SAGITAL":
-            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       index=coord[2])
-            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       index=coord[1])
-        elif self.orientation == "CORONAL":
-            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       index=coord[2])
-            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       index=coord[0])
-
     def OnScrollBar(self, *args, **kwargs):
         # Update other slice's cross according to the new focal point from
         # the actual orientation.
         x, y, z = self.viewer.cross.GetFocalPoint()
+        print("OnScrollBar GetFocalPoint: {}".format([x, y, z]))
         self.viewer.UpdateSlicesNavigation([x, y, z])
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
         Publisher.sendMessage('Update slice viewer')
