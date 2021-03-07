@@ -476,4 +476,5 @@ class Mask():
                 self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
+        del self.matrix
         os.remove(self.temp_file)
