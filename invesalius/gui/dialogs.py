@@ -4093,7 +4093,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         Publisher.subscribe(self.SetNewFocalPoint, 'Cross focal point')
         Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
 
-    def UpdateAffineMatrix(self, affine, status):
+    def UpdateAffineMatrix(self, affine):
         self.affine = affine
 
     def SetNewFocalPoint(self, coord, spacing):
