@@ -503,7 +503,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def ChangeCrossPosition(self, iren):
         mouse_x, mouse_y = iren.GetEventPosition()
         x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
-        self.viewer.UpdateSlices([x, y, z])
+        self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
         Publisher.sendMessage('Update slice viewer')
@@ -512,7 +512,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # Update other slice's cross according to the new focal point from
         # the actual orientation.
         x, y, z = self.viewer.cross.GetFocalPoint()
-        self.viewer.UpdateSlices([x, y, z])
+        self.viewer.UpdateSlicesPosition([x, y, z])
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
         Publisher.sendMessage('Update slice viewer')
 
