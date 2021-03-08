@@ -149,11 +149,9 @@ class TriggerNew(threading.Thread):
                 # lines = True
                 if lines:
                     trigger_on = True
-                    # wx.CallAfter(Publisher.sendMessage, 'Create marker')
 
                 if self.stylusplh:
                     trigger_on = True
-                    # wx.CallAfter(Publisher.sendMessage, 'Create marker')
                     self.stylusplh = False
 
                 self.trigger_queue.put_nowait(trigger_on)
@@ -163,10 +161,6 @@ class TriggerNew(threading.Thread):
                 print("Trigger not read, error")
                 pass
 
-            # except queue.Empty:
-            #     pass
-            # except queue.Full:
-            #     self.coord_queue.task_done()
         else:
             if self.trigger_init:
                 self.trigger_init.close()

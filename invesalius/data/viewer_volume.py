@@ -554,11 +554,11 @@ class Viewer(wx.Panel):
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
 
-    def AddMarker(self, ball_id, size, colour, coord):
+    def AddMarker(self, marker_ind, coord, colour, size):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
-        self.ball_id = ball_id
+        self.ball_id = marker_ind
         coord_flip = list(coord)
         coord_flip[1] = -coord_flip[1]
 
@@ -570,17 +570,16 @@ class Viewer(wx.Panel):
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(colour[0:3])
+        prop.SetColor(colour)
 
-        #adding a new actor for the present ball
+        # adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
 
         self.staticballs[self.ball_id].SetMapper(mapper)
         self.staticballs[self.ball_id].SetProperty(prop)
 
         self.ren.AddActor(self.staticballs[self.ball_id])
-        self.ball_id = self.ball_id + 1
-        #self.UpdateRender()
+        self.ball_id += 1
         self.Refresh()
 
     def add_marker(self, coord, color):
@@ -591,10 +590,8 @@ class Viewer(wx.Panel):
         :return: vtkActor
         """
 
-        # x, y, z = coord
-
         ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(2)
+        ball_ref.SetRadius(1.5)
         ball_ref.SetCenter(coord)
 
         mapper = vtk.vtkPolyDataMapper()
@@ -606,9 +603,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
-        actor.GetProperty().SetOpacity(.5)
-
-        # ren.AddActor(actor)
+        actor.GetProperty().SetOpacity(1.)
 
         return actor
 

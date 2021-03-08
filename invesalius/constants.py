@@ -700,8 +700,8 @@ BTNS_IMG = {IR1: {0: _('LEI')},
             IR3: {2: _('NAI')}}
 
 BTNS_IMG_MKS = {IR1: {0: 'LEI'},
-            IR2: {1: 'REI'},
-            IR3: {2: 'NAI'}}
+                IR2: {1: 'REI'},
+                IR3: {2: 'NAI'}}
 
 TIPS_IMG = [_("Select left ear in image"),
             _("Select right ear in image"),
@@ -760,3 +760,6 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
                   'max_interval': 1, 'min_radius_curv': 0.8, 'probe_length': 0.4,
                   'write_interval': 50, 'numb_threads': '', 'max_lenth': 200,
                   'min_lenth': 20, 'max_sampling_step': 100}
+
+WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") + "|" +\
+                        _("Marker files (*.mks)|*.mks")
