@@ -565,7 +565,7 @@ class Viewer(wx.Panel):
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def UpdateSlices(self, position):
+    def UpdateSlicesPosition(self, position):
         # Get point from base change
         px, py = self.get_slice_pixel_coord_by_world_pos(*position)
         coord = self.calcultate_scroll_position(px, py)
@@ -837,7 +837,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.__update_cross_position,
         #                     'Update cross position %s' % self.orientation)
         Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
-        # Publisher.subscribe(self.UpdateSlices,
+        # Publisher.subscribe(self.UpdateSlicesPosition,
         #                     'Co-registered points')
         ###
         #  Publisher.subscribe(self.ChangeBrushColour,
@@ -1157,7 +1157,7 @@ class Viewer(wx.Panel):
 
     # def __update_cross_position(self, arg, position):
     #     # self.cross.SetFocalPoint(position[:3])
-    #     self.UpdateSlices(None, position)
+    #     self.UpdateSlicesPosition(None, position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
