@@ -362,11 +362,10 @@ def HybridCoord(trk_init, trck_id, ref_mode):
     #                  [-6.45741228e-02, -9.97637261e-01, -2.34537363e-02 , 1.23903278e+03],
     #                  [ 0.00000000e+00 , 0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
 
-    M_robot_2_mtc =   [[-2.99470811e-01 ,-9.18258093e-01 , 2.59073944e-01,  1.99291576e+02],
-                     [-7.92273592e-01 , 8.80348250e-02, -6.03781770e-01,  7.46582619e+02],
-                     [ 5.31619967e-01, -3.86072461e-01 ,-7.53875497e-01 , 6.21098108e+02],
-                     [ 0.00000000e+00 , 0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
-
+    M_robot_2_mtc = [[ 3.26006013e-01,  9.45273796e-01 , 1.33240445e-02, -2.02855718e+02],
+                     [ 9.70479041e-02, -1.94436575e-02, -9.95089769e-01,  2.69030767e+02],
+                     [-9.40373215e-01,  3.25698319e-01, -9.80755899e-02,  1.53869455e+03],
+                     [ 0.00000000e+00 , 0.00000000e+00,  0.00000000e+00 , 1.00000000e+00]]
 
     trans = tr.translation_matrix(coord_robot[0][:3])
     a, b, g = np.radians(coord_robot[0][3:6])
@@ -376,7 +375,7 @@ def HybridCoord(trk_init, trck_id, ref_mode):
     M_probe_robot_in_mtc = M_robot_2_mtc @ M_probe_robot
     scale, shear, angles, translate, perspective = tr.decompose_matrix(M_probe_robot_in_mtc)
     probe_robot_in_mtc = [translate[0], translate[1], translate[2],\
-            np.degrees(angles[2]), np.degrees(angles[1]), np.degrees(angles[0])]
+            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
 
     print('\nprobe_robot_in_mtc:',probe_robot_in_mtc)
 
