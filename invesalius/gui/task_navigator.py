@@ -690,9 +690,6 @@ class NeuronavigationPanel(wx.Panel):
             self.checkicp.Enable(True)
             self.checkicp.SetValue(True)
             self.icp = True
-        else:
-            self.m_icp = None
-            self.icp = False
 
         return self.m_icp
 
