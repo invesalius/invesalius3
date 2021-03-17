@@ -231,9 +231,9 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
 #     return point_rot
 
 def transform_icp(m_img, m_icp):
-    coord_img = flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]])
+    coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
-    m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = flip_x_m([m_img[0, -1], m_img[1, -1], m_img[2, -1]])
+    m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
 
     return m_img
 
