@@ -4092,20 +4092,20 @@ class SetNDIconfigs(wx.Dialog):
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
         row_probe = wx.BoxSizer(wx.VERTICAL)
         row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_probe.Add(self.dir_probe, 0, wx.EXPAND|wx.ALIGN_CENTER)
+        row_probe.Add(self.dir_probe, 0, wx.ALIGN_CENTER)
 
         self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
-        row_ref.Add(self.dir_ref, 0, wx.EXPAND|wx.ALIGN_CENTER)
+        row_ref.Add(self.dir_ref, 0, wx.ALIGN_CENTER)
 
         self.dir_obj = wx.FilePickerCtrl(self, path=last_ndi_obj_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
         row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_obj.Add(self.dir_obj, 0, wx.EXPAND|wx.ALIGN_CENTER)
+        row_obj.Add(self.dir_obj, 0, wx.ALIGN_CENTER)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
