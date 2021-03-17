@@ -310,6 +310,8 @@ class NeuronavigationPanel(wx.Panel):
         self.obj_reg_status = False
         self.track_obj = False
         self.m_icp = None
+        self.fre = None
+        self.icp_fre = None
         self.event = threading.Event()
 
         self.coord_queue = QueueCustom(maxsize=1)
@@ -476,7 +478,7 @@ class NeuronavigationPanel(wx.Panel):
             self.checkicp.Enable(True)
         else:
             self.checkicp.Enable(False)
-            self.checkicp.SetValue(False)
+            #self.checkicp.SetValue(False)
 
     #def UpdateImageCoordinates(self, position):
     def UpdateFRE(self, fre):
@@ -686,8 +688,11 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
                 Publisher.sendMessage('Create marker',  coord=transf_coord, marker_id=None, colour=(0,0,1))
             self.checkicp.Enable(True)
+            self.checkicp.SetValue(True)
+            self.icp = True
         else:
             self.m_icp = None
+            self.icp = False
 
         return self.m_icp
 
@@ -696,7 +701,13 @@ class NeuronavigationPanel(wx.Panel):
             self.icp = True
         else:
             self.icp = False
+        self.ctrl_icp()
 
+    def ctrl_icp(self):
+        if self.icp:
+            self.UpdateFRE(self.icp_fre)
+        else:
+            self.UpdateFRE(self.fre)
         self.icp_queue.put_nowait([self.icp, self.m_icp])
         print(self.icp, self.m_icp)
 
@@ -788,8 +799,9 @@ class NeuronavigationPanel(wx.Panel):
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 
                 # compute fiducial registration error (FRE)
-                fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
-                self.UpdateFRE(fre)
+                if not self.icp_fre:
+                    self.fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
+                    self.UpdateFRE(self.fre)
 
                 if self.track_obj:
                     # if object tracking is selected
@@ -849,11 +861,12 @@ class NeuronavigationPanel(wx.Panel):
                         jobs.start()
                         # del jobs
 
-                    if dlg.ICPcorregistration(fre):
-                        m_icp = self.OnICP()
-                        # calculate the FRE after ICP make no sense. Is there a way to quantify the new error?
-                        #fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change, m_icp)
-                        #self.UpdateFRE(fre)
+                    if not self.checkicp.GetValue():
+                        if dlg.ICPcorregistration(self.fre):
+                            m_icp = self.OnICP()
+                            self.icp_fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id,
+                                                            m_change, m_icp)
+                            self.ctrl_icp()
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
