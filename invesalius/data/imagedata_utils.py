@@ -582,3 +582,44 @@ def convert_world_to_voxel(xyz, affine):
     ijk = ijk_homo.T[np.newaxis, 0, :3]
 
     return ijk
+
+
+def create_grid(xy_range, z_range, z_offset, spacing):
+    x = np.arange(xy_range[0], xy_range[1]+1, spacing)
+    y = np.arange(xy_range[0], xy_range[1]+1, spacing)
+    z = z_offset + np.arange(z_range[0], z_range[1]+1, spacing)
+    xv, yv, zv = np.meshgrid(x, y, -z)
+    coord_grid = np.array([xv, yv, zv])
+    # create grid of points
+    grid_number = x.shape[0]*y.shape[0]*z.shape[0]
+    coord_grid = coord_grid.reshape([3, grid_number]).T
+    # sort grid from distance to the origin/coil center
+    coord_list = coord_grid[np.argsort(np.linalg.norm(coord_grid, axis=1)), :]
+    # make the coordinates homogeneous
+    coord_list_w = np.append(coord_list.T, np.ones([1, grid_number]), axis=0)
+
+    return coord_list_w
+
+
+def create_spherical_grid(radius=10, subdivision=1):
+    x = np.linspace(-radius, radius, int(2*radius/subdivision)+1)
+    xv, yv, zv = np.meshgrid(x, x, x)
+    coord_grid = np.array([xv, yv, zv])
+    # create grid of points
+    grid_number = x.shape[0]**3
+    coord_grid = coord_grid.reshape([3, grid_number]).T
+
+    sph_grid = coord_grid[np.linalg.norm(coord_grid, axis=1) < radius, :]
+    sph_sort = sph_grid[np.argsort(np.linalg.norm(sph_grid, axis=1)), :]
+
+    return sph_sort
+
+
+def random_sample_sphere(radius=3, size=100):
+    uvw = np.random.normal(0, 1, (size, 3))
+    norm = np.linalg.norm(uvw, axis=1, keepdims=True)
+    # Change/remove **(1./3) to make samples more concentrated around the center
+    r = np.random.uniform(0, 1, (size, 1)) ** 1.5
+    scale = radius * np.divide(r, norm)
+    xyz = scale * uvw
+    return xyz

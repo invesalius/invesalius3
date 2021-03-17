@@ -129,10 +129,11 @@ class Presets():
         thresh_ct_new = {}
         for name in self.thresh_ct.keys():
             thresh_ct_new[translate_to_en[name]] = self.thresh_ct[name]
-        
+
         preset['thresh_mri'] = thresh_mri_new
         preset['thresh_ct'] = thresh_ct_new
-        plistlib.writePlist(preset, filename)
+        with open(filename, 'w+b') as f:
+            plistlib.dump(preset, f)
         return os.path.split(filename)[1]
 
     def OpenPlist(self, filename):
@@ -154,7 +155,8 @@ class Presets():
                 "Custom":_("Custom")}
 
 
-        p = plistlib.readPlist(filename)
+        with open(filename, 'r+b') as f:
+            p = plistlib.load(f, fmt=plistlib.FMT_XML)
         thresh_mri = p['thresh_mri'].copy()
         thresh_ct = p['thresh_ct'].copy()
 
@@ -181,7 +183,8 @@ def get_wwwl_presets():
 
 
 def get_wwwl_preset_colours(pfile):
-    preset = plistlib.readPlist(pfile)
+    with open(pfile, 'r+b') as f:
+        preset = plistlib.load(f, fmt=plistlib.FMT_XML)
     ncolours = len(preset['Blue'])
     colours = []
     for i in range(ncolours):

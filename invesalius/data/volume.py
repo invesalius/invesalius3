@@ -354,9 +354,11 @@ class Volume():
         color_transfer.RemoveAllPoints()
         color_preset = self.config['CLUT']
         if color_preset != "No CLUT":
-            p = plistlib.readPlist(
-                os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
-                             'color_list', color_preset + '.plist'))
+            path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
+                                'color_list', color_preset + '.plist')
+            with open(path, 'r+b') as f:
+                p = plistlib.load(f, fmt=plistlib.FMT_XML)
+
             r = p['Red']
             g = p['Green']
             b = p['Blue']
@@ -768,8 +770,8 @@ class VolumeMask:
             self._volume_property.SetScalarOpacity(self._piecewise_function)
             self._volume_property.ShadeOn()
             self._volume_property.SetInterpolationTypeToLinear()
-            #vp.SetSpecular(1.75)
-            #vp.SetSpecularPower(8)
+            self._volume_property.SetSpecular(0.75)
+            self._volume_property.SetSpecularPower(2)
 
             if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
                 self._volume_property.SetScalarOpacityUnitDistance(pix_diag)

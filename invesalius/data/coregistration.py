@@ -162,6 +162,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     if icp[0]:
         m_img = bases.transform_icp(m_img, icp[1])
+
     # compute rotation angles
     _, _, angles, _, _ = tr.decompose_matrix(m_img)
     # create output coordiante list
@@ -205,8 +206,7 @@ class CoordinateCorregistrate(threading.Thread):
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
-                print('ref')
-                print(self.icp)
+
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 

@@ -1071,7 +1071,8 @@ class Controller():
                 if not os.path.isfile(path):
                     path = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     preset_name+".plist")
-            preset = plistlib.readPlist(path)
+            with open(path, 'r+b') as f:
+                preset = plistlib.load(f, fmt=plistlib.FMT_XML)
             prj.Project().raycasting_preset = preset
             # Notify volume
             # TODO: Chamar grafico tb!
@@ -1085,7 +1086,8 @@ class Controller():
         preset['name'] = preset_name
         preset_dir = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                   preset_name + '.plist')
-        plistlib.writePlist(preset, preset_dir)
+        with open(preset_dir, 'w+b') as f:
+            plistlib.dump(preset, f)
 
     def ShowBooleanOpDialog(self):
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)

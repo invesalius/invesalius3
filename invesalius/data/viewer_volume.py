@@ -36,7 +36,6 @@ from scipy.spatial import distance
 from imageio import imsave
 
 import invesalius.constants as const
-import invesalius.data.bases as bases
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
@@ -194,19 +193,9 @@ class Viewer(wx.Panel):
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
 
-        # for DTI support tests
-        # self.ntimes = False
-        # self._to_show_stream = True
-        # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
-        # nii_path = b'sub-P0_dwi_FOD.nii'
-        # trk_path = os.path.join(data_dir, nii_path)
-        # self.tracker_FOD = Trekker.tracker(trk_path)
-        # proj = prj.Project()
-        # self.affine = np.identity(4)
         self.actor_tracts = None
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
-        # Publisher.sendMessage('Get affine matrix')
 
         # initialize Trekker parameters
         slic = sl.Slice()
@@ -281,8 +270,9 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-        Publisher.subscribe(self.UpdateCameraBallPosition,
-                            'Update cross position')
+        # Publisher.subscribe(self.UpdateCameraBallPosition,
+        #                     'Update cross position')
+        Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
@@ -578,7 +568,8 @@ class Viewer(wx.Panel):
         Markers created by navigation tools and rendered in volume viewer.
         """
         self.ball_id = ball_id
-        coord_flip = bases.flip_x_m(coord)[:3, 0]
+        coord_flip = list(coord)
+        coord_flip[1] = -coord_flip[1]
 
         ball_ref = vtk.vtkSphereSource()
         ball_ref.SetRadius(size)
@@ -1200,14 +1191,14 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.ball_actor)
 
-    def UpdateCameraBallPosition(self, arg, position):
-        coord_flip = bases.flip_x_m(position[:3])[:3, 0]
+    # def SetCrossFocalPoint(self, position):
+    #     self.UpdateCameraBallPosition(None, position)
+
+    def UpdateCameraBallPosition(self, position):
+        coord_flip = list(position[:3])
+        coord_flip[1] = -coord_flip[1]
         self.ball_actor.SetPosition(coord_flip)
         self.SetVolumeCamera(coord_flip)
-
-    def SetBallReferencePosition(self, position):
-        coord_flip = bases.flip_x_m(position[:3])[:3, 0]
-        self.ball_actor.SetPosition(coord_flip)
 
     def CreateObjectPolyData(self, filename):
         """
@@ -1412,7 +1403,7 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-    def OnUpdateTracts(self, evt=None, flag=None, actor=None, root=None, affine_vtk=None, count=0):
+    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None):
         mapper = vtk.vtkCompositePolyDataMapper2()
         mapper.SetInputDataObject(root)
 
@@ -1421,6 +1412,8 @@ class Viewer(wx.Panel):
         self.actor_tracts.SetUserMatrix(affine_vtk)
 
         self.ren.AddActor(self.actor_tracts)
+        if self.mark_actor:
+            self.mark_actor.SetPosition(coord_offset)
         self.Refresh()
 
     def OnRemoveTracts(self):
