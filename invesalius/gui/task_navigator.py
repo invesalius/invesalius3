@@ -312,6 +312,7 @@ class NeuronavigationPanel(wx.Panel):
         self.m_icp = None
         self.fre = None
         self.icp_fre = None
+        self.icp = False
         self.event = threading.Event()
 
         self.coord_queue = QueueCustom(maxsize=1)
@@ -682,14 +683,19 @@ class NeuronavigationPanel(wx.Panel):
         if dialog.ShowModal() == wx.ID_OK:
             self.m_icp, point_coord, transformed_points = dialog.GetValue()
             #create markers
-            for i in range(len(point_coord)):
-                img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
-                transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
-                Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
-                Publisher.sendMessage('Create marker',  coord=transf_coord, marker_id=None, colour=(0,0,1))
-            self.checkicp.Enable(True)
-            self.checkicp.SetValue(True)
-            self.icp = True
+            # for i in range(len(point_coord)):
+            #     img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
+            #     transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
+            #     Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
+            #     Publisher.sendMessage('Create marker',  coord=transf_coord, marker_id=None, colour=(0,0,1))
+            if self.m_icp is not None:
+                self.checkicp.Enable(True)
+                self.checkicp.SetValue(True)
+                self.icp = True
+            else:
+                self.checkicp.Enable(False)
+                self.checkicp.SetValue(False)
+                self.icp = False
 
         return self.m_icp
 

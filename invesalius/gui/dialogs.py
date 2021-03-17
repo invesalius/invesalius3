@@ -1170,7 +1170,7 @@ def ShowAboutDialog(parent):
 
     info.SetWebSite("https://www.cti.gov.br/invesalius")
     info.SetIcon(icon)
-    
+
     info.License = _("GNU GPL (General Public License) version 2")
 
     info.Developers = [u"Paulo Henrique Junqueira Amorim",
@@ -1358,7 +1358,7 @@ class NewSurfaceDialog(wx.Dialog):
 def ExportPicture(type_=""):
     import invesalius.constants as const
     import invesalius.project as proj
-    
+
     INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
     WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
                                 _("JPG image")+" (*.jpg)|*.jpg|"+\
@@ -1528,7 +1528,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         project = prj.Project()
         index_list = project.mask_dict.keys()
         self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
-        
+
         active_mask = slc.Slice().current_mask.index
         #active_mask = len(self.mask_list)-1
 
@@ -2108,17 +2108,17 @@ class ImportBitmapParameters(wx.Dialog):
 
 
     def _init_gui(self):
-        
+
         import invesalius.project as prj
-        
+
         p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
                      | wx.CLIP_CHILDREN
                      | wx.FULL_REPAINT_ON_RESIZE)
-       
+
         gbs_principal = self.gbs = wx.GridBagSizer(4,1)
 
         gbs = self.gbs = wx.GridBagSizer(5, 2)
-       
+
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
         stx_name = wx.StaticText(p, -1, _(u"Project name:"))
@@ -2149,7 +2149,7 @@ class ImportBitmapParameters(wx.Dialog):
 
         #--- spacing --------------
         gbs_spacing = wx.GridBagSizer(2, 6)
-        
+
         stx_spacing_x = stx_spacing_x = wx.StaticText(p, -1, _(u"X:"))
         fsp_spacing_x = self.fsp_spacing_x = InvFloatSpinCtrl(p, -1, min_value=0, max_value=1000000000,
                                             increment=0.25, value=1.0, digits=8)
@@ -2166,7 +2166,7 @@ class ImportBitmapParameters(wx.Dialog):
 
         try:
             proj = prj.Project()
-            
+
             sx = proj.spacing[0]
             sy = proj.spacing[1]
             sz = proj.spacing[2]
@@ -2189,7 +2189,7 @@ class ImportBitmapParameters(wx.Dialog):
 
         #----- buttons ------------------------
         gbs_button = wx.GridBagSizer(2, 4)
- 
+
         btn_ok = self.btn_ok= wx.Button(p, wx.ID_OK)
         btn_ok.SetDefault()
 
@@ -2212,14 +2212,14 @@ class ImportBitmapParameters(wx.Dialog):
 
         box = wx.BoxSizer()
         box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
-        
+
         p.SetSizer(box)
         box.Fit(self)
         self.Layout()
 
     def bind_evts(self):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-   
+
     def SetInterval(self, v):
         self.interval = v
 
@@ -2243,10 +2243,10 @@ class ImportBitmapParameters(wx.Dialog):
 
 
 def BitmapNotSameSize():
-    
+
     dlg = wx.MessageDialog(None,_("All bitmaps files must be the same \n width and height size."), 'Error',\
                                 wx.OK | wx.ICON_ERROR)
- 
+
     dlg.ShowModal()
     dlg.Destroy()
 
@@ -2923,7 +2923,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 
 class CropOptionsDialog(wx.Dialog):
-    
+
     def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         self.config = config
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
@@ -3552,7 +3552,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
 
-        combo_surface_name = wx.ComboBox(self, -1,
+        combo_surface_name = wx.ComboBox(self, -1, size=(330,23),
                                          style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
@@ -3578,6 +3578,9 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
 
+        btn_reset = wx.Button(self, -1, label=_('Reset the points'), size=(100, 23))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+
         btn_acqui_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         btn_acqui_sizer.AddMany([(create_point, wx.LEFT),
                                  (cont_point, wx.RIGHT)])
@@ -3596,6 +3599,13 @@ class ICPCorregistrationDialog(wx.Dialog):
         btn_icp_sizer.AddMany([(choice_icp_method, wx.LEFT),
                                (icp, wx.RIGHT)])
 
+        surface_resetsizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        surface_resetsizer.AddMany([combo_surface_name,
+                                    btn_reset])
+
+        top_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=5)
+        top_sizer.AddMany([txt_surface,
+                           surface_resetsizer])
 
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"ICP done"))
@@ -3609,11 +3619,6 @@ class ICPCorregistrationDialog(wx.Dialog):
         btnsizer.AddMany([(btn_ok, wx.LEFT),
                           (btn_cancel, wx.RIGHT)])
 
-
-        top_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=5)
-        top_sizer.AddMany([txt_surface,
-                           combo_surface_name])
-
         extra_sizer = wx.FlexGridSizer(rows=3, cols=1, hgap=50, vgap=10)
         extra_sizer.AddMany([btn_acqui_sizer,
                              btn_icp_sizer,
@@ -3622,7 +3627,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.progress = wx.Gauge(self, -1)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(top_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(extra_sizer, 0,
                        wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
@@ -3657,6 +3662,9 @@ class ICPCorregistrationDialog(wx.Dialog):
         #self.ren.RemoveActor(self.obj_actor)
         self.ren.RemoveAllViewProps()
         self.point_coord = []
+        self.transformed_points = []
+        self.m_icp = None
+        self.SetProgress(0)
         self.ren.ResetCamera()
         self.interactor.Render()
 
@@ -3806,13 +3814,17 @@ class ICPCorregistrationDialog(wx.Dialog):
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, event):
+    def OnUpdate(self, evt):
         self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
         self.SetCameraVolume(self.current_coord[:3])
 
     def OnCreatePoint(self, evt):
         self.AddMarker(3,(1,0,0),self.current_coord[:3])
         self.SetCameraVolume(self.current_coord[:3])
+
+    def OnReset(self, evt):
+        self.RemoveActor()
+        self.LoadActor()
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.transformed_points
