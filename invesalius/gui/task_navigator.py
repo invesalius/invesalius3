@@ -887,15 +887,25 @@ class NeuronavigationPanel(wx.Panel):
         self.txtctrl_fre.SetValue('')
         self.txtctrl_fre.SetBackgroundColour('WHITE')
 
+    def ResetIcp(self):
+        self.m_icp = None
+        self.fre = None
+        self.icp_fre = None
+        self.icp = False
+        self.checkicp.Enable(False)
+        self.checkicp.SetValue(False)
+
     def OnCloseProject(self):
         self.ResetTrackerFiducials()
         self.ResetImageFiducials()
+        self.ResetIcp()
         self.OnChoiceTracker(False, self.choice_trck)
         Publisher.sendMessage('Update object registration')
         Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
         Publisher.sendMessage('Delete all markers')
         Publisher.sendMessage("Update marker offset state", create=False)
         Publisher.sendMessage("Remove tracts")
+        Publisher.sendMessage("Set cross visibility", visibility=0)
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
 
