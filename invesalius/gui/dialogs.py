@@ -908,6 +908,18 @@ def ICPcorregistration(fre):
     dlg.Destroy()
     return flag
 
+def ReportICPerror(prev_error, final_error):
+    msg = _("The average error after ICP is: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
+          _("The previously average error was: ") + str(round(prev_error, 2)) + ' mm'
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def ShowEnterMarkerID(default):
     msg = _("Edit marker ID")
     if sys.platform == 'darwin':
@@ -3719,6 +3731,45 @@ class ICPCorregistrationDialog(wx.Dialog):
                 m[i, j] = matrix.GetElement(i, j)
         return m
 
+    def SetCameraVolume(self, position):
+        cam_focus = np.array([position[0], -position[1], position[2]])
+        cam = self.ren.GetActiveCamera()
+
+        if self.initial_focus is None:
+            self.initial_focus = np.array(cam.GetFocalPoint())
+
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus - self.initial_focus)
+
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1/v1n)*v0n + cam_focus
+
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
+        self.Refresh()
+
+    def ErrorEstimation(self, surface, Points):
+        cell_locator = vtk.vtkCellLocator()
+        cell_locator.SetDataSet(surface)
+        cell_locator.BuildLocator()
+
+        cellId = vtk.mutable(0)
+        c = [0.0, 0.0, 0.0]
+        subId = vtk.mutable(0)
+        d = vtk.mutable(0.0)
+        error = []
+        for i in range(len(Points)):
+            cell_locator.FindClosestPoint(Points[i], c, cellId, subId, d)
+            error.append(np.sqrt(float(d)))
+
+        return np.mean(error)
+
     def OnChoiceICPMethod(self, evt):
         self.icp_mode = evt.GetSelection()
 
@@ -3787,29 +3838,10 @@ class ICPCorregistrationDialog(wx.Dialog):
             actor.GetProperty().SetColor((0,1,0))
 
             self.ren.AddActor(actor)
-        self.Refresh()
 
-    def SetCameraVolume(self, position):
-        cam_focus = np.array([position[0], -position[1], position[2]])
-        cam = self.ren.GetActiveCamera()
+        self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
+        self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
 
-        if self.initial_focus is None:
-            self.initial_focus = np.array(cam.GetFocalPoint())
-
-        cam_pos0 = np.array(cam.GetPosition())
-        cam_focus0 = np.array(cam.GetFocalPoint())
-        v0 = cam_pos0 - cam_focus0
-        v0n = np.sqrt(inner1d(v0, v0))
-
-        v1 = (cam_focus - self.initial_focus)
-
-        v1n = np.sqrt(inner1d(v1, v1))
-        if not v1n:
-            v1n = 1.0
-        cam_pos = (v1/v1n)*v0n + cam_focus
-
-        cam.SetFocalPoint(cam_focus)
-        cam.SetPosition(cam_pos)
         self.Refresh()
 
     def OnContinuousAcquisition(self, evt=None, btn=None):
@@ -3832,7 +3864,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.LoadActor()
 
     def GetValue(self):
-        return self.m_icp, self.point_coord, self.transformed_points
+        return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
 
 class SurfaceProgressWindow(object):
     def __init__(self):
