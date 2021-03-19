@@ -1115,7 +1115,7 @@ class Controller():
                 pass
 
         if err_msg:
-            dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3 dsfa dfdsfa sdfas fdsaf asdfasf dsaa", err_msg)
+            dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3", err_msg)
 
     def show_mask_preview(self, index, flag=True):
         proj = prj.Project()
@@ -1126,6 +1126,7 @@ class Controller():
         Publisher.sendMessage("Reload actual slice")
 
     def enable_mask_preview(self):
+        ses.Session().mask_3d_preview = True
         mask = self.Slice.current_mask
         if mask is not None:
             self.Slice.do_threshold_to_all_slices(mask)
@@ -1134,6 +1135,7 @@ class Controller():
             Publisher.sendMessage("Render volume viewer")
 
     def disable_mask_preview(self):
+        ses.Session().mask_3d_preview = False
         mask = self.Slice.current_mask
         if mask is not None:
             Publisher.sendMessage("Remove mask preview", mask_3d_actor=mask.volume._actor)

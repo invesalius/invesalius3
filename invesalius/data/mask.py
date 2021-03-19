@@ -248,6 +248,9 @@ class Mask():
 
     def on_show(self):
         self.history._config_undo_redo(self.is_shown)
+        if ses.Session().mask_3d_preview:
+            Publisher.sendMessage('Show mask preview', index=self.index, flag=bool(self.is_shown))
+            Publisher.sendMessage("Render volume viewer")
 
     def create_3d_preview(self):
         if self.volume is None:

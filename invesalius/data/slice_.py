@@ -1178,6 +1178,10 @@ class Slice(metaclass=utils.Singleton):
 
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
+        if self.current_mask:
+            self.current_mask.is_shown = False
+            self.current_mask.on_show()
+
         proj = Project()
         future_mask = proj.GetMask(index)
         future_mask.is_shown = True
@@ -1394,6 +1398,8 @@ class Slice(metaclass=utils.Singleton):
         Publisher.sendMessage("Add mask", mask=mask)
 
         if show:
+            if self.current_mask:
+                self.current_mask.is_shown = False
             self.current_mask = mask
             Publisher.sendMessage("Show mask", index=mask.index, value=True)
             Publisher.sendMessage("Change mask selected", index=mask.index)
