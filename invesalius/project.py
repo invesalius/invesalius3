@@ -119,14 +119,14 @@ class Project(metaclass=Singleton):
 
     def RemoveMask(self, index):
         new_dict = {}
+        new_index = 0
         for i in self.mask_dict:
-            mask = self.mask_dict[i]
-            mask.cleanup()
-            if i < index:
-                new_dict[i] = self.mask_dict[i]
-            if i > index:
-                new_dict[i-1] = self.mask_dict[i]
-                new_dict[i-1].index = i-1
+            if i == index:
+                mask = self.mask_dict[i]
+                mask.cleanup()
+            else:
+                new_dict[new_index] = self.mask_dict[i]
+                new_index += 1
         self.mask_dict = new_dict
 
     def GetMask(self, index):
