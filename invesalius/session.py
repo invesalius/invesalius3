@@ -54,6 +54,7 @@ class Session(metaclass=Singleton):
     def __init__(self):
         self.project_path = ()
         self.temp_item = False
+        self.mask_3d_preview = False
 
         self._values = collections.defaultdict(dict, {
             'session': {
@@ -128,7 +129,7 @@ class Session(metaclass=Singleton):
         return object.__getattribute__(self, '_values')[session][key]
 
     def __setattr__(self, name, value):
-        if name in ("temp_item", "_map_attrs", "_values", "project_path"):
+        if name in ("temp_item", "_map_attrs", "_values", "project_path", "mask_3d_preview"):
             return object.__setattr__(self, name, value)
         else:
             session, key = self._map_attrs[name]
