@@ -1,5 +1,5 @@
 Cython==0.29.22
-Pillow==8.1.0
+Pillow==8.1.1
 Pypubsub==4.0.3
 configparser==5.0.1
 h5py==2.10.0
