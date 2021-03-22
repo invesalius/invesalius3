@@ -561,7 +561,7 @@ class NeuronavigationPanel(wx.Panel):
             dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
 
     def OnSendCoordinates(self, coord):
-        if self.tracker_id == const.ELFIN:
+        if self.tracker_id == const.HYBRID:
             self.trk_init[0].SendCoordinates(coord)
 
     def OnSendCoordinates(self, coord):
