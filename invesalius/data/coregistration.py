@@ -22,9 +22,6 @@ import queue
 import threading
 from time import sleep
 
-import wx
-from pubsub import pub as Publisher
-
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases

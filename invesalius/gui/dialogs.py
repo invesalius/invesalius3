@@ -3754,7 +3754,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         cam.SetPosition(cam_pos)
         self.Refresh()
 
-    def ErrorEstimation(self, surface, Points):
+    def ErrorEstimation(self, surface, points):
         cell_locator = vtk.vtkCellLocator()
         cell_locator.SetDataSet(surface)
         cell_locator.BuildLocator()
@@ -3764,8 +3764,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         subId = vtk.mutable(0)
         d = vtk.mutable(0.0)
         error = []
-        for i in range(len(Points)):
-            cell_locator.FindClosestPoint(Points[i], c, cellId, subId, d)
+        for i in range(len(points)):
+            cell_locator.FindClosestPoint(points[i], c, cellId, subId, d)
             error.append(np.sqrt(float(d)))
 
         return np.mean(error)

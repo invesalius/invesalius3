@@ -176,29 +176,18 @@ def calculate_fre_m(fiducials):
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
 def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
-
-    dist = np.zeros([3, 1])
-
-    p1 = np.vstack([fiducials_raw[0, :], fiducials_raw[1, :]])
-    p2 = np.vstack([fiducials_raw[2, :], fiducials_raw[3, :]])
-    p3 = np.vstack([fiducials_raw[4, :], fiducials_raw[5, :]])
-
     if m_icp is not None:
         icp = [True, m_icp]
     else:
         icp = [False, None]
 
     coreg_data = (m_change, 0)
-    p1_m, m_img = dcr.corregistrate_dynamic(coreg_data, p1, ref_mode_id, icp)
-    p2_m, m_img = dcr.corregistrate_dynamic(coreg_data, p2, ref_mode_id, icp)
-    p3_m, m_img = dcr.corregistrate_dynamic(coreg_data, p3, ref_mode_id, icp)
 
-    print(p1_m)
-    print(fiducials[0, :])
-
-    dist[0] = np.sqrt(np.sum(np.power((p1_m[:3] - fiducials[0, :]), 2)))
-    dist[1] = np.sqrt(np.sum(np.power((p2_m[:3] - fiducials[1, :]), 2)))
-    dist[2] = np.sqrt(np.sum(np.power((p3_m[:3] - fiducials[2, :]), 2)))
+    dist = np.zeros([3, 1])
+    for i in range(0, 6, 2):
+        p_m, _ = dcr.corregistrate_dynamic(coreg_data, fiducials_raw[i:i+2], ref_mode_id, icp)
+        j = int(i/2)
+        dist[j] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[j, :]), 2)))
 
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
