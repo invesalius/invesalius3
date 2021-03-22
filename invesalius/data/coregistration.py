@@ -87,7 +87,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     :type m_probe_ref: numpy.ndarray
     :param r_obj_img: Object coordinate system in image space (3d model)
     :type r_obj_img: numpy.ndarray
-    :param m_obj_raw: Object basis in raw coordinates from tacker
+    :param m_obj_raw: Object basis in raw coordinates from tracker
     :type m_obj_raw: numpy.ndarray
     :param s0_dyn:
     :type s0_dyn: numpy.ndarray
@@ -181,7 +181,7 @@ class CoordinateCorregistrate(threading.Thread):
         while not self.event.is_set():
             try:
                 # print(f"Set the coordinate")
-                coord_raw = dco.a(trck_init, trck_id, trck_mode)
+                coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id)
                 # m_img = np.array([[0.38, -0.8, -0.45, 40.17],
                 #                   [0.82, 0.52, -0.24, 152.28],

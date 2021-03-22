@@ -352,34 +352,46 @@ def dynamic_reference_m(probe, reference):
 
 def HybridCoord(trk_init, trck_id, ref_mode):
     print(trk_init)
-    coord_mtc = ClaronCoord(trk_init[0], 1, ref_mode)
-    coord_robot = ElfinCoord(trk_init[1], 3, ref_mode)
+    #coord_tracker = ClaronCoord(trk_init[0], 1, ref_mode)
+    coord_tracker = DebugCoord(trk_init[0], 1, ref_mode)
+    #coord_robot = ElfinCoord(trk_init[1], 3, ref_mode)
+    coord_robot = DebugCoord(trk_init[1], 3, ref_mode)
 
-    print('\nmtc:',coord_mtc)
+    print('\nmtc:',coord_tracker)
     print('\nelfin:',coord_robot)
     # M_plh_in_mtc = [[ 9.16605401e-01 ,-5.00041261e-02, -3.96653660e-01, -2.70131503e+01],
     #                  [ 3.94543688e-01 ,-4.71113835e-02 , 9.17668674e-01, -5.04448294e+02],
     #                  [-6.45741228e-02, -9.97637261e-01, -2.34537363e-02 , 1.23903278e+03],
     #                  [ 0.00000000e+00 , 0.00000000e+00,  0.00000000e+00,  1.00000000e+00]]
 
-    M_robot_2_mtc = [[ 3.26006013e-01,  9.45273796e-01 , 1.33240445e-02, -2.02855718e+02],
-                     [ 9.70479041e-02, -1.94436575e-02, -9.95089769e-01,  2.69030767e+02],
+    M_tracker_2_robot = [[ 3.26006013e-01,  9.45273796e-01 , 1.33240445e-02, -2.02855718e+02],
+                     [9.70479041e-02, -1.94436575e-02, -9.95089769e-01,  2.69030767e+02],
                      [-9.40373215e-01,  3.25698319e-01, -9.80755899e-02,  1.53869455e+03],
-                     [ 0.00000000e+00 , 0.00000000e+00,  0.00000000e+00 , 1.00000000e+00]]
+                     [0.00000000e+00, 0.00000000e+00,  0.00000000e+00, 1.00000000e+00]]
 
-    trans = tr.translation_matrix(coord_robot[0][:3])
-    a, b, g = np.radians(coord_robot[0][3:6])
+    probe_tracker_in_robot = transform_2_robot(coord_tracker[0], M_tracker_2_robot)
+    ref_tracker_in_robot = transform_2_robot(coord_tracker[1], M_tracker_2_robot)
+    #obj_tracker_in_robot = transform_2_robot(coord_tracker[2], M_tracker_2_robot)
+
+    print('\nprobe_tracker_in_robot:', probe_tracker_in_robot)
+    print('\nref_tracker_in_robot:', ref_tracker_in_robot)
+    #print('\nobj_tracker_in_robot:', obj_tracker_in_robot)
+
+    #return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, obj_tracker_in_robot, coord_robot])
+    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot])
+
+def transform_2_robot(tracker_coord, M_tracker_2_robot):
+    trans = tr.translation_matrix(tracker_coord[:3])
+    a, b, g = np.radians(tracker_coord[3:6])
     rot = tr.euler_matrix(a, b, g, 'rzyx')
-    M_probe_robot = tr.concatenate_matrices(trans, rot)
+    M_tracker = tr.concatenate_matrices(trans, rot)
+    M_tracker_in_robot = M_tracker_2_robot @ M_tracker
 
-    M_probe_robot_in_mtc = M_robot_2_mtc @ M_probe_robot
-    scale, shear, angles, translate, perspective = tr.decompose_matrix(M_probe_robot_in_mtc)
-    probe_robot_in_mtc = [translate[0], translate[1], translate[2],\
+    scale, shear, angles, translate, perspective = tr.decompose_matrix(M_tracker_in_robot)
+    tracker_in_robot = [translate[0], translate[1], translate[2],\
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
 
-    print('\nprobe_robot_in_mtc:',probe_robot_in_mtc)
-
-    return np.vstack([probe_robot_in_mtc, coord_mtc[1], coord_mtc[2]])
+    return tracker_in_robot
 
 
 def dynamic_reference_m2(probe, reference):
