@@ -23,6 +23,7 @@ import os
 import random
 import sys
 import time
+from functools import partial
 
 from concurrent import futures
 
@@ -58,10 +59,12 @@ import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius.data.bases as bases
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
+from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
 
@@ -888,6 +891,35 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
     dlg.ShowModal()
     dlg.Destroy()
 
+def ICPcorregistration(fre):
+    msg = _("The fiducial registration error is: ") + str(round(fre, 2)) + '\n\n' + \
+          _("Would you like to improve accuracy?")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.YES_NO)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.YES_NO)
+
+    if dlg.ShowModal() == wx.ID_YES:
+        flag = True
+    else:
+        flag = False
+
+    dlg.Destroy()
+    return flag
+
+def ReportICPerror(prev_error, final_error):
+    msg = _("The average error after ICP is: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
+          _("The previously average error was: ") + str(round(prev_error, 2)) + ' mm'
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
 
 def ShowEnterMarkerID(default):
     msg = _("Edit marker ID")
@@ -1156,7 +1188,7 @@ def ShowAboutDialog(parent):
 
     info.SetWebSite("https://www.cti.gov.br/invesalius")
     info.SetIcon(icon)
-    
+
     info.License = _("GNU GPL (General Public License) version 2")
 
     info.Developers = [u"Paulo Henrique Junqueira Amorim",
@@ -1344,7 +1376,7 @@ class NewSurfaceDialog(wx.Dialog):
 def ExportPicture(type_=""):
     import invesalius.constants as const
     import invesalius.project as proj
-    
+
     INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
     WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
                                 _("JPG image")+" (*.jpg)|*.jpg|"+\
@@ -1514,7 +1546,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         project = prj.Project()
         index_list = project.mask_dict.keys()
         self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
-        
+
         active_mask = slc.Slice().current_mask.index
         #active_mask = len(self.mask_list)-1
 
@@ -2094,17 +2126,17 @@ class ImportBitmapParameters(wx.Dialog):
 
 
     def _init_gui(self):
-        
+
         import invesalius.project as prj
-        
+
         p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
                      | wx.CLIP_CHILDREN
                      | wx.FULL_REPAINT_ON_RESIZE)
-       
+
         gbs_principal = self.gbs = wx.GridBagSizer(4,1)
 
         gbs = self.gbs = wx.GridBagSizer(5, 2)
-       
+
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
         stx_name = wx.StaticText(p, -1, _(u"Project name:"))
@@ -2135,7 +2167,7 @@ class ImportBitmapParameters(wx.Dialog):
 
         #--- spacing --------------
         gbs_spacing = wx.GridBagSizer(2, 6)
-        
+
         stx_spacing_x = stx_spacing_x = wx.StaticText(p, -1, _(u"X:"))
         fsp_spacing_x = self.fsp_spacing_x = InvFloatSpinCtrl(p, -1, min_value=0, max_value=1000000000,
                                             increment=0.25, value=1.0, digits=8)
@@ -2152,7 +2184,7 @@ class ImportBitmapParameters(wx.Dialog):
 
         try:
             proj = prj.Project()
-            
+
             sx = proj.spacing[0]
             sy = proj.spacing[1]
             sz = proj.spacing[2]
@@ -2175,7 +2207,7 @@ class ImportBitmapParameters(wx.Dialog):
 
         #----- buttons ------------------------
         gbs_button = wx.GridBagSizer(2, 4)
- 
+
         btn_ok = self.btn_ok= wx.Button(p, wx.ID_OK)
         btn_ok.SetDefault()
 
@@ -2198,14 +2230,14 @@ class ImportBitmapParameters(wx.Dialog):
 
         box = wx.BoxSizer()
         box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
-        
+
         p.SetSizer(box)
         box.Fit(self)
         self.Layout()
 
     def bind_evts(self):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-   
+
     def SetInterval(self, v):
         self.interval = v
 
@@ -2229,10 +2261,10 @@ class ImportBitmapParameters(wx.Dialog):
 
 
 def BitmapNotSameSize():
-    
+
     dlg = wx.MessageDialog(None,_("All bitmaps files must be the same \n width and height size."), 'Error',\
                                 wx.OK | wx.ICON_ERROR)
- 
+
     dlg.ShowModal()
     dlg.Destroy()
 
@@ -2909,7 +2941,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 
 class CropOptionsDialog(wx.Dialog):
-    
+
     def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
         self.config = config
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
@@ -3317,7 +3349,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(group_sizer, 0,
-                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -3494,6 +3526,346 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(self):
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata
 
+class ICPCorregistrationDialog(wx.Dialog):
+
+    def __init__(self, nav_prop):
+        import invesalius.project as prj
+
+        self.__bind_events()
+
+        self.tracker_id = nav_prop[0]
+        self.trk_init = nav_prop[1]
+        self.obj_ref_id = 2
+        self.obj_name = None
+        self.obj_actor = None
+        self.polydata = None
+        self.m_icp = None
+        self.initial_focus = None
+        self.icp_mode = 0
+        self.staticballs = []
+        self.point_coord = []
+        self.transformed_points = []
+
+        self.obj_fiducials = np.full([5, 3], np.nan)
+        self.obj_orients = np.full([5, 3], np.nan)
+
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"ICP Corregistration"), size=(450, 440),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        self.proj = prj.Project()
+
+        self._init_gui()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
+
+    def UpdateCurrentCoord(self, position):
+        self.current_coord = position[:]
+
+    def _init_gui(self):
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.Enable(1)
+        self.ren = vtk.vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(self.ren)
+
+        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+
+        combo_surface_name = wx.ComboBox(self, -1, size=(330,23),
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        for n in range(len(self.proj.surface_dict)):
+            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        self.combo_surface_name = combo_surface_name
+
+        init_surface = 0
+        combo_surface_name.SetSelection(init_surface)
+        self.surface = self.proj.surface_dict[init_surface].polydata
+        self.LoadActor()
+
+        create_point = wx.Button(self, -1, label=_('Create point'))
+        create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+
+        cont_point = wx.ToggleButton(self, -1, label=_('Continuous acquisition'))
+        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
+        self.cont_point = cont_point
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+
+        btn_reset = wx.Button(self, -1, label=_('Reset the points'), size=(100, 23))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+
+        btn_acqui_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btn_acqui_sizer.AddMany([(create_point, wx.LEFT),
+                                 (cont_point, wx.RIGHT)])
+
+        icp = wx.Button(self, -1, label=_('Apply registration'))
+        icp.Bind(wx.EVT_BUTTON, self.OnICP)
+
+        tooltip = wx.ToolTip(_("Choose the ICP method"))
+        choice_icp_method = wx.ComboBox(self, -1, "",
+                                        choices=([_("Affine"), _("Similarity"), _("RigidBody")]), style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        choice_icp_method.SetSelection(0)
+        choice_icp_method.SetToolTip(tooltip)
+        choice_icp_method.Bind(wx.EVT_COMBOBOX, self.OnChoiceICPMethod)
+
+        btn_icp_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btn_icp_sizer.AddMany([(choice_icp_method, wx.LEFT),
+                               (icp, wx.RIGHT)])
+
+        surface_resetsizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        surface_resetsizer.AddMany([combo_surface_name,
+                                    btn_reset])
+
+        top_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=5)
+        top_sizer.AddMany([txt_surface,
+                           surface_resetsizer])
+
+        # Buttons to finish or cancel object registration
+        tooltip = wx.ToolTip(_(u"ICP done"))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
+        btn_ok.SetToolTip(tooltip)
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btnsizer.AddMany([(btn_ok, wx.LEFT),
+                          (btn_cancel, wx.RIGHT)])
+
+        extra_sizer = wx.FlexGridSizer(rows=3, cols=1, hgap=50, vgap=10)
+        extra_sizer.AddMany([btn_acqui_sizer,
+                             btn_icp_sizer,
+                             btnsizer])
+
+        self.progress = wx.Gauge(self, -1)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
+        main_sizer.Add(self.interactor, 0, wx.EXPAND)
+        main_sizer.Add(extra_sizer, 0,
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
+        main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def OnComboName(self, evt):
+        surface_name = evt.GetString()
+        surface_index = evt.GetSelection()
+        self.surface = self.proj.surface_dict[surface_index].polydata
+        if self.obj_actor:
+            self.RemoveActor()
+        self.LoadActor()
+
+    def LoadActor(self):
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(self.surface)
+        mapper.ScalarVisibilityOff()
+        #mapper.ImmediateModeRenderingOn()
+
+        obj_actor = vtk.vtkActor()
+        obj_actor.SetMapper(mapper)
+        self.obj_actor = obj_actor
+
+        self.ren.AddActor(obj_actor)
+        self.ren.ResetCamera()
+        self.interactor.Render()
+
+    def RemoveActor(self):
+        #self.ren.RemoveActor(self.obj_actor)
+        self.ren.RemoveAllViewProps()
+        self.point_coord = []
+        self.transformed_points = []
+        self.m_icp = None
+        self.SetProgress(0)
+        self.ren.ResetCamera()
+        self.interactor.Render()
+
+    def AddMarker(self, size, colour, coord):
+        """
+        Markers created by navigation tools and rendered in volume viewer.
+        """
+
+        x, y, z = coord[0], -coord[1], coord[2]
+
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(size)
+        ball_ref.SetCenter(x, y, z)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_ref.GetOutputPort())
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(colour[0:3])
+
+        #adding a new actor for the present ball
+        sphere_actor = vtk.vtkActor()
+
+        sphere_actor.SetMapper(mapper)
+        sphere_actor.SetProperty(prop)
+
+        self.ren.AddActor(sphere_actor)
+        self.point_coord.append([x, y, z])
+
+        self.Refresh()
+
+    def SetProgress(self, progress):
+        self.progress.SetValue(progress * 100)
+        self.Refresh()
+
+    def vtkmatrix_to_numpy(self, matrix):
+        """
+        Copies the elements of a vtkMatrix4x4 into a numpy array.
+
+        :param matrix: The matrix to be copied into an array.
+        :type matrix: vtk.vtkMatrix4x4
+        :rtype: numpy.ndarray
+        """
+        m = np.ones((4, 4))
+        for i in range(4):
+            for j in range(4):
+                m[i, j] = matrix.GetElement(i, j)
+        return m
+
+    def SetCameraVolume(self, position):
+        cam_focus = np.array([position[0], -position[1], position[2]])
+        cam = self.ren.GetActiveCamera()
+
+        if self.initial_focus is None:
+            self.initial_focus = np.array(cam.GetFocalPoint())
+
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus - self.initial_focus)
+
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1/v1n)*v0n + cam_focus
+
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
+        self.Refresh()
+
+    def ErrorEstimation(self, surface, points):
+        cell_locator = vtk.vtkCellLocator()
+        cell_locator.SetDataSet(surface)
+        cell_locator.BuildLocator()
+
+        cellId = vtk.mutable(0)
+        c = [0.0, 0.0, 0.0]
+        subId = vtk.mutable(0)
+        d = vtk.mutable(0.0)
+        error = []
+        for i in range(len(points)):
+            cell_locator.FindClosestPoint(points[i], c, cellId, subId, d)
+            error.append(np.sqrt(float(d)))
+
+        return np.mean(error)
+
+    def OnChoiceICPMethod(self, evt):
+        self.icp_mode = evt.GetSelection()
+
+    def OnICP(self, evt):
+        self.SetProgress(0.3)
+        if self.cont_point:
+            self.cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+        sourcePoints = np.array(self.point_coord)
+        sourcePoints_vtk = vtk.vtkPoints()
+
+        for i in range(len(sourcePoints)):
+            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
+
+        source = vtk.vtkPolyData()
+        source.SetPoints(sourcePoints_vtk)
+
+        icp = vtk.vtkIterativeClosestPointTransform()
+        icp.SetSource(source)
+        icp.SetTarget(self.surface)
+
+        if self.icp_mode == 0:
+            print("Affine mode")
+            icp.GetLandmarkTransform().SetModeToAffine()
+        elif self.icp_mode == 1:
+            print("Similarity mode")
+            icp.GetLandmarkTransform().SetModeToSimilarity()
+        elif self.icp_mode == 2:
+            print("Rigid mode")
+            icp.GetLandmarkTransform().SetModeToRigidBody()
+
+        #icp.DebugOn()
+        icp.SetMaximumNumberOfIterations(1000)
+
+        icp.Modified()
+
+        icp.Update()
+
+        self.m_icp = self.vtkmatrix_to_numpy(icp.GetMatrix())
+
+        icpTransformFilter = vtk.vtkTransformPolyDataFilter()
+        icpTransformFilter.SetInputData(source)
+
+        icpTransformFilter.SetTransform(icp)
+        icpTransformFilter.Update()
+
+        transformedSource = icpTransformFilter.GetOutput()
+
+        self.SetProgress(1)
+
+        for i in range(transformedSource.GetNumberOfPoints()):
+            p = [0, 0, 0]
+            transformedSource.GetPoint(i, p)
+            self.transformed_points.append(p)
+            point = vtk.vtkSphereSource()
+            point.SetCenter(p)
+            point.SetRadius(3)
+            point.SetPhiResolution(3)
+            point.SetThetaResolution(3)
+
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(point.GetOutputPort())
+
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor((0,1,0))
+
+            self.ren.AddActor(actor)
+
+        self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
+        self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
+
+        self.Refresh()
+
+    def OnContinuousAcquisition(self, evt=None, btn=None):
+        value = btn.GetValue()
+        if value:
+            self.timer.Start(500)
+        else:
+            self.timer.Stop()
+
+    def OnUpdate(self, evt):
+        self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
+        self.SetCameraVolume(self.current_coord[:3])
+
+    def OnCreatePoint(self, evt):
+        self.AddMarker(3,(1,0,0),self.current_coord[:3])
+        self.SetCameraVolume(self.current_coord[:3])
+
+    def OnReset(self, evt):
+        self.RemoveActor()
+        self.LoadActor()
+
+    def GetValue(self):
+        return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
 
 class SurfaceProgressWindow(object):
     def __init__(self):
@@ -3753,20 +4125,20 @@ class SetNDIconfigs(wx.Dialog):
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
         row_probe = wx.BoxSizer(wx.VERTICAL)
         row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_probe.Add(self.dir_probe, 0, wx.EXPAND|wx.ALIGN_CENTER)
+        row_probe.Add(self.dir_probe, 0, wx.ALIGN_CENTER)
 
         self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
-        row_ref.Add(self.dir_ref, 0, wx.EXPAND|wx.ALIGN_CENTER)
+        row_ref.Add(self.dir_ref, 0, wx.ALIGN_CENTER)
 
         self.dir_obj = wx.FilePickerCtrl(self, path=last_ndi_obj_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
         row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_obj.Add(self.dir_obj, 0, wx.EXPAND|wx.ALIGN_CENTER)
+        row_obj.Add(self.dir_obj, 0, wx.ALIGN_CENTER)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")

@@ -1,7 +1,7 @@
 import numpy as np
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
-
+import invesalius.data.coregistration as dcr
 
 def angle_calculation(ap_axis, coil_axis):
     """
@@ -175,6 +175,22 @@ def calculate_fre_m(fiducials):
 
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 
+def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
+    if m_icp is not None:
+        icp = [True, m_icp]
+    else:
+        icp = [False, None]
+
+    coreg_data = (m_change, 0)
+
+    dist = np.zeros([3, 1])
+    for i in range(0, 6, 2):
+        p_m, _ = dcr.corregistrate_dynamic(coreg_data, fiducials_raw[i:i+2], ref_mode_id, icp)
+        j = int(i/2)
+        dist[j] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[j, :]), 2)))
+
+    return float(np.sqrt(np.sum(dist ** 2) / 3))
+
 
 # The function flip_x_m is deprecated and was replaced by a simple minus multiplication of the Y coordinate as follows:
 # coord_flip = list(coord)
@@ -202,6 +218,13 @@ def calculate_fre_m(fiducials):
 #     point_rot = m_rot @ point_4
 #
 #     return point_rot
+
+def transform_icp(m_img, m_icp):
+    coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
+    m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
+    m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
+
+    return m_img
 
 
 def object_registration(fiducials, orients, coord_raw, m_change):

@@ -15,6 +15,14 @@ def prepare_plaidml():
         if local_user_plaidml.exists():
             os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
             os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("/usr/local/lib/libplaidml.dylib").expanduser().absolute())
+    elif sys.platform == "win32":
+        if 'VIRTUAL_ENV' in os.environ:
+            local_user_plaidml = pathlib.Path(os.environ["VIRTUAL_ENV"]).joinpath("share/plaidml")
+            plaidml_dll = pathlib.Path(os.environ["VIRTUAL_ENV"]).joinpath("library/bin/plaidml.dll")
+            if local_user_plaidml.exists():
+                os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
+            if plaidml_dll.exists():
+                os.environ["PLAIDML_NATIVE_PATH"] = str(plaidml_dll)
 
 def prepare_ambient(backend, device_id, use_gpu):
     if backend.lower() == 'plaidml':

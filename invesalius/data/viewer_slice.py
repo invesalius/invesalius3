@@ -565,17 +565,31 @@ class Viewer(wx.Panel):
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def UpdateSlicesNavigation(self, arg, position):
+    def UpdateSlicesPosition(self, position):
         # Get point from base change
-        ux, uy, uz = position[:3]
-        px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
+        px, py = self.get_slice_pixel_coord_by_world_pos(*position)
         coord = self.calcultate_scroll_position(px, py)
+        # Debugging coordinates. For a 1.0 spacing axis the coord and position is the same,
+        # but for a spacing dimension =! 1, the coord and position are different
+        # print("\nPosition: {}".format(position))
+        # print("Scroll position: {}".format(coord))
+        # print("Slice actor bounds: {}".format(self.slice_data.actor.GetBounds()))
+        # print("Scroll from int of position: {}\n".format([round(s) for s in position]))
 
-        self.cross.SetFocalPoint((ux, uy, uz))
+        # this call did not affect the working code
+        # self.cross.SetFocalPoint(coord)
+
+        # update the image slices in all three orientations
         self.ScrollSlice(coord)
 
     def SetCrossFocalPoint(self, position):
-        self.cross.SetFocalPoint(position)
+        """
+        Sets the cross focal point for all slice panels (axial, coronal, sagittal). This function is also called via
+        pubsub messaging and may receive a list of 6 coordinates. Thus, limiting the number of list elements in the
+        SetFocalPoint call is required.
+        :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
+        """
+        self.cross.SetFocalPoint(position[:3])
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -818,12 +832,12 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ChangeSliceNumber,
                                  ('Set scroll position',
                                   self.orientation))
-        Publisher.subscribe(self.__update_cross_position,
-                            'Update cross position')
-        Publisher.subscribe(self.__update_cross_position,
-                            'Update cross position %s' % self.orientation)
+        # Publisher.subscribe(self.__update_cross_position,
+        #                     'Update cross position')
+        # Publisher.subscribe(self.__update_cross_position,
+        #                     'Update cross position %s' % self.orientation)
         Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
-        # Publisher.subscribe(self.UpdateSlicesNavigation,
+        # Publisher.subscribe(self.UpdateSlicesPosition,
         #                     'Co-registered points')
         ###
         #  Publisher.subscribe(self.ChangeBrushColour,
@@ -835,9 +849,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateWindowLevelText,
                             'Update window level text')
 
-        #Publisher.subscribe(self._set_cross_visibility,\
-        #                         'Set cross visibility')
-        ###
+        Publisher.subscribe(self._set_cross_visibility,
+                                 'Set cross visibility')
+
         Publisher.subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 
@@ -1141,9 +1155,9 @@ class Viewer(wx.Panel):
 
         renderer.AddActor(cross_actor)
 
-    def __update_cross_position(self, arg, position):
-        # self.cross.SetFocalPoint(position[:3])
-        self.UpdateSlicesNavigation(None, position)
+    # def __update_cross_position(self, arg, position):
+    #     # self.cross.SetFocalPoint(position[:3])
+    #     self.UpdateSlicesPosition(None, position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
@@ -1300,12 +1314,16 @@ class Viewer(wx.Panel):
         if update3D:
             self.UpdateSlice3D(pos)
 
+        # This Render needs to come before the self.style.OnScrollBar, otherwise the GetFocalPoint will sometimes
+        # provide the non-updated coordinate and the cross focal point will lag one pixel behind the actual
+        # scroll position
+        self.interactor.Render()
+
         try:
             self.style.OnScrollBar()
         except AttributeError:
             print("Do not have OnScrollBar")
 
-        self.interactor.Render()
         if evt:
             if self._flush_buffer:
                 self.slice_.apply_slice_buffer_to_mask(self.orientation)

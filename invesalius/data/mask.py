@@ -293,14 +293,16 @@ class Mask():
         #plist_filepath = os.path.join(dir_temp, plist_filename)
 
         temp_plist = tempfile.mktemp()
-        plistlib.writePlist(mask, temp_plist)
+        with open(temp_plist, 'w+b') as f:
+            plistlib.dump(mask, f)
 
         filelist[temp_plist] = plist_filename
 
         return plist_filename
 
     def OpenPList(self, filename):
-        mask = plistlib.readPlist(filename)
+        with open(filename, 'r+b') as f:
+            mask = plistlib.load(f, fmt=plistlib.FMT_XML)
 
         self.index = mask['index']
         self.name = mask['name']

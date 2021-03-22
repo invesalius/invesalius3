@@ -188,7 +188,8 @@ class Project(metaclass=Singleton):
 
     def SetRaycastPreset(self, label):
         path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + '.plist')
-        preset = plistlib.readPlist(path)
+        with open(path, 'r+b') as f:
+            preset = plistlib.load(f, fmt=plistlib.FMT_XML)
         Publisher.sendMessage('Set raycasting preset', preset)
 
     def GetMeasuresDict(self):
@@ -252,9 +253,9 @@ class Project(metaclass=Singleton):
         # Saving the measurements
         measurements = self.GetMeasuresDict()
         measurements_filename = 'measurements.plist'
-        temp_mplist = tempfile.mktemp() 
-        plistlib.writePlist(measurements, 
-                            temp_mplist)
+        temp_mplist = tempfile.mktemp()
+        with open(temp_mplist, 'w+b') as f:
+            plistlib.dump(measurements, f)
         filelist[temp_mplist] = measurements_filename
         project['measurements'] = measurements_filename
 
@@ -263,7 +264,8 @@ class Project(metaclass=Singleton):
 
         # Saving the main plist
         temp_plist = tempfile.mktemp()
-        plistlib.writePlist(project, temp_plist)
+        with open(temp_plist, 'w+b') as f:
+            plistlib.dump(project, f)
         filelist[temp_plist] = 'main.plist'
 
         # Compressing and generating the .inv3 file
@@ -298,7 +300,8 @@ class Project(metaclass=Singleton):
         import invesalius.data.surface as srf
         # Opening the main file from invesalius 3 project
         main_plist =  os.path.join(dirpath ,'main.plist')
-        project = plistlib.readPlist(main_plist)
+        with open(main_plist, 'r+b') as f:
+            project = plistlib.load(f, fmt=plistlib.FMT_XML)
 
         format_version = project["format_version"]
         if format_version > const.INVESALIUS_ACTUAL_FORMAT_VERSION:
@@ -350,7 +353,8 @@ class Project(metaclass=Singleton):
         self.measurement_dict = {}
         measures_file = os.path.join(dirpath, project.get("measurements", "measurements.plist"))
         if os.path.exists(measures_file):
-            measurements = plistlib.readPlist(measures_file)
+            with open(measures_file, 'r+b') as f:
+                measurements = plistlib.load(f, fmt=plistlib.FMT_XML)
             for index in measurements:
                 if measurements[index]["type"] in (const.DENSITY_ELLIPSE, const.DENSITY_POLYGON):
                     measure = ms.DensityMeasurement()
@@ -390,7 +394,10 @@ class Project(metaclass=Singleton):
 
                    "matrix": matrix,
                   }
-        plistlib.writePlist(project, os.path.join(folder, 'main.plist'))
+
+        path = os.path.join(folder, 'main.plist')
+        with open(path, 'w+b') as f:
+            plistlib.dump(project, f)
 
 
     def export_project(self, filename, save_masks=True):
