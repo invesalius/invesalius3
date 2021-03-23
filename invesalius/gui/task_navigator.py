@@ -708,7 +708,6 @@ class NeuronavigationPanel(wx.Panel):
         dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         if dialog.ShowModal() == wx.ID_OK:
             self.m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
-            dlg.ReportICPerror(prev_error, final_error)
             #TODO: checkbox in the dialog to transfer the icp points to 3D viewer
             #create markers
             # for i in range(len(point_coord)):
@@ -717,6 +716,7 @@ class NeuronavigationPanel(wx.Panel):
             #     Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
             #     Publisher.sendMessage('Create marker',  coord=transf_coord, marker_id=None, colour=(0,0,1))
             if self.m_icp is not None:
+                dlg.ReportICPerror(prev_error, final_error)
                 self.checkicp.Enable(True)
                 self.checkicp.SetValue(True)
                 self.icp = True
