@@ -230,7 +230,7 @@ def tracts_computation_branch(trk_list, alpha=255):
 
 class ComputeTractsThread(threading.Thread):
 
-    def __init__(self, inp, coord_tracts_queue, tracts_queue, event, sle):
+    def __init__(self, inp, queues, event, sle):
         """Class (threading) to compute real time tractography data for visualization.
 
         Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
@@ -243,10 +243,9 @@ class ComputeTractsThread(threading.Thread):
 
         :param inp: List of inputs: trekker instance, affine numpy array, seed_offset, seed_radius, n_threads
         :type inp: list
-        :param coord_tracts_queue: Queue instance that manage co-registered coordinates
-        :type coord_tracts_queue: queue.Queue
-        :param tracts_queue: Queue instance that manage the tracts to be visualized
-        :type tracts_queue: queue.Queue
+        :param queues: Queue list with coord_tracts_queue (Queue instance that manage co-registered coordinates) and
+         tracts_queue (Queue instance that manage the tracts to be visualized)
+        :type queues: list[queue.Queue, queue.Queue]
         :param event: Threading event to coordinate when tasks as done and allow UI release
         :type event: threading.Event
         :param sle: Sleep pause in seconds
@@ -256,8 +255,8 @@ class ComputeTractsThread(threading.Thread):
         threading.Thread.__init__(self, name='ComputeTractsThread')
         self.inp = inp
         # self.coord_queue = coord_queue
-        self.coord_tracts_queue = coord_tracts_queue
-        self.tracts_queue = tracts_queue
+        self.coord_tracts_queue = queues[0]
+        self.tracts_queue = queues[1]
         # self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
@@ -362,7 +361,7 @@ class ComputeTractsThread(threading.Thread):
 
 class ComputeTractsACTThread(threading.Thread):
 
-    def __init__(self, inp, coord_tracts_queue, tracts_queue, event, sle):
+    def __init__(self, inp, queues, event, sle):
         """Class (threading) to compute real time tractography data for visualization.
 
         Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
@@ -375,10 +374,9 @@ class ComputeTractsACTThread(threading.Thread):
 
         :param inp: List of inputs: trekker instance, affine numpy array, seed_offset, seed_radius, n_threads
         :type inp: list
-        :param coord_tracts_queue: Queue instance that manage co-registered coordinates
-        :type coord_tracts_queue: queue.Queue
-        :param tracts_queue: Queue instance that manage the tracts to be visualized
-        :type tracts_queue: queue.Queue
+        :param queues: Queue list with coord_tracts_queue (Queue instance that manage co-registered coordinates) and
+         tracts_queue (Queue instance that manage the tracts to be visualized)
+        :type queues: list[queue.Queue, queue.Queue]
         :param event: Threading event to coordinate when tasks as done and allow UI release
         :type event: threading.Event
         :param sle: Sleep pause in seconds
@@ -388,8 +386,8 @@ class ComputeTractsACTThread(threading.Thread):
         threading.Thread.__init__(self, name='ComputeTractsThreadACT')
         self.inp = inp
         # self.coord_queue = coord_queue
-        self.coord_tracts_queue = coord_tracts_queue
-        self.tracts_queue = tracts_queue
+        self.coord_tracts_queue = queues[0]
+        self.tracts_queue = queues[1]
         # on first pilots (january 12, 2021) used (-4, 4)
         self.coord_list_w = img_utils.create_grid((-2, 2), (0, 20), inp[2]-5, 1)
         # self.coord_list_sph = img_utils.create_spherical_grid(10, 1)

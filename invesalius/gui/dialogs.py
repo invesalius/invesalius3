@@ -910,8 +910,8 @@ def ICPcorregistration(fre):
     return flag
 
 def ReportICPerror(prev_error, final_error):
-    msg = _("The average error after ICP is: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
-          _("The previously average error was: ") + str(round(prev_error, 2)) + ' mm'
+    msg = _("Error after refine: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
+          _("Previous error: ") + str(round(prev_error, 2)) + ' mm'
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.OK)
@@ -3549,7 +3549,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
 
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"ICP Corregistration"), size=(450, 440),
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Refine Corregistration"), size=(450, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.proj = prj.Project()
@@ -3626,7 +3626,7 @@ class ICPCorregistrationDialog(wx.Dialog):
                            surface_resetsizer])
 
         # Buttons to finish or cancel object registration
-        tooltip = wx.ToolTip(_(u"ICP done"))
+        tooltip = wx.ToolTip(_(u"Refine done"))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)
 
@@ -3654,15 +3654,11 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def OnComboName(self, evt):
-        surface_name = evt.GetString()
-        surface_index = evt.GetSelection()
-        self.surface = self.proj.surface_dict[surface_index].polydata
-        if self.obj_actor:
-            self.RemoveActor()
-        self.LoadActor()
-
     def LoadActor(self):
+        '''
+        Load the selected actor from the project (self.surface) into the scene
+        :return:
+        '''
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         mapper.ScalarVisibilityOff()
@@ -3688,7 +3684,13 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def AddMarker(self, size, colour, coord):
         """
-        Markers created by navigation tools and rendered in volume viewer.
+        Points are rendered into the scene. These points give visual information about the registration.
+        :param size: value of the marker size
+        :type size: int
+        :param colour: RGB Color Code for the marker
+        :type colour: tuple (int(R),int(G),int(B))
+        :param coord: x, y, z of the marker
+        :type coord: np.ndarray
         """
 
         x, y, z = coord[0], -coord[1], coord[2]
@@ -3733,6 +3735,11 @@ class ICPCorregistrationDialog(wx.Dialog):
         return m
 
     def SetCameraVolume(self, position):
+        """
+        Positioning of the camera based on the acquired point
+        :param position: x, y, z of the last acquired point
+        :return:
+        """
         cam_focus = np.array([position[0], -position[1], position[2]])
         cam = self.ren.GetActiveCamera()
 
@@ -3756,6 +3763,14 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.Refresh()
 
     def ErrorEstimation(self, surface, points):
+        """
+        Estimation of the average squared distance between the cloud of points to the closest mesh
+        :param surface: Surface polydata of the scene
+        :type surface: vtk.polydata
+        :param points: Cloud of points
+        :type points: np.ndarray
+        :return: mean distance
+        """
         cell_locator = vtk.vtkCellLocator()
         cell_locator.SetDataSet(surface)
         cell_locator.BuildLocator()
@@ -3771,8 +3786,35 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.mean(error)
 
+    def OnComboName(self, evt):
+        surface_name = evt.GetString()
+        surface_index = evt.GetSelection()
+        self.surface = self.proj.surface_dict[surface_index].polydata
+        if self.obj_actor:
+            self.RemoveActor()
+        self.LoadActor()
+
     def OnChoiceICPMethod(self, evt):
         self.icp_mode = evt.GetSelection()
+
+    def OnContinuousAcquisition(self, evt=None, btn=None):
+        value = btn.GetValue()
+        if value:
+            self.timer.Start(500)
+        else:
+            self.timer.Stop()
+
+    def OnUpdate(self, evt):
+        self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
+        self.SetCameraVolume(self.current_coord[:3])
+
+    def OnCreatePoint(self, evt):
+        self.AddMarker(3,(1,0,0),self.current_coord[:3])
+        self.SetCameraVolume(self.current_coord[:3])
+
+    def OnReset(self, evt):
+        self.RemoveActor()
+        self.LoadActor()
 
     def OnICP(self, evt):
         self.SetProgress(0.3)
@@ -3844,25 +3886,6 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
 
         self.Refresh()
-
-    def OnContinuousAcquisition(self, evt=None, btn=None):
-        value = btn.GetValue()
-        if value:
-            self.timer.Start(500)
-        else:
-            self.timer.Stop()
-
-    def OnUpdate(self, evt):
-        self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
-        self.SetCameraVolume(self.current_coord[:3])
-
-    def OnCreatePoint(self, evt):
-        self.AddMarker(3,(1,0,0),self.current_coord[:3])
-        self.SetCameraVolume(self.current_coord[:3])
-
-    def OnReset(self, evt):
-        self.RemoveActor()
-        self.LoadActor()
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error

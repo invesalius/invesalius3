@@ -100,94 +100,31 @@ def base_creation(fiducials):
     return m, q
 
 
-# def calculate_fre(fiducials, minv, n, q, o):
-#     """
-#     Calculate the Fiducial Registration Error for neuronavigation.
-#
-#     :param fiducials: array of 6 rows (image and tracker fiducials) and 3 columns (x, y, z) with coordinates
-#     :param minv: inverse matrix given by base creation
-#     :param n: base change matrix given by base creation
-#     :param q: origin of first base
-#     :param o: origin of second base
-#     :return: float number of fiducial registration error
-#     """
-#
-#     img = np.zeros([3, 3])
-#     dist = np.zeros([3, 1])
-#
-#     q1 = np.mat(q).reshape(3, 1)
-#     q2 = np.mat(o).reshape(3, 1)
-#
-#     p1 = np.mat(fiducials[3, :]).reshape(3, 1)
-#     p2 = np.mat(fiducials[4, :]).reshape(3, 1)
-#     p3 = np.mat(fiducials[5, :]).reshape(3, 1)
-#
-#     img[0, :] = np.asarray((q1 + (minv * n) * (p1 - q2)).reshape(1, 3))
-#     img[1, :] = np.asarray((q1 + (minv * n) * (p2 - q2)).reshape(1, 3))
-#     img[2, :] = np.asarray((q1 + (minv * n) * (p3 - q2)).reshape(1, 3))
-#
-#     dist[0] = np.sqrt(np.sum(np.power((img[0, :] - fiducials[0, :]), 2)))
-#     dist[1] = np.sqrt(np.sum(np.power((img[1, :] - fiducials[1, :]), 2)))
-#     dist[2] = np.sqrt(np.sum(np.power((img[2, :] - fiducials[2, :]), 2)))
-#
-#     return float(np.sqrt(np.sum(dist ** 2) / 3))
-
-
-def calculate_fre_m(fiducials):
+def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
     """
     Calculate the Fiducial Registration Error for neuronavigation.
 
+    :param fiducials_raw: array of 6 rows (tracker probe and reference) and 3 columns (x, y, z) with coordinates
+    :type fiducials_raw: numpy.ndarray
     :param fiducials: array of 6 rows (image and tracker fiducials) and 3 columns (x, y, z) with coordinates
-    :param minv: inverse matrix given by base creation
-    :param n: base change matrix given by base creation
-    :param q: origin of first base
-    :param o: origin of second base
+    :type fiducials: numpy.ndarray
+    :param ref_mode_id: Reference mode ID
+    :type ref_mode_id: int
+    :param m_change: 3x3 array representing change of basis from head in tracking system to vtk head system
+    :type  m_change:  numpy.ndarray
+    :param m_icp: list with icp flag and 3x3 affine array
+    :type  m_icp: list[int, numpy.ndarray]
     :return: float number of fiducial registration error
     """
-
-    m, q1, minv = base_creation_old(fiducials[:3, :])
-    n, q2, ninv = base_creation_old(fiducials[3:, :])
-
-    # TODO: replace the old by the new base creation
-    # the values differ greatly if FRE is computed using the old or new base_creation
-    # check the reason for the difference, because they should be the same
-    # m, q1 = base_creation(fiducials[:3, :])
-    # n, q2 = base_creation(fiducials[3:, :])
-    # minv = np.linalg.inv(m)
-
-    img = np.zeros([3, 3])
-    dist = np.zeros([3, 1])
-
-    q1 = q1.reshape(3, 1)
-    q2 = q2.reshape(3, 1)
-
-    p1 = fiducials[3, :].reshape(3, 1)
-    p2 = fiducials[4, :].reshape(3, 1)
-    p3 = fiducials[5, :].reshape(3, 1)
-
-    img[0, :] = (q1 + (minv @ n) * (p1 - q2)).reshape(1, 3)
-    img[1, :] = (q1 + (minv @ n) * (p2 - q2)).reshape(1, 3)
-    img[2, :] = (q1 + (minv @ n) * (p3 - q2)).reshape(1, 3)
-
-    dist[0] = np.sqrt(np.sum(np.power((img[0, :] - fiducials[0, :]), 2)))
-    dist[1] = np.sqrt(np.sum(np.power((img[1, :] - fiducials[1, :]), 2)))
-    dist[2] = np.sqrt(np.sum(np.power((img[2, :] - fiducials[2, :]), 2)))
-
-    return float(np.sqrt(np.sum(dist ** 2) / 3))
-
-def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
     if m_icp is not None:
         icp = [True, m_icp]
     else:
         icp = [False, None]
 
-    coreg_data = (m_change, 0)
-
     dist = np.zeros([3, 1])
     for i in range(0, 6, 2):
-        p_m, _ = dcr.corregistrate_dynamic(coreg_data, fiducials_raw[i:i+2], ref_mode_id, icp)
-        j = int(i/2)
-        dist[j] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[j, :]), 2)))
+        p_m, _ = dcr.corregistrate_dynamic((m_change, 0), fiducials_raw[i:i+2], ref_mode_id, icp)
+        dist[int(i/2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i/2), :]), 2)))
 
     return float(np.sqrt(np.sum(dist ** 2) / 3))
 

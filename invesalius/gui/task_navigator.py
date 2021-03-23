@@ -392,7 +392,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
-        txt_icp = wx.StaticText(self, -1, _('icp:'))
+        txt_icp = wx.StaticText(self, -1, _('refine:'))
 
         # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
@@ -740,7 +740,7 @@ class NeuronavigationPanel(wx.Panel):
         else:
             self.UpdateFRE(self.fre)
         self.icp_queue.put_nowait([self.icp, self.m_icp])
-        print(self.icp, self.m_icp)
+        #print(self.icp, self.m_icp)
 
     def OnNavigate(self, evt, btn):
         btn_nav = btn[0]
@@ -856,16 +856,16 @@ class NeuronavigationPanel(wx.Panel):
                         obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                         coreg_data.extend(obj_data)
 
-                        jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data, self.coord_queue,
-                                                                     self.view_tracts, self.coord_tracts_queue,
-                                                                     self.event, self.sleep_nav, self.icp_queue))
-
+                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                        jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
+                                                                     self.view_tracts, queues,
+                                                                     self.event, self.sleep_nav))
                 else:
                     coreg_data = (m_change, 0)
+                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
                     jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                         self.coord_queue,
-                                                                         self.view_tracts, self.coord_tracts_queue,
-                                                                         self.event, self.sleep_nav, self.icp_queue))
+                                                                         self.view_tracts, queues,
+                                                                         self.event, self.sleep_nav))
 
                 if not errors:
                     #TODO: Test the trigger thread
@@ -885,12 +885,11 @@ class NeuronavigationPanel(wx.Panel):
                         self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
                                        self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
                         # print("Appending the tract computation thread!")
+                        queues = [self.coord_tracts_queue, self.tracts_queue]
                         if self.enable_act:
-                            jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, self.coord_tracts_queue,
-                                                                     self.tracts_queue, self.event, self.sleep_nav))
+                            jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, queues, self.event, self.sleep_nav))
                         else:
-                            jobs_list.append(dti.ComputeTractsThread(self.trk_inp, self.coord_tracts_queue,
-                                                                        self.tracts_queue, self.event, self.sleep_nav))
+                            jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
 
                     jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
                                                            self.event, self.sleep_nav))
