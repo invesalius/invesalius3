@@ -170,17 +170,17 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle, icp_queue):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle):
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
         self.coreg_data = coreg_data
-        self.coord_queue = coord_queue
+        self.coord_queue = queues[0]
         self.view_tracts = view_tracts
-        self.coord_tracts_queue = coord_tracts_queue
+        self.coord_tracts_queue = queues[1]
         self.event = event
         self.sle = sle
-        self.icp_queue = icp_queue
+        self.icp_queue = queues[3]
         self.icp = None
         self.m_icp = None
 
@@ -224,17 +224,17 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, coord_queue, view_tracts, coord_tracts_queue, event, sle, icp_queue):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle):
         threading.Thread.__init__(self, name='CoordCoregNoObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
         self.coreg_data = coreg_data
-        self.coord_queue = coord_queue
+        self.coord_queue = queues[0]
         self.view_tracts = view_tracts
-        self.coord_tracts_queue = coord_tracts_queue
+        self.coord_tracts_queue = queues[1]
         self.event = event
         self.sle = sle
-        self.icp_queue = icp_queue
+        self.icp_queue = queues[2]
         self.icp = None
         self.m_icp = None
 
