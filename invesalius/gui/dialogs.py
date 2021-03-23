@@ -3540,6 +3540,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.polydata = None
         self.m_icp = None
         self.initial_focus = None
+        self.prev_error = None
+        self.final_error = None
         self.icp_mode = 0
         self.staticballs = []
         self.point_coord = []
