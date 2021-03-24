@@ -180,7 +180,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.coord_tracts_queue = queues[1]
         self.event = event
         self.sle = sle
-        self.icp_queue = queues[3]
+        self.icp_queue = queues[2]
         self.icp = None
         self.m_icp = None
 
