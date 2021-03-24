@@ -3551,7 +3551,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
 
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Refine Corregistration"), size=(450, 440),
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Refine Corregistration"), size=(380, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.proj = prj.Project()
@@ -3570,9 +3570,13 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren = vtk.vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
-        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
 
-        combo_surface_name = wx.ComboBox(self, -1, size=(330,23),
+        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+        txt_mode = wx.StaticText(self, -1, _('Registration mode:'))
+
+        combo_surface_name = wx.ComboBox(self, -1, size=(210, 23),
                                          style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
@@ -3588,6 +3592,15 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.LoadActor()
 
+        tooltip = wx.ToolTip(_("Choose the registration mode:"))
+        choice_icp_method = wx.ComboBox(self, -1, "", size=(100, 23),
+                                        choices=([_("Affine"), _("Similarity"), _("RigidBody")]),
+                                        style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        choice_icp_method.SetSelection(0)
+        choice_icp_method.SetToolTip(tooltip)
+        choice_icp_method.Bind(wx.EVT_COMBOBOX, self.OnChoiceICPMethod)
+
+        # Buttons to acquire and remove points
         create_point = wx.Button(self, -1, label=_('Create point'))
         create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
 
@@ -3595,37 +3608,11 @@ class ICPCorregistrationDialog(wx.Dialog):
         cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
         self.cont_point = cont_point
 
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
-
-        btn_reset = wx.Button(self, -1, label=_('Reset the points'), size=(100, 23))
+        btn_reset = wx.Button(self, -1, label=_('Remove points'))
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
 
-        btn_acqui_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        btn_acqui_sizer.AddMany([(create_point, wx.LEFT),
-                                 (cont_point, wx.RIGHT)])
-
-        icp = wx.Button(self, -1, label=_('Apply registration'))
-        icp.Bind(wx.EVT_BUTTON, self.OnICP)
-
-        tooltip = wx.ToolTip(_("Choose the ICP method"))
-        choice_icp_method = wx.ComboBox(self, -1, "",
-                                        choices=([_("Affine"), _("Similarity"), _("RigidBody")]), style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        choice_icp_method.SetSelection(0)
-        choice_icp_method.SetToolTip(tooltip)
-        choice_icp_method.Bind(wx.EVT_COMBOBOX, self.OnChoiceICPMethod)
-
-        btn_icp_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        btn_icp_sizer.AddMany([(choice_icp_method, wx.LEFT),
-                               (icp, wx.RIGHT)])
-
-        surface_resetsizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        surface_resetsizer.AddMany([combo_surface_name,
-                                    btn_reset])
-
-        top_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=5)
-        top_sizer.AddMany([txt_surface,
-                           surface_resetsizer])
+        btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
+        btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
 
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Refine done"))
@@ -3635,22 +3622,27 @@ class ICPCorregistrationDialog(wx.Dialog):
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
 
-        btnsizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        btnsizer.AddMany([(btn_ok, wx.LEFT),
-                          (btn_cancel, wx.RIGHT)])
+        top_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=50, vgap=5)
+        top_sizer.AddMany([txt_surface, txt_mode,
+                           combo_surface_name, choice_icp_method])
 
-        extra_sizer = wx.FlexGridSizer(rows=3, cols=1, hgap=50, vgap=10)
-        extra_sizer.AddMany([btn_acqui_sizer,
-                             btn_icp_sizer,
-                             btnsizer])
+        btn_acqui_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=15, vgap=15)
+        btn_acqui_sizer.AddMany([create_point, cont_point, btn_reset])
+
+        btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_ok_sizer.AddMany([btn_apply_icp, btn_ok, btn_cancel])
+
+        btn_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=20)
+        btn_sizer.AddMany([(btn_acqui_sizer, 1, wx.ALIGN_CENTER_HORIZONTAL),
+                            (btn_ok_sizer, 1, wx.ALIGN_RIGHT)])
 
         self.progress = wx.Gauge(self, -1)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.TOP|wx.BOTTOM, 10)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
-        main_sizer.Add(extra_sizer, 0,
-                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM, 10)
+        main_sizer.Add(btn_sizer, 0,
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.BOTTOM, 10)
         main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(main_sizer)

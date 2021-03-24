@@ -392,7 +392,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
-        txt_icp = wx.StaticText(self, -1, _('refine:'))
+        txt_icp = wx.StaticText(self, -1, _('Refine:'))
 
         # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
@@ -409,10 +409,12 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.SetToolTip(tooltip)
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
+        tooltip = wx.ToolTip(_(u"Refine the coregistration"))
         checkicp = wx.CheckBox(self, -1, _(' '))
         checkicp.SetValue(False)
         checkicp.Enable(False)
         checkicp.Bind(wx.EVT_CHECKBOX, partial(self.Oncheckicp, ctrl=checkicp))
+        checkicp.SetToolTip(tooltip)
         self.checkicp = checkicp
 
         # Image and tracker coordinates number controls
