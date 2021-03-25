@@ -560,7 +560,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def OnSendCoordinates(self, coord):
         if self.tracker_id == const.HYBRID:
-            self.trk_init[0].SendCoordinates(coord)
+            self.trk_init[1][0].SendCoordinates(coord)
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -1426,8 +1426,10 @@ class MarkersPanel(wx.Panel):
         #  self.UpdateAngles([psi, theta, phi])
         #  print(psi, theta, phi)
         if self.mchange is not None:
+            print(coord)
             t_probe_raw = np.linalg.inv(self.mchange) * np.asmatrix(tr.translation_matrix(coord[0:3]))
             coord_inv = t_probe_raw[0, -1], t_probe_raw[1, -1], -t_probe_raw[2, -1], psi, theta, phi
+            print(coord_inv)
             Publisher.sendMessage('Send coord to robot', coord=coord_inv)
 
     def OnDeleteAllMarkers(self, evt=None):
