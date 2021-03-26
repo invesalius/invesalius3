@@ -837,8 +837,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.__update_cross_position,
         #                     'Update cross position %s' % self.orientation)
         Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
-        # Publisher.subscribe(self.UpdateSlicesPosition,
-        #                     'Co-registered points')
+        Publisher.subscribe(self.UpdateSlicesPosition, 'Update slices position')
         ###
         #  Publisher.subscribe(self.ChangeBrushColour,
                                  #  'Add mask')
@@ -849,9 +848,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateWindowLevelText,
                             'Update window level text')
 
-        #Publisher.subscribe(self._set_cross_visibility,\
-        #                         'Set cross visibility')
-        ###
+        Publisher.subscribe(self._set_cross_visibility,
+                                 'Set cross visibility')
+
         Publisher.subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 
