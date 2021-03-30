@@ -1321,6 +1321,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.UpdateMchange, 'Update matrix change')
+        Publisher.subscribe(self.UpdateObjMchange, 'Update object matrix')
 
     def UpdateCurrentCoord(self, position):
         self.current_coord = position
@@ -1336,6 +1337,9 @@ class MarkersPanel(wx.Panel):
 
     def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0)):
         self.current_seed = coord_offset
+
+    def UpdateObjMchange(self, m_img, coord):
+        self.m_img = m_img
 
     def UpdateMchange(self, mchange):
         self.mchange = mchange
@@ -1432,7 +1436,7 @@ class MarkersPanel(wx.Panel):
         #  print(psi, theta, phi)
         if self.mchange is not None:
             print(coord)
-            t_probe_raw = np.linalg.inv(self.mchange) * np.asmatrix(tr.translation_matrix(coord[0:3]))
+            t_probe_raw = np.linalg.inv(self.m_img) * np.asmatrix(tr.translation_matrix(coord[0:3]))
             coord_inv = t_probe_raw[0, -1], t_probe_raw[1, -1], -t_probe_raw[2, -1], psi, theta, phi
             print(coord_inv)
             Publisher.sendMessage('Send coord to robot', coord=coord_inv)

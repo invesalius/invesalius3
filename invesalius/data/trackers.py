@@ -113,25 +113,8 @@ def ElfinRobot(tracker_id):
     trck_init = None
     try:
         import invesalius.data.elfin_robot as elfin
-        trck_init = elfin.elfin_server('169.254.153.251', 10003)
-        #trck_init = elfin.elfin_server('127.0.0.1', 10003)
-        trck_init.Initialize()
-        lib_mode = 'wrapper'
-        print('Connect to elfin robot tracking device.')
-
-    except:
-        lib_mode = 'disconnect'
-        trck_init = None
-        print('Could not connect to default tracker.')
-
-    # return tracker initialization variable and type of connection
-    return trck_init, lib_mode
-def ElfinRobot(tracker_id):
-    trck_init = None
-    try:
-        import invesalius.data.elfin_robot as elfin
-        trck_init = elfin.elfin_server('169.254.153.251', 10003)
-        #trck_init = elfin.elfin_server('127.0.0.1', 10003)
+        #trck_init = elfin.elfin_server('169.254.153.251', 10003)
+        trck_init = elfin.elfin_server('127.0.0.1', 10003)
         trck_init.Initialize()
         lib_mode = 'wrapper'
         print('Connect to elfin robot tracking device.')
