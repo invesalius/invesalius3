@@ -1,5 +1,6 @@
 import invesalius.data.elfin as elfin
 import time
+import numpy as np
 
 
 class elfin_server():
@@ -21,7 +22,11 @@ class elfin_server():
         return self.cobot.ReadPcsActualPos()
 
     def SendCoordinates(self, target):
-        print(self.cobot.MoveL(target))
+        coord = self.cobot.ReadPcsActualPos()
+        print(coord)
+        target_keep_angle = np.hstack([target[:3],coord[3:]])
+        print(target_keep_angle)
+        print(self.cobot.MoveL(target_keep_angle))
         status = self.cobot.ReadMoveState()
         while status == 1009:
             time.sleep(2)

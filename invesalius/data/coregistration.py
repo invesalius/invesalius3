@@ -26,6 +26,8 @@ import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
 
+from pubsub import pub as Publisher
+
 
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
 
@@ -149,9 +151,10 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
     if ref_mode_id:
         m_ref = compute_marker_transformation(coord_raw, 1)
         m_probe_ref = np.linalg.inv(m_ref) @ m_probe
+        Publisher.sendMessage('Update ref matrix', m_ref=m_ref)
     else:
         m_probe_ref = m_probe
-
+#TODO: multiplicar pela inv(ref) para jogar para o robo????
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
     # corregistrate from tracker to image space

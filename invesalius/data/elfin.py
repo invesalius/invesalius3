@@ -19,7 +19,7 @@ class elfin:
         self.mySocket.sendall(message.encode('utf-8'))
         data = self.mySocket.recv(self.size).decode('utf-8').split(',')
         status = self.check_status(data)
-        if status:
+        if status and type(data) != bool:
             if len(data) > 3:
                 return data[2:-1]
         return status
