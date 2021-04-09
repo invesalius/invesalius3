@@ -259,7 +259,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                        uniform(*dt), uniform(*dt), uniform(*dt)])
 
-    sleep(0.05)
+    sleep(0.15)
 
     # coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
