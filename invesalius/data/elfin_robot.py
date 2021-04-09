@@ -24,12 +24,13 @@ class elfin_server():
     def SendCoordinates(self, target):
         coord = self.cobot.ReadPcsActualPos()
         print(coord)
-        target_keep_angle = np.hstack([target[:3],coord[3:]])
-        print(target_keep_angle)
-        print(self.cobot.MoveL(target_keep_angle))
+        print(target)
+        #target_keep_angle = np.hstack([target[:3],coord[3:]])
+        #print(target_keep_angle)
+        print(self.cobot.MoveL(target))
         status = self.cobot.ReadMoveState()
         while status == 1009:
-            time.sleep(2)
+            time.sleep(5)
             print("moving...")
             #print(self.cobot.ReadPcsActualPos())
             status = self.cobot.ReadMoveState()

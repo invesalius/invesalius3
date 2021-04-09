@@ -373,6 +373,7 @@ def HybridCoord(trk_init, trck_id, ref_mode):
 
     probe_tracker_in_robot = transform_2_robot(coord_tracker[0], M_tracker_2_robot)
     ref_tracker_in_robot = transform_2_robot(coord_tracker[1], M_tracker_2_robot)
+    #ref_tracker_in_robot = [ 716.916,   18.842,   61.245, -175.362 ,  23.223, -168.643]
     #obj_tracker_in_robot = transform_2_robot(coord_tracker[2], M_tracker_2_robot)
 
     #print('\nprobe_tracker_in_robot:', probe_tracker_in_robot)

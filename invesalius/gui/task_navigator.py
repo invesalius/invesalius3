@@ -1227,6 +1227,7 @@ class MarkersPanel(wx.Panel):
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
+        self.current_robot_angle = 0, 0, 0
         self.list_coord = []
         self.marker_ind = 0
         self.tgt_flag = self.tgt_index = None
@@ -1318,6 +1319,8 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.UpdateMchange, 'Update matrix change')
         Publisher.subscribe(self.UpdateMRef, 'Update ref matrix')
+        Publisher.subscribe(self.UpdateRobotAngle, 'Update angle robot')
+        Publisher.subscribe(self.UpdateObjectMarker2Center, 'Update object marker to center')
 
     def UpdateCurrentCoord(self, position):
         self.current_coord = position
@@ -1339,6 +1342,13 @@ class MarkersPanel(wx.Panel):
 
     def UpdateMchange(self, mchange):
         self.mchange = mchange
+
+    def UpdateRobotAngle(self, coord_raw):
+        self.current_robot_angle = coord_raw[3:]
+
+    def UpdateObjectMarker2Center(self, s0_raw, t_offset):
+        self.s0_raw=s0_raw
+        self.t_offset=t_offset
 
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
@@ -1424,19 +1434,31 @@ class MarkersPanel(wx.Panel):
     def OnMenuSendCoord(self, evt):
         if isinstance(evt, int):
             self.lc.Focus(evt)
-        coord = self.list_coord[self.lc.GetFocusedItem()][:6]
-        psi, theta, phi = coord[3:6]
+        coord = self.list_coord[self.lc.GetFocusedItem()]
+        psi, theta, phi = coord[14:17]
+
+        trans = tr.translation_matrix(coord[:3])
+        a, b, g = np.radians(coord[3:6])
+        rot = tr.euler_matrix(a, b, g, 'rzyx')
+        M_coord_target = tr.concatenate_matrices(trans, rot)
+
         #if coord[3:] == [0, 0, 0]:
         #   phi, theta, psi, _ = db.SetTargetOrientation([coord[0], -coord[1], coord[2]], cog_surface_index=0)
         #  self.UpdateAngles([psi, theta, phi])
         #  print(psi, theta, phi)
         if self.mchange is not None:
             print("mchange", self.mchange)
-            print("mref", self.m_ref)
-            print('img_target:',coord)
-            t_probe_raw = self.m_ref @ np.linalg.inv(self.mchange) * np.asmatrix(tr.translation_matrix(coord[0:3]))
-            coord_inv = t_probe_raw[0, -1], t_probe_raw[1, -1], t_probe_raw[2, -1], psi, theta, phi
-            print('m_img_tranform', coord_inv)
+            print('m_ref:', self.m_ref)
+            print('coord:', coord)
+            print('M_coord_target:', M_coord_target)
+            m_robot = np.linalg.inv(self.mchange) @ M_coord_target
+            m_robot[2, -1] = -m_robot[2, -1]
+            m_robot = self.m_ref @ m_robot
+            M_probe_raw = self.s0_raw @ np.linalg.inv(self.t_offset) @ np.linalg.inv(self.s0_raw) @ m_robot
+            #psi, theta, phi = np.degrees(tr.euler_from_matrix(M_probe_raw, 'rzyx'))
+            #print('psi, theta, phi', psi, theta, phi)
+            coord_inv = M_probe_raw[0, -1], M_probe_raw[1, -1], M_probe_raw[2, -1], psi, theta, phi
+            #print('m_img_tranform', coord_inv)
             Publisher.sendMessage('Send coord to robot', coord=coord_inv)
 
     def OnDeleteAllMarkers(self, evt=None):
@@ -1516,7 +1538,7 @@ class MarkersPanel(wx.Panel):
                                   seed=self.current_seed)
         else:
             self.CreateMarker(coord=self.current_coord, colour=colour, size=self.marker_size,
-                              seed=self.current_seed)
+                              seed=self.current_seed, robot=self.current_robot_angle)
 
     def OnLoadMarkers(self, evt):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
@@ -1545,6 +1567,11 @@ class MarkersPanel(wx.Panel):
                             seed = [float(s) for s in line[11:14]]
                         else:
                             seed = 0., 0., 0.
+                        if len(line) > 12:
+                            robot = [float(s) for s in line[14:17]]
+                        else:
+                            robot = 0., 0., 0.
+
 
                         # coord = float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5])
                         # colour = float(line[6]), float(line[7]), float(line[8])
@@ -1559,7 +1586,7 @@ class MarkersPanel(wx.Panel):
                         else:
                             line.append("")
 
-                        self.CreateMarker(coord, colour, size, line[10], seed)
+                        self.CreateMarker(coord, colour, size, line[10], seed, robot)
                         if target is not None:
                             self.OnMenuSetTarget(target)
 
@@ -1622,7 +1649,7 @@ class MarkersPanel(wx.Panel):
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
 
-    def CreateMarker(self, coord, colour, size, marker_id="x", seed=(0, 0, 0)):
+    def CreateMarker(self, coord, colour, size, marker_id="x", seed=(0, 0, 0), robot=(0, 0, 0)):
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
@@ -1637,6 +1664,7 @@ class MarkersPanel(wx.Panel):
         line.append(size)
         line.append(marker_id)
         line.extend(seed)
+        line.extend(robot)
 
         # line = [coord[0], coord[1], coord[2], coord[3], coord[4], coord[5], colour[0], colour[1], colour[2], size, marker_id]
         # line = [coord[0], coord[1], coord[2], coord[3], coord[4], coord[5],
@@ -2162,7 +2190,7 @@ class UpdateNavigationScene(threading.Thread):
         while not self.event.is_set():
             got_coords = False
             try:
-                coord, m_img, view_obj = self.coord_queue.get_nowait()
+                coord, coord_raw, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
@@ -2187,6 +2215,7 @@ class UpdateNavigationScene(threading.Thread):
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
+                wx.CallAfter(Publisher.sendMessage, 'Update angle robot', coord_raw=coord_raw[2])
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
 
                 if view_obj:
