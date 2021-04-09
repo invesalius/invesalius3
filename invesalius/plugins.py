@@ -17,15 +17,17 @@
 #    detalhes.
 # --------------------------------------------------------------------
 
+import glob
 import importlib.util
 import json
+import pathlib
 import sys
+from itertools import chain
 
 from pubsub import pub as Publisher
 
 import invesalius.constants as consts
 from invesalius import inv_paths
-from itertools import chain
 
 
 def import_source(module_name, module_file_path):
@@ -45,24 +47,28 @@ class PluginManager:
 
     def find_plugins(self):
         self.plugins = {}
-        for p in sorted(chain(inv_paths.USER_PLUGINS_DIRECTORY.glob("*"),\
-                inv_paths.PLUGIN_DIRECTORY.glob("*"))):
-            if p.is_dir():
-                try:
-                    with p.joinpath("plugin.json").open() as f:
-                        jdict = json.load(f)
-                        plugin_name = jdict["name"]
-                        plugin_description = jdict["description"]
-                        enable_startup = jdict.get("enable-startup", False)
+        for p in sorted(
+            chain(
+                glob.glob(str(inv_paths.USER_PLUGINS_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
+                glob.glob(str(inv_paths.PLUGIN_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
+            )
+        ):
+            try:
+                p = pathlib.Path(p)
+                with p.open() as f:
+                    jdict = json.load(f)
+                    plugin_name = jdict["name"]
+                    plugin_description = jdict["description"]
+                    enable_startup = jdict.get("enable-startup", False)
 
-                        self.plugins[plugin_name] = {
-                            "name": plugin_name,
-                            "description": plugin_description,
-                            "folder": p,
-                            "enable_startup": enable_startup,
-                        }
-                except Exception as err:
-                    print("It was not possible to load plugin. Error: {}".format(err))
+                    self.plugins[plugin_name] = {
+                        "name": plugin_name,
+                        "description": plugin_description,
+                        "folder": p.parent,
+                        "enable_startup": enable_startup,
+                    }
+            except Exception as err:
+                print("It was not possible to load plugin. Error: {}".format(err))
 
         Publisher.sendMessage("Add plugins menu items", items=self.plugins)
 
@@ -72,5 +78,5 @@ class PluginManager:
                 plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")
             )
             sys.modules[plugin_name] = plugin_module
-            main = importlib.import_module(plugin_name + '.main')
+            main = importlib.import_module(plugin_name + ".main")
             main.load()
