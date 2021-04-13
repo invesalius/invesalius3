@@ -42,7 +42,7 @@ class elfin_server():
     def Close(self):
         self.cobot.close()
 
-
+#TODO:SendCoordinates2Robot Thread
 class SendCoordinates2Robot(threading.Thread):
     def __init__(self, sendcoord_queue, event, sle):
         """Class (threading) to compute real time tractography data for visualization in a single loop.
