@@ -1451,13 +1451,16 @@ class MarkersPanel(wx.Panel):
             print('m_ref:', self.m_ref)
             print('coord:', coord)
             print('M_coord_target:', M_coord_target)
-            m_robot = np.linalg.inv(self.mchange) @ M_coord_target
-            m_robot[2, -1] = -m_robot[2, -1]
-            m_robot = self.m_ref @ m_robot
-            M_probe_raw = self.s0_raw @ np.linalg.inv(self.t_offset) @ np.linalg.inv(self.s0_raw) @ m_robot
-            #psi, theta, phi = np.degrees(tr.euler_from_matrix(M_probe_raw, 'rzyx'))
-            #print('psi, theta, phi', psi, theta, phi)
-            coord_inv = M_probe_raw[0, -1], M_probe_raw[1, -1], M_probe_raw[2, -1], psi, theta, phi
+
+            m_img2robotref = np.linalg.inv(self.mchange) @ M_coord_target
+            m_img2robotref[2, -1] = -m_img2robotref[2, -1]
+
+            m_robotref2robotraw = self.m_ref @ m_img2robotref
+
+            m_robot = self.s0_raw @ np.linalg.inv(self.t_offset) @ np.linalg.inv(self.s0_raw) @ m_robotref2robotraw
+            # psi, theta, phi = np.degrees(tr.euler_from_matrix(m_robot, 'rzyx'))
+            # print('psi, theta, phi', psi, theta, phi)
+            coord_inv = m_robot[0, -1], m_robot[1, -1], m_robot[2, -1], psi, theta, phi
             #print('m_img_tranform', coord_inv)
             Publisher.sendMessage('Send coord to robot', coord=coord_inv)
 
