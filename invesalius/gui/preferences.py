@@ -3,15 +3,7 @@ import invesalius.session as ses
 import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from pubsub import pub as Publisher
-
-try:
-    from agw import flatnotebook as fnb
-
-    AGW = 1
-except ImportError:  # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.flatnotebook as fnb
-
-    AGW = 0
+import sys
 
 
 class Preferences(wx.Dialog):
@@ -22,13 +14,9 @@ class Preferences(wx.Dialog):
         title=_("Preferences"),
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
     ):
-
         super().__init__(parent, id_, title, style=style)
 
-        bookStyle = fnb.FNB_NODRAG | fnb.FNB_NO_X_BUTTON
-
         self.book = wx.Notebook(self, -1)
-
         self.pnl_viewer2d = Viewer2D(self.book)
         self.pnl_viewer3d = Viewer3D(self.book)
         #  self.pnl_surface = SurfaceCreation(self)
@@ -44,16 +32,14 @@ class Preferences(wx.Dialog):
 
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
         min_height = max([i.GetMinHeight() for i in (self.book.GetChildren())])
-        self.book.SetMinClientSize((min_width * 2, min_height * 2))
+        if sys.platform.startswith('linux'):
+            self.book.SetMinClientSize((min_width * 2, min_height * 2))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
         self.SetSizerAndFit(sizer)
         self.Layout()
-
-
-
         self.__bind_events()
 
     def __bind_events(self):
