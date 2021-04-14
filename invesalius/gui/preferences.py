@@ -46,14 +46,6 @@ class Preferences(wx.Dialog):
         min_height = max([i.GetMinHeight() for i in (self.book.GetChildren())])
         self.book.SetMinClientSize((min_width * 2, min_height * 2))
 
-        print("Min size", self.pnl_viewer2d.GetSize())
-        print("Min size", self.pnl_viewer3d.GetSize())
-        print("Min size", self.pnl_language.GetSize())
-        print("Min size", self.book.GetSize())
-        print("Min size", self.book.GetPage(0))
-        print("Size by text", self.book.GetSizeFromText("Language"))
-        print("min size", min_width, min_height)
-
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
