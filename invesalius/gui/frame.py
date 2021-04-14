@@ -605,7 +605,7 @@ class Frame(wx.Frame):
         self.mw.SetPosition(pos)
 
     def ShowPreferences(self):
-        preferences_dialog = preferences.Preferences(None)
+        preferences_dialog = preferences.Preferences(self)
         preferences_dialog.LoadPreferences()
         preferences_dialog.Center()
 
