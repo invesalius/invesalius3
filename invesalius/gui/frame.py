@@ -40,6 +40,7 @@ import wx.aui
 import wx.lib.agw.toasterbox as TB
 import wx.lib.popupctl as pc
 from invesalius import inv_paths
+from invesalius.gui import project_properties
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 from pubsub import pub as Publisher
 
@@ -438,6 +439,8 @@ class Frame(wx.Frame):
             self.ShowSaveAsProject()
         elif id == const.ID_EXPORT_SLICE:
             self.ExportProject()
+        elif id == const.ID_PROJECT_PROPERTIES:
+            self.ShowProjectProperties()
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
@@ -698,6 +701,16 @@ class Frame(wx.Frame):
             p.export_project(filename)
             session['paths']['last_directory_export_prj'] = os.path.split(filename)[0]
 
+    def ShowProjectProperties(self):
+        window = project_properties.ProjectProperties(self)
+        if window.ShowModal() == wx.ID_OK:
+            p = prj.Project()
+            if window.name_txt.GetValue() != p.name:
+                p.name = window.name_txt.GetValue()
+                ses.Session().ChangeProject()
+                self._SetProjectName(p.name)
+        window.Destroy()
+
     def ShowBitmapImporter(self):
         """
         Tiff, BMP, JPEG and PNG
@@ -821,6 +834,7 @@ class MenuBar(wx.MenuBar):
         self.enable_items = [const.ID_PROJECT_SAVE,
                              const.ID_PROJECT_SAVE_AS,
                              const.ID_EXPORT_SLICE,
+                             const.ID_PROJECT_PROPERTIES,
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
@@ -898,6 +912,7 @@ class MenuBar(wx.MenuBar):
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
         app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
         app(const.ID_EXPORT_SLICE, _("Export project"))
+        app(const.ID_PROJECT_PROPERTIES, _("Project properties"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
         #app(const.ID_PROJECT_INFO, _("Project Information..."))
