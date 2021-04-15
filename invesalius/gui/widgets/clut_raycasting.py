@@ -227,7 +227,9 @@ class CLUTRaycastingWidget(wx.Panel):
             colour_dialog = wx.GetColourFromUser(self, actual_colour)
             if colour_dialog.IsOk():
                 i,j = point
-                r, g, b = colour_dialog.Get()
+
+                r, g, b, a = colour_dialog.Get()
+
                 self.colours[i][j]['red'] = r / 255.0
                 self.colours[i][j]['green'] = g / 255.0
                 self.colours[i][j]['blue'] = b / 255.0
