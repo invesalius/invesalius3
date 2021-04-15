@@ -841,6 +841,7 @@ class SingleImagePreview(wx.Panel):
         # GUI
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
+        self.slider.SetTickFreq(1)
         self.ShowSlice()
 
     def ShowSlice(self, index = 0):
