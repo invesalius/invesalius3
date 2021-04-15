@@ -1,9 +1,10 @@
+import sys
+
 import invesalius.constants as const
 import invesalius.session as ses
 import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from pubsub import pub as Publisher
-import sys
 
 
 class Preferences(wx.Dialog):
@@ -22,7 +23,6 @@ class Preferences(wx.Dialog):
         #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self.book)
 
-
         self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("3D Visualization"))
         #  self.book.AddPage(self.pnl_surface, _("Surface creation"))
@@ -32,7 +32,7 @@ class Preferences(wx.Dialog):
 
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
         min_height = max([i.GetMinHeight() for i in (self.book.GetChildren())])
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             self.book.SetMinClientSize((min_width * 2, min_height * 2))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -82,7 +82,7 @@ class Viewer3D(wx.Panel):
             bsizer.GetStaticBox(),
             -1,
             "",
-            choices = ["Flat", "Gouraud", "Phong"],
+            choices=["Flat", "Gouraud", "Phong"],
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
