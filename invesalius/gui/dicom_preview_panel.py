@@ -911,12 +911,19 @@ class SingleImagePreview(wx.Panel):
 
             image = colorer.GetOutput()
 
+        flip = vtk.vtkImageFlip()
+        flip.SetInputData(image)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.ReleaseDataFlagOn()
+        flip.Update()
+
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInputData(image)
+        self.actor.SetInputData(flip.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 
