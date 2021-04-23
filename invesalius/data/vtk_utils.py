@@ -45,7 +45,7 @@ def ShowProgress(number_of_filters = 1,
     last_obj_progress = [0]
     if (dialog_type == "ProgressDialog"):
         try:
-            dlg = ProgressDialog(100)
+            dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
         except wx._core.PyNoAppError:
             return lambda obj, label: 0
 

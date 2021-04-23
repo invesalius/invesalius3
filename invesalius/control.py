@@ -407,7 +407,6 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def StartImportPanel(self, path):
-
         # retrieve DICOM files split into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
@@ -419,7 +418,7 @@ class Controller():
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
-                                    maximum = data[1], abort=1)
+                                    parent=self.frame, maximum = data[1], abort=1)
             else:
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
