@@ -345,6 +345,8 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     for n, f in enumerate(files):
         image_as_array = bitmap_reader.ReadBitmap(f)
 
+        print(image_as_array.dtype)
+
         image = converters.to_vtk(image_as_array, spacing=spacing,\
                                     slice_number=1, orientation=orientation.upper())
 
@@ -374,9 +376,9 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
         array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
 
         if array.dtype == 'uint16':
-            array = array - 32768/2
-       
-        array = array.astype("int16")
+            new_array = np.empty_like(array, dtype=np.int16)
+            new_array = array - 32768
+            array = new_array
 
         if orientation == 'CORONAL':
             array.shape = matrix.shape[0], matrix.shape[2]

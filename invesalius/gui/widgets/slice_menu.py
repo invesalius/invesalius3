@@ -262,8 +262,8 @@ class SliceMenu(wx.Menu):
             if self.cdialog is None:
                 slc = sl.Slice()
                 histogram = slc.histogram
-                init = slc.matrix.min()
-                end = slc.matrix.max()
+                init = int(slc.matrix.min())
+                end = int(slc.matrix.max())
                 nodes = slc.nodes
                 self.cdialog = ClutImagedataDialog(histogram, init, end, nodes)
                 self.cdialog.Show()
