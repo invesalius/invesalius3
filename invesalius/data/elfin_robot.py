@@ -26,10 +26,20 @@ class elfin_server():
         coord = self.cobot.ReadPcsActualPos()
         print(coord)
         print(target)
-        #target_keep_angle = np.hstack([target[:3],coord[3:]])
-        #print(target_keep_angle)
+        # Rx, Ry, Rz = target[3:]
+        # #target_keep_angle = np.hstack([target[:3],coord[3:]])
+        # #print(target_keep_angle)
+        # print(self.cobot.MoveRelL(5, Rz))
+        # time.sleep(5)
+        # print(self.cobot.MoveRelL(4, Ry))
+        # time.sleep(5)
+        # print(self.cobot.MoveRelL(3, Rx))
+        # time.sleep(8)
+        # angles = self.cobot.ReadPcsActualPos()[3:]
+        # target = np.hstack([target[:3], angles])
+        # print(target)
         print(self.cobot.MoveL(target))
-        status = self.cobot.ReadMoveState()
+        #status = self.cobot.ReadMoveState()
         # while status == 1009:
         #     time.sleep(5)
         #     print("moving...")
