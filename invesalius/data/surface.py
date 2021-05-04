@@ -424,8 +424,11 @@ class SurfaceManager():
         actor.GetProperty().SetOpacity(1-surface.transparency)
 
         if overwrite and self.actors_dict.keys():
-            old_actor = self.actors_dict[index]
-            Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
+            try:
+                old_actor = self.actors_dict[index]
+                Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
+            except KeyError:
+                pass
 
         self.actors_dict[surface.index] = actor
 

@@ -917,6 +917,9 @@ class Controller():
         sop_class_uid = dicom.acquisition.sop_class_uid
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
+        samples_per_pixel = dicom.image.samples_per_pixel
+
+        print(f"\n\n\n\n{samples_per_pixel =}\n\n\n")
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
