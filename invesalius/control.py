@@ -508,6 +508,7 @@ class Controller():
         self.ImportGroup(group, use_gui)
 
     def ImportGroup(self, group, gui=True):
+
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
 
@@ -878,6 +879,13 @@ class Controller():
 
 
     def OnOpenDicomGroup(self, group, interval, file_range):
+        dicom = group.GetDicomSample()
+        samples_per_pixel = dicom.image.samples_per_pixel
+        print(f"\n\n\n\n{samples_per_pixel =}\n\n\n")
+        if samples_per_pixel == 3:
+            dlg = wx.MessageDialog(wx.GetApp().GetTopWindow(), _("this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\ndo you want to convert it to grayscale?"), _("Confirm"), wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
+            if dlg.ShowModal() != wx.ID_YES:
+                return
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
@@ -918,8 +926,8 @@ class Controller():
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
         samples_per_pixel = dicom.image.samples_per_pixel
-
         print(f"\n\n\n\n{samples_per_pixel =}\n\n\n")
+
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)

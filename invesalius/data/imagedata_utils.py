@@ -39,6 +39,7 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data import vtk_utils as vtk_utils
+from skimage.color import rgb2gray
 
 if sys.platform == "win32":
     try:
@@ -483,10 +484,13 @@ def dcmmf2memmap(dcm_file, orientation):
     image = reader.GetImage()
     xs, ys, zs = image.GetSpacing()
     pf = image.GetPixelFormat()
+    samples_per_pixel = pf.GetSamplesPerPixel()
     np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
+    if samples_per_pixel == 3:
+        np_image = image_normalize(rgb2gray(np_image), 0, 255)
+        print(f"\n\n\n{np_image.min() =} - {np_image.max() =}\n\n\n")
     temp_file = tempfile.mktemp()
     matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=np_image.shape)
-    print("Number of dimensions", np_image.shape)
     z, y, x = np_image.shape
     if orientation == "CORONAL":
         spacing = xs, zs, ys

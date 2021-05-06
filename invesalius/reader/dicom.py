@@ -962,7 +962,7 @@ class Parser():
 
         if not data:
             return 1
-        return data
+        return int(data)
 
     def GetPhotometricInterpretation(self):
         """
