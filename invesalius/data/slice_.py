@@ -1626,7 +1626,7 @@ class Slice(metaclass=utils.Singleton):
 
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
-        future_mask.spacing = spacing
+        future_mask.spacing = self.spacing
         future_mask.name = new_name
 
         future_mask.matrix[:] = 1
