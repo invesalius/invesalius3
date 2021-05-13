@@ -31,6 +31,12 @@ try:
     has_trekker = True
 except ImportError:
     has_trekker = False
+try:
+    import invesalius.data.elfin as elfin
+    has_robot = True
+except ImportError:
+    has_robot = False
+
 import wx
 
 try:
@@ -191,7 +197,16 @@ class InnerFoldPanel(wx.Panel):
             fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
                                           leftSpacing=0, rightSpacing=0)
 
-        # Fold 5 - DBS
+        # Fold 5 - Robot navigation panel
+        if has_robot:
+            item = fold_panel.AddFoldPanel(_("Robot navigation"), collapsed=True)
+            otw = RobotPanel(item)
+
+            fold_panel.ApplyCaptionStyle(item, style)
+            fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
+                                          leftSpacing=0, rightSpacing=0)
+
+        # Fold 6 - DBS
         self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
         dtw = DbsPanel(self.dbs_item) #Atribuir nova var, criar panel
 
@@ -327,6 +342,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
+        self.robottarget_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.trigger_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -479,6 +495,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
+        Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -563,6 +580,9 @@ class NeuronavigationPanel(wx.Panel):
     def OnSendCoordinates(self, coord):
         if self.tracker_id == const.HYBRID:
             self.trk_init[1][0].SendCoordinates(coord)
+
+    def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot2ref):
+        self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -679,7 +699,7 @@ class NeuronavigationPanel(wx.Panel):
             #     coord2 = np.zeros([3, 6])
             #     coord_raw = np.vstack([coord1, coord2])
             # else:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
 
             if self.ref_mode_id:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
@@ -753,7 +773,7 @@ class NeuronavigationPanel(wx.Panel):
         # initialize jobs list
         jobs_list = []
         vis_components = [self.trigger_state, self.view_tracts]
-        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
+        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
 
         nav_id = btn_nav.GetValue()
         if not nav_id:
@@ -851,20 +871,20 @@ class NeuronavigationPanel(wx.Panel):
                         coreg_data = [m_change, obj_ref_mode]
 
                         if self.ref_mode_id:
-                            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+                            coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
                         else:
                             coord_raw = np.array([None])
 
                         obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                         coreg_data.extend(obj_data)
 
-                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.robottarget_queue]
                         jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
                                                                      self.view_tracts, queues,
                                                                      self.event, self.sleep_nav))
                 else:
                     coreg_data = (m_change, 0)
-                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.robottarget_queue]
                     jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
                                                                          self.view_tracts, queues,
                                                                          self.event, self.sleep_nav))
@@ -1343,7 +1363,7 @@ class MarkersPanel(wx.Panel):
     def UpdateMchange(self, mchange):
         self.mchange = mchange
 
-    def UpdateRawCoord(self, coord_raw):
+    def UpdateRawCoord(self, coord_raw, markers_flag):
         self.current_ref = coord_raw[1]
         self.current_robot = coord_raw[2]
 
@@ -1449,19 +1469,8 @@ class MarkersPanel(wx.Panel):
 
         m_change_robot2ref = np.linalg.inv(m_ref_target) @ m_robot_target
 
-        if self.mchange is not None:
-            trans = tr.translation_matrix(self.current_ref[:3])
-            a, b, g = np.radians(self.current_ref[3:6])
-            rot = tr.euler_matrix(a, b, g, 'rzyx')
-            M_current_ref = tr.concatenate_matrices(trans, rot)
+        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot2ref=m_change_robot2ref)
 
-            m_robot_new = M_current_ref @ m_change_robot2ref
-            _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
-            angles = np.degrees(angles)
-
-            coord_inv = m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], angles[2]
-
-            Publisher.sendMessage('Send coord to robot', coord=coord_inv)
 
     def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:
@@ -2141,6 +2150,145 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Remove tracts')
 
 
+class RobotPanel(wx.Panel):
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+
+        self.tracker_coord = []
+        self.tracker_angles = []
+        self.robot_coord = []
+        self.robot_angles = []
+
+        self.__bind_events()
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+
+        # Buttons to acquire and remove points
+        txt_acquisition = wx.StaticText(self, -1, _('Poses acquisition for robot registration:'))
+
+        btn_create_point = wx.Button(self, -1, label=_('Single'))
+        btn_create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+
+        btn_cont_point = wx.ToggleButton(self, -1, label=_('Continuous'))
+        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=btn_cont_point))
+        self.btn_cont_point = btn_cont_point
+
+        txt_number = wx.StaticText(self, -1, _('0'))
+        txt_recorded = wx.StaticText(self, -1, _('Poses recorded'))
+        self.txt_number = txt_number
+
+        btn_reset = wx.Button(self, -1, label=_('Reset'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+
+        btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
+        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
+
+        # Buttons to save and load
+        txt_file = wx.StaticText(self, -1, _('Registration file'))
+
+        btn_save = wx.Button(self, -1, label=_('Export'), size=wx.Size(65, 23))
+        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
+
+        btn_load = wx.Button(self, -1, label=_('Import'), size=wx.Size(65, 23))
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+
+        # Create a horizontal sizers
+        border = 1
+        acquisition = wx.BoxSizer(wx.HORIZONTAL)
+        acquisition.AddMany([(btn_create_point, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                             (btn_cont_point, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        txt_pose = wx.BoxSizer(wx.HORIZONTAL)
+        txt_pose.AddMany([(txt_number, 1,  wx.LEFT, 50),
+                          (txt_recorded, 1, wx.LEFT, border)])
+
+        apply_reset = wx.BoxSizer(wx.HORIZONTAL)
+        apply_reset.AddMany([(btn_reset, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                             (btn_apply_reg, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        save_load = wx.BoxSizer(wx.HORIZONTAL)
+        save_load.AddMany([(btn_save, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                             (btn_load, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        # Add line sizers into main sizer
+        border = 10
+        border_last = 10
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(txt_acquisition, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL , border)
+        main_sizer.Add(acquisition, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
+        main_sizer.Add(txt_pose, 0,  wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(apply_reset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT , border_last)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border/2)
+        main_sizer.Add(save_load, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
+        main_sizer.Fit(self)
+
+        self.SetSizer(main_sizer)
+        self.Update()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateRawCoord, 'Update raw coord')
+
+    def UpdateRawCoord(self, coord_raw,  markers_flag):
+        self.current_ref = coord_raw[1]
+        self.markers_flag = markers_flag
+        self.current_robot = coord_raw[2]
+
+    def affine_correg(self, tracker, robot):
+        m_change = tr.affine_matrix_from_points(robot[:].T, tracker[:].T,
+                                                shear=False, scale=False, usesvd=False)
+        return m_change
+
+    def OnContinuousAcquisition(self, evt=None, btn=None):
+        value = btn.GetValue()
+        if value:
+            self.timer.Start(500)
+        else:
+            self.timer.Stop()
+
+    def OnUpdate(self, evt):
+        self.OnCreatePoint(evt=None)
+
+    def OnCreatePoint(self, evt):
+        if self.markers_flag[2]:
+            self.tracker_coord.append(self.current_ref[:3])
+            self.tracker_angles.append(self.current_ref[3:])
+            self.robot_coord.append(self.current_robot[:3])
+            self.robot_angles.append(self.current_robot[3:])
+            self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
+        else:
+            print('Cannot detect the coil markers, pls try again')
+
+    def OnReset(self, evt):
+        self.tracker_coord = []
+        self.tracker_angles = []
+        self.robot_coord = []
+        self.robot_angles = []
+        self.txt_number.SetLabel('0')
+
+    def OnApply(self, evt):
+        self.tracker_coord = np.array(self.tracker_coord)
+        self.robot_coord = np.array(self.robot_coord)
+        M_robot_2_tracker = self.affine_correg(self.tracker_coord, self.robot_coord)
+        M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
+        #sendmessage M_tracker_2_robot
+        #return M_tracker_2_robot
+
+    def OnSaveReg(self, evt):
+        pass
+
+    def OnLoadReg(self, evt):
+        None
+
+
 class QueueCustom(queue.Queue):
     """
     A custom queue subclass that provides a :meth:`clear` method.
@@ -2186,7 +2334,7 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.trigger_state, self.view_tracts = vis_components
-        self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue = vis_queues
+        self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue = vis_queues
         self.sle = sle
         self.event = event
 
@@ -2195,7 +2343,7 @@ class UpdateNavigationScene(threading.Thread):
         while not self.event.is_set():
             got_coords = False
             try:
-                coord, coord_raw, m_img, view_obj = self.coord_queue.get_nowait()
+                coord, [coord_raw, markers_flag], m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
@@ -2220,7 +2368,7 @@ class UpdateNavigationScene(threading.Thread):
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update raw coord', coord_raw=coord_raw)
+                wx.CallAfter(Publisher.sendMessage, 'Update raw coord', coord_raw=coord_raw,  markers_flag=markers_flag)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
 
                 if view_obj:

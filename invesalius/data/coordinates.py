@@ -51,11 +51,11 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.ELFIN: ElfinCoord,
                     const.DEBUGTRACK: DebugCoord,
                     const.HYBRID: HybridCoord}
-        coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
+        coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
 
-    return coord
+    return coord, markers_flag
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -79,7 +79,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     coord = np.vstack([coord1, coord2, coord3])
     # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
 
-    return coord
+    return coord, [trck.probeID, trck.refID, trck.coilID]
 
 def ElfinCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -89,13 +89,14 @@ def ElfinCoord(trck_init, trck_id, ref_mode):
     ref = [0,0,0,0,0,0]
     coord = np.vstack([probe, ref])
 
-    return coord
+    return coord, None
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
-    coord, probeID, refID = trck.Run()
+    coord, probeID, refID, coilID = trck.Run()
     Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
-    return coord
+
+    return coord, [probeID, refID, coilID]
 
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -118,7 +119,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
 
     Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
 
-    return coord
+    return coord, [trck.probeID, trck.refID, trck.coilID]
 
 
 def PolhemusCoord(trck, trck_id, ref_mode):
@@ -133,7 +134,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
     elif trck[1] == 'wrapper':
         coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
 
-    return coord
+    return coord, None
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
@@ -287,7 +288,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
 
     Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
 
-    return np.vstack([coord1, coord2, coord3, coord4])
+    return np.vstack([coord1, coord2, coord3, coord4]), [int(uniform(0, 5)), int(uniform(0, 5)), int(uniform(0, 5))]
 
 
 def dynamic_reference(probe, reference):
@@ -352,13 +353,13 @@ def dynamic_reference_m(probe, reference):
 
 
 def HybridCoord(trk_init, trck_id, ref_mode):
-    coord_tracker = ClaronCoord(trk_init[0], 1, ref_mode)
-    coord_robot = ElfinCoord(trk_init[1], 3, ref_mode)
+    coord_tracker, markers_flag = ClaronCoord(trk_init[0], 1, ref_mode)
+    coord_robot, _ = ElfinCoord(trk_init[1], 3, ref_mode)
     #coord_tracker = DebugCoord(trk_init[0], 1, ref_mode)
     #coord_robot = DebugCoord(trk_init[1], 3, ref_mode)
 
     #M_robot_2_tracker is created by an affine transformation. Robot TCP should be calibrated to the center of the tracker marker
-    #TODO: create affine matrix inside invesalius
+    #TODO: send affine matrix to here or do this transformation later here?
     M_robot_2_tracker = [[3.41541979e-01, 9.39589953e-01, 2.27990560e-02, -3.39484527e+02],
                          [8.40244849e-02, -6.36439415e-03, -9.96443365e-01, 2.28264256e+02],
                          [-9.36103073e-01, 3.42242918e-01, -8.11222696e-02, 1.65836850e+03],
@@ -371,7 +372,7 @@ def HybridCoord(trk_init, trck_id, ref_mode):
     #ref_tracker_in_robot = [ 716.916,   18.842,   61.245, -175.362 ,  23.223, -168.643]
     #obj_tracker_in_robot = transform_tracker_2_robot(coord_tracker[2], M_tracker_2_robot)
 
-    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot])
+    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot]), markers_flag
 
 def transform_tracker_2_robot(tracker_coord, M_tracker_2_robot):
     trans = tr.translation_matrix(tracker_coord[:3])

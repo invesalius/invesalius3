@@ -3469,7 +3469,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
 
         if self.trk_init and self.tracker_id:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
+            coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
             if self.obj_ref_id and btn_id == 4:
                 coord = coord_raw[self.obj_ref_id, :]
             else:
