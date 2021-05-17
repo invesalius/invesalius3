@@ -1153,12 +1153,13 @@ class Slice(metaclass=utils.Singleton):
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
         proj = Project()
-        proj.mask_dict[index].is_shown = value
-        proj.mask_dict[index].on_show()
+        mask = proj.mask_dict[index]
+        mask.is_shown = value
+        mask.on_show()
 
         if value:
-            threshold_range = proj.mask_dict[index].threshold_range
-            edition_threshold_range = proj.mask_dict[index].edition_threshold_range
+            threshold_range = mask.threshold_range
+            edition_threshold_range = mask.edition_threshold_range
             Publisher.sendMessage(
                 "Set edition threshold gui",
                 threshold_range=edition_threshold_range
@@ -1168,7 +1169,7 @@ class Slice(metaclass=utils.Singleton):
                 threshold_range=threshold_range
             )
 
-        if index == self.current_mask.index:
+        if mask.index == self.current_mask.index:
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
                 buffer_.discard_mask()

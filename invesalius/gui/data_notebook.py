@@ -43,6 +43,8 @@ import invesalius.gui.dialogs as dlg
 import wx.lib.mixins.listctrl as listmix
 import invesalius.utils as ul
 
+from invesalius import project
+
 from invesalius import inv_paths
 
 
@@ -471,46 +473,49 @@ class MasksListCtrlPanel(InvListCtrl):
         """
         selected_items = self.GetSelected()
 
+        print(f"{self.mask_list_index =}")
+        mask_dict = project.Project().mask_dict
+        for i in mask_dict:
+            print(f"{i} - {mask_dict[i].index}")
+
         if selected_items:
             Publisher.sendMessage('Remove masks', mask_indexes=selected_items)
         else:
             dlg.MaskSelectionRequiredForRemoval()
             return
 
-        # it is necessary to update internal dictionary
-        # that maps bitmap given item index
-        old_dict = self.mask_list_index
-        if selected_items:
-            for index in selected_items:
-                new_dict = {}
-                self.DeleteItem(index)
-                for i in old_dict:
-                    if i < index:
-                        new_dict[i] = old_dict[i]
-                    if i > index:
-                        new_dict[i-1] = old_dict[i]
-                old_dict = new_dict
-            self.mask_list_index = new_dict
+        self.DeleteAllItems()
+        self.imagelist.RemoveAll()
+        self.__init_image_list()
 
-        if new_dict:
-            if index == self.current_index:
-                self.SetItemImage(0, 1)
-                Publisher.sendMessage('Change mask selected', index=0)
-                Publisher.sendMessage('Show mask', index=0, value=1)
-                Publisher.sendMessage('Refresh viewer')
-                for key in new_dict:
-                    if key:
-                         self.SetItemImage(key, 0)
+        print(f"{self.mask_list_index =}")
+        new_dict = {}
+        self.current_index = 0
+        self.mask_list_index = {}
+        mask_dict = project.Project().mask_dict
+        for n, i in enumerate(mask_dict):
+            mask = mask_dict[i]
+            new_dict[n] = mask.index
+            self.AddMask(mask)
+            if mask.is_shown:
+                self.current_index = n
 
-            elif index < self.current_index:
-                self.current_index -= 1
-                self.SetItemImage(self.current_index, 1)
+
+        for i in mask_dict:
+            print(f"{i} - {mask_dict[i].index}")
+        print(f"{self.mask_list_index =}")
+
+        self.SetItemImage(self.current_index, 1)
+        Publisher.sendMessage('Change mask selected', index=self.current_index)
+        Publisher.sendMessage('Show mask', index=self.current_index, value=1)
+        Publisher.sendMessage('Refresh viewer')
 
     def OnCloseProject(self):
         self.DeleteAllItems()
         self.mask_list_index = {}
 
     def OnChangeCurrentMask(self, index):
+        print(f"{index=}")
         try:
             self.SetItemImage(index, 1)
             self.current_index = index
@@ -568,17 +573,23 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def OnCheckItem(self, index, flag):
         if flag:
-            for key in self.mask_list_index.keys():
+            for key in self.mask_list_index:
                 if key != index:
                     self.SetItemImage(key, 0)
+                else:
+                    self.SetItemImage(key, 1)
             Publisher.sendMessage('Change mask selected', index=index)
             self.current_index = index
         Publisher.sendMessage('Show mask', index=index, value=flag)
 
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
+        image = self.CreateColourBitmap(colour)
+        image_index = self.imagelist.Add(image)
+        print(f"{image_index =}")
         self.InsertItem(index, "")
-        self.SetItem(index, 1, label, imageId=self.mask_list_index[index])
+        self.SetItemImage(index, 0)
+        self.SetItem(index, 1, label, imageId=image_index)
         self.SetItem(index, 2, threshold)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
@@ -587,18 +598,19 @@ class MasksListCtrlPanel(InvListCtrl):
         #  self.current_index = index
 
     def AddMask(self, mask):
-        image = self.CreateColourBitmap(mask.colour)
-        image_index = self.imagelist.Add(image)
-        self.mask_list_index[mask.index] = image_index
-        self.InsertNewItem(mask.index, mask.name, str(mask.threshold_range))
+        image_index = len(self.mask_list_index)
+        #  print(f"{image_index =}")
+        self.mask_list_index[image_index] = mask.index
+        self.InsertNewItem(image_index, mask.name, str(mask.threshold_range), mask.colour)
 
     def EditMaskThreshold(self, index, threshold_range):
         self.SetItem(index, 2, str(threshold_range))
 
     def EditMaskColour(self, index, colour):
+        print(f"EDITMASKCOLOUR {index=}")
         image = self.CreateColourBitmap(colour)
-        image_index = self.mask_list_index[index]
-        self.imagelist.Replace(image_index, image)
+        #  image_index = self.mask_list_index[index]
+        self.imagelist.Replace(index + 2, image)
         self.Refresh()
 
     def GetSelected(self):
