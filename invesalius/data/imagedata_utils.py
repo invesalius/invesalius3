@@ -362,9 +362,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
     for n, f in enumerate(files):
         image_as_array = bitmap_reader.ReadBitmap(f)
-
-        print(image_as_array.dtype)
-
         image = converters.to_vtk(
             image_as_array,
             spacing=spacing,
@@ -428,7 +425,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     matrix.flush()
     scalar_range = min_scalar, max_scalar
 
-    print("MATRIX", matrix.shape)
     return matrix, scalar_range, temp_file
 
 
@@ -488,7 +484,6 @@ def dcmmf2memmap(dcm_file, orientation):
     np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     if samples_per_pixel == 3:
         np_image = image_normalize(rgb2gray(np_image), 0, 255)
-        print("\n\n\nnp_image.min = {} - np_image.max = {}\n\n\n".format(np_image.min(), np_image.max()))
     temp_file = tempfile.mktemp()
     matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=np_image.shape)
     z, y, x = np_image.shape

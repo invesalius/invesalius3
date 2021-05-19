@@ -273,7 +273,6 @@ class Controller():
     def ShowDialogCloseProject(self):
         session = ses.Session()
         st = session.project_status
-        print('Status', st, type(st))
         if st == const.PROJ_CLOSE:
             return -1
         try:
@@ -476,7 +475,6 @@ class Controller():
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
-        print("patients: ", patients_groups)
 
         if len(patients_groups):
             # OPTION 1: DICOM
@@ -881,7 +879,6 @@ class Controller():
     def OnOpenDicomGroup(self, group, interval, file_range):
         dicom = group.GetDicomSample()
         samples_per_pixel = dicom.image.samples_per_pixel
-        print("\n\n\n\n{}\n\n\n".format(samples_per_pixel))
         if samples_per_pixel == 3:
             dlg = wx.MessageDialog(wx.GetApp().GetTopWindow(), _("this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\ndo you want to convert it to grayscale?"), _("Confirm"), wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
             if dlg.ShowModal() != wx.ID_YES:
@@ -926,8 +923,6 @@ class Controller():
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
         samples_per_pixel = dicom.image.samples_per_pixel
-        print("\n\n\n\n{}\n\n\n".format(samples_per_pixel))
-
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
@@ -968,10 +963,7 @@ class Controller():
             elif orientation == 'SAGITTAL':
                 spacing = zspacing, xyspacing[1], xyspacing[0]
         else:
-            print(">>>>>> filelist", filelist)
             self.matrix, scalar_range, spacing, self.filename = image_utils.dcmmf2memmap(filelist[0], orientation)
-
-        print(">>>>>> spacing", spacing)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
