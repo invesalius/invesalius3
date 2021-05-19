@@ -473,10 +473,10 @@ class MasksListCtrlPanel(InvListCtrl):
         """
         selected_items = self.GetSelected()
 
-        print(f"{self.mask_list_index =}")
+        print("mask_list_index = {}".format(self.mask_list_index))
         mask_dict = project.Project().mask_dict
         for i in mask_dict:
-            print(f"{i} - {mask_dict[i].index}")
+            print("{} - {}".format(i, mask_dict[i].index))
 
         if selected_items:
             Publisher.sendMessage('Remove masks', mask_indexes=selected_items)
@@ -488,7 +488,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.imagelist.RemoveAll()
         self.__init_image_list()
 
-        print(f"{self.mask_list_index =}")
+        print("mask_list_index = {}".format(self.mask_list_index))
         new_dict = {}
         self.current_index = 0
         self.mask_list_index = {}
@@ -502,8 +502,8 @@ class MasksListCtrlPanel(InvListCtrl):
 
 
         for i in mask_dict:
-            print(f"{i} - {mask_dict[i].index}")
-        print(f"{self.mask_list_index =}")
+            print("{} - {}".format(i, mask_dict[i].index))
+        print("mask_list_index = {}".format(self.mask_list_index))
 
         self.SetItemImage(self.current_index, 1)
         Publisher.sendMessage('Change mask selected', index=self.current_index)
@@ -515,7 +515,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.mask_list_index = {}
 
     def OnChangeCurrentMask(self, index):
-        print(f"{index=}")
+        print("index = {}".format(index))
         try:
             self.SetItemImage(index, 1)
             self.current_index = index
@@ -586,7 +586,7 @@ class MasksListCtrlPanel(InvListCtrl):
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
-        print(f"{image_index =}")
+        print("image_index = {}".format(image_index))
         self.InsertItem(index, "")
         self.SetItemImage(index, 0)
         self.SetItem(index, 1, label, imageId=image_index)
@@ -599,7 +599,7 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def AddMask(self, mask):
         image_index = len(self.mask_list_index)
-        #  print(f"{image_index =}")
+        #  print("image_index = {}".format(image_index))
         self.mask_list_index[image_index] = mask.index
         self.InsertNewItem(image_index, mask.name, str(mask.threshold_range), mask.colour)
 
@@ -607,7 +607,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.SetItem(index, 2, str(threshold_range))
 
     def EditMaskColour(self, index, colour):
-        print(f"EDITMASKCOLOUR {index=}")
+        print("EDITMASKCOLOUR {}".format(index))
         image = self.CreateColourBitmap(colour)
         #  image_index = self.mask_list_index[index]
         self.imagelist.Replace(index + 2, image)

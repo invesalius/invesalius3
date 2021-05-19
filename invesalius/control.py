@@ -881,7 +881,7 @@ class Controller():
     def OnOpenDicomGroup(self, group, interval, file_range):
         dicom = group.GetDicomSample()
         samples_per_pixel = dicom.image.samples_per_pixel
-        print(f"\n\n\n\n{samples_per_pixel =}\n\n\n")
+        print("\n\n\n\n{}\n\n\n".format(samples_per_pixel))
         if samples_per_pixel == 3:
             dlg = wx.MessageDialog(wx.GetApp().GetTopWindow(), _("this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\ndo you want to convert it to grayscale?"), _("Confirm"), wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
             if dlg.ShowModal() != wx.ID_YES:
@@ -926,7 +926,7 @@ class Controller():
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
         samples_per_pixel = dicom.image.samples_per_pixel
-        print(f"\n\n\n\n{samples_per_pixel =}\n\n\n")
+        print("\n\n\n\n{}\n\n\n".format(samples_per_pixel))
 
 
         wl = float(dicom.image.level)
