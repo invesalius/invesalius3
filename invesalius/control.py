@@ -579,13 +579,16 @@ class Controller():
         Publisher.sendMessage('Update AUI')
 
         if len(proj.mask_dict):
+            self.Slice.current_mask = None
             mask_index = len(proj.mask_dict) -1
-            for m in proj.mask_dict.values():
+            for key, m in proj.mask_dict.items():
                 Publisher.sendMessage('Add mask', mask=m)
                 if m.is_shown:
-                    self.Slice.current_mask = proj.mask_dict[mask_index]
-                    Publisher.sendMessage('Show mask', index=m.index, value=True)
-                    Publisher.sendMessage('Change mask selected', index=m.index)
+                    self.Slice.current_mask = m
+                    visible_mask_idx = key
+            if self.Slice.current_mask is not None:
+                Publisher.sendMessage('Show mask', index=visible_mask_idx, value=True)
+                Publisher.sendMessage('Change mask selected', index=visible_mask_idx)
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
 
