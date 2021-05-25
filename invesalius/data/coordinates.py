@@ -62,12 +62,12 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     trck.Run()
     scale = np.array([1.0, 1.0, 1.0])
 
-    coord1 = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
-                       float(trck.PositionTooltipZ1) * scale[2],
+    coord1 = np.array([float(trck.PositionToolTipX1) * scale[0], float(trck.PositionToolTipY1) * scale[1],
+                       float(trck.PositionToolTipZ1) * scale[2],
                        float(trck.YawToolTip), float(trck.PitchToolTip), float(trck.RollToolTip)])
 
-    coord2 = np.array([float(trck.PositionHead) * scale[0], float(trck.PositionHead) * scale[1],
-                       float(trck.PositionHead) * scale[2],
+    coord2 = np.array([float(trck.PositionHeadX1) * scale[0], float(trck.PositionHeadY1) * scale[1],
+                       float(trck.PositionHeadZ1) * scale[2],
                        float(trck.YawHead), float(trck.PitchHead), float(trck.RollHead)])
     coord3 = np.array([float(trck.PositionCoilX1) * scale[0], float(trck.PositionCoilY1) * scale[1],
                        float(trck.PositionCoilZ1) * scale[2],
