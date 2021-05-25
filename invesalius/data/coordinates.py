@@ -48,12 +48,34 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
+                    const.OPTITRACK: OptitrackCoord,
                     const.DEBUGTRACK: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
 
     return coord
+
+def OptitrackCoord(trck_init, trck_id, ref_mode):
+    trck=trck_init[0]
+
+    trck.Run()
+    scale = np.array([1.0, 1.0, 1.0])
+
+    coord1 = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
+                       float(trck.PositionTooltipZ1) * scale[2],
+                       float(trck.YawToolTip), float(trck.PitchToolTip), float(trck.RollToolTip)])
+
+    coord2 = np.array([float(trck.PositionHead) * scale[0], float(trck.PositionHead) * scale[1],
+                       float(trck.PositionHead) * scale[2],
+                       float(trck.YawHead), float(trck.PitchHead), float(trck.RollHead)])
+    coord3 = np.array([float(trck.PositionCoilX1) * scale[0], float(trck.PositionCoilY1) * scale[1],
+                       float(trck.PositionCoilZ1) * scale[2],
+                       float(trck.YawCoil), float(trck.PitchCoil), float(trck.RollCoil)])
+
+    coord = np.vstack([coord1, coord2, coord3])
+    return coord
+
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]

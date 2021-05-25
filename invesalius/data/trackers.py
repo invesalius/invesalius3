@@ -40,6 +40,7 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.PATRIOT: PolhemusTracker,    # PATRIOT
                     const.CAMERA: CameraTracker,      # CAMERA
                     const.POLARIS: PolarisTracker,      # POLARIS
+                    const.OPTITRACK: OptitrackTracker,   #Optitrack
                     const.DEBUGTRACK: DebugTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
@@ -62,6 +63,21 @@ def DefaultTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
+def OptitrackTracker(tracker_id):
+
+    import invesalius.constants as const
+    trck_init = None
+    try:
+        import optitrack
+        trck_init = optitrack.optr()
+        trck_init.Initialize()
+
+        #
+        # trck_init.DetachListener();
+        # trck_init.Close();
+    except ImportError:
+        print('Error')
+    return trck_init, 'wrapper'
 
 def PolarisTracker(tracker_id):
     from wx import ID_OK
