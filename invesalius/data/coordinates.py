@@ -60,20 +60,37 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     trck=trck_init[0]
 
     trck.Run()
-    scale = np.array([1.0, 1.0, 1.0])
 
+
+    scale =  100*np.array([1.0, 1.0, 1.0])
+
+    #angles_probe = np.array(tr.euler_matrix(float(trck.RollToolTip), float(trck.PitchToolTip), float(trck.YawToolTip), axes='rzyx'))
+    # coord1 = np.array([float(trck.PositionToolTipX1) * scale[0], float(trck.PositionToolTipY1) * scale[1],
+    #                    float(trck.PositionToolTipZ1) * scale[2], float(trck.RollToolTip), float(trck.PitchToolTip), float(trck.YawToolTip) ])
+    # coord2 = np.array([float(trck.PositionHeadX1) * scale[0], float(trck.PositionHeadY1) * scale[1],
+    #                    float(trck.PositionHeadZ1) * scale[2],
+    #                    float(trck.YawHead), float(trck.PitchHead), float(trck.RollHead)])
+    # coord3 = np.array([float(trck.PositionCoilX1) * scale[0], float(trck.PositionCoilY1) * scale[1],
+    #                    float(trck.PositionCoilZ1) * scale[2],
+    #                    float(trck.YawCoil), float(trck.PitchCoil), float(trck.RollCoil)])
+
+    angles_probe = np.array(tr.euler_from_quaternion([float(trck.qxToolTip), float(trck.qyToolTip), float(trck.qzToolTip), float(trck.qwToolTip)], axes='rzyx'))
     coord1 = np.array([float(trck.PositionToolTipX1) * scale[0], float(trck.PositionToolTipY1) * scale[1],
-                       float(trck.PositionToolTipZ1) * scale[2],
-                       float(trck.YawToolTip), float(trck.PitchToolTip), float(trck.RollToolTip)])
+                       float(trck.PositionToolTipZ1) * scale[2]])
+    coord1 = np.hstack((coord1, angles_probe))
 
+    angles_head = np.array(tr.euler_from_quaternion([float(trck.qxHead), float(trck.qyHead), float(trck.qzHead), float(trck.qwHead)], axes='rzyx'))
     coord2 = np.array([float(trck.PositionHeadX1) * scale[0], float(trck.PositionHeadY1) * scale[1],
-                       float(trck.PositionHeadZ1) * scale[2],
-                       float(trck.YawHead), float(trck.PitchHead), float(trck.RollHead)])
+                       float(trck.PositionHeadZ1) * scale[2]])
+    coord2 = np.hstack((coord2, angles_head))
+
+    angles_coil = np.array(tr.euler_from_quaternion([float(trck.qxCoil), float(trck.qyCoil), float(trck.qzCoil), float(trck.qwCoil)], axes='rzyx'))
     coord3 = np.array([float(trck.PositionCoilX1) * scale[0], float(trck.PositionCoilY1) * scale[1],
-                       float(trck.PositionCoilZ1) * scale[2],
-                       float(trck.YawCoil), float(trck.PitchCoil), float(trck.RollCoil)])
+                       float(trck.PositionCoilZ1) * scale[2]])
+    coord3 = np.hstack((coord3, angles_coil))
 
     coord = np.vstack([coord1, coord2, coord3])
+    print(coord)
     return coord
 
 
