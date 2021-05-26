@@ -74,17 +74,17 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     #                    float(trck.PositionCoilZ1) * scale[2],
     #                    float(trck.YawCoil), float(trck.PitchCoil), float(trck.RollCoil)])
 
-    angles_probe = np.array(tr.euler_from_quaternion([float(trck.qwToolTip), float(trck.qxToolTip), float(trck.qyToolTip), float(trck.qzToolTip)], axes='rzyx'))
+    angles_probe = np.degrees(tr.euler_from_quaternion([float(trck.qwToolTip), float(trck.qxToolTip), float(trck.qyToolTip), float(trck.qzToolTip)], axes='rzyx'))
     coord1 = np.array([float(trck.PositionToolTipX1) * scale[0], float(trck.PositionToolTipY1) * scale[1],
                        float(trck.PositionToolTipZ1) * scale[2]])
     coord1 = np.hstack((coord1, angles_probe))
 
-    angles_head = np.array(tr.euler_from_quaternion([float(trck.qwHead), float(trck.qxHead), float(trck.qyHead), float(trck.qzHead)], axes='rzyx'))
+    angles_head = np.degrees(tr.euler_from_quaternion([float(trck.qwHead), float(trck.qxHead), float(trck.qyHead), float(trck.qzHead)], axes='rzyx'))
     coord2 = np.array([float(trck.PositionHeadX1) * scale[0], float(trck.PositionHeadY1) * scale[1],
                        float(trck.PositionHeadZ1) * scale[2]])
     coord2 = np.hstack((coord2, angles_head))
 
-    angles_coil = np.array(tr.euler_from_quaternion([float(trck.qwCoil, float(trck.qxCoil), float(trck.qyCoil), float(trck.qzCoil))], axes='rzyx'))
+    angles_coil = np.degrees(tr.euler_from_quaternion([float(trck.qwCoil), float(trck.qxCoil), float(trck.qyCoil), float(trck.qzCoil)], axes='rzyx'))
     coord3 = np.array([float(trck.PositionCoilX1) * scale[0], float(trck.PositionCoilY1) * scale[1],
                        float(trck.PositionCoilZ1) * scale[2]])
     coord3 = np.hstack((coord3, angles_coil))
