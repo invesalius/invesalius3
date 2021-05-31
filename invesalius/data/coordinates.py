@@ -58,9 +58,10 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 
 def OptitrackCoord(trck_init, trck_id, ref_mode):
     trck=trck_init[0]
+    trck.Update()
     trck.Run()
 
-    scale =  1000*np.array([1.0, 1.0, 1.0])
+    scale = 1000*np.array([1.0, 1.0, 1.0])
 
     #angles_probe = np.array(tr.euler_matrix(float(trck.RollToolTip), float(trck.PitchToolTip), float(trck.YawToolTip), axes='rzyx'))
     # coord1 = np.array([float(trck.PositionToolTipX1) * scale[0], float(trck.PositionToolTipY1) * scale[1],
@@ -88,7 +89,9 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((coord3, angles_coil))
 
     coord = np.vstack([coord1, coord2, coord3])
-
+    coord1 = 0
+    coord2 = 0
+    coord3 = 0
     return coord
 
 
