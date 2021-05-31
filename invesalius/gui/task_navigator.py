@@ -33,6 +33,7 @@ except ImportError:
     has_trekker = False
 try:
     import invesalius.data.elfin as elfin
+    import invesalius.data.elfin_robot as elfin_process
     has_robot = True
 except ImportError:
     has_robot = False
@@ -774,7 +775,7 @@ class NeuronavigationPanel(wx.Panel):
         jobs_list = []
         vis_components = [self.trigger_state, self.view_tracts]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
-
+        process_tracker = elfin_process.TrackerProcessing()
         nav_id = btn_nav.GetValue()
         if not nav_id:
             self.event.set()
@@ -880,7 +881,7 @@ class NeuronavigationPanel(wx.Panel):
 
                         queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.robottarget_queue]
                         jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                     self.view_tracts, queues,
+                                                                     self.view_tracts, process_tracker, queues,
                                                                      self.event, self.sleep_nav))
                 else:
                     coreg_data = (m_change, 0)

@@ -20,16 +20,15 @@
 import numpy as np
 import queue
 import threading
-from time import sleep, time
+from time import sleep
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
 
+
 from pubsub import pub as Publisher
 
-coord_vel = []
-timestamp = []
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
 
 def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw):
@@ -175,58 +174,9 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     return coord, m_img
 
-def estimate_head_velocity(coord_vel, timestamp):
-    velocity = []
-    distance = []
-    coord_vel = np.array(coord_vel)
-    for i in range(len(coord_vel)-2):
-        distance.append(coord_vel[i + 2] - coord_vel[i])
-        velocity.append(distance[i]/(timestamp[i+2]-timestamp[i]))
-    return np.vstack(velocity), np.vstack(distance)
-
-
-def head_move_threshold(current_ref):
-    coord_vel.append(current_ref)
-    timestamp.append(time())
-    if len(coord_vel) > 10:
-        head_velocity, head_distance = estimate_head_velocity(coord_vel, timestamp)
-
-        coord_velocity = np.abs(
-            np.vstack([head_velocity[i][:len(head_velocity[0]) // 2] for i in range(len(head_velocity))]))
-        angles_velocity = np.abs(
-            np.vstack([head_velocity[i][len(head_velocity[0]) // 2:] for i in range(len(head_velocity))]))
-        coord_distance = np.abs(
-            np.vstack([head_distance[i][:len(head_distance[0]) // 2] for i in range(len(head_distance))]))
-        angles_distance = np.abs(
-            np.vstack([head_distance[i][len(head_distance[0]) // 2:] for i in range(len(head_distance))]))
-
-        del coord_vel[0]
-        del timestamp[0]
-        if (coord_distance < 0.1).all() or (angles_distance < 0.1).all() or coord_velocity[coord_velocity > 50].any() or \
-                angles_velocity[angles_velocity > 30].any():
-            print('Velocity threshold activated')
-            return False
-        else:
-            return True
-
-    return True
-
-
-def head_move_compensation(current_ref, m_change_robot2ref):
-    trans = tr.translation_matrix(current_ref[:3])
-    a, b, g = np.radians(current_ref[3:6])
-    rot = tr.euler_matrix(a, b, g, 'rzyx')
-    M_current_ref = tr.concatenate_matrices(trans, rot)
-
-    m_robot_new = M_current_ref @ m_change_robot2ref
-    _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
-    angles = np.degrees(angles)
-
-    return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
-                angles[2]
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, process_tracker, queues, event, sle):
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
@@ -242,6 +192,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.m_icp = None
         self.robot_tracker_flag = None
         self.m_change_robot2ref = None
+        self.process_tracker = process_tracker
 
     def run(self):
         trck_info = self.trck_info
@@ -282,8 +233,9 @@ class CoordinateCorregistrate(threading.Thread):
                 if self.robot_tracker_flag:
                     current_ref = coord_raw[1]
                     if current_ref is not None:
-                        if head_move_threshold(current_ref):
-                            coord_inv = head_move_compensation(current_ref, self.m_change_robot2ref)
+                        current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
+                        if self.process_tracker.head_move_threshold(current_ref_filtered):
+                            coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered, self.m_change_robot2ref)
                             trck_init[1][0].SendCoordinates(coord_inv)
 
                 if not self.icp_queue.empty():
