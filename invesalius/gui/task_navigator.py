@@ -731,6 +731,7 @@ class NeuronavigationPanel(wx.Panel):
         dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         if dialog.ShowModal() == wx.ID_OK:
             self.m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
+            dlg.ReportICPerror(prev_error, final_error)
             #TODO: checkbox in the dialog to transfer the icp points to 3D viewer
             #create markers
             # for i in range(len(point_coord)):
@@ -849,7 +850,6 @@ class NeuronavigationPanel(wx.Panel):
                 # fiducials matrix
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
-                Publisher.sendMessage('Update matrix change', mchange=m_change)
                 # initialize spatial tracker parameters
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
 

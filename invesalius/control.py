@@ -273,7 +273,6 @@ class Controller():
     def ShowDialogCloseProject(self):
         session = ses.Session()
         st = session.project_status
-        print('Status', st, type(st))
         if st == const.PROJ_CLOSE:
             return -1
         try:
@@ -407,7 +406,6 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def StartImportPanel(self, path):
-
         # retrieve DICOM files split into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
@@ -419,7 +417,7 @@ class Controller():
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
-                                    maximum = data[1], abort=1)
+                                    parent=self.frame, maximum = data[1], abort=1)
             else:
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
@@ -477,7 +475,6 @@ class Controller():
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
-        print("patients: ", patients_groups)
 
         if len(patients_groups):
             # OPTION 1: DICOM
@@ -509,6 +506,7 @@ class Controller():
         self.ImportGroup(group, use_gui)
 
     def ImportGroup(self, group, gui=True):
+
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
 
@@ -581,13 +579,16 @@ class Controller():
         Publisher.sendMessage('Update AUI')
 
         if len(proj.mask_dict):
+            self.Slice.current_mask = None
             mask_index = len(proj.mask_dict) -1
-            for m in proj.mask_dict.values():
+            for key, m in proj.mask_dict.items():
                 Publisher.sendMessage('Add mask', mask=m)
                 if m.is_shown:
-                    self.Slice.current_mask = proj.mask_dict[mask_index]
-                    Publisher.sendMessage('Show mask', index=m.index, value=True)
-                    Publisher.sendMessage('Change mask selected', index=m.index)
+                    self.Slice.current_mask = m
+                    visible_mask_idx = key
+            if self.Slice.current_mask is not None:
+                Publisher.sendMessage('Show mask', index=visible_mask_idx, value=True)
+                Publisher.sendMessage('Change mask selected', index=visible_mask_idx)
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
 
@@ -879,6 +880,12 @@ class Controller():
 
 
     def OnOpenDicomGroup(self, group, interval, file_range):
+        dicom = group.GetDicomSample()
+        samples_per_pixel = dicom.image.samples_per_pixel
+        if samples_per_pixel == 3:
+            dlg = wx.MessageDialog(wx.GetApp().GetTopWindow(), _("this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\ndo you want to convert it to grayscale?"), _("Confirm"), wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
+            if dlg.ShowModal() != wx.ID_YES:
+                return
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
@@ -918,6 +925,7 @@ class Controller():
         sop_class_uid = dicom.acquisition.sop_class_uid
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
+        samples_per_pixel = dicom.image.samples_per_pixel
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
@@ -958,10 +966,7 @@ class Controller():
             elif orientation == 'SAGITTAL':
                 spacing = zspacing, xyspacing[1], xyspacing[0]
         else:
-            print(">>>>>> filelist", filelist)
             self.matrix, scalar_range, spacing, self.filename = image_utils.dcmmf2memmap(filelist[0], orientation)
-
-        print(">>>>>> spacing", spacing)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix

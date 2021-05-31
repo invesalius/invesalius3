@@ -486,6 +486,7 @@ class SingleImagePreview(wx.Panel):
 
         interactor = wxVTKRenderWindowInteractor(self.panel, -1,
                                     size=wx.Size(340,340))
+        interactor.SetRenderWhenDisabled(True)
         interactor.GetRenderWindow().AddRenderer(renderer)
         interactor.SetInteractorStyle(style)
         interactor.Render()

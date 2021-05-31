@@ -955,13 +955,14 @@ class Parser():
 
         Critical DICOM tag (0x0028,0x0002). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0028, 0x0002)
-        sf = gdcm.StringFilter()
-        sf.SetFile(self.gdcm_reader.GetFile())
-        res = sf.ToStringPair(tag)
-        if (res[1]):
-            return int(res[1])
-        return ""
+        try:
+            data = self.data_image[str(0x0028)][str(0x0002)]
+        except KeyError:
+            data = 1
+
+        if not data:
+            return 1
+        return int(data)
 
     def GetPhotometricInterpretation(self):
         """
@@ -1967,6 +1968,7 @@ class Image(object):
         self.thumbnail_path = parser.thumbnail_path
 
         self.number_of_frames = parser.GetNumberOfFrames()
+        self.samples_per_pixel = parser.GetImageSamplesPerPixel()
 
         if (parser.GetImageThickness()):
             self.spacing.append(parser.GetImageThickness())

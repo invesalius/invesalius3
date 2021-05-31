@@ -27,8 +27,6 @@ import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
 
 
-from pubsub import pub as Publisher
-
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
 
 def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw):
@@ -58,8 +56,6 @@ def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw
     t_probe = s0_raw @ t_offset @ np.linalg.inv(s0_raw) @ t_probe_raw
     m_probe = tr.concatenate_matrices(t_probe, r_probe)
 
-    Publisher.sendMessage('Update object marker to center', s0_raw=s0_raw, t_offset=t_offset)
-
     return m_probe
 
 
@@ -80,8 +76,6 @@ def object_to_reference(coord_raw, m_probe):
     m_ref = tr.concatenate_matrices(t_ref, r_ref)
 
     m_dyn = np.linalg.inv(m_ref) @ m_probe
-    Publisher.sendMessage('Update ref matrix', m_ref=m_ref)
-
     return m_dyn
 
 
@@ -106,6 +100,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     r_obj = r_obj_img @ np.linalg.inv(m_obj_raw) @ np.linalg.inv(s0_dyn) @ m_probe_ref @ m_obj_raw
     m_img[:3, :3] = r_obj[:3, :3]
     return m_img
+
 
 def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
@@ -154,7 +149,6 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
     if ref_mode_id:
         m_ref = compute_marker_transformation(coord_raw, 1)
         m_probe_ref = np.linalg.inv(m_ref) @ m_probe
-        Publisher.sendMessage('Update ref matrix', m_ref=m_ref)
     else:
         m_probe_ref = m_probe
 

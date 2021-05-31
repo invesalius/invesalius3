@@ -708,7 +708,6 @@ class SingleImagePreview(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
         self.actor = None
         self.__init_gui()
-        self.__init_vtk()
         self.__bind_evt_gui()
         self.dicom_list = []
         self.nimages = 1
@@ -754,23 +753,11 @@ class SingleImagePreview(wx.Panel):
 
         style = vtk.vtkInteractorStyleImage()
 
-        interactor = wxVTKRenderWindowInteractor(self.panel, -1,
-                                    size=wx.Size(340,340))
-        interactor.GetRenderWindow().AddRenderer(renderer)
-        interactor.SetInteractorStyle(style)
-        interactor.Render()
-        self.interactor = interactor
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(interactor, 1, wx.GROW|wx.EXPAND)
-        sizer.Fit(self.panel)
-        self.panel.SetSizer(sizer)
-        self.Layout()
-        self.Update()
+        self.interactor.GetRenderWindow().AddRenderer(renderer)
+        self.interactor.SetInteractorStyle(style)
+        self.interactor.Render()
 
     def __init_gui(self):
-        self.panel = wx.Panel(self, -1)
-
         slider = wx.Slider(self,
                             id=-1,
                             value=0,
@@ -784,12 +771,15 @@ class SingleImagePreview(wx.Panel):
         checkbox = wx.CheckBox(self, -1, _("Auto-play"))
         self.checkbox = checkbox
 
+        self.interactor = wxVTKRenderWindowInteractor(self, -1)
+        self.interactor.SetRenderWhenDisabled(True)
+
         in_sizer = wx.BoxSizer(wx.HORIZONTAL)
         in_sizer.Add(slider, 1, wx.GROW|wx.EXPAND)
         in_sizer.Add(checkbox, 0)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.panel, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(self.interactor, 1, wx.GROW|wx.EXPAND)
         sizer.Add(in_sizer, 0, wx.GROW|wx.EXPAND)
         sizer.Fit(self)
 
@@ -841,6 +831,7 @@ class SingleImagePreview(wx.Panel):
         # GUI
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
+        self.slider.SetTickFreq(1)
         self.ShowSlice()
 
     def ShowSlice(self, index = 0):
@@ -848,6 +839,9 @@ class SingleImagePreview(wx.Panel):
             dicom = self.dicom_list[index]
         except IndexError:
             dicom = self.dicom_list[0]
+
+        if self.actor is None:
+            self.__init_vtk()
 
         # UPDATE GUI
         ## Text related to size
@@ -911,12 +905,19 @@ class SingleImagePreview(wx.Panel):
 
             image = colorer.GetOutput()
 
+        flip = vtk.vtkImageFlip()
+        flip.SetInputData(image)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.ReleaseDataFlagOn()
+        flip.Update()
+
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInputData(image)
+        self.actor.SetInputData(flip.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 

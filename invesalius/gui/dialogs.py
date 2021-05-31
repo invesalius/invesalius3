@@ -195,7 +195,7 @@ def ShowNumberDialog(message, value=0):
 
 
 class ProgressDialog(object):
-    def __init__(self, maximum, abort=False):
+    def __init__(self, parent, maximum, abort=False):
         self.title = "InVesalius 3"
         self.msg = _("Loading DICOM files")
         self.maximum = maximum
@@ -207,7 +207,7 @@ class ProgressDialog(object):
         self.dlg = wx.ProgressDialog(self.title,
                                      self.msg,
                                      maximum = self.maximum,
-                                     parent = None,
+                                     parent = parent,
                                      style  = self.style)
 
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)

@@ -338,7 +338,7 @@ class Project(metaclass=Singleton):
             m = msk.Mask()
             m.spacing = self.spacing
             m.OpenPList(filepath)
-            self.mask_dict[m.index] = m
+            self.mask_dict[int(index)] = m
 
         # Opening the surfaces
         self.surface_dict = {}

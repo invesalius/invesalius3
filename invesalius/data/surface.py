@@ -213,6 +213,8 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
         Publisher.subscribe(self.UpdateconverttoInVflag, 'Update converttoInV flag')
 
+        Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
+
     def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
         surface_dict = proj.surface_dict
@@ -356,9 +358,9 @@ class SurfaceManager():
     def UpdateconverttoInVflag(self, converttoInV):
         self.converttoInV = converttoInV
 
-    def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
-                                  name=None, colour=None,
-                                  transparency=None, volume=None, area=None, scalar=False):
+    def CreateSurfaceFromPolydata(self, polydata, overwrite=False, index=None,
+                                  name=None, colour=None, transparency=None,
+                                  volume=None, area=None, scalar=False):
         if self.converttoInV and self.affine is not None:
             transform = vtk.vtkTransform()
             transform.SetMatrix(self.affine)
@@ -390,7 +392,9 @@ class SurfaceManager():
         print("BOunds", actor.GetBounds())
 
         if overwrite:
-            surface = Surface(index = self.last_surface_index)
+            if index is None:
+                index =  self.last_surface_index
+            surface = Surface(index=index)
         else:
             surface = Surface()
 
@@ -418,6 +422,14 @@ class SurfaceManager():
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
+
+        if overwrite and self.actors_dict.keys():
+            try:
+                old_actor = self.actors_dict[index]
+                Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
+            except KeyError:
+                pass
+
         self.actors_dict[surface.index] = actor
 
         session = ses.Session()
@@ -444,7 +456,6 @@ class SurfaceManager():
         self.last_surface_index = surface.index
 
         Publisher.sendMessage('Load surface actor into viewer', actor=actor)
-
         Publisher.sendMessage('Update surface info in GUI', surface=surface)
         return surface.index
 
