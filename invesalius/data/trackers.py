@@ -71,7 +71,7 @@ def OptitrackTracker(tracker_id):
         import optitrack
         trck_init = optitrack.optr()
         trck_init.Initialize()
-
+        trck_init.Run()
         #
         # trck_init.DetachListener();
         # trck_init.Close();
