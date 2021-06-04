@@ -58,7 +58,6 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 
 def OptitrackCoord(trck_init, trck_id, ref_mode):
     trck=trck_init[0]
-    trck.Update()
     trck.Run()
 
     scale = 1000*np.array([1.0, 1.0, 1.0])
