@@ -64,17 +64,24 @@ def DefaultTracker(tracker_id):
     return trck_init, 'wrapper'
 
 def OptitrackTracker(tracker_id):
+    """
+    Imports optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration, loads User Profile
+    (Rigid bodies information).
 
-    import invesalius.constants as const
+    Parameters
+    ----------
+    tracker_id : Optitrack ID
+
+    Returns
+    -------
+    trck_init : local name for Optitrack module
+    """
     trck_init = None
     try:
         import optitrack
         trck_init = optitrack.optr()
         trck_init.Initialize()
-        trck_init.Run()
-        #
-        # trck_init.DetachListener();
-        # trck_init.Close();
+        trck_init.Run() #Runs once Run function, to update cameras.
     except ImportError:
         print('Error')
     return trck_init, 'wrapper'

@@ -57,20 +57,25 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
     return coord
 
 def OptitrackCoord(trck_init, trck_id, ref_mode):
+    """
+
+    Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
+    rotations to Euler angles. This function uses Optitrack wrapper from Motive API 2.2.
+
+    Parameters
+    ----------
+    :trck_init: tracker initialization instance from OptitrackTracker function at trackers.py
+    :trck_id: not used
+    :ref_mode: not used
+
+    Returns
+    -------
+    coord: position of tracking rigid bodies
+    """
     trck=trck_init[0]
     trck.Run()
 
-    scale = 1000*np.array([1.0, 1.0, 1.0])
-
-    #angles_probe = np.array(tr.euler_matrix(float(trck.RollToolTip), float(trck.PitchToolTip), float(trck.YawToolTip), axes='rzyx'))
-    # coord1 = np.array([float(trck.PositionToolTipX1) * scale[0], float(trck.PositionToolTipY1) * scale[1],
-    #                    float(trck.PositionToolTipZ1) * scale[2], float(trck.RollToolTip), float(trck.PitchToolTip), float(trck.YawToolTip) ])
-    # coord2 = np.array([float(trck.PositionHeadX1) * scale[0], float(trck.PositionHeadY1) * scale[1],
-    #                    float(trck.PositionHeadZ1) * scale[2],
-    #                    float(trck.YawHead), float(trck.PitchHead), float(trck.RollHead)])
-    # coord3 = np.array([float(trck.PositionCoilX1) * scale[0], float(trck.PositionCoilY1) * scale[1],
-    #                    float(trck.PositionCoilZ1) * scale[2],
-    #                    float(trck.YawCoil), float(trck.PitchCoil), float(trck.RollCoil)])
+    scale = 1000*np.array([1.0, 1.0, 1.0]) # coordinates are in millimeters in Motive API
 
     angles_probe = np.degrees(tr.euler_from_quaternion([float(trck.qwToolTip), float(trck.qzToolTip), float(trck.qxToolTip), float(trck.qyToolTip)], axes='rzyx'))
     coord1 = np.array([float(trck.PositionToolTipZ1) * scale[0], float(trck.PositionToolTipX1) * scale[1],
@@ -88,9 +93,6 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((coord3, angles_coil))
 
     coord = np.vstack([coord1, coord2, coord3])
-    coord1 = 0
-    coord2 = 0
-    coord3 = 0
     return coord
 
 
