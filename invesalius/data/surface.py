@@ -902,7 +902,22 @@ class SurfaceManager():
                     wx.MessageBox(_("It was not possible to export the surface because the surface is empty"), _("Export surface error"))
                 return
 
-            shutil.move(temp_file, filename)
+            try:
+                shutil.move(temp_file, filename)
+            except PermissionError as err:
+                dirpath = os.path.split(filename)[0]
+                if wx.GetApp() is None:
+                    print(_("It was not possible to export the surface because you don't have permission to write to {} folder: {}".format(dirpath, err)))
+                else:
+                    dlg = dialogs.ErrorMessageBox(
+                        None,
+                        _("Export surface error"),
+                        "It was not possible to export the surface because you don't have permission to write to {}:\n{}".format(dirpath, err)
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                os.remove(temp_file)
+
 
     def _export_surface(self, filename, filetype):
         if filetype in (const.FILETYPE_STL,
