@@ -181,7 +181,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.event = event
         self.sle = sle
         self.icp_queue = queues[2]
-        self.robottarget_queue = queues[3]
         self.icp = None
         self.m_icp = None
         self.robot_tracker_flag = None
@@ -202,11 +201,6 @@ class CoordinateCorregistrate(threading.Thread):
                 else:
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
 
-                if self.robottarget_queue.empty():
-                    None
-                else:
-                    self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
-
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
@@ -224,18 +218,9 @@ class CoordinateCorregistrate(threading.Thread):
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
 
-                if self.robot_tracker_flag:
-                    current_ref = coord_raw[1]
-                    if current_ref is not None:
-                        current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
-                        if self.process_tracker.head_move_threshold(current_ref_filtered):
-                            coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered, self.m_change_robot2ref)
-                            trck_init[1][0].SendCoordinates(coord_inv)
 
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
-                if not self.robottarget_queue.empty():
-                    self.robottarget_queue.task_done()
 
                 # The sleep has to be in both threads
                 sleep(self.sle)

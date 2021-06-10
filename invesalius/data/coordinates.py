@@ -82,12 +82,11 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
 def ElfinCoord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
-    trck.Run()
-    probe = trck.Run()
-    probe[3], probe[5] = probe[5], probe[3]
-    ref = [0,0,0,0,0,0]
-    coord = np.vstack([probe, ref])
+    robot_coord_queue = trck_init[1]
+    if robot_coord_queue.empty():
+        coord = np.array([0, 0, 0, 0, 0, 0])
+    else:
+        coord = robot_coord_queue.get()
 
     return coord, None
 
@@ -354,7 +353,7 @@ def dynamic_reference_m(probe, reference):
 
 def HybridCoord(trk_init, trck_id, ref_mode):
     coord_tracker, markers_flag = ClaronCoord(trk_init[0], 1, ref_mode)
-    coord_robot, _ = ElfinCoord(trk_init[1], 3, ref_mode)
+    coord_robot, _ = ElfinCoord(trk_init[1:], 3, ref_mode)
     #coord_tracker = DebugCoord(trk_init[0], 1, ref_mode)
     #coord_robot = DebugCoord(trk_init[1], 3, ref_mode)
 

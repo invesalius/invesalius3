@@ -340,8 +340,10 @@ class NeuronavigationPanel(wx.Panel):
         self.icp_fre = None
         self.icp = False
         self.event = threading.Event()
+        self.robot_event = threading.Event()
 
         self.coord_queue = QueueCustom(maxsize=1)
+        self.robot_coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.robottarget_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
@@ -651,6 +653,12 @@ class NeuronavigationPanel(wx.Panel):
                     dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
+                if self.tracker_id == const.HYBRID:
+                    self.process_tracker = elfin_process.TrackerProcessing()
+                    self.robot_coord_queue.clear()
+                    self.robot_coord_queue.join()
+                    self.trk_init.append(self.robot_coord_queue)
+                    self.process_tracker = elfin_process.TrackerProcessing()
 
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage('Update tracker initializer',
@@ -776,10 +784,10 @@ class NeuronavigationPanel(wx.Panel):
         jobs_list = []
         vis_components = [self.trigger_state, self.view_tracts]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
-        process_tracker = elfin_process.TrackerProcessing()
         nav_id = btn_nav.GetValue()
         if not nav_id:
             self.event.set()
+            self.robot_event.set()
 
             # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
             # print("coord_tracts unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
@@ -833,6 +841,8 @@ class NeuronavigationPanel(wx.Panel):
             else:
                 if self.event.is_set():
                     self.event.clear()
+                if self.robot_event.is_set():
+                    self.robot_event.clear()
 
                 # prepare GUI for navigation
                 Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -879,16 +889,23 @@ class NeuronavigationPanel(wx.Panel):
                         obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                         coreg_data.extend(obj_data)
 
-                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.robottarget_queue]
+                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
                         jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                     self.view_tracts, process_tracker, queues,
+                                                                     self.view_tracts, self.process_tracker, queues,
                                                                      self.event, self.sleep_nav))
                 else:
                     coreg_data = (m_change, 0)
-                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.robottarget_queue]
+                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
                     jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
                                                                          self.view_tracts, queues,
                                                                          self.event, self.sleep_nav))
+
+                if self.tracker_id == const.HYBRID:
+                    self.robot_coord_queue.clear()
+                    #self.robot_coord_queue.join()
+                    elfin_process.ControlRobot(self.trk_init,
+                                       [self.robot_coord_queue, self.coord_queue, self.robottarget_queue], self.process_tracker,
+                                       self.robot_event).start()
 
                 if not errors:
                     #TODO: Test the trigger thread
