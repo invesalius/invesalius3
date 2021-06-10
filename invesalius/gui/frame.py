@@ -23,6 +23,7 @@ import platform
 import subprocess
 import sys
 import webbrowser
+import errno
 
 import invesalius.constants as const
 import invesalius.gui.default_tasks as tasks
@@ -687,19 +688,34 @@ class Frame(wx.Frame):
 
         session = ses.Session()
         last_directory = session.get('paths', 'last_directory_export_prj', '')
-        dlg = wx.FileDialog(None,
+        fdlg = wx.FileDialog(None,
                             "Export slice ...",
                             last_directory, # last used directory
                             os.path.split(p.name)[-1], # initial filename
                             WILDCARD_EXPORT_SLICE,
                             wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()
-            ext = IDX_EXT[dlg.GetFilterIndex()]
+        if fdlg.ShowModal() == wx.ID_OK:
+            filename = fdlg.GetPath()
+            ext = IDX_EXT[fdlg.GetFilterIndex()]
+            dirpath = os.path.split(filename)[0]
             if not filename.endswith(ext):
                 filename += ext
-            p.export_project(filename)
-            session['paths']['last_directory_export_prj'] = os.path.split(filename)[0]
+            try:
+                p.export_project(filename)
+            except (OSError, IOError) as err:
+                if err.errno == errno.EACCES:
+                    message = "It was not possible to save because you don't have permission to write at {}".format(dirpath)
+                else:
+                    message = "It was not possible to save because"
+                d = dlg.ErrorMessageBox(
+                    None,
+                    "Save project error",
+                    "{}:\n{}".format(message, err)
+                )
+                d.ShowModal()
+                d.Destroy()
+            else:
+                session['paths']['last_directory_export_prj'] = dirpath
 
     def ShowProjectProperties(self):
         window = project_properties.ProjectProperties(self)
