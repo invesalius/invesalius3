@@ -22,7 +22,7 @@ import plistlib
 
 import invesalius.constants as const
 
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 from invesalius import inv_paths
 from invesalius.utils import TwoWaysDictionary

@@ -21,7 +21,7 @@ import sys
 
 import vtk
 import wx
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu

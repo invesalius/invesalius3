@@ -5,7 +5,7 @@ import numpy
 
 from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vtku

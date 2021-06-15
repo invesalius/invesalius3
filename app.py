@@ -25,6 +25,7 @@ import optparse as op
 import os
 import sys
 import shutil
+import time
 import traceback
 
 import re
@@ -51,7 +52,7 @@ try:
 except ImportError:
     from wx import SplashScreen
 
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
 #if sys.platform.startswith('linux'):
@@ -322,6 +323,10 @@ def parse_comand_line():
 
     parser.add_option("--import-folder", action="store", dest="import_folder")
 
+    parser.add_option("--remote-host",
+                      action="store",
+                      dest="remote_host")
+
     parser.add_option("-s", "--save",
                       help="Save the project after an import.")
 
@@ -487,11 +492,61 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     """
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
+def setup_remote_host(remote_host):
+    import socketio
+    sio = socketio.Client()
+
+    connected = False
+
+    @sio.on('connect')
+    def on_connect():
+        print("Connected to {}".format(remote_host))
+
+        nonlocal connected
+        connected = True
+
+    @sio.on('disconnect')
+    def on_disconnect():
+        print("Disconnected")
+
+    sio.connect(remote_host)
+
+    while not connected:
+        print("Connecting...")
+        time.sleep(1.0)
+
+    def emit(topic, data):
+        print("Emitting data {} to topic {}".format(data, topic))
+        try:
+            if isinstance(topic, str):
+                sio.emit("from_neuronavigation", {
+                    "topic": topic,
+                    "data": data,
+                })
+        except TypeError:
+            pass
+
+    @sio.on("to_neuronavigation")
+    def handler(msg):
+        topic = msg["topic"]
+        data = msg["data"]
+
+        print("Received an event into topic '{}' with data {}".format(topic, str(data)))
+        Publisher.sendMessage_no_hook(
+            topicName=topic,
+            **data
+        )
+
+    Publisher.add_sendMessage_hook(emit)
+
 def main():
     """
     Initialize InVesalius GUI
     """
     options, args = parse_comand_line()
+
+    if options.remote_host is not None:
+        setup_remote_host(options.remote_host)
 
     if options.no_gui:
         non_gui_startup(options, args)
