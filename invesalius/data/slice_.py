@@ -379,7 +379,9 @@ class Slice(metaclass=utils.Singleton):
     def __set_current_mask_threshold(self, threshold_range):
         if self.current_mask is None:
             return
-        index = self.current_mask.index
+        proj = Project()
+        index = proj.mask_dict.get_key(self.current_mask)
+        print(f"\n\n\n{index=}\n\n\n")
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
@@ -434,7 +436,8 @@ class Slice(metaclass=utils.Singleton):
     def __set_current_mask_threshold_actual_slice(self, threshold_range):
         if self.current_mask is None:
             return
-        index = self.current_mask.index
+        proj = Project()
+        index = proj.mask_dict.get_key(self.current_mask)
         for orientation in self.buffer_slices:
             self.buffer_slices[orientation].discard_vtk_mask()
             self.SetMaskThreshold(
@@ -1114,10 +1117,11 @@ class Slice(metaclass=utils.Singleton):
         If slice_number is None then all the threshold is calculated for all
         slices, otherwise only to indicated slice.
         """
-        self.current_mask.was_edited = False
         thresh_min, thresh_max = threshold_range
 
-        if self.current_mask.index == index:
+        proj = Project()
+        if proj.mask_dict[index] == self.current_mask:
+            self.current_mask.was_edited = False
             # TODO: find out a better way to do threshold
             if slice_number is None:
                 for n, slice_ in enumerate(self.matrix):
@@ -1140,15 +1144,10 @@ class Slice(metaclass=utils.Singleton):
             # Update data notebook (GUI)
             Publisher.sendMessage(
                 "Set mask threshold in notebook",
-                index=self.current_mask.index,
+                index=index,
                 threshold_range=self.current_mask.threshold_range,
             )
-        else:
-            proj = Project()
-            proj.mask_dict[index].threshold_range = threshold_range
-
-        proj = Project()
-        proj.mask_dict[self.current_mask.index].threshold_range = threshold_range
+        proj.mask_dict[index].threshold_range = threshold_range
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"

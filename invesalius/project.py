@@ -38,7 +38,7 @@ import invesalius.version as version
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
-from invesalius.utils import Singleton, debug, decode, touch
+from invesalius.utils import Singleton, debug, decode, touch, TwoWaysDictionary
 
 if sys.platform == 'win32':
     try:
@@ -62,7 +62,7 @@ class Project(metaclass=Singleton):
         self.affine = ''
 
         # Masks (vtkImageData)
-        self.mask_dict = {}
+        self.mask_dict = TwoWaysDictionary()
 
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
@@ -118,7 +118,7 @@ class Project(metaclass=Singleton):
         return index
 
     def RemoveMask(self, index):
-        new_dict = {}
+        new_dict = TwoWaysDictionary()
         new_index = 0
         for i in self.mask_dict:
             if i == index:
@@ -331,7 +331,7 @@ class Project(metaclass=Singleton):
         self.matrix_dtype = project["matrix"]['dtype']
 
         # Opening the masks
-        self.mask_dict = {}
+        self.mask_dict = TwoWaysDictionary()
         for index in project.get("masks", []):
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)

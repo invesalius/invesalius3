@@ -181,6 +181,12 @@ class TwoWaysDictionary(dict):
 
     def get_key(self, value):
         """
+        Find the key (first) with the given value
+        """
+        return self.get_keys(value)[0]
+
+    def get_keys(self, value):
+        """
         Find the key(s) as a list given a value.
         """
         return [item[0] for item in self.items() if item[1] == value]
