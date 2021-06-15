@@ -131,6 +131,7 @@ class DicomGroup:
             filelist = [dicom.image.file for dicom in
                         self.slices_dict.values()]
 
+        print(f"\n\n\n{filelist=}\n\n\n")
         # Sort slices using GDCM
         #if (self.dicom.image.orientation_label != "CORONAL"):
         #Organize reversed image
@@ -139,7 +140,8 @@ class DicomGroup:
         sorter.SetZSpacingTolerance(1e-10)
         try:
             sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
-        except TypeError:
+        except TypeError as e:
+            print(f"\n\n\nError: {e=}\n\n\n")
             sorter.Sort(filelist)
         filelist = sorter.GetFilenames()
 
@@ -147,6 +149,7 @@ class DicomGroup:
         if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
             filelist.sort()
 
+        print(f"\n\n\n{filelist=}\n\n\n")
         return filelist
 
     def GetHandSortedList(self):
