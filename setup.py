@@ -37,6 +37,7 @@ class build_ext_subclass(build_ext):
 
 setup(
     cmdclass={"build_ext": build_ext_subclass},
+    packages=['invesalius_pubsub'],
     ext_modules=cythonize(
         [
             Extension(

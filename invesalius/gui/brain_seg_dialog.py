@@ -12,7 +12,7 @@ import time
 
 import numpy as np
 import wx
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 import invesalius.data.slice_ as slc
 from invesalius.segmentation.brain import segment, utils

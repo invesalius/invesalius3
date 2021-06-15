@@ -31,7 +31,7 @@ import codecs
 import collections
 import json
 
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 import wx
 
 from invesalius.utils import Singleton, debug, decode, deep_merge_dict

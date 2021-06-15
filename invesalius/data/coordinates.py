@@ -26,7 +26,7 @@ import invesalius.constants as const
 
 from time import sleep
 from random import uniform
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 
 def GetCoordinates(trck_init, trck_id, ref_mode):

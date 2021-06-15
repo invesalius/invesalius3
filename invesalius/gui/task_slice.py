@@ -31,7 +31,7 @@ except ImportError:
 
 import wx.lib.platebtn as pbtn
 import wx.lib.colourselect as csel
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 import invesalius.data.mask as mask
 import invesalius.data.slice_ as slice_

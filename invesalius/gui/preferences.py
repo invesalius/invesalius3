@@ -4,7 +4,7 @@ import invesalius.constants as const
 import invesalius.session as ses
 import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 
 
 class Preferences(wx.Dialog):

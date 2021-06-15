@@ -29,7 +29,7 @@ from numpy.core.umath_tests import inner1d
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-from pubsub import pub as Publisher
+from invesalius_pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
 
@@ -589,6 +589,7 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.staticballs[self.ball_id])
         self.ball_id = self.ball_id + 1
+
         #self.UpdateRender()
         self.Refresh()
 
