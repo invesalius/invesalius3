@@ -182,7 +182,14 @@ class InnerTaskPanel(wx.Panel):
                 dlgs.Destroy()
 
             if to_generate:
-                mask_index = sl.current_mask.index
+                proj = Project()
+                for idx in proj.mask_dict:
+                    if proj.mask_dict[idx] is sl.current_mask:
+                        mask_index = idx
+                        break
+                else:
+                    return
+
                 method = {'algorithm': algorithm,
                           'options': options}
                 srf_options = {"index": mask_index,

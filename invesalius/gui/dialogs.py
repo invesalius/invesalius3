@@ -1546,8 +1546,11 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         index_list = project.mask_dict.keys()
         self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
 
-        active_mask = slc.Slice().current_mask.index
-        #active_mask = len(self.mask_list)-1
+        active_mask = 0
+        for idx in project.mask_dict:
+            if project.mask_dict[idx] is slc.Slice().current_mask:
+                active_mask = idx
+                break
 
         # Mask selection combo
         combo_mask = wx.ComboBox(self, -1, "", choices= self.mask_list,
