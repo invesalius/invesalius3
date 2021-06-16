@@ -115,6 +115,7 @@ class Project(metaclass=Singleton):
         """
         index = len(self.mask_dict)
         self.mask_dict[index] = mask
+        mask.index = index
         return index
 
     def RemoveMask(self, index):
@@ -126,6 +127,7 @@ class Project(metaclass=Singleton):
                 mask.cleanup()
             else:
                 new_dict[new_index] = self.mask_dict[i]
+                self.mask_dict[i] = new_index
                 new_index += 1
         self.mask_dict = new_dict
 
@@ -338,7 +340,8 @@ class Project(metaclass=Singleton):
             m = msk.Mask()
             m.spacing = self.spacing
             m.OpenPList(filepath)
-            self.mask_dict[int(index)] = m
+            m.index = len(self.mask_dict)
+            self.mask_dict[m.index] = m
 
         # Opening the surfaces
         self.surface_dict = {}
