@@ -381,7 +381,6 @@ class Slice(metaclass=utils.Singleton):
             return
         proj = Project()
         index = proj.mask_dict.get_key(self.current_mask)
-        print(f"\n\n\n{index=}\n\n\n")
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
