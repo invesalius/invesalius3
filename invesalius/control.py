@@ -1085,7 +1085,7 @@ class Controller():
                 if not os.path.isfile(path):
                     path = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     preset_name+".plist")
-            with open(path, 'r+b') as f:
+            with open(path, 'rb') as f:
                 preset = plistlib.load(f, fmt=plistlib.FMT_XML)
             prj.Project().raycasting_preset = preset
             # Notify volume

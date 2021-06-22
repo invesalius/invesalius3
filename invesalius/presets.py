@@ -155,7 +155,7 @@ class Presets():
                 "Custom":_("Custom")}
 
 
-        with open(filename, 'r+b') as f:
+        with open(filename, 'rb') as f:
             p = plistlib.load(f, fmt=plistlib.FMT_XML)
         thresh_mri = p['thresh_mri'].copy()
         thresh_ct = p['thresh_ct'].copy()
@@ -183,7 +183,7 @@ def get_wwwl_presets():
 
 
 def get_wwwl_preset_colours(pfile):
-    with open(pfile, 'r+b') as f:
+    with open(pfile, 'rb') as f:
         preset = plistlib.load(f, fmt=plistlib.FMT_XML)
     ncolours = len(preset['Blue'])
     colours = []
