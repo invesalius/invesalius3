@@ -609,6 +609,9 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
+        if mask.matrix.max() < 127:
+            wx.MessageBox(_("It's not possible to create a surface because there is not any voxel selected on mask"), _("Create surface warning"))
+            return
         t_init = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
