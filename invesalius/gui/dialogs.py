@@ -869,8 +869,10 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.PATRIOT: 'Polhemus PATRIOT',
             const.CAMERA: 'CAMERA',
             const.POLARIS: 'NDI Polaris',
+            const.POLARISP4: 'NDI Polaris P4',
             const.ELFIN: 'Elfin Robot',
-            const.DEBUGTRACK: 'Debug tracker device'}
+            const.DEBUGTRACK: 'Debug tracker device',
+            const.HYBRID: 'Hybrid tracker device'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
@@ -4087,6 +4089,54 @@ class GoToDialogScannerCoord(wx.Dialog):
         wx.Dialog.Close(self)
         self.Destroy()
 
+class SetTrackerDevice2Robot(wx.Dialog):
+    def __init__(self, title=_("Setting tracker device:")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        self.tracker_id = None
+        self._init_gui()
+
+    def _init_gui(self):
+        # ComboBox for spatial tracker device selection
+        tooltip = wx.ToolTip(_("Choose the tracking device"))
+        choice_trck = wx.ComboBox(self, -1, "",
+                                  choices=const.TRACKER[:8], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        choice_trck.SetToolTip(tooltip)
+        choice_trck.SetSelection(const.DEFAULT_TRACKER)
+        choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
+        #self.choice_trck = choice_trck
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(choice_trck, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def OnChoiceTracker(self, evt, ctrl):
+        choice = evt.GetSelection()
+        self.tracker_id = choice
+
+    def GetValue(self):
+        return self.tracker_id
 
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):

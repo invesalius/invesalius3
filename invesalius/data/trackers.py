@@ -80,17 +80,17 @@ def PolarisP4Tracker(tracker_id):
             if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
                 trck_init = None
                 lib_mode = None
-                print('Could not connect to default tracker.')
+                print('Could not connect to polaris P4 tracker.')
             else:
-                print('Connect to polaris tracking device.')
+                print('Connect to polaris P4 tracking device.')
 
         except:
             lib_mode = 'error'
             trck_init = None
-            print('Could not connect to default tracker.')
+            print('Could not connect to polaris P4 tracker.')
     else:
         lib_mode = None
-        print('Could not connect to default tracker.')
+        print('Could not connect to polaris P4 tracker.')
 
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
@@ -109,17 +109,17 @@ def PolarisTracker(tracker_id):
             if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
                 trck_init = None
                 lib_mode = None
-                print('Could not connect to default tracker.')
+                print('Could not connect to polaris tracker.')
             else:
                 print('Connect to polaris tracking device.')
 
         except:
             lib_mode = 'error'
             trck_init = None
-            print('Could not connect to default tracker.')
+            print('Could not connect to polaris tracker.')
     else:
         lib_mode = None
-        print('Could not connect to default tracker.')
+        print('Could not connect to polaris tracker.')
 
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
@@ -134,7 +134,7 @@ def CameraTracker(tracker_id):
         print('Connect to camera tracking device.')
 
     except:
-        print('Could not connect to default tracker.')
+        print('Could not connect to camera tracker.')
 
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
@@ -152,7 +152,7 @@ def ElfinRobot(tracker_id):
     except:
         lib_mode = 'disconnect'
         trck_init = None
-        print('Could not connect to default tracker.')
+        print('Could not connect to elfin robot tracker.')
 
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
@@ -272,10 +272,10 @@ def PlhSerialConnection(tracker_id):
         except:
             lib_mode = 'error'
             trck_init = None
-            print('Could not connect to default tracker.')
+            print('Could not connect to Polhemus tracker.')
     else:
         lib_mode = None
-        print('Could not connect to default tracker.')
+        print('Could not connect to Polhemus tracker.')
 
     return trck_init
 
@@ -314,9 +314,16 @@ def PlhUSBConnection(tracker_id):
     return trck_init
 
 def HybridTracker(tracker_id):
-    trck_init_mtc = ClaronTracker(1)
+    from wx import ID_OK
+    trck_init = None
+    dlg_device = dlg.SetTrackerDevice2Robot()
+    if dlg_device.ShowModal() == ID_OK:
+        tracker_id = dlg_device.GetValue()
+        trk_init = TrackerConnection(tracker_id, None, 'connect')
+    else:
+        trck_init = ClaronTracker(1)
     trck_init_robot = ElfinRobot(7)
-    return [trck_init_mtc,trck_init_robot]
+    return [trck_init,trck_init_robot]
 
 
 def DisconnectTracker(tracker_id, trck_init):
