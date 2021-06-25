@@ -48,6 +48,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
+                    const.POLARISP4: PolarisP4Coord,
                     const.ELFIN: ElfinCoord,
                     const.DEBUGTRACK: DebugCoord,
                     const.HYBRID: HybridCoord}
@@ -56,6 +57,57 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
         print("Select Tracker")
 
     return coord, markers_flag
+
+def PolarisP4Coord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+
+    data_raw = trck.toolDataRaw.decode(const.FS_ENCODE)
+    data_raw = data_raw[2:].split("\n")
+    probe = data_raw[0][2:]
+    ref = data_raw[1][2:]
+    obj = data_raw[2][2:]
+
+    if probe[:7] == "MISSING":
+        probeID = 0
+        if not "coord1" in locals():
+            coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_probe = np.array(t).astype(float)
+        coord1 = np.hstack((trans_probe, angles_probe))
+        probeID = 1
+
+    if ref[:7] == "MISSING":
+        refID = 0
+        if not "coord2" in locals():
+            coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_ref = np.array(t).astype(float)
+        coord2 = np.hstack((trans_ref, angles_ref))
+        refID = 1
+
+    if obj[:7] == "MISSING":
+        objID = 0
+        if not "coord3" in locals():
+            coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_obj = np.array(t).astype(float)
+        coord3 = np.hstack((trans_obj, angles_obj))
+        objID = 1
+
+    Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID, obj_id=objID)
+    coord = np.vstack([coord1, coord2, coord3])
+
+    return coord, [probeID, refID, objID]
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
