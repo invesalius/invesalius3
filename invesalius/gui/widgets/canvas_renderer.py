@@ -626,12 +626,12 @@ class CanvasRendererCTX:
             font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
         font = gc.CreateFont(font, txt_colour)
-        gc.SetFont(font)
-
         px, py = pos
         for t in text.split('\n'):
+            t = t.strip()
             _py = -py
             _px = px
+            gc.SetFont(font)
             gc.DrawText(t, _px, _py)
 
             w, h = self.calc_text_size(t)
