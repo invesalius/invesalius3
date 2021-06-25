@@ -219,6 +219,8 @@ class TextZero(object):
         self.text = ''
         self.position = (0, 0)
         self.symbolic_syze = wx.FONTSIZE_MEDIUM
+        self.bottom_pos = False
+        self.right_pos = False
 
     def SetColour(self, colour):
         self.property.SetColor(colour)
@@ -282,10 +284,15 @@ class TextZero(object):
         coord.SetCoordinateSystemToNormalizedDisplay()
         coord.SetValue(*self.position)
         x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
-
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         #  font.SetWeight(wx.FONTWEIGHT_BOLD)
         font.SetSymbolicSize(self.symbolic_syze)
+        if self.bottom_pos or self.right_pos:
+            w, h = canvas.calc_text_size(self.text, font)
+            if self.right_pos:
+                x -= w
+            if self.bottom_pos:
+                y += h
         canvas.draw_text(self.text, (x, y), font=font)
 
 
