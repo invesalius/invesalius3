@@ -62,14 +62,15 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
     trck.Run()
 
-    data_raw = trck.toolDataRaw.decode(const.FS_ENCODE)
-    data_raw = data_raw[2:].split("\n")
-    probe = data_raw[0][2:]
-    ref = data_raw[1][2:]
-    obj = data_raw[2][2:]
+    probe = trck.probe.decode(const.FS_ENCODE)
+    ref = trck.ref.decode(const.FS_ENCODE)
+    obj = trck.obj.decode(const.FS_ENCODE)
+
+    probe = probe[2:]
+    ref = ref[2:]
+    obj = obj[2:]
 
     if probe[:7] == "MISSING":
-        probeID = 0
         if not "coord1" in locals():
             coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
@@ -78,10 +79,8 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
         trans_probe = np.array(t).astype(float)
         coord1 = np.hstack((trans_probe, angles_probe))
-        probeID = 1
 
     if ref[:7] == "MISSING":
-        refID = 0
         if not "coord2" in locals():
             coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
@@ -90,10 +89,8 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
         trans_ref = np.array(t).astype(float)
         coord2 = np.hstack((trans_ref, angles_ref))
-        refID = 1
 
     if obj[:7] == "MISSING":
-        objID = 0
         if not "coord3" in locals():
             coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
@@ -102,12 +99,11 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
         trans_obj = np.array(t).astype(float)
         coord3 = np.hstack((trans_obj, angles_obj))
-        objID = 1
 
-    Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID, obj_id=objID)
+    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
     coord = np.vstack([coord1, coord2, coord3])
 
-    return coord, [probeID, refID, objID]
+    return coord, [trck.probeID, trck.refID, trck.objID]
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
