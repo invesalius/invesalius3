@@ -80,8 +80,10 @@ def OptitrackTracker(tracker_id):
     try:
         import optitrack
         trck_init = optitrack.optr()
-        trck_init.Initialize()
-        trck_init.Run() #Runs once Run function, to update cameras.
+        if trck_init.Initialize()==0:
+            trck_init.Run() #Runs once Run function, to update cameras.
+        else:
+            trck_init = None
     except ImportError:
         print('Error')
     return trck_init, 'wrapper'
