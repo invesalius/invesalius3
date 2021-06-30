@@ -48,12 +48,53 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
+                    const.OPTITRACK: OptitrackCoord,
                     const.DEBUGTRACK: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
 
     return coord
+
+def OptitrackCoord(trck_init, trck_id, ref_mode):
+    """
+
+    Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
+    rotations to Euler angles. This function uses Optitrack wrapper from Motive API 2.2.
+
+    Parameters
+    ----------
+    :trck_init: tracker initialization instance from OptitrackTracker function at trackers.py
+    :trck_id: not used
+    :ref_mode: not used
+
+    Returns
+    -------
+    coord: position of tracking rigid bodies
+    """
+    trck=trck_init[0]
+    trck.Run()
+
+    scale = 1000*np.array([1.0, 1.0, 1.0]) # coordinates are in millimeters in Motive API
+
+    angles_probe = np.degrees(tr.euler_from_quaternion([float(trck.qwToolTip), float(trck.qzToolTip), float(trck.qxToolTip), float(trck.qyToolTip)], axes='rzyx'))
+    coord1 = np.array([float(trck.PositionToolTipZ1) * scale[0], float(trck.PositionToolTipX1) * scale[1],
+                       float(trck.PositionToolTipY1) * scale[2]])
+    coord1 = np.hstack((coord1, angles_probe))
+
+    angles_head = np.degrees(tr.euler_from_quaternion([float(trck.qwHead), float(trck.qzHead), float(trck.qxHead), float(trck.qyHead)], axes='rzyx'))
+    coord2 = np.array([float(trck.PositionHeadZ1) * scale[0], float(trck.PositionHeadX1) * scale[1],
+                       float(trck.PositionHeadY1) * scale[2]])
+    coord2 = np.hstack((coord2, angles_head))
+
+    angles_coil = np.degrees(tr.euler_from_quaternion([float(trck.qwCoil), float(trck.qzCoil), float(trck.qxCoil), float(trck.qyCoil)], axes='rzyx'))
+    coord3 = np.array([float(trck.PositionCoilZ1) * scale[0], float(trck.PositionCoilX1) * scale[1],
+                       float(trck.PositionCoilY1) * scale[2]])
+    coord3 = np.hstack((coord3, angles_coil))
+
+    coord = np.vstack([coord1, coord2, coord3])
+    return coord
+
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]

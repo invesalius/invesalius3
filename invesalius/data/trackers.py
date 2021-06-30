@@ -40,6 +40,7 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.PATRIOT: PolhemusTracker,    # PATRIOT
                     const.CAMERA: CameraTracker,      # CAMERA
                     const.POLARIS: PolarisTracker,      # POLARIS
+                    const.OPTITRACK: OptitrackTracker,   #Optitrack
                     const.DEBUGTRACK: DebugTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
@@ -62,6 +63,30 @@ def DefaultTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
+def OptitrackTracker(tracker_id):
+    """
+    Imports optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration, loads User Profile
+    (Rigid bodies information).
+
+    Parameters
+    ----------
+    tracker_id : Optitrack ID
+
+    Returns
+    -------
+    trck_init : local name for Optitrack module
+    """
+    trck_init = None
+    try:
+        import optitrack
+        trck_init = optitrack.optr()
+        if trck_init.Initialize()==0:
+            trck_init.Run() #Runs once Run function, to update cameras.
+        else:
+            trck_init = None
+    except ImportError:
+        print('Error')
+    return trck_init, 'wrapper'
 
 def PolarisTracker(tracker_id):
     from wx import ID_OK

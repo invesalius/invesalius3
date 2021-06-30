@@ -666,8 +666,9 @@ ISOTRAKII = 3
 PATRIOT = 4
 CAMERA = 5
 POLARIS = 6
-DEBUGTRACK = 7
-DISCTRACK = 8
+OPTITRACK = 7
+DEBUGTRACK = 8
+DISCTRACK = 9
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
@@ -675,7 +676,7 @@ NDICOMPORT = b'COM1'
 TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
-           _("NDI Polaris"), _("Debug tracker"), _("Disconnect tracker")]
+           _("NDI Polaris"), _("Optitrack"), _("Debug tracker"), _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -753,7 +754,7 @@ PEEL_DEPTH = 5
 MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 15
 SEED_RADIUS = 1.5
-SLEEP_NAVIGATION = 0.3
+SLEEP_NAVIGATION = 0.1
 BRAIN_OPACITY = 0.5
 N_CPU = psutil.cpu_count()
 TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_quality': 3,

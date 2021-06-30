@@ -869,6 +869,7 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.PATRIOT: 'Polhemus PATRIOT',
             const.CAMERA: 'CAMERA',
             const.POLARIS: 'NDI Polaris',
+            const.OPTITRACK: 'Optitrack',
             const.DEBUGTRACK: 'Debug tracker device'}
 
     if lib_mode == 'choose':
