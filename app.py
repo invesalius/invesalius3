@@ -526,8 +526,7 @@ def setup_remote_host(remote_host):
         except TypeError:
             pass
 
-    @sio.on("to_neuronavigation")
-    def handler(msg):
+    def to_neuronavigation(msg):
         topic = msg["topic"]
         data = msg["data"]
 
@@ -536,6 +535,13 @@ def setup_remote_host(remote_host):
             topicName=topic,
             **data
         )
+
+    @sio.on("to_neuronavigation")
+    def to_neuronavigation_wrapper(msg):
+
+        # wx.CallAfter wrapping is needed to make messages that update WxPython UI work properly, as the
+        # Socket.IO listener runs inside a thread. (See WxPython and thread-safety for more information.)
+        wx.CallAfter(to_neuronavigation, msg)
 
     Publisher.add_sendMessage_hook(emit)
 
