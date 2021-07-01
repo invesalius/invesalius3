@@ -288,6 +288,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
+        Publisher.subscribe(self.SetMarkers, 'Set markers')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
@@ -562,6 +563,28 @@ class Viewer(wx.Panel):
         """
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
+
+    def SetMarkers(self, markers):
+        """
+        Set all markers, overwriting the previous markers.
+        """
+        self.RemoveAllMarkers(len(self.staticballs))
+
+        for marker in markers:
+
+            ball_id = marker["ball_id"]
+            size = marker["size"]
+            colour = marker["colour"]
+            coord = marker["coord"]
+
+            self.AddMarker(
+                ball_id=ball_id,
+                size=size,
+                colour=colour,
+                coord=coord,
+            )
+
+        self.UpdateRender()
 
     def AddMarker(self, ball_id, size, colour, coord):
         """
