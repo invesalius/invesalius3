@@ -130,7 +130,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
 def ElfinCoord(trck_init, trck_id, ref_mode):
-    robot_coord_queue = trck_init[1]
+    robot_coord_queue = trck_init[-1]
     if robot_coord_queue.empty():
         coord = np.array([0, 0, 0, 0, 0, 0])
     else:
@@ -400,39 +400,18 @@ def dynamic_reference_m(probe, reference):
 
 
 def HybridCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = ClaronCoord(trk_init[0], 1, ref_mode)
+    coord_tracker, markers_flag = PolarisP4Coord(trk_init[0], 1, ref_mode)
     coord_robot, _ = ElfinCoord(trk_init[1:], 3, ref_mode)
-    #coord_tracker = DebugCoord(trk_init[0], 1, ref_mode)
-    #coord_robot = DebugCoord(trk_init[1], 3, ref_mode)
 
-    #M_robot_2_tracker is created by an affine transformation. Robot TCP should be calibrated to the center of the tracker marker
-    #TODO: send affine matrix to here or do this transformation later here?
-    M_robot_2_tracker = [[3.41541979e-01, 9.39589953e-01, 2.27990560e-02, -3.39484527e+02],
-                         [8.40244849e-02, -6.36439415e-03, -9.96443365e-01, 2.28264256e+02],
-                         [-9.36103073e-01, 3.42242918e-01, -8.11222696e-02, 1.65836850e+03],
-                         [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]]
-
-    M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
-
-    probe_tracker_in_robot = transform_tracker_2_robot(coord_tracker[0], M_tracker_2_robot)
-    ref_tracker_in_robot = transform_tracker_2_robot(coord_tracker[1], M_tracker_2_robot)
+    probe_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[0])
+    ref_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[1])
     #ref_tracker_in_robot = [ 716.916,   18.842,   61.245, -175.362 ,  23.223, -168.643]
     #obj_tracker_in_robot = transform_tracker_2_robot(coord_tracker[2], M_tracker_2_robot)
-
+    if probe_tracker_in_robot is None:
+        print("popup error message")
+        probe_tracker_in_robot = coord_tracker[0]
+        ref_tracker_in_robot = coord_tracker[1]
     return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot]), markers_flag
-
-def transform_tracker_2_robot(tracker_coord, M_tracker_2_robot):
-    trans = tr.translation_matrix(tracker_coord[:3])
-    a, b, g = np.radians(tracker_coord[3:6])
-    rot = tr.euler_matrix(a, b, g, 'rzyx')
-    M_tracker = tr.concatenate_matrices(trans, rot)
-    M_tracker_in_robot = M_tracker_2_robot @ M_tracker
-
-    _, _, angles, translate, _ = tr.decompose_matrix(M_tracker_in_robot)
-    tracker_in_robot = [translate[0], translate[1], translate[2],\
-            np.degrees(angles[2]), np.degrees(angles[1]), np.degrees(angles[0])]
-
-    return tracker_in_robot
 
 
 def dynamic_reference_m2(probe, reference):

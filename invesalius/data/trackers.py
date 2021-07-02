@@ -139,11 +139,13 @@ def CameraTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
-def ElfinRobot(tracker_id):
+def ElfinRobot(tracker_id=const.ELFIN):
     trck_init = None
     try:
         import invesalius.data.elfin_robot as elfin
-        trck_init = elfin.elfin_server('169.254.153.251', 10003)
+        #TODO: dialog to set IP and port
+        trck_init = elfin.elfin_server('143.107.220.251', 10003)
+        #trck_init = elfin.elfin_server('169.254.153.251', 10003)
         #trck_init = elfin.elfin_server('127.0.0.1', 10003)
         trck_init.Initialize()
         lib_mode = 'wrapper'
@@ -319,11 +321,12 @@ def HybridTracker(tracker_id):
     dlg_device = dlg.SetTrackerDevice2Robot()
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
-        trk_init = TrackerConnection(tracker_id, None, 'connect')
+        trck_init = TrackerConnection(tracker_id, None, 'connect')
     else:
         trck_init = ClaronTracker(1)
-    trck_init_robot = ElfinRobot(7)
-    return [trck_init,trck_init_robot]
+    trck_init_robot = ElfinRobot()
+
+    return [trck_init, trck_init_robot, tracker_id, const.ELFIN]
 
 
 def DisconnectTracker(tracker_id, trck_init):
@@ -345,6 +348,14 @@ def DisconnectTracker(tracker_id, trck_init):
                 trck_init = False
                 lib_mode = 'serial'
                 print('Tracker disconnected.')
+
+            elif tracker_id == const.HYBRID:
+                trck_init[0].Close()
+                #trck_init[1].Close()
+                trck_init = False
+                lib_mode = 'wrapper'
+                print('Tracker disconnected.')
+
             else:
                 trck_init.Close()
                 trck_init = False

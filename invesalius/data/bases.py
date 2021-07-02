@@ -234,3 +234,23 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     s0_dyn = tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn)
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
+
+class transform_tracker_2_robot(object):
+    M_tracker_2_robot = None
+    def transformation_tracker_2_robot(self, tracker_coord):
+        print(transform_tracker_2_robot.M_tracker_2_robot)
+        if transform_tracker_2_robot.M_tracker_2_robot is None:
+            print("matrix tracker2robot is not define")
+            return None
+        else:
+            trans = tr.translation_matrix(tracker_coord[:3])
+            a, b, g = np.radians(tracker_coord[3:6])
+            rot = tr.euler_matrix(a, b, g, 'rzyx')
+            M_tracker = tr.concatenate_matrices(trans, rot)
+            M_tracker_in_robot = transform_tracker_2_robot.M_tracker_2_robot @ M_tracker
+
+            _, _, angles, translate, _ = tr.decompose_matrix(M_tracker_in_robot)
+            tracker_in_robot = [translate[0], translate[1], translate[2], \
+                                np.degrees(angles[2]), np.degrees(angles[1]), np.degrees(angles[0])]
+
+            return tracker_in_robot

@@ -198,16 +198,7 @@ class InnerFoldPanel(wx.Panel):
             fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
                                           leftSpacing=0, rightSpacing=0)
 
-        # Fold 5 - Robot navigation panel
-        if has_robot:
-            item = fold_panel.AddFoldPanel(_("Robot navigation"), collapsed=True)
-            otw = RobotPanel(item)
-
-            fold_panel.ApplyCaptionStyle(item, style)
-            fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
-                                          leftSpacing=0, rightSpacing=0)
-
-        # Fold 6 - DBS
+        # Fold 5 - DBS
         self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
         dtw = DbsPanel(self.dbs_item) #Atribuir nova var, criar panel
 
@@ -659,6 +650,20 @@ class NeuronavigationPanel(wx.Panel):
                     self.robot_coord_queue.join()
                     self.trk_init.append(self.robot_coord_queue)
                     self.process_tracker = elfin_process.TrackerProcessing()
+                    dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.trk_init)
+                    if dlg_correg_robot.ShowModal() == wx.ID_OK:
+                        M_tracker_2_robot = dlg_correg_robot.GetValue()
+                        db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
+                    else:
+                        self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
+                        if not self.trk_init[0]:
+                            if evt is not False:
+                                dlg.ShowNavigationTrackerWarning(self.tracker_id, 'disconnect')
+                            self.tracker_id = 0
+                            ctrl.SetSelection(self.tracker_id)
+                            Publisher.sendMessage('Update status text in GUI',
+                                                  label=_("Tracker disconnected"))
+                            print("Tracker disconnected!")
 
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage('Update tracker initializer',
@@ -2166,145 +2171,6 @@ class TractographyPanel(wx.Panel):
         self.n_tracts = const.N_TRACTS
 
         Publisher.sendMessage('Remove tracts')
-
-
-class RobotPanel(wx.Panel):
-
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-        self.SetBackgroundColour(default_colour)
-
-        self.tracker_coord = []
-        self.tracker_angles = []
-        self.robot_coord = []
-        self.robot_angles = []
-
-        self.__bind_events()
-
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
-
-        # Buttons to acquire and remove points
-        txt_acquisition = wx.StaticText(self, -1, _('Poses acquisition for robot registration:'))
-
-        btn_create_point = wx.Button(self, -1, label=_('Single'))
-        btn_create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
-
-        btn_cont_point = wx.ToggleButton(self, -1, label=_('Continuous'))
-        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=btn_cont_point))
-        self.btn_cont_point = btn_cont_point
-
-        txt_number = wx.StaticText(self, -1, _('0'))
-        txt_recorded = wx.StaticText(self, -1, _('Poses recorded'))
-        self.txt_number = txt_number
-
-        btn_reset = wx.Button(self, -1, label=_('Reset'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
-
-        btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
-        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
-
-        # Buttons to save and load
-        txt_file = wx.StaticText(self, -1, _('Registration file'))
-
-        btn_save = wx.Button(self, -1, label=_('Export'), size=wx.Size(65, 23))
-        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
-
-        btn_load = wx.Button(self, -1, label=_('Import'), size=wx.Size(65, 23))
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
-
-        # Create a horizontal sizers
-        border = 1
-        acquisition = wx.BoxSizer(wx.HORIZONTAL)
-        acquisition.AddMany([(btn_create_point, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                             (btn_cont_point, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
-
-        txt_pose = wx.BoxSizer(wx.HORIZONTAL)
-        txt_pose.AddMany([(txt_number, 1,  wx.LEFT, 50),
-                          (txt_recorded, 1, wx.LEFT, border)])
-
-        apply_reset = wx.BoxSizer(wx.HORIZONTAL)
-        apply_reset.AddMany([(btn_reset, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                             (btn_apply_reg, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
-
-        save_load = wx.BoxSizer(wx.HORIZONTAL)
-        save_load.AddMany([(btn_save, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                             (btn_load, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
-
-        # Add line sizers into main sizer
-        border = 10
-        border_last = 10
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
-        main_sizer.Add(txt_acquisition, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL , border)
-        main_sizer.Add(acquisition, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
-        main_sizer.Add(txt_pose, 0,  wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, border)
-        main_sizer.Add(apply_reset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT , border_last)
-        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
-        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border/2)
-        main_sizer.Add(save_load, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
-        main_sizer.Fit(self)
-
-        self.SetSizer(main_sizer)
-        self.Update()
-
-    def __bind_events(self):
-        Publisher.subscribe(self.UpdateRawCoord, 'Update raw coord')
-
-    def UpdateRawCoord(self, coord_raw,  markers_flag):
-        self.current_ref = coord_raw[1]
-        self.markers_flag = markers_flag
-        self.current_robot = coord_raw[2]
-
-    def affine_correg(self, tracker, robot):
-        m_change = tr.affine_matrix_from_points(robot[:].T, tracker[:].T,
-                                                shear=False, scale=False, usesvd=False)
-        return m_change
-
-    def OnContinuousAcquisition(self, evt=None, btn=None):
-        value = btn.GetValue()
-        if value:
-            self.timer.Start(500)
-        else:
-            self.timer.Stop()
-
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
-
-    def OnCreatePoint(self, evt):
-        if self.markers_flag[2]:
-            self.tracker_coord.append(self.current_ref[:3])
-            self.tracker_angles.append(self.current_ref[3:])
-            self.robot_coord.append(self.current_robot[:3])
-            self.robot_angles.append(self.current_robot[3:])
-            self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
-        else:
-            print('Cannot detect the coil markers, pls try again')
-
-    def OnReset(self, evt):
-        self.tracker_coord = []
-        self.tracker_angles = []
-        self.robot_coord = []
-        self.robot_angles = []
-        self.txt_number.SetLabel('0')
-
-    def OnApply(self, evt):
-        self.tracker_coord = np.array(self.tracker_coord)
-        self.robot_coord = np.array(self.robot_coord)
-        M_robot_2_tracker = self.affine_correg(self.tracker_coord, self.robot_coord)
-        M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
-        #sendmessage M_tracker_2_robot
-        #return M_tracker_2_robot
-
-    def OnSaveReg(self, evt):
-        pass
-
-    def OnLoadReg(self, evt):
-        None
 
 
 class QueueCustom(queue.Queue):
