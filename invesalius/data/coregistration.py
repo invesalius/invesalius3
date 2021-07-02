@@ -22,6 +22,7 @@ import queue
 import threading
 from time import sleep
 
+import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
@@ -170,7 +171,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle):
+    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle, tracker_id, target):
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
         self.trck_info = trck_info
@@ -183,6 +184,16 @@ class CoordinateCorregistrate(threading.Thread):
         self.icp_queue = queues[2]
         self.icp = None
         self.m_icp = None
+        self.last_coord = None
+        self.tracker_id = tracker_id
+
+        self.target = np.array(target)
+
+        # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
+        #      in viewer_volume.py, so this makes them match. A better solution would probably be to
+        #      do this transformation only once, and doing it in the correct place.
+        #
+        self.target[1] = -self.target[1]
 
     def run(self):
         trck_info = self.trck_info
@@ -200,6 +211,27 @@ class CoordinateCorregistrate(threading.Thread):
                 # print(f"Set the coordinate")
                 coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
+
+                # XXX: This is not the best place to do the logic related to approaching the target when the
+                #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
+                #      the tracker space where it is hard to make the tracker approach the target in the image space.
+                #      Ideally, the transformation from the tracker space to the image space (the function
+                #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
+                #      tracker, and then the whole class would be mocked when using the debug tracker. However,
+                #      those abstractions do not currently exist and doing them would need a larger refactoring.
+                #
+                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
+
+                    if self.last_coord is None:
+                        self.last_coord = np.array(coord)
+                    else:
+                        coord = self.last_coord + (self.target - self.last_coord) * 0.05
+                        self.last_coord = coord
+
+                    angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
+                    translate = coord[0:3]
+                    m_img = tr.compose_matrix(angles=angles, translate=translate)
+
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)

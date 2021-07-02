@@ -870,7 +870,8 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.CAMERA: 'CAMERA',
             const.POLARIS: 'NDI Polaris',
             const.OPTITRACK: 'Optitrack',
-            const.DEBUGTRACK: 'Debug tracker device'}
+            const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
+            const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
@@ -3305,7 +3306,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+        if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
             choice_sensor.Show(True)
         else:
             choice_sensor.Show(False)
@@ -3506,7 +3507,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if evt.GetSelection():
             self.obj_ref_id = 2
-            if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
