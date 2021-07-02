@@ -400,7 +400,7 @@ def dynamic_reference_m(probe, reference):
 
 
 def HybridCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = PolarisP4Coord(trk_init[0], 1, ref_mode)
+    coord_tracker, markers_flag = GetCoordinates(trk_init[0], trk_init[2], ref_mode)
     coord_robot, _ = ElfinCoord(trk_init[1:], 3, ref_mode)
 
     probe_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[0])

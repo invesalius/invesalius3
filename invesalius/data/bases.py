@@ -238,7 +238,6 @@ def object_registration(fiducials, orients, coord_raw, m_change):
 class transform_tracker_2_robot(object):
     M_tracker_2_robot = None
     def transformation_tracker_2_robot(self, tracker_coord):
-        print(transform_tracker_2_robot.M_tracker_2_robot)
         if transform_tracker_2_robot.M_tracker_2_robot is None:
             print("matrix tracker2robot is not define")
             return None

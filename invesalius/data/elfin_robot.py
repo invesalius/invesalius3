@@ -7,6 +7,9 @@ import csv
 
 import invesalius.data.elfin as elfin
 import invesalius.data.transformations as tr
+import invesalius.constants as const
+import invesalius.data.coordinates as dco
+import invesalius.data.bases as db
 
 
 class elfin_server():
@@ -146,47 +149,6 @@ class TrackerProcessing:
                     angles[2]
 
 
-    def transform_tracker_2_robot(self, coord_tracker):
-        M_robot_2_tracker = [[3.41541979e-01, 9.39589953e-01, 2.27990560e-02, -3.39484527e+02],
-                             [8.40244849e-02, -6.36439415e-03, -9.96443365e-01, 2.28264256e+02],
-                             [-9.36103073e-01, 3.42242918e-01, -8.11222696e-02, 1.65836850e+03],
-                             [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]]
-
-        M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
-
-        trans = tr.translation_matrix(coord_tracker[:3])
-        a, b, g = np.radians(coord_tracker[3:6])
-        rot = tr.euler_matrix(a, b, g, 'rzyx')
-        M_tracker = tr.concatenate_matrices(trans, rot)
-        M_tracker_in_robot = M_tracker_2_robot @ M_tracker
-
-        _, _, angles, translate, _ = tr.decompose_matrix(M_tracker_in_robot)
-        tracker_in_robot = [translate[0], translate[1], translate[2], \
-                            np.degrees(angles[2]), np.degrees(angles[1]), np.degrees(angles[0])]
-
-        return tracker_in_robot
-
-def ClaronCoord(trck_init):
-    trck = trck_init[0]
-    trck.Run()
-    scale = np.array([1.0, 1.0, 1.0])
-
-    coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
-                      float(trck.PositionTooltipZ1)*scale[2],
-                      float(trck.AngleZ1), float(trck.AngleY1), float(trck.AngleX1)])
-
-    coord2 = np.array([float(trck.PositionTooltipX2)*scale[0], float(trck.PositionTooltipY2)*scale[1],
-                       float(trck.PositionTooltipZ2)*scale[2],
-                       float(trck.AngleZ2), float(trck.AngleY2), float(trck.AngleX2)])
-
-    coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
-                       float(trck.PositionTooltipZ3) * scale[2],
-                       float(trck.AngleZ3), float(trck.AngleY3), float(trck.AngleX3)])
-
-    coord = np.vstack([coord1, coord2, coord3])
-
-    return coord
-
 class ControlRobot(threading.Thread):
     def __init__(self, trck_init, queues, process_tracker, event):
         threading.Thread.__init__(self, name='ControlRobot')
@@ -194,6 +156,7 @@ class ControlRobot(threading.Thread):
 
         self.trck_init_robot = trck_init[1][0]
         self.trck_init_tracker = trck_init[0]
+        self.trk_id = trck_init[2]
         self.robot_tracker_flag = False
         self.m_change_robot2ref = None
         self.robot_coord_queue = queues[0]
@@ -211,7 +174,7 @@ class ControlRobot(threading.Thread):
     def run(self):
 
         while not self.event.is_set():
-            start = time()
+            #start = time()
             probe = self.trck_init_robot.Run()
             probe[3], probe[5] = probe[5], probe[3]
             coord_robot = np.array(probe)
@@ -221,9 +184,9 @@ class ControlRobot(threading.Thread):
                 pass
 
             #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, const.MTC, const.DEFAULT_REF_MODE)
-            coord_raw = ClaronCoord(self.trck_init_tracker)
-            coord_tracker_in_robot = self.process_tracker.transform_tracker_2_robot(coord_raw[1])
-
+            coord_raw = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)
+            coord_tracker_ref = coord_raw[0][1]
+            coord_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker_ref)
 
             if self.robottarget_queue.empty():
                 None
@@ -254,6 +217,6 @@ class ControlRobot(threading.Thread):
 
                 csv_writer.writerow(info)
 
-            end = time()
+            #end = time()
             #print("                   ", end - start)
-        #print('hi')
+

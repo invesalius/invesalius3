@@ -649,7 +649,6 @@ class NeuronavigationPanel(wx.Panel):
                     self.robot_coord_queue.clear()
                     self.robot_coord_queue.join()
                     self.trk_init.append(self.robot_coord_queue)
-                    self.process_tracker = elfin_process.TrackerProcessing()
                     dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.trk_init)
                     if dlg_correg_robot.ShowModal() == wx.ID_OK:
                         M_tracker_2_robot = dlg_correg_robot.GetValue()
