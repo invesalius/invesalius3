@@ -462,7 +462,8 @@ class NeuronavigationPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
-        Publisher.subscribe(self.SetFiducial, 'Set fiducial')
+        Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
+        Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
@@ -486,14 +487,58 @@ class NeuronavigationPanel(wx.Panel):
             fiducial_name = list(const.BTNS_IMG_MKS[n].values())[0]
             if marker_id == fiducial_name and not self.btns_coord[btn_id].GetValue():
                 self.btns_coord[btn_id].SetValue(True)
-                Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+                Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
-    def SetFiducial(self, fiducial_name, coord):
-        id = const.FIDUCIAL_NAME_TO_ID[fiducial_name]
+    def SetImageFiducial(self, fiducial_name, coord):
+        fiducial_id = const.FIDUCIAL_NAME_TO_ID[fiducial_name]
 
-        self.fiducials[id, :] = coord
+        self.fiducials[fiducial_id, :] = coord
+
+    def SetTrackerFiducial(self, fiducial_name):
+        fiducial_id = const.FIDUCIAL_NAME_TO_ID[fiducial_name]
+        coord = None
+
+        if self.trk_init and self.tracker_id:
+            # if self.tracker_id == const.DEBUGTRACK:
+            #     if btn_id == 3:
+            #         coord1 = np.array([-120., 0., 0., 0., 0., 0.])
+            #     elif btn_id == 4:
+            #         coord1 = np.array([120., 0., 0., 0., 0., 0.])
+            #     elif btn_id == 5:
+            #         coord1 = np.array([0., 120., 0., 0., 0., 0.])
+            #     coord2 = np.zeros([3, 6])
+            #     coord_raw = np.vstack([coord1, coord2])
+            # else:
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+
+            if self.ref_mode_id:
+                coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
+            else:
+                coord = coord_raw[0, :]
+                coord[2] = -coord[2]
+
+        else:
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
+
+        # Update tracker fiducial with tracker coordinates
+        if coord is not None:
+            self.fiducials[fiducial_id, :] = coord[0:3]
+
+            if fiducial_id == 3:
+                self.fiducials_raw[0, :] = coord_raw[0, :]
+                self.fiducials_raw[1, :] = coord_raw[1, :]
+            elif fiducial_id == 4:
+                self.fiducials_raw[2, :] = coord_raw[0, :]
+                self.fiducials_raw[3, :] = coord_raw[1, :]
+            else:
+                self.fiducials_raw[4, :] = coord_raw[0, :]
+                self.fiducials_raw[5, :] = coord_raw[1, :]
+
+        # Update tracker location in the UI.
+        for n in [0, 1, 2]:
+            self.numctrls_coord[fiducial_id][n].SetValue(float(coord[n]))
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -658,57 +703,20 @@ class NeuronavigationPanel(wx.Panel):
                     self.numctrls_coord[btn_id][1].GetValue(),\
                     self.numctrls_coord[btn_id][2].GetValue(), 0, 0, 0
 
-            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
             Publisher.sendMessage('Create marker', coord=coord, marker_id=fiducial_name)
         else:
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
 
-            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=np.nan)
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=np.nan)
             Publisher.sendMessage('Delete fiducial marker', marker_id=fiducial_name)
 
     def OnTrackerFiducials(self, evt):
         btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
         fiducial_name = list(const.BTNS_TRK[evt.GetId()].values())[0]
-        coord = None
 
-        if self.trk_init and self.tracker_id:
-            # if self.tracker_id == const.DEBUGTRACK:
-            #     if btn_id == 3:
-            #         coord1 = np.array([-120., 0., 0., 0., 0., 0.])
-            #     elif btn_id == 4:
-            #         coord1 = np.array([120., 0., 0., 0., 0., 0.])
-            #     elif btn_id == 5:
-            #         coord1 = np.array([0., 120., 0., 0., 0., 0.])
-            #     coord2 = np.zeros([3, 6])
-            #     coord_raw = np.vstack([coord1, coord2])
-            # else:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-
-            if self.ref_mode_id:
-                coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
-            else:
-                coord = coord_raw[0, :]
-                coord[2] = -coord[2]
-
-        else:
-            dlg.ShowNavigationTrackerWarning(0, 'choose')
-
-        # Update number controls with tracker coordinates
-        if coord is not None:
-            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
-            if btn_id == 3:
-                self.fiducials_raw[0, :] = coord_raw[0, :]
-                self.fiducials_raw[1, :] = coord_raw[1, :]
-            elif btn_id == 4:
-                self.fiducials_raw[2, :] = coord_raw[0, :]
-                self.fiducials_raw[3, :] = coord_raw[1, :]
-            else:
-                self.fiducials_raw[4, :] = coord_raw[0, :]
-                self.fiducials_raw[5, :] = coord_raw[1, :]
-
-            for n in [0, 1, 2]:
-                self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
+        Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
 
     def OnICP(self):
         dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
@@ -917,7 +925,7 @@ class NeuronavigationPanel(wx.Panel):
 
             fiducial_name = const.FIDUCIAL_ID_TO_NAME[m]
             coord = [np.nan, np.nan, np.nan]
-            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord)
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord)
 
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
@@ -927,7 +935,7 @@ class NeuronavigationPanel(wx.Panel):
 
             fiducial_name = const.FIDUCIAL_ID_TO_NAME[m]
             coord = [np.nan, np.nan, np.nan]
-            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord)
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord)
 
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
