@@ -299,7 +299,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
         Publisher.subscribe(self.OnUpdateTargetCoordinates, 'Update target')
-        Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
+        Publisher.subscribe(self.OnDisableOrEnableCoilTracker, 'Disable or enable coil tracker')
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
@@ -570,6 +570,7 @@ class Viewer(wx.Panel):
         """
         self.RemoveAllMarkers(len(self.staticballs))
 
+        target_selected = False
         for marker in markers:
 
             ball_id = marker["ball_id"]
@@ -588,6 +589,10 @@ class Viewer(wx.Panel):
 
             if target:
                 Publisher.sendMessage('Update target', coord=position + direction)
+                target_selected = True
+
+        if not target_selected:
+            self.RemoveTarget()
 
         self.UpdateRender()
 
@@ -956,11 +961,14 @@ class Viewer(wx.Panel):
         self.CreateTargetAim()
         print("Target updated to coordinates {}".format(coord))
 
-    def OnRemoveTarget(self, status):
+    def RemoveTarget(self):
+        self.target_mode = None
+        self.target_coord = None
+        self.RemoveTargetAim()
+
+    def OnDisableOrEnableCoilTracker(self, status):
         if not status:
-            self.target_mode = None
-            self.target_coord = None
-            self.RemoveTargetAim()
+            self.RemoveTarget()
             self.DisableCoilTracker()
 
     def CreateTargetAim(self):
