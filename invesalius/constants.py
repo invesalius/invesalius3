@@ -704,6 +704,24 @@ BTNS_IMG_MKS = {IR1: {0: 'LEI'},
             IR2: {1: 'REI'},
             IR3: {2: 'NAI'}}
 
+FIDUCIAL_NAME_TO_ID = {
+    'LEI': 0,
+    'REI': 1,
+    'NAI': 2,
+    'LET': 3,
+    'RET': 4,
+    'NAT': 5,
+}
+
+FIDUCIAL_ID_TO_NAME = {
+    0: 'LEI',
+    1: 'REI',
+    2: 'NAI',
+    3: 'LET',
+    4: 'RET',
+    5: 'NAT',
+}
+
 TIPS_IMG = [_("Select left ear in image"),
             _("Select right ear in image"),
             _("Select nasion in image")]

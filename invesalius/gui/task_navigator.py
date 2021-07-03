@@ -462,6 +462,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
+        Publisher.subscribe(self.SetFiducial, 'Set fiducial')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
@@ -482,12 +483,17 @@ class NeuronavigationPanel(wx.Panel):
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
             btn_id = list(const.BTNS_IMG_MKS[n].keys())[0]
-            fid_id = list(const.BTNS_IMG_MKS[n].values())[0]
-            if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
+            fiducial_name = list(const.BTNS_IMG_MKS[n].values())[0]
+            if marker_id == fiducial_name and not self.btns_coord[btn_id].GetValue():
                 self.btns_coord[btn_id].SetValue(True)
-                self.fiducials[btn_id, :] = coord[0:3]
+                Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
+
+    def SetFiducial(self, fiducial_name, coord):
+        id = const.FIDUCIAL_NAME_TO_ID[fiducial_name]
+
+        self.fiducials[id, :] = coord
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -642,25 +648,28 @@ class NeuronavigationPanel(wx.Panel):
         print("Reference mode changed!")
 
     def OnImageFiducials(self, evt):
+        # XXX: This is slightly hard to read, would benefit from a clean-up.
+        #      Similarly in OnTrackerFiducials.
         btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
-        marker_id = list(const.BTNS_IMG_MKS[evt.GetId()].values())[0]
+        fiducial_name = list(const.BTNS_IMG_MKS[evt.GetId()].values())[0]
 
         if self.btns_coord[btn_id].GetValue():
             coord = self.numctrls_coord[btn_id][0].GetValue(),\
                     self.numctrls_coord[btn_id][1].GetValue(),\
                     self.numctrls_coord[btn_id][2].GetValue(), 0, 0, 0
 
-            self.fiducials[btn_id, :] = coord[0:3]
-            Publisher.sendMessage('Create marker', coord=coord, marker_id=marker_id)
+            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+            Publisher.sendMessage('Create marker', coord=coord, marker_id=fiducial_name)
         else:
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
 
-            self.fiducials[btn_id, :] = np.nan
-            Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
+            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=np.nan)
+            Publisher.sendMessage('Delete fiducial marker', marker_id=fiducial_name)
 
     def OnTrackerFiducials(self, evt):
         btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
+        fiducial_name = list(const.BTNS_TRK[evt.GetId()].values())[0]
         coord = None
 
         if self.trk_init and self.tracker_id:
@@ -687,7 +696,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Update number controls with tracker coordinates
         if coord is not None:
-            self.fiducials[btn_id, :] = coord[0:3]
+            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
             if btn_id == 3:
                 self.fiducials_raw[0, :] = coord_raw[0, :]
                 self.fiducials_raw[1, :] = coord_raw[1, :]
@@ -905,13 +914,21 @@ class NeuronavigationPanel(wx.Panel):
     def ResetImageFiducials(self):
         for m in range(0, 3):
             self.btns_coord[m].SetValue(False)
-            self.fiducials[m, :] = [np.nan, np.nan, np.nan]
+
+            fiducial_name = const.FIDUCIAL_ID_TO_NAME[m]
+            coord = [np.nan, np.nan, np.nan]
+            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord)
+
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
-            self.fiducials[m, :] = [np.nan, np.nan, np.nan]
+
+            fiducial_name = const.FIDUCIAL_ID_TO_NAME[m]
+            coord = [np.nan, np.nan, np.nan]
+            Publisher.sendMessage('Set fiducial', fiducial_name=fiducial_name, coord=coord)
+
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
