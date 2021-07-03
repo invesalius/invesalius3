@@ -575,14 +575,19 @@ class Viewer(wx.Panel):
             ball_id = marker["ball_id"]
             size = marker["size"]
             colour = marker["colour"]
-            coord = marker["coord"]
+            position = marker["position"]
+            direction = marker["direction"]
+            target = marker["target"]
 
             self.AddMarker(
                 ball_id=ball_id,
                 size=size,
                 colour=colour,
-                coord=coord,
+                coord=position,
             )
+
+            if target:
+                Publisher.sendMessage('Update target', coord=position + direction)
 
         self.UpdateRender()
 
@@ -949,6 +954,7 @@ class Viewer(wx.Panel):
         self.target_coord = coord
         self.target_coord[1] = -self.target_coord[1]
         self.CreateTargetAim()
+        print("Target updated to coordinates {}".format(coord))
 
     def OnRemoveTarget(self, status):
         if not status:
