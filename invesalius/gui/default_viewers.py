@@ -388,7 +388,7 @@ class VolumeToolPanel(wx.Panel):
         #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
         self.navigation_status = False
-        self.status_target_select = False
+        self.status_target_selected = False
         self.status_obj_tracker = False
 
         sizer.Fit(self)
@@ -408,7 +408,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
-        Publisher.subscribe(self.StatusTargetSelect, 'Disable or enable coil tracker')
+        Publisher.subscribe(self.StatusTargetSelected, 'Target selected')
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
         Publisher.subscribe(self.ActiveTarget, 'Active target button')
         Publisher.subscribe(self.DeactiveTarget, 'Deactive target button')
@@ -442,8 +442,8 @@ class VolumeToolPanel(wx.Panel):
         self.status_obj_tracker = status
         self.StatusNavigation()
 
-    def StatusTargetSelect(self, status):
-        self.status_target_select = status
+    def StatusTargetSelected(self, status):
+        self.status_target_selected = status
         self.StatusNavigation()
 
     def ActiveTarget(self):
@@ -453,7 +453,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_target.Hide()
 
     def StatusNavigation(self):
-        if self.status_target_select and self.status_obj_tracker:
+        if self.status_target_selected and self.status_obj_tracker:
             self.button_target.Enable(1)
         else:
             self.OnButtonTarget(False)

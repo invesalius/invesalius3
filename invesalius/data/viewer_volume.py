@@ -959,12 +959,14 @@ class Viewer(wx.Panel):
         self.target_coord = coord
         self.target_coord[1] = -self.target_coord[1]
         self.CreateTargetAim()
+        Publisher.sendMessage('Target selected', status=True)
         print("Target updated to coordinates {}".format(coord))
 
     def RemoveTarget(self):
         self.target_mode = None
         self.target_coord = None
         self.RemoveTargetAim()
+        Publisher.sendMessage('Target selected', status=False)
 
     def OnDisableOrEnableCoilTracker(self, status):
         if not status:
