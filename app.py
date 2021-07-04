@@ -529,6 +529,8 @@ def setup_remote_host(remote_host):
     def to_neuronavigation(msg):
         topic = msg["topic"]
         data = msg["data"]
+        if data is None:
+            data = {}
 
         print("Received an event into topic '{}' with data {}".format(topic, str(data)))
         Publisher.sendMessage_no_hook(
