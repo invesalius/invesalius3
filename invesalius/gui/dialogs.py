@@ -3471,11 +3471,14 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def OnGetObjectFiducials(self, evt):
         btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
-
         if self.trk_init and self.tracker_id:
             coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
             if self.obj_ref_id and btn_id == 4:
-                coord = coord_raw[self.obj_ref_id, :]
+                if self.tracker_id == const.HYBRID:
+                    trck_init_robot = self.trk_init[1][0]
+                    coord = trck_init_robot.Run()
+                else:
+                    coord = coord_raw[self.obj_ref_id, :]
             else:
                 coord = coord_raw[0, :]
         else:
@@ -4186,12 +4189,12 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         # Buttons to save and load
         txt_file = wx.StaticText(self, -1, _('Registration file'))
 
-        btn_save = wx.Button(self, -1, label=_('Export'), size=wx.Size(65, 23))
+        btn_save = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
         btn_save.Enable(False)
         self.btn_save = btn_save
 
-        btn_load = wx.Button(self, -1, label=_('Import'), size=wx.Size(65, 23))
+        btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
 
         # Create a horizontal sizers
@@ -4231,7 +4234,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         border_last = 10
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
-        main_sizer.Add(txt_acquisition, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL , border)
+        main_sizer.Add(txt_acquisition, 0, wx.BOTTOM |  wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_HORIZONTAL , border)
         main_sizer.Add(acquisition, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
         main_sizer.Add(txt_pose, 0,  wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, border)
         main_sizer.Add(apply_reset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT , border_last)
@@ -4265,7 +4268,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
     def OnCreatePoint(self, evt):
         coord_raw_tracker, markers_flag = dco.GetCoordinates(self.trk_init[0], self.trk_init[2], const.DYNAMIC_REF)
-        coord_raw_robot, _ = dco.GetCoordinates([self.trk_init[1], self.trk_init[-1]], self.trk_init[3], const.DYNAMIC_REF)
+        trck_init_robot = self.trk_init[1][0]
+        coord_raw_robot = trck_init_robot.Run()
         if markers_flag[2]:
             self.tracker_coord.append(coord_raw_tracker[2][:3])
             self.tracker_angles.append(coord_raw_tracker[2][3:])
@@ -4275,7 +4279,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         else:
             print('Cannot detect the coil markers, pls try again')
 
-        if len(self.tracker_coord)>=3:
+        if len(self.tracker_coord) >= 3:
             self.btn_apply_reg.Enable(True)
 
     def OnReset(self, evt):

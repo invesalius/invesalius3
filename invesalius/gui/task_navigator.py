@@ -644,25 +644,33 @@ class NeuronavigationPanel(wx.Panel):
                     dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
-                if self.tracker_id == const.HYBRID:
-                    self.process_tracker = elfin_process.TrackerProcessing()
-                    self.robot_coord_queue.clear()
-                    self.robot_coord_queue.join()
-                    self.trk_init.append(self.robot_coord_queue)
-                    dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.trk_init)
-                    if dlg_correg_robot.ShowModal() == wx.ID_OK:
-                        M_tracker_2_robot = dlg_correg_robot.GetValue()
-                        db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
+                if (self.tracker_id == const.HYBRID):
+                    if not self.trk_init[0][0] or not self.trk_init[1][0]:
+                        dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+                        self.tracker_id = 0
+                        self.trk_init = None
+                        ctrl.SetSelection(self.tracker_id)
                     else:
-                        self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
-                        if not self.trk_init[0]:
-                            if evt is not False:
-                                dlg.ShowNavigationTrackerWarning(self.tracker_id, 'disconnect')
-                            self.tracker_id = 0
-                            ctrl.SetSelection(self.tracker_id)
-                            Publisher.sendMessage('Update status text in GUI',
-                                                  label=_("Tracker disconnected"))
-                            print("Tracker disconnected!")
+                        self.process_tracker = elfin_process.TrackerProcessing()
+                        self.robot_coord_queue.clear()
+                        self.robot_coord_queue.join()
+                        self.trk_init.append(self.robot_coord_queue)
+                        dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.trk_init)
+                        if dlg_correg_robot.ShowModal() == wx.ID_OK:
+                            M_tracker_2_robot = dlg_correg_robot.GetValue()
+                            db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
+                        else:
+                            self.trk_init = dt.TrackerConnection(self.tracker_id, self.trk_init[0][0], 'disconnect')
+                            if not self.trk_init[0]:
+                                if evt is not False:
+                                    # TODO: update msg to the matrix be mandatory
+                                    dlg.ShowNavigationTrackerWarning(self.tracker_id, 'disconnect')
+                                self.tracker_id = 0
+                                self.trk_init = None
+                                ctrl.SetSelection(self.tracker_id)
+                                Publisher.sendMessage('Update status text in GUI',
+                                                      label=_("Tracker disconnected"))
+                                print("Tracker disconnected!")
 
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage('Update tracker initializer',

@@ -322,6 +322,7 @@ def HybridTracker(tracker_id):
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         trck_init = TrackerConnection(tracker_id, None, 'connect')
+        #TODO: deal with errors
     else:
         trck_init = ClaronTracker(1)
     trck_init_robot = ElfinRobot()
@@ -348,14 +349,6 @@ def DisconnectTracker(tracker_id, trck_init):
                 trck_init = False
                 lib_mode = 'serial'
                 print('Tracker disconnected.')
-
-            elif tracker_id == const.HYBRID:
-                trck_init[0].Close()
-                #trck_init[1].Close()
-                trck_init = False
-                lib_mode = 'wrapper'
-                print('Tracker disconnected.')
-
             else:
                 trck_init.Close()
                 trck_init = False
