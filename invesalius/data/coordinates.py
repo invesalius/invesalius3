@@ -165,8 +165,8 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
 
     Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
     coord = np.vstack([coord1, coord2, coord3])
-    print(coord)
-    return coord, [trck.probeID, trck.refID, trck.objID]
+
+    return coord
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
