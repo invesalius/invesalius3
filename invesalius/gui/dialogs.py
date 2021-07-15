@@ -2745,7 +2745,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
