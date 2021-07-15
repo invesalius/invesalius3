@@ -76,7 +76,6 @@ setup(
         "build_ext": build_ext_subclass,
         "build_plugins": BuildPluginsCommand,
     },
-    packages=['invesalius_pubsub'],
     ext_modules=cythonize(
         [
             Extension(

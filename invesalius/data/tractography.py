@@ -28,7 +28,7 @@ import time
 
 import numpy as np
 import queue
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 from scipy.stats import norm
 import vtk
 

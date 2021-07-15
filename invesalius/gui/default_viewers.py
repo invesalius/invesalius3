@@ -21,7 +21,7 @@ import os
 
 import wx
 import wx.lib.agw.fourwaysplitter as fws
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import invesalius.data.viewer_slice as slice_viewer
 import invesalius.data.viewer_volume as volume_viewer
@@ -316,7 +316,7 @@ class VolumeInteraction(wx.Panel):
 
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
 RAYCASTING_TOOLS = wx.NewId()

@@ -30,7 +30,7 @@ except ImportError:
     from weakrefmethod import WeakMethod
 
 from invesalius.data import converters
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 
 class CanvasEvent:

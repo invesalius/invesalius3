@@ -38,7 +38,7 @@ import vtk
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
 
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 if sys.platform == 'win32':
     try:

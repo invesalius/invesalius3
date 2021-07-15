@@ -23,7 +23,7 @@ import time
 import socketio
 import wx
 
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 class RemoteControl:
     def __init__(self, remote_host):

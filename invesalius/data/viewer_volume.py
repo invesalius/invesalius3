@@ -29,7 +29,7 @@ from numpy.core.umath_tests import inner1d
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
 

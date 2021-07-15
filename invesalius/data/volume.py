@@ -24,7 +24,7 @@ from distutils.version import LooseVersion
 import numpy
 import vtk
 import wx
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.project as prj

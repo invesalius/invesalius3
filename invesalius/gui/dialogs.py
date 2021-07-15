@@ -47,7 +47,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 try:
     from wx.adv import AboutDialogInfo, AboutBox

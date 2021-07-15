@@ -28,7 +28,7 @@ except ImportError:
     import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 import wx.lib.scrolledpanel as scrolled
 

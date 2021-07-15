@@ -27,7 +27,7 @@ except ImportError:
     import wx.lib.hyperlink as hl
 
 import wx.lib.platebtn as pbtn
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as constants
 import invesalius.constants as const

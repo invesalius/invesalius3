@@ -31,7 +31,7 @@ from scipy import ndimage
 from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
 from skimage.morphology import watershed
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters

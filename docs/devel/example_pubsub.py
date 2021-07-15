@@ -3,7 +3,7 @@
 # More information about this design pattern can be found at:
 # http://wiki.wxpython.org/ModelViewController
 # http://wiki.wxpython.org/PubSub
-from invesalius_pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 # The maintainer of Pubsub module is Oliver Schoenborn.
 # Since the end of 2006 Pubsub is now maintained separately on SourceForge at:
