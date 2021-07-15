@@ -314,6 +314,7 @@ class NeuronavigationPanel(wx.Panel):
         self.current_coord = 0, 0, 0
         self.trk_init = None
         self.nav_status = False
+        self.target = None
         self.trigger = None
         self.trigger_state = False
         self.obj_reg = None
@@ -585,9 +586,6 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateACTData(self, data):
         self.act_data = data
-
-    def UpdateTarget(self, coord):
-        self.target = coord
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -1734,7 +1732,6 @@ class TractographyPanel(wx.Panel):
         self.brain_actor = None
         self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0., 0., 0.]])
-        self.target = None
         self.tracts_run = None
         self.trekker_cfg = const.TREKKER_CONFIG
         self.nav_status = False
