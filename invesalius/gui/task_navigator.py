@@ -1389,7 +1389,6 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index][:6])
         Publisher.sendMessage('Set target transparency', status=True, index=self.tgt_index)
-        Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         wx.MessageBox(_("New target selected."), _("InVesalius 3"))
