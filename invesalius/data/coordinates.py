@@ -49,7 +49,8 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
                     const.OPTITRACK: OptitrackCoord,
-                    const.DEBUGTRACK: DebugCoord}
+                    const.DEBUGTRACKRANDOM: DebugCoordRandom,
+                    const.DEBUGTRACKAPPROACH: DebugCoordRandom}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
@@ -264,7 +265,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     return coord
 
 
-def DebugCoord(trk_init, trck_id, ref_mode):
+def DebugCoordRandom(trk_init, trck_id, ref_mode):
     """
     Method to simulate a tracking device for debug and error check. Generate a random
     x, y, z, alfa, beta and gama coordinates in interval [1, 200[

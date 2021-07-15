@@ -478,6 +478,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.UpdateTarget, 'Update target')
 
     def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
@@ -529,6 +530,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateACTData(self, data):
         self.act_data = data
+
+    def UpdateTarget(self, coord):
+        self.target = coord
 
     def EnableACT(self, data):
         self.enable_act = data
@@ -855,7 +859,8 @@ class NeuronavigationPanel(wx.Panel):
                         queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
                         jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
                                                                      self.view_tracts, queues,
-                                                                     self.event, self.sleep_nav))
+                                                                     self.event, self.sleep_nav, self.tracker_id,
+                                                                     self.target))
                 else:
                     coreg_data = (m_change, 0)
                     queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
@@ -1667,6 +1672,7 @@ class TractographyPanel(wx.Panel):
         self.brain_actor = None
         self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0., 0., 0.]])
+        self.target = None
         self.tracts_run = None
         self.trekker_cfg = const.TREKKER_CONFIG
         self.nav_status = False

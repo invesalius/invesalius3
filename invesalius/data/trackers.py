@@ -41,7 +41,8 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.CAMERA: CameraTracker,      # CAMERA
                     const.POLARIS: PolarisTracker,      # POLARIS
                     const.OPTITRACK: OptitrackTracker,   #Optitrack
-                    const.DEBUGTRACK: DebugTracker}
+                    const.DEBUGTRACKRANDOM: DebugTrackerRandom,
+                    const.DEBUGTRACKAPPROACH: DebugTrackerApproach}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
 
@@ -185,9 +186,15 @@ def PolhemusTracker(tracker_id):
     return trck_init, lib_mode
 
 
-def DebugTracker(tracker_id):
+def DebugTrackerRandom(tracker_id):
     trck_init = True
-    print('Debug device started.')
+    print('Debug device (random) started.')
+    return trck_init, 'debug'
+
+
+def DebugTrackerApproach(tracker_id):
+    trck_init = True
+    print('Debug device (approach) started.')
     return trck_init, 'debug'
 
 
@@ -298,7 +305,7 @@ def DisconnectTracker(tracker_id, trck_init):
     :param trck_init: Initialization variable of tracking device.
     """
 
-    if tracker_id == const.DEBUGTRACK:
+    if tracker_id == const.DEBUGTRACKRANDOM:
         trck_init = False
         lib_mode = 'debug'
         print('Debug tracker disconnected.')
