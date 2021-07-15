@@ -25,10 +25,11 @@ import optparse as op
 import os
 import sys
 import shutil
-import time
 import traceback
 
 import re
+
+from invesalius.net.remote_control import RemoteControl
 
 if sys.platform == 'win32':
     try:
@@ -492,61 +493,6 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     """
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
-def setup_remote_host(remote_host):
-    import socketio
-    sio = socketio.Client()
-
-    connected = False
-
-    @sio.on('connect')
-    def on_connect():
-        print("Connected to {}".format(remote_host))
-
-        nonlocal connected
-        connected = True
-
-    @sio.on('disconnect')
-    def on_disconnect():
-        print("Disconnected")
-
-    sio.connect(remote_host)
-
-    while not connected:
-        print("Connecting...")
-        time.sleep(1.0)
-
-    def emit(topic, data):
-        print("Emitting data {} to topic {}".format(data, topic))
-        try:
-            if isinstance(topic, str):
-                sio.emit("from_neuronavigation", {
-                    "topic": topic,
-                    "data": data,
-                })
-        except TypeError:
-            pass
-
-    def to_neuronavigation(msg):
-        topic = msg["topic"]
-        data = msg["data"]
-        if data is None:
-            data = {}
-
-        print("Received an event into topic '{}' with data {}".format(topic, str(data)))
-        Publisher.sendMessage_no_hook(
-            topicName=topic,
-            **data
-        )
-
-    @sio.on("to_neuronavigation")
-    def to_neuronavigation_wrapper(msg):
-
-        # wx.CallAfter wrapping is needed to make messages that update WxPython UI work properly, as the
-        # Socket.IO listener runs inside a thread. (See WxPython and thread-safety for more information.)
-        wx.CallAfter(to_neuronavigation, msg)
-
-    Publisher.add_sendMessage_hook(emit)
-
 def main():
     """
     Initialize InVesalius GUI
@@ -554,7 +500,8 @@ def main():
     options, args = parse_comand_line()
 
     if options.remote_host is not None:
-        setup_remote_host(options.remote_host)
+        remote_control = RemoteControl(options.remote_host)
+        remote_control.connect()
 
     if options.no_gui:
         non_gui_startup(options, args)
