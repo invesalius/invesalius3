@@ -1505,7 +1505,7 @@ class MarkersPanel(wx.Panel):
                                 self.lc.Focus(item.GetId())
                 index = [self.lc.GetFocusedItem()]
         else:
-            if self.lc.GetFirstSelected() is not -1:
+            if self.lc.GetFirstSelected() != -1:
                 index = self.GetSelectedItems()
             else:
                 index = None
