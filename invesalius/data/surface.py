@@ -182,9 +182,6 @@ class SurfaceManager():
             session['surface'] = self._default_parameters
             session.WriteSessionFile()
 
-        print('Session', session)
-
-
     def __bind_events(self):
         Publisher.subscribe(self.AddNewActor, 'Create surface')
         Publisher.subscribe(self.SetActorTransparency,
