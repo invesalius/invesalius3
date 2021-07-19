@@ -871,7 +871,8 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
-            const.DEBUGTRACK: 'Debug tracker device'}
+            const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
+            const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
@@ -2746,7 +2747,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
@@ -3306,7 +3307,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+        if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
             choice_sensor.Show(True)
         else:
             choice_sensor.Show(False)
@@ -3507,7 +3508,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if evt.GetSelection():
             self.obj_ref_id = 2
-            if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
