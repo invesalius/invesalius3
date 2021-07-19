@@ -335,7 +335,7 @@ def DisconnectTracker(tracker_id, trck_init):
     :param trck_init: Initialization variable of tracking device.
     """
 
-    if tracker_id == const.DEBUGTRACKRANDOM:
+    if tracker_id == const.DEBUGTRACKRANDOM or tracker_id == const.DEBUGTRACKAPPROACH:
         trck_init = False
         lib_mode = 'debug'
         print('Debug tracker disconnected.')
