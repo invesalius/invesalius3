@@ -788,7 +788,10 @@ PEEL_DEPTH = 5
 MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 15
 SEED_RADIUS = 1.5
-SLEEP_NAVIGATION = 0.1
+
+# Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
+SLEEP_NAVIGATION = 0.15
+
 BRAIN_OPACITY = 0.5
 N_CPU = psutil.cpu_count()
 TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_quality': 3,
