@@ -531,7 +531,7 @@ class NeuronavigationPanel(wx.Panel):
         #     coord2 = np.zeros([3, 6])
         #     coord_raw = np.vstack([coord1, coord2])
         # else:
-        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+        coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
 
         if self.ref_mode_id:
             coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])

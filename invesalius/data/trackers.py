@@ -164,7 +164,7 @@ def CameraTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
-def ElfinRobot(tracker_id=const.ELFIN):
+def ElfinRobot():
     trck_init = None
     try:
         import invesalius.data.elfin_robot as elfin
@@ -358,7 +358,7 @@ def HybridTracker(tracker_id):
         trck_init = ClaronTracker(1)
     trck_init_robot = ElfinRobot()
 
-    return [trck_init, trck_init_robot, tracker_id, const.ELFIN]
+    return [trck_init, trck_init_robot, tracker_id]
 
 
 def DisconnectTracker(tracker_id, trck_init):
