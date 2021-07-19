@@ -139,7 +139,7 @@ class DicomGroup:
         sorter.SetZSpacingTolerance(1e-10)
         try:
             sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
-        except TypeError:
+        except TypeError as e:
             sorter.Sort(filelist)
         filelist = sorter.GetFilenames()
 

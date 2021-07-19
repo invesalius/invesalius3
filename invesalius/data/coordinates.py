@@ -49,8 +49,9 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
                     const.POLARISP4: PolarisP4Coord,
-                    const.ELFIN: ElfinCoord,
-                    const.DEBUGTRACK: DebugCoord,
+                    const.OPTITRACK: OptitrackCoord,
+                    const.DEBUGTRACKRANDOM: DebugCoordRandom,
+                    const.DEBUGTRACKAPPROACH: DebugCoordRandom,
                     const.HYBRID: HybridCoord}
         coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
@@ -105,6 +106,46 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.objID]
 
+def OptitrackCoord(trck_init, trck_id, ref_mode):
+    """
+
+    Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
+    rotations to Euler angles. This function uses Optitrack wrapper from Motive API 2.2.
+
+    Parameters
+    ----------
+    :trck_init: tracker initialization instance from OptitrackTracker function at trackers.py
+    :trck_id: not used
+    :ref_mode: not used
+
+    Returns
+    -------
+    coord: position of tracking rigid bodies
+    """
+    trck=trck_init[0]
+    trck.Run()
+
+    scale = 1000*np.array([1.0, 1.0, 1.0]) # coordinates are in millimeters in Motive API
+
+    angles_probe = np.degrees(tr.euler_from_quaternion([float(trck.qwToolTip), float(trck.qzToolTip), float(trck.qxToolTip), float(trck.qyToolTip)], axes='rzyx'))
+    coord1 = np.array([float(trck.PositionToolTipZ1) * scale[0], float(trck.PositionToolTipX1) * scale[1],
+                       float(trck.PositionToolTipY1) * scale[2]])
+    coord1 = np.hstack((coord1, angles_probe))
+
+    angles_head = np.degrees(tr.euler_from_quaternion([float(trck.qwHead), float(trck.qzHead), float(trck.qxHead), float(trck.qyHead)], axes='rzyx'))
+    coord2 = np.array([float(trck.PositionHeadZ1) * scale[0], float(trck.PositionHeadX1) * scale[1],
+                       float(trck.PositionHeadY1) * scale[2]])
+    coord2 = np.hstack((coord2, angles_head))
+
+    angles_coil = np.degrees(tr.euler_from_quaternion([float(trck.qwCoil), float(trck.qzCoil), float(trck.qxCoil), float(trck.qyCoil)], axes='rzyx'))
+    coord3 = np.array([float(trck.PositionCoilZ1) * scale[0], float(trck.PositionCoilX1) * scale[1],
+                       float(trck.PositionCoilY1) * scale[2]])
+    coord3 = np.hstack((coord3, angles_coil))
+
+    coord = np.vstack([coord1, coord2, coord3])
+    return coord, None
+
+
 def PolarisCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
     trck.Run()
@@ -129,7 +170,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
-def ElfinCoord(trck_init, trck_id, ref_mode):
+def ElfinCoord(trck_init):
     robot_coord_queue = trck_init[-1]
     if robot_coord_queue.empty():
         coord = np.array([0, 0, 0, 0, 0, 0])
@@ -283,7 +324,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     return coord
 
 
-def DebugCoord(trk_init, trck_id, ref_mode):
+def DebugCoordRandom(trk_init, trck_id, ref_mode):
     """
     Method to simulate a tracking device for debug and error check. Generate a random
     x, y, z, alfa, beta and gama coordinates in interval [1, 200[
@@ -401,12 +442,11 @@ def dynamic_reference_m(probe, reference):
 
 def HybridCoord(trk_init, trck_id, ref_mode):
     coord_tracker, markers_flag = GetCoordinates(trk_init[0], trk_init[2], ref_mode)
-    coord_robot, _ = ElfinCoord(trk_init[1:], 3, ref_mode)
+    coord_robot, _ = ElfinCoord(trk_init[1:])
 
     probe_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[0])
     ref_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[1])
-    #ref_tracker_in_robot = [ 716.916,   18.842,   61.245, -175.362 ,  23.223, -168.643]
-    #obj_tracker_in_robot = transform_tracker_2_robot(coord_tracker[2], M_tracker_2_robot)
+
     if probe_tracker_in_robot is None:
         print("popup error message")
         probe_tracker_in_robot = coord_tracker[0]

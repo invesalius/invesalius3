@@ -28,7 +28,7 @@ from invesalius import utils
 from invesalius import inv_paths
 
 #from invesalius.project import Project
-INVESALIUS_VERSION = "3.1.99994"
+INVESALIUS_VERSION = "3.1.99995"
 
 INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 
@@ -667,10 +667,11 @@ PATRIOT = 4
 CAMERA = 5
 POLARIS = 6
 POLARISP4 = 7
-ELFIN = 8
-DEBUGTRACK = 9
-HYBRID = 10
-DISCTRACK = 11
+OPTITRACK = 8
+DEBUGTRACKRANDOM = 9
+DEBUGTRACKAPPROACH = 10
+HYBRID = 11
+DISCTRACK = 12
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
@@ -679,8 +680,9 @@ TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
            _("NDI Polaris"), _("NDI Polaris P4"),
-           _("Elfin Robot"), _("Debug tracker"),
-           _("Hybrid tracker"), _("Disconnect tracker")]
+           _("Optitrack"), _("Debug tracker (random)"),
+           _("Debug tracker (approach)"), _("Hybrid tracker"),
+           _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -700,25 +702,57 @@ TR2 = wx.NewId()
 TR3 = wx.NewId()
 SET = wx.NewId()
 
-BTNS_IMG = {IR1: {0: _('LEI')},
-            IR2: {1: _('REI')},
-            IR3: {2: _('NAI')}}
+IMAGE_FIDUCIALS = [
+    {
+        'button_id': IR1,
+        'label': 'LEI',
+        'fiducial_name': 'LE',
+        'fiducial_index': 0,
+        'tip': _("Select left ear in image"),
+    },
+    {
+        'button_id': IR2,
+        'label': 'REI',
+        'fiducial_name': 'RE',
+        'fiducial_index': 1,
+        'tip': _("Select right ear in image"),
+    },
+    {
+        'button_id': IR3,
+        'label': 'NAI',
+        'fiducial_name': 'NA',
+        'fiducial_index': 2,
+        'tip': _("Select nasion in image"),
+    },
+]
 
-BTNS_IMG_MKS = {IR1: {0: 'LEI'},
-            IR2: {1: 'REI'},
-            IR3: {2: 'NAI'}}
+TRACKER_FIDUCIALS = [
+    {
+        'button_id': TR1,
+        'label': 'LET',
+        'fiducial_name': 'LE',
+        'fiducial_index': 3,
+        'tip': _("Select left ear with spatial tracker"),
+    },
+    {
+        'button_id': TR2,
+        'label': 'RET',
+        'fiducial_name': 'RE',
+        'fiducial_index': 4,
+        'tip': _("Select right ear with spatial tracker"),
+    },
+    {
+        'button_id': TR3,
+        'label': 'NAT',
+        'fiducial_name': 'NA',
+        'fiducial_index': 5,
+        'tip': _("Select nasion with spatial tracker"),
+    },
+]
 
-TIPS_IMG = [_("Select left ear in image"),
-            _("Select right ear in image"),
-            _("Select nasion in image")]
-
-BTNS_TRK = {TR1: {3: _('LET')},
-            TR2: {4: _('RET')},
-            TR3: {5: _('NAT')}}
-
-TIPS_TRK = [_("Select left ear with spatial tracker"),
-            _("Select right ear with spatial tracker"),
-            _("Select nasion with spatial tracker")]
+BTNS_IMG_MARKERS = {IR1: {0: 'LEI'},
+                    IR2: {1: 'REI'},
+                    IR3: {2: 'NAI'}}
 
 OBJL = wx.NewId()
 OBJR = wx.NewId()
@@ -740,7 +774,7 @@ TIPS_OBJ = [_("Select left object fiducial"),
 
 MTC_PROBE_NAME = "1Probe"
 MTC_REF_NAME = "2Ref"
-MTC_OBJ_NAME = "3bigcoil"
+MTC_OBJ_NAME = "3Coil"
 
 #OBJECT TRACKING
 ARROW_SCALE = 6
@@ -758,7 +792,10 @@ PEEL_DEPTH = 5
 MAX_PEEL_DEPTH = 30
 SEED_OFFSET = 15
 SEED_RADIUS = 1.5
-SLEEP_NAVIGATION = 0.3
+
+# Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
+SLEEP_NAVIGATION = 0.15
+
 BRAIN_OPACITY = 0.5
 N_CPU = psutil.cpu_count()
 TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_quality': 3,

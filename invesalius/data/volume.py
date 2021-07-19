@@ -356,7 +356,7 @@ class Volume():
         if color_preset != "No CLUT":
             path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                 'color_list', color_preset + '.plist')
-            with open(path, 'r+b') as f:
+            with open(path, 'rb') as f:
                 p = plistlib.load(f, fmt=plistlib.FMT_XML)
 
             r = p['Red']

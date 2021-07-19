@@ -182,7 +182,14 @@ class InnerTaskPanel(wx.Panel):
                 dlgs.Destroy()
 
             if to_generate:
-                mask_index = sl.current_mask.index
+                proj = Project()
+                for idx in proj.mask_dict:
+                    if proj.mask_dict[idx] is sl.current_mask:
+                        mask_index = idx
+                        break
+                else:
+                    return
+
                 method = {'algorithm': algorithm,
                           'options': options}
                 srf_options = {"index": mask_index,
@@ -565,7 +572,7 @@ class MaskProperties(wx.Panel):
         self.bind_evt_gradient = True
         thresh = (thresh_min, thresh_max)
         if thresh in Project().threshold_modes.values():
-            preset_name = Project().threshold_modes.get_key(thresh)[0]
+            preset_name = Project().threshold_modes.get_key(thresh)
             index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
@@ -579,7 +586,7 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMaxValue(thresh_max)
         thresh = (thresh_min, thresh_max)
         if thresh in Project().threshold_modes.values():
-            preset_name = Project().threshold_modes.get_key(thresh)[0]
+            preset_name = Project().threshold_modes.get_key(thresh)
             index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
@@ -621,7 +628,7 @@ class MaskProperties(wx.Panel):
             thresh_min, thresh_max = self.threshold_modes[default_thresh]
 
         elif default_thresh in proj.threshold_modes.values():
-            preset_name = proj.threshold_modes.get_key(default_thresh)[0]
+            preset_name = proj.threshold_modes.get_key(default_thresh)
             index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh

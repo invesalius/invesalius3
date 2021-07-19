@@ -872,8 +872,9 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.CAMERA: 'CAMERA',
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
-            const.ELFIN: 'Elfin Robot',
-            const.DEBUGTRACK: 'Debug tracker device',
+            const.OPTITRACK: 'Optitrack',
+            const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
+            const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)',
             const.HYBRID: 'Hybrid tracker device'}
 
     if lib_mode == 'choose':
@@ -1551,8 +1552,11 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         index_list = project.mask_dict.keys()
         self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
 
-        active_mask = slc.Slice().current_mask.index
-        #active_mask = len(self.mask_list)-1
+        active_mask = 0
+        for idx in project.mask_dict:
+            if project.mask_dict[idx] is slc.Slice().current_mask:
+                active_mask = idx
+                break
 
         # Mask selection combo
         combo_mask = wx.ComboBox(self, -1, "", choices= self.mask_list,
@@ -2746,7 +2750,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
@@ -3306,7 +3310,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+        if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
             choice_sensor.Show(True)
         else:
             choice_sensor.Show(False)
@@ -3510,7 +3514,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if evt.GetSelection():
             self.obj_ref_id = 2
-            if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
@@ -4396,7 +4400,7 @@ class SetNDIconfigs(wx.Dialog):
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
         row_probe = wx.BoxSizer(wx.VERTICAL)
         row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_probe.Add(self.dir_probe, 0, wx.ALL | wx.CENTER | wx.EXPAND )
+        row_probe.Add(self.dir_probe, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")

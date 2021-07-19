@@ -67,7 +67,7 @@ class SliceMenu(wx.Menu):
         submenu_wl.Append(wl_item)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
-        for name in sorted(const.WINDOW_LEVEL):
+        for name in const.WINDOW_LEVEL:
             if not(name == _('Default') or name == _('Manual')):
                 new_id = wx.NewId()
                 wl_item = wx.MenuItem(submenu_wl, new_id,\

@@ -256,10 +256,7 @@ class Controller():
         if saveas or session.temp_item:
             proj = prj.Project()
             filepath, compress = dialog.ShowSaveAsProjectDialog(proj.name)
-            if filepath:
-                #session.RemoveTemp()
-                session.OpenProject(filepath)
-            else:
+            if not filepath:
                 return
         else:
             proj = prj.Project()
@@ -364,7 +361,6 @@ class Controller():
         session = ses.Session()
         if path:
             dirpath, filename = os.path.split(path)
-            session.SaveProject((dirpath, filename))
         else:
             dirpath, filename = session.project_path
 
@@ -372,9 +368,22 @@ class Controller():
             filename = utils.decode(filename, const.FS_ENCODE)
 
         proj = prj.Project()
-        prj.Project().SavePlistProject(dirpath, filename, compress)
+        try:
+            prj.Project().SavePlistProject(dirpath, filename, compress)
+        except PermissionError as err:
+            if wx.GetApp() is None:
+                print("Error: Permission denied, you don't have permission to write at {}".format(dirpath))
+            else:
+                dlg = dialogs.ErrorMessageBox(
+                    None,
+                    "Save project error",
+                    "It was not possible to save because you don't have permission to write at {}\n{}".format(dirpath, err)
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+        else:
+            session.SaveProject((dirpath, filename))
 
-        session.SaveProject()
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
@@ -1076,7 +1085,7 @@ class Controller():
                 if not os.path.isfile(path):
                     path = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     preset_name+".plist")
-            with open(path, 'r+b') as f:
+            with open(path, 'rb') as f:
                 preset = plistlib.load(f, fmt=plistlib.FMT_XML)
             prj.Project().raycasting_preset = preset
             # Notify volume

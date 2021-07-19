@@ -425,6 +425,7 @@ class Mask():
         new_mask.threshold_range = self.threshold_range
         new_mask.edition_threshold_range = self.edition_threshold_range
         new_mask.is_shown = self.is_shown
+        new_mask.was_edited = self.was_edited
 
         new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]

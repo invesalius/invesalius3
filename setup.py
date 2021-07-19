@@ -1,4 +1,8 @@
+import distutils.cmd
+import distutils.log
 import os
+import pathlib
+import subprocess
 import sys
 from distutils.core import setup
 from distutils.extension import Extension
@@ -7,12 +11,16 @@ import numpy
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 
-if sys.platform == 'darwin':
-    unix_copt = ['-Xpreprocessor', '-fopenmp', '-lomp']
-    unix_lopt = ['-Xpreprocessor', '-fopenmp', '-lomp']
+if sys.platform == "darwin":
+    unix_copt = ["-Xpreprocessor", "-fopenmp", "-lomp"]
+    unix_lopt = ["-Xpreprocessor", "-fopenmp", "-lomp"]
 else:
-    unix_copt = ['-fopenmp',]
-    unix_lopt = ['-fopenmp',]
+    unix_copt = [
+        "-fopenmp",
+    ]
+    unix_lopt = [
+        "-fopenmp",
+    ]
 
 
 copt = {"msvc": ["/openmp"], "mingw32": ["-fopenmp"], "unix": unix_copt}
@@ -35,8 +43,39 @@ class build_ext_subclass(build_ext):
         build_ext.build_extensions(self)
 
 
+class BuildPluginsCommand(distutils.cmd.Command):
+    """
+    A custom command to build all plugins with cython code.
+    """
+
+    description = "Build all plugins with cython code"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        compilable_plugins = ["porous_creation", "remove_tiny_objects"]
+        inv_folder = pathlib.Path(__file__).parent.resolve()
+        plugins_folder = inv_folder.joinpath("plugins")
+        for p in compilable_plugins:
+            plugin_folder = plugins_folder.joinpath(p)
+            self.announce("Compiling plugin: {}".format(p), level=distutils.log.INFO)
+            os.chdir(plugin_folder)
+            subprocess.check_call(
+                [sys.executable, "setup.py", "build_ext", "--inplace"]
+            )
+            os.chdir(inv_folder)
+
+
 setup(
-    cmdclass={"build_ext": build_ext_subclass},
+    cmdclass={
+        "build_ext": build_ext_subclass,
+        "build_plugins": BuildPluginsCommand,
+    },
     ext_modules=cythonize(
         [
             Extension(

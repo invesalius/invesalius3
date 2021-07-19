@@ -1321,7 +1321,7 @@ class Viewer(wx.Panel):
         try:
             self.style.OnScrollBar()
         except AttributeError:
-            print("Do not have OnScrollBar")
+            pass
 
         if evt:
             if self._flush_buffer:

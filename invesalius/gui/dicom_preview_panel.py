@@ -37,6 +37,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.utils as utils
 from invesalius.data import imagedata_utils
 from invesalius.data import converters
+from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 if sys.platform == 'win32':
     try:
@@ -716,46 +717,62 @@ class SingleImagePreview(wx.Panel):
         self.window_level = const.WINDOW_LEVEL[_("Bone")][1]
 
     def __init_vtk(self):
-        text_image_size = vtku.Text()
+        text_image_size = vtku.TextZero()
         text_image_size.SetPosition(const.TEXT_POS_LEFT_UP)
         text_image_size.SetValue("")
-        text_image_size.SetSize(const.TEXT_SIZE_SMALL)
+        text_image_size.SetSymbolicSize(wx.FONTSIZE_SMALL)
         self.text_image_size = text_image_size
 
-        text_image_location = vtku.Text()
-        text_image_location.SetVerticalJustificationToBottom()
+        text_image_location = vtku.TextZero()
+        #  text_image_location.SetVerticalJustificationToBottom()
         text_image_location.SetPosition(const.TEXT_POS_LEFT_DOWN)
         text_image_location.SetValue("")
-        text_image_location.SetSize(const.TEXT_SIZE_SMALL)
+        text_image_location.bottom_pos = True
+        text_image_location.SetSymbolicSize(wx.FONTSIZE_SMALL)
         self.text_image_location = text_image_location
 
-        text_patient = vtku.Text()
-        text_patient.SetJustificationToRight()
+        text_patient = vtku.TextZero()
+        #  text_patient.SetJustificationToRight()
         text_patient.SetPosition(const.TEXT_POS_RIGHT_UP)
         text_patient.SetValue("")
-        text_patient.SetSize(const.TEXT_SIZE_SMALL)
+        text_patient.right_pos = True
+        text_patient.SetSymbolicSize(wx.FONTSIZE_SMALL)
         self.text_patient = text_patient
 
-        text_acquisition = vtku.Text()
-        text_acquisition.SetJustificationToRight()
-        text_acquisition.SetVerticalJustificationToBottom()
+        text_acquisition = vtku.TextZero()
+        #  text_acquisition.SetJustificationToRight()
+        #  text_acquisition.SetVerticalJustificationToBottom()
         text_acquisition.SetPosition(const.TEXT_POS_RIGHT_DOWN)
         text_acquisition.SetValue("")
-        text_acquisition.SetSize(const.TEXT_SIZE_SMALL)
+        text_acquisition.right_pos = True
+        text_acquisition.bottom_pos = True
+        text_acquisition.SetSymbolicSize(wx.FONTSIZE_SMALL)
         self.text_acquisition = text_acquisition
 
-        renderer = vtk.vtkRenderer()
-        renderer.AddActor(text_image_size.actor)
-        renderer.AddActor(text_image_location.actor)
-        renderer.AddActor(text_patient.actor)
-        renderer.AddActor(text_acquisition.actor)
-        self.renderer = renderer
+        self.renderer = vtk.vtkRenderer()
+        self.renderer.SetLayer(0)
+
+        cam = self.renderer.GetActiveCamera()
+
+        self.canvas_renderer = vtk.vtkRenderer()
+        self.canvas_renderer.SetLayer(1)
+        self.canvas_renderer.SetActiveCamera(cam)
+        self.canvas_renderer.SetInteractive(0)
+        self.canvas_renderer.PreserveDepthBufferOn()
 
         style = vtk.vtkInteractorStyleImage()
 
-        self.interactor.GetRenderWindow().AddRenderer(renderer)
+        self.interactor.GetRenderWindow().SetNumberOfLayers(2)
+        self.interactor.GetRenderWindow().AddRenderer(self.renderer)
+        self.interactor.GetRenderWindow().AddRenderer(self.canvas_renderer)
         self.interactor.SetInteractorStyle(style)
         self.interactor.Render()
+
+        self.canvas = CanvasRendererCTX(self, self.renderer, self.canvas_renderer)
+        self.canvas.draw_list.append(self.text_image_size)
+        self.canvas.draw_list.append(self.text_image_location)
+        self.canvas.draw_list.append(self.text_patient)
+        self.canvas.draw_list.append(self.text_acquisition)
 
     def __init_gui(self):
         slider = wx.Slider(self,
@@ -891,7 +908,6 @@ class SingleImagePreview(wx.Panel):
                 filename = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
 
             np_image = imagedata_utils.read_dcm_slice_as_np2(filename)
-            print(">>> spacing", dicom.image.spacing)
             vtk_image = converters.to_vtk(np_image, dicom.image.spacing, 0, 'AXIAL')
 
             # ADJUST CONTRAST
@@ -915,6 +931,8 @@ class SingleImagePreview(wx.Panel):
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
+
+        self.canvas.modified = True
 
         # PLOT IMAGE INTO VIEWER
         self.actor.SetInputData(flip.GetOutput())

@@ -47,11 +47,9 @@ class PluginManager:
 
     def find_plugins(self):
         self.plugins = {}
-        for p in sorted(
-            chain(
-                glob.glob(str(inv_paths.USER_PLUGINS_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
+        for p in chain(
                 glob.glob(str(inv_paths.PLUGIN_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
-            )
+                glob.glob(str(inv_paths.USER_PLUGINS_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
         ):
             try:
                 p = pathlib.Path(p)

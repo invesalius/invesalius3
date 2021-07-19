@@ -41,8 +41,9 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.CAMERA: CameraTracker,      # CAMERA
                     const.POLARIS: PolarisTracker,      # POLARIS
                     const.POLARISP4: PolarisP4Tracker,  # POLARISP4
-                    const.ELFIN: ElfinRobot,      # ELFIN
-                    const.DEBUGTRACK: DebugTracker,
+                    const.OPTITRACK: OptitrackTracker,   #Optitrack
+                    const.DEBUGTRACKRANDOM: DebugTrackerRandom,
+                    const.DEBUGTRACKAPPROACH: DebugTrackerApproach,
                     const.HYBRID: HybridTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
@@ -65,35 +66,30 @@ def DefaultTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
+def OptitrackTracker(tracker_id):
+    """
+    Imports optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration, loads User Profile
+    (Rigid bodies information).
 
-def PolarisP4Tracker(tracker_id):
-    from wx import ID_OK
+    Parameters
+    ----------
+    tracker_id : Optitrack ID
+
+    Returns
+    -------
+    trck_init : local name for Optitrack module
+    """
     trck_init = None
-    dlg_port = dlg.SetNDIconfigs()
-    if dlg_port.ShowModal() == ID_OK:
-        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
-        try:
-            import pypolarisP4
-            lib_mode = 'wrapper'
-            trck_init = pypolarisP4.pypolarisP4()
-
-            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
-                trck_init = None
-                lib_mode = None
-                print('Could not connect to polaris P4 tracker.')
-            else:
-                print('Connect to polaris P4 tracking device.')
-
-        except:
-            lib_mode = 'error'
+    try:
+        import optitrack
+        trck_init = optitrack.optr()
+        if trck_init.Initialize()==0:
+            trck_init.Run() #Runs once Run function, to update cameras.
+        else:
             trck_init = None
-            print('Could not connect to polaris P4 tracker.')
-    else:
-        lib_mode = None
-        print('Could not connect to polaris P4 tracker.')
-
-    # return tracker initialization variable and type of connection
-    return trck_init, lib_mode
+    except ImportError:
+        print('Error')
+    return trck_init, 'wrapper'
 
 def PolarisTracker(tracker_id):
     from wx import ID_OK
@@ -121,6 +117,35 @@ def PolarisTracker(tracker_id):
         lib_mode = None
         print('Could not connect to polaris tracker.')
 
+    # return tracker initialization variable and type of connection
+    return trck_init, lib_mode
+
+
+def PolarisP4Tracker(tracker_id):
+    from wx import ID_OK
+    trck_init = None
+    dlg_port = dlg.SetNDIconfigs()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
+        try:
+            import pypolarisP4
+            lib_mode = 'wrapper'
+            trck_init = pypolarisP4.pypolarisP4()
+
+            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
+                trck_init = None
+                lib_mode = None
+                print('Could not connect to Polaris P4 tracker.')
+            else:
+                print('Connect to Polaris P4 tracking device.')
+
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to Polaris P4 tracker.')
+    else:
+        lib_mode = None
+        print('Could not connect to Polaris P4 tracker.')
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
 
@@ -211,9 +236,15 @@ def PolhemusTracker(tracker_id):
     return trck_init, lib_mode
 
 
-def DebugTracker(tracker_id):
+def DebugTrackerRandom(tracker_id):
     trck_init = True
-    print('Debug device started.')
+    print('Debug device (random) started.')
+    return trck_init, 'debug'
+
+
+def DebugTrackerApproach(tracker_id):
+    trck_init = True
+    print('Debug device (approach) started.')
     return trck_init, 'debug'
 
 
@@ -338,7 +369,7 @@ def DisconnectTracker(tracker_id, trck_init):
     :param trck_init: Initialization variable of tracking device.
     """
 
-    if tracker_id == const.DEBUGTRACK:
+    if tracker_id == const.DEBUGTRACKRANDOM or tracker_id == const.DEBUGTRACKAPPROACH:
         trck_init = False
         lib_mode = 'debug'
         print('Debug tracker disconnected.')

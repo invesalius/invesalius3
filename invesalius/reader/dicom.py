@@ -1282,17 +1282,12 @@ class Parser():
         except(KeyError):
             return ""
 
-        if (data):
-            name = data.strip()
-            encoding = self.GetEncoding()
-            
-            try:
-                # Returns a unicode decoded in the own dicom encoding
-                return utils.decode(name, encoding, 'replace')
-            except(UnicodeEncodeError):
-                return name
-
-        return ""
+        encoding = self.GetEncoding()
+        try:
+            data = data.encode(encoding, errors="surrogateescape").decode(encoding)
+        except Exception as err:
+            print(err)
+        return data
 
     def GetPatientID(self):
         """
@@ -1559,13 +1554,20 @@ class Parser():
         """
         try:
             data = self.data_image[str(0x0008)][str(0x103E)]
-            if data == "None":
-                return _("unnamed")
-            if (data):
-                return data
-            else:
-                return _("unnamed")
         except(KeyError):
+            return _("unnamed")
+
+        encoding = self.GetEncoding()
+        try:
+            data = data.encode(encoding, errors="surrogateescape").decode(encoding)
+        except Exception as err:
+            print(err)
+
+        if data == "None":
+            return _("unnamed")
+        if data:
+            return data
+        else:
             return _("unnamed")
 
     def GetImageTime(self):
