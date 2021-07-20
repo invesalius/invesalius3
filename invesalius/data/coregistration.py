@@ -186,14 +186,16 @@ class CoordinateCorregistrate(threading.Thread):
         self.m_icp = None
         self.last_coord = None
         self.tracker_id = tracker_id
+        self.target = target
 
-        self.target = np.array(target)
+        if self.target is not None:
+            self.target = np.array(self.target)
 
-        # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
-        #      in viewer_volume.py, so this makes them match. A better solution would probably be to
-        #      do this transformation only once, and doing it in the correct place.
-        #
-        self.target[1] = -self.target[1]
+            # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
+            #      in viewer_volume.py, so this makes them match. A better solution would probably be to
+            #      do this transformation only once, and doing it in the correct place.
+            #
+            self.target[1] = -self.target[1]
 
     def run(self):
         trck_info = self.trck_info
