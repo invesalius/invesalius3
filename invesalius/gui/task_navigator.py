@@ -482,27 +482,38 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTarget, 'Update target')
 
     def LoadImageFiducials(self, marker_id, coord):
-        for n in const.BTNS_IMG_MARKERS:
-            btn_id = list(const.BTNS_IMG_MARKERS[n].keys())[0]
-            fiducial_name = list(const.BTNS_IMG_MARKERS[n].values())[0]
-            if marker_id == fiducial_name and not self.btns_coord[btn_id].GetValue():
-                self.btns_coord[btn_id].SetValue(True)
-                Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
-                for m in [0, 1, 2]:
-                    self.numctrls_coord[btn_id][m].SetValue(coord[m])
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
 
-    def FiducialNameToIndex(self, fiducials, fiducial_name):
-        fiducial = [fiducial for fiducial in fiducials if fiducial['fiducial_name'] == fiducial_name][0]
-        return fiducial['fiducial_index']
+        fiducial_index = fiducial['fiducial_index']
+        fiducial_name = fiducial['fiducial_name']
+
+        if self.btns_coord[fiducial_index].GetValue():
+            print("Fiducial {} already set, not resetting".format(marker_id))
+            return
+
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+
+        self.btns_coord[fiducial_index].SetValue(True)
+        for m in [0, 1, 2]:
+            self.numctrls_coord[fiducial_index][m].SetValue(coord[m])
+
+    def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
+        found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
+
+        assert len(found) != 0, "No fiducial found for which {} = {}".format(attribute_name, attribute_value)
+        return found[0]
 
     def SetImageFiducial(self, fiducial_name, coord):
-        fiducial_index = self.FiducialNameToIndex(const.IMAGE_FIDUCIALS, fiducial_name)
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
         self.fiducials[fiducial_index, :] = coord
 
         print("Set image fiducial {} to coordinates {}".format(fiducial_name, coord))
 
     def SetTrackerFiducial(self, fiducial_name):
-        fiducial_index = self.FiducialNameToIndex(const.TRACKER_FIDUCIALS, fiducial_name)
+        fiducial = self.GetFiducialByAttribute(const.TRACKER_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
+
         coord = None
 
         if not(self.trk_init and self.tracker_id):
