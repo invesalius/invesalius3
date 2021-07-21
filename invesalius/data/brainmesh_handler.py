@@ -76,12 +76,14 @@ class Brain:
 
         newPeel = vtk.vtkPolyData()
         newPeel.DeepCopy(self.currentPeel)
+        self.peel_normals = vtk.vtkFloatArray()
+        self.peel_centers = vtk.vtkFloatArray()
         self.peel.append(newPeel)
         self.currentPeelActor = vtk.vtkActor()
         self.currentPeelActor.SetUserMatrix(affine_vtk)
         self.getCurrentPeelActor()
         self.peelActors.append(self.currentPeelActor)
-
+        self.locator = vtk.vtkCellLocator()  # This one will later find the triangle on the peel surface where the coil's normal intersect
         self.numberOfPeels = n_peels
         self.peelDown()
 
@@ -179,6 +181,12 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
+        self.currentPeel = self.peel[p]
+        self.locator.SetDataSet(self.peel[p])
+        self.locator.BuildLocator()
+        self.getCenters()
+        self.getNormals()
+
         return self.currentPeelActor
 
     def getCurrentPeelActor(self):
@@ -212,6 +220,26 @@ class Brain:
         self.currentPeelActor.GetProperty().SetOpacity(0.5)
 
         return self.currentPeelActor
+
+    def getCenters(self):
+        # Compute centers of triangles
+        centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the peel
+        centerComputer.SetInputData(self.currentPeel)
+        centerComputer.Update()
+        peel_centers = vtk.vtkFloatArray()  # This stores the centers for easy access
+        peel_centers = centerComputer.GetOutput()
+        self.peel_centers = peel_centers
+
+    def getNormals(self):
+        # Compute normals of triangles
+        normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the peel
+        normalComputer.SetInputData(self.currentPeel)
+        normalComputer.ComputePointNormalsOff()
+        normalComputer.ComputeCellNormalsOn()
+        normalComputer.Update()
+        peel_normals = vtk.vtkFloatArray()  # This converts to the normals to an array for easy access
+        peel_normals = normalComputer.GetOutput().GetCellData().GetNormals()
+        self.peel_normals = peel_normals
 
 
 def cleanMesh(inp):
