@@ -173,6 +173,8 @@ class Viewer(wx.Panel):
         self.y_actor = None
         self.z_actor = None
         self.mark_actor = None
+        self.obj_projection_arrow_actor = None
+        self.object_orientation_disk_actor = None
 
         self._mode_cross = False
         self._to_show_ball = 0
@@ -1315,11 +1317,17 @@ class Viewer(wx.Panel):
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
+        self.obj_projection_arrow_actor = self.add_objectArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
+                                                               50)
+        self.object_orientation_disk_actor = self.add_object_orientation_disk([0., 0., 0.], [0., 0., 0.],
+                                                                              vtk_colors.GetColor3d('Red'))
+
         self.ren.AddActor(self.obj_actor)
         self.ren.AddActor(self.x_actor)
         self.ren.AddActor(self.y_actor)
         self.ren.AddActor(self.z_actor)
-
+        self.ren.AddActor(self.obj_projection_arrow_actor)
+        self.ren.AddActor(self.object_orientation_disk_actor)
         # self.obj_axes = vtk.vtkAxesActor()
         # self.obj_axes.SetShaftTypeToCylinder()
         # self.obj_axes.SetXAxisLabelText("x")
@@ -1328,6 +1336,45 @@ class Viewer(wx.Panel):
         # self.obj_axes.SetTotalLength(50.0, 50.0, 50.0)
 
         # self.ren.AddActor(self.obj_axes)
+
+    def add_object_orientation_disk(self, position, orientation, color=[0.0, 0.0, 1.0]):
+        # Create a disk to show target
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(2)
+        disk.SetOuterRadius(5)
+        disk.SetRadialResolution(100)
+        disk.SetCircumferentialResolution(100)
+        disk.Update()
+
+        disk_mapper = vtk.vtkPolyDataMapper()
+        disk_mapper.SetInputData(disk.GetOutput())
+        disk_actor = vtk.vtkActor()
+        disk_actor.SetMapper(disk_mapper)
+        disk_actor.GetProperty().SetColor(color)
+        disk_actor.GetProperty().SetOpacity(5)
+        disk_actor.SetPosition(position)
+        disk_actor.SetOrientation(orientation)
+
+        return disk_actor
+
+    def add_objectArrow(self, direction, orientation, color=[0.0, 0.0, 1.0], size=2):
+        vtk_colors = vtk.vtkNamedColors()
+
+        arrow = vtk.vtkArrowSource()
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(arrow.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetLineWidth(50)
+        actor.AddPosition(0, 0, 0)
+        actor.SetScale(size)
+        actor.SetPosition(direction)
+        actor.SetOrientation(orientation)
+
+        return actor
 
     def add_line(self, p1, p2, color=[0.0, 0.0, 1.0]):
         line = vtk.vtkLineSource()
@@ -1427,11 +1474,15 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.y_actor)
                 self.ren.RemoveActor(self.z_actor)
                 self.ren.RemoveActor(self.mark_actor)
+                self.ren.RemoveActor(self.obj_projection_arrow_actor)
+                self.ren.RemoveActor(self.object_orientation_disk_actor)
                 self.obj_actor = None
                 self.x_actor = None
                 self.y_actor = None
                 self.z_actor = None
                 self.mark_actor = None
+                self.obj_projection_arrow_actor = None
+                self.object_orientation_disk_actor=None
         self.Refresh()
 
     def UpdateShowObjectState(self, state):
