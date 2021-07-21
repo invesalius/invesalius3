@@ -106,6 +106,7 @@ class InVesalius(wx.App):
         from multiprocessing import freeze_support
         freeze_support()
 
+        self.ResetLocale()
         self.SetAppName("InVesalius 3")
         self.splash = Inv3SplashScreen()
         self.splash.Show()

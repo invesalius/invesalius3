@@ -378,6 +378,7 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceRefMode, ctrl=choice_trck))
+        self.choice_ref = choice_ref
 
         # Toggle buttons for image fiducials
         for n, fiducial in enumerate(const.IMAGE_FIDUCIALS):
@@ -416,7 +417,7 @@ class NeuronavigationPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Start navigation"))
         btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, -1))
         btn_nav.SetToolTip(tooltip)
-        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
+        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=btn_nav))
 
         tooltip = wx.ToolTip(_(u"Refine the coregistration"))
         checkicp = wx.CheckBox(self, -1, _(' '))
@@ -490,31 +491,44 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateTarget, 'Update target')
+        Publisher.subscribe(self.onStartNavigation, 'Start navigation')
+        Publisher.subscribe(self.onStopNavigation, 'Stop navigation')
         Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
         Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
 
     def LoadImageFiducials(self, marker_id, coord):
-        for n in const.BTNS_IMG_MARKERS:
-            btn_id = list(const.BTNS_IMG_MARKERS[n].keys())[0]
-            fiducial_name = list(const.BTNS_IMG_MARKERS[n].values())[0]
-            if marker_id == fiducial_name and not self.btns_coord[btn_id].GetValue():
-                self.btns_coord[btn_id].SetValue(True)
-                Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
-                for m in [0, 1, 2]:
-                    self.numctrls_coord[btn_id][m].SetValue(coord[m])
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
 
-    def FiducialNameToIndex(self, fiducials, fiducial_name):
-        fiducial = [fiducial for fiducial in fiducials if fiducial['fiducial_name'] == fiducial_name][0]
-        return fiducial['fiducial_index']
+        fiducial_index = fiducial['fiducial_index']
+        fiducial_name = fiducial['fiducial_name']
+
+        if self.btns_coord[fiducial_index].GetValue():
+            print("Fiducial {} already set, not resetting".format(marker_id))
+            return
+
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+
+        self.btns_coord[fiducial_index].SetValue(True)
+        for m in [0, 1, 2]:
+            self.numctrls_coord[fiducial_index][m].SetValue(coord[m])
+
+    def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
+        found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
+
+        assert len(found) != 0, "No fiducial found for which {} = {}".format(attribute_name, attribute_value)
+        return found[0]
 
     def SetImageFiducial(self, fiducial_name, coord):
-        fiducial_index = self.FiducialNameToIndex(const.IMAGE_FIDUCIALS, fiducial_name)
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
         self.fiducials[fiducial_index, :] = coord
 
         print("Set image fiducial {} to coordinates {}".format(fiducial_name, coord))
 
     def SetTrackerFiducial(self, fiducial_name):
-        fiducial_index = self.FiducialNameToIndex(const.TRACKER_FIDUCIALS, fiducial_name)
+        fiducial = self.GetFiducialByAttribute(const.TRACKER_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
+
         coord = None
 
         if not(self.trk_init and self.tracker_id):
@@ -851,178 +865,193 @@ class NeuronavigationPanel(wx.Panel):
         self.icp_queue.put_nowait([self.icp, self.m_icp])
         #print(self.icp, self.m_icp)
 
-    def OnNavigate(self, evt, btn):
-        btn_nav = btn[0]
-        choice_trck = btn[1]
-        choice_ref = btn[2]
+    def onStopNavigation(self):
+        choice_trck = self.choice_trck
+        choice_ref = self.choice_ref
+
+        self.event.set()
+        self.robot_event.set()
+
+        # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+        # print("coord_tracts unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
+        # print("tracts unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
+        self.coord_queue.clear()
+        # self.visualization_queue.clear()
+        if self.trigger_state:
+            self.trigger_queue.clear()
+        if self.view_tracts:
+            self.coord_tracts_queue.clear()
+            self.tracts_queue.clear()
+
+        # print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+        # print("coord_tracts after unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
+        # print("tracts after unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
+        self.coord_queue.join()
+        # self.visualization_queue.join()
+        if self.trigger_state:
+            self.trigger_queue.join()
+        if self.view_tracts:
+            self.coord_tracts_queue.join()
+            self.tracts_queue.join()
+
+        # print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+        # print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+
+        # Enable all navigation buttons
+        choice_ref.Enable(True)
+        choice_trck.Enable(True)
+        for btn_c in self.btns_coord:
+            btn_c.Enable(True)
+
+        # if self.trigger_state:
+        #     self.trigger.stop()
+
+        vis_components = [self.trigger_state, self.view_tracts]
+        Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+
+    def onStartNavigation(self):
+        choice_trck = self.choice_trck
+        choice_ref = self.choice_ref
+
         errors = False
 
         # initialize jobs list
         jobs_list = []
         vis_components = [self.trigger_state, self.view_tracts]
-        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
+        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
+
+        if np.isnan(self.fiducials).any():
+            wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
+
+        elif not self.trk_init[0] or not self.tracker_id:
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
+            errors = True
+
+        else:
+            if self.event.is_set():
+                self.event.clear()
+            if self.robot_event.is_set():
+                self.robot_event.clear()
+
+            # prepare GUI for navigation
+            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
+            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Hide current mask")
+
+            # disable all navigation buttons
+            choice_ref.Enable(False)
+            choice_trck.Enable(False)
+            for btn_c in self.btns_coord:
+                btn_c.Enable(False)
+
+            # fiducials matrix
+            m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
+                                                    shear=False, scale=False)
+            # initialize spatial tracker parameters
+            tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+
+            # compute fiducial registration error (FRE)
+            if not self.icp_fre:
+                self.fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
+                self.UpdateFRE(self.fre)
+
+            if self.track_obj:
+                # if object tracking is selected
+                if not self.obj_reg_status:
+                    # check if object registration was performed
+                    wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
+                    errors = True
+                else:
+                    # if object registration was correctly performed continue with navigation
+                    # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
+                    obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
+
+                    coreg_data = [m_change, obj_ref_mode]
+
+                    if self.ref_mode_id:
+                        coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+                    else:
+                        coord_raw = np.array([None])
+
+                    obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
+                    coreg_data.extend(obj_data)
+
+                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                    jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
+                                                                    self.view_tracts, queues,
+                                                                    self.event, self.sleep_nav, self.tracker_id,
+                                                                    self.target))
+            else:
+                coreg_data = (m_change, 0)
+                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
+                                                                        self.view_tracts, queues,
+                                                                        self.event, self.sleep_nav))
+
+            if self.tracker_id == const.HYBRID:
+                self.robot_coord_queue.clear()
+                #self.robot_coord_queue.join()
+                elfin_process.ControlRobot(self.trk_init,
+                                   [self.robot_coord_queue, self.coord_queue, self.robottarget_queue], self.process_tracker,
+                                   self.robot_event).start()
+
+            if not errors:
+                #TODO: Test the trigger thread
+                if self.trigger_state:
+                    # self.trigger = trig.Trigger(nav_id)
+                    jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
+
+                if self.view_tracts:
+                    # initialize Trekker parameters
+                    slic = sl.Slice()
+                    prj_data = prj.Project()
+                    matrix_shape = tuple(prj_data.matrix_shape)
+                    affine = slic.affine.copy()
+                    affine[1, -1] -= matrix_shape[1]
+                    affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                    Publisher.sendMessage("Update marker offset state", create=True)
+                    self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
+                                    self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
+                    # print("Appending the tract computation thread!")
+                    queues = [self.coord_tracts_queue, self.tracts_queue]
+                    if self.enable_act:
+                        jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, queues, self.event, self.sleep_nav))
+                    else:
+                        jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
+
+                jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
+                                                       self.event, self.sleep_nav))
+
+                for jobs in jobs_list:
+                    # jobs.daemon = True
+                    jobs.start()
+                    # del jobs
+
+                if not self.checkicp.GetValue():
+                    if dlg.ICPcorregistration(self.fre):
+                        m_icp = self.OnICP()
+                        self.icp_fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id,
+                                                        m_change, m_icp)
+                        self.ctrl_icp()
+
+    def OnNavigate(self, evt, btn_nav):
+        choice_trck = self.choice_trck
+        choice_ref = self.choice_ref
+
         nav_id = btn_nav.GetValue()
         if not nav_id:
-            self.event.set()
-            self.robot_event.set()
-
-            # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("coord_tracts unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
-            # print("tracts unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
-            self.coord_queue.clear()
-            # self.visualization_queue.clear()
-            if self.trigger_state:
-                self.trigger_queue.clear()
-            if self.view_tracts:
-                self.coord_tracts_queue.clear()
-                self.tracts_queue.clear()
-
-            # print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("coord_tracts after unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
-            # print("tracts after unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
-            self.coord_queue.join()
-            # self.visualization_queue.join()
-            if self.trigger_state:
-                self.trigger_queue.join()
-            if self.view_tracts:
-                self.coord_tracts_queue.join()
-                self.tracts_queue.join()
-
-            # print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            Publisher.sendMessage("Stop navigation")
 
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
-
-            # Enable all navigation buttons
-            choice_ref.Enable(True)
-            choice_trck.Enable(True)
-            for btn_c in self.btns_coord:
-                btn_c.Enable(True)
-
-            # if self.trigger_state:
-            #     self.trigger.stop()
-
-            Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
-
         else:
+            Publisher.sendMessage("Start navigation")
 
-            if np.isnan(self.fiducials).any():
-                wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
-                btn_nav.SetValue(False)
-
-            elif not self.trk_init[0] or not self.tracker_id:
-                dlg.ShowNavigationTrackerWarning(0, 'choose')
-                errors = True
-
-            else:
-                if self.event.is_set():
-                    self.event.clear()
-                if self.robot_event.is_set():
-                    self.robot_event.clear()
-
-                # prepare GUI for navigation
-                Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-                Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
-                Publisher.sendMessage("Hide current mask")
+            if self.nav_status:
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
                 btn_nav.SetToolTip(tooltip)
-
-                # disable all navigation buttons
-                choice_ref.Enable(False)
-                choice_trck.Enable(False)
-                for btn_c in self.btns_coord:
-                    btn_c.Enable(False)
-
-                # fiducials matrix
-                m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
-                                                        shear=False, scale=False)
-                # initialize spatial tracker parameters
-                tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-
-                # compute fiducial registration error (FRE)
-                if not self.icp_fre:
-                    self.fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
-                    self.UpdateFRE(self.fre)
-
-                if self.track_obj:
-                    # if object tracking is selected
-                    if not self.obj_reg_status:
-                        # check if object registration was performed
-                        wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
-                        errors = True
-                    else:
-                        # if object registration was correctly performed continue with navigation
-                        # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
-                        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
-
-                        coreg_data = [m_change, obj_ref_mode]
-
-                        if self.ref_mode_id:
-                            coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-                        else:
-                            coord_raw = np.array([None])
-
-                        obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
-                        coreg_data.extend(obj_data)
-
-                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
-                        jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                     self.view_tracts, queues,
-                                                                     self.event, self.sleep_nav, self.tracker_id,
-                                                                     self.target))
-                else:
-                    coreg_data = (m_change, 0)
-                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
-                    jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                         self.view_tracts, queues,
-                                                                         self.event, self.sleep_nav))
-
-                if self.tracker_id == const.HYBRID:
-                    self.robot_coord_queue.clear()
-                    #self.robot_coord_queue.join()
-                    elfin_process.ControlRobot(self.trk_init,
-                                       [self.robot_coord_queue, self.coord_queue, self.robottarget_queue], self.process_tracker,
-                                       self.robot_event).start()
-
-                if not errors:
-                    #TODO: Test the trigger thread
-                    if self.trigger_state:
-                        # self.trigger = trig.Trigger(nav_id)
-                        jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
-
-                    if self.view_tracts:
-                        # initialize Trekker parameters
-                        slic = sl.Slice()
-                        prj_data = prj.Project()
-                        matrix_shape = tuple(prj_data.matrix_shape)
-                        affine = slic.affine.copy()
-                        affine[1, -1] -= matrix_shape[1]
-                        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-                        Publisher.sendMessage("Update marker offset state", create=True)
-                        self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
-                                       self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
-                        # print("Appending the tract computation thread!")
-                        queues = [self.coord_tracts_queue, self.tracts_queue]
-                        if self.enable_act:
-                            jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, queues, self.event, self.sleep_nav))
-                        else:
-                            jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
-
-                    jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
-                                                           self.event, self.sleep_nav))
-
-                    for jobs in jobs_list:
-                        # jobs.daemon = True
-                        jobs.start()
-                        # del jobs
-
-                    if not self.checkicp.GetValue():
-                        if dlg.ICPcorregistration(self.fre):
-                            m_icp = self.OnICP()
-                            self.icp_fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id,
-                                                            m_change, m_icp)
-                            self.ctrl_icp()
+            else:
+                btn_nav.SetValue(False)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
