@@ -312,6 +312,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.UpdateMarkerOffsetPosition, 'Update marker offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
+        Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
+        Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
 
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
@@ -1397,6 +1399,18 @@ class Viewer(wx.Panel):
         if flag and actor:
             self.ren.AddActor(actor)
             self.actor_peel = actor
+        self.Refresh()
+
+    def GetPeelCenters(self, centers, normals):
+        self.peel_centers = centers
+        self.peel_normals = normals
+        print('viewer centers',self.peel_centers)
+        print('viewer normals', self.peel_normals)
+        self.Refresh()
+
+    def Initlocator_viewer(self, locator):
+        self.locator = locator
+        print('locator', self.locator)
         self.Refresh()
 
     def OnNavigationStatus(self, nav_status, vis_status):
