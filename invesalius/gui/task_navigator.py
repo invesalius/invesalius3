@@ -2253,7 +2253,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord)
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1

@@ -295,6 +295,7 @@ class Viewer(wx.Panel):
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
+        Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -1428,6 +1429,48 @@ class Viewer(wx.Panel):
         self.locator = locator
         self.Refresh()
 
+    def getcellintersection(self, p1, p2, coil_norm, coil_dir):
+        vtk_colors = vtk.vtkNamedColors()
+        intersectingCellIds = vtk.vtkIdList()  # This find store the triangles that intersect the coil's normal
+
+        #self.x_actor = self.add_line(p1, p2, vtk_colors.GetColor3d('Blue'))
+        #self.ren.AddActor(self.x_actor)
+        # TODO : CHECK IF THERE ARE INTERSECTION CELLS AND ADD THE ARROW AND DISC ACCORDINGLY
+
+        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+
+        closestPoint = np.array((np.Inf, np.Inf, np.Inf))
+        closestDist = np.Inf
+
+
+        for i in range(intersectingCellIds.GetNumberOfIds()):
+            cellId = intersectingCellIds.GetId(i)
+            point = np.array(self.peel_centers.GetPoint(cellId))
+            distance = np.linalg.norm(point - p1)
+            # TODO : check this
+            if distance < closestDist:
+                closestDist = distance
+                closestPoint = point
+                pointnormal = np.array(self.peel_normals.GetTuple(cellId))
+                angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                print('the angle:', angle)
+
+        #self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal, vtk_colors.GetColor3d('Yellow'))
+        #self.ren.AddActor(self.y_actor)
+        self.obj_projection_arrow_actor.SetPosition(closestPoint)
+        self.obj_projection_arrow_actor.SetOrientation(coil_dir)
+
+        self.object_orientation_disk_actor.SetPosition(closestPoint)
+        self.object_orientation_disk_actor.SetOrientation(coil_dir)
+        if angle < 30:
+            self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+            self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+        else:
+            self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
+            self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
+
+        self.Refresh()
+
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
         self.tracts_status = vis_status[1]
@@ -1488,6 +1531,18 @@ class Viewer(wx.Panel):
         self.y_actor.SetUserMatrix(m_img_vtk)
         self.z_actor.SetUserMatrix(m_img_vtk)
 
+        self.Refresh()
+
+
+    def UpdateObjectArrowOrientation(self, m_img, coord):
+
+        [coil_dir, norm, coil_norm, p1 ]= self.objectArrowlocation(m_img,coord)
+        #self.obj_arrow_actor.SetPosition(p1)
+        #self.obj_arrow_actor.SetOrientation(coil_dir)
+        #self.ren.RemoveActor(self.x_actor)
+        #self.ren.RemoveActor(self.y_actor)
+        #self.ren.RemoveActor(self.z_actor)
+        self.getcellintersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
