@@ -1404,13 +1404,11 @@ class Viewer(wx.Panel):
     def GetPeelCenters(self, centers, normals):
         self.peel_centers = centers
         self.peel_normals = normals
-        print('viewer centers',self.peel_centers)
-        print('viewer normals', self.peel_normals)
+
         self.Refresh()
 
     def Initlocator_viewer(self, locator):
         self.locator = locator
-        print('locator', self.locator)
         self.Refresh()
 
     def OnNavigationStatus(self, nav_status, vis_status):
