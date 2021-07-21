@@ -364,7 +364,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
-        choice_trck = wx.ComboBox(self, -1, "",
+        choice_trck = wx.ComboBox(self, -1, "", size = (145,-1),
                                   choices=const.TRACKER, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_trck.SetToolTip(tooltip)
         choice_trck.SetSelection(const.DEFAULT_TRACKER)
@@ -918,7 +918,7 @@ class NeuronavigationPanel(wx.Panel):
         # initialize jobs list
         jobs_list = []
         vis_components = [self.trigger_state, self.view_tracts]
-        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
+        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
 
         if np.isnan(self.fiducials).any():
             wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
@@ -1373,7 +1373,7 @@ class MarkersPanel(wx.Panel):
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
         self.current_ref = 0, 0, 0, 0, 0, 0
-        self.current_robot_angle = 0, 0, 0, 0, 0, 0
+        self.current_robot = 0, 0, 0, 0, 0, 0
         self.list_coord = []
         self.marker_ind = 0
         self.tgt_flag = self.tgt_index = None
