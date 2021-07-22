@@ -4109,7 +4109,7 @@ class SetTrackerDevice2Robot(wx.Dialog):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
         choice_trck = wx.ComboBox(self, -1, "",
-                                  choices=const.TRACKER[:8], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+                                  choices=const.TRACKER[:-4], style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_trck.SetToolTip(tooltip)
         choice_trck.SetSelection(const.DEFAULT_TRACKER)
         choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
@@ -4146,6 +4146,57 @@ class SetTrackerDevice2Robot(wx.Dialog):
 
     def GetValue(self):
         return self.tracker_id
+
+class SetRobotIP(wx.Dialog):
+    def __init__(self, title=_("Setting Robot IP")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        self.robot_ip = None
+        self._init_gui()
+
+    def _init_gui(self):
+        # ComboBox for spatial tracker device selection
+        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        choice_IP = wx.ComboBox(self, -1, "",
+                                  choices=const.ROBOT_ElFIN_IP, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        choice_IP.SetToolTip(tooltip)
+        choice_IP.SetSelection(const.DEFAULT_TRACKER)
+        choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
+        choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(choice_IP, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def OnTxt_Ent(self, evt, ctrl):
+        self.robot_ip = str(ctrl.GetValue())
+
+    def OnChoiceIP(self, evt, ctrl):
+        self.robot_ip = ctrl.GetStringSelection()
+
+    def GetValue(self):
+        return self.robot_ip
 
 class CreateTransformationMatrixRobot(wx.Dialog):
     def __init__(self, nav_prop, title=_("Create transformation matrix to robot space")):

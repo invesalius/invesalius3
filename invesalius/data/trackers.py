@@ -193,14 +193,12 @@ def CameraTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
-def ElfinRobot():
+def ElfinRobot(robot_IP):
     trck_init = None
     try:
         import invesalius.data.elfin_robot as elfin
-        #TODO: dialog to set IP and port
-        trck_init = elfin.elfin_server('143.107.220.251', 10003)
-        #trck_init = elfin.elfin_server('169.254.153.251', 10003)
-        #trck_init = elfin.elfin_server('127.0.0.1', 10003)
+        print("Trying to connect Robot via: ", robot_IP)
+        trck_init = elfin.elfin_server(robot_IP, 10003)
         trck_init.Initialize()
         lib_mode = 'wrapper'
         print('Connect to elfin robot tracking device.')
@@ -382,10 +380,16 @@ def HybridTracker(tracker_id):
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         trck_init = TrackerConnection(tracker_id, None, 'connect')
+        dlg_ip = dlg.SetRobotIP()
+        if dlg_ip.ShowModal() == ID_OK:
+            robot_IP = dlg_ip.GetValue()
+            trck_init_robot = ElfinRobot(robot_IP)
+        else:
+            trck_init = None
+            trck_init_robot = None
         #TODO: deal with errors
     else:
-        trck_init = ClaronTracker(1)
-    trck_init_robot = ElfinRobot()
+        trck_init = None
 
     return [trck_init, trck_init_robot, tracker_id]
 
