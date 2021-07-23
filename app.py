@@ -67,6 +67,7 @@ import invesalius.session as ses
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+from invesalius.net.pedal_connection import PedalConnection
 
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
@@ -342,6 +343,9 @@ def parse_comand_line():
                       dest="save_masks", default=True,
                       help="Make InVesalius not export mask when exporting project.")
 
+    parser.add_option("--use-pedal", action="store_true", dest="use_pedal",
+                      help="Use an external trigger pedal")
+
     options, args = parser.parse_args()
     return options, args
 
@@ -352,6 +356,10 @@ def use_cmd_optargs(options, args):
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
         session = ses.Session()
         session.debug = 1
+
+    # If use-pedal argument...
+    if options.use_pedal:
+        PedalConnection().start()
 
     # If import DICOM argument...
     if options.dicom_dir:
