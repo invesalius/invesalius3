@@ -804,3 +804,4 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
                   'min_lenth': 20, 'max_sampling_step': 100}
 
 ROBOT_ElFIN_IP = ['Select robot IP:', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_ElFIN_PORT = 10003

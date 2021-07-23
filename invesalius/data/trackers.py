@@ -198,7 +198,7 @@ def ElfinRobot(robot_IP):
     try:
         import invesalius.data.elfin_robot as elfin
         print("Trying to connect Robot via: ", robot_IP)
-        trck_init = elfin.elfin_server(robot_IP, 10003)
+        trck_init = elfin.elfin_server(robot_IP, const.ROBOT_ElFIN_PORT)
         trck_init.Initialize()
         lib_mode = 'wrapper'
         print('Connect to elfin robot tracking device.')

@@ -13,7 +13,7 @@ import invesalius.data.bases as db
 
 
 class elfin_server():
-    def __init__(self, server_ip='169.254.153.251', port_number=10003):
+    def __init__(self, server_ip, port_number):
         self.server_ip = server_ip
         self.port_number = port_number
         #print(cobot.ReadPcsActualPos())
