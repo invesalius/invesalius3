@@ -60,6 +60,7 @@ import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
 import invesalius.data.bases as bases
+import invesalius.data.coregistration as dcr
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
@@ -3536,10 +3537,9 @@ class ICPCorregistrationDialog(wx.Dialog):
     def __init__(self, nav_prop):
         import invesalius.project as prj
 
-        self.__bind_events()
-
-        self.tracker_id = nav_prop[0]
-        self.trk_init = nav_prop[1]
+        self.m_change = nav_prop[0]
+        self.tracker_id = nav_prop[1]
+        self.trk_init = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3562,12 +3562,6 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.proj = prj.Project()
 
         self._init_gui()
-
-    def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
-
-    def UpdateCurrentCoord(self, position):
-        self.current_coord = position[:]
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3615,10 +3609,10 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         btn_reset = wx.Button(self, -1, label=_('Remove points'))
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
-
+        # TODO: enable apply registration button after points collection
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
         btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
-
+        #TODO: enable done button after apply registration
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Refine done"))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
@@ -3680,6 +3674,11 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetProgress(0)
         self.ren.ResetCamera()
         self.interactor.Render()
+
+    def GetCurrentCoord(self):
+        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
+        coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
+        return coord[:3]
 
     def AddMarker(self, size, colour, coord):
         """
@@ -3804,12 +3803,14 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.timer.Stop()
 
     def OnUpdate(self, evt):
-        self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
-        self.SetCameraVolume(self.current_coord[:3])
+        current_coord = self.GetCurrentCoord()
+        self.AddMarker(3, (1, 0, 0), current_coord)
+        self.SetCameraVolume(current_coord)
 
     def OnCreatePoint(self, evt):
-        self.AddMarker(3,(1,0,0),self.current_coord[:3])
-        self.SetCameraVolume(self.current_coord[:3])
+        current_coord = self.GetCurrentCoord()
+        self.AddMarker(3, (1, 0, 0), current_coord)
+        self.SetCameraVolume(current_coord)
 
     def OnReset(self, evt):
         self.RemoveActor()
@@ -3817,6 +3818,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def OnICP(self, evt):
         self.SetProgress(0.3)
+        time.sleep(2)
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
@@ -3832,6 +3834,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         icp = vtk.vtkIterativeClosestPointTransform()
         icp.SetSource(source)
         icp.SetTarget(self.surface)
+
+        self.SetProgress(0.5)
 
         if self.icp_mode == 0:
             print("Affine mode")
