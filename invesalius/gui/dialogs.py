@@ -59,7 +59,7 @@ import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
-import invesalius.data.bases as bases
+import invesalius.data.vtk_utils as vtku
 import invesalius.data.coregistration as dcr
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
@@ -3665,17 +3665,33 @@ class ICPCorregistrationDialog(wx.Dialog):
         obj_actor.SetMapper(mapper)
         self.obj_actor = obj_actor
 
+        poses_recorded = vtku.Text()
+        poses_recorded.SetSize(const.TEXT_SIZE_LARGE)
+        poses_recorded.SetPosition((const.X, const.Y))
+        poses_recorded.ShadowOff()
+        poses_recorded.SetValue("Poses recorded: ")
+
+        collect_points = vtku.Text()
+        collect_points.SetSize(const.TEXT_SIZE_LARGE)
+        collect_points.SetPosition((const.X+0.35, const.Y))
+        collect_points.ShadowOff()
+        collect_points.SetValue("0")
+        self.collect_points = collect_points
+
         self.ren.AddActor(obj_actor)
+        self.ren.AddActor(poses_recorded.actor)
+        self.ren.AddActor(collect_points.actor)
         self.ren.ResetCamera()
         self.interactor.Render()
 
     def RemoveActor(self):
-        #self.ren.RemoveActor(self.obj_actor)
         self.ren.RemoveAllViewProps()
         self.point_coord = []
         self.transformed_points = []
         self.m_icp = None
         self.SetProgress(0)
+        self.btn_apply_icp.Enable(False)
+        self.btn_ok.Enable(False)
         self.ren.ResetCamera()
         self.interactor.Render()
 
@@ -3715,6 +3731,8 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.ren.AddActor(sphere_actor)
         self.point_coord.append([x, y, z])
+
+        self.collect_points.SetValue(str(int(self.collect_points.GetValue()) + 1))
 
         self.interactor.Render()
 
@@ -3824,10 +3842,12 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetCameraVolume(current_coord)
 
     def OnReset(self, evt):
+        if self.cont_point:
+            self.cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+
         self.RemoveActor()
         self.LoadActor()
-        self.btn_apply_icp.Enable(False)
-        self.btn_ok.Enable(False)
 
     def OnICP(self):
         if self.cont_point:
@@ -3878,7 +3898,6 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         transformedSource = icpTransformFilter.GetOutput()
 
-        self.SetProgress(1)
 
         for i in range(transformedSource.GetNumberOfPoints()):
             p = [0, 0, 0]
@@ -3903,6 +3922,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
 
         self.interactor.Render()
+
+        self.SetProgress(1)
 
         self.btn_ok.Enable(True)
 
