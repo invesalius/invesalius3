@@ -3609,13 +3609,12 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         btn_reset = wx.Button(self, -1, label=_('Remove points'))
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
-        # TODO: enable apply registration button after points collection
+
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
         btn_apply_icp.Bind(wx.EVT_BUTTON, self.thread_ICP_start, btn_apply_icp)
         btn_apply_icp.Enable(False)
         self.btn_apply_icp = btn_apply_icp
-        #TODO: enable done button after apply registration
-        # Buttons to finish or cancel object registration
+
         tooltip = wx.ToolTip(_(u"Refine done"))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)

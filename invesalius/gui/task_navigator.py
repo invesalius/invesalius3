@@ -691,6 +691,7 @@ class NeuronavigationPanel(wx.Panel):
         # has been initialized before
         if trck and choice != const.DISCTRACK:
             self.ResetTrackerFiducials()
+            self.ResetIcp()
             Publisher.sendMessage('Update status text in GUI',
                                   label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
@@ -711,6 +712,7 @@ class NeuronavigationPanel(wx.Panel):
         elif choice == const.DISCTRACK:
             if trck:
                 self.ResetTrackerFiducials()
+                self.ResetIcp()
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
@@ -749,6 +751,7 @@ class NeuronavigationPanel(wx.Panel):
         # When ref mode is changed the tracker coordinates are set to zero
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
+        self.ResetIcp()
         # Some trackers do not accept restarting within this time window
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
