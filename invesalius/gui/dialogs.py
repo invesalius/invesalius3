@@ -3611,12 +3611,16 @@ class ICPCorregistrationDialog(wx.Dialog):
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
         # TODO: enable apply registration button after points collection
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
-        btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
+        btn_apply_icp.Bind(wx.EVT_BUTTON, self.thread_ICP_start, btn_apply_icp)
+        btn_apply_icp.Enable(False)
+        self.btn_apply_icp = btn_apply_icp
         #TODO: enable done button after apply registration
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Refine done"))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)
+        btn_ok.Enable(False)
+        self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
@@ -3712,11 +3716,17 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.AddActor(sphere_actor)
         self.point_coord.append([x, y, z])
 
-        self.Refresh()
+        self.interactor.Render()
+
+        if len(self.point_coord) >= 5 and self.btn_apply_icp.IsEnabled() is False:
+            self.btn_apply_icp.Enable(True)
+
+        if self.progress.GetValue() != 0:
+            self.SetProgress(0)
 
     def SetProgress(self, progress):
         self.progress.SetValue(progress * 100)
-        self.Refresh()
+        self.interactor.Render()
 
     def vtkmatrix_to_numpy(self, matrix):
         """
@@ -3758,7 +3768,8 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
-        self.Refresh()
+
+        self.interactor.Render()
 
     def ErrorEstimation(self, surface, points):
         """
@@ -3815,13 +3826,16 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnReset(self, evt):
         self.RemoveActor()
         self.LoadActor()
+        self.btn_apply_icp.Enable(False)
+        self.btn_ok.Enable(False)
 
-    def OnICP(self, evt):
-        self.SetProgress(0.3)
-        time.sleep(2)
+    def OnICP(self):
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+
+        self.SetProgress(0.3)
+
         sourcePoints = np.array(self.point_coord)
         sourcePoints_vtk = vtk.vtkPoints()
 
@@ -3888,7 +3902,14 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
         self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
 
-        self.Refresh()
+        self.interactor.Render()
+
+        self.btn_ok.Enable(True)
+
+    def thread_ICP_start(self, evt):
+        import threading
+        th = threading.Thread(target=self.OnICP, args=[])
+        th.start()
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
