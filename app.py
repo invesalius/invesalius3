@@ -29,8 +29,6 @@ import traceback
 
 import re
 
-from invesalius.net.remote_control import RemoteControl
-
 if sys.platform == 'win32':
     try:
         import winreg
@@ -500,6 +498,8 @@ def main():
     options, args = parse_comand_line()
 
     if options.remote_host is not None:
+        from invesalius.net.remote_control import RemoteControl
+
         remote_control = RemoteControl(options.remote_host)
         remote_control.connect()
 
