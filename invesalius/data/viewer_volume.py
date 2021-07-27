@@ -1442,32 +1442,32 @@ class Viewer(wx.Panel):
         closestPoint = np.array((np.Inf, np.Inf, np.Inf))
         closestDist = np.Inf
 
+        if intersectingCellIds.GetNumberOfIds() != 0:
+            for i in range(intersectingCellIds.GetNumberOfIds()):
+                cellId = intersectingCellIds.GetId(i)
+                point = np.array(self.peel_centers.GetPoint(cellId))
+                distance = np.linalg.norm(point - p1)
+                # TODO : check this
+                if distance < closestDist:
+                    closestDist = distance
+                    closestPoint = point
+                    pointnormal = np.array(self.peel_normals.GetTuple(cellId))
+                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    print('the angle:', angle)
 
-        for i in range(intersectingCellIds.GetNumberOfIds()):
-            cellId = intersectingCellIds.GetId(i)
-            point = np.array(self.peel_centers.GetPoint(cellId))
-            distance = np.linalg.norm(point - p1)
-            # TODO : check this
-            if distance < closestDist:
-                closestDist = distance
-                closestPoint = point
-                pointnormal = np.array(self.peel_normals.GetTuple(cellId))
-                angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-                print('the angle:', angle)
+            #self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal, vtk_colors.GetColor3d('Yellow'))
+            #self.ren.AddActor(self.y_actor)
+            self.obj_projection_arrow_actor.SetPosition(closestPoint)
+            self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
-        #self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal, vtk_colors.GetColor3d('Yellow'))
-        #self.ren.AddActor(self.y_actor)
-        self.obj_projection_arrow_actor.SetPosition(closestPoint)
-        self.obj_projection_arrow_actor.SetOrientation(coil_dir)
-
-        self.object_orientation_disk_actor.SetPosition(closestPoint)
-        self.object_orientation_disk_actor.SetOrientation(coil_dir)
-        if angle < 30:
-            self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
-            self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
-        else:
-            self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
-            self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
+            self.object_orientation_disk_actor.SetPosition(closestPoint)
+            self.object_orientation_disk_actor.SetOrientation(coil_dir)
+            if angle < 30:
+                self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+                self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+            else:
+                self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
+                self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
 
         self.Refresh()
 
