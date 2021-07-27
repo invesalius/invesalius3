@@ -1459,6 +1459,7 @@ class Viewer(wx.Panel):
 
             self.object_orientation_disk_actor.SetPosition(closestPoint)
             self.object_orientation_disk_actor.SetOrientation(coil_dir)
+            #change color of arrow and disk according to angle
             if angle < 30:
                 self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                 self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
