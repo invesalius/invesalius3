@@ -91,7 +91,7 @@ class Brain:
         self.peelDown(currentPeel)
 
     def get_actor(self, n):
-        return self.getPeelActor(n, currentPeel)
+        return self.getPeelActor(n)
 
     def sliceDown(self, currentPeel):
         # Warp using the normals
@@ -158,7 +158,7 @@ class Brain:
 
             self.currentPeelNo += 1
 
-    def getPeelActor(self, p, currentPeel):
+    def getPeelActor(self, p,):
         colors = vtk.vtkNamedColors()
         # Create the color map
         colorLookupTable = vtk.vtkLookupTable()
@@ -185,11 +185,11 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
-        currentPeel = self.peel[p]
+
         self.locator.SetDataSet(self.peel[p])
         self.locator.BuildLocator()
-        self.getCenters(currentPeel)
-        self.getNormals(currentPeel)
+        self.getCenters(self.peel[p])
+        self.getNormals(self.peel[p])
 
         return self.currentPeelActor
 
@@ -225,7 +225,7 @@ class Brain:
 
         return self.currentPeelActor
 
-    def getCenters(self, currentPeel):
+    def getCenters(self, currentPeel): #change name of variable for not confusion
         # Compute centers of triangles
         centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the peel
         centerComputer.SetInputData(currentPeel)
@@ -234,7 +234,7 @@ class Brain:
         peel_centers = centerComputer.GetOutput()
         self.peel_centers = peel_centers
 
-    def getNormals(self, currentPeel):
+    def getNormals(self, currentPeel): #change name of variable
         # Compute normals of triangles
         normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the peel
         normalComputer.SetInputData(currentPeel)
