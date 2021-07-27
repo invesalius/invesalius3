@@ -1943,7 +1943,9 @@ class TractographyPanel(wx.Panel):
         if self.checkpeeling.GetValue():
             actor = self.brain_peel.get_actor(self.peel_depth)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
-
+            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                  normals=self.brain_peel.peel_normals)
+            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
         # self.tract.n_tracts = ctrl.GetValue()
@@ -2018,6 +2020,9 @@ class TractographyPanel(wx.Panel):
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                  normals=self.brain_peel.peel_normals)
+            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
             self.checkpeeling.Enable(1)
             self.checkpeeling.SetValue(True)
             self.spin_opacity.Enable(1)
@@ -2248,7 +2253,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord)
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
