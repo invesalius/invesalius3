@@ -158,6 +158,16 @@ class Brain:
 
             self.currentPeelNo += 1
 
+    def transformpeelposition(self, p, affine_vtk):
+        peel_transform = vtk.vtkTransform()
+        peel_transform.SetMatrix(affine_vtk)
+        refpeelspace = vtk.vtkTransformPolyDataFilter()
+        refpeelspace.SetInputData(self.peel[p])
+        refpeelspace.SetTransform(peel_transform)
+        refpeelspace.Update()
+        currentPeel = refpeelspace.GetOutput()
+        return currentPeel
+
     def getPeelActor(self, p, affine_vtk):
         colors = vtk.vtkNamedColors()
         # Create the color map
@@ -185,14 +195,7 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
-        ## tried to change the position
-        peel_transform = vtk.vtkTransform()
-        peel_transform.SetMatrix(affine_vtk)
-        refpeelspace = vtk.vtkTransformPolyDataFilter()
-        refpeelspace.SetInputData(self.peel[p])
-        refpeelspace.SetTransform(peel_transform)
-        refpeelspace.Update()
-        currentPeel = refpeelspace.GetOutput()
+        currentPeel = self.transformpeelposition(p, affine_vtk)
 
         self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
