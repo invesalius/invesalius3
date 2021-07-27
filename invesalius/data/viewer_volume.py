@@ -1433,15 +1433,12 @@ class Viewer(wx.Panel):
         vtk_colors = vtk.vtkNamedColors()
         intersectingCellIds = vtk.vtkIdList()  # This find store the triangles that intersect the coil's normal
 
-        #self.x_actor = self.add_line(p1, p2, vtk_colors.GetColor3d('Blue'))
-        #self.ren.AddActor(self.x_actor)
-        # TODO : CHECK IF THERE ARE INTERSECTION CELLS AND ADD THE ARROW AND DISC ACCORDINGLY
 
         self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 
         closestPoint = np.array((np.Inf, np.Inf, np.Inf))
         closestDist = np.Inf
-
+        #if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
                 cellId = intersectingCellIds.GetId(i)
@@ -1456,8 +1453,7 @@ class Viewer(wx.Panel):
                     print('the angle:', angle)
             self.ren.AddActor(self.obj_projection_arrow_actor)
             self.ren.AddActor(self.object_orientation_disk_actor)
-            #self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal, vtk_colors.GetColor3d('Yellow'))
-            #self.ren.AddActor(self.y_actor)
+
             self.obj_projection_arrow_actor.SetPosition(closestPoint)
             self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
