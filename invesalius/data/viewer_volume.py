@@ -1329,8 +1329,8 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.x_actor)
         self.ren.AddActor(self.y_actor)
         self.ren.AddActor(self.z_actor)
-        self.ren.AddActor(self.obj_projection_arrow_actor)
-        self.ren.AddActor(self.object_orientation_disk_actor)
+        #self.ren.AddActor(self.obj_projection_arrow_actor)
+        #self.ren.AddActor(self.object_orientation_disk_actor)
         # self.obj_axes = vtk.vtkAxesActor()
         # self.obj_axes.SetShaftTypeToCylinder()
         # self.obj_axes.SetXAxisLabelText("x")
@@ -1454,7 +1454,8 @@ class Viewer(wx.Panel):
                     pointnormal = np.array(self.peel_normals.GetTuple(cellId))
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     print('the angle:', angle)
-
+            self.ren.AddActor(self.obj_projection_arrow_actor)
+            self.ren.AddActor(self.object_orientation_disk_actor)
             #self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal, vtk_colors.GetColor3d('Yellow'))
             #self.ren.AddActor(self.y_actor)
             self.obj_projection_arrow_actor.SetPosition(closestPoint)
@@ -1468,7 +1469,9 @@ class Viewer(wx.Panel):
             else:
                 self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
                 self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
-
+        else:
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.ren.RemoveActor(self.object_orientation_disk_actor)
         self.Refresh()
 
     def OnNavigationStatus(self, nav_status, vis_status):
