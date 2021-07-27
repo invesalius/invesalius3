@@ -691,6 +691,7 @@ class NeuronavigationPanel(wx.Panel):
         # has been initialized before
         if trck and choice != const.DISCTRACK:
             self.ResetTrackerFiducials()
+            self.ResetIcp()
             Publisher.sendMessage('Update status text in GUI',
                                   label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
@@ -711,6 +712,7 @@ class NeuronavigationPanel(wx.Panel):
         elif choice == const.DISCTRACK:
             if trck:
                 self.ResetTrackerFiducials()
+                self.ResetIcp()
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
@@ -749,6 +751,7 @@ class NeuronavigationPanel(wx.Panel):
         # When ref mode is changed the tracker coordinates are set to zero
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
+        self.ResetIcp()
         # Some trackers do not accept restarting within this time window
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
@@ -780,8 +783,8 @@ class NeuronavigationPanel(wx.Panel):
         fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
         Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
 
-    def OnICP(self):
-        dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
+    def OnICP(self, m_change):
+        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, self.tracker_id, self.trk_init, self.ref_mode_id))
         if dialog.ShowModal() == wx.ID_OK:
             self.m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
             #TODO: checkbox in the dialog to transfer the icp points to 3D viewer
@@ -972,7 +975,7 @@ class NeuronavigationPanel(wx.Panel):
 
                 if not self.checkicp.GetValue():
                     if dlg.ICPcorregistration(self.fre):
-                        m_icp = self.OnICP()
+                        m_icp = self.OnICP(m_change)
                         self.icp_fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id,
                                                         m_change, m_icp)
                         self.ctrl_icp()
