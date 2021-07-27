@@ -67,7 +67,6 @@ import invesalius.session as ses
 import invesalius.utils as utils
 
 from invesalius import inv_paths
-from invesalius.net.pedal_connection import PedalConnection
 
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
@@ -359,6 +358,8 @@ def use_cmd_optargs(options, args):
 
     # If use-pedal argument...
     if options.use_pedal:
+        from invesalius.net.pedal_connection import PedalConnection
+
         PedalConnection().start()
 
     # If import DICOM argument...

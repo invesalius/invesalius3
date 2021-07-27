@@ -63,7 +63,12 @@ import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 from invesalius import utils
-from invesalius.net.pedal_connection import PedalConnection
+
+HAS_PEDAL_CONNECTION = True
+try:
+    from invesalius.net.pedal_connection import PedalConnection
+except ImportError:
+    HAS_PEDAL_CONNECTION = False
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -309,7 +314,7 @@ class NeuronavigationPanel(wx.Panel):
         self.__bind_events()
 
         # Initialize global variables
-        self.pedal_connection = PedalConnection()
+        self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         self.fiducials = np.full([6, 3], np.nan)
         self.fiducials_raw = np.zeros((6, 6))
         self.correg = None
@@ -396,7 +401,7 @@ class NeuronavigationPanel(wx.Panel):
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         txt_icp = wx.StaticText(self, -1, _('Refine:'))
 
-        if self.pedal_connection.in_use:
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
             txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
         else:
             txt_pedal_pressed = None
@@ -425,7 +430,7 @@ class NeuronavigationPanel(wx.Panel):
         self.checkicp = checkicp
 
         # An indicator for pedal trigger
-        if self.pedal_connection.in_use:
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
             tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
             checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
             checkbox_pedal_pressed.SetValue(False)
@@ -469,7 +474,7 @@ class NeuronavigationPanel(wx.Panel):
                            (checkicp, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL)])
 
         pedal_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        if self.pedal_connection.in_use:
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
             pedal_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                                 (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
