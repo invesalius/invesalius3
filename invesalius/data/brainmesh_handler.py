@@ -90,8 +90,8 @@ class Brain:
         self.numberOfPeels = n_peels
         self.peelDown(currentPeel)
 
-    def get_actor(self, n):
-        return self.getPeelActor(n)
+    def get_actor(self, n, affine_vtk):
+        return self.getPeelActor(n, affine_vtk)
 
     def sliceDown(self, currentPeel):
         # Warp using the normals
@@ -158,7 +158,7 @@ class Brain:
 
             self.currentPeelNo += 1
 
-    def getPeelActor(self, p,):
+    def getPeelActor(self, p, affine_vtk):
         colors = vtk.vtkNamedColors()
         # Create the color map
         colorLookupTable = vtk.vtkLookupTable()
@@ -185,11 +185,19 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
+        ## tried to change the position
+        peel_transform = vtk.vtkTransform()
+        peel_transform.SetMatrix(affine_vtk)
+        refpeelspace = vtk.vtkTransformPolyDataFilter()
+        refpeelspace.SetInputData(self.peel[p])
+        refpeelspace.SetTransform(peel_transform)
+        refpeelspace.Update()
+        currentPeel = refpeelspace.GetOutput()
 
-        self.locator.SetDataSet(self.peel[p])
+        self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
-        self.getCenters(self.peel[p])
-        self.getNormals(self.peel[p])
+        self.getCenters(currentPeel)
+        self.getNormals(currentPeel)
 
         return self.currentPeelActor
 

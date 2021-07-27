@@ -1941,7 +1941,7 @@ class TractographyPanel(wx.Panel):
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth)
+            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
                                   normals=self.brain_peel.peel_normals)
@@ -1973,7 +1973,7 @@ class TractographyPanel(wx.Panel):
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth)
+            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
         else:
             actor = None
         Publisher.sendMessage('Update peel', flag=ctrl.GetValue(), actor=actor)
@@ -2017,7 +2017,7 @@ class TractographyPanel(wx.Panel):
 
         try:
             self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
+            self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
