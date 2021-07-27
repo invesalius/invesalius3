@@ -8,34 +8,33 @@ import pyvista
 
 class Brain:
     def __init__(self, img_path, mask_path, n_peels, affine_vtk):
+        #create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
-
+        #read the image
         T1_reader = vtk.vtkNIFTIImageReader()
         T1_reader.SetFileName(img_path)
         T1_reader.Update()
-
-        # self.refImage = vtk.vtkImageData()
+        #image
         self.refImage = T1_reader.GetOutput()
-
+        #read the mask
         mask_reader = vtk.vtkNIFTIImageReader()
         mask_reader.SetFileName(mask_path)
         mask_reader.Update()
-
+        #use the mask to create isosurface
         mc = vtk.vtkContourFilter()
         mc.SetInputConnection(mask_reader.GetOutputPort())
         mc.SetValue(0, 1)
         mc.Update()
 
-        refSurface = vtk.vtkPolyData()
+        #mask isosurface
         refSurface = mc.GetOutput()
-
-        tmpPeel = vtk.vtkPolyData()
+        #create a uniformly meshed surface
         tmpPeel = downsample(refSurface)
-
-        mask_sFormMatrix = vtk.vtkMatrix4x4()
+        #standard space coordinates
         mask_sFormMatrix = mask_reader.GetSFormMatrix()
 
+        # apply coordinate transform to the meshed mask
         mask_ijk2xyz = vtk.vtkTransform()
         mask_ijk2xyz.SetMatrix(mask_sFormMatrix)
 
@@ -44,17 +43,21 @@ class Brain:
         mask_ijk2xyz_filter.SetTransform(mask_ijk2xyz)
         mask_ijk2xyz_filter.Update()
 
+        #smooth the mesh
         tmpPeel = smooth(mask_ijk2xyz_filter.GetOutput())
+        #configure calculation of normals
         tmpPeel = fixMesh(tmpPeel)
+        #remove duplicate points etc
         tmpPeel = cleanMesh(tmpPeel)
+        #generate triangles
         tmpPeel = upsample(tmpPeel)
+
         tmpPeel = smooth(tmpPeel)
         tmpPeel = fixMesh(tmpPeel)
         tmpPeel = cleanMesh(tmpPeel)
 
-        # sFormMatrix = vtk.vtkMatrix4x4()
+        # scanner coordinates from image
         qFormMatrix = T1_reader.GetQFormMatrix()
-        # sFormMatrix = T1_reader.GetSFormMatrix()
 
         refImageSpace2_xyz_transform = vtk.vtkTransform()
         refImageSpace2_xyz_transform.SetMatrix(qFormMatrix)
@@ -69,29 +72,28 @@ class Brain:
         self.xyz2_refImageSpace = vtk.vtkTransformPolyDataFilter()
         self.xyz2_refImageSpace.SetTransform(xyz2_refImageSpace_transform)
 
-        # self.currentPeel = vtk.vtkPolyData()
-        self.currentPeel = tmpPeel
+        currentPeel = tmpPeel
         self.currentPeelNo = 0
-        self.mapImageOnCurrentPeel()
+        currentPeel= self.mapImageOnCurrentPeel(currentPeel)
 
         newPeel = vtk.vtkPolyData()
-        newPeel.DeepCopy(self.currentPeel)
+        newPeel.DeepCopy(currentPeel)
         self.peel.append(newPeel)
         self.currentPeelActor = vtk.vtkActor()
         self.currentPeelActor.SetUserMatrix(affine_vtk)
-        self.getCurrentPeelActor()
+        self.getCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
 
         self.numberOfPeels = n_peels
-        self.peelDown()
+        self.peelDown(currentPeel)
 
     def get_actor(self, n):
         return self.getPeelActor(n)
 
-    def sliceDown(self):
+    def sliceDown(self, currentPeel):
         # Warp using the normals
         warp = vtk.vtkWarpVector()
-        warp.SetInputData(fixMesh(downsample(self.currentPeel)))  # fixMesh here updates normals needed for warping
+        warp.SetInputData(fixMesh(downsample(currentPeel)))  # fixMesh here updates normals needed for warping
         warp.SetInputArrayToProcess(0, 0, 0, vtk.vtkDataObject().FIELD_ASSOCIATION_POINTS,
                                     vtk.vtkDataSetAttributes().NORMALS)
         warp.SetScaleFactor(-1)
@@ -103,8 +105,8 @@ class Brain:
         out = fixMesh(out)
         out = cleanMesh(out)
 
-        self.currentPeel = out
-
+        currentPeel = out
+        return currentPeel
     # def sliceUp(self):
     #     # Warp using the normals
     #     warp = vtk.vtkWarpVector()
@@ -122,8 +124,8 @@ class Brain:
     #
     #     currentPeel = out
 
-    def mapImageOnCurrentPeel(self):
-        self.xyz2_refImageSpace.SetInputData(self.currentPeel)
+    def mapImageOnCurrentPeel(self, currentPeel):
+        self.xyz2_refImageSpace.SetInputData(currentPeel)
         self.xyz2_refImageSpace.Update()
 
         probe = vtk.vtkProbeFilter()
@@ -134,15 +136,16 @@ class Brain:
         self.refImageSpace2_xyz.SetInputData(probe.GetOutput())
         self.refImageSpace2_xyz.Update()
 
-        self.currentPeel = self.refImageSpace2_xyz.GetOutput()
+        currentPeel = self.refImageSpace2_xyz.GetOutput()
+        return currentPeel
 
-    def peelDown(self):
+    def peelDown(self, currentPeel):
         for i in range(0, self.numberOfPeels):
-            self.sliceDown()
-            self.mapImageOnCurrentPeel()
+            currentPeel = self.sliceDown(currentPeel)
+            currentPeel = self.mapImageOnCurrentPeel(currentPeel)
 
             newPeel = vtk.vtkPolyData()
-            newPeel.DeepCopy(self.currentPeel)
+            newPeel.DeepCopy(currentPeel)
             self.peel.append(newPeel)
 
             # getCurrentPeelActor()
@@ -181,7 +184,7 @@ class Brain:
 
         return self.currentPeelActor
 
-    def getCurrentPeelActor(self):
+    def getCurrentPeelActor(self, currentPeel):
         colors = vtk.vtkNamedColors()
 
         # Create the color map
@@ -198,7 +201,7 @@ class Brain:
 
         # Set mapper auto
         mapper = vtk.vtkOpenGLPolyDataMapper()
-        mapper.SetInputData(self.currentPeel)
+        mapper.SetInputData(currentPeel)
         # mapper.SetScalarRange(0, 1000)
         # mapper.SetScalarRange(0, 250)
         mapper.SetScalarRange(0, 200)
