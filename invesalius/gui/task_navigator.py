@@ -64,6 +64,12 @@ import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 from invesalius import utils
 
+HAS_PEDAL_CONNECTION = True
+try:
+    from invesalius.net.pedal_connection import PedalConnection
+except ImportError:
+    HAS_PEDAL_CONNECTION = False
+
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
 
@@ -308,6 +314,7 @@ class NeuronavigationPanel(wx.Panel):
         self.__bind_events()
 
         # Initialize global variables
+        self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         self.fiducials = np.full([6, 3], np.nan)
         self.fiducials_raw = np.zeros((6, 6))
         self.correg = None
@@ -394,6 +401,11 @@ class NeuronavigationPanel(wx.Panel):
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         txt_icp = wx.StaticText(self, -1, _('Refine:'))
 
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+            txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
+        else:
+            txt_pedal_pressed = None
+
         # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
         txtctrl_fre = wx.TextCtrl(self, value="", size=wx.Size(60, -1), style=wx.TE_CENTRE)
@@ -416,6 +428,23 @@ class NeuronavigationPanel(wx.Panel):
         checkicp.Bind(wx.EVT_CHECKBOX, partial(self.Oncheckicp, ctrl=checkicp))
         checkicp.SetToolTip(tooltip)
         self.checkicp = checkicp
+
+        # An indicator for pedal trigger
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+            tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
+            checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
+            checkbox_pedal_pressed.SetValue(False)
+            checkbox_pedal_pressed.Enable(False)
+            checkbox_pedal_pressed.SetToolTip(tooltip)
+
+            def handle_pedal_value_changed(value):
+                checkbox_pedal_pressed.SetValue(value)
+
+            self.pedal_connection.set_callback(handle_pedal_value_changed)
+
+            self.checkbox_pedal_pressed = checkbox_pedal_pressed
+        else:
+            self.checkbox_pedal_pressed = None
 
         # Image and tracker coordinates number controls
         for m in range(len(self.btns_coord)):
@@ -442,9 +471,14 @@ class NeuronavigationPanel(wx.Panel):
                            (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (txt_icp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
-                           (checkicp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+                           (checkicp, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL)])
 
-        group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
+        pedal_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+            pedal_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                                (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+
+        group_sizer = wx.FlexGridSizer(rows=10, cols=1, hgap=5, vgap=5)
         group_sizer.AddGrowableCol(0, 1)
         group_sizer.AddGrowableRow(0, 1)
         group_sizer.AddGrowableRow(1, 1)
@@ -452,7 +486,8 @@ class NeuronavigationPanel(wx.Panel):
         group_sizer.SetFlexibleDirection(wx.BOTH)
         group_sizer.AddMany([(choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (coord_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                             (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
+                             (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                             (pedal_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_sizer.Add(group_sizer, 1)# wx.ALIGN_CENTER_HORIZONTAL, 10)
