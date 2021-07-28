@@ -1433,7 +1433,8 @@ class Viewer(wx.Panel):
         vtk_colors = vtk.vtkNamedColors()
         intersectingCellIds = vtk.vtkIdList()  # This find store the triangles that intersect the coil's normal
 
-
+        self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
+        self.ren.AddActor(self.x_actor)
         self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 
         closestPoint = np.array((np.Inf, np.Inf, np.Inf))
@@ -1451,6 +1452,11 @@ class Viewer(wx.Panel):
                     pointnormal = np.array(self.peel_normals.GetTuple(cellId))
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     print('the angle:', angle)
+
+            self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
+                                                 vtk_colors.GetColor3d('Yellow'))
+            self.ren.AddActor(self.y_actor)
+
             self.ren.AddActor(self.obj_projection_arrow_actor)
             self.ren.AddActor(self.object_orientation_disk_actor)
 
@@ -1540,9 +1546,9 @@ class Viewer(wx.Panel):
         [coil_dir, norm, coil_norm, p1 ]= self.objectArrowlocation(m_img,coord)
         #self.obj_arrow_actor.SetPosition(p1)
         #self.obj_arrow_actor.SetOrientation(coil_dir)
-        #self.ren.RemoveActor(self.x_actor)
-        #self.ren.RemoveActor(self.y_actor)
-        #self.ren.RemoveActor(self.z_actor)
+        self.ren.RemoveActor(self.x_actor)
+        self.ren.RemoveActor(self.y_actor)
+        self.ren.RemoveActor(self.z_actor)
         self.getcellintersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
