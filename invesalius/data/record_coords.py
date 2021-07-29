@@ -23,7 +23,7 @@ import time
 import wx
 from numpy import array, savetxt, hstack,vstack, asarray
 import invesalius.gui.dialogs as dlg
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 
 class Record(threading.Thread):

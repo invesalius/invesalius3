@@ -51,7 +51,7 @@ try:
 except ImportError:
     from wx import SplashScreen
 
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
 #if sys.platform.startswith('linux'):
@@ -323,6 +323,10 @@ def parse_comand_line():
 
     parser.add_option("--import-folder", action="store", dest="import_folder")
 
+    parser.add_option("--remote-host",
+                      action="store",
+                      dest="remote_host")
+
     parser.add_option("-s", "--save",
                       help="Save the project after an import.")
 
@@ -502,6 +506,12 @@ def main():
     Initialize InVesalius GUI
     """
     options, args = parse_comand_line()
+
+    if options.remote_host is not None:
+        from invesalius.net.remote_control import RemoteControl
+
+        remote_control = RemoteControl(options.remote_host)
+        remote_control.connect()
 
     if options.no_gui:
         non_gui_startup(options, args)

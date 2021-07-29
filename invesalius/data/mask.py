@@ -33,7 +33,7 @@ from invesalius.data.volume import VolumeMask
 import numpy as np
 import vtk
 from invesalius_cy import floodfill
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 from scipy import ndimage
 from vtk.util import numpy_support
 

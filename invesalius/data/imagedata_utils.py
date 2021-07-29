@@ -27,7 +27,8 @@ import imageio
 import numpy
 import numpy as np
 import vtk
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
+
 from scipy.ndimage import shift, zoom
 from vtk.util import numpy_support
 
