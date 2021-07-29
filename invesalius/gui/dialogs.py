@@ -59,7 +59,8 @@ import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
-import invesalius.data.bases as bases
+import invesalius.data.vtk_utils as vtku
+import invesalius.data.coregistration as dcr
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
@@ -869,8 +870,10 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.PATRIOT: 'Polhemus PATRIOT',
             const.CAMERA: 'CAMERA',
             const.POLARIS: 'NDI Polaris',
+            const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
-            const.DEBUGTRACK: 'Debug tracker device'}
+            const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
+            const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
@@ -2745,7 +2748,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
@@ -3305,7 +3308,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+        if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
             choice_sensor.Show(True)
         else:
             choice_sensor.Show(False)
@@ -3506,7 +3509,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if evt.GetSelection():
             self.obj_ref_id = 2
-            if self.tracker_id == const.FASTRAK or self.tracker_id == const.DEBUGTRACK:
+            if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
@@ -3534,10 +3537,9 @@ class ICPCorregistrationDialog(wx.Dialog):
     def __init__(self, nav_prop):
         import invesalius.project as prj
 
-        self.__bind_events()
-
-        self.tracker_id = nav_prop[0]
-        self.trk_init = nav_prop[1]
+        self.m_change = nav_prop[0]
+        self.tracker_id = nav_prop[1]
+        self.trk_init = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3560,12 +3562,6 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.proj = prj.Project()
 
         self._init_gui()
-
-    def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
-
-    def UpdateCurrentCoord(self, position):
-        self.current_coord = position[:]
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3615,12 +3611,15 @@ class ICPCorregistrationDialog(wx.Dialog):
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
 
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
-        btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
+        btn_apply_icp.Bind(wx.EVT_BUTTON, self.thread_ICP_start, btn_apply_icp)
+        btn_apply_icp.Enable(False)
+        self.btn_apply_icp = btn_apply_icp
 
-        # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Refine done"))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)
+        btn_ok.Enable(False)
+        self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
@@ -3665,19 +3664,40 @@ class ICPCorregistrationDialog(wx.Dialog):
         obj_actor.SetMapper(mapper)
         self.obj_actor = obj_actor
 
+        poses_recorded = vtku.Text()
+        poses_recorded.SetSize(const.TEXT_SIZE_LARGE)
+        poses_recorded.SetPosition((const.X, const.Y))
+        poses_recorded.ShadowOff()
+        poses_recorded.SetValue("Poses recorded: ")
+
+        collect_points = vtku.Text()
+        collect_points.SetSize(const.TEXT_SIZE_LARGE)
+        collect_points.SetPosition((const.X+0.35, const.Y))
+        collect_points.ShadowOff()
+        collect_points.SetValue("0")
+        self.collect_points = collect_points
+
         self.ren.AddActor(obj_actor)
+        self.ren.AddActor(poses_recorded.actor)
+        self.ren.AddActor(collect_points.actor)
         self.ren.ResetCamera()
         self.interactor.Render()
 
     def RemoveActor(self):
-        #self.ren.RemoveActor(self.obj_actor)
         self.ren.RemoveAllViewProps()
         self.point_coord = []
         self.transformed_points = []
         self.m_icp = None
         self.SetProgress(0)
+        self.btn_apply_icp.Enable(False)
+        self.btn_ok.Enable(False)
         self.ren.ResetCamera()
         self.interactor.Render()
+
+    def GetCurrentCoord(self):
+        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
+        coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
+        return coord[:3]
 
     def AddMarker(self, size, colour, coord):
         """
@@ -3711,11 +3731,19 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.AddActor(sphere_actor)
         self.point_coord.append([x, y, z])
 
-        self.Refresh()
+        self.collect_points.SetValue(str(int(self.collect_points.GetValue()) + 1))
+
+        self.interactor.Render()
+
+        if len(self.point_coord) >= 5 and self.btn_apply_icp.IsEnabled() is False:
+            self.btn_apply_icp.Enable(True)
+
+        if self.progress.GetValue() != 0:
+            self.SetProgress(0)
 
     def SetProgress(self, progress):
         self.progress.SetValue(progress * 100)
-        self.Refresh()
+        self.interactor.Render()
 
     def vtkmatrix_to_numpy(self, matrix):
         """
@@ -3757,7 +3785,8 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
-        self.Refresh()
+
+        self.interactor.Render()
 
     def ErrorEstimation(self, surface, points):
         """
@@ -3802,22 +3831,30 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.timer.Stop()
 
     def OnUpdate(self, evt):
-        self.AddMarker(3, (1, 0, 0), self.current_coord[:3])
-        self.SetCameraVolume(self.current_coord[:3])
+        current_coord = self.GetCurrentCoord()
+        self.AddMarker(3, (1, 0, 0), current_coord)
+        self.SetCameraVolume(current_coord)
 
     def OnCreatePoint(self, evt):
-        self.AddMarker(3,(1,0,0),self.current_coord[:3])
-        self.SetCameraVolume(self.current_coord[:3])
+        current_coord = self.GetCurrentCoord()
+        self.AddMarker(3, (1, 0, 0), current_coord)
+        self.SetCameraVolume(current_coord)
 
     def OnReset(self, evt):
-        self.RemoveActor()
-        self.LoadActor()
-
-    def OnICP(self, evt):
-        self.SetProgress(0.3)
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+
+        self.RemoveActor()
+        self.LoadActor()
+
+    def OnICP(self):
+        if self.cont_point:
+            self.cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+
+        self.SetProgress(0.3)
+
         sourcePoints = np.array(self.point_coord)
         sourcePoints_vtk = vtk.vtkPoints()
 
@@ -3830,6 +3867,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         icp = vtk.vtkIterativeClosestPointTransform()
         icp.SetSource(source)
         icp.SetTarget(self.surface)
+
+        self.SetProgress(0.5)
 
         if self.icp_mode == 0:
             print("Affine mode")
@@ -3858,7 +3897,6 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         transformedSource = icpTransformFilter.GetOutput()
 
-        self.SetProgress(1)
 
         for i in range(transformedSource.GetNumberOfPoints()):
             p = [0, 0, 0]
@@ -3882,7 +3920,16 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
         self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
 
-        self.Refresh()
+        self.interactor.Render()
+
+        self.SetProgress(1)
+
+        self.btn_ok.Enable(True)
+
+    def thread_ICP_start(self, evt):
+        import threading
+        th = threading.Thread(target=self.OnICP, args=[])
+        th.start()
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
@@ -4145,20 +4192,20 @@ class SetNDIconfigs(wx.Dialog):
                                            wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
         row_probe = wx.BoxSizer(wx.VERTICAL)
         row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_probe.Add(self.dir_probe, 0, wx.ALIGN_CENTER)
+        row_probe.Add(self.dir_probe, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
-        row_ref.Add(self.dir_ref, 0, wx.ALIGN_CENTER)
+        row_ref.Add(self.dir_ref, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         self.dir_obj = wx.FilePickerCtrl(self, path=last_ndi_obj_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
                                          wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
         row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
-        row_obj.Add(self.dir_obj, 0, wx.ALIGN_CENTER)
+        row_obj.Add(self.dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")

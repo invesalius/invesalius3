@@ -148,6 +148,9 @@ class Text(object):
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8", errors='replace'))
 
+    def GetValue(self):
+        return self.mapper.GetInput()
+
     def SetCoilDistanceValue(self, value):
         #TODO: Not being used anymore. Can be deleted.
         if isinstance(value, int) or isinstance(value, float):

@@ -1459,7 +1459,7 @@ class WatershedProgressWindow(object):
 
         self.dlg = wx.ProgressDialog(self.title,
                                      self.msg,
-                                     parent = None,
+                                     parent = wx.GetApp().GetTopWindow(),
                                      style  = self.style)
 
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
@@ -2349,7 +2349,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(floodfill.floodfill_threshold, mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=wx.GetApp().GetTopWindow(), style=wx.PD_APP_MODAL)
                 while not future.done():
                     dlg.Pulse()
                     time.sleep(0.1)
@@ -2787,7 +2787,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(self.do_rg_confidence, image, mask, (x, y, z), bstruct)
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=wx.GetApp().GetTopWindow(), style=wx.PD_APP_MODAL|wx.PD_AUTO_HIDE)
                 while not future.done():
                     dlg.Pulse()
                     time.sleep(0.1)
@@ -2798,11 +2798,10 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=wx.GetApp().GetTopWindow(), style=wx.PD_APP_MODAL|wx.PD_AUTO_HIDE)
                 while not future.done():
                     dlg.Pulse()
                     time.sleep(0.1)
-
                 dlg.Destroy()
 
         mask[out_mask.astype('bool')] = self.config.fill_value

@@ -48,8 +48,10 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.PATRIOT: PolhemusCoord,
                     const.CAMERA: CameraCoord,
                     const.POLARIS: PolarisCoord,
+                    const.POLARISP4: PolarisP4Coord,
                     const.OPTITRACK: OptitrackCoord,
-                    const.DEBUGTRACK: DebugCoord}
+                    const.DEBUGTRACKRANDOM: DebugCoordRandom,
+                    const.DEBUGTRACKAPPROACH: DebugCoordRandom}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
@@ -117,6 +119,53 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     coord = np.vstack([coord1, coord2, coord3])
     # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+
+    return coord
+
+def PolarisP4Coord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+
+    probe = trck.probe.decode(const.FS_ENCODE)
+    ref = trck.ref.decode(const.FS_ENCODE)
+    obj = trck.obj.decode(const.FS_ENCODE)
+
+    probe = probe[2:]
+    ref = ref[2:]
+    obj = obj[2:]
+
+    if probe[:7] == "MISSING":
+        if not "coord1" in locals():
+            coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_probe = np.array(t).astype(float)
+        coord1 = np.hstack((trans_probe, angles_probe))
+
+    if ref[:7] == "MISSING":
+        if not "coord2" in locals():
+            coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_ref = np.array(t).astype(float)
+        coord2 = np.hstack((trans_ref, angles_ref))
+
+    if obj[:7] == "MISSING":
+        if not "coord3" in locals():
+            coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_obj = np.array(t).astype(float)
+        coord3 = np.hstack((trans_obj, angles_obj))
+
+    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
+    coord = np.vstack([coord1, coord2, coord3])
 
     return coord
 
@@ -264,7 +313,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     return coord
 
 
-def DebugCoord(trk_init, trck_id, ref_mode):
+def DebugCoordRandom(trk_init, trck_id, ref_mode):
     """
     Method to simulate a tracking device for debug and error check. Generate a random
     x, y, z, alfa, beta and gama coordinates in interval [1, 200[

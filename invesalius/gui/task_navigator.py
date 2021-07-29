@@ -64,6 +64,12 @@ import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 from invesalius import utils
 
+HAS_PEDAL_CONNECTION = True
+try:
+    from invesalius.net.pedal_connection import PedalConnection
+except ImportError:
+    HAS_PEDAL_CONNECTION = False
+
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
 
@@ -308,12 +314,14 @@ class NeuronavigationPanel(wx.Panel):
         self.__bind_events()
 
         # Initialize global variables
+        self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         self.fiducials = np.full([6, 3], np.nan)
         self.fiducials_raw = np.zeros((6, 6))
         self.correg = None
         self.current_coord = 0, 0, 0
         self.trk_init = None
         self.nav_status = False
+        self.target = None
         self.trigger = None
         self.trigger_state = False
         self.obj_reg = None
@@ -367,32 +375,36 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceRefMode, ctrl=choice_trck))
+        self.choice_ref = choice_ref
 
         # Toggle buttons for image fiducials
-        btns_img = const.BTNS_IMG
-        tips_img = const.TIPS_IMG
+        for n, fiducial in enumerate(const.IMAGE_FIDUCIALS):
+            button_id = fiducial['button_id']
+            label = fiducial['label']
+            tip = fiducial['tip']
 
-        for k in btns_img:
-            n = list(btns_img[k].keys())[0]
-            lab = list(btns_img[k].values())[0]
-            self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(45, 23))
-            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_img[n]))
-            self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
+            self.btns_coord[n] = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
+            self.btns_coord[n].SetToolTip(wx.ToolTip(tip))
+            self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
 
         # Push buttons for tracker fiducials
-        btns_trk = const.BTNS_TRK
-        tips_trk = const.TIPS_TRK
+        for n, fiducial in enumerate(const.TRACKER_FIDUCIALS):
+            button_id = fiducial['button_id']
+            label = fiducial['label']
+            tip = fiducial['tip']
 
-        for k in btns_trk:
-            n = list(btns_trk[k].keys())[0]
-            lab = list(btns_trk[k].values())[0]
-            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
-            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
-            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
+            self.btns_coord[n + 3] = wx.Button(self, button_id, label=label, size=wx.Size(45, 23))
+            self.btns_coord[n + 3].SetToolTip(wx.ToolTip(tip))
+            self.btns_coord[n + 3].Bind(wx.EVT_BUTTON, partial(self.OnTrackerFiducials, n))
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         txt_icp = wx.StaticText(self, -1, _('Refine:'))
+
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+            txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
+        else:
+            txt_pedal_pressed = None
 
         # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
@@ -407,7 +419,7 @@ class NeuronavigationPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Start navigation"))
         btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, -1))
         btn_nav.SetToolTip(tooltip)
-        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
+        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=btn_nav))
 
         tooltip = wx.ToolTip(_(u"Refine the coregistration"))
         checkicp = wx.CheckBox(self, -1, _(' '))
@@ -416,6 +428,23 @@ class NeuronavigationPanel(wx.Panel):
         checkicp.Bind(wx.EVT_CHECKBOX, partial(self.Oncheckicp, ctrl=checkicp))
         checkicp.SetToolTip(tooltip)
         self.checkicp = checkicp
+
+        # An indicator for pedal trigger
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+            tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
+            checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
+            checkbox_pedal_pressed.SetValue(False)
+            checkbox_pedal_pressed.Enable(False)
+            checkbox_pedal_pressed.SetToolTip(tooltip)
+
+            def handle_pedal_value_changed(value):
+                checkbox_pedal_pressed.SetValue(value)
+
+            self.pedal_connection.set_callback(handle_pedal_value_changed)
+
+            self.checkbox_pedal_pressed = checkbox_pedal_pressed
+        else:
+            self.checkbox_pedal_pressed = None
 
         # Image and tracker coordinates number controls
         for m in range(len(self.btns_coord)):
@@ -442,9 +471,14 @@ class NeuronavigationPanel(wx.Panel):
                            (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (txt_icp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
-                           (checkicp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+                           (checkicp, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL)])
 
-        group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
+        pedal_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+            pedal_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                                (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+
+        group_sizer = wx.FlexGridSizer(rows=10, cols=1, hgap=5, vgap=5)
         group_sizer.AddGrowableCol(0, 1)
         group_sizer.AddGrowableRow(0, 1)
         group_sizer.AddGrowableRow(1, 1)
@@ -452,7 +486,8 @@ class NeuronavigationPanel(wx.Panel):
         group_sizer.SetFlexibleDirection(wx.BOTH)
         group_sizer.AddMany([(choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (coord_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                             (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
+                             (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                             (pedal_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_sizer.Add(group_sizer, 1)# wx.ALIGN_CENTER_HORIZONTAL, 10)
@@ -462,6 +497,8 @@ class NeuronavigationPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
+        Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
+        Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
@@ -478,16 +515,85 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.UpdateTarget, 'Update target')
+        Publisher.subscribe(self.onStartNavigation, 'Start navigation')
+        Publisher.subscribe(self.onStopNavigation, 'Stop navigation')
 
     def LoadImageFiducials(self, marker_id, coord):
-        for n in const.BTNS_IMG_MKS:
-            btn_id = list(const.BTNS_IMG_MKS[n].keys())[0]
-            fid_id = list(const.BTNS_IMG_MKS[n].values())[0]
-            if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
-                self.btns_coord[btn_id].SetValue(True)
-                self.fiducials[btn_id, :] = coord[0:3]
-                for m in [0, 1, 2]:
-                    self.numctrls_coord[btn_id][m].SetValue(coord[m])
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
+
+        fiducial_index = fiducial['fiducial_index']
+        fiducial_name = fiducial['fiducial_name']
+
+        if self.btns_coord[fiducial_index].GetValue():
+            print("Fiducial {} already set, not resetting".format(marker_id))
+            return
+
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+
+        self.btns_coord[fiducial_index].SetValue(True)
+        for m in [0, 1, 2]:
+            self.numctrls_coord[fiducial_index][m].SetValue(coord[m])
+
+    def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
+        found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
+
+        assert len(found) != 0, "No fiducial found for which {} = {}".format(attribute_name, attribute_value)
+        return found[0]
+
+    def SetImageFiducial(self, fiducial_name, coord):
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
+        self.fiducials[fiducial_index, :] = coord
+
+        print("Set image fiducial {} to coordinates {}".format(fiducial_name, coord))
+
+    def SetTrackerFiducial(self, fiducial_name):
+        fiducial = self.GetFiducialByAttribute(const.TRACKER_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
+
+        coord = None
+
+        if not(self.trk_init and self.tracker_id):
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
+            return
+
+        # if self.tracker_id == const.DEBUGTRACK:
+        #     if btn_id == 3:
+        #         coord1 = np.array([-120., 0., 0., 0., 0., 0.])
+        #     elif btn_id == 4:
+        #         coord1 = np.array([120., 0., 0., 0., 0., 0.])
+        #     elif btn_id == 5:
+        #         coord1 = np.array([0., 120., 0., 0., 0., 0.])
+        #     coord2 = np.zeros([3, 6])
+        #     coord_raw = np.vstack([coord1, coord2])
+        # else:
+        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+
+        if self.ref_mode_id:
+            coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
+        else:
+            coord = coord_raw[0, :]
+            coord[2] = -coord[2]
+
+        # Update tracker fiducial with tracker coordinates
+        self.fiducials[fiducial_index, :] = coord[0:3]
+
+        if fiducial_index == 3:
+            self.fiducials_raw[0, :] = coord_raw[0, :]
+            self.fiducials_raw[1, :] = coord_raw[1, :]
+        elif fiducial_index == 4:
+            self.fiducials_raw[2, :] = coord_raw[0, :]
+            self.fiducials_raw[3, :] = coord_raw[1, :]
+        else:
+            self.fiducials_raw[4, :] = coord_raw[0, :]
+            self.fiducials_raw[5, :] = coord_raw[1, :]
+
+        # Update tracker location in the UI.
+        for n in [0, 1, 2]:
+            self.numctrls_coord[fiducial_index][n].SetValue(float(coord[n]))
+
+        print("Set tracker fiducial {} to coordinates {}.".format(fiducial_name, coord[0:3]))
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -529,6 +635,50 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateACTData(self, data):
         self.act_data = data
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
+        if nav_status and (self.m_icp is not None):
+            self.checkicp.Enable(True)
+        else:
+            self.checkicp.Enable(False)
+            #self.checkicp.SetValue(False)
+
+    def UpdateFRE(self, fre):
+        # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
+        self.txtctrl_fre.SetValue(str(round(fre, 2)))
+        if fre <= 3:
+            self.txtctrl_fre.SetBackgroundColour('GREEN')
+        else:
+            self.txtctrl_fre.SetBackgroundColour('RED')
+
+    def UpdateTrekkerObject(self, data):
+        # self.trk_inp = data
+        self.trekker = data
+
+    def UpdateNumTracts(self, data):
+        self.n_tracts = data
+
+    def UpdateSeedOffset(self, data):
+        self.seed_offset = data
+
+    def UpdateSeedRadius(self, data):
+        self.seed_radius = data
+
+    def UpdateSleep(self, data):
+        self.sleep_nav = data
+
+    def UpdateNumberThreads(self, data):
+        self.n_threads = data
+
+    def UpdateTractsVisualization(self, data):
+        self.view_tracts = data
+
+    def UpdateACTData(self, data):
+        self.act_data = data
+
+    def UpdateTarget(self, coord):
+        self.target = coord
 
     def EnableACT(self, data):
         self.enable_act = data
@@ -576,6 +726,7 @@ class NeuronavigationPanel(wx.Panel):
         # has been initialized before
         if trck and choice != const.DISCTRACK:
             self.ResetTrackerFiducials()
+            self.ResetIcp()
             Publisher.sendMessage('Update status text in GUI',
                                   label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
@@ -596,6 +747,7 @@ class NeuronavigationPanel(wx.Panel):
         elif choice == const.DISCTRACK:
             if trck:
                 self.ResetTrackerFiducials()
+                self.ResetIcp()
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
@@ -634,6 +786,7 @@ class NeuronavigationPanel(wx.Panel):
         # When ref mode is changed the tracker coordinates are set to zero
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
+        self.ResetIcp()
         # Some trackers do not accept restarting within this time window
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
@@ -641,68 +794,32 @@ class NeuronavigationPanel(wx.Panel):
                               nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         print("Reference mode changed!")
 
-    def OnImageFiducials(self, evt):
-        btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
-        marker_id = list(const.BTNS_IMG_MKS[evt.GetId()].values())[0]
+    def OnImageFiducials(self, n, evt):
+        fiducial_name = const.IMAGE_FIDUCIALS[n]['fiducial_name']
 
-        if self.btns_coord[btn_id].GetValue():
-            coord = self.numctrls_coord[btn_id][0].GetValue(),\
-                    self.numctrls_coord[btn_id][1].GetValue(),\
-                    self.numctrls_coord[btn_id][2].GetValue(), 0, 0, 0
+        # XXX: This is still a bit hard to read, could be cleaned up.
+        marker_id = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
 
-            self.fiducials[btn_id, :] = coord[0:3]
+        if self.btns_coord[n].GetValue():
+            coord = self.numctrls_coord[n][0].GetValue(),\
+                    self.numctrls_coord[n][1].GetValue(),\
+                    self.numctrls_coord[n][2].GetValue(), 0, 0, 0
+
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
             Publisher.sendMessage('Create marker', coord=coord, marker_id=marker_id)
         else:
-            for n in [0, 1, 2]:
-                self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
+            for m in [0, 1, 2]:
+                self.numctrls_coord[n][m].SetValue(float(self.current_coord[m]))
 
-            self.fiducials[btn_id, :] = np.nan
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=np.nan)
             Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
 
-    def OnTrackerFiducials(self, evt):
-        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
-        coord = None
+    def OnTrackerFiducials(self, n, evt):
+        fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
+        Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
 
-        if self.trk_init and self.tracker_id:
-            # if self.tracker_id == const.DEBUGTRACK:
-            #     if btn_id == 3:
-            #         coord1 = np.array([-120., 0., 0., 0., 0., 0.])
-            #     elif btn_id == 4:
-            #         coord1 = np.array([120., 0., 0., 0., 0., 0.])
-            #     elif btn_id == 5:
-            #         coord1 = np.array([0., 120., 0., 0., 0., 0.])
-            #     coord2 = np.zeros([3, 6])
-            #     coord_raw = np.vstack([coord1, coord2])
-            # else:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-
-            if self.ref_mode_id:
-                coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
-            else:
-                coord = coord_raw[0, :]
-                coord[2] = -coord[2]
-
-        else:
-            dlg.ShowNavigationTrackerWarning(0, 'choose')
-
-        # Update number controls with tracker coordinates
-        if coord is not None:
-            self.fiducials[btn_id, :] = coord[0:3]
-            if btn_id == 3:
-                self.fiducials_raw[0, :] = coord_raw[0, :]
-                self.fiducials_raw[1, :] = coord_raw[1, :]
-            elif btn_id == 4:
-                self.fiducials_raw[2, :] = coord_raw[0, :]
-                self.fiducials_raw[3, :] = coord_raw[1, :]
-            else:
-                self.fiducials_raw[4, :] = coord_raw[0, :]
-                self.fiducials_raw[5, :] = coord_raw[1, :]
-
-            for n in [0, 1, 2]:
-                self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
-
-    def OnICP(self):
-        dialog = dlg.ICPCorregistrationDialog(nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
+    def OnICP(self, m_change):
+        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, self.tracker_id, self.trk_init, self.ref_mode_id))
         if dialog.ShowModal() == wx.ID_OK:
             self.m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
             #TODO: checkbox in the dialog to transfer the icp points to 3D viewer
@@ -739,10 +856,53 @@ class NeuronavigationPanel(wx.Panel):
         self.icp_queue.put_nowait([self.icp, self.m_icp])
         #print(self.icp, self.m_icp)
 
-    def OnNavigate(self, evt, btn):
-        btn_nav = btn[0]
-        choice_trck = btn[1]
-        choice_ref = btn[2]
+    def onStopNavigation(self):
+        choice_trck = self.choice_trck
+        choice_ref = self.choice_ref
+
+        self.event.set()
+
+        # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+        # print("coord_tracts unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
+        # print("tracts unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
+        self.coord_queue.clear()
+        # self.visualization_queue.clear()
+        if self.trigger_state:
+            self.trigger_queue.clear()
+        if self.view_tracts:
+            self.coord_tracts_queue.clear()
+            self.tracts_queue.clear()
+
+        # print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+        # print("coord_tracts after unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
+        # print("tracts after unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
+        self.coord_queue.join()
+        # self.visualization_queue.join()
+        if self.trigger_state:
+            self.trigger_queue.join()
+        if self.view_tracts:
+            self.coord_tracts_queue.join()
+            self.tracts_queue.join()
+
+        # print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
+        # print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+
+        # Enable all navigation buttons
+        choice_ref.Enable(True)
+        choice_trck.Enable(True)
+        for btn_c in self.btns_coord:
+            btn_c.Enable(True)
+
+        # if self.trigger_state:
+        #     self.trigger.stop()
+
+        vis_components = [self.trigger_state, self.view_tracts]
+        Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+
+    def onStartNavigation(self):
+        choice_trck = self.choice_trck
+        choice_ref = self.choice_ref
+
         errors = False
 
         # initialize jobs list
@@ -750,157 +910,129 @@ class NeuronavigationPanel(wx.Panel):
         vis_components = [self.trigger_state, self.view_tracts]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
 
+        if np.isnan(self.fiducials).any():
+            wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
+
+        elif not self.trk_init[0] or not self.tracker_id:
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
+            errors = True
+
+        else:
+            if self.event.is_set():
+                self.event.clear()
+
+            # prepare GUI for navigation
+            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
+            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Hide current mask")
+
+            # disable all navigation buttons
+            choice_ref.Enable(False)
+            choice_trck.Enable(False)
+            for btn_c in self.btns_coord:
+                btn_c.Enable(False)
+
+            # fiducials matrix
+            m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
+                                                    shear=False, scale=False)
+            # initialize spatial tracker parameters
+            tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+
+            # compute fiducial registration error (FRE)
+            if not self.icp_fre:
+                self.fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
+                self.UpdateFRE(self.fre)
+
+            if self.track_obj:
+                # if object tracking is selected
+                if not self.obj_reg_status:
+                    # check if object registration was performed
+                    wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
+                    errors = True
+                else:
+                    # if object registration was correctly performed continue with navigation
+                    # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
+                    obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
+
+                    coreg_data = [m_change, obj_ref_mode]
+
+                    if self.ref_mode_id:
+                        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+                    else:
+                        coord_raw = np.array([None])
+
+                    obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
+                    coreg_data.extend(obj_data)
+
+                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                    jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
+                                                                    self.view_tracts, queues,
+                                                                    self.event, self.sleep_nav, self.tracker_id,
+                                                                    self.target))
+            else:
+                coreg_data = (m_change, 0)
+                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
+                                                                        self.view_tracts, queues,
+                                                                        self.event, self.sleep_nav))
+
+            if not errors:
+                #TODO: Test the trigger thread
+                if self.trigger_state:
+                    # self.trigger = trig.Trigger(nav_id)
+                    jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
+
+                if self.view_tracts:
+                    # initialize Trekker parameters
+                    slic = sl.Slice()
+                    prj_data = prj.Project()
+                    matrix_shape = tuple(prj_data.matrix_shape)
+                    affine = slic.affine.copy()
+                    affine[1, -1] -= matrix_shape[1]
+                    affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                    Publisher.sendMessage("Update marker offset state", create=True)
+                    self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
+                                    self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
+                    # print("Appending the tract computation thread!")
+                    queues = [self.coord_tracts_queue, self.tracts_queue]
+                    if self.enable_act:
+                        jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, queues, self.event, self.sleep_nav))
+                    else:
+                        jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
+
+                jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
+                                                       self.event, self.sleep_nav))
+
+                for jobs in jobs_list:
+                    # jobs.daemon = True
+                    jobs.start()
+                    # del jobs
+
+                if not self.checkicp.GetValue():
+                    if dlg.ICPcorregistration(self.fre):
+                        m_icp = self.OnICP(m_change)
+                        self.icp_fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id,
+                                                        m_change, m_icp)
+                        self.ctrl_icp()
+
+    def OnNavigate(self, evt, btn_nav):
+        choice_trck = self.choice_trck
+        choice_ref = self.choice_ref
+
         nav_id = btn_nav.GetValue()
         if not nav_id:
-            self.event.set()
-
-            # print("coord unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("coord_tracts unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
-            # print("tracts unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
-            self.coord_queue.clear()
-            # self.visualization_queue.clear()
-            if self.trigger_state:
-                self.trigger_queue.clear()
-            if self.view_tracts:
-                self.coord_tracts_queue.clear()
-                self.tracts_queue.clear()
-
-            # print("coord after unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("coord_tracts after unfinished: {}, queue {}", self.coord_tracts_queue.unfinished_tasks, self.coord_tracts_queue.qsize())
-            # print("tracts after unfinished: {}, queue {}", self.tracts_queue.unfinished_tasks, self.tracts_queue.qsize())
-            self.coord_queue.join()
-            # self.visualization_queue.join()
-            if self.trigger_state:
-                self.trigger_queue.join()
-            if self.view_tracts:
-                self.coord_tracts_queue.join()
-                self.tracts_queue.join()
-
-            # print("coord join unfinished: {}, queue {}", self.coord_queue.unfinished_tasks, self.coord_queue.qsize())
-            # print("vis join unfinished: {}, queue {}", self.visualization_queue.unfinished_tasks, self.visualization_queue.qsize())
+            Publisher.sendMessage("Stop navigation")
 
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
-
-            # Enable all navigation buttons
-            choice_ref.Enable(True)
-            choice_trck.Enable(True)
-            for btn_c in self.btns_coord:
-                btn_c.Enable(True)
-
-            # if self.trigger_state:
-            #     self.trigger.stop()
-
-            Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
-
         else:
+            Publisher.sendMessage("Start navigation")
 
-            if np.isnan(self.fiducials).any():
-                wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
-                btn_nav.SetValue(False)
-
-            elif not self.trk_init[0] or not self.tracker_id:
-                dlg.ShowNavigationTrackerWarning(0, 'choose')
-                errors = True
-
-            else:
-                if self.event.is_set():
-                    self.event.clear()
-
-                # prepare GUI for navigation
-                Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-                Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
-                Publisher.sendMessage("Hide current mask")
+            if self.nav_status:
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
                 btn_nav.SetToolTip(tooltip)
-
-                # disable all navigation buttons
-                choice_ref.Enable(False)
-                choice_trck.Enable(False)
-                for btn_c in self.btns_coord:
-                    btn_c.Enable(False)
-
-                # fiducials matrix
-                m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
-                                                        shear=False, scale=False)
-                # initialize spatial tracker parameters
-                tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-
-                # compute fiducial registration error (FRE)
-                if not self.icp_fre:
-                    self.fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id, m_change)
-                    self.UpdateFRE(self.fre)
-
-                if self.track_obj:
-                    # if object tracking is selected
-                    if not self.obj_reg_status:
-                        # check if object registration was performed
-                        wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
-                        errors = True
-                    else:
-                        # if object registration was correctly performed continue with navigation
-                        # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
-                        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
-
-                        coreg_data = [m_change, obj_ref_mode]
-
-                        if self.ref_mode_id:
-                            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-                        else:
-                            coord_raw = np.array([None])
-
-                        obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
-                        coreg_data.extend(obj_data)
-
-                        queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
-                        jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                     self.view_tracts, queues,
-                                                                     self.event, self.sleep_nav))
-                else:
-                    coreg_data = (m_change, 0)
-                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
-                    jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker_mode, coreg_data,
-                                                                         self.view_tracts, queues,
-                                                                         self.event, self.sleep_nav))
-
-                if not errors:
-                    #TODO: Test the trigger thread
-                    if self.trigger_state:
-                        # self.trigger = trig.Trigger(nav_id)
-                        jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
-
-                    if self.view_tracts:
-                        # initialize Trekker parameters
-                        slic = sl.Slice()
-                        prj_data = prj.Project()
-                        matrix_shape = tuple(prj_data.matrix_shape)
-                        affine = slic.affine.copy()
-                        affine[1, -1] -= matrix_shape[1]
-                        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-                        Publisher.sendMessage("Update marker offset state", create=True)
-                        self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
-                                       self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
-                        # print("Appending the tract computation thread!")
-                        queues = [self.coord_tracts_queue, self.tracts_queue]
-                        if self.enable_act:
-                            jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, queues, self.event, self.sleep_nav))
-                        else:
-                            jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
-
-                    jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
-                                                           self.event, self.sleep_nav))
-
-                    for jobs in jobs_list:
-                        # jobs.daemon = True
-                        jobs.start()
-                        # del jobs
-
-                    if not self.checkicp.GetValue():
-                        if dlg.ICPcorregistration(self.fre):
-                            m_icp = self.OnICP()
-                            self.icp_fre = db.calculate_fre(self.fiducials_raw, self.fiducials, self.ref_mode_id,
-                                                            m_change, m_icp)
-                            self.ctrl_icp()
+            else:
+                btn_nav.SetValue(False)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -1384,7 +1516,6 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index][:6])
         Publisher.sendMessage('Set target transparency', status=True, index=self.tgt_index)
-        Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         wx.MessageBox(_("New target selected."), _("InVesalius 3"))
@@ -1433,12 +1564,12 @@ class MarkersPanel(wx.Panel):
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
                     if item.GetText() == marker_id:
-                        for i in const.BTNS_IMG_MKS:
-                            if marker_id in list(const.BTNS_IMG_MKS[i].values())[0]:
+                        for i in const.BTNS_IMG_MARKERS:
+                            if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
                                 self.lc.Focus(item.GetId())
                 index = [self.lc.GetFocusedItem()]
         else:
-            if self.lc.GetFirstSelected() is not -1:
+            if self.lc.GetFirstSelected() != -1:
                 index = self.GetSelectedItems()
             else:
                 index = None
@@ -1515,8 +1646,8 @@ class MarkersPanel(wx.Panel):
                         # size = float(line[9])
 
                         if len(line) >= 11:
-                            for i in const.BTNS_IMG_MKS:
-                                if line[10] in list(const.BTNS_IMG_MKS[i].values())[0]:
+                            for i in const.BTNS_IMG_MARKERS:
+                                if line[10] in list(const.BTNS_IMG_MARKERS[i].values())[0]:
                                     Publisher.sendMessage('Load image fiducials', marker_id=line[10], coord=coord)
                                 elif line[10] == 'TARGET':
                                     target = count_line
@@ -1533,8 +1664,8 @@ class MarkersPanel(wx.Panel):
                         size = float(line[6])
 
                         if len(line) == 8:
-                            for i in const.BTNS_IMG_MKS:
-                                if line[7] in list(const.BTNS_IMG_MKS[i].values())[0]:
+                            for i in const.BTNS_IMG_MARKERS:
+                                if line[7] in list(const.BTNS_IMG_MARKERS[i].values())[0]:
                                     Publisher.sendMessage('Load image fiducials', marker_id=line[7], coord=coord)
                         else:
                             line.append("")

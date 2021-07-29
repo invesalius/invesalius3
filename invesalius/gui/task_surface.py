@@ -522,7 +522,6 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.__bind_events()
 
     def OnResize(self, evt):
-        print("Resize")
         self.SetupScrolling()
 
     def __bind_events(self):

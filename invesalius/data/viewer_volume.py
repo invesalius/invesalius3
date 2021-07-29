@@ -288,6 +288,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
+        Publisher.subscribe(self.SetMarkers, 'Set markers')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
@@ -298,7 +299,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
         Publisher.subscribe(self.OnUpdateTargetCoordinates, 'Update target')
-        Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
+        Publisher.subscribe(self.OnDisableOrEnableCoilTracker, 'Disable or enable coil tracker')
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
@@ -562,6 +563,38 @@ class Viewer(wx.Panel):
         """
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
+
+    def SetMarkers(self, markers):
+        """
+        Set all markers, overwriting the previous markers.
+        """
+        self.RemoveAllMarkers(len(self.staticballs))
+
+        target_selected = False
+        for marker in markers:
+
+            ball_id = marker["ball_id"]
+            size = marker["size"]
+            colour = marker["colour"]
+            position = marker["position"]
+            direction = marker["direction"]
+            target = marker["target"]
+
+            self.AddMarker(
+                ball_id=ball_id,
+                size=size,
+                colour=colour,
+                coord=position,
+            )
+
+            if target:
+                Publisher.sendMessage('Update target', coord=position + direction)
+                target_selected = True
+
+        if not target_selected:
+            self.RemoveTarget()
+
+        self.UpdateRender()
 
     def AddMarker(self, ball_id, size, colour, coord):
         """
@@ -912,8 +945,10 @@ class Viewer(wx.Panel):
 
             if thrdist and thrcoordx and thrcoordy and thrcoordz:
                 self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
+                Publisher.sendMessage('Coil at target', state=True)
             else:
                 self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
+                Publisher.sendMessage('Coil at target', state=False)
 
             self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                     arrow_pitch_y1, arrow_pitch_y2
@@ -927,12 +962,18 @@ class Viewer(wx.Panel):
         self.target_coord = coord
         self.target_coord[1] = -self.target_coord[1]
         self.CreateTargetAim()
+        Publisher.sendMessage('Target selected', status=True)
+        print("Target updated to coordinates {}".format(coord))
 
-    def OnRemoveTarget(self, status):
+    def RemoveTarget(self):
+        self.target_mode = None
+        self.target_coord = None
+        self.RemoveTargetAim()
+        Publisher.sendMessage('Target selected', status=False)
+
+    def OnDisableOrEnableCoilTracker(self, status):
         if not status:
-            self.target_mode = None
-            self.target_coord = None
-            self.RemoveTargetAim()
+            self.RemoveTarget()
             self.DisableCoilTracker()
 
     def CreateTargetAim(self):
