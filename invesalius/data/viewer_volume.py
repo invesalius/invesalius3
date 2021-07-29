@@ -1435,7 +1435,7 @@ class Viewer(wx.Panel):
         intersectingCellIds = vtk.vtkIdList()  # This find store the triangles that intersect the coil's normal
 
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-        self.ren.AddActor(self.x_actor)
+        #self.ren.AddActor(self.x_actor)
         self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 
         closestPoint = np.array((np.Inf, np.Inf, np.Inf))
@@ -1456,7 +1456,7 @@ class Viewer(wx.Panel):
 
             self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
                                                  vtk_colors.GetColor3d('Yellow'))
-            self.ren.AddActor(self.y_actor)
+            #self.ren.AddActor(self.y_actor)
 
             self.ren.AddActor(self.obj_projection_arrow_actor)
             self.ren.AddActor(self.object_orientation_disk_actor)
