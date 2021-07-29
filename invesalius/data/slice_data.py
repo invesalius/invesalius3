@@ -85,3 +85,4 @@ class SliceData(object):
         w, h = self.renderer.GetSize()
         colour = const.ORIENTATION_COLOUR[self.orientation]
         canvas.draw_rectangle((0, 0), w, h, line_colour=[255*i for i in colour] + [255], line_width=2)
+        self.text.draw_to_canvas(gc, canvas)
