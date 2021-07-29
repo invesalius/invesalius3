@@ -1392,6 +1392,7 @@ class Viewer(wx.Panel):
 
         coil_norm = np.cross(coil_dir, coil_face)
         p2_norm = p1 - vec_length * coil_norm # point normal to the coil away from the center by vec_length
+        coil_dir = np.array([coord[3], coord[4], coord[5]])
 
         return coil_dir, p2_norm, coil_norm, p1
 
