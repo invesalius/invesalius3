@@ -561,7 +561,7 @@ class Tracker():
         # TODO: const.DISCTRACK is not a tracker, so discoupling it from the actual trackers
         #       would make this cleaner.
         #
-        elif new_tracker == const.DISCTRACK and trck:
+        elif new_tracker == const.DISCTRACK:
             self.ResetTrackerFiducials()
             Publisher.sendMessage('Update status text in GUI',
                                     label=_("Disconnecting tracker ..."))
@@ -1106,10 +1106,9 @@ class NeuronavigationPanel(wx.Panel):
             else:
                 btn_nav.SetValue(False)
 
-    def ResetImageFiducials(self):
+    def ResetUI(self):
         for m in range(0, 3):
             self.btns_coord[m].SetValue(False)
-            self.fiducials[m, :] = [np.nan, np.nan, np.nan]
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
@@ -1118,10 +1117,8 @@ class NeuronavigationPanel(wx.Panel):
         self.UpdateFiducialRegistrationError()
 
     def OnCloseProject(self):
-        self.ResetTrackerFiducials()
-        self.ResetImageFiducials()
-        self.navigation.ResetICP()
         self.OnChooseTracker(False, self.select_tracker_elem)
+        self.ResetUI()
         Publisher.sendMessage('Update object registration')
         Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
         Publisher.sendMessage('Delete all markers')
@@ -1130,6 +1127,9 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage("Set cross visibility", visibility=0)
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
+        self.navigation.StopNavigation()
+        self.navigation.__init__()
+        self.tracker.__init__()
 
 
 class ObjectRegistrationPanel(wx.Panel):
