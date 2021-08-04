@@ -1322,7 +1322,7 @@ class Viewer(wx.Panel):
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
         self.obj_projection_arrow_actor = self.Add_ObjectArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
-                                                               50)
+                                                               15)
         self.object_orientation_disk_actor = self.Add_Object_Orientation_Disk([0., 0., 0.], [0., 0., 0.],
                                                                               vtk_colors.GetColor3d('Red'))
         #self.obj_projection_arrow_actor.SetVisibility(False)
@@ -1345,8 +1345,8 @@ class Viewer(wx.Panel):
     def Add_Object_Orientation_Disk(self, position, orientation, color=[0.0, 0.0, 1.0]):
         # Create a disk to show target
         disk = vtk.vtkDiskSource()
-        disk.SetInnerRadius(2)
-        disk.SetOuterRadius(5)
+        disk.SetInnerRadius(5)
+        disk.SetOuterRadius(15)
         disk.SetRadialResolution(100)
         disk.SetCircumferentialResolution(100)
         disk.Update()
@@ -1373,7 +1373,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(color)
-        actor.GetProperty().SetLineWidth(50)
+        actor.GetProperty().SetLineWidth(5)
         actor.AddPosition(0, 0, 0)
         actor.SetScale(size)
         actor.SetPosition(direction)
@@ -1481,8 +1481,8 @@ class Viewer(wx.Panel):
                         self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                         self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                     else:
-                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Violet'))
+                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
+                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
                 #else:
                 #     self.ren.RemoveActor(self.obj_projection_arrow_actor)
                 #     self.ren.RemoveActor(self.object_orientation_disk_actor)
