@@ -480,5 +480,9 @@ class Mask():
                 self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
-        del self.matrix
+        # On Linux self.matrix is already removed so it gives an error
+        try:
+            del self.matrix
+        except AttributeError:
+            pass
         os.remove(self.temp_file)
