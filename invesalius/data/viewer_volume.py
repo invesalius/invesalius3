@@ -194,6 +194,7 @@ class Viewer(wx.Panel):
         self.polydata = None
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
+        self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
 
         self.actor_tracts = None
         self.actor_peel = None
@@ -1462,6 +1463,7 @@ class Viewer(wx.Panel):
 
                     self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
                                                          vtk_colors.GetColor3d('Yellow'))
+
                     #self.ren.AddActor(self.y_actor)
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
@@ -1475,7 +1477,7 @@ class Viewer(wx.Panel):
                     self.object_orientation_disk_actor.SetPosition(closestPoint)
                     self.object_orientation_disk_actor.SetOrientation(coil_dir)
                     # change color of arrow and disk according to angle
-                    if angle < 10:
+                    if angle < self.angle_arrow_projection_threshold:
                         self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                         self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                     else:
@@ -1491,6 +1493,8 @@ class Viewer(wx.Panel):
         else:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_disk_actor)
+            #self.ren.RemoveActor(self.x_actor)
+            #self.ren.RemoveActor(self.y_actor)
         self.Refresh()
 
     def OnNavigationStatus(self, nav_status, vis_status):
@@ -1564,7 +1568,7 @@ class Viewer(wx.Panel):
         #self.obj_arrow_actor.SetOrientation(coil_dir)
         self.ren.RemoveActor(self.x_actor)
         self.ren.RemoveActor(self.y_actor)
-        self.ren.RemoveActor(self.z_actor)
+        #self.ren.RemoveActor(self.z_actor)
         self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
