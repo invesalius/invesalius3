@@ -74,7 +74,7 @@ class Brain:
 
         currentPeel = tmpPeel
         self.currentPeelNo = 0
-        currentPeel= self.mapImageOnCurrentPeel(currentPeel)
+        currentPeel= self.MapImageOnCurrentPeel(currentPeel)
 
         newPeel = vtk.vtkPolyData()
         newPeel.DeepCopy(currentPeel)
@@ -84,16 +84,16 @@ class Brain:
         self.peel.append(newPeel)
         self.currentPeelActor = vtk.vtkActor()
         self.currentPeelActor.SetUserMatrix(affine_vtk)
-        self.getCurrentPeelActor(currentPeel)
+        self.GetCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
         self.locator = vtk.vtkCellLocator()  # This one will later find the triangle on the peel surface where the coil's normal intersect
         self.numberOfPeels = n_peels
-        self.peelDown(currentPeel)
+        self.PeelDown(currentPeel)
 
     def get_actor(self, n, affine_vtk):
-        return self.getPeelActor(n, affine_vtk)
+        return self.GetPeelActor(n, affine_vtk)
 
-    def sliceDown(self, currentPeel):
+    def SliceDown(self, currentPeel):
         # Warp using the normals
         warp = vtk.vtkWarpVector()
         warp.SetInputData(fixMesh(downsample(currentPeel)))  # fixMesh here updates normals needed for warping
@@ -127,7 +127,7 @@ class Brain:
     #
     #     currentPeel = out
 
-    def mapImageOnCurrentPeel(self, currentPeel):
+    def MapImageOnCurrentPeel(self, currentPeel):
         self.xyz2_refImageSpace.SetInputData(currentPeel)
         self.xyz2_refImageSpace.Update()
 
@@ -142,23 +142,23 @@ class Brain:
         currentPeel = self.refImageSpace2_xyz.GetOutput()
         return currentPeel
 
-    def peelDown(self, currentPeel):
+    def PeelDown(self, currentPeel):
         for i in range(0, self.numberOfPeels):
-            currentPeel = self.sliceDown(currentPeel)
-            currentPeel = self.mapImageOnCurrentPeel(currentPeel)
+            currentPeel = self.SliceDown(currentPeel)
+            currentPeel = self.MapImageOnCurrentPeel(currentPeel)
 
             newPeel = vtk.vtkPolyData()
             newPeel.DeepCopy(currentPeel)
             self.peel.append(newPeel)
 
-            # getCurrentPeelActor()
+            # GetCurrentPeelActor()
             # newPeelActor = vtk.vtkActor()
             # newPeelActor = currentPeelActor
             # peelActors.push_back(newPeelActor)
 
             self.currentPeelNo += 1
 
-    def transformpeelposition(self, p, affine_vtk):
+    def TransformPeelPosition(self, p, affine_vtk):
         peel_transform = vtk.vtkTransform()
         peel_transform.SetMatrix(affine_vtk)
         refpeelspace = vtk.vtkTransformPolyDataFilter()
@@ -168,7 +168,7 @@ class Brain:
         currentPeel = refpeelspace.GetOutput()
         return currentPeel
 
-    def getPeelActor(self, p, affine_vtk):
+    def GetPeelActor(self, p, affine_vtk):
         colors = vtk.vtkNamedColors()
         # Create the color map
         colorLookupTable = vtk.vtkLookupTable()
@@ -195,16 +195,16 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
-        currentPeel = self.transformpeelposition(p, affine_vtk)
+        currentPeel = self.TransformPeelPosition(p, affine_vtk)
 
         self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
-        self.getCenters(currentPeel)
-        self.getNormals(currentPeel)
+        self.GetCenters(currentPeel)
+        self.GetNormals(currentPeel)
 
         return self.currentPeelActor
 
-    def getCurrentPeelActor(self, currentPeel):
+    def GetCurrentPeelActor(self, currentPeel):
         colors = vtk.vtkNamedColors()
 
         # Create the color map
@@ -236,7 +236,7 @@ class Brain:
 
         return self.currentPeelActor
 
-    def getCenters(self, currentPeel): #change name of variable for not confusion
+    def GetCenters(self, currentPeel): #change name of variable for not confusion
         # Compute centers of triangles
         centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the peel
         centerComputer.SetInputData(currentPeel)
@@ -245,7 +245,7 @@ class Brain:
         peel_centers = centerComputer.GetOutput()
         self.peel_centers = peel_centers
 
-    def getNormals(self, currentPeel): #change name of variable
+    def GetNormals(self, currentPeel): #change name of variable
         # Compute normals of triangles
         normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the peel
         normalComputer.SetInputData(currentPeel)
