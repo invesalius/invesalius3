@@ -158,15 +158,20 @@ class ControlRobot(threading.Thread):
         self.trck_init_tracker = trck_init[0]
         self.trk_id = trck_init[2]
         self.robot_tracker_flag = False
+        self.target_flag = False
         self.m_change_robot2ref = None
         self.robot_coord_queue = queues[0]
         self.coord_queue = queues[1]
         self.robottarget_queue = queues[2]
+        self.objattarget_queue = queues[3]
         self.process_tracker = process_tracker
         self.event = event
         self.time_start = time()
-        self.fieldnames = ['time', 'x','xf','statusx']
-        with open('data.csv', 'w') as csv_file:
+        self.fieldnames = ["time",
+                           "x_robot", "y_robot", "z_robot", "a_robot", "b_robot", "c_robot",
+                           "x_tracker_obj", "y_tracker_obj", "z_tracker_obj", "a_tracker_obj", "b_tracker_obj", "c_tracker_obj",
+                           "velocity_std", "target"]
+        with open('data_robot_and_tracker.csv', 'w', newline='') as csv_file:
             csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
             csv_writer.writeheader()
 
@@ -187,11 +192,18 @@ class ControlRobot(threading.Thread):
             coord_raw = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)
             coord_tracker_ref = coord_raw[0][1]
             coord_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker_ref)
+            coord_tracker_obj = coord_raw[0][2]
 
             if self.robottarget_queue.empty():
                 None
             else:
                 self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
+
+            if self.objattarget_queue.empty():
+                None
+            else:
+                self.target_flag = self.objattarget_queue.get_nowait()
+
             current_ref_filtered = [0]
             if self.robot_tracker_flag:
                 current_ref = coord_tracker_in_robot
@@ -205,14 +217,25 @@ class ControlRobot(threading.Thread):
             if not self.robottarget_queue.empty():
                 self.robottarget_queue.task_done()
 
-            with open('data.csv', 'a') as csv_file:
+            with open('data_robot_and_tracker.csv', 'a', newline='') as csv_file:
                 csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
 
                 info = {
                     "time": time() - self.time_start,
-                    "x": coord_tracker_in_robot[0],
-                    "xf": current_ref_filtered[0],
-                    "statusx": self.process_tracker.velocity_std,
+                    "x_robot": coord_robot[0],
+                    "y_robot": coord_robot[1],
+                    "z_robot": coord_robot[2],
+                    "a_robot": coord_robot[3],
+                    "b_robot": coord_robot[4],
+                    "c_robot": coord_robot[5],
+                    "x_tracker_obj": coord_tracker_obj[0],
+                    "y_tracker_obj": coord_tracker_obj[1],
+                    "z_tracker_obj": coord_tracker_obj[2],
+                    "a_tracker_obj": coord_tracker_obj[3],
+                    "b_tracker_obj": coord_tracker_obj[4],
+                    "c_tracker_obj": coord_tracker_obj[5],
+                    "velocity_std": self.process_tracker.velocity_std,
+                    "target": self.target_flag
                 }
 
                 csv_writer.writerow(info)

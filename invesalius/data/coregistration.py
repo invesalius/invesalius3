@@ -20,7 +20,8 @@
 import numpy as np
 import queue
 import threading
-from time import sleep
+from time import time, sleep
+import csv
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
@@ -182,6 +183,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.event = event
         self.sle = sle
         self.icp_queue = queues[2]
+        self.objattarget_queue = queues[3]
         self.icp = None
         self.m_icp = None
         self.robot_tracker_flag = None
@@ -189,6 +191,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.last_coord = None
         self.tracker_id = tracker_id
         self.target = target
+        self.target_flag = False
 
         if self.target is not None:
             self.target = np.array(self.target)
@@ -198,6 +201,13 @@ class CoordinateCorregistrate(threading.Thread):
             #      do this transformation only once, and doing it in the correct place.
             #
             self.target[1] = -self.target[1]
+
+        self.time_start = time()
+        self.fieldnames = ["time",
+                           "x_nav", "y_nav", "z_nav", "a_nav", "b_nav", "c_nav", "target"]
+        with open('data_nav.csv', 'w', newline='') as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
+            csv_writer.writeheader()
 
     def run(self):
         trck_info = self.trck_info
@@ -212,6 +222,12 @@ class CoordinateCorregistrate(threading.Thread):
                     None
                 else:
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
+
+                if self.objattarget_queue.empty():
+                    None
+                else:
+                    self.target_flag = self.objattarget_queue.get_nowait()
+                print(self.target_flag)
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
@@ -253,6 +269,21 @@ class CoordinateCorregistrate(threading.Thread):
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
 
+                with open('data_nav.csv', 'a', newline='') as csv_file:
+                    csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
+
+                    info = {
+                        "time": time() - self.time_start,
+                        "x_nav": coord[0],
+                        "y_nav": coord[1],
+                        "z_nav": coord[2],
+                        "a_nav": coord[3],
+                        "b_nav": coord[4],
+                        "c_nav": coord[5],
+                        "target": self.target_flag
+                    }
+
+                    csv_writer.writerow(info)
                 # The sleep has to be in both threads
                 sleep(self.sle)
             except queue.Full:

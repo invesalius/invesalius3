@@ -390,6 +390,7 @@ def HybridTracker(tracker_id):
         #TODO: deal with errors
     else:
         trck_init = None
+        trck_init_robot = None
 
     return [trck_init, trck_init_robot, tracker_id]
 

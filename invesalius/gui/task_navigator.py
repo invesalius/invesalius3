@@ -335,6 +335,7 @@ class NeuronavigationPanel(wx.Panel):
         self.robot_event = threading.Event()
 
         self.coord_queue = QueueCustom(maxsize=1)
+        self.objattarget_queue = QueueCustom(maxsize=1)
         self.robot_coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.robottarget_queue = QueueCustom(maxsize=1)
@@ -495,6 +496,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.onStopNavigation, 'Stop navigation')
         Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
         Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
+        Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
 
     def LoadImageFiducials(self, marker_id, coord):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
@@ -692,6 +694,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot2ref):
         self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
+
+    def OnObjectTarget(self, state):
+        self.objattarget_queue.put_nowait(state)
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -979,7 +984,7 @@ class NeuronavigationPanel(wx.Panel):
                     obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                     coreg_data.extend(obj_data)
 
-                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+                    queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.objattarget_queue]
                     jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker_mode, coreg_data,
                                                                     self.view_tracts, queues,
                                                                     self.event, self.sleep_nav, self.tracker_id,
@@ -995,8 +1000,8 @@ class NeuronavigationPanel(wx.Panel):
                 self.robot_coord_queue.clear()
                 #self.robot_coord_queue.join()
                 elfin_process.ControlRobot(self.trk_init,
-                                   [self.robot_coord_queue, self.coord_queue, self.robottarget_queue], self.process_tracker,
-                                   self.robot_event).start()
+                                           [self.robot_coord_queue, self.coord_queue, self.robottarget_queue, self.objattarget_queue],
+                                           self.process_tracker, self.robot_event).start()
 
             if not errors:
                 #TODO: Test the trigger thread
