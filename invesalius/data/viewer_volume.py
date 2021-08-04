@@ -1440,7 +1440,7 @@ class Viewer(wx.Panel):
         intersectingCellIds = vtk.vtkIdList()  # This find store the triangles that intersect the coil's normal
 
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-        #self.ren.AddActor(self.x_actor)
+        self.ren.AddActor(self.x_actor)
         self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 
         closestPoint = np.array((np.Inf, np.Inf, np.Inf))
@@ -1452,7 +1452,7 @@ class Viewer(wx.Panel):
                 point = np.array(self.peel_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
                 #print('distance:', distance, point - p1)
-
+                self.ren.RemoveActor(self.y_actor)
                 # TODO : check this
                 if distance < closestDist:
                     closestDist = distance
@@ -1464,7 +1464,7 @@ class Viewer(wx.Panel):
                     self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
                                                          vtk_colors.GetColor3d('Yellow'))
 
-                    #self.ren.AddActor(self.y_actor)
+                    self.ren.AddActor(self.y_actor)
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_disk_actor)
@@ -1483,7 +1483,8 @@ class Viewer(wx.Panel):
                     else:
                         self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
                         self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
-                #else:
+                else:
+                    self.ren.RemoveActor(self.y_actor)
                 #     self.ren.RemoveActor(self.obj_projection_arrow_actor)
                 #     self.ren.RemoveActor(self.object_orientation_disk_actor)
                 # elif self.obj_projection_arrow_actor.GetVisibility():
@@ -1494,7 +1495,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_disk_actor)
             #self.ren.RemoveActor(self.x_actor)
-            #self.ren.RemoveActor(self.y_actor)
+            self.ren.RemoveActor(self.y_actor)
         self.Refresh()
 
     def OnNavigationStatus(self, nav_status, vis_status):
