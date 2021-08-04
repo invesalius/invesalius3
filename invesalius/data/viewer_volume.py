@@ -1565,7 +1565,7 @@ class Viewer(wx.Panel):
         self.ren.RemoveActor(self.x_actor)
         self.ren.RemoveActor(self.y_actor)
         self.ren.RemoveActor(self.z_actor)
-        self.GetCellIntersectionn(p1, norm, coil_norm, coil_dir)
+        self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
