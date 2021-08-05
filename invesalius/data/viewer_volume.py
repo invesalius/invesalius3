@@ -1140,9 +1140,13 @@ class Viewer(wx.Panel):
         return actor_arrow
 
     def CenterOfMass(self):
-        proj = prj.Project()
-        surface = proj.surface_dict[0].polydata
         barycenter = [0.0, 0.0, 0.0]
+        proj = prj.Project()
+        try:
+            surface = proj.surface_dict[0].polydata
+        except KeyError:
+            print("There is not any surface created")
+            return barycenter
         n = surface.GetNumberOfPoints()
         for i in range(n):
             point = surface.GetPoint(i)
@@ -1356,9 +1360,9 @@ class Viewer(wx.Panel):
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
         self.tracts_status = vis_status[1]
-        self.pTarget = self.CenterOfMass()
 
         if self.nav_status:
+            self.pTarget = self.CenterOfMass()
             if self.obj_actor:
                 self.obj_actor.SetVisibility(self.obj_state)
                 self.x_actor.SetVisibility(self.obj_state)
