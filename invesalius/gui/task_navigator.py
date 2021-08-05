@@ -338,6 +338,7 @@ class NeuronavigationPanel(wx.Panel):
         self.trekker = None
         self.n_threads = None
         self.view_tracts = False
+        self.peel_loaded = False
         self.enable_act = False
         self.act_data = None
         self.n_tracts = const.N_TRACTS
@@ -477,6 +478,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSleep, 'Update sleep')
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
+        Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -597,6 +599,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateTractsVisualization(self, data):
         self.view_tracts = data
+
+    def UpdatePeelVisualization(self, data):
+        self.peel_loaded = data
 
     def UpdateACTData(self, data):
         self.act_data = data
@@ -858,7 +863,7 @@ class NeuronavigationPanel(wx.Panel):
         # if self.trigger_state:
         #     self.trigger.stop()
 
-        vis_components = [self.trigger_state, self.view_tracts]
+        vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
     def onStartNavigation(self):
@@ -869,7 +874,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # initialize jobs list
         jobs_list = []
-        vis_components = [self.trigger_state, self.view_tracts]
+        vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
 
         if np.isnan(self.fiducials).any():
@@ -1763,7 +1768,7 @@ class TractographyPanel(wx.Panel):
         self.tracts_run = None
         self.trekker_cfg = const.TREKKER_CONFIG
         self.nav_status = False
-
+        self.peel_loaded = False
         self.SetAutoLayout(1)
         self.__bind_events()
 
@@ -1946,6 +1951,7 @@ class TractographyPanel(wx.Panel):
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
                                   normals=self.brain_peel.peel_normals)
             Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
+            self.peel_loaded = True
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
         # self.tract.n_tracts = ctrl.GetValue()
@@ -2027,6 +2033,8 @@ class TractographyPanel(wx.Panel):
             self.checkpeeling.SetValue(True)
             self.spin_opacity.Enable(1)
             Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+            self.peel_loaded = True
+            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
         except:
             wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
 
@@ -2214,7 +2222,7 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.trigger_state, self.view_tracts = vis_components
+        self.trigger_state, self.view_tracts, self.peel_loaded = vis_components
         self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
@@ -2253,7 +2261,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord)
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord, flag= self.peel_loaded)
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1

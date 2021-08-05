@@ -1562,7 +1562,7 @@ class Viewer(wx.Panel):
         self.Refresh()
 
 
-    def UpdateObjectArrowOrientation(self, m_img, coord):
+    def UpdateObjectArrowOrientation(self, m_img, coord, flag):
 
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
         #self.obj_arrow_actor.SetPosition(p1)
@@ -1570,7 +1570,8 @@ class Viewer(wx.Panel):
         self.ren.RemoveActor(self.x_actor)
         self.ren.RemoveActor(self.y_actor)
         #self.ren.RemoveActor(self.z_actor)
-        self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
+        if flag:
+            self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
