@@ -1356,7 +1356,7 @@ class Viewer(wx.Panel):
         disk_actor = vtk.vtkActor()
         disk_actor.SetMapper(disk_mapper)
         disk_actor.GetProperty().SetColor(color)
-        disk_actor.GetProperty().SetOpacity(5)
+        disk_actor.GetProperty().SetOpacity(1)
         disk_actor.SetPosition(position)
         disk_actor.SetOrientation(orientation)
 
@@ -1433,27 +1433,29 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
-        #TODO: remove the arrow when the distance is larger than required
-        #print('visibility:', self.obj_projection_arrow_actor.GetVisibility())
 
         vtk_colors = vtk.vtkNamedColors()
-        intersectingCellIds = vtk.vtkIdList()  # This find store the triangles that intersect the coil's normal
+        # This find store the triangles that intersect the coil's normal
+        intersectingCellIds = vtk.vtkIdList()
 
+        #for debugging
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-        self.ren.AddActor(self.x_actor)
+        #self.ren.AddActor(self.x_actor) # remove comment for testing
+
         self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 
-        closestPoint = np.array((np.Inf, np.Inf, np.Inf))
-        closestDist = 50#np.Inf
+        closestDist = 50
+
         #if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
                 cellId = intersectingCellIds.GetId(i)
                 point = np.array(self.peel_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
+
                 #print('distance:', distance, point - p1)
                 self.ren.RemoveActor(self.y_actor)
-                # TODO : check this
+
                 if distance < closestDist:
                     closestDist = distance
                     closestPoint = point
@@ -1461,21 +1463,22 @@ class Viewer(wx.Panel):
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     #print('the angle:', angle)
 
+                    #for debbuging
                     self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
                                                          vtk_colors.GetColor3d('Yellow'))
 
-                    self.ren.AddActor(self.y_actor)
+                    #self.ren.AddActor(self.y_actor)# remove comment for testing
+
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_disk_actor)
-                    #self.object_orientation_disk_actor.SetVisibility(True)
-                    #self.obj_projection_arrow_actor.SetVisibility(True)
-                    #print('actors:', self.ren.GetActors())
+
                     self.obj_projection_arrow_actor.SetPosition(closestPoint)
                     self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
                     self.object_orientation_disk_actor.SetPosition(closestPoint)
                     self.object_orientation_disk_actor.SetOrientation(coil_dir)
+
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
                         self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
@@ -1485,17 +1488,12 @@ class Viewer(wx.Panel):
                         self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
                 else:
                     self.ren.RemoveActor(self.y_actor)
-                #     self.ren.RemoveActor(self.obj_projection_arrow_actor)
-                #     self.ren.RemoveActor(self.object_orientation_disk_actor)
-                # elif self.obj_projection_arrow_actor.GetVisibility():
-                #     print('visibility:', self.obj_projection_arrow_actor.GetVisibility())
-                #     self.ren.RemoveActor(self.obj_projection_arrow_actor)
-                #     self.ren.RemoveActor(self.object_orientation_disk_actor)
+
         else:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_disk_actor)
-            #self.ren.RemoveActor(self.x_actor)
-            self.ren.RemoveActor(self.y_actor)
+            self.ren.RemoveActor(self.x_actor)
+            #self.ren.RemoveActor(self.y_actor)
         self.Refresh()
 
     def OnNavigationStatus(self, nav_status, vis_status):
@@ -1565,12 +1563,12 @@ class Viewer(wx.Panel):
     def UpdateObjectArrowOrientation(self, m_img, coord, flag):
 
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
-        #self.obj_arrow_actor.SetPosition(p1)
-        #self.obj_arrow_actor.SetOrientation(coil_dir)
-        self.ren.RemoveActor(self.x_actor)
-        self.ren.RemoveActor(self.y_actor)
-        #self.ren.RemoveActor(self.z_actor)
+
         if flag:
+            self.ren.RemoveActor(self.x_actor)
+            #self.ren.RemoveActor(self.y_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.ren.RemoveActor(self.object_orientation_disk_actor)
             self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
