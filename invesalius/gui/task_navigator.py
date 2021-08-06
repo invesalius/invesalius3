@@ -310,6 +310,8 @@ class Navigation():
         self.trigger_state = False
         self.obj_reg = None
         self.track_obj = False
+        self.m_change = None
+        self.all_fiducials = np.zeros((6, 6))
 
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
@@ -331,12 +333,6 @@ class Navigation():
         self.seed_radius = const.SEED_RADIUS
         self.sleep_nav = const.SLEEP_NAVIGATION
 
-        # ICP related variables
-        self.use_icp = False
-        self.m_icp = None
-        self.fre = None
-        self.icp_fre = None
-
     def SetImageFiducial(self, fiducial_index, coord):
         self.image_fiducials[fiducial_index, :] = coord
 
@@ -349,16 +345,12 @@ class Navigation():
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
         ref_mode_id = tracker.GetReferenceMode()
 
-        all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
 
-        # fiducials matrix
-        m_change = tr.affine_matrix_from_points(all_fiducials[3:, :].T, all_fiducials[:3, :].T,
-                                                shear=False, scale=False)
+        self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, ref_mode_id, self.m_change)
 
-        self.fre = db.calculate_fre(tracker_fiducials_raw, all_fiducials, ref_mode_id, m_change)
-
-    def GetFiducialRegistrationError(self):
-        fre = self.icp_fre if self.use_icp else self.fre
+    def GetFiducialRegistrationError(self, icp):
+        fre = icp.icp_fre if icp.use_icp else self.fre
         return fre, fre <= 3
 
     def StartNavigation(self, tracker):
@@ -376,11 +368,12 @@ class Navigation():
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
-        all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
 
         # fiducials matrix
-        m_change = tr.affine_matrix_from_points(all_fiducials[3:, :].T, all_fiducials[:3, :].T,
+        m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
                                                 shear=False, scale=False)
+        self.m_change = m_change
 
         errors = False
 
@@ -449,16 +442,6 @@ class Navigation():
                 jobs.start()
                 # del jobs
 
-            # TODO: Separate ICP-related code from Navigation class. The first step would be to have this stuff
-            #       in a separate function or so.
-            #
-            if not self.use_icp:
-                if dlg.ICPcorregistration(self.fre):
-                    m_icp = self.OnICP(tracker, m_change)
-                    self.icp_fre = db.calculate_fre(tracker_fiducials_raw, all_fiducials, ref_mode_id,
-                                                    m_change, m_icp)
-                    self.SetICP(True)
-
     def StopNavigation(self):
         self.event.set()
 
@@ -477,42 +460,6 @@ class Navigation():
 
         vis_components = [self.trigger_state, self.view_tracts]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
-
-    # ICP-related functions
-    #
-    # TODO: Refactor to preferably their own class.
-    #
-    def OnICP(self, tracker, m_change):
-        ref_mode_id = tracker.GetReferenceMode()
-
-        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, tracker.tracker_id, tracker.trk_init, ref_mode_id))
-
-        if dialog.ShowModal() == wx.ID_OK:
-            self.m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
-            # TODO: checkbox in the dialog to transfer the icp points to 3D viewer
-            #create markers
-            # for i in range(len(point_coord)):
-            #     img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
-            #     transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
-            #     Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
-            #     Publisher.sendMessage('Create marker', coord=transf_coord, marker_id=None, colour=(0,0,1))
-            if self.m_icp is not None:
-                dlg.ReportICPerror(prev_error, final_error)
-                self.use_icp = True
-            else:
-                self.use_icp = False
-
-        return self.m_icp
-
-    def SetICP(self, use_icp):
-        self.use_icp = use_icp
-        self.icp_queue.put_nowait([self.use_icp, self.m_icp])
-
-    def ResetICP(self):
-        self.use_icp = False
-        self.m_icp = None
-        self.fre = None
-        self.icp_fre = None
 
 
 class Tracker():
@@ -689,6 +636,58 @@ class Tracker():
     def get_trackers(self):
         return const.TRACKERS
 
+class ICP():
+    def __init__(self):
+        self.use_icp = False
+        self.m_icp = None
+        self.icp_fre = None
+
+    def StartICP(self, navigation, tracker):
+        if not self.use_icp:
+            if dlg.ICPcorregistration(navigation.fre):
+                Publisher.sendMessage('Stop navigation')
+                use_icp, self.m_icp = self.OnICP(tracker, navigation.m_change)
+                if use_icp:
+                    self.icp_fre = db.calculate_fre(tracker.tracker_fiducials_raw, navigation.all_fiducials,
+                                                    tracker.ref_mode_id, navigation.m_change, self.m_icp)
+                    self.SetICP(navigation, use_icp)
+                else:
+                    print("ICP canceled")
+                Publisher.sendMessage('Start navigation')
+
+    def OnICP(self, tracker, m_change):
+        ref_mode_id = tracker.GetReferenceMode()
+
+        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, tracker.tracker_id, tracker.trk_init, ref_mode_id))
+
+        if dialog.ShowModal() == wx.ID_OK:
+            m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
+            # TODO: checkbox in the dialog to transfer the icp points to 3D viewer
+            #create markers
+            # for i in range(len(point_coord)):
+            #     img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
+            #     transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
+            #     Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
+            #     Publisher.sendMessage('Create marker', coord=transf_coord, marker_id=None, colour=(0,0,1))
+            if m_icp is not None:
+                dlg.ReportICPerror(prev_error, final_error)
+                use_icp = True
+            else:
+                use_icp = False
+
+            return use_icp, m_icp
+
+        else:
+            return self.use_icp, self.m_icp
+
+    def SetICP(self, navigation, use_icp):
+        self.use_icp = use_icp
+        navigation.icp_queue.put_nowait([self.use_icp, self.m_icp])
+
+    def ResetICP(self):
+        self.use_icp = False
+        self.m_icp = None
+        self.icp_fre = None
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
@@ -707,6 +706,7 @@ class NeuronavigationPanel(wx.Panel):
         self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         self.tracker = Tracker()
         self.navigation = Navigation()
+        self.icp = ICP()
 
         self.nav_status = False
 
@@ -915,11 +915,12 @@ class NeuronavigationPanel(wx.Panel):
 
         self.tracker.SetTrackerFiducial(fiducial_index)
 
+        self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_coord[3:6], self.txtctrl_fre)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
-        if nav_status and self.navigation.m_icp is not None:
+        if nav_status and self.icp.m_icp is not None:
             self.checkbox_icp.Enable(True)
         else:
             self.checkbox_icp.Enable(False)
@@ -974,7 +975,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.trigger_state = trigger_state
 
     def ResetICP(self):
-        self.navigation.ResetICP()
+        self.icp.ResetICP()
         self.checkbox_icp.Enable(False)
         self.checkbox_icp.SetValue(False)
 
@@ -1041,7 +1042,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker)
-        fre, fre_ok = self.navigation.GetFiducialRegistrationError()
+        fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
 
         self.txtctrl_fre.SetValue(str(round(fre, 2)))
         if fre_ok:
@@ -1063,10 +1064,6 @@ class NeuronavigationPanel(wx.Panel):
             errors = True
 
         else:
-            if not self.UpdateFiducialRegistrationError():
-                # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
-                print("WARNING: Fiducial registration error too large.")
-
             # Prepare GUI for navigation.
             Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
             Publisher.sendMessage("Hide current mask")
@@ -1079,13 +1076,17 @@ class NeuronavigationPanel(wx.Panel):
 
             self.navigation.StartNavigation(self.tracker)
 
+            if not self.UpdateFiducialRegistrationError():
+                # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
+                print("WARNING: Fiducial registration error too large.")
+
+            self.icp.StartICP(self.navigation, self.tracker)
+            if self.icp.use_icp:
+                self.checkbox_icp.Enable(True)
+                self.checkbox_icp.SetValue(True)
             # Update FRE once more after starting the navigation, due to the optional use of ICP,
             # which improves FRE.
             self.UpdateFiducialRegistrationError()
-
-            if self.navigation.use_icp:
-                self.checkbox_icp.Enable(True)
-                self.checkbox_icp.SetValue(True)
 
     def OnNavigate(self, evt, btn_nav):
         select_tracker_elem = self.select_tracker_elem
@@ -1113,7 +1114,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
     def OnCheckboxICP(self, evt, ctrl):
-        self.navigation.SetICP(ctrl.GetValue())
+        self.icp.SetICP(self.navigation, ctrl.GetValue())
         self.UpdateFiducialRegistrationError()
 
     def OnCloseProject(self):
@@ -1130,6 +1131,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.StopNavigation()
         self.navigation.__init__()
         self.tracker.__init__()
+        self.icp.__init__()
 
 
 class ObjectRegistrationPanel(wx.Panel):
