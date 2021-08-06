@@ -8,33 +8,33 @@ import pyvista
 
 class Brain:
     def __init__(self, img_path, mask_path, n_peels, affine_vtk):
-        #create arrays to access the peel data and peel Actors
+        # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
-        #read the image
+        # Read the image
         T1_reader = vtk.vtkNIFTIImageReader()
         T1_reader.SetFileName(img_path)
         T1_reader.Update()
-        #image
+        # Image
         self.refImage = T1_reader.GetOutput()
-        #read the mask
+        # Read the mask
         mask_reader = vtk.vtkNIFTIImageReader()
         mask_reader.SetFileName(mask_path)
         mask_reader.Update()
-        #use the mask to create isosurface
+        # Use the mask to create isosurface
         mc = vtk.vtkContourFilter()
         mc.SetInputConnection(mask_reader.GetOutputPort())
         mc.SetValue(0, 1)
         mc.Update()
 
-        #mask isosurface
+        # Mask isosurface
         refSurface = mc.GetOutput()
-        #create a uniformly meshed surface
+        # Create a uniformly meshed surface
         tmpPeel = downsample(refSurface)
-        #standard space coordinates
+        # Standard space coordinates
         mask_sFormMatrix = mask_reader.GetSFormMatrix()
 
-        # apply coordinate transform to the meshed mask
+        # Apply coordinate transform to the meshed mask
         mask_ijk2xyz = vtk.vtkTransform()
         mask_ijk2xyz.SetMatrix(mask_sFormMatrix)
 
@@ -43,20 +43,20 @@ class Brain:
         mask_ijk2xyz_filter.SetTransform(mask_ijk2xyz)
         mask_ijk2xyz_filter.Update()
 
-        #smooth the mesh
+        # Smooth the mesh
         tmpPeel = smooth(mask_ijk2xyz_filter.GetOutput())
-        #configure calculation of normals
+        # Configure calculation of normals
         tmpPeel = fixMesh(tmpPeel)
-        #remove duplicate points etc
+        # Remove duplicate points etc
         tmpPeel = cleanMesh(tmpPeel)
-        #generate triangles
+        # Generate triangles
         tmpPeel = upsample(tmpPeel)
 
         tmpPeel = smooth(tmpPeel)
         tmpPeel = fixMesh(tmpPeel)
         tmpPeel = cleanMesh(tmpPeel)
 
-        # scanner coordinates from image
+        # Scanner coordinates from image
         qFormMatrix = T1_reader.GetQFormMatrix()
 
         refImageSpace2_xyz_transform = vtk.vtkTransform()
@@ -86,7 +86,8 @@ class Brain:
         self.currentPeelActor.SetUserMatrix(affine_vtk)
         self.GetCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
-        self.locator = vtk.vtkCellLocator()  # This one will later find the triangle on the peel surface where the coil's normal intersect
+        # locator will later find the triangle on the peel surface where the coil's normal intersect
+        self.locator = vtk.vtkCellLocator()
         self.numberOfPeels = n_peels
         self.PeelDown(currentPeel)
 
@@ -236,7 +237,7 @@ class Brain:
 
         return self.currentPeelActor
 
-    def GetCenters(self, currentPeel): #change name of variable for not confusion
+    def GetCenters(self, currentPeel):
         # Compute centers of triangles
         centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the peel
         centerComputer.SetInputData(currentPeel)
@@ -245,7 +246,7 @@ class Brain:
         peel_centers = centerComputer.GetOutput()
         self.peel_centers = peel_centers
 
-    def GetNormals(self, currentPeel): #change name of variable
+    def GetNormals(self, currentPeel):
         # Compute normals of triangles
         normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the peel
         normalComputer.SetInputData(currentPeel)
