@@ -51,7 +51,7 @@ try:
 except ImportError:
     from wx import SplashScreen
 
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
 #if sys.platform.startswith('linux'):
@@ -106,7 +106,6 @@ class InVesalius(wx.App):
         from multiprocessing import freeze_support
         freeze_support()
 
-        self.ResetLocale()
         self.SetAppName("InVesalius 3")
         self.splash = Inv3SplashScreen()
         self.splash.Show()
@@ -323,6 +322,10 @@ def parse_comand_line():
 
     parser.add_option("--import-folder", action="store", dest="import_folder")
 
+    parser.add_option("--remote-host",
+                      action="store",
+                      dest="remote_host")
+
     parser.add_option("-s", "--save",
                       help="Save the project after an import.")
 
@@ -342,6 +345,9 @@ def parse_comand_line():
                       dest="save_masks", default=True,
                       help="Make InVesalius not export mask when exporting project.")
 
+    parser.add_option("--use-pedal", action="store_true", dest="use_pedal",
+                      help="Use an external trigger pedal")
+
     options, args = parser.parse_args()
     return options, args
 
@@ -352,6 +358,12 @@ def use_cmd_optargs(options, args):
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
         session = ses.Session()
         session.debug = 1
+
+    # If use-pedal argument...
+    if options.use_pedal:
+        from invesalius.net.pedal_connection import PedalConnection
+
+        PedalConnection().start()
 
     # If import DICOM argument...
     if options.dicom_dir:
@@ -493,6 +505,12 @@ def main():
     Initialize InVesalius GUI
     """
     options, args = parse_comand_line()
+
+    if options.remote_host is not None:
+        from invesalius.net.remote_control import RemoteControl
+
+        remote_control = RemoteControl(options.remote_host)
+        remote_control.connect()
 
     if options.no_gui:
         non_gui_startup(options, args)

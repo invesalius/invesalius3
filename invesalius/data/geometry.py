@@ -22,7 +22,7 @@ import math
 
 import numpy as np
 import vtk
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.utils as utils

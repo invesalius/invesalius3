@@ -30,7 +30,7 @@ except ImportError:
     from weakrefmethod import WeakMethod
 
 from invesalius.data import converters
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 
 class CanvasEvent:
@@ -586,7 +586,9 @@ class CanvasRendererCTX:
 
         return (xi, yi, xf, yf)
 
-    def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+    def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128),
+        fill_colour=(0, 0, 0, 0), line_width=1, pen_style=wx.PENSTYLE_SOLID,
+        brush_style=wx.BRUSHSTYLE_SOLID):
         """
         Draw a rectangle with its top left at pos and with the given width and height.
 
@@ -603,9 +605,11 @@ class CanvasRendererCTX:
 
         px, py = pos
         py = -py
-        gc.SetPen(wx.Pen(wx.Colour(*line_colour)))
-        gc.SetBrush(wx.Brush(wx.Colour(*fill_colour)))
-        gc.DrawRectangle(px, py, width, height)
+        pen = wx.Pen(wx.Colour(*line_colour), width=line_width, style=pen_style)
+        brush = wx.Brush(wx.Colour(*fill_colour), style=brush_style)
+        gc.SetPen(pen)
+        gc.SetBrush(brush)
+        gc.DrawRectangle(px, py, width, -height)
         self._drawn = True
 
     def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)):
@@ -666,7 +670,7 @@ class CanvasRendererCTX:
 
         # Drawing the box
         cw, ch = w + border * 2, h + border * 2
-        self.draw_rectangle((px, py), cw, ch, bg_colour, bg_colour)
+        self.draw_rectangle((px, py - ch), cw, ch, bg_colour, bg_colour)
 
         # Drawing the text
         tpx, tpy = px + border, py - border
@@ -817,7 +821,7 @@ class TextBox(CanvasHandlerBase):
                                               bg_colour=self.box_colour)
             if self._highlight:
                 rw, rh = canvas.evt_renderer.GetSize()
-                canvas.draw_rectangle((px, py), w, h,
+                canvas.draw_rectangle((px, py - h), w, h,
                                       (255, 0, 0, 25),
                                       (255, 0, 0, 25))
 

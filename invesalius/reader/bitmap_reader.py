@@ -28,7 +28,7 @@ import numpy
 import vtk
 import wx
 from imageio import imread
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 from vtk.util import numpy_support
 
 import invesalius.constants as const

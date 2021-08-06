@@ -20,7 +20,7 @@ import sys
 
 import vtk
 import wx
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 from invesalius.gui.dialogs import ProgressDialog
 
@@ -147,6 +147,9 @@ class Text(object):
                 self.mapper.SetInput(value.encode("latin-1"))
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8", errors='replace'))
+
+    def GetValue(self):
+        return self.mapper.GetInput()
 
     def SetCoilDistanceValue(self, value):
         #TODO: Not being used anymore. Can be deleted.

@@ -31,7 +31,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import invesalius.data.styles as styles
 import wx
 import sys
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 try:
     from agw import floatspin as FS
@@ -232,11 +232,11 @@ class Viewer(wx.Panel):
         self.mip_ctrls.Hide()
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
+        sizer.Add(self.interactor, 1, wx.EXPAND)
         sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
         background_sizer = wx.BoxSizer(wx.VERTICAL)
-        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(sizer, 1, wx.EXPAND)
         #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
@@ -935,8 +935,6 @@ class Viewer(wx.Panel):
 
     def _export_picture(self, id, filename, filetype):
         view_prop_list = []
-        view_prop_list.append(self.slice_data.box_actor)
-        self.slice_data.renderer.RemoveViewProp(self.slice_data.box_actor)
 
         dict = {"AXIAL": const.AXIAL,
                 "CORONAL": const.CORONAL,
@@ -1030,7 +1028,7 @@ class Viewer(wx.Panel):
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
-        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
+        # self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
@@ -1071,7 +1069,7 @@ class Viewer(wx.Panel):
                 x, y = const.TEXT_POS_LEFT_DOWN
                 slice_data.text.SetPosition((x+slice_xi,y+slice_yi))
                 slice_data.SetCursor(self.__create_cursor())
-                slice_data.SetSize((w, h))
+                # slice_data.SetSize((w, h))
                 self.__update_camera(slice_data)
 
                 style = 0
@@ -1085,7 +1083,7 @@ class Viewer(wx.Panel):
                 if i == self.layout[0] - 1:
                     style = style | sd.BORDER_RIGHT
 
-                slice_data.SetBorderStyle(style)
+                # slice_data.SetBorderStyle(style)
                 n += 1
 
     def __create_cursor(self):
@@ -1111,7 +1109,7 @@ class Viewer(wx.Panel):
         self.__build_cross_lines()
 
         self.canvas = CanvasRendererCTX(self, self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
-        self.canvas.draw_list.append(self.slice_data.text)
+        self.canvas.draw_list.append(self.slice_data)
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -1207,10 +1205,10 @@ class Viewer(wx.Panel):
         slice_data.canvas_renderer = canvas_renderer
         slice_data.overlay_renderer = overlay_renderer
         slice_data.actor = actor
-        slice_data.SetBorderStyle(sd.BORDER_ALL)
+        # slice_data.SetBorderStyle(sd.BORDER_ALL)
         renderer.AddActor(actor)
         #  renderer.AddActor(slice_data.text.actor)
-        renderer.AddViewProp(slice_data.box_actor)
+        # renderer.AddViewProp(slice_data.box_actor)
 
         return slice_data
 

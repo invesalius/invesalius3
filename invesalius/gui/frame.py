@@ -43,7 +43,7 @@ import wx.lib.popupctl as pc
 from invesalius import inv_paths
 from invesalius.gui import project_properties
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -1008,7 +1008,7 @@ class MenuBar(wx.MenuBar):
 
         mask_preview_menu = wx.Menu()
 
-        self.mask_preview = mask_preview_menu.Append(const.ID_MASK_3D_PREVIEW, _("Enable") + "\tCtrl+Shift+M", "", wx.ITEM_CHECK)
+        self.mask_preview = mask_preview_menu.Append(const.ID_MASK_3D_PREVIEW, _("Enable") + "\tCtrl+Shift+P", "", wx.ITEM_CHECK)
         self.mask_preview.Enable(False)
 
         self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+D", "", wx.ITEM_CHECK)
