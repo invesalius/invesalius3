@@ -372,7 +372,7 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.trigger_state, self.view_tracts]
+        vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -476,7 +476,7 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.trigger_state, self.view_tracts]
+        vis_components = [self.trigger_state, self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
     # ICP-related functions
