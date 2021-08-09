@@ -1489,8 +1489,8 @@ class Viewer(wx.Panel):
                         self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                         self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
                     else:
-                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('light_beige'))
+                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
+                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
                 else:
                     self.ren.RemoveActor(self.y_actor)
 
