@@ -921,7 +921,7 @@ class NeuronavigationPanel(wx.Panel):
 
 
     def UpdatePeelVisualization(self, data):
-        self.peel_loaded = data
+        self.navigation.peel_loaded = data
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
