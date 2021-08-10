@@ -173,6 +173,8 @@ class Viewer(wx.Panel):
         self.y_actor = None
         self.z_actor = None
         self.mark_actor = None
+        self.obj_projection_arrow_actor = None
+        self.object_orientation_disk_actor = None
 
         self._mode_cross = False
         self._to_show_ball = 0
@@ -192,6 +194,7 @@ class Viewer(wx.Panel):
         self.polydata = None
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
+        self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
 
         self.actor_tracts = None
         self.actor_peel = None
@@ -293,6 +296,7 @@ class Viewer(wx.Panel):
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
+        Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -310,6 +314,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.UpdateMarkerOffsetPosition, 'Update marker offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
+        Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
+        Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
 
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
@@ -1320,11 +1326,18 @@ class Viewer(wx.Panel):
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
+        self.obj_projection_arrow_actor = self.Add_ObjectArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
+                                                               15)
+        self.object_orientation_disk_actor = self.Add_Object_Orientation_Disk([0., 0., 0.], [0., 0., 0.],
+                                                                              vtk_colors.GetColor3d('Red'))
+        #self.obj_projection_arrow_actor.SetVisibility(False)
+        #self.object_orientation_disk_actor.SetVisibility(False)
         self.ren.AddActor(self.obj_actor)
         self.ren.AddActor(self.x_actor)
         self.ren.AddActor(self.y_actor)
         self.ren.AddActor(self.z_actor)
-
+        #self.ren.AddActor(self.obj_projection_arrow_actor)
+        #self.ren.AddActor(self.object_orientation_disk_actor)
         # self.obj_axes = vtk.vtkAxesActor()
         # self.obj_axes.SetShaftTypeToCylinder()
         # self.obj_axes.SetXAxisLabelText("x")
@@ -1333,6 +1346,63 @@ class Viewer(wx.Panel):
         # self.obj_axes.SetTotalLength(50.0, 50.0, 50.0)
 
         # self.ren.AddActor(self.obj_axes)
+
+    def Add_Object_Orientation_Disk(self, position, orientation, color=[0.0, 0.0, 1.0]):
+        # Create a disk to show target
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(5)
+        disk.SetOuterRadius(15)
+        disk.SetRadialResolution(100)
+        disk.SetCircumferentialResolution(100)
+        disk.Update()
+
+        disk_mapper = vtk.vtkPolyDataMapper()
+        disk_mapper.SetInputData(disk.GetOutput())
+        disk_actor = vtk.vtkActor()
+        disk_actor.SetMapper(disk_mapper)
+        disk_actor.GetProperty().SetColor(color)
+        disk_actor.GetProperty().SetOpacity(1)
+        disk_actor.SetPosition(position)
+        disk_actor.SetOrientation(orientation)
+
+        return disk_actor
+
+    def Add_ObjectArrow(self, direction, orientation, color=[0.0, 0.0, 1.0], size=2):
+        vtk_colors = vtk.vtkNamedColors()
+
+        arrow = vtk.vtkArrowSource()
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(arrow.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetLineWidth(5)
+        actor.AddPosition(0, 0, 0)
+        actor.SetScale(size)
+        actor.SetPosition(direction)
+        actor.SetOrientation(orientation)
+
+        return actor
+
+    def ObjectArrowLocation(self, m_img, coord):
+        # m_img[:3, 0] is from posterior to anterior direction of the coil
+        # m_img[:3, 1] is from left to right direction of the coil
+        # m_img[:3, 2] is from bottom to up direction of the coil
+        vec_length = 70
+        m_img_flip = m_img.copy()
+        m_img_flip[1, -1] = -m_img_flip[1, -1]
+        p1 = m_img_flip[:-1, -1]  # coil center
+        coil_dir = m_img_flip[:-1, 0]
+        coil_face = m_img_flip[:-1, 1]
+
+        coil_norm = np.cross(coil_dir, coil_face)
+        p2_norm = p1 - vec_length * coil_norm # point normal to the coil away from the center by vec_length
+        coil_dir = np.array([coord[3], coord[4], coord[5]])
+
+        return coil_dir, p2_norm, coil_norm, p1
+
 
     def add_line(self, p1, p2, color=[0.0, 0.0, 1.0]):
         line = vtk.vtkLineSource()
@@ -1357,6 +1427,80 @@ class Viewer(wx.Panel):
             self.actor_peel = actor
         self.Refresh()
 
+    def GetPeelCenters(self, centers, normals):
+        self.peel_centers = centers
+        self.peel_normals = normals
+
+        self.Refresh()
+
+    def Initlocator_viewer(self, locator):
+        self.locator = locator
+        self.Refresh()
+
+    def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
+
+        vtk_colors = vtk.vtkNamedColors()
+        # This find store the triangles that intersect the coil's normal
+        intersectingCellIds = vtk.vtkIdList()
+
+        #for debugging
+        self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
+        #self.ren.AddActor(self.x_actor) # remove comment for testing
+
+        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+
+        closestDist = 50
+
+        #if find intersection , calculate angle and add actors
+        if intersectingCellIds.GetNumberOfIds() != 0:
+            for i in range(intersectingCellIds.GetNumberOfIds()):
+                cellId = intersectingCellIds.GetId(i)
+                point = np.array(self.peel_centers.GetPoint(cellId))
+                distance = np.linalg.norm(point - p1)
+
+                #print('distance:', distance, point - p1)
+                self.ren.RemoveActor(self.y_actor)
+
+                if distance < closestDist:
+                    closestDist = distance
+                    closestPoint = point
+                    pointnormal = np.array(self.peel_normals.GetTuple(cellId))
+                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    #print('the angle:', angle)
+
+                    #for debbuging
+                    self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
+                                                         vtk_colors.GetColor3d('Yellow'))
+
+                    #self.ren.AddActor(self.y_actor)# remove comment for testing
+
+
+                    self.ren.AddActor(self.obj_projection_arrow_actor)
+                    self.ren.AddActor(self.object_orientation_disk_actor)
+
+                    self.obj_projection_arrow_actor.SetPosition(closestPoint)
+                    self.obj_projection_arrow_actor.SetOrientation(coil_dir)
+
+                    self.object_orientation_disk_actor.SetPosition(closestPoint)
+                    self.object_orientation_disk_actor.SetOrientation(coil_dir)
+
+                    # change color of arrow and disk according to angle
+                    if angle < self.angle_arrow_projection_threshold:
+                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+                    else:
+                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
+                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
+                else:
+                    self.ren.RemoveActor(self.y_actor)
+
+        else:
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.ren.RemoveActor(self.object_orientation_disk_actor)
+            self.ren.RemoveActor(self.x_actor)
+            #self.ren.RemoveActor(self.y_actor)
+        self.Refresh()
+
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
         self.tracts_status = vis_status[1]
@@ -1368,7 +1512,8 @@ class Viewer(wx.Panel):
                 self.x_actor.SetVisibility(self.obj_state)
                 self.y_actor.SetVisibility(self.obj_state)
                 self.z_actor.SetVisibility(self.obj_state)
-
+                #self.object_orientation_disk_actor.SetVisibility(self.obj_state)
+                #self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
         self.Refresh()
 
     def UpdateSeedOffset(self, data):
@@ -1419,6 +1564,19 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
+
+    def UpdateObjectArrowOrientation(self, m_img, coord, flag):
+
+        [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
+
+        if flag:
+            self.ren.RemoveActor(self.x_actor)
+            #self.ren.RemoveActor(self.y_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.ren.RemoveActor(self.object_orientation_disk_actor)
+            self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
+        self.Refresh()
+
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
         if flag:
             self.obj_name = obj_name
@@ -1432,11 +1590,15 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.y_actor)
                 self.ren.RemoveActor(self.z_actor)
                 self.ren.RemoveActor(self.mark_actor)
+                self.ren.RemoveActor(self.obj_projection_arrow_actor)
+                self.ren.RemoveActor(self.object_orientation_disk_actor)
                 self.obj_actor = None
                 self.x_actor = None
                 self.y_actor = None
                 self.z_actor = None
                 self.mark_actor = None
+                self.obj_projection_arrow_actor = None
+                self.object_orientation_disk_actor=None
         self.Refresh()
 
     def UpdateShowObjectState(self, state):

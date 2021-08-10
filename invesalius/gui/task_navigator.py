@@ -326,6 +326,7 @@ class Navigation():
         self.trekker = None
         self.n_threads = None
         self.view_tracts = False
+        self.peel_loaded = False
         self.enable_act = False
         self.act_data = None
         self.n_tracts = const.N_TRACTS
@@ -363,7 +364,7 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.trigger_state, self.view_tracts]
+        vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -458,7 +459,7 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.trigger_state, self.view_tracts]
+        vis_components = [self.trigger_state, self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
 
@@ -870,6 +871,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSleep, 'Update sleep')
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
+        Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -917,6 +919,10 @@ class NeuronavigationPanel(wx.Panel):
 
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_coord[3:6], self.txtctrl_fre)
+
+
+    def UpdatePeelVisualization(self, data):
+        self.navigation.peel_loaded = data
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -1043,6 +1049,7 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker)
         fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
+
 
         self.txtctrl_fre.SetValue(str(round(fre, 2)))
         if fre_ok:
@@ -1862,7 +1869,7 @@ class TractographyPanel(wx.Panel):
         self.tracts_run = None
         self.trekker_cfg = const.TREKKER_CONFIG
         self.nav_status = False
-
+        self.peel_loaded = False
         self.SetAutoLayout(1)
         self.__bind_events()
 
@@ -2040,9 +2047,12 @@ class TractographyPanel(wx.Panel):
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth)
+            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
-
+            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                  normals=self.brain_peel.peel_normals)
+            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
+            self.peel_loaded = True
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
         # self.tract.n_tracts = ctrl.GetValue()
@@ -2070,7 +2080,7 @@ class TractographyPanel(wx.Panel):
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth)
+            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
         else:
             actor = None
         Publisher.sendMessage('Update peel', flag=ctrl.GetValue(), actor=actor)
@@ -2114,13 +2124,18 @@ class TractographyPanel(wx.Panel):
 
         try:
             self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
+            self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                  normals=self.brain_peel.peel_normals)
+            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
             self.checkpeeling.Enable(1)
             self.checkpeeling.SetValue(True)
             self.spin_opacity.Enable(1)
             Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+            self.peel_loaded = True
+            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
         except:
             wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
 
@@ -2308,7 +2323,7 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.trigger_state, self.view_tracts = vis_components
+        self.trigger_state, self.view_tracts, self.peel_loaded = vis_components
         self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
@@ -2347,7 +2362,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord, flag= self.peel_loaded)
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
