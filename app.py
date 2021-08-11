@@ -136,7 +136,7 @@ class Inv3SplashScreen(SplashScreen):
     def __init__(self):
         # Splash screen image will depend on currently language
         lang = LANG
-        self.locale = wx.Locale(wx.LANGUAGE_DEFAULT)
+        self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
 
         # Language information is available in session configuration
         # file. First we need to check if this file exist, if now, it
