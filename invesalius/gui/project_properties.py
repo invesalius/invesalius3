@@ -19,7 +19,7 @@
 
 import wx
 import invesalius.project as prj
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 from invesalius.gui import utils
 from invesalius import constants as const
 

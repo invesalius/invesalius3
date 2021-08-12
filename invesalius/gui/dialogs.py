@@ -47,7 +47,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 import csv
 
 try:
@@ -866,7 +866,8 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
     """
     Spatial Tracker connection error
     """
-    trck = {const.MTC: 'Claron MicronTracker',
+    trck = {const.SELECT: 'Tracker',
+            const.MTC: 'Claron MicronTracker',
             const.FASTRAK: 'Polhemus FASTRAK',
             const.ISOTRAKII: 'Polhemus ISOTRAK',
             const.PATRIOT: 'Polhemus PATRIOT',
@@ -3476,6 +3477,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def OnGetObjectFiducials(self, evt):
         btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
+
         if self.trk_init and self.tracker_id:
             coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
             if self.obj_ref_id and btn_id == 4:
@@ -3617,7 +3619,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
 
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
-        btn_apply_icp.Bind(wx.EVT_BUTTON, self.thread_ICP_start, btn_apply_icp)
+        btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
         btn_apply_icp.Enable(False)
         self.btn_apply_icp = btn_apply_icp
 
@@ -3854,12 +3856,13 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.RemoveActor()
         self.LoadActor()
 
-    def OnICP(self):
+    def OnICP(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
 
         self.SetProgress(0.3)
+        time.sleep(1)
 
         sourcePoints = np.array(self.point_coord)
         sourcePoints_vtk = vtk.vtkPoints()
@@ -3931,11 +3934,6 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetProgress(1)
 
         self.btn_ok.Enable(True)
-
-    def thread_ICP_start(self, evt):
-        import threading
-        th = threading.Thread(target=self.OnICP, args=[])
-        th.start()
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error

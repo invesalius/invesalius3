@@ -671,18 +671,16 @@ OPTITRACK = 8
 DEBUGTRACKRANDOM = 9
 DEBUGTRACKAPPROACH = 10
 HYBRID = 11
-DISCTRACK = 12
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
 
-TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
+TRACKER = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
            _("NDI Polaris"), _("NDI Polaris P4"),
            _("Optitrack"), _("Debug tracker (random)"),
-           _("Debug tracker (approach)"), _("Hybrid tracker"),
-           _("Disconnect tracker")]
+           _("Debug tracker (approach)"), _("Hybrid tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -731,21 +729,21 @@ TRACKER_FIDUCIALS = [
         'button_id': TR1,
         'label': 'LET',
         'fiducial_name': 'LE',
-        'fiducial_index': 3,
+        'fiducial_index': 0,
         'tip': _("Select left ear with spatial tracker"),
     },
     {
         'button_id': TR2,
         'label': 'RET',
         'fiducial_name': 'RE',
-        'fiducial_index': 4,
+        'fiducial_index': 1,
         'tip': _("Select right ear with spatial tracker"),
     },
     {
         'button_id': TR3,
         'label': 'NAT',
         'fiducial_name': 'NA',
-        'fiducial_index': 5,
+        'fiducial_index': 2,
         'tip': _("Select nasion with spatial tracker"),
     },
 ]
@@ -783,6 +781,7 @@ ARROW_UPPER_LIMIT = 15
 COIL_ANGLES_THRESHOLD = 3
 COIL_COORD_THRESHOLD = 3
 TIMESTAMP = 2.0
+COIL_ANGLE_ARROW_PROJECTION_THRESHOLD = 10
 
 CAM_MODE = True
 

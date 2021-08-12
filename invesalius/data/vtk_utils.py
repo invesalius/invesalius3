@@ -20,7 +20,7 @@ import sys
 
 import vtk
 import wx
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 from invesalius.gui.dialogs import ProgressDialog
 

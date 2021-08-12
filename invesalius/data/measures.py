@@ -4,7 +4,7 @@ import math
 import random
 import sys
 
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import numpy as np
 import vtk

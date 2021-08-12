@@ -22,7 +22,7 @@ try:
     import wx.lib.agw.foldpanelbar as fpb
 except ModuleNotFoundError:
     import wx.lib.foldpanelbar as fpb
-from pubsub import pub as Publisher
+from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.gui.data_notebook as nb
@@ -325,6 +325,7 @@ class UpperTaskPanel(wx.Panel):
         self.navigation_mode_status = status
         name = _("Navigation system")
         panel = navigator.TaskPanel
+        session = ses.Session()
         if status and (self.fold_panel.GetCount()<=4):
             # Create panel
             item = self.fold_panel.AddFoldPanel("%d. %s"%(5, name),
@@ -343,14 +344,22 @@ class UpperTaskPanel(wx.Panel):
             if not self.fold_panel.GetFoldPanel(2).IsEnabled():
                 item.Disable()
 
+            # Setting configuration to MODE_NAVIGATOR
+            session.mode = const.MODE_NAVIGATOR
         elif status and (self.fold_panel.GetCount()>4):
             self.fold_panel.GetFoldPanel(4).Show()
 
+            # Setting configuration to MODE_NAVIGATOR
+            session.mode = const.MODE_NAVIGATOR
         else:
             Publisher.sendMessage('Deactive target button')
             self.fold_panel.GetFoldPanel(4).Hide()
-        self.sizer.Layout()
 
+            # Setting configuration to MODE_RP (default mode)
+            session.mode = const.MODE_RP
+
+        session.WriteSessionFile()
+        self.sizer.Layout()
 
 
     def SetStateProjectClose(self):

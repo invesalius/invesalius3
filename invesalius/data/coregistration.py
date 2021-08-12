@@ -172,10 +172,10 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle, tracker_id, target):
+    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, tracker_id, target):
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
-        self.trck_info = trck_info
+        self.tracker = tracker
         self.coreg_data = coreg_data
         self.coord_queue = queues[0]
         self.view_tracts = view_tracts
@@ -210,11 +210,11 @@ class CoordinateCorregistrate(threading.Thread):
             csv_writer.writeheader()
 
     def run(self):
-        trck_info = self.trck_info
         coreg_data = self.coreg_data
         view_obj = 1
 
-        trck_init, trck_id, trck_mode = trck_info
+        trck_init, trck_id, trck_mode = self.tracker.GetTrackerInfo()
+
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
@@ -291,10 +291,10 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, trck_info, coreg_data, view_tracts, queues, event, sle):
+    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle):
         threading.Thread.__init__(self, name='CoordCoregNoObject')
         self.ref_mode_id = ref_mode_id
-        self.trck_info = trck_info
+        self.tracker = tracker
         self.coreg_data = coreg_data
         self.coord_queue = queues[0]
         self.view_tracts = view_tracts
@@ -306,11 +306,10 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         self.m_icp = None
 
     def run(self):
-        trck_info = self.trck_info
         coreg_data = self.coreg_data
         view_obj = 0
 
-        trck_init, trck_id, trck_mode = trck_info
+        trck_init, trck_id, trck_mode = self.tracker.GetTrackerInfo()
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
