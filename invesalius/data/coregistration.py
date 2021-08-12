@@ -227,7 +227,7 @@ class CoordinateCorregistrate(threading.Thread):
                     None
                 else:
                     self.target_flag = self.objattarget_queue.get_nowait()
-                print(self.target_flag)
+
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = dco.GetCoordinates(trck_init, trck_id, trck_mode)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])

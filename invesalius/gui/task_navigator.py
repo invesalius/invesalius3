@@ -693,10 +693,18 @@ class NeuronavigationPanel(wx.Panel):
             self.trk_init[1][0].SendCoordinates(coord)
 
     def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot2ref):
-        self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
+        try:
+            self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
+        except queue.Full:
+            print('full')
+            pass
 
     def OnObjectTarget(self, state):
-        self.objattarget_queue.put_nowait(state)
+        try:
+            self.objattarget_queue.put_nowait(state)
+        except queue.Full:
+            print('full')
+            pass
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -1153,16 +1161,16 @@ class ObjectRegistrationPanel(wx.Panel):
 
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
-        spin_size_angles = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_size_angles.SetRange(1, 99)
+        spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
+        spin_size_angles.SetRange(0.1, 99)
         spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
         spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
         spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
 
         # Change dist threshold
         text_dist = wx.StaticText(self, -1, _("Distance threshold [mm]:"))
-        spin_size_dist = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_size_dist.SetRange(1, 99)
+        spin_size_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
+        spin_size_dist.SetRange(0.1, 99)
         spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
         spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
         spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
@@ -1387,6 +1395,10 @@ class MarkersPanel(wx.Panel):
         self.tgt_flag = self.tgt_index = None
         self.nav_status = False
         self.mchange = None
+        self.flag_target = False
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnUpdateSendCoord, self.timer)
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1475,6 +1487,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateMRef, 'Update ref matrix')
         Publisher.subscribe(self.UpdateRawCoord, 'Update raw coord')
         Publisher.subscribe(self.UpdateObjectMarker2Center, 'Update object marker to center')
+        Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
 
     def UpdateCurrentCoord(self, position):
         self.current_coord = position
@@ -1505,6 +1518,9 @@ class MarkersPanel(wx.Panel):
         self.s0_raw=s0_raw
         self.t_offset=t_offset
 
+    def OnObjectTarget(self, state):
+        self.flag_target = state
+
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
@@ -1517,7 +1533,7 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
         send_coord_robot = menu_id.Append(3, _('Send coord to robot'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendCoord, send_coord_robot)
+        menu_id.Bind(wx.EVT_MENU, self.OnContinuousSendCoord, send_coord_robot)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1585,10 +1601,21 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
+    def OnContinuousSendCoord(self, evt=None):
+        self.timer.Start(20000)
+
+    def OnUpdateSendCoord(self, evt):
+        self.OnMenuSendCoord(evt=None)
+
     def OnMenuSendCoord(self, evt):
         if isinstance(evt, int):
             self.lc.Focus(evt)
-        coord = self.list_coord[self.lc.GetFocusedItem()]
+        coord_target = self.list_coord[3]
+        coord_home = self.list_coord[4]
+        if self.flag_target:
+            coord = coord_home
+        else:
+            coord = coord_target
 
         trans = tr.translation_matrix(coord[14:17])
         a, b, g = np.radians(coord[17:20])

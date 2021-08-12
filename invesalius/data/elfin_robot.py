@@ -35,6 +35,10 @@ class elfin_server():
         if status != 1009:
             self.cobot.MoveL(target)
 
+    def StopRobot(self):
+        self.cobot.GrpStop()
+        sleep(0.1)
+
     def Close(self):
         self.cobot.close()
 
@@ -160,6 +164,7 @@ class ControlRobot(threading.Thread):
         self.robot_tracker_flag = False
         self.target_flag = False
         self.m_change_robot2ref = None
+        self.coord_inv_old = None
         self.robot_coord_queue = queues[0]
         self.coord_queue = queues[1]
         self.robottarget_queue = queues[2]
@@ -180,9 +185,9 @@ class ControlRobot(threading.Thread):
 
         while not self.event.is_set():
             #start = time()
-            probe = self.trck_init_robot.Run()
-            probe[3], probe[5] = probe[5], probe[3]
-            coord_robot = np.array(probe)
+            coord_robot_raw = self.trck_init_robot.Run()
+            coord_robot = np.array(coord_robot_raw)
+            coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
             try:
                 self.robot_coord_queue.put_nowait(coord_robot)
             except queue.Full or queue.Empty:
