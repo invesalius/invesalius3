@@ -190,7 +190,7 @@ class ControlRobot(threading.Thread):
             coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
             try:
                 self.robot_coord_queue.put_nowait(coord_robot)
-            except queue.Full or queue.Empty:
+            except queue.Full:
                 pass
 
             #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, const.MTC, const.DEFAULT_REF_MODE)
@@ -216,8 +216,21 @@ class ControlRobot(threading.Thread):
                     current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
                     if self.process_tracker.head_move_threshold(current_ref_filtered):
                         coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered, self.m_change_robot2ref)
-                        self.trck_init_robot.SendCoordinates(coord_inv)
+                        #self.trck_init_robot.SendCoordinates(coord_inv)
                         #print('send')
+                        if self.coord_inv_old is None:
+                            self.coord_inv_old = coord_inv
+
+                        if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 5):
+                            #print("At target within range 5")
+                            pass
+                        elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
+                            #print("stop")
+                            self.trck_init_robot.StopRobot()
+                            self.coord_inv_old = coord_inv
+                        else:
+                            self.trck_init_robot.SendCoordinates(coord_inv)
+                            self.coord_inv_old = coord_inv
 
             if not self.robottarget_queue.empty():
                 self.robottarget_queue.task_done()
