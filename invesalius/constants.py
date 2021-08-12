@@ -670,7 +670,6 @@ POLARISP4 = 7
 OPTITRACK = 8
 DEBUGTRACKRANDOM = 9
 DEBUGTRACKAPPROACH = 10
-DISCTRACK = 11
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
@@ -680,7 +679,7 @@ TRACKERS = [_("Claron MicronTracker"),
             _("Polhemus PATRIOT"), _("Camera tracker"),
             _("NDI Polaris"), _("NDI Polaris P4"),
             _("Optitrack"), _("Debug tracker (random)"),
-            _("Debug tracker (approach)"), _("Disconnect tracker")]
+            _("Debug tracker (approach)")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1

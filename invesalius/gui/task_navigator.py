@@ -475,77 +475,21 @@ class Tracker():
         self.tracker_connected = False
 
     def SetTracker(self, new_tracker):
-        if self.trk_init:
-            trck = self.trk_init[0]
-        else:
-            trck = None
+        if new_tracker:
+            self.DisconnectTracker()
 
-        # Conditions check if click was on current selection and if any other tracker
-        # has been initialized before
-        if new_tracker != const.DISCTRACK and trck:
-            self.ResetTrackerFiducials()
-            Publisher.sendMessage('Update status text in GUI',
-                                  label=_("Disconnecting tracker..."))
-            Publisher.sendMessage('Remove sensors ID')
-            self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
-            Publisher.sendMessage('Remove object data')
-
-            if not self.trk_init[0] and new_tracker:
-                Publisher.sendMessage('Update status text in GUI',
-                                      label=_("Tracker disconnected successfully"))
-                self.trk_init = dt.TrackerConnection(new_tracker, None, 'connect')
-                if not self.trk_init[0]:
-                    self.tracked_connected = False
-                    self.tracker_id = 0
-
-                    dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
-                    print("Tracker not connected!")
-                else:
-                    self.tracked_connected = True
-                    self.tracker_id = new_tracker
-
-                    print("Tracker connected!")
-
-        # TODO: const.DISCTRACK is not a tracker, so discoupling it from the actual trackers
-        #       would make this cleaner.
-        #
-        elif new_tracker == const.DISCTRACK:
-            self.ResetTrackerFiducials()
-            Publisher.sendMessage('Update status text in GUI',
-                                    label=_("Disconnecting tracker ..."))
-            Publisher.sendMessage('Remove sensors ID')
-            Publisher.sendMessage('Remove object data')
-            self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
+            self.trk_init = dt.TrackerConnection(new_tracker, None, 'connect')
             if not self.trk_init[0]:
-                dlg.ShowNavigationTrackerWarning(self.tracker_id, 'disconnect')
+                dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
 
-                self.tracked_connected = False
                 self.tracker_id = 0
-
-                Publisher.sendMessage('Update status text in GUI',
-                                        label=_("Tracker disconnected"))
-
-                print("Tracker disconnected!")
+                self.tracker_connected = False
             else:
-                Publisher.sendMessage('Update status text in GUI',
-                                        label=_("Tracker still connected"))
-                print("Tracker still connected!")
+                self.tracker_id = new_tracker
+                self.tracker_connected = True
 
-        else:
-            # If trk_init is None try to connect. If doesn't succeed show dialog.
-            if new_tracker:
-                self.trk_init = dt.TrackerConnection(new_tracker, None, 'connect')
-                if not self.trk_init[0]:
-                    dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
-
-                    self.tracker_id = 0
-                    self.tracker_connected = False
-                else:
-                    self.tracker_id = new_tracker
-                    self.tracker_connected = True
-
-        Publisher.sendMessage('Update tracker initializer',
-                              nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
+            Publisher.sendMessage('Update tracker initializer',
+                                nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -618,7 +562,7 @@ class Tracker():
     def GetReferenceMode(self):
         return self.ref_mode_id
 
-    def UpdateUI(self, selection_ctrl, numctrls_coord, txtctrl_fre):
+    def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
         if self.tracker_connected:
             selection_ctrl.SetSelection(self.tracker_id)
         else:
@@ -629,7 +573,7 @@ class Tracker():
             coord = self.tracker_fiducials[m, :]
             for n in range(0, 3):
                 value = 0.0 if np.isnan(coord[n]) else float(coord[n])
-                numctrls_coord[m][n].SetValue(value)
+                numctrls_fiducial[m][n].SetValue(value)
 
         txtctrl_fre.SetValue('')
         txtctrl_fre.SetBackgroundColour('WHITE')
@@ -712,8 +656,8 @@ class NeuronavigationPanel(wx.Panel):
         self.nav_status = False
 
         # Initialize list of buttons and numctrls for wx objects
-        self.btns_coord = [None, None, None, None, None, None]
-        self.numctrls_coord = [[], [], [], [], [], []]
+        self.btns_set_fiducial = [None, None, None, None, None, None]
+        self.numctrls_fiducial = [[], [], [], [], [], []]
 
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select tracker:")] + self.tracker.get_trackers()
@@ -742,9 +686,9 @@ class NeuronavigationPanel(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            self.btns_coord[n] = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
-            self.btns_coord[n].SetToolTip(wx.ToolTip(tip))
-            self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
+            self.btns_set_fiducial[n] = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
+            self.btns_set_fiducial[n].SetToolTip(wx.ToolTip(tip))
+            self.btns_set_fiducial[n].Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
 
         # Push buttons for tracker fiducials
         for n, fiducial in enumerate(const.TRACKER_FIDUCIALS):
@@ -752,9 +696,9 @@ class NeuronavigationPanel(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            self.btns_coord[n + 3] = wx.Button(self, button_id, label=label, size=wx.Size(45, 23))
-            self.btns_coord[n + 3].SetToolTip(wx.ToolTip(tip))
-            self.btns_coord[n + 3].Bind(wx.EVT_BUTTON, partial(self.OnTrackerFiducials, n))
+            self.btns_set_fiducial[n + 3] = wx.Button(self, button_id, label=label, size=wx.Size(45, 23))
+            self.btns_set_fiducial[n + 3].SetToolTip(wx.ToolTip(tip))
+            self.btns_set_fiducial[n + 3].Bind(wx.EVT_BUTTON, partial(self.OnTrackerFiducials, n))
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
@@ -806,9 +750,9 @@ class NeuronavigationPanel(wx.Panel):
             self.checkbox_pedal_pressed = None
 
         # Image and tracker coordinates number controls
-        for m in range(len(self.btns_coord)):
+        for m in range(len(self.btns_set_fiducial)):
             for n in range(3):
-                self.numctrls_coord[m].append(
+                self.numctrls_fiducial[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
         # Sizer to group all GUI objects
@@ -818,12 +762,12 @@ class NeuronavigationPanel(wx.Panel):
 
         coord_sizer = wx.GridBagSizer(hgap=5, vgap=5)
 
-        for m in range(len(self.btns_coord)):
-            coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
+        for m in range(len(self.btns_set_fiducial)):
+            coord_sizer.Add(self.btns_set_fiducial[m], pos=wx.GBPosition(m, 0))
             for n in range(3):
-                coord_sizer.Add(self.numctrls_coord[m][n], pos=wx.GBPosition(m, n+1))
+                coord_sizer.Add(self.numctrls_fiducial[m][n], pos=wx.GBPosition(m, n+1))
                 if m in range(1, 6):
-                    self.numctrls_coord[m][n].SetEditable(False)
+                    self.numctrls_fiducial[m][n].SetEditable(False)
 
         nav_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=5, vgap=5)
         nav_sizer.AddMany([(txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
@@ -885,15 +829,15 @@ class NeuronavigationPanel(wx.Panel):
         fiducial_index = fiducial['fiducial_index']
         fiducial_name = fiducial['fiducial_name']
 
-        if self.btns_coord[fiducial_index].GetValue():
+        if self.btns_set_fiducial[fiducial_index].GetValue():
             print("Fiducial {} already set, not resetting".format(marker_id))
             return
 
         Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
 
-        self.btns_coord[fiducial_index].SetValue(True)
+        self.btns_set_fiducial[fiducial_index].SetValue(True)
         for m in [0, 1, 2]:
-            self.numctrls_coord[fiducial_index][m].SetValue(coord[m])
+            self.numctrls_fiducial[fiducial_index][m].SetValue(coord[m])
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -918,7 +862,7 @@ class NeuronavigationPanel(wx.Panel):
         self.tracker.SetTrackerFiducial(fiducial_index)
 
         self.ResetICP()
-        self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_coord[3:6], self.txtctrl_fre)
+        self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
 
     def UpdatePeelVisualization(self, data):
@@ -967,9 +911,9 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.current_coord = position
 
         for m in [0, 1, 2]:
-            if not self.btns_coord[m].GetValue():
+            if not self.btns_set_fiducial[m].GetValue():
                 for n in [0, 1, 2]:
-                    self.numctrls_coord[m][n].SetValue(float(position[n]))
+                    self.numctrls_fiducial[m][n].SetValue(float(position[n]))
 
     def UpdateObjectRegistration(self, data=None):
         self.navigation.obj_reg = data
@@ -988,6 +932,7 @@ class NeuronavigationPanel(wx.Panel):
     def OnDisconnectTracker(self):
         self.tracker.DisconnectTracker()
         self.ResetICP()
+        self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
     def OnChooseTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -995,11 +940,11 @@ class NeuronavigationPanel(wx.Panel):
         if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
-            choice = const.DISCTRACK
+            choice = None
 
         self.tracker.SetTracker(choice)
         self.ResetICP()
-        self.tracker.UpdateUI(ctrl, self.numctrls_coord[3:6], self.txtctrl_fre)
+        self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 
@@ -1015,16 +960,16 @@ class NeuronavigationPanel(wx.Panel):
         # XXX: This is still a bit hard to read, could be cleaned up.
         marker_id = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
 
-        if self.btns_coord[n].GetValue():
-            coord = self.numctrls_coord[n][0].GetValue(),\
-                    self.numctrls_coord[n][1].GetValue(),\
-                    self.numctrls_coord[n][2].GetValue(), 0, 0, 0
+        if self.btns_set_fiducial[n].GetValue():
+            coord = self.numctrls_fiducial[n][0].GetValue(),\
+                    self.numctrls_fiducial[n][1].GetValue(),\
+                    self.numctrls_fiducial[n][2].GetValue(), 0, 0, 0
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
             Publisher.sendMessage('Create marker', coord=coord, marker_id=marker_id)
         else:
             for m in [0, 1, 2]:
-                self.numctrls_coord[n][m].SetValue(float(self.current_coord[m]))
+                self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=np.nan)
             Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
@@ -1043,7 +988,7 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref.Enable(True)
         select_tracker_elem.Enable(True)
 
-        for btn_c in self.btns_coord:
+        for btn_c in self.btns_set_fiducial:
             btn_c.Enable(True)
 
     def UpdateFiducialRegistrationError(self):
@@ -1078,7 +1023,7 @@ class NeuronavigationPanel(wx.Panel):
             # Disable all navigation buttons.
             choice_ref.Enable(False)
             select_tracker_elem.Enable(False)
-            for btn_c in self.btns_coord:
+            for btn_c in self.btns_set_fiducial:
                 btn_c.Enable(False)
 
             self.navigation.StartNavigation(self.tracker)
@@ -1116,17 +1061,17 @@ class NeuronavigationPanel(wx.Panel):
 
     def ResetUI(self):
         for m in range(0, 3):
-            self.btns_coord[m].SetValue(False)
+            self.btns_set_fiducial[m].SetValue(False)
             for n in range(0, 3):
-                self.numctrls_coord[m][n].SetValue(0.0)
+                self.numctrls_fiducial[m][n].SetValue(0.0)
 
     def OnCheckboxICP(self, evt, ctrl):
         self.icp.SetICP(self.navigation, ctrl.GetValue())
         self.UpdateFiducialRegistrationError()
 
     def OnCloseProject(self):
-        self.OnChooseTracker(False, self.select_tracker_elem)
         self.ResetUI()
+        Publisher.sendMessage('Disconnect tracker')
         Publisher.sendMessage('Update object registration')
         Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
         Publisher.sendMessage('Delete all markers')
