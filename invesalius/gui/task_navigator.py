@@ -498,7 +498,7 @@ class Tracker():
                                     label=_("Disconnecting tracker ..."))
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
-            self.trk_init = dt.TrackerConnection(self.tracker_id, self.tracker_connected, 'disconnect')
+            self.trk_init = dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
             if not self.trk_init[0]:
                 self.tracker_connected = False
                 self.tracker_id = 0
