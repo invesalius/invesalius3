@@ -354,8 +354,8 @@ class Viewer(wx.Panel):
             # self._check_and_set_ball_visibility()
             self._ball_ref_visibility = True
             # if self._to_show_ball:
-            if not self.ball_actor:
-                self.CreateBallReference()
+            #if not self.ball_actor:
+            #    self.CreateBallReference()
 
             self.interactor.Render()
 
@@ -1249,7 +1249,7 @@ class Viewer(wx.Panel):
     def UpdateCameraBallPosition(self, position):
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
-        self.ball_actor.SetPosition(coord_flip)
+#        self.ball_actor.SetPosition(coord_flip)
         self.SetVolumeCamera(coord_flip)
 
     def CreateObjectPolyData(self, filename):
