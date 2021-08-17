@@ -508,15 +508,19 @@ class Parser():
         DICOM standard tag (0x0028, 0x0030) was used.
         """
         try:
-            return self.data_image["spacing"][:2]
+            image_helper_spacing =  self.data_image["spacing"]
         except KeyError:
-            try:
-                data = self.data_image[str(0x0028)][str(0x0030)].replace(",", ".")
-            except(KeyError):
-                return ""
-            if (data):
-                return [float(value) for value in data.split('\\')]
-            return ""
+            image_helper_spacing = None
+        try:
+            tag_spacing = self.data_image[str(0x0028)][str(0x0030)]
+        except KeyError:
+            tag_spacing = ""
+
+        # Some dicom images have comma (,) as decimal separation. In this case InVesalius is not using the spacing given by gdcm.ImageHelper but using direct from the tag and replacing the comma with dot.
+        if image_helper_spacing is not None and "," not in tag_spacing:
+            return image_helper_spacing[:2]
+        else:
+            return [float(value) for value in tag_spacing.replace(",", ".").split("\\")]
 
     def GetPatientWeight(self):
         """
