@@ -352,7 +352,7 @@ class Navigation():
 
     def GetFiducialRegistrationError(self, icp):
         fre = icp.icp_fre if icp.use_icp else self.fre
-        return fre, fre <= 3
+        return fre, fre <= const.FIDUCIAL_REGISTRATION_ERROR_THRESHOLD
 
     def StartNavigation(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
