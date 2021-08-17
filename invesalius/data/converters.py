@@ -124,8 +124,8 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
     map_gdcm_np = {
         gdcm.PixelFormat.UINT8   :np.uint8,
         gdcm.PixelFormat.INT8  :np.int8,
-        #gdcm.PixelFormat.UINT12 :np.uint12,
-        #gdcm.PixelFormat.INT12  :np.int12,
+        gdcm.PixelFormat.UINT12 :np.uint16,
+        gdcm.PixelFormat.INT12  :np.int16,
         gdcm.PixelFormat.UINT16 :np.uint16,
         gdcm.PixelFormat.INT16  :np.int16,
         gdcm.PixelFormat.UINT32 :np.uint32,
