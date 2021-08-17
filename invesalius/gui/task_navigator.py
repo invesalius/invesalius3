@@ -2026,8 +2026,13 @@ class TractographyPanel(wx.Panel):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
             actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            self.peel_loaded = True
+            Publisher.sendMessage('Update peel visualization', data=self.peel_loaded)
         else:
             actor = None
+            self.peel_loaded = False
+            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
+
         Publisher.sendMessage('Update peel', flag=ctrl.GetValue(), actor=actor)
 
     def OnEnableTracts(self, evt, ctrl):

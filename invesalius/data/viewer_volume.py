@@ -1449,10 +1449,14 @@ class Viewer(wx.Panel):
     def AddPeeledSurface(self, flag, actor):
         if self.actor_peel:
             self.ren.RemoveActor(self.actor_peel)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.actor_peel = None
         if flag and actor:
             self.ren.AddActor(actor)
             self.actor_peel = actor
+            self.ren.AddActor(self.object_orientation_torus_actor)
+            self.ren.AddActor(self.obj_projection_arrow_actor)
         self.Refresh()
 
     def GetPeelCenters(self, centers, normals):
