@@ -1327,7 +1327,7 @@ class Viewer(wx.Panel):
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
         self.obj_projection_arrow_actor = self.Add_ObjectArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
-                                                               15)
+                                                               8)
         self.object_orientation_torus_actor = self.Add_Torus([0., 0., 0.], [0., 0., 0.],
                                                              vtk_colors.GetColor3d('Red'))
 
@@ -1370,21 +1370,20 @@ class Viewer(wx.Panel):
 
     def Add_Torus(self, position, orientation, color=[0.0, 0.0, 1.0]):
         torus = vtk.vtkParametricTorus()
-        torus.SetRingRadius(3.5)
+        torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
 
         torusSource = vtk.vtkParametricFunctionSource()
         torusSource.SetParametricFunction(torus)
-        torusSource.SetScalarModeToPhase()
         torusSource.Update()
 
         torusMapper = vtk.vtkPolyDataMapper()
         torusMapper.SetInputConnection(torusSource.GetOutputPort())
-        torusMapper.SetScalarRange(0, 360)
+        # torusMapper.SetScalarRange(0, 360)
 
         torusActor = vtk.vtkActor()
         torusActor.SetMapper(torusMapper)
-        torusActor.GetProperty().SetColor(color)
+        torusActor.GetProperty().SetDiffuseColor(color)
         torusActor.SetPosition(position)
         torusActor.SetOrientation(orientation)
 
@@ -1518,11 +1517,11 @@ class Viewer(wx.Panel):
 
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
-                        self.object_orientation_torus_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
+                        self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
                     else:
-                        self.object_orientation_torus_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
+                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([114/255,153/255,179/255])
+                        self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
                 else:
                     self.ren.RemoveActor(self.y_actor)
 
