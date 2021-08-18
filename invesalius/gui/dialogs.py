@@ -4460,7 +4460,14 @@ class SetSpacingDialog(wx.Dialog):
         self.txt_spacing_new_z.ChangeValue(str(sz))
 
     def OnOk(self, evt):
-        self.EndModal(wx.ID_OK)
+        if self.spacing_new_x == 0.0:
+            self.txt_spacing_new_x.SetFocus()
+        elif self.spacing_new_y == 0.0:
+            self.txt_spacing_new_y.SetFocus()
+        elif self.spacing_new_z == 0.0:
+            self.txt_spacing_new_z.SetFocus()
+        else:
+            self.EndModal(wx.ID_OK)
 
     def OnCancel(self, evt):
         self.EndModal(wx.ID_CANCEL)
