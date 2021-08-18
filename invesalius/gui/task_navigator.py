@@ -1624,7 +1624,7 @@ class MarkersPanel(wx.Panel):
 
     def OnLoadMarkers(self, evt):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
-                                          wildcard=_("Markers files (*.mks)|*.mks"))
+                                          wildcard=const.WILDCARD_MARKER_FILES)
         # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
         # marker_path = 'markers.mks'
         # filename = os.path.join(data_dir, marker_path)
@@ -1694,7 +1694,7 @@ class MarkersPanel(wx.Panel):
 
     def OnSaveMarkers(self, evt):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
-                                          wildcard=_("Marker files (*.mks)|*.mks"),
+                                          wildcard=const.WILDCARD_MARKER_FILES,
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename="markers.mks", save_ext="mks")
 
