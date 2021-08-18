@@ -310,6 +310,8 @@ class InnerFoldPanel(wx.Panel):
 
 class Navigation():
     def __init__(self):
+        self.pedal_connection = PedalConnection()
+
         self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
         self.current_coord = 0, 0, 0
@@ -344,6 +346,17 @@ class Navigation():
         self.serial_port = None
         self.serial_port_connection = None
 
+        # During navigation
+        self.coil_at_target = False
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
+
+    def CoilAtTarget(self, state):
+        self.coil_at_target = state
+
     def UpdateSleep(self, sleep):
         self.sleep_nav = sleep
         self.serial_port_connection.sleep_nav = sleep
@@ -370,6 +383,12 @@ class Navigation():
     def GetFiducialRegistrationError(self, icp):
         fre = icp.icp_fre if icp.use_icp else self.fre
         return fre, fre <= const.FIDUCIAL_REGISTRATION_ERROR_THRESHOLD
+
+    def PedalStateChanged(self, state):
+        if state is True and self.coil_at_target and self.SerialPortEnabled():
+            success = self.serial_port_connection.SendPulse()
+            if success:
+                Publisher.sendMessage('Pulse triggered', state=True)
 
     def StartNavigation(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
@@ -466,8 +485,12 @@ class Navigation():
                 jobs.start()
                 # del jobs
 
+            self.pedal_connection.add_callback('navigation', self.PedalStateChanged)
+
     def StopNavigation(self):
         self.event.set()
+
+        self.pedal_connection.remove_callback('navigation')
 
         self.coord_queue.clear()
         self.coord_queue.join()
