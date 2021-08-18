@@ -163,10 +163,6 @@ class TriggerNew(threading.Thread):
                 print("Trigger not read, error")
                 pass
 
-            # except queue.Empty:
-            #     pass
-            # except queue.Full:
-            #     self.coord_queue.task_done()
         else:
             if self.trigger_init:
                 self.trigger_init.close()
