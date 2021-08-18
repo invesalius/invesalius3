@@ -740,10 +740,7 @@ class NeuronavigationPanel(wx.Panel):
             checkbox_pedal_pressed.Enable(False)
             checkbox_pedal_pressed.SetToolTip(tooltip)
 
-            def handle_pedal_value_changed(value):
-                checkbox_pedal_pressed.SetValue(value)
-
-            self.pedal_connection.set_callback(handle_pedal_value_changed)
+            self.pedal_connection.add_callback('gui', checkbox_pedal_pressed.SetValue)
 
             self.checkbox_pedal_pressed = checkbox_pedal_pressed
         else:

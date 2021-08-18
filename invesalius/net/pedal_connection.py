@@ -26,7 +26,7 @@ from invesalius.utils import Singleton
 
 class PedalConnection(Thread, metaclass=Singleton):
     """
-    Connect to the trigger pedal via MIDI, and allow setting a callback for the pedal
+    Connect to the trigger pedal via MIDI, and allow adding callbacks for the pedal
     being pressed or released.
 
     Started by calling PedalConnection().start()
@@ -39,7 +39,7 @@ class PedalConnection(Thread, metaclass=Singleton):
 
         self._midi_in = None
         self._active_inputs = None
-        self._callback = None
+        self._callbacks = {}
 
     def _midi_to_pedal(self, msg):
         # TODO: At this stage, interpret all note_on messages as the pedal being pressed,
@@ -47,16 +47,18 @@ class PedalConnection(Thread, metaclass=Singleton):
         #       message types and be more stringent about the messages.
         #
         if msg.type == 'note_on':
-            if self._callback is None:
-                print("Pedal pressed, no callback registered")
+            if not self._callbacks:
+                print("Pedal pressed, no callbacks registered")
             else:
-                self._callback(True)
+                for callback in self._callbacks.values():
+                    callback(True)
 
         elif msg.type == 'note_off':
-            if self._callback is None:
-                print("Pedal released, no callback registered")
+            if not self._callbacks:
+                print("Pedal released, no callbacks registered")
             else:
-                self._callback(False)
+                for callback in self._callbacks.values():
+                    callback(False)
 
         else:
             print("Unknown message type received from MIDI device")
@@ -83,8 +85,12 @@ class PedalConnection(Thread, metaclass=Singleton):
     def is_connected(self):
         return self._midi_in is not None
 
-    def set_callback(self, callback):
-        self._callback = callback
+    def add_callback(self, name, callback):
+        self._callbacks[name] = callback
+
+    def remove_callback(self, name):
+        if name in self._callbacks:
+            del self._callbacks[name]
 
     def run(self):
         self.in_use = True
