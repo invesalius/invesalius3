@@ -489,6 +489,8 @@ class Controller():
             # OPTION 1: DICOM
             group = dcm.SelectLargerDicomGroup(patients_groups)
             matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
+            if matrix is None:
+                return
             self.CreateDicomProject(dicom, matrix, matrix_filename)
         else:
             # OPTION 2: NIfTI, Analyze or PAR/REC
@@ -517,6 +519,8 @@ class Controller():
     def ImportGroup(self, group, gui=True):
 
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
+        if matrix is None:
+            return
         self.CreateDicomProject(dicom, matrix, matrix_filename)
 
         self.LoadProject()
@@ -896,6 +900,8 @@ class Controller():
             if dlg.ShowModal() != wx.ID_YES:
                 return
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
+        if matrix is None:
+            return
         self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
@@ -980,6 +986,14 @@ class Controller():
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
+
+        if gui and (spacing[0] == 0.0 or spacing[1] == 0.0 or spacing[2] == 0.0):
+            sx, sy, sz = spacing
+            dlg = dialogs.SetSpacingDialog(wx.GetApp().GetTopWindow(), sx, sy, sz)
+            if dlg.ShowModal() == wx.ID_OK:
+                spacing = dlg.spacing_new_x, dlg.spacing_new_y, dlg.spacing_new_z
+            else:
+                return None, None, None
 
         self.Slice.spacing = spacing
 
