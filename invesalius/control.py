@@ -1052,8 +1052,7 @@ class Controller():
                                                           angles=angs, translate=trans, perspective=persp))
             # print("repos_img: {}".format(repos_img))
             self.Slice.affine = self.affine
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
+            Publisher.sendMessage('Update affine matrix', affine=self.affine)
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
         Publisher.sendMessage('Update threshold limits list',
@@ -1062,8 +1061,7 @@ class Controller():
 
     def Send_affine(self):
         if self.affine is not None:
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine, status=True)
+            Publisher.sendMessage('Update affine matrix', affine=self.affine)
 
     def LoadImagedataInfo(self):
         proj = prj.Project()

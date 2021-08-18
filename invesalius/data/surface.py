@@ -56,7 +56,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
-import invesalius.data.vtk_utils as vu
+import invesalius.data.vtk_utils as vtk_utils
 
 from invesalius.gui import dialogs
 from invesalius_cy import cy_mesh
@@ -159,8 +159,8 @@ class SurfaceManager():
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
-        self.affine = None
-        self.converttoInV = None
+        self.affine_vtk = None
+        self.convert2inv = None
         self.__bind_events()
 
         self._default_parameters = {
@@ -208,7 +208,7 @@ class SurfaceManager():
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
         Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
-        Publisher.subscribe(self.UpdateconverttoInVflag, 'Update converttoInV flag')
+        Publisher.subscribe(self.UpdateConvert2InvFlag, 'Update convert2inv flag')
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
 
@@ -338,35 +338,22 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
-    def UpdateAffineMatrix(self, affine, status):
-        try:
-            if status:
-                from numpy import hstack
-                from numpy.linalg import inv
-                affine = inv(affine)
-                affine[1, 3] = -affine[1, 3]
-                self.affine = hstack(affine)
-            else:
-                self.affine = None
-        except:
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=None, status=False)
+    def UpdateAffineMatrix(self, affine):
+        if affine is not None:
+            prj_data = prj.Project()
+            matrix_shape = tuple(prj_data.matrix_shape)
+            affine = affine.copy()
+            affine[1, -1] -= matrix_shape[1]
+            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+        else:
+            self.affine_vtk = None
 
-    def UpdateconverttoInVflag(self, converttoInV):
-        self.converttoInV = converttoInV
+    def UpdateConvert2InvFlag(self, convert2inv=False):
+        self.convert2inv = convert2inv
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False, index=None,
                                   name=None, colour=None, transparency=None,
                                   volume=None, area=None, scalar=False):
-        if self.converttoInV and self.affine is not None:
-            transform = vtk.vtkTransform()
-            transform.SetMatrix(self.affine)
-            transformFilter = vtk.vtkTransformPolyDataFilter()
-            transformFilter.SetTransform(transform)
-            transformFilter.SetInputData(polydata)
-            transformFilter.Update()
-            polydata = transformFilter.GetOutput()
-            self.converttoInV = None
 
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
@@ -386,7 +373,8 @@ class SurfaceManager():
         actor.SetMapper(mapper)
         actor.GetProperty().SetBackfaceCulling(1)
 
-        print("BOunds", actor.GetBounds())
+        if self.convert2inv and (self.affine_vtk is not None):
+            actor.SetUserMatrix(self.affine_vtk)
 
         if overwrite:
             if index is None:
@@ -468,8 +456,9 @@ class SurfaceManager():
         # restarting the surface index
         Surface.general_index = -1
 
-        Publisher.sendMessage('Update affine matrix',
-                              affine=None, status=False)
+        self.affine_vtk = None
+        self.convert2inv = False
+
 
     def OnSelectSurface(self, surface_index):
         #self.last_surface_index = surface_index
