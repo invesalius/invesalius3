@@ -820,8 +820,8 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateTarget, 'Update target')
-        Publisher.subscribe(self.onStartNavigation, 'Start navigation')
-        Publisher.subscribe(self.onStopNavigation, 'Stop navigation')
+        Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
+        Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
 
     def LoadImageFiducials(self, marker_id, coord):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
@@ -978,7 +978,7 @@ class NeuronavigationPanel(wx.Panel):
         fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
         Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
 
-    def onStopNavigation(self):
+    def OnStopNavigation(self):
         select_tracker_elem = self.select_tracker_elem
         choice_ref = self.choice_ref
 
@@ -991,10 +991,9 @@ class NeuronavigationPanel(wx.Panel):
         for btn_c in self.btns_set_fiducial:
             btn_c.Enable(True)
 
-    def UpdateFiducialRegistrationError(self):
+    def CheckFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker)
         fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
-
 
         self.txtctrl_fre.SetValue(str(round(fre, 2)))
         if fre_ok:
@@ -1004,7 +1003,7 @@ class NeuronavigationPanel(wx.Panel):
 
         return fre_ok
 
-    def onStartNavigation(self):
+    def OnStartNavigation(self):
         select_tracker_elem = self.select_tracker_elem
         choice_ref = self.choice_ref
 
@@ -1028,7 +1027,7 @@ class NeuronavigationPanel(wx.Panel):
 
             self.navigation.StartNavigation(self.tracker)
 
-            if not self.UpdateFiducialRegistrationError():
+            if not self.CheckFiducialRegistrationError():
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
                 print("WARNING: Fiducial registration error too large.")
 
@@ -1038,7 +1037,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.checkbox_icp.SetValue(True)
             # Update FRE once more after starting the navigation, due to the optional use of ICP,
             # which improves FRE.
-            self.UpdateFiducialRegistrationError()
+            self.CheckFiducialRegistrationError()
 
     def OnNavigate(self, evt, btn_nav):
         select_tracker_elem = self.select_tracker_elem
@@ -1067,7 +1066,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def OnCheckboxICP(self, evt, ctrl):
         self.icp.SetICP(self.navigation, ctrl.GetValue())
-        self.UpdateFiducialRegistrationError()
+        self.CheckFiducialRegistrationError()
 
     def OnCloseProject(self):
         self.ResetUI()
