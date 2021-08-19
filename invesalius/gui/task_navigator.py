@@ -22,6 +22,7 @@ import csv
 import os
 import queue
 import sys
+import time
 import threading
 
 import nibabel as nb
@@ -963,7 +964,13 @@ class NeuronavigationPanel(wx.Panel):
                     self.numctrls_fiducial[n][2].GetValue(), 0, 0, 0
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
-            Publisher.sendMessage('Create marker', coord=coord, marker_id=marker_id)
+
+            colour = (0., 1., 0.)
+            size = 2
+            seed = 3 * [0.]
+
+            Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
+                                   marker_id=marker_id, seed=seed)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
@@ -1447,7 +1454,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
-        Publisher.subscribe(self.OnCreateMarker, 'Create marker')
+        Publisher.subscribe(self.CreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
 
@@ -1497,28 +1504,33 @@ class MarkersPanel(wx.Panel):
         else:
             id_label = dlg.ShowEnterMarkerID(self.lc.GetItemText(list_index, 4))
             if id_label == 'TARGET':
-                id_label = ''
+                id_label = '*'
                 wx.MessageBox(_("Invalid TARGET ID."), _("InVesalius 3"))
-        self.lc.SetItem(list_index, 4, id_label)
+
         # Add the new ID to exported list
         if len(self.list_coord[list_index]) > 8:
             self.list_coord[list_index][10] = str(id_label)
         else:
             self.list_coord[list_index][7] = str(id_label)
 
+        self.lc.SetItem(list_index, 4, id_label)
+
     def OnMenuSetTarget(self, evt):
         if isinstance(evt, int):
             self.lc.Focus(evt)
 
         if self.tgt_flag:
+            marker_id = '*'
+
             self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
             Publisher.sendMessage('Set target transparency', status=False, index=self.tgt_index)
-            self.lc.SetItem(self.tgt_index, 4, '')
+            self.lc.SetItem(self.tgt_index, 4, marker_id)
+
             # Add the new ID to exported list
             if len(self.list_coord[self.tgt_index]) > 8:
-                self.list_coord[self.tgt_index][10] = str('')
+                self.list_coord[self.tgt_index][10] = marker_id
             else:
-                self.list_coord[self.tgt_index][7] = str('')
+                self.list_coord[self.tgt_index][7] = marker_id
 
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
@@ -1538,8 +1550,11 @@ class MarkersPanel(wx.Panel):
 
         if color_new:
             assert len(color_new) == 3
-            for n, col in enumerate(color_new):
-                self.list_coord[index][n+6] = col/255.0
+
+            # XXX: Seems like a slightly too early point for rounding; better to round only when the value
+            #      is printed to the screen or file.
+            #
+            self.list_coord[index][6:9] = [round(s/255.0, 3) for s in color_new]
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
@@ -1604,23 +1619,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Remove marker', index=index)
 
     def OnCreateMarker(self, evt=None, coord=None, marker_id=None, colour=None):
-        # OnCreateMarker is used for both pubsub and button click events
-        # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
-        if not colour:
-            colour = self.marker_colour
-        if not coord:
-            coord = self.current_coord
-
-        if evt is None:
-            if coord:
-                self.CreateMarker(coord=coord, colour=(0.0, 1.0, 0.0), size=self.marker_size,
-                                  marker_id=marker_id, seed=self.current_seed)
-            else:
-                self.CreateMarker(coord=self.current_coord, colour=colour, size=self.marker_size,
-                                  seed=self.current_seed)
-        else:
-            self.CreateMarker(coord=self.current_coord, colour=colour, size=self.marker_size,
-                              seed=self.current_seed)
+        self.CreateMarker()
 
     def OnLoadMarkers(self, evt):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
@@ -1635,50 +1634,63 @@ class MarkersPanel(wx.Panel):
                 # content = [s.rstrip() for s in open(filename)]
                 with open(filename, 'r') as file:
                     reader = csv.reader(file, delimiter='\t')
+
+                    # skip the header
+                    if filename.lower().endswith('.mkss'):
+                        next(reader)
+
                     content = [row for row in reader]
 
                 for line in content:
                     target = None
-                    # line = [s for s in data.split()]
                     if len(line) > 8:
                         coord = [float(s) for s in line[:6]]
                         colour = [float(s) for s in line[6:9]]
                         size = float(line[9])
-                        # marker_id = line[10]
+                        marker_id = line[10]
+
                         if len(line) > 11:
                             seed = [float(s) for s in line[11:14]]
                         else:
-                            seed = 0., 0., 0.
-
-                        # coord = float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5])
-                        # colour = float(line[6]), float(line[7]), float(line[8])
-                        # size = float(line[9])
+                            seed = 3 * [0.]
 
                         if len(line) >= 11:
                             for i in const.BTNS_IMG_MARKERS:
-                                if line[10] in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', marker_id=line[10], coord=coord)
-                                elif line[10] == 'TARGET':
+                                if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
+                                    Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
+                                elif marker_id == 'TARGET':
                                     target = count_line
                         else:
-                            line.append("")
+                            marker_id = '*'
 
-                        self.CreateMarker(coord, colour, size, line[10], seed)
-                        if target is not None:
-                            self.OnMenuSetTarget(target)
-
+                        if len(line) == 15:
+                            target_id = line[14]
+                        else:
+                            target_id = '*'
                     else:
+                        # for compatibility with previous version without the extra seed and target columns
                         coord = float(line[0]), float(line[1]), float(line[2]), 0, 0, 0
                         colour = float(line[3]), float(line[4]), float(line[5])
                         size = float(line[6])
 
+                        seed = 3 * [0]
+                        target_id = '*'
+
                         if len(line) == 8:
+                            marker_id = line[7]
                             for i in const.BTNS_IMG_MARKERS:
-                                if line[7] in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', marker_id=line[7], coord=coord)
+                                if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
+                                    Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
                         else:
-                            line.append("")
-                        self.CreateMarker(coord, colour, size, line[7])
+                            marker_id = '*'
+
+                    self.CreateMarker(coord=coord, colour=colour, size=size,
+                                      marker_id=marker_id, target_id=target_id, seed=seed)
+
+                    # if there are multiple TARGETS will set the last one
+                    if target:
+                        self.OnMenuSetTarget(target)
+
                     count_line += 1
             except:
                 wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
@@ -1693,32 +1705,31 @@ class MarkersPanel(wx.Panel):
             ctrl.SetLabel('Hide')
 
     def OnSaveMarkers(self, evt):
+        prj_data = prj.Project()
+        timestamp = time.localtime(time.time())
+        stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+        stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+        sep = '-'
+        parts = [stamp_date, stamp_time, prj_data.name, 'markers']
+        default_filename = sep.join(parts) + '.mkss'
+
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
                                           wildcard=_("Marker files (*.mks)|*.mks"),
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename="markers.mks", save_ext="mks")
 
+        header_titles = ['x', 'y', 'z', 'alpha', 'beta', 'gamma', 'r', 'g', 'b',
+                         'size', 'marker_id', 'x_seed', 'y_seed', 'z_seed', 'target_id']
+
         if filename:
             if self.list_coord:
                 with open(filename, 'w', newline='') as file:
                     writer = csv.writer(file, delimiter='\t')
+
+                    if filename.lower().endswith('.mkss'):
+                        writer.writerow(header_titles)
+
                     writer.writerows(self.list_coord)
-                # text_file = open(filename, "w")
-                # list_slice1 = self.list_coord[0]
-                # coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
-                # angles = str('%.3f' %self.list_coord[0][3]) + "\t" + str('%.3f' %self.list_coord[0][4]) + "\t" + str('%.3f' %self.list_coord[0][5])
-                # properties = str('%.3f' %list_slice1[6]) + "\t" + str('%.3f' %list_slice1[7]) + "\t" + str('%.3f' %list_slice1[8]) + "\t" + str('%.1f' %list_slice1[9]) + "\t" + list_slice1[10]
-                # line = coord + "\t" + angles + "\t" + properties + "\n"
-                # list_slice = self.list_coord[1:]
-                #
-                # for value in list_slice:
-                #     coord = str('%.3f' %value[0]) + "\t" + str('%.3f' %value[1]) + "\t" + str('%.3f' %value[2])
-                #     angles = str('%.3f' % value[3]) + "\t" + str('%.3f' % value[4]) + "\t" + str('%.3f' % value[5])
-                #     properties = str('%.3f' %value[6]) + "\t" + str('%.3f' %value[7]) + "\t" + str('%.3f' %value[8]) + "\t" + str('%.1f' %value[9]) + "\t" + value[10]
-                #     line = line + coord + "\t" + angles + "\t" +properties + "\n"
-                #
-                # text_file.writelines(line)
-                # text_file.close()
 
     def OnSelectColour(self, evt, ctrl):
         self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()]
@@ -1726,7 +1737,12 @@ class MarkersPanel(wx.Panel):
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
 
-    def CreateMarker(self, coord, colour, size, marker_id="x", seed=(0, 0, 0)):
+    def CreateMarker(self, coord=None, colour=None, size=None, marker_id='*', target_id='*', seed=None):
+        coord = coord or self.current_coord
+        colour = colour or self.marker_colour
+        size = size or self.marker_size
+        seed = seed or self.current_seed
+
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
@@ -1741,11 +1757,7 @@ class MarkersPanel(wx.Panel):
         line.append(size)
         line.append(marker_id)
         line.extend(seed)
-
-        # line = [coord[0], coord[1], coord[2], coord[3], coord[4], coord[5], colour[0], colour[1], colour[2], size, marker_id]
-        # line = [coord[0], coord[1], coord[2], coord[3], coord[4], coord[5],
-        #         colour[0], colour[1], colour[2], size, marker_id,
-        #         seed[0], seed[1], seed[2]]
+        line.append(target_id)
 
         # Adding current line to a list of all markers already created
         if not self.list_coord:
