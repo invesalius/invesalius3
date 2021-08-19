@@ -4134,6 +4134,73 @@ class GoToDialogScannerCoord(wx.Dialog):
         wx.Dialog.Close(self)
         self.Destroy()
 
+class SetOptitrackconfigs(wx.Dialog):
+    def __init__(self, title=_("Setting Optitrack configs:")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        self._init_gui()
+
+    def _init_gui(self):
+        session = ses.Session()
+        last_optitrack_cal_dir = session.get('paths', 'last_optitrack_cal_dir', '')
+        last_optitrack_User_Profile_dir = session.get('paths', 'last_optitrack_User_Profile_dir', '')
+
+        if not last_optitrack_cal_dir:
+            last_optitrack_cal_dir = inv_paths.OPTITRACK_CAL_DIR
+        if not last_optitrack_User_Profile_dir:
+            last_optitrack_User_Profile_dir = inv_paths.OPTITRACK_USERPROFILE_DIR
+
+        self.dir_cal = wx.FilePickerCtrl(self, path=last_optitrack_cal_dir, style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
+                                         wildcard="Cal files (*.cal)|*.cal", message="Select Calibration file")
+        row_cal = wx.BoxSizer(wx.VERTICAL)
+        row_cal.Add(wx.StaticText(self, wx.ID_ANY, "Select Calibration file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_cal.Add(self.dir_cal, 0, wx.ALL | wx.CENTER | wx.EXPAND)
+
+        self.dir_UserProfile = wx.FilePickerCtrl(self, path=last_optitrack_User_Profile_dir, style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
+                                         wildcard="User Profile files (*.motive)|*.motive", message="Select User Profile file")
+
+        row_userprofile = wx.BoxSizer(wx.VERTICAL)
+        row_userprofile.Add(wx.StaticText(self, wx.ID_ANY, "Select User Profile file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_userprofile.Add(self.dir_UserProfile, 0, wx.ALL | wx.CENTER | wx.EXPAND)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(row_cal, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(row_userprofile, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def GetValue(self):
+        fn_cal = self.dir_cal.GetPath()
+        fn_userprofile = self.dir_UserProfile.GetPath()
+
+        if fn_cal and fn_userprofile:
+            session = ses.Session()
+            session['paths']['last_optitrack_cal_dir'] = self.dir_cal.GetPath()
+            session['paths']['last_optitrack_User_Profile_dir'] = self.dir_UserProfile.GetPath()
+            session.WriteSessionFile()
+
+        return fn_cal, fn_userprofile
 
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):
