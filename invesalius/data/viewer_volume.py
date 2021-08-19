@@ -609,16 +609,16 @@ class Viewer(wx.Panel):
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(colour[0:3])
+        prop.SetColor(colour)
 
-        #adding a new actor for the present ball
+        # adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
 
         self.staticballs[self.ball_id].SetMapper(mapper)
         self.staticballs[self.ball_id].SetProperty(prop)
 
         self.ren.AddActor(self.staticballs[self.ball_id])
-        self.ball_id = self.ball_id + 1
+        self.ball_id += 1
 
         #self.UpdateRender()
         self.Refresh()
