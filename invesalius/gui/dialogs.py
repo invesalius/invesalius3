@@ -3703,7 +3703,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def GetCurrentCoord(self):
-        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
+        coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
         return coord[:3]
 
@@ -4145,14 +4145,15 @@ class SetTrackerDevice2Robot(wx.Dialog):
     def __init__(self, title=_("Setting tracker device:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
-        self.tracker_id = None
+        self.tracker_id = const.DEFAULT_TRACKER
         self._init_gui()
 
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
+        tracker_options = [_("Select tracker:")] + const.TRACKERS[:-3]
         choice_trck = wx.ComboBox(self, -1, "",
-                                  choices=const.TRACKER[:-4], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+                                  choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_trck.SetToolTip(tooltip)
         choice_trck.SetSelection(const.DEFAULT_TRACKER)
         choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
@@ -4467,16 +4468,19 @@ class SetNDIconfigs(wx.Dialog):
         return port_list, port_selec
 
     def _init_gui(self):
-        self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
         row_com = wx.BoxSizer(wx.VERTICAL)
         row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
-        row_com.Add(self.com_ports, 0, wx.EXPAND)
+        row_com.Add(com_ports, 0, wx.EXPAND)
 
         port_list, port_selec = self.serial_ports()
 
-        self.com_ports.Append(port_list)
+        com_ports.Append(port_list)
         if port_selec:
-            self.com_ports.SetSelection(port_selec[0])
+            com_ports.SetSelection(port_selec[0])
+
+        self.com_ports = com_ports
 
         session = ses.Session()
         last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
@@ -4512,6 +4516,8 @@ class SetNDIconfigs(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
+        btn_ok.Enable(False)
+        self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
@@ -4539,6 +4545,9 @@ class SetNDIconfigs(wx.Dialog):
         main_sizer.Fit(self)
 
         self.CenterOnParent()
+
+    def OnChoicePort(self, evt, ctrl):
+        self.btn_ok.Enable(True)
 
     def GetValue(self):
         fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)

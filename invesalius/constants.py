@@ -675,7 +675,7 @@ DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
 
-TRACKER = [_("Claron MicronTracker"),
+TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
            _("NDI Polaris"), _("NDI Polaris P4"),

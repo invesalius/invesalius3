@@ -376,21 +376,19 @@ def PlhUSBConnection(tracker_id):
 def HybridTracker(tracker_id):
     from wx import ID_OK
     trck_init = None
+    trck_init_robot = None
+    tracker_id = None
     dlg_device = dlg.SetTrackerDevice2Robot()
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
-        trck_init = TrackerConnection(tracker_id, None, 'connect')
-        dlg_ip = dlg.SetRobotIP()
-        if dlg_ip.ShowModal() == ID_OK:
-            robot_IP = dlg_ip.GetValue()
-            trck_init_robot = ElfinRobot(robot_IP)
-        else:
-            trck_init = None
-            trck_init_robot = None
-        #TODO: deal with errors
-    else:
-        trck_init = None
-        trck_init_robot = None
+        if tracker_id:
+            trck_connection = TrackerConnection(tracker_id, None, 'connect')
+            if trck_connection[0]:
+                dlg_ip = dlg.SetRobotIP()
+                if dlg_ip.ShowModal() == ID_OK:
+                    robot_IP = dlg_ip.GetValue()
+                    trck_init = trck_connection
+                    trck_init_robot = ElfinRobot(robot_IP)
 
     return [trck_init, trck_init_robot, tracker_id]
 

@@ -377,7 +377,7 @@ class Navigation():
             self.event.clear()
 
         vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
-        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
+        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
@@ -404,7 +404,7 @@ class Navigation():
                 coreg_data = [m_change, obj_ref_mode]
 
                 if ref_mode_id:
-                    coord_raw = dco.GetCoordinates(tracker.trk_init, tracker.tracker_id, ref_mode_id)
+                    coord_raw, markers_flag = dco.GetCoordinates(tracker.trk_init, tracker.tracker_id, ref_mode_id)
                 else:
                     coord_raw = np.array([None])
 
@@ -422,14 +422,6 @@ class Navigation():
             jobs_list.append(dcr.CoordinateCorregistrateNoObject(ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
                                                                     self.event, self.sleep_nav))
-
-        if self.tracker_id == const.HYBRID:
-            self.robot_coord_queue.clear()
-            # self.robot_coord_queue.join()
-            elfin_process.ControlRobot(self.trk_init,
-                                       [self.robot_coord_queue, self.coord_queue, self.robottarget_queue,
-                                        self.objattarget_queue],
-                                       self.process_tracker, self.robot_event).start()
 
         if not errors:
             #TODO: Test the trigger thread
@@ -508,29 +500,6 @@ class Tracker():
                 self.tracker_id = new_tracker
                 self.tracker_connected = True
 
-            if self.tracker_id == const.HYBRID:
-                if not self.trk_init[0][0] or not self.trk_init[1][0]:
-                    dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
-                    self.tracker_id = 0
-                    self.tracker_connected = False
-                else:
-                    self.process_tracker = elfin_process.TrackerProcessing()
-                    self.robot_coord_queue.clear()
-                    self.robot_coord_queue.join()
-                    self.trk_init.append(self.robot_coord_queue)
-                    dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.trk_init)
-                    if dlg_correg_robot.ShowModal() == wx.ID_OK:
-                        M_tracker_2_robot = dlg_correg_robot.GetValue()
-                        db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
-                    else:
-                        self.trk_init = dt.TrackerConnection(self.tracker_id, self.trk_init[0][0], 'disconnect')
-                        if not self.trk_init[0]:
-                            # if evt is not False:
-                            #     # TODO: update msg to the matrix be mandatory
-                            #     dlg.ShowNavigationTrackerWarning(self.tracker_id, 'disconnect')
-                            self.tracker_id = 0
-                            self.tracker_connected = False
-
             Publisher.sendMessage('Update tracker initializer',
                                 nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
 
@@ -563,7 +532,7 @@ class Tracker():
     def SetTrackerFiducial(self, fiducial_index):
         coord = None
 
-        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+        coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
 
         if self.ref_mode_id:
             coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
@@ -677,6 +646,73 @@ class ICP():
         self.m_icp = None
         self.icp_fre = None
 
+class Robot():
+    def __init__(self):
+        self.trk_init = None
+        self.robot_coord_queue = None
+        self.robottarget_queue = None
+        self.objattarget_queue = None
+        self.process_tracker = None
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
+        Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
+        Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
+
+    def OnRobotConnection(self, tracker):
+        if not tracker.trk_init[0][0] or not tracker.trk_init[1][0]:
+            dlg.ShowNavigationTrackerWarning(tracker.tracker_id, tracker.trk_init[1])
+            tracker.tracker_id = 0
+            tracker.tracker_connected = False
+        else:
+            self.process_tracker = elfin_process.TrackerProcessing()
+            dlg_correg_robot = dlg.CreateTransformationMatrixRobot(tracker.trk_init)
+            if dlg_correg_robot.ShowModal() == wx.ID_OK:
+                M_tracker_2_robot = dlg_correg_robot.GetValue()
+                db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
+                tracker.trk_init.append(self.robot_coord_queue)
+                self.robot_server = tracker.trk_init[1][0]
+                self.trk_init = tracker.trk_init
+            else:
+                dlg.ShowNavigationTrackerWarning(tracker.tracker_id, 'disconnect')
+                tracker.trk_init = None
+                tracker.tracker_id = 0
+                tracker.tracker_connected = False
+
+        Publisher.sendMessage('Update tracker initializer',
+                              nav_prop=(tracker.tracker_id, tracker.trk_init, tracker.ref_mode_id))
+
+    def StartRobotNavigation(self, coord_queue, robot_event):
+        self.robot_coord_queue.clear()
+        # self.robot_coord_queue.join()
+        elfin_process.ControlRobot(self.trk_init,
+                                   [self.robot_coord_queue, coord_queue, self.robottarget_queue,
+                                    self.objattarget_queue],
+                                   self.process_tracker, robot_event).start()
+
+    def OnSendCoordinates(self, coord):
+        self.robot_server.SendCoordinates(coord)
+
+    def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot2ref):
+        try:
+            self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
+        except queue.Full:
+            print('full')
+            pass
+
+    def OnObjectTarget(self, state):
+        try:
+            if self.objattarget_queue:
+                self.objattarget_queue.put_nowait(state)
+        except queue.Full:
+            print('full')
+            pass
+
+    def SetRobotQueues(self, queues):
+        self.robot_coord_queue, self.robottarget_queue, self.objattarget_queue = queues
+
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -695,6 +731,7 @@ class NeuronavigationPanel(wx.Panel):
         self.tracker = Tracker()
         self.navigation = Navigation()
         self.icp = ICP()
+        self.robot = Robot()
 
         self.nav_status = False
 
@@ -865,9 +902,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTarget, 'Update target')
         Publisher.subscribe(self.onStartNavigation, 'Start navigation')
         Publisher.subscribe(self.onStopNavigation, 'Stop navigation')
-        Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
-        Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
-        Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
 
     def LoadImageFiducials(self, marker_id, coord):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
@@ -980,24 +1014,6 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
-    def OnSendCoordinates(self, coord):
-        if self.tracker_id == const.HYBRID:
-            self.trk_init[1][0].SendCoordinates(coord)
-
-    def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot2ref):
-        try:
-            self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
-        except queue.Full:
-            print('full')
-            pass
-
-    def OnObjectTarget(self, state):
-        try:
-            self.objattarget_queue.put_nowait(state)
-        except queue.Full:
-            print('full')
-            pass
-
     def OnChooseTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
                               label=_("Configuring tracker ..."))
@@ -1007,6 +1023,12 @@ class NeuronavigationPanel(wx.Panel):
             choice = None
 
         self.tracker.SetTracker(choice)
+        if self.tracker.tracker_id == const.HYBRID:
+            self.robot.SetRobotQueues([self.navigation.robot_coord_queue,
+                                      self.navigation.robottarget_queue,
+                                      self.navigation.objattarget_queue])
+            self.robot.OnRobotConnection(self.tracker)
+
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
@@ -1091,6 +1113,8 @@ class NeuronavigationPanel(wx.Panel):
                 btn_c.Enable(False)
 
             self.navigation.StartNavigation(self.tracker)
+            if self.tracker.tracker_id == const.HYBRID:
+                self.robot.StartRobotNavigation(self.navigation.coord_queue, self.navigation.robot_event)
 
             if not self.UpdateFiducialRegistrationError():
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
@@ -1148,6 +1172,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.__init__()
         self.tracker.__init__()
         self.icp.__init__()
+        self.robot.__init__()
 
 
 class ObjectRegistrationPanel(wx.Panel):
@@ -1439,8 +1464,8 @@ class MarkersPanel(wx.Panel):
         self.mchange = None
         self.flag_target = False
 
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdateSendCoord, self.timer)
+        # self.timer = wx.Timer(self)
+        # self.Bind(wx.EVT_TIMER, self.OnUpdateSendCoord, self.timer)
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1575,7 +1600,8 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
         send_coord_robot = menu_id.Append(3, _('Send coord to robot'))
-        menu_id.Bind(wx.EVT_MENU, self.OnContinuousSendCoord, send_coord_robot)
+        #menu_id.Bind(wx.EVT_MENU, self.OnContinuousSendCoord, send_coord_robot)
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendCoord, send_coord_robot)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1643,21 +1669,22 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
-    def OnContinuousSendCoord(self, evt=None):
-        self.timer.Start(20000)
-
-    def OnUpdateSendCoord(self, evt):
-        self.OnMenuSendCoord(evt=None)
+    # def OnContinuousSendCoord(self, evt=None):
+    #     self.timer.Start(20000)
+    #
+    # def OnUpdateSendCoord(self, evt):
+    #     self.OnMenuSendCoord(evt=None)
 
     def OnMenuSendCoord(self, evt):
         if isinstance(evt, int):
             self.lc.Focus(evt)
-        coord_target = self.list_coord[3]
-        coord_home = self.list_coord[4]
-        if self.flag_target:
-            coord = coord_home
-        else:
-            coord = coord_target
+        coord = self.list_coord[self.lc.GetFocusedItem()]
+        # coord_target = self.list_coord[3]
+        # coord_home = self.list_coord[4]
+        # if self.flag_target:
+        #     coord = coord_home
+        # else:
+        #     coord = coord_target
 
         trans = tr.translation_matrix(coord[14:17])
         a, b, g = np.radians(coord[17:20])

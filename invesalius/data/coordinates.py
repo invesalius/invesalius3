@@ -28,7 +28,7 @@ from time import sleep
 from random import uniform
 from invesalius.pubsub import pub as Publisher
 
-
+#TODO: create a thread to get coordinates. Invesalius will get the coord from another class, updated by the thread
 def GetCoordinates(trck_init, trck_id, ref_mode):
 
     """
@@ -195,31 +195,37 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         if not "coord1" in locals():
             coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
-        q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_probe = np.array(t).astype(float)
-        coord1 = np.hstack((trans_probe, angles_probe))
+        sign = [n for n in range(len(probe)) if probe.find('+', n) == n or probe.find('-', n) == n]
+        if len(sign) == 8:
+            q = [int(probe[sign[i]:sign[i+1]]) * 0.0001 for i in range(4)]
+            t = [int(probe[sign[i]:sign[i+1]]) * 0.01 for i in range(4, 7)]
+            angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_probe = np.array(t).astype(float)
+            coord1 = np.hstack((trans_probe, angles_probe))
 
     if ref[:7] == "MISSING":
         if not "coord2" in locals():
             coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
-        q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_ref = np.array(t).astype(float)
-        coord2 = np.hstack((trans_ref, angles_ref))
+        sign = [n for n in range(len(ref)) if ref.find('+', n) == n or ref.find('-', n) == n]
+        if len(sign) == 8:
+            q = [int(ref[sign[i]:sign[i+1]]) * 0.0001 for i in range(4)]
+            t = [int(ref[sign[i]:sign[i+1]]) * 0.01 for i in range(4, 7)]
+            angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_ref = np.array(t).astype(float)
+            coord2 = np.hstack((trans_ref, angles_ref))
 
     if obj[:7] == "MISSING":
         if not "coord3" in locals():
             coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
-        q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_obj = np.array(t).astype(float)
-        coord3 = np.hstack((trans_obj, angles_obj))
+        sign = [n for n in range(len(obj)) if obj.find('+', n) == n or obj.find('-', n) == n]
+        if len(sign) == 8:
+            q = [int(obj[sign[i]:sign[i+1]]) * 0.0001 for i in range(4)]
+            t = [int(obj[sign[i]:sign[i+1]]) * 0.01 for i in range(4, 7)]
+            angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_obj = np.array(t).astype(float)
+            coord3 = np.hstack((trans_obj, angles_obj))
 
     Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
     coord = np.vstack([coord1, coord2, coord3])
