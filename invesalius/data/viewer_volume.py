@@ -631,10 +631,8 @@ class Viewer(wx.Panel):
         :return: vtkActor
         """
 
-        # x, y, z = coord
-
         ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(2)
+        ball_ref.SetRadius(1.5)
         ball_ref.SetCenter(coord)
 
         mapper = vtk.vtkPolyDataMapper()
@@ -646,7 +644,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
-        actor.GetProperty().SetOpacity(.5)
+        actor.GetProperty().SetOpacity(1.)
 
         # ren.AddActor(actor)
 
