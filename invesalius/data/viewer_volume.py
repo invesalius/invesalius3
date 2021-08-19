@@ -1379,7 +1379,7 @@ class Viewer(wx.Panel):
 
         torusMapper = vtk.vtkPolyDataMapper()
         torusMapper.SetInputConnection(torusSource.GetOutputPort())
-        # torusMapper.SetScalarRange(0, 360)
+        torusMapper.SetScalarRange(0, 360)
 
         torusActor = vtk.vtkActor()
         torusActor.SetMapper(torusMapper)
@@ -1517,10 +1517,10 @@ class Viewer(wx.Panel):
 
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
-                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
+                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([51/255,176/255,102/255])
                         self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
                     else:
-                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([114/255,153/255,179/255])
+                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
                         self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
                 else:
                     self.ren.RemoveActor(self.y_actor)
