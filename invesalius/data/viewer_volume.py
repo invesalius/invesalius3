@@ -1521,7 +1521,7 @@ class Viewer(wx.Panel):
                         self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
                     else:
                         self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
-                        self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
+                        self.obj_projection_arrow_actor.GetProperty().SetColor([240/255,146/255,105/255])
                 else:
                     self.ren.RemoveActor(self.y_actor)
 
