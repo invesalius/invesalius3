@@ -19,6 +19,8 @@
 
 from math import sin, cos
 import numpy as np
+import queue
+import threading
 
 import invesalius.data.bases as db
 import invesalius.data.transformations as tr
@@ -28,8 +30,16 @@ from time import sleep
 from random import uniform
 from invesalius.pubsub import pub as Publisher
 
+class TrackerCoordinates():
+    def __init__(self):
+        self.coord = None
+        self.markers_flag = False
+
+    def GetCoordinates(self):
+        return self.coord, self.markers_flag
+
 #TODO: create a thread to get coordinates. Invesalius will get the coord from another class, updated by the thread
-def GetCoordinates(trck_init, trck_id, ref_mode):
+def GetCoordinatesFromThread(trck_init, trck_id, ref_mode):
 
     """
     Read coordinates from spatial tracking devices using
@@ -494,17 +504,20 @@ def dynamic_reference_m(probe, reference):
 
 
 def HybridCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinates(trk_init[0], trk_init[2], ref_mode)
+    coord_tracker, markers_flag = GetCoordinatesFromThread(trk_init[0], trk_init[2], ref_mode)
     coord_robot, _ = ElfinCoord(trk_init[1:])
 
     probe_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[0])
     ref_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[1])
+    obj_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[2])
 
     if probe_tracker_in_robot is None:
-        print("popup error message")
+        #print("popup error message")
         probe_tracker_in_robot = coord_tracker[0]
         ref_tracker_in_robot = coord_tracker[1]
-    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot]), markers_flag
+        obj_tracker_in_robot = coord_tracker[2]
+
+    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot, obj_tracker_in_robot]), markers_flag
 
 
 def dynamic_reference_m2(probe, reference):
@@ -570,3 +583,18 @@ def offset_coordinate(p_old, norm_vec, offset):
     """
     p_offset = p_old - offset * norm_vec
     return p_offset
+
+class ReceiveCoordinates(threading.Thread):
+    def __init__(self, trck_init, trck_id, TrackerCoordinates, event):
+        threading.Thread.__init__(self, name='ReceiveCoordinates')
+        self.trck_init = trck_init
+        self.trck_id = trck_id
+        self.event = event
+        self.TrackerCoordinates = TrackerCoordinates
+
+    def run(self):
+        while not self.event.is_set():
+            coord_raw, markers_flag = GetCoordinatesFromThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
+            self.TrackerCoordinates.coord = coord_raw
+            self.TrackerCoordinates.markers_flag = markers_flag
+            sleep(0.1)

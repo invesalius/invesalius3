@@ -3267,6 +3267,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
+        self.TrackerCoordinates = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
@@ -3479,7 +3480,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
 
         if self.trk_init and self.tracker_id:
-            coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
+            coord_raw, markers_flag = self.TrackerCoordinates.GetCoordinates()
             if self.obj_ref_id and btn_id == 4:
                 if self.tracker_id == const.HYBRID:
                     trck_init_robot = self.trk_init[1][0]
@@ -3546,8 +3547,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         import invesalius.project as prj
 
         self.m_change = nav_prop[0]
-        self.tracker_id = nav_prop[1]
-        self.trk_init = nav_prop[2]
+        self.tracker = nav_prop[1]
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3703,7 +3703,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def GetCurrentCoord(self):
-        coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
         return coord[:3]
 
@@ -4243,7 +4243,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class CreateTransformationMatrixRobot(wx.Dialog):
-    def __init__(self, nav_prop, title=_("Create transformation matrix to robot space")):
+    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -4255,7 +4255,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.robot_coord = []
         self.robot_angles = []
 
-        self.trk_init = nav_prop
+        self.tracker = tracker
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
@@ -4366,12 +4366,13 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        coord_raw_tracker, markers_flag = dco.GetCoordinates(self.trk_init[0], self.trk_init[2], const.DYNAMIC_REF)
-        trck_init_robot = self.trk_init[1][0]
-        coord_raw_robot = trck_init_robot.Run()
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw_robot = coord_raw[2]
+        coord_raw_tracker_obj = coord_raw[3]
+
         if markers_flag[2]:
-            self.tracker_coord.append(coord_raw_tracker[2][:3])
-            self.tracker_angles.append(coord_raw_tracker[2][3:])
+            self.tracker_coord.append(coord_raw_tracker_obj[:3])
+            self.tracker_angles.append(coord_raw_tracker_obj[3:])
             self.robot_coord.append(coord_raw_robot[:3])
             self.robot_angles.append(coord_raw_robot[3:])
             self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
