@@ -140,7 +140,11 @@ class LoadDicom:
             image_helper = gdcm.ImageHelper()
             data_dict["spacing"] = image_helper.GetSpacingValue(reader.GetFile())
             if ds.FindDataElement(tag):
-                encoding_value = str(ds.GetDataElement(tag).GetValue()).split("\\")[0]
+                data_element = ds.GetDataElement(tag)
+                if data_element.IsEmpty():
+                    encoding_value = "ISO_IR 100"
+                else:
+                    encoding_value = str(ds.GetDataElement(tag).GetValue()).split("\\")[0]
 
                 if encoding_value.startswith("Loaded"):
                     encoding = "ISO_IR 100"
