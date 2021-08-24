@@ -307,7 +307,6 @@ class Navigation():
         self.correg = None
         self.current_coord = 0, 0, 0
         self.target = None
-        self.trigger = None
         self.serial_port_enabled = False
         self.obj_reg = None
         self.track_obj = False
@@ -415,7 +414,6 @@ class Navigation():
         if not errors:
             #TODO: Test the trigger thread
             if self.serial_port_enabled:
-                # self.trigger = trig.Trigger(nav_id)
                 jobs_list.append(trig.TriggerNew(self.serial_port_queue, self.event, self.sleep_nav))
 
             if self.view_tracts:
