@@ -502,10 +502,9 @@ class Tracker():
             else:
                 self.tracker_id = new_tracker
                 self.tracker_connected = True
-                dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates, self.event).start()
 
-            Publisher.sendMessage('Update tracker initializer',
-                                nav_prop=(self.tracker_id, self.trk_init, self.TrackerCoordinates, self.ref_mode_id))
+            #Publisher.sendMessage('Update tracker initializer',
+            #                    nav_prop=(self.tracker_id, self.trk_init, self.TrackerCoordinates, self.ref_mode_id))
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -665,13 +664,13 @@ class Robot():
         Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
         Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
 
-    def OnRobotConnection(self, tracker):
+    def OnRobotConnection(self, tracker, robotcoordinates):
         if not tracker.trk_init[0][0] or not tracker.trk_init[1][0]:
             dlg.ShowNavigationTrackerWarning(tracker.tracker_id, tracker.trk_init[1])
             tracker.tracker_id = 0
             tracker.tracker_connected = False
         else:
-            tracker.trk_init.append(self.robot_coord_queue)
+            tracker.trk_init.append(robotcoordinates)
             self.process_tracker = elfin_process.TrackerProcessing()
             dlg_correg_robot = dlg.CreateTransformationMatrixRobot(tracker)
             if dlg_correg_robot.ShowModal() == wx.ID_OK:
@@ -687,11 +686,12 @@ class Robot():
 
         Publisher.sendMessage('Update tracker initializer',
                               nav_prop=(tracker.tracker_id, tracker.trk_init, tracker.TrackerCoordinates, tracker.ref_mode_id))
+        sleep(1)
 
-    def StartRobotNavigation(self, tracker, coord_queue, robot_event):
+    def StartRobotNavigation(self, tracker, robotcoordinates, coord_queue, robot_event):
         self.robot_coord_queue.clear()
         # self.robot_coord_queue.join()
-        elfin_process.ControlRobot(self.trk_init, tracker,
+        elfin_process.ControlRobot(self.trk_init, tracker, robotcoordinates,
                                    [self.robot_coord_queue, coord_queue, self.robottarget_queue,
                                     self.objattarget_queue],
                                    self.process_tracker, robot_event).start()
@@ -736,6 +736,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation = Navigation()
         self.icp = ICP()
         self.robot = Robot()
+        self.robotcoordinates = elfin_process.RobotCoordinates()
 
         self.nav_status = False
 
@@ -1019,19 +1020,26 @@ class NeuronavigationPanel(wx.Panel):
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
     def OnChooseTracker(self, evt, ctrl):
-        Publisher.sendMessage('Update status text in GUI',
-                              label=_("Configuring tracker ..."))
+        #Publisher.sendMessage('Update status text in GUI',
+        #                      label=_("Configuring tracker ..."))
         if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
             choice = None
 
         self.tracker.SetTracker(choice)
+        sleep(5)
+        dco.ReceiveCoordinates(self.tracker.trk_init, self.tracker.tracker_id,
+                               self.tracker.TrackerCoordinates, self.navigation.event).start()
+        sleep(5)
+
         if self.tracker.tracker_id == const.HYBRID:
             self.robot.SetRobotQueues([self.navigation.robot_coord_queue,
-                                      self.navigation.robottarget_queue,
-                                      self.navigation.objattarget_queue])
-            self.robot.OnRobotConnection(self.tracker)
+                                       self.navigation.robottarget_queue,
+                                       self.navigation.objattarget_queue])
+            self.robot.OnRobotConnection(self.tracker, self.robotcoordinates)
+            self.robot.StartRobotNavigation(self.tracker, self.robotcoordinates,
+                                            self.navigation.coord_queue, self.navigation.robot_event)
 
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -1117,8 +1125,6 @@ class NeuronavigationPanel(wx.Panel):
                 btn_c.Enable(False)
 
             self.navigation.StartNavigation(self.tracker)
-            if self.tracker.tracker_id == const.HYBRID:
-                self.robot.StartRobotNavigation(self.tracker, self.navigation.coord_queue, self.navigation.robot_event)
 
             if not self.UpdateFiducialRegistrationError():
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok

@@ -152,15 +152,22 @@ class TrackerProcessing:
         return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
                     angles[2]
 
+class RobotCoordinates():
+    def __init__(self):
+        self.coord = None
+
+    def GetRobotCoordinates(self):
+        return self.coord
 
 class ControlRobot(threading.Thread):
-    def __init__(self, trck_init, tracker, queues, process_tracker, event):
+    def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event):
         threading.Thread.__init__(self, name='ControlRobot')
 
         self.trck_init_robot = trck_init[1][0]
         self.trck_init_tracker = trck_init[0]
         self.trk_id = trck_init[2]
         self.tracker = tracker
+        self.robotcoordinates = robotcoordinates
         self.robot_tracker_flag = False
         self.target_flag = False
         self.m_change_robot2ref = None
@@ -189,10 +196,12 @@ class ControlRobot(threading.Thread):
             coord_robot_raw = self.trck_init_robot.Run()
             coord_robot = np.array(coord_robot_raw)
             coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
-            try:
-                self.robot_coord_queue.put_nowait(coord_robot)
-            except queue.Full:
-                pass
+
+            self.robotcoordinates.coord = coord_robot
+            # try:
+            #     self.robot_coord_queue.put_nowait(coord_robot)
+            # except queue.Full:
+            #     pass
 
             #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, const.MTC, const.DEFAULT_REF_MODE)
             #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)

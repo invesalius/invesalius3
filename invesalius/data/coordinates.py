@@ -181,11 +181,14 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
 def ElfinCoord(trck_init):
-    robot_coord_queue = trck_init[-1]
-    if robot_coord_queue.empty():
-        coord = np.array([0, 0, 0, 0, 0, 0])
+    if len(trck_init) > 2:
+        robotcoordinates = trck_init[-1]
+        if robotcoordinates.coord is None:
+            coord = np.array([0, 0, 0, 0, 0, 0])
+        else:
+            coord = robotcoordinates.coord
     else:
-        coord = robot_coord_queue.get()
+        coord = np.array([0, 0, 0, 0, 0, 0])
 
     return coord, None
 
