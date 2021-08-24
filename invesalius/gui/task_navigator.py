@@ -215,13 +215,13 @@ class InnerFoldPanel(wx.Panel):
         checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
         self.checkcamera = checkcamera
 
-        # Check box for trigger monitoring to create markers from serial port
-        tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
-        checktrigger = wx.CheckBox(self, -1, _('Ext. trigger'))
-        checktrigger.SetToolTip(tooltip)
-        checktrigger.SetValue(False)
-        checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.OnExternalTrigger, ctrl=checktrigger))
-        self.checktrigger = checktrigger
+        # Check box to create markers from serial port
+        tooltip = wx.ToolTip(_("Enable serial port communication for creating markers"))
+        checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
+        checkbox_serial_port.SetToolTip(tooltip)
+        checkbox_serial_port.SetValue(False)
+        checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPortCommunication, ctrl=checkbox_serial_port))
+        self.checkbox_serial_port = checkbox_serial_port
 
         # Check box for object position and orientation update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Show and track TMS coil"))
@@ -234,12 +234,12 @@ class InnerFoldPanel(wx.Panel):
 
         #  if sys.platform != 'win32':
         self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        checkbox_serial_port.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
-        line_sizer.Add(checktrigger, 0, wx.ALIGN_CENTER)
+        line_sizer.Add(checkbox_serial_port, 0, wx.ALIGN_CENTER)
         line_sizer.Add(checkobj, 0, wx.RIGHT | wx.LEFT, 5)
         line_sizer.Fit(self)
 
@@ -270,15 +270,15 @@ class InnerFoldPanel(wx.Panel):
 
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
-            self.checktrigger.Enable(False)
+            self.checkbox_serial_port.Enable(False)
             self.checkobj.Enable(False)
         else:
-            self.checktrigger.Enable(True)
+            self.checkbox_serial_port.Enable(True)
             if self.track_obj:
                 self.checkobj.Enable(True)
 
-    def OnExternalTrigger(self, evt, ctrl):
-        Publisher.sendMessage('Update trigger state', trigger_state=ctrl.GetValue())
+    def OnEnableSerialPortCommunication(self, evt, ctrl):
+        Publisher.sendMessage('Update serial port communication', serial_port_enabled=ctrl.GetValue())
 
     def OnShowObject(self, evt=None, flag=None, obj_name=None, polydata=None):
         if not evt:
@@ -308,7 +308,7 @@ class Navigation():
         self.current_coord = 0, 0, 0
         self.target = None
         self.trigger = None
-        self.trigger_state = False
+        self.serial_port_enabled = False
         self.obj_reg = None
         self.track_obj = False
         self.m_change = None
@@ -318,7 +318,7 @@ class Navigation():
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
-        self.trigger_queue = QueueCustom(maxsize=1)
+        self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
         self.tracts_queue = QueueCustom(maxsize=1)
 
@@ -365,8 +365,8 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
-        vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue]
+        vis_components = [self.serial_port_enabled, self.view_tracts, self.peel_loaded]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
@@ -414,9 +414,9 @@ class Navigation():
 
         if not errors:
             #TODO: Test the trigger thread
-            if self.trigger_state:
+            if self.serial_port_enabled:
                 # self.trigger = trig.Trigger(nav_id)
-                jobs_list.append(trig.TriggerNew(self.trigger_queue, self.event, self.sleep_nav))
+                jobs_list.append(trig.TriggerNew(self.serial_port_queue, self.event, self.sleep_nav))
 
             if self.view_tracts:
                 # initialize Trekker parameters
@@ -450,9 +450,10 @@ class Navigation():
         self.coord_queue.clear()
         self.coord_queue.join()
 
-        if self.trigger_state:
-            self.trigger_queue.clear()
-            self.trigger_queue.join()
+        if self.serial_port_enabled:
+            self.serial_port_queue.clear()
+            self.serial_port_queue.join()
+
         if self.view_tracts:
             self.coord_tracts_queue.clear()
             self.coord_tracts_queue.join()
@@ -460,7 +461,7 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.trigger_state, self.view_tracts,  self.peel_loaded]
+        vis_components = [self.serial_port_enabled, self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
 
@@ -800,7 +801,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
         Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
-        Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
+        Publisher.subscribe(self.UpdateSerialPortCommunication, 'Update serial port communication')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
@@ -919,8 +920,8 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
         self.navigation.track_obj = flag
 
-    def UpdateTriggerState(self, trigger_state):
-        self.navigation.trigger_state = trigger_state
+    def UpdateSerialPortCommunication(self, serial_port_enabled):
+        self.navigation.serial_port_enabled = serial_port_enabled
 
     def ResetICP(self):
         self.icp.ResetICP()
@@ -2281,8 +2282,8 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.trigger_state, self.view_tracts, self.peel_loaded = vis_components
-        self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue = vis_queues
+        self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
 
@@ -2306,11 +2307,11 @@ class UpdateNavigationScene(threading.Thread):
                     # wx.CallAfter(Publisher.sendMessage, 'Update marker offset', coord_offset=coord_offset)
                     self.tracts_queue.task_done()
 
-                if self.trigger_state:
-                    trigger_on = self.trigger_queue.get_nowait()
+                if self.serial_port_enabled:
+                    trigger_on = self.serial_port_queue.get_nowait()
                     if trigger_on:
                         wx.CallAfter(Publisher.sendMessage, 'Create marker')
-                    self.trigger_queue.task_done()
+                    self.serial_port_queue.task_done()
 
                 #TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
                 # see the red cross in the position of the offset marker
