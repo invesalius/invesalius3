@@ -220,7 +220,7 @@ class InnerFoldPanel(wx.Panel):
         checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
         checkbox_serial_port.SetToolTip(tooltip)
         checkbox_serial_port.SetValue(False)
-        checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPortCommunication, ctrl=checkbox_serial_port))
+        checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port))
         self.checkbox_serial_port = checkbox_serial_port
 
         # Check box for object position and orientation update in volume rendering during navigation
@@ -277,8 +277,15 @@ class InnerFoldPanel(wx.Panel):
             if self.track_obj:
                 self.checkobj.Enable(True)
 
-    def OnEnableSerialPortCommunication(self, evt, ctrl):
-        Publisher.sendMessage('Update serial port communication', serial_port_enabled=ctrl.GetValue())
+    def OnEnableSerialPort(self, evt, ctrl):
+        com_port = None
+        if ctrl.GetValue():
+            from wx import ID_OK
+            dlg_port = dlg.SetCOMport()
+            if dlg_port.ShowModal() == ID_OK:
+                com_port = dlg_port.GetValue()
+
+        Publisher.sendMessage('Update serial port', serial_port=com_port)
 
     def OnShowObject(self, evt=None, flag=None, obj_name=None, polydata=None):
         if not evt:
@@ -307,7 +314,6 @@ class Navigation():
         self.correg = None
         self.current_coord = 0, 0, 0
         self.target = None
-        self.serial_port_enabled = False
         self.obj_reg = None
         self.track_obj = False
         self.m_change = None
@@ -333,6 +339,17 @@ class Navigation():
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
         self.sleep_nav = const.SLEEP_NAVIGATION
+
+        # Serial port
+        self.serial_port = None
+        self.serial_port_connection = None
+
+    def UpdateSleep(self, sleep):
+        self.sleep_nav = sleep
+        self.serial_port_connection.sleep_nav = sleep
+
+    def SerialPortEnabled(self):
+        return self.serial_port is not None
 
     def SetImageFiducial(self, fiducial_index, coord):
         self.image_fiducials[fiducial_index, :] = coord
@@ -364,7 +381,7 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.serial_port_enabled, self.view_tracts, self.peel_loaded]
+        vis_components = [self.SerialPortEnabled(), self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -413,14 +430,15 @@ class Navigation():
 
         if not errors:
             #TODO: Test the serial port thread
-            if self.serial_port_enabled:
-
-                serial_port_connection = spc.SerialPortConnection(
+            if self.SerialPortEnabled():
+                self.serial_port_connection = spc.SerialPortConnection(
+                    self.serial_port,
                     self.serial_port_queue,
                     self.event,
                     self.sleep_nav,
                 )
-                jobs_list.append(serial_port_connection)
+                self.serial_port_connection.Connect()
+                jobs_list.append(self.serial_port_connection)
 
             if self.view_tracts:
                 # initialize Trekker parameters
@@ -454,7 +472,9 @@ class Navigation():
         self.coord_queue.clear()
         self.coord_queue.join()
 
-        if self.serial_port_enabled:
+        if self.SerialPortEnabled():
+            self.serial_port_connection.join()
+
             self.serial_port_queue.clear()
             self.serial_port_queue.join()
 
@@ -465,7 +485,7 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.serial_port_enabled, self.view_tracts,  self.peel_loaded]
+        vis_components = [self.serial_port_connection.Enabled(), self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
 
@@ -805,7 +825,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
         Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
-        Publisher.subscribe(self.UpdateSerialPortCommunication, 'Update serial port communication')
+        Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
@@ -892,7 +912,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.seed_radius = data
 
     def UpdateSleep(self, data):
-        self.navigation.sleep_nav = data
+        self.navigation.UpdateSleep(data)
 
     def UpdateNumberThreads(self, data):
         self.navigation.n_threads = data
@@ -924,8 +944,8 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
         self.navigation.track_obj = flag
 
-    def UpdateSerialPortCommunication(self, serial_port_enabled):
-        self.navigation.serial_port_enabled = serial_port_enabled
+    def UpdateSerialPort(self, serial_port):
+        self.navigation.serial_port = serial_port
 
     def ResetICP(self):
         self.icp.ResetICP()
