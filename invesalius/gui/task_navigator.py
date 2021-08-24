@@ -54,11 +54,11 @@ if has_trekker:
 
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
 import invesalius.data.trackers as dt
 import invesalius.data.tractography as dti
 import invesalius.data.transformations as tr
-import invesalius.data.trigger as trig
 import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
@@ -412,9 +412,15 @@ class Navigation():
                                                                     self.event, self.sleep_nav))
 
         if not errors:
-            #TODO: Test the trigger thread
+            #TODO: Test the serial port thread
             if self.serial_port_enabled:
-                jobs_list.append(trig.TriggerNew(self.serial_port_queue, self.event, self.sleep_nav))
+
+                serial_port_connection = spc.SerialPortConnection(
+                    self.serial_port_queue,
+                    self.event,
+                    self.sleep_nav,
+                )
+                jobs_list.append(serial_port_connection)
 
             if self.view_tracts:
                 # initialize Trekker parameters
