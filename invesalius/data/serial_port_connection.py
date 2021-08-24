@@ -18,7 +18,7 @@
 #--------------------------------------------------------------------------
 
 import threading
-from time import sleep
+import time
 
 import wx
 from invesalius.pubsub import pub as Publisher
@@ -30,57 +30,40 @@ class SerialPortConnection(threading.Thread):
         """
         Thread created to communicate using the serial port to interact with software during neuronavigation.
         """
-
         threading.Thread.__init__(self, name='Serial port')
 
         self.serial_port = None
         self.stylusplh = False
-        # self.COM = False
-        # self.__bind_events()
+
         try:
             import serial
-
             self.serial_port = serial.Serial('COM5', baudrate=115200, timeout=0)
-            # self.COM = True
-
         except:
-            #wx.MessageBox(_('Connection with port COM1 failed'), _('Communication error'), wx.OK | wx.ICON_ERROR)
             print("Serial port init error: Connection with port COM failed")
-            # self.COM = False
-            pass
 
-        # self.coord_queue = coord_queue
         self.serial_port_queue = serial_port_queue
         self.event = event
         self.sle = sle
 
     def run(self):
-
         while not self.event.is_set():
             trigger_on = False
             try:
                 self.serial_port.write(b'0')
-                sleep(0.3)
+                time.sleep(0.3)
+
                 lines = self.serial_port.readlines()
-                # Following lines can simulate a trigger in 3 sec repetitions
-                # sleep(3)
-                # lines = True
                 if lines:
                     trigger_on = True
-                    # wx.CallAfter(Publisher.sendMessage, 'Create marker')
 
                 if self.stylusplh:
                     trigger_on = True
-                    # wx.CallAfter(Publisher.sendMessage, 'Create marker')
                     self.stylusplh = False
 
                 self.serial_port_queue.put_nowait(trigger_on)
-                sleep(self.sle)
-
+                time.sleep(self.sle)
             except:
                 print("Trigger not read, error")
-                pass
-
         else:
             if self.serial_port:
                 self.serial_port.close()
