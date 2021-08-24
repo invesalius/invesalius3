@@ -198,15 +198,15 @@ class ControlRobot(threading.Thread):
             coord_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker_ref)
             coord_tracker_obj = coord_raw[2]
 
-            if self.robottarget_queue.empty():
-                None
-            else:
+            try:
                 self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
+            except queue.Empty:
+                pass
 
-            if self.objattarget_queue.empty():
-                None
-            else:
+            try:
                 self.target_flag = self.objattarget_queue.get_nowait()
+            except queue.Empty:
+                pass
 
             current_ref_filtered = [0]
             if self.robot_tracker_flag:
