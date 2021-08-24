@@ -239,7 +239,7 @@ class transform_tracker_2_robot(object):
     M_tracker_2_robot = None
     def transformation_tracker_2_robot(self, tracker_coord):
         if transform_tracker_2_robot.M_tracker_2_robot is None:
-            #print("matrix tracker2robot is not define")
+            print("matrix tracker2robot is not define")
             return None
         else:
             trans = tr.translation_matrix(tracker_coord[:3])

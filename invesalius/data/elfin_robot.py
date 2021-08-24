@@ -154,13 +154,12 @@ class TrackerProcessing:
 
 
 class ControlRobot(threading.Thread):
-    def __init__(self, trck_init, tracker, queues, process_tracker, event):
+    def __init__(self, trck_init, queues, process_tracker, event):
         threading.Thread.__init__(self, name='ControlRobot')
 
         self.trck_init_robot = trck_init[1][0]
         self.trck_init_tracker = trck_init[0]
         self.trk_id = trck_init[2]
-        self.tracker = tracker
         self.robot_tracker_flag = False
         self.target_flag = False
         self.m_change_robot2ref = None
@@ -185,7 +184,6 @@ class ControlRobot(threading.Thread):
 
         while not self.event.is_set():
             #start = time()
-            #TODO: criar class igual coordinates
             coord_robot_raw = self.trck_init_robot.Run()
             coord_robot = np.array(coord_robot_raw)
             coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
@@ -195,12 +193,11 @@ class ControlRobot(threading.Thread):
                 pass
 
             #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, const.MTC, const.DEFAULT_REF_MODE)
-            #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)
-            coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+            coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)
             coord_tracker_ref = coord_raw[1]
             coord_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker_ref)
-            #coord_tracker_obj = coord_raw[2]
-            print(coord_robot, coord_tracker_ref)
+            coord_tracker_obj = coord_raw[2]
+
             if self.robottarget_queue.empty():
                 None
             else:
@@ -241,7 +238,6 @@ class ControlRobot(threading.Thread):
             if not self.robottarget_queue.empty():
                 self.robottarget_queue.task_done()
 
-            #sleep(0.05)
             # with open('data_robot_and_tracker.csv', 'a', newline='') as csv_file:
             #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
             #
