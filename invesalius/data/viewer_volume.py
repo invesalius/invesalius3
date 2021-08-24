@@ -174,7 +174,7 @@ class Viewer(wx.Panel):
         self.z_actor = None
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
-        self.object_orientation_disk_actor = None
+        self.object_orientation_torus_actor = None
 
         self._mode_cross = False
         self._to_show_ball = 0
@@ -199,11 +199,6 @@ class Viewer(wx.Panel):
         self.actor_tracts = None
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
-
-        # initialize Trekker parameters
-        slic = sl.Slice()
-        affine = slic.affine
-        self.affine_vtk = vtku.numpy_to_vtkMatrix4x4(affine)
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -242,9 +237,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, 'Load slice plane')
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
-        # Publisher.subscribe(self.SetVolumeCamera, 'Update cross position')
-        # Publisher.subscribe(self.SetVolumeCamera, 'Co-registered points')
-        # Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
+
         Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
         Publisher.subscribe(self.enable_style, 'Enable style')
@@ -273,8 +266,6 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-        # Publisher.subscribe(self.UpdateCameraBallPosition,
-        #                     'Update cross position')
         Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
@@ -618,16 +609,16 @@ class Viewer(wx.Panel):
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(colour[0:3])
+        prop.SetColor(colour)
 
-        #adding a new actor for the present ball
+        # adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
 
         self.staticballs[self.ball_id].SetMapper(mapper)
         self.staticballs[self.ball_id].SetProperty(prop)
 
         self.ren.AddActor(self.staticballs[self.ball_id])
-        self.ball_id = self.ball_id + 1
+        self.ball_id += 1
 
         #self.UpdateRender()
         self.Refresh()
@@ -640,10 +631,8 @@ class Viewer(wx.Panel):
         :return: vtkActor
         """
 
-        # x, y, z = coord
-
         ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(2)
+        ball_ref.SetRadius(1.5)
         ball_ref.SetCenter(coord)
 
         mapper = vtk.vtkPolyDataMapper()
@@ -655,7 +644,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
-        actor.GetProperty().SetOpacity(.5)
+        actor.GetProperty().SetOpacity(1.)
 
         # ren.AddActor(actor)
 
@@ -1327,17 +1316,18 @@ class Viewer(wx.Panel):
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
         self.obj_projection_arrow_actor = self.Add_ObjectArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
-                                                               15)
-        self.object_orientation_disk_actor = self.Add_Object_Orientation_Disk([0., 0., 0.], [0., 0., 0.],
-                                                                              vtk_colors.GetColor3d('Red'))
+                                                               8)
+        self.object_orientation_torus_actor = self.Add_Torus([0., 0., 0.], [0., 0., 0.],
+                                                             vtk_colors.GetColor3d('Red'))
+
         #self.obj_projection_arrow_actor.SetVisibility(False)
-        #self.object_orientation_disk_actor.SetVisibility(False)
+        #self.object_orientation_torus_actor.SetVisibility(False)
         self.ren.AddActor(self.obj_actor)
         self.ren.AddActor(self.x_actor)
         self.ren.AddActor(self.y_actor)
         self.ren.AddActor(self.z_actor)
         #self.ren.AddActor(self.obj_projection_arrow_actor)
-        #self.ren.AddActor(self.object_orientation_disk_actor)
+        #self.ren.AddActor(self.object_orientation_torus_actor)
         # self.obj_axes = vtk.vtkAxesActor()
         # self.obj_axes.SetShaftTypeToCylinder()
         # self.obj_axes.SetXAxisLabelText("x")
@@ -1367,10 +1357,36 @@ class Viewer(wx.Panel):
 
         return disk_actor
 
+    def Add_Torus(self, position, orientation, color=[0.0, 0.0, 1.0]):
+        torus = vtk.vtkParametricTorus()
+        torus.SetRingRadius(2)
+        torus.SetCrossSectionRadius(1)
+
+        torusSource = vtk.vtkParametricFunctionSource()
+        torusSource.SetParametricFunction(torus)
+        torusSource.Update()
+
+        torusMapper = vtk.vtkPolyDataMapper()
+        torusMapper.SetInputConnection(torusSource.GetOutputPort())
+        torusMapper.SetScalarRange(0, 360)
+
+        torusActor = vtk.vtkActor()
+        torusActor.SetMapper(torusMapper)
+        torusActor.GetProperty().SetDiffuseColor(color)
+        torusActor.SetPosition(position)
+        torusActor.SetOrientation(orientation)
+
+        return torusActor
+
     def Add_ObjectArrow(self, direction, orientation, color=[0.0, 0.0, 1.0], size=2):
         vtk_colors = vtk.vtkNamedColors()
 
         arrow = vtk.vtkArrowSource()
+        arrow.SetTipResolution(40)
+        arrow.SetShaftResolution(40)
+        arrow.SetShaftRadius(0.05)
+        arrow.SetTipRadius(0.15)
+        arrow.SetTipLength(0.35)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(arrow.GetOutputPort())
@@ -1421,10 +1437,14 @@ class Viewer(wx.Panel):
     def AddPeeledSurface(self, flag, actor):
         if self.actor_peel:
             self.ren.RemoveActor(self.actor_peel)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.actor_peel = None
         if flag and actor:
             self.ren.AddActor(actor)
             self.actor_peel = actor
+            self.ren.AddActor(self.object_orientation_torus_actor)
+            self.ren.AddActor(self.obj_projection_arrow_actor)
         self.Refresh()
 
     def GetPeelCenters(self, centers, normals):
@@ -1476,27 +1496,27 @@ class Viewer(wx.Panel):
 
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
-                    self.ren.AddActor(self.object_orientation_disk_actor)
+                    self.ren.AddActor(self.object_orientation_torus_actor)
 
                     self.obj_projection_arrow_actor.SetPosition(closestPoint)
                     self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
-                    self.object_orientation_disk_actor.SetPosition(closestPoint)
-                    self.object_orientation_disk_actor.SetOrientation(coil_dir)
+                    self.object_orientation_torus_actor.SetPosition(closestPoint)
+                    self.object_orientation_torus_actor.SetOrientation(coil_dir)
 
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
-                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Green'))
+                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([51/255,176/255,102/255])
+                        self.obj_projection_arrow_actor.GetProperty().SetColor([55/255,120/255,163/255])
                     else:
-                        self.object_orientation_disk_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(vtk_colors.GetColor3d('indian_red'))
+                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
+                        self.obj_projection_arrow_actor.GetProperty().SetColor([240/255,146/255,105/255])
                 else:
                     self.ren.RemoveActor(self.y_actor)
 
         else:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_disk_actor)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.x_actor)
             #self.ren.RemoveActor(self.y_actor)
         self.Refresh()
@@ -1512,7 +1532,7 @@ class Viewer(wx.Panel):
                 self.x_actor.SetVisibility(self.obj_state)
                 self.y_actor.SetVisibility(self.obj_state)
                 self.z_actor.SetVisibility(self.obj_state)
-                #self.object_orientation_disk_actor.SetVisibility(self.obj_state)
+                #self.object_orientation_torus_actor.SetVisibility(self.obj_state)
                 #self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
         self.Refresh()
 
@@ -1573,7 +1593,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.x_actor)
             #self.ren.RemoveActor(self.y_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_disk_actor)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
@@ -1591,14 +1611,14 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.z_actor)
                 self.ren.RemoveActor(self.mark_actor)
                 self.ren.RemoveActor(self.obj_projection_arrow_actor)
-                self.ren.RemoveActor(self.object_orientation_disk_actor)
+                self.ren.RemoveActor(self.object_orientation_torus_actor)
                 self.obj_actor = None
                 self.x_actor = None
                 self.y_actor = None
                 self.z_actor = None
                 self.mark_actor = None
                 self.obj_projection_arrow_actor = None
-                self.object_orientation_disk_actor=None
+                self.object_orientation_torus_actor=None
         self.Refresh()
 
     def UpdateShowObjectState(self, state):

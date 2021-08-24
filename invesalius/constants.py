@@ -659,6 +659,8 @@ BOOLEAN_XOR = 4
 
 MARKER_COLOUR = (1.0, 1.0, 0.)
 MARKER_SIZE = 2
+FIDUCIAL_REGISTRATION_ERROR_THRESHOLD = 3.0
+
 SELECT = 0
 MTC = 1
 FASTRAK = 2
@@ -774,14 +776,14 @@ MTC_PROBE_NAME = "1Probe"
 MTC_REF_NAME = "2Ref"
 MTC_OBJ_NAME = "3Coil"
 
-#OBJECT TRACKING
+# Object tracking
 ARROW_SCALE = 6
 ARROW_UPPER_LIMIT = 15
 #COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
 COIL_ANGLES_THRESHOLD = 3
 COIL_COORD_THRESHOLD = 3
 TIMESTAMP = 2.0
-COIL_ANGLE_ARROW_PROJECTION_THRESHOLD = 10
+COIL_ANGLE_ARROW_PROJECTION_THRESHOLD = 5
 
 CAM_MODE = True
 
@@ -801,6 +803,9 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
                   'max_interval': 1, 'min_radius_curv': 0.8, 'probe_length': 0.4,
                   'write_interval': 50, 'numb_threads': '', 'max_lenth': 200,
                   'min_lenth': 20, 'max_sampling_step': 100}
+
+WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") + "|" +\
+                        _("Marker files (*.mks)|*.mks")
 
 ROBOT_ElFIN_IP = ['Select robot IP:', '143.107.220.251', '169.254.153.251', '127.0.0.1']
 ROBOT_ElFIN_PORT = 10003

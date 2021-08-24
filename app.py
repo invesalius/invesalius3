@@ -359,12 +359,6 @@ def use_cmd_optargs(options, args):
         session = ses.Session()
         session.debug = 1
 
-    # If use-pedal argument...
-    if options.use_pedal:
-        from invesalius.net.pedal_connection import PedalConnection
-
-        PedalConnection().start()
-
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
@@ -511,6 +505,11 @@ def main():
 
         remote_control = RemoteControl(options.remote_host)
         remote_control.connect()
+
+    if options.use_pedal:
+        from invesalius.net.pedal_connection import PedalConnection
+
+        PedalConnection().start()
 
     if options.no_gui:
         non_gui_startup(options, args)
