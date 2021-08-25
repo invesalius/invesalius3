@@ -485,7 +485,7 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.serial_port_connection.Enabled(), self.view_tracts,  self.peel_loaded]
+        vis_components = [self.SerialPortEnabled(), self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
 

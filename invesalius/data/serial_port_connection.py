@@ -40,9 +40,6 @@ class SerialPortConnection(threading.Thread):
         self.event = event
         self.sleep_nav = sleep_nav
 
-    def Enabled(self):
-        return self.port is not None
-
     def Connect(self):
         if self.port is None:
             print("Serial port init error: COM port is unset.")
