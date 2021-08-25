@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import queue
 import threading
 import time
 
@@ -25,6 +26,7 @@ from invesalius.pubsub import pub as Publisher
 
 
 class SerialPortConnection(threading.Thread):
+    BINARY_PULSE = b'\x01'
 
     def __init__(self, port, serial_port_queue, event, sleep_nav):
         """
@@ -54,25 +56,49 @@ class SerialPortConnection(threading.Thread):
         except:
             print("Serial port init error: Connecting to port {} failed.".format(self.port))
 
+    def SendPulse(self):
+        success = False
+        try:
+            self.connection.write(self.BINARY_PULSE)
+            success = True
+        except:
+            print("Error: Serial port could not be written into.")
+
+        return success
+
     def run(self):
         while not self.event.is_set():
             trigger_on = False
             try:
-                self.connection.write(b'0')
-                time.sleep(0.3)
-
                 lines = self.connection.readlines()
-                if lines:
-                    trigger_on = True
-
-                if self.stylusplh:
-                    trigger_on = True
-                    self.stylusplh = False
-
-                self.serial_port_queue.put_nowait(trigger_on)
-                time.sleep(self.sleep_nav)
             except:
-                print("Trigger not read, error")
+                print("Error: Serial port could not be read.")
+
+            if lines:
+                trigger_on = True
+
+            if self.stylusplh:
+                trigger_on = True
+                self.stylusplh = False
+
+            try:
+                self.serial_port_queue.put_nowait(trigger_on)
+            except queue.Full:
+                print("Error: Serial port queue full.")
+
+            time.sleep(self.sleep_nav)
+
+            # XXX: This is needed here because the serial port queue has to be read
+            #      at least as fast as it is written into, otherwise it will eventually
+            #      become full. Reading is done in another thread, which has the same
+            #      sleeping parameter sleep_nav between consecutive runs as this thread.
+            #      However, a single run of that thread takes longer to finish than a
+            #      single run of this thread, causing that thread to lag behind. Hence,
+            #      the additional sleeping here to ensure that this thread lags behind the
+            #      other thread and not the other way around. However, it would be nice to
+            #      handle the timing dependencies between the threads in a more robust way.
+            #
+            time.sleep(0.3)
         else:
             if self.connection:
                 self.connection.close()
