@@ -318,11 +318,6 @@ class Project(metaclass=Singleton):
         self.level = project["window_level"]
         self.threshold_range = project["scalar_range"]
         self.spacing = project["spacing"]
-        if project.get("affine", ""):
-            self.affine = project["affine"]
-            # self.affine = project.get("affine")
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=np.asarray(self.affine).reshape(4, 4), status=True)
 
         self.compress = project.get("compress", True)
 
@@ -331,6 +326,11 @@ class Project(metaclass=Singleton):
         self.matrix_filename = filepath
         self.matrix_shape = project["matrix"]['shape']
         self.matrix_dtype = project["matrix"]['dtype']
+
+        if project.get("affine", ""):
+            self.affine = project["affine"]
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=np.asarray(self.affine).reshape(4, 4))
 
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()

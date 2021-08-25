@@ -1242,12 +1242,12 @@ class MenuBar(wx.MenuBar):
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
 
-    def OnEnableGotoCoord(self,  affine, status):
+    def OnEnableGotoCoord(self, affine):
         """
         Disable goto coord either if there is no affine matrix or affine is wrongly imported.
         :param status: Affine matrix status
         """
-        if status:
+        if affine is not None:
             self.FindItemById(const.ID_GOTO_COORD).Enable(True)
         else:
             self.FindItemById(const.ID_GOTO_COORD).Enable(False)

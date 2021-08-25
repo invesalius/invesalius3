@@ -84,6 +84,8 @@ NDI_MAR_DIR_PROBE = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers
 NDI_MAR_DIR_REF = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700339.rom"))
 NDI_MAR_DIR_OBJ = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700338.rom"))
 
+OPTITRACK_CAL_DIR = str(INV_TOP_DIR.joinpath("navigation", "optitrack_files", "Calibration.cal"))
+OPTITRACK_USERPROFILE_DIR = str(INV_TOP_DIR.joinpath("navigation", "optitrack_files", "UserProfile.motive"))
 # MAC App
 if not os.path.exists(ICON_DIR):
     ICON_DIR = INV_TOP_DIR.parent.parent.joinpath("icons").resolve()

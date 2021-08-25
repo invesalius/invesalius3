@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,36 +15,35 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 import os
-import threading
-import tempfile
 import sys
-
+import tempfile
+import threading
 from multiprocessing import cpu_count
 
-import vtk
 import gdcm
+import vtk
+
 # Not showing GDCM warning and debug messages
 gdcm.Trace_DebugOff()
 gdcm.Trace_WarningOff()
-from invesalius.pubsub import pub as Publisher
+import glob
+import plistlib
 
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom
 import invesalius.reader.dicom_grouper as dicom_grouper
 import invesalius.session as session
-import glob
 import invesalius.utils as utils
-
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
+from invesalius.pubsub import pub as Publisher
 
-import plistlib
-
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         _has_win32api = False
@@ -79,6 +78,7 @@ def SelectLargerDicomGroup(patient_group):
 
     return larger_group
 
+
 def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
@@ -89,14 +89,16 @@ def SortFiles(filelist, dicom):
     sorter.SetZSpacingTolerance(1e-10)
     sorter.Sort(filelist)
 
-    #Getting organized image
+    # Getting organized image
     filelist = sorter.GetFilenames()
 
     return filelist
 
+
 tag_labels = {}
 main_dict = {}
 dict_file = {}
+
 
 class LoadDicom:
     def __init__(self, grouper, filepath):
@@ -109,8 +111,11 @@ class LoadDicom:
         reader = gdcm.ImageReader()
         if _has_win32api:
             try:
-                reader.SetFileName(utils.encode(win32api.GetShortPathName(self.filepath),
-                                                const.FS_ENCODE))
+                reader.SetFileName(
+                    utils.encode(
+                        win32api.GetShortPathName(self.filepath), const.FS_ENCODE
+                    )
+                )
             except TypeError:
                 reader.SetFileName(win32api.GetShortPathName(self.filepath))
         else:
@@ -118,7 +123,7 @@ class LoadDicom:
                 reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
             except TypeError:
                 reader.SetFileName(self.filepath)
-        if (reader.Read()):
+        if reader.Read():
             file = reader.GetFile()
             # Retrieve data set
             dataSet = file.GetDataSet()
@@ -133,23 +138,27 @@ class LoadDicom:
             tag = gdcm.Tag(0x0008, 0x0005)
             ds = reader.GetFile().GetDataSet()
             image_helper = gdcm.ImageHelper()
-            data_dict['spacing'] = image_helper.GetSpacingValue(reader.GetFile())
+            data_dict["spacing"] = image_helper.GetSpacingValue(reader.GetFile())
             if ds.FindDataElement(tag):
-                encoding_value = str(ds.GetDataElement(tag).GetValue()).split('\\')[0]
-                
+                data_element = ds.GetDataElement(tag)
+                if data_element.IsEmpty():
+                    encoding_value = "ISO_IR 100"
+                else:
+                    encoding_value = str(ds.GetDataElement(tag).GetValue()).split("\\")[0]
+
                 if encoding_value.startswith("Loaded"):
                     encoding = "ISO_IR 100"
                 else:
                     try:
                         encoding = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
                     except KeyError:
-                        encoding = 'ISO_IR 100'
+                        encoding = "ISO_IR 100"
             else:
                 encoding = "ISO_IR 100"
 
             # Iterate through the Header
             iterator = header.GetDES().begin()
-            while (not iterator.equal(header.GetDES().end())):
+            while not iterator.equal(header.GetDES().end()):
                 dataElement = iterator.next()
                 if not dataElement.IsUndefinedLength():
                     tag = dataElement.GetTag()
@@ -164,20 +173,20 @@ class LoadDicom:
                     if not group in data_dict.keys():
                         data_dict[group] = {}
 
-                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                    if not (utils.VerifyInvalidPListCharacter(data[1])):
                         data_dict[group][field] = utils.decode(data[1], encoding)
                     else:
                         data_dict[group][field] = "Invalid Character"
 
             # Iterate through the Data set
             iterator = dataSet.GetDES().begin()
-            while (not iterator.equal(dataSet.GetDES().end())):
+            while not iterator.equal(dataSet.GetDES().end()):
                 dataElement = iterator.next()
                 if not dataElement.IsUndefinedLength():
                     tag = dataElement.GetTag()
                     #  if (tag.GetGroup() == 0x0009 and tag.GetElement() == 0x10e3) \
-                            #  or (tag.GetGroup() == 0x0043 and tag.GetElement() == 0x1027):
-                        #  continue
+                    #  or (tag.GetGroup() == 0x0043 and tag.GetElement() == 0x1027):
+                    #  continue
                     data = stf.ToStringPair(tag)
                     stag = tag.PrintAsPipeSeparatedString()
 
@@ -189,28 +198,28 @@ class LoadDicom:
                     if not group in data_dict.keys():
                         data_dict[group] = {}
 
-                    if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = utils.decode(data[1], encoding, 'replace')
+                    if not (utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = utils.decode(
+                            data[1], encoding, "replace"
+                        )
                     else:
                         data_dict[group][field] = "Invalid Character"
 
-
             # -------------- To Create DICOM Thumbnail -----------
-
 
             try:
                 data = data_dict[str(0x028)][str(0x1050)]
-                level = [float(value) for value in data.split('\\')][0]
+                level = [float(value) for value in data.split("\\")][0]
                 data = data_dict[str(0x028)][str(0x1051)]
-                window =  [float(value) for value in data.split('\\')][0]
-            except(KeyError, ValueError):
+                window = [float(value) for value in data.split("\\")][0]
+            except (KeyError, ValueError):
                 level = None
                 window = None
 
             img = reader.GetImage()
             thumbnail_path = imagedata_utils.create_dicom_thumbnails(img, window, level)
 
-            #------ Verify the orientation --------------------------------
+            # ------ Verify the orientation --------------------------------
 
             direc_cosines = img.GetDirectionCosines()
             orientation = gdcm.Orientation()
@@ -220,41 +229,43 @@ class LoadDicom:
                 _type = orientation.GetType(direc_cosines)
             label = orientation.GetLabel(_type)
 
- 
             # ----------   Refactory --------------------------------------
-            data_dict['invesalius'] = {'orientation_label' : label}
+            data_dict["invesalius"] = {"orientation_label": label}
 
             # -------------------------------------------------------------
             dict_file[self.filepath] = data_dict
-            
-            #----------  Verify is DICOMDir -------------------------------
+
+            # ----------  Verify is DICOMDir -------------------------------
             is_dicom_dir = 1
-            try: 
-                if (data_dict[str(0x002)][str(0x002)] != "1.2.840.10008.1.3.10"): #DICOMDIR
+            try:
+                if (
+                    data_dict[str(0x002)][str(0x002)] != "1.2.840.10008.1.3.10"
+                ):  # DICOMDIR
                     is_dicom_dir = 0
-            except(KeyError):
-                    is_dicom_dir = 0
-                                        
-            if not(is_dicom_dir):
+            except (KeyError):
+                is_dicom_dir = 0
+
+            if not (is_dicom_dir):
                 parser = dicom.Parser()
-                parser.SetDataImage(dict_file[self.filepath], self.filepath, thumbnail_path)
-                
+                parser.SetDataImage(
+                    dict_file[self.filepath], self.filepath, thumbnail_path
+                )
+
                 dcm = dicom.Dicom()
-                #self.l.acquire()
+                # self.l.acquire()
                 dcm.SetParser(parser)
                 grouper.AddFile(dcm)
 
-                #self.l.release()
-        
+                # self.l.release()
 
-        #==========  used in test =======================================
-        #print dict_file
-        #main_dict = dict(
+        # ==========  used in test =======================================
+        # print dict_file
+        # main_dict = dict(
         #                data  = dict_file,
         #                labels  = tag_labels)
-        #print main_dict
-        #print "\n" 
-        #plistlib.writePlist(main_dict, ".//teste.plist")
+        # print main_dict
+        # print "\n"
+        # plistlib.writePlist(main_dict, ".//teste.plist")
 
 
 def yGetDicomGroups(directory, recursive=True, gui=True):
@@ -271,11 +282,11 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
         nfiles = len(filenames)
 
     counter = 0
-    grouper = dicom_grouper.DicomPatientGrouper() 
-    #q = Queue.Queue()
-    #l = threading.Lock()
-    #threads = []
-    #for i in xrange(cpu_count()):
+    grouper = dicom_grouper.DicomPatientGrouper()
+    # q = Queue.Queue()
+    # l = threading.Lock()
+    # threads = []
+    # for i in xrange(cpu_count()):
     #    t = LoadDicom(grouper, q, l)
     #    t.start()
     #    threads.append(t)
@@ -286,7 +297,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                 filepath = os.path.join(dirpath, name)
                 counter += 1
                 if gui:
-                    yield (counter,nfiles)
+                    yield (counter, nfiles)
                 LoadDicom(grouper, filepath)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
@@ -294,17 +305,17 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
             filepath = str(os.path.join(dirpath, name))
             counter += 1
             if gui:
-                yield (counter,nfiles)
-            #q.put(filepath)
+                yield (counter, nfiles)
+            # q.put(filepath)
 
-    #for t in threads:
+    # for t in threads:
     #    q.put(0)
 
-    #for t in threads:
+    # for t in threads:
     #    t.join()
 
-    #TODO: Is this commented update necessary?
-    #grouper.Update()
+    # TODO: Is this commented update necessary?
+    # grouper.Update()
     yield grouper.GetPatientsGroups()
 
 
@@ -321,14 +332,14 @@ class ProgressDicomReader:
         self.stoped = True
 
     def SetWindowEvent(self, frame):
-        self.frame = frame          
+        self.frame = frame
 
-    def SetDirectoryPath(self, path,recursive=True):
+    def SetDirectoryPath(self, path, recursive=True):
         self.running = True
         self.stoped = False
-        self.GetDicomGroups(path,recursive)
+        self.GetDicomGroups(path, recursive)
 
-    def UpdateLoadFileProgress(self,cont_progress):
+    def UpdateLoadFileProgress(self, cont_progress):
         Publisher.sendMessage("Update dicom load", data=cont_progress)
 
     def EndLoadFile(self, patient_list):
@@ -337,7 +348,9 @@ class ProgressDicomReader:
     def GetDicomGroups(self, path, recursive):
 
         if not const.VTK_WARNING:
-            log_path = utils.encode(str(inv_paths.USER_LOG_DIR.joinpath('vtkoutput.txt')), const.FS_ENCODE)
+            log_path = utils.encode(
+                str(inv_paths.USER_LOG_DIR.joinpath("vtkoutput.txt")), const.FS_ENCODE
+            )
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
@@ -354,10 +367,8 @@ class ProgressDicomReader:
                 self.EndLoadFile(value_progress)
         self.UpdateLoadFileProgress(None)
 
-        #Is necessary in the case user cancel
-        #the load, ensure that dicomdialog is closed
-        if(self.stoped):
+        # Is necessary in the case user cancel
+        # the load, ensure that dicomdialog is closed
+        if self.stoped:
             self.UpdateLoadFileProgress(None)
-            self.stoped = False   
-
-
+            self.stoped = False

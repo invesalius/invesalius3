@@ -3267,7 +3267,6 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
-        self.TrackerCoordinates = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
@@ -3480,7 +3479,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
 
         if self.trk_init and self.tracker_id:
-            coord_raw, markers_flag = self.TrackerCoordinates.GetCoordinates()
+            coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
             if self.obj_ref_id and btn_id == 4:
                 if self.tracker_id == const.HYBRID:
                     trck_init_robot = self.trk_init[1][0]
@@ -3547,7 +3546,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         import invesalius.project as prj
 
         self.m_change = nav_prop[0]
-        self.tracker = nav_prop[1]
+        self.tracker_id = nav_prop[1]
+        self.trk_init = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3703,7 +3703,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def GetCurrentCoord(self):
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw, markers_flag = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
         return coord[:3]
 
@@ -4100,7 +4100,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         Publisher.subscribe(self.SetNewFocalPoint, 'Cross focal point')
         Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
 
-    def UpdateAffineMatrix(self, affine, status):
+    def UpdateAffineMatrix(self, affine):
         self.affine = affine
 
     def SetNewFocalPoint(self, coord, spacing):
@@ -4141,6 +4141,73 @@ class GoToDialogScannerCoord(wx.Dialog):
         wx.Dialog.Close(self)
         self.Destroy()
 
+class SetOptitrackconfigs(wx.Dialog):
+    def __init__(self, title=_("Setting Optitrack configs:")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        self._init_gui()
+
+    def _init_gui(self):
+        session = ses.Session()
+        last_optitrack_cal_dir = session.get('paths', 'last_optitrack_cal_dir', '')
+        last_optitrack_User_Profile_dir = session.get('paths', 'last_optitrack_User_Profile_dir', '')
+
+        if not last_optitrack_cal_dir:
+            last_optitrack_cal_dir = inv_paths.OPTITRACK_CAL_DIR
+        if not last_optitrack_User_Profile_dir:
+            last_optitrack_User_Profile_dir = inv_paths.OPTITRACK_USERPROFILE_DIR
+
+        self.dir_cal = wx.FilePickerCtrl(self, path=last_optitrack_cal_dir, style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
+                                         wildcard="Cal files (*.cal)|*.cal", message="Select Calibration file")
+        row_cal = wx.BoxSizer(wx.VERTICAL)
+        row_cal.Add(wx.StaticText(self, wx.ID_ANY, "Select Calibration file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_cal.Add(self.dir_cal, 0, wx.ALL | wx.CENTER | wx.EXPAND)
+
+        self.dir_UserProfile = wx.FilePickerCtrl(self, path=last_optitrack_User_Profile_dir, style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
+                                         wildcard="User Profile files (*.motive)|*.motive", message="Select User Profile file")
+
+        row_userprofile = wx.BoxSizer(wx.VERTICAL)
+        row_userprofile.Add(wx.StaticText(self, wx.ID_ANY, "Select User Profile file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_userprofile.Add(self.dir_UserProfile, 0, wx.ALL | wx.CENTER | wx.EXPAND)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(row_cal, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(row_userprofile, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def GetValue(self):
+        fn_cal = self.dir_cal.GetPath()
+        fn_userprofile = self.dir_UserProfile.GetPath()
+
+        if fn_cal and fn_userprofile:
+            session = ses.Session()
+            session['paths']['last_optitrack_cal_dir'] = self.dir_cal.GetPath()
+            session['paths']['last_optitrack_User_Profile_dir'] = self.dir_UserProfile.GetPath()
+            session.WriteSessionFile()
+
+        return fn_cal, fn_userprofile
 class SetTrackerDevice2Robot(wx.Dialog):
     def __init__(self, title=_("Setting tracker device:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
@@ -4243,7 +4310,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class CreateTransformationMatrixRobot(wx.Dialog):
-    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
+    def __init__(self, nav_prop, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -4255,7 +4322,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.robot_coord = []
         self.robot_angles = []
 
-        self.tracker = tracker
+        self.trk_init = nav_prop
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
@@ -4366,13 +4433,12 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-        coord_raw_robot = coord_raw[2]
-        coord_raw_tracker_obj = coord_raw[3]
-
+        coord_raw_tracker, markers_flag = dco.GetCoordinates(self.trk_init[0], self.trk_init[2], const.DYNAMIC_REF)
+        trck_init_robot = self.trk_init[1][0]
+        coord_raw_robot = trck_init_robot.Run()
         if markers_flag[2]:
-            self.tracker_coord.append(coord_raw_tracker_obj[:3])
-            self.tracker_angles.append(coord_raw_tracker_obj[3:])
+            self.tracker_coord.append(coord_raw_tracker[2][:3])
+            self.tracker_angles.append(coord_raw_tracker[2][3:])
             self.robot_coord.append(coord_raw_robot[:3])
             self.robot_angles.append(coord_raw_robot[3:])
             self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
@@ -4684,3 +4750,105 @@ class ManualWWWLDialog(wx.Dialog):
 
     def OnClose(self, evt):
         self.Destroy()
+
+
+
+class SetSpacingDialog(wx.Dialog):
+    def __init__(
+        self,
+        parent,
+        sx,
+        sy,
+        sz,
+        title=_("Set spacing"),
+        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
+    ):
+        wx.Dialog.__init__(self, parent, -1, title=title, style=style)
+        self.spacing_original_x = sx
+        self.spacing_original_y = sy
+        self.spacing_original_z = sz
+
+        self._init_gui()
+        self._bind_events()
+
+    def _init_gui(self):
+        self.txt_spacing_new_x = wx.TextCtrl(self, -1, value=str(self.spacing_original_x))
+        self.txt_spacing_new_y = wx.TextCtrl(self, -1, value=str(self.spacing_original_y))
+        self.txt_spacing_new_z = wx.TextCtrl(self, -1, value=str(self.spacing_original_z))
+
+        sizer_new = wx.FlexGridSizer(3, 2, 5, 5)
+        sizer_new.AddMany(
+            (
+                (wx.StaticText(self, -1, "Spacing X"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.txt_spacing_new_x, 1, wx.EXPAND),
+                (wx.StaticText(self, -1, "Spacing Y"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.txt_spacing_new_y, 1, wx.EXPAND),
+                (wx.StaticText(self, -1, "Spacing Z"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.txt_spacing_new_z, 1, wx.EXPAND),
+            )
+        )
+
+        self.button_ok = wx.Button(self, wx.ID_OK)
+        self.button_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        button_sizer = wx.StdDialogButtonSizer()
+        button_sizer.AddButton(self.button_ok)
+        button_sizer.AddButton(self.button_cancel)
+        button_sizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(wx.StaticText(self, -1, _("It was not possible to obtain the image spacings.\nPlease set it correctly:")), 0, wx.EXPAND)
+        main_sizer.Add(sizer_new, 1, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 5)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+        self.Layout()
+
+    def _bind_events(self):
+        self.txt_spacing_new_x.Bind(wx.EVT_KILL_FOCUS, self.OnSetNewSpacing)
+        self.txt_spacing_new_y.Bind(wx.EVT_KILL_FOCUS, self.OnSetNewSpacing)
+        self.txt_spacing_new_z.Bind(wx.EVT_KILL_FOCUS, self.OnSetNewSpacing)
+
+        self.button_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        self.button_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+
+    def OnSetNewSpacing(self, evt):
+        try:
+            new_spacing_x = float(self.txt_spacing_new_x.GetValue())
+        except ValueError:
+            new_spacing_x = self.spacing_new_x
+
+        try:
+            new_spacing_y = float(self.txt_spacing_new_y.GetValue())
+        except ValueError:
+            new_spacing_y = self.spacing_new_y
+
+        try:
+            new_spacing_z = float(self.txt_spacing_new_z.GetValue())
+        except ValueError:
+            new_spacing_z = self.spacing_new_z
+
+        self.set_new_spacing(new_spacing_x, new_spacing_y, new_spacing_z)
+
+    def set_new_spacing(self, sx, sy, sz):
+        self.spacing_new_x = sx
+        self.spacing_new_y = sy
+        self.spacing_new_z = sz
+
+        self.txt_spacing_new_x.ChangeValue(str(sx))
+        self.txt_spacing_new_y.ChangeValue(str(sy))
+        self.txt_spacing_new_z.ChangeValue(str(sz))
+
+    def OnOk(self, evt):
+        if self.spacing_new_x == 0.0:
+            self.txt_spacing_new_x.SetFocus()
+        elif self.spacing_new_y == 0.0:
+            self.txt_spacing_new_y.SetFocus()
+        elif self.spacing_new_z == 0.0:
+            self.txt_spacing_new_z.SetFocus()
+        else:
+            self.EndModal(wx.ID_OK)
+
+    def OnCancel(self, evt):
+        self.EndModal(wx.ID_CANCEL)

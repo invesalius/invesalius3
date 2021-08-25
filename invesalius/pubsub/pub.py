@@ -84,3 +84,4 @@ def sendMessage_no_hook(topicName: str, **msgdata):
     Publisher.sendMessage(topicName, **msgdata)
 
 AUTO_TOPIC = Publisher.AUTO_TOPIC
+ALL_TOPICS = Publisher.ALL_TOPICS
