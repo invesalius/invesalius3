@@ -309,8 +309,8 @@ class InnerFoldPanel(wx.Panel):
 
 
 class Navigation():
-    def __init__(self):
-        self.pedal_connection = PedalConnection()
+    def __init__(self, pedal_connection):
+        self.pedal_connection = pedal_connection
 
         self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
@@ -485,12 +485,14 @@ class Navigation():
                 jobs.start()
                 # del jobs
 
-            self.pedal_connection.add_callback('navigation', self.PedalStateChanged)
+            if self.pedal_connection is not None:
+                self.pedal_connection.add_callback('navigation', self.PedalStateChanged)
 
     def StopNavigation(self):
         self.event.set()
 
-        self.pedal_connection.remove_callback('navigation')
+        if self.pedal_connection is not None:
+            self.pedal_connection.remove_callback('navigation')
 
         self.coord_queue.clear()
         self.coord_queue.join()
@@ -699,7 +701,9 @@ class NeuronavigationPanel(wx.Panel):
         # Initialize global variables
         self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         self.tracker = Tracker()
-        self.navigation = Navigation()
+        self.navigation = Navigation(
+            pedal_connection=self.pedal_connection,
+        )
         self.icp = ICP()
 
         self.nav_status = False
@@ -753,7 +757,7 @@ class NeuronavigationPanel(wx.Panel):
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         txt_icp = wx.StaticText(self, -1, _('Refine:'))
 
-        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+        if self.pedal_connection is not None and self.pedal_connection.in_use:
             txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
         else:
             txt_pedal_pressed = None
@@ -782,7 +786,7 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp = checkbox_icp
 
         # An indicator for pedal trigger
-        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+        if self.pedal_connection is not None and self.pedal_connection.in_use:
             tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
             checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
             checkbox_pedal_pressed.SetValue(False)
@@ -1132,7 +1136,9 @@ class NeuronavigationPanel(wx.Panel):
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
         self.navigation.StopNavigation()
-        self.navigation.__init__()
+        self.navigation.__init__(
+            pedal_connection=self.pedal_connection,
+        )
         self.tracker.__init__()
         self.icp.__init__()
 
