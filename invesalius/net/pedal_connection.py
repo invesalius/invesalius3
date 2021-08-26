@@ -22,6 +22,7 @@ from threading import Thread
 
 import mido
 
+from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 class PedalConnection(Thread, metaclass=Singleton):
@@ -50,6 +51,8 @@ class PedalConnection(Thread, metaclass=Singleton):
             if not self._callbacks:
                 print("Pedal pressed, no callbacks registered")
             else:
+                Publisher.sendMessage('Pedal state changed', state=True)
+
                 for callback in self._callbacks.values():
                     callback(True)
 
@@ -57,9 +60,10 @@ class PedalConnection(Thread, metaclass=Singleton):
             if not self._callbacks:
                 print("Pedal released, no callbacks registered")
             else:
+                Publisher.sendMessage('Pedal state changed', state=False)
+
                 for callback in self._callbacks.values():
                     callback(False)
-
         else:
             print("Unknown message type received from MIDI device")
 
@@ -70,12 +74,16 @@ class PedalConnection(Thread, metaclass=Singleton):
             self._midi_in._rt.ignore_types(False, False, False)
             self._midi_in.callback = self._midi_to_pedal
 
+            Publisher.sendMessage('Pedal connection', state=True)
+
             print("Connected to MIDI device")
 
     def _check_disconnected(self):
         if self._midi_in is not None:
             if self._active_input not in self._midi_inputs:
                 self._midi_in = None
+
+                Publisher.sendMessage('Pedal connection', state=False)
 
                 print("Disconnected from MIDI device")
 
