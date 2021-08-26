@@ -386,9 +386,7 @@ class Navigation():
 
     def PedalStateChanged(self, state):
         if state is True and self.coil_at_target and self.SerialPortEnabled():
-            success = self.serial_port_connection.SendPulse()
-            if success:
-                Publisher.sendMessage('Pulse triggered', state=True)
+            self.serial_port_connection.SendPulse()
 
     def StartNavigation(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()

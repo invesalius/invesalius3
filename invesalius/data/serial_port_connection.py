@@ -50,18 +50,24 @@ class SerialPortConnection(threading.Thread):
             import serial
             self.connection = serial.Serial(self.port, baudrate=115200, timeout=0)
             print("Connection to port {} opened.".format(self.port))
+
+            Publisher.sendMessage('Serial port connection', state=True)
         except:
             print("Serial port init error: Connecting to port {} failed.".format(self.port))
 
+    def Disconnect(self):
+        if self.connection:
+            self.connection.close()
+            print("Connection to port {} closed.".format(self.port))
+
+            Publisher.sendMessage('Serial port connection', state=False)
+
     def SendPulse(self):
-        success = False
         try:
             self.connection.write(self.BINARY_PULSE)
-            success = True
+            Publisher.sendMessage('Serial port pulse triggered')
         except:
             print("Error: Serial port could not be written into.")
-
-        return success
 
     def run(self):
         while not self.event.is_set():
@@ -97,6 +103,4 @@ class SerialPortConnection(threading.Thread):
             #
             time.sleep(0.3)
         else:
-            if self.connection:
-                self.connection.close()
-                print("Connection to port {} closed.".format(self.port))
+            self.Disconnect()
