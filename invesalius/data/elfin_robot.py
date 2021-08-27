@@ -169,111 +169,74 @@ class ControlRobot(threading.Thread):
         self.tracker = tracker
         self.robotcoordinates = robotcoordinates
         self.robot_tracker_flag = False
-        self.target_flag = False
+        self.objattarget_flag = False
         self.m_change_robot2ref = None
         self.coord_inv_old = None
-        self.robot_coord_queue = queues[0]
-        self.coord_queue = queues[1]
-        self.robottarget_queue = queues[2]
-        self.objattarget_queue = queues[3]
+        self.coord_queue = queues[0]
+        self.robottarget_queue = queues[1]
+        #self.objattarget_queue = queues[2]
         self.process_tracker = process_tracker
         self.event = event
-        self.time_start = time()
-        # self.fieldnames = ["time",
-        #                    "x_robot", "y_robot", "z_robot", "a_robot", "b_robot", "c_robot",
-        #                    "x_tracker_obj", "y_tracker_obj", "z_tracker_obj", "a_tracker_obj", "b_tracker_obj", "c_tracker_obj",
-        #                    "velocity_std", "target"]
-        # with open('data_robot_and_tracker.csv', 'w', newline='') as csv_file:
-        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-        #     csv_writer.writeheader()
 
+    def getcoordsfromdevices(self):
+        coord_robot_raw = self.trck_init_robot.Run()
+        coord_robot = np.array(coord_robot_raw)
+        coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
+        self.robotcoordinates.coord = coord_robot
+
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+
+        return coord_raw, coord_robot_raw, markers_flag
+
+    def control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
+        coord_ref_tracker_in_robot = coords_tracker_in_robot[1]
+        coord_obj_tracker_in_robot = coords_tracker_in_robot[2]
+
+        if self.robot_tracker_flag:
+            current_ref = coord_ref_tracker_in_robot
+            if current_ref is not None and markers_flag[1]:
+                current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
+                if self.process_tracker.head_move_threshold(current_ref_filtered):
+                    coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
+                                                                            self.m_change_robot2ref)
+                    if self.coord_inv_old is None:
+                        self.coord_inv_old = coord_inv
+
+                    if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 5):
+                        # print("At target within range 5")
+                        pass
+                    elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
+                        # print("stop")
+                        self.trck_init_robot.StopRobot()
+                        self.coord_inv_old = coord_inv
+                    else:
+                        self.trck_init_robot.SendCoordinates(coord_inv)
+                        self.coord_inv_old = coord_inv
+            else:
+                self.trck_init_robot.StopRobot()
 
     def run(self):
 
         while not self.event.is_set():
-            #start = time()
-            #TODO: criar class igual coordinates
-            coord_robot_raw = self.trck_init_robot.Run()
-            coord_robot = np.array(coord_robot_raw)
-            coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
+            coords_tracker_in_robot, coord_robot_raw, markers_flag = self.getcoordsfromdevices()
 
-            self.robotcoordinates.coord = coord_robot
-            # try:
-            #     self.robot_coord_queue.put_nowait(coord_robot)
-            # except queue.Full:
-            #     pass
-
-            #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, const.MTC, const.DEFAULT_REF_MODE)
-            #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)
-            coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-            coord_tracker_ref = coord_raw[1]
-            coord_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker_ref)
-            #coord_tracker_obj = coord_raw[2]
-            print(coord_robot, coord_tracker_ref)
-            try:
-                self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
-            except queue.Empty:
-                pass
-
-            try:
-                self.target_flag = self.objattarget_queue.get_nowait()
-            except queue.Empty:
-                pass
-
-            current_ref_filtered = [0]
-            if self.robot_tracker_flag:
-                current_ref = coord_tracker_in_robot
-                if current_ref is not None and markers_flag[1]:
-                    current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
-                    if self.process_tracker.head_move_threshold(current_ref_filtered):
-                        coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered, self.m_change_robot2ref)
-                        #self.trck_init_robot.SendCoordinates(coord_inv)
-                        #print('send')
-                        if self.coord_inv_old is None:
-                            self.coord_inv_old = coord_inv
-
-                        if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 5):
-                            #print("At target within range 5")
-                            pass
-                        elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
-                            #print("stop")
-                            self.trck_init_robot.StopRobot()
-                            self.coord_inv_old = coord_inv
-                        else:
-                            self.trck_init_robot.SendCoordinates(coord_inv)
-                            self.coord_inv_old = coord_inv
-                else:
-                    self.trck_init_robot.StopRobot()
+            if self.robottarget_queue.empty():
+                None
             else:
-                self.trck_init_robot.StopRobot()
-
-            if not self.robottarget_queue.empty():
+                self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
                 self.robottarget_queue.task_done()
 
-            #sleep(0.05)
-            # with open('data_robot_and_tracker.csv', 'a', newline='') as csv_file:
-            #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-            #
-            #     info = {
-            #         "time": time() - self.time_start,
-            #         "x_robot": coord_robot[0],
-            #         "y_robot": coord_robot[1],
-            #         "z_robot": coord_robot[2],
-            #         "a_robot": coord_robot[3],
-            #         "b_robot": coord_robot[4],
-            #         "c_robot": coord_robot[5],
-            #         "x_tracker_obj": coord_tracker_obj[0],
-            #         "y_tracker_obj": coord_tracker_obj[1],
-            #         "z_tracker_obj": coord_tracker_obj[2],
-            #         "a_tracker_obj": coord_tracker_obj[3],
-            #         "b_tracker_obj": coord_tracker_obj[4],
-            #         "c_tracker_obj": coord_tracker_obj[5],
-            #         "velocity_std": self.process_tracker.velocity_std,
-            #         "target": self.target_flag
-            #     }
-            #
-            #     csv_writer.writerow(info)
+            # if self.objattarget_queue.empty():
+            #     None
+            # else:
+            #     self.target_flag = self.objattarget_queue.get_nowait()
+            #     self.objattarget_queue.task_done()
 
-            #end = time()
-            #print("                   ", end - start)
+            self.control(coords_tracker_in_robot,coord_robot_raw, markers_flag)
 
+            # if not self.robottarget_queue.empty():
+            #     self.robottarget_queue.task_done()
+            # if not self.objattarget_queue.empty():
+            #     self.objattarget_queue.task_done()
+
+            sleep(0.01)

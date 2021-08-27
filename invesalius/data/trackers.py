@@ -419,6 +419,11 @@ def DisconnectTracker(tracker_id, trck_init):
                 trck_init = False
                 lib_mode = 'serial'
                 print('Tracker disconnected.')
+            elif tracker_id == const.HYBRID:
+                trck_init[0].Close()
+                trck_init = False
+                lib_mode = 'wrapper'
+                print('Tracker disconnected.')
             else:
                 trck_init.Close()
                 trck_init = False

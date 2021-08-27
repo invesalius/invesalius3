@@ -19,6 +19,9 @@
 
 from math import sin, cos
 import numpy as np
+import queue
+import threading
+import wx
 
 import invesalius.data.bases as db
 import invesalius.data.transformations as tr
@@ -28,8 +31,17 @@ from time import sleep
 from random import uniform
 from invesalius.pubsub import pub as Publisher
 
+class TrackerCoordinates():
+    def __init__(self):
+        self.coord = None
+        self.markers_flag = [False, False, False]
+
+    def GetCoordinates(self):
+        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+        return self.coord, self.markers_flag
+
 #TODO: create a thread to get coordinates. Invesalius will get the coord from another class, updated by the thread
-def GetCoordinates(trck_init, trck_id, ref_mode):
+def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
 
     """
     Read coordinates from spatial tracking devices using
@@ -101,7 +113,6 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         trans_obj = np.array(t).astype(float)
         coord3 = np.hstack((trans_obj, angles_obj))
 
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
     coord = np.vstack([coord1, coord2, coord3])
 
     return coord, [trck.probeID, trck.refID, trck.objID]
@@ -166,7 +177,6 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((trans_obj, angles_obj))
 
     coord = np.vstack([coord1, coord2, coord3])
-    # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
 
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
@@ -230,7 +240,6 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
             trans_obj = np.array(t).astype(float)
             coord3 = np.hstack((trans_obj, angles_obj))
 
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
     coord = np.vstack([coord1, coord2, coord3])
 
     return coord, [trck.probeID, trck.refID, trck.objID]
@@ -238,7 +247,6 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
     coord, probeID, refID, coilID = trck.Run()
-    Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
 
     return coord, [probeID, refID, coilID]
 
@@ -260,8 +268,6 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                        float(trck.AngleZ3), float(trck.AngleY3), float(trck.AngleX3)])
 
     coord = np.vstack([coord1, coord2, coord3])
-
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
 
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
@@ -430,7 +436,7 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
+    #Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
 
     return np.vstack([coord1, coord2, coord3, coord4]), [int(uniform(0, 5)), int(uniform(0, 5)), int(uniform(0, 5))]
 
@@ -497,17 +503,20 @@ def dynamic_reference_m(probe, reference):
 
 
 def HybridCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinates(trk_init[0], trk_init[2], ref_mode)
+    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[2], ref_mode)
     coord_robot, _ = ElfinCoord(trk_init[1:])
 
     probe_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[0])
     ref_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[1])
+    obj_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[2])
 
     if probe_tracker_in_robot is None:
-        print("popup error message")
+        print("Getting raw tracker")
         probe_tracker_in_robot = coord_tracker[0]
         ref_tracker_in_robot = coord_tracker[1]
-    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot]), markers_flag
+        obj_tracker_in_robot = coord_tracker[2]
+
+    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot, obj_tracker_in_robot]), markers_flag
 
 
 def dynamic_reference_m2(probe, reference):
@@ -573,3 +582,18 @@ def offset_coordinate(p_old, norm_vec, offset):
     """
     p_offset = p_old - offset * norm_vec
     return p_offset
+
+class ReceiveCoordinates(threading.Thread):
+    def __init__(self, trck_init, trck_id, TrackerCoordinates, event):
+        threading.Thread.__init__(self, name='ReceiveCoordinates')
+        self.trck_init = trck_init
+        self.trck_id = trck_id
+        self.event = event
+        self.TrackerCoordinates = TrackerCoordinates
+
+    def run(self):
+        while not self.event.is_set():
+            coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
+            self.TrackerCoordinates.coord = coord_raw
+            self.TrackerCoordinates.markers_flag = markers_flag
+            sleep(const.SLEEP_COORDINATES)
