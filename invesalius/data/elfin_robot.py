@@ -1,15 +1,12 @@
 import numpy as np
 import cv2
 from time import time, sleep
-import queue
 import threading
-import csv
 
 import invesalius.data.elfin as elfin
 import invesalius.data.transformations as tr
-import invesalius.constants as const
-import invesalius.data.coordinates as dco
-import invesalius.data.bases as db
+import invesalius.data.coregistration as dcr
+
 
 
 class elfin_server():
@@ -152,6 +149,15 @@ class TrackerProcessing:
         return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
                     angles[2]
 
+    def estimate_head_center(self, tracker, current_ref):
+        m_probe_ref_left, m_probe_ref_right, m_probe_ref_nasion = tracker.GetMatrixTrackerFiducials()
+        m_current_ref = dcr.compute_marker_transformation(np.array([current_ref]), 0)
+
+        m_ear_left_new = m_current_ref @ m_probe_ref_left
+        m_ear_right_new = m_current_ref @ m_probe_ref_right
+
+        return (m_ear_left_new[:3, -1] + m_ear_right_new[:3, -1])/2
+
 class RobotCoordinates():
     def __init__(self):
         self.coord = None
@@ -210,6 +216,7 @@ class ControlRobot(threading.Thread):
                         self.trck_init_robot.StopRobot()
                         self.coord_inv_old = coord_inv
                     else:
+                        #print(self.process_tracker.estimate_head_center(self.tracker, current_ref_filtered))
                         self.trck_init_robot.SendCoordinates(coord_inv)
                         self.coord_inv_old = coord_inv
             else:
@@ -232,7 +239,7 @@ class ControlRobot(threading.Thread):
             #     self.target_flag = self.objattarget_queue.get_nowait()
             #     self.objattarget_queue.task_done()
 
-            self.control(coords_tracker_in_robot,coord_robot_raw, markers_flag)
+            self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
 
             # if not self.robottarget_queue.empty():
             #     self.robottarget_queue.task_done()
