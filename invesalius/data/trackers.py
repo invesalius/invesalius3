@@ -79,16 +79,23 @@ def OptitrackTracker(tracker_id):
     -------
     trck_init : local name for Optitrack module
     """
+    from wx import ID_OK
     trck_init = None
-    try:
-        import optitrack
-        trck_init = optitrack.optr()
-        if trck_init.Initialize()==0:
-            trck_init.Run() #Runs once Run function, to update cameras.
-        else:
-            trck_init = None
-    except ImportError:
-        print('Error')
+    dlg_port = dlg.SetOptitrackconfigs()
+    if dlg_port.ShowModal() == ID_OK:
+        Cal_optitrack, User_profile_optitrack = dlg_port.GetValue()
+        try:
+            import optitrack
+            trck_init = optitrack.optr()
+
+            if trck_init.Initialize(Cal_optitrack, User_profile_optitrack)==0:
+                trck_init.Run() #Runs once Run function, to update cameras.
+            else:
+                trck_init = None
+        except ImportError:
+            print('Error')
+    else:
+        print('#####')
     return trck_init, 'wrapper'
 
 def PolarisTracker(tracker_id):
@@ -411,6 +418,11 @@ def DisconnectTracker(tracker_id, trck_init):
                 trck_init.close()
                 trck_init = False
                 lib_mode = 'serial'
+                print('Tracker disconnected.')
+            elif tracker_id == const.HYBRID:
+                trck_init[0].Close()
+                trck_init = False
+                lib_mode = 'wrapper'
                 print('Tracker disconnected.')
             else:
                 trck_init.Close()

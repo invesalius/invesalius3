@@ -1,15 +1,12 @@
 import numpy as np
 import cv2
 from time import time, sleep
-import queue
 import threading
-import csv
 
 import invesalius.data.elfin as elfin
 import invesalius.data.transformations as tr
-import invesalius.constants as const
-import invesalius.data.coordinates as dco
-import invesalius.data.bases as db
+import invesalius.data.coregistration as dcr
+
 
 
 class elfin_server():
@@ -203,6 +200,15 @@ class TrackerProcessing:
         return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
                     angles[2]
 
+    def estimate_head_center(self, tracker, current_ref):
+        m_probe_ref_left, m_probe_ref_right, m_probe_ref_nasion = tracker.GetMatrixTrackerFiducials()
+        m_current_ref = dcr.compute_marker_transformation(np.array([current_ref]), 0)
+
+        m_ear_left_new = m_current_ref @ m_probe_ref_left
+        m_ear_right_new = m_current_ref @ m_probe_ref_right
+
+        return (m_ear_left_new[:3, -1] + m_ear_right_new[:3, -1])/2
+    
     def correction_distance_calculation_target(self, coord_inv,actual_point):
 
         #a posição atual do robo está embaixo disso
@@ -213,136 +219,95 @@ class TrackerProcessing:
 
         return correction_distance_compensation
 
+     
+class RobotCoordinates():
+    def __init__(self):
+        self.coord = None
+
+    def GetRobotCoordinates(self):
+        return self.coord
 
 class ControlRobot(threading.Thread):
-    def __init__(self, trck_init, queues, process_tracker, event):
+    def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event):
         threading.Thread.__init__(self, name='ControlRobot')
 
         self.trck_init_robot = trck_init[1][0]
         self.trck_init_tracker = trck_init[0]
         self.trk_id = trck_init[2]
+        self.tracker = tracker
+        self.robotcoordinates = robotcoordinates
         self.robot_tracker_flag = False
-        self.target_flag = False
+        self.objattarget_flag = False
         self.m_change_robot2ref = None
         self.coord_inv_old = None
-        self.robot_coord_queue = queues[0]
-        self.coord_queue = queues[1]
-        self.robottarget_queue = queues[2]
-        self.objattarget_queue = queues[3]
+        self.coord_queue = queues[0]
+        self.robottarget_queue = queues[1]
+        #self.objattarget_queue = queues[2]
         self.process_tracker = process_tracker
         self.event = event
-        self.time_start = time()
-        # self.fieldnames = ["time",
-        #                    "x_robot", "y_robot", "z_robot", "a_robot", "b_robot", "c_robot",
-        #                    "x_tracker_obj", "y_tracker_obj", "z_tracker_obj", "a_tracker_obj", "b_tracker_obj", "c_tracker_obj",
-        #                    "velocity_std", "target"]
-        # with open('data_robot_and_tracker.csv', 'w', newline='') as csv_file:
-        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-        #     csv_writer.writeheader()
 
+    def getcoordsfromdevices(self):
+        coord_robot_raw = self.trck_init_robot.Run()
+        coord_robot = np.array(coord_robot_raw)
+        coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
+        self.robotcoordinates.coord = coord_robot
+
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+
+        return coord_raw, coord_robot_raw, markers_flag
+
+    def control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
+        coord_ref_tracker_in_robot = coords_tracker_in_robot[1]
+        coord_obj_tracker_in_robot = coords_tracker_in_robot[2]
+
+        if self.robot_tracker_flag:
+            current_ref = coord_ref_tracker_in_robot
+            if current_ref is not None and markers_flag[1]:
+                current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
+                if self.process_tracker.head_move_threshold(current_ref_filtered):
+                    coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
+                                                                            self.m_change_robot2ref)
+                    if self.coord_inv_old is None:
+                        self.coord_inv_old = coord_inv
+
+                    if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 5):
+                        # print("At target within range 5")
+                        pass
+                    elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
+                        # print("stop")
+                        self.trck_init_robot.StopRobot()
+                        self.coord_inv_old = coord_inv
+                    else:
+                        #print(self.process_tracker.estimate_head_center(self.tracker, current_ref_filtered))
+                        if self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) < 100:
+                            self.trck_init_robot.SendCoordinates(coord_inv)
+
+                        elif self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) >= 100:
+                            actual_point = coord_robot_raw
+
+                            pc = 756,-90,188, coord_inv[3], coord_inv[4], coord_inv[5]
+
+                            self.trck_init_robot.StopRobot()
+                            target_linear, target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc, coord_inv)
+                            self.trck_init_robot.SendCoordinatesArc(target_linear, target_arc)
+                            self.trck_init_robot.StopRobot()
+                            self.trck_init_robot.SendCoordinates(coord_inv)
+                            sleep(10)
+                        self.coord_inv_old = coord_inv
+            else:
+                self.trck_init_robot.StopRobot()
 
     def run(self):
 
         while not self.event.is_set():
-            #start = time()
-            coord_robot_raw = self.trck_init_robot.Run()
-            coord_robot = np.array(coord_robot_raw)
-            coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
-            try:
-                self.robot_coord_queue.put_nowait(coord_robot)
-            except queue.Full:
-                pass
-
-            #coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, const.MTC, const.DEFAULT_REF_MODE)
-            coord_raw, markers_flag = dco.GetCoordinates(self.trck_init_tracker, self.trk_id, const.DYNAMIC_REF)
-            coord_tracker_ref = coord_raw[1]
-            coord_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker_ref)
-            coord_tracker_obj = coord_raw[2]
+            coords_tracker_in_robot, coord_robot_raw, markers_flag = self.getcoordsfromdevices()
 
             if self.robottarget_queue.empty():
                 None
             else:
                 self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
-
-            if self.objattarget_queue.empty():
-                None
-            else:
-                self.target_flag = self.objattarget_queue.get_nowait()
-
-            current_ref_filtered = [0]
-            if self.robot_tracker_flag:
-                current_ref = coord_tracker_in_robot
-                if current_ref is not None and markers_flag[1]:
-                    current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
-                    if self.process_tracker.head_move_threshold(current_ref_filtered):
-                        coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered, self.m_change_robot2ref)
-                        #self.trck_init_robot.SendCoordinates(coord_inv)
-                        #print('send')
-                        if self.coord_inv_old is None:
-                            self.coord_inv_old = coord_inv
-
-                        if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 5):
-                            #print("At target within range 5")
-                            pass
-                        elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
-                            #print("stop")
-                            self.trck_init_robot.StopRobot()
-                            self.coord_inv_old = coord_inv
-
-                        else:
-                            if self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) < 100:
-                                self.trck_init_robot.SendCoordinates(coord_inv)
-
-                            elif self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) >= 100:
-                                actual_point = coord_robot_raw
-
-                                pc = 756,-90,188, coord_inv[3], coord_inv[4], coord_inv[5]
-
-                                self.trck_init_robot.StopRobot()
-                                target_linear, target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc, coord_inv)
-                                self.trck_init_robot.SendCoordinatesArc(target_linear, target_arc)
-                                self.trck_init_robot.StopRobot()
-                                self.trck_init_robot.SendCoordinates(coord_inv)
-                                sleep(10)
-
-                            else: #sendcordinates
-                                self.coord_inv_old = coord_inv
-                    else:
-                        self.trck_init_robot.StopRobot()
-                        #self.trck_init_robot.SendCoordinates(self.process_tracker.moveback) #Inserir o movimento de recuo
-                else:
-                    self.trck_init_robot.StopRobot()
-            else:
-                self.trck_init_robot.StopRobot()
-
-            if not self.robottarget_queue.empty():
                 self.robottarget_queue.task_done()
 
-            sleep(0.05)
+            self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
 
-            # with open('data_robot_and_tracker.csv', 'a', newline='') as csv_file:
-            #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-            #
-            #     info = {
-            #         "time": time() - self.time_start,
-            #         "x_robot": coord_robot[0],
-            #         "y_robot": coord_robot[1],
-            #         "z_robot": coord_robot[2],
-            #         "a_robot": coord_robot[3],
-            #         "b_robot": coord_robot[4],
-            #         "c_robot": coord_robot[5],
-            #         "x_tracker_obj": coord_tracker_obj[0],
-            #         "y_tracker_obj": coord_tracker_obj[1],
-            #         "z_tracker_obj": coord_tracker_obj[2],
-            #         "a_tracker_obj": coord_tracker_obj[3],
-            #         "b_tracker_obj": coord_tracker_obj[4],
-            #         "c_tracker_obj": coord_tracker_obj[5],
-            #         "velocity_std": self.process_tracker.velocity_std,
-            #         "target": self.target_flag
-            #     }
-            #
-            #     csv_writer.writerow(info)
-
-            #end = time()
-            #print("                   ", end - start)
-
+            sleep(0.01)
