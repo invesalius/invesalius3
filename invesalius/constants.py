@@ -772,7 +772,7 @@ TIPS_OBJ = [_("Select left object fiducial"),
 
 MTC_PROBE_NAME = "1Probe"
 MTC_REF_NAME = "2Ref"
-MTC_OBJ_NAME = "3Coil"
+MTC_OBJ_NAME = "3bigcoil"
 
 #OBJECT TRACKING
 ARROW_SCALE = 6

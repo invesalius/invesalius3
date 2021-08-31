@@ -30,10 +30,31 @@ class elfin_server():
         #print("starting move")
         return self.cobot.ReadPcsActualPos()
 
-    def SendCoordinates(self, target):
+    def  SendCoordinates(self, target):
         status = self.cobot.ReadMoveState()
         if status != 1009:
             self.cobot.MoveL(target)
+
+    def SendCoordinatesArc(self, target_linear, target_arc):
+        status = self.cobot.ReadMoveState()
+
+        print(self.cobot.MoveL(target_linear))
+        status = self.cobot.ReadMoveState()
+        while status == 1009:
+            sleep(0.5)
+            print("moving...")
+            print(self.cobot.ReadPcsActualPos())
+            status = self.cobot.ReadMoveState()
+        print("end move")
+
+        print(self.cobot.MoveC(target_arc))
+        status = self.cobot.ReadMoveState()
+        while status == 1009:
+            sleep(0.5)
+            print("moving...")
+            print(self.cobot.ReadPcsActualPos())
+            status = self.cobot.ReadMoveState()
+        print("end move")
 
     def StopRobot(self):
         self.cobot.GrpStop()
@@ -115,6 +136,36 @@ class TrackerProcessing:
 
         return velocity, distance
 
+    def Versores(self,init_point, final_point):
+        init_point = np.array(init_point)
+        final_point = np.array(final_point)
+        norm = (sum((final_point-init_point)**2))**0.5
+        versorfator = (((final_point-init_point)/norm)*70).tolist()
+
+        return versorfator
+
+    def arcmotion(self, actual_point, pc,coord_inv):
+
+        p1 = coord_inv
+
+        versorfator1_calculado = self.Versores(pc,actual_point)
+        init_ext_point = actual_point[0]+versorfator1_calculado[0],\
+                         actual_point[1]+versorfator1_calculado[1],\
+                         actual_point[2]+versorfator1_calculado[2], \
+                         actual_point[3], actual_point[4], actual_point[5]
+
+        pm = ((p1[0]+actual_point[0])/2, (p1[1]+actual_point[1])/2,(p1[2]+actual_point[2])/2,0,0,0 ) #ponto médio da trajetória
+
+        newarr = (np.array(self.Versores(pc,pm)))*2
+        pontointermediario = pm[0]+newarr[0],pm[1]+newarr[1],pm[2]+newarr[2]
+
+        versorfator3 = self.Versores(pc,p1)
+        final_ext_point = p1[0]+versorfator3[0],p1[1]+versorfator3[1],p1[2]+versorfator3[2], coord_inv[3], coord_inv[4], coord_inv[5]
+        final_ext_point_arc = final_ext_point = p1[0]+versorfator3[0],p1[1]+versorfator3[1],p1[2]+versorfator3[2], coord_inv[3], coord_inv[4], coord_inv[5],0
+        #type_arc = 0
+        target_arc = pontointermediario+final_ext_point_arc
+
+        return init_ext_point, target_arc
 
     def head_move_threshold(self, current_ref):
         self.coord_vel.append(current_ref)
@@ -151,6 +202,16 @@ class TrackerProcessing:
 
         return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
                     angles[2]
+
+    def correction_distance_calculation_target(self, coord_inv,actual_point):
+
+        #a posição atual do robo está embaixo disso
+        sum = (coord_inv[0]-actual_point[0])**2\
+              +(coord_inv[1]-actual_point[1])**2\
+              +(coord_inv[2]-actual_point[2])**2
+        correction_distance_compensation = pow(sum,0.5)
+
+        return correction_distance_compensation
 
 
 class ControlRobot(threading.Thread):
@@ -227,9 +288,28 @@ class ControlRobot(threading.Thread):
                             #print("stop")
                             self.trck_init_robot.StopRobot()
                             self.coord_inv_old = coord_inv
+
                         else:
-                            self.trck_init_robot.SendCoordinates(coord_inv)
-                            self.coord_inv_old = coord_inv
+                            if self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) < 100:
+                                self.trck_init_robot.SendCoordinates(coord_inv)
+
+                            elif self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) >= 100:
+                                actual_point = coord_robot_raw
+
+                                pc = 756,-90,188, coord_inv[3], coord_inv[4], coord_inv[5]
+
+                                self.trck_init_robot.StopRobot()
+                                target_linear, target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc, coord_inv)
+                                self.trck_init_robot.SendCoordinatesArc(target_linear, target_arc)
+                                self.trck_init_robot.StopRobot()
+                                self.trck_init_robot.SendCoordinates(coord_inv)
+                                sleep(10)
+
+                            else: #sendcordinates
+                                self.coord_inv_old = coord_inv
+                    else:
+                        self.trck_init_robot.StopRobot()
+                        #self.trck_init_robot.SendCoordinates(self.process_tracker.moveback) #Inserir o movimento de recuo
                 else:
                     self.trck_init_robot.StopRobot()
             else:
@@ -237,6 +317,8 @@ class ControlRobot(threading.Thread):
 
             if not self.robottarget_queue.empty():
                 self.robottarget_queue.task_done()
+
+            sleep(0.05)
 
             # with open('data_robot_and_tracker.csv', 'a', newline='') as csv_file:
             #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
