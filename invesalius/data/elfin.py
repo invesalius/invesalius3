@@ -191,3 +191,14 @@ class elfin:
         message = "MoveHoming," + self.rbtID + self.end_msg
         status = self.send(message)
         return status
+
+    def MoveC(self, target):
+        """
+        function: Arc motion
+        :param: Through position[X,Y,Z],GoalCoord[X,Y,Z,RX,RY,RZ],Type[0 or 1],;
+        :return:
+        """
+        target = [str(s) for s in target]
+        target = (",".join(target))
+        message = "MoveC," + self.rbtID + ',' + target + self.end_msg
+        return self.send(message)

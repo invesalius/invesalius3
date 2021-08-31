@@ -375,7 +375,6 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-
         vis_components = [self.trigger_state, self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.trigger_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
 
