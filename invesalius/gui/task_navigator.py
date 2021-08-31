@@ -1680,72 +1680,76 @@ class MarkersPanel(wx.Panel):
         # marker_path = 'markers.mks'
         # filename = os.path.join(data_dir, marker_path)
 
-        if filename:
-            try:
-                count_line = self.lc.GetItemCount()
-                # content = [s.rstrip() for s in open(filename)]
-                with open(filename, 'r') as file:
-                    reader = csv.reader(file, delimiter='\t')
+        if not filename:
+            return
+        
+        try:
+            count_line = self.lc.GetItemCount()
+            
+            # read lines from th efile
+            with open(filename, 'r') as file:
+                reader = csv.reader(file, delimiter='\t')
 
-                    # skip the header
-                    if filename.lower().endswith('.mkss'):
-                        next(reader)
+                # skip the header
+                if filename.lower().endswith('.mkss'):
+                    next(reader)
 
-                    content = [row for row in reader]
+                content = [row for row in reader]
 
-                for line in content:
-                    target = None
-                    if len(line) > 8:
-                        coord = [float(s) for s in line[:6]]
-                        colour = [float(s) for s in line[6:9]]
-                        size = float(line[9])
-                        marker_id = line[10]
+            # parse the lines and update the markers list
+            for line in content:
+                target = None
+                if len(line) > 8:
+                    coord = [float(s) for s in line[:6]]
+                    colour = [float(s) for s in line[6:9]]
+                    size = float(line[9])
+                    marker_id = line[10]
 
-                        if len(line) > 11:
-                            seed = [float(s) for s in line[11:14]]
-                        else:
-                            seed = 3 * [0.]
-
-                        if len(line) >= 11:
-                            for i in const.BTNS_IMG_MARKERS:
-                                if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
-                                elif marker_id == 'TARGET':
-                                    target = count_line
-                        else:
-                            marker_id = '*'
-
-                        if len(line) == 15:
-                            target_id = line[14]
-                        else:
-                            target_id = '*'
+                    if len(line) > 11:
+                        seed = [float(s) for s in line[11:14]]
                     else:
-                        # for compatibility with previous version without the extra seed and target columns
-                        coord = float(line[0]), float(line[1]), float(line[2]), 0, 0, 0
-                        colour = float(line[3]), float(line[4]), float(line[5])
-                        size = float(line[6])
+                        seed = 3 * [0.]
 
-                        seed = 3 * [0]
+                    if len(line) >= 11:
+                        for i in const.BTNS_IMG_MARKERS:
+                            if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
+                                Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
+                            elif marker_id == 'TARGET':
+                                target = count_line
+                    else:
+                        marker_id = '*'
+
+                    if len(line) == 15:
+                        target_id = line[14]
+                    else:
                         target_id = '*'
+                else:
+                    # for compatibility with previous version without the extra seed and target columns
+                    coord = float(line[0]), float(line[1]), float(line[2]), 0, 0, 0
+                    colour = float(line[3]), float(line[4]), float(line[5])
+                    size = float(line[6])
 
-                        if len(line) == 8:
-                            marker_id = line[7]
-                            for i in const.BTNS_IMG_MARKERS:
-                                if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
-                        else:
-                            marker_id = '*'
+                    seed = 3 * [0]
+                    target_id = '*'
 
-                    self.CreateMarker(coord=coord, colour=colour, size=size,
-                                      marker_id=marker_id, target_id=target_id, seed=seed)
+                    if len(line) == 8:
+                        marker_id = line[7]
+                        for i in const.BTNS_IMG_MARKERS:
+                            if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
+                                Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
+                    else:
+                        marker_id = '*'
 
-                    # if there are multiple TARGETS will set the last one
-                    if target:
-                        self.OnMenuSetTarget(target)
+                self.CreateMarker(coord=coord, colour=colour, size=size,
+                                  marker_id=marker_id, target_id=target_id, seed=seed)
 
-                    count_line += 1
-            except:
-                wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
+                # if there are multiple TARGETS will set the last one
+                if target:
+                    self.OnMenuSetTarget(target)
+
+                count_line += 1
+        except:
+            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
 
@@ -1768,7 +1772,7 @@ class MarkersPanel(wx.Panel):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
                                           wildcard=const.WILDCARD_MARKER_FILES,
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                          default_filename="markers.mks", save_ext="mks")
+                                          default_filename=default_filename)
 
         header_titles = ['x', 'y', 'z', 'alpha', 'beta', 'gamma', 'r', 'g', 'b',
                          'size', 'marker_id', 'x_seed', 'y_seed', 'z_seed', 'target_id']
