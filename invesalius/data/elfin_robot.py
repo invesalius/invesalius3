@@ -287,21 +287,21 @@ class ControlRobot(threading.Thread):
                         self.trck_init_robot.StopRobot()
                         self.coord_inv_old = coord_inv
                     else:
-                        #print(self.process_tracker.estimate_head_center(self.tracker, current_ref_filtered))
                         if self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) < 100:
                             self.trck_init_robot.SendCoordinates(coord_inv)
 
                         elif self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) >= 100:
                             actual_point = coord_robot_raw
 
-                            pc = 756,-90,188, coord_inv[3], coord_inv[4], coord_inv[5]
+                            coord_head = self.process_tracker.estimate_head_center(self.tracker, current_ref_filtered).tolist()
+                            pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
 
                             self.trck_init_robot.StopRobot()
                             target_linear, target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc, coord_inv)
                             self.trck_init_robot.SendCoordinatesArc(target_linear, target_arc)
                             self.trck_init_robot.StopRobot()
                             self.trck_init_robot.SendCoordinates(coord_inv)
-                            sleep(10)
+                            #sleep(10)
                         self.coord_inv_old = coord_inv
             else:
                 self.trck_init_robot.StopRobot()
