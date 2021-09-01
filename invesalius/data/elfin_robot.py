@@ -271,21 +271,21 @@ class ControlRobot(threading.Thread):
                         self.coord_inv_old = coord_inv
 
                     if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 5):
-                        # print("At target within range 5")
+                        # print("At target within range 5").
                         pass
                     elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
                         # print("stop")
                         self.trck_init_robot.StopRobot()
                         self.coord_inv_old = coord_inv
                     else:
-                        #print(self.process_tracker.estimate_head_center(self.tracker, current_ref_filtered))
                         if self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) < 100:
                             self.trck_init_robot.SendCoordinates(coord_inv)
 
                         elif self.process_tracker.correction_distance_calculation_target(coord_inv,coord_robot_raw) >= 100:
                             actual_point = coord_robot_raw
 
-                            pc = 756,-90,188, coord_inv[3], coord_inv[4], coord_inv[5]
+                            coord_head = self.process_tracker.estimate_head_center(self.tracker, current_ref_filtered).tolist()
+                            pc = coord_head[0],coord_head[1],coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
 
                             self.trck_init_robot.StopRobot()
                             target_linear, target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc, coord_inv)
