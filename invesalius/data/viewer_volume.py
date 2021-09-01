@@ -345,16 +345,18 @@ class Viewer(wx.Panel):
             # self._check_and_set_ball_visibility()
             self._ball_ref_visibility = True
             # if self._to_show_ball:
-            if not self.ball_actor:
+            if not self.ball_actor and not self.actor_peel:
                 self.CreateBallReference()
-
+                self.ball_actor.SetVisibility(1)
+            else:
+                self.ball_actor.SetVisibility(0)
             self.interactor.Render()
 
     def _uncheck_ball_reference(self, style):
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = False
             # self.RemoveBallReference()
-            self._ball_ref_visibility = False
+            self._ball_ref_visibility = True
             if self.ball_actor:
                 self.ren.RemoveActor(self.ball_actor)
                 self.ball_actor = None
@@ -1236,10 +1238,11 @@ class Viewer(wx.Panel):
     #     self.UpdateCameraBallPosition(None, position)
 
     def UpdateCameraBallPosition(self, position):
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-        self.ball_actor.SetPosition(coord_flip)
-        self.SetVolumeCamera(coord_flip)
+        if not self.actor_peel:
+            coord_flip = list(position[:3])
+            coord_flip[1] = -coord_flip[1]
+            self.ball_actor.SetPosition(coord_flip)
+            self.SetVolumeCamera(coord_flip)
 
     def CreateObjectPolyData(self, filename):
         """
