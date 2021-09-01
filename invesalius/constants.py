@@ -803,5 +803,7 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
                   'write_interval': 50, 'numb_threads': '', 'max_lenth': 200,
                   'min_lenth': 20, 'max_sampling_step': 100}
 
+MARKER_FILE_MAGICK_STRING = "INVESALIUS3_MARKER_FILE_"
+CURRENT_MARKER_FILE_VERSION = 0
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") + "|" +\
                         _("Marker files (*.mks)|*.mks")
