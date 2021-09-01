@@ -1428,6 +1428,9 @@ class MarkersPanel(wx.Panel):
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
+        
+        # Define CSV dialect for saving/loading markers
+        csv.register_dialect('markers_dialect', delimiter='\t', quoting=csv.QUOTE_NONNUMERIC)
 
         # Change marker size
         spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
@@ -1676,23 +1679,18 @@ class MarkersPanel(wx.Panel):
     def OnLoadMarkers(self, evt):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
                                           wildcard=const.WILDCARD_MARKER_FILES)
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # marker_path = 'markers.mks'
-        # filename = os.path.join(data_dir, marker_path)
-
-        if filename:
+        
+        def __legacy_load_markers(filename):
+            """Code for  loading markers in the old .mks format. To be deprecated at some point."""
             try:
                 count_line = self.lc.GetItemCount()
-                # content = [s.rstrip() for s in open(filename)]
+                
+                # read lines from the file
                 with open(filename, 'r') as file:
                     reader = csv.reader(file, delimiter='\t')
-
-                    # skip the header
-                    if filename.lower().endswith('.mkss'):
-                        next(reader)
-
                     content = [row for row in reader]
 
+                # parse the lines and update the markers list
                 for line in content:
                     target = None
                     if len(line) > 8:
@@ -1746,6 +1744,62 @@ class MarkersPanel(wx.Panel):
                     count_line += 1
             except:
                 wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
+        
+        if not filename:
+            return
+
+        if filename.lower().endswith('.mks'):
+            __legacy_load_markers(filename)
+            return
+        
+        # Treat any extension othjer than .mks as 'new' format that has magick
+        # string and version number
+        try:
+            count_line = self.lc.GetItemCount()
+            
+            with open(filename, 'r') as file:
+                magick_line = file.readline()
+                assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
+                ver = int(magick_line.split('_')[-1])
+                if ver != 0:
+                    wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
+                    return
+                
+                # read lines from the file
+                reader = csv.reader(file, dialect='markers_dialect')
+                next(reader) # skip the header line
+                content = [row for row in reader]
+                
+                # parse the lines and update the markers list
+                for line in content:
+                    target = None
+    
+                    coord = [float(s) for s in line[:6]]
+                    colour = [float(s) for s in line[6:9]]
+                    size = float(line[9])
+                    marker_id = line[10]
+
+                    seed = [float(s) for s in line[11:14]]
+
+                    for i in const.BTNS_IMG_MARKERS:
+                        if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
+                            Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
+                        elif marker_id == 'TARGET':
+                            target = count_line
+
+                    target_id = line[14]
+
+                    self.CreateMarker(coord=coord, colour=colour, size=size,
+                                      marker_id=marker_id, target_id=target_id, seed=seed)
+
+                    # if there are multiple TARGETS will set the last one
+                    if target:
+                        self.OnMenuSetTarget(target)
+
+                    count_line += 1
+          
+        except:
+            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
 
     def OnMarkersVisibility(self, evt, ctrl):
 
@@ -1768,7 +1822,7 @@ class MarkersPanel(wx.Panel):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
                                           wildcard=const.WILDCARD_MARKER_FILES,
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                          default_filename="markers.mks", save_ext="mks")
+                                          default_filename=default_filename)
 
         header_titles = ['x', 'y', 'z', 'alpha', 'beta', 'gamma', 'r', 'g', 'b',
                          'size', 'marker_id', 'x_seed', 'y_seed', 'z_seed', 'target_id']
@@ -1776,9 +1830,11 @@ class MarkersPanel(wx.Panel):
         if filename:
             if self.list_coord:
                 with open(filename, 'w', newline='') as file:
-                    writer = csv.writer(file, delimiter='\t')
-
-                    if filename.lower().endswith('.mkss'):
+                    if filename.lower().endswith('.mks'):
+                        writer = csv.writer(file, delimiter='\t')
+                    else:
+                        file.writelines(['%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)])
+                        writer = csv.writer(file, dialect='markers_dialect')
                         writer.writerow(header_titles)
 
                     writer.writerows(self.list_coord)
