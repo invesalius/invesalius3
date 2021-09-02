@@ -93,7 +93,6 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     coord3 = np.array([float(trck.PositionCoilZ1) * scale[0], float(trck.PositionCoilX1) * scale[1],
                        float(trck.PositionCoilY1) * scale[2]])
     coord3 = np.hstack((coord3, angles_coil))
-
     coord = np.vstack([coord1, coord2, coord3])
     return coord
 
