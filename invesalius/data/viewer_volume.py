@@ -1545,7 +1545,8 @@ class Viewer(wx.Panel):
                 #self.x_actor.SetVisibility(self.obj_state)
                 #self.y_actor.SetVisibility(self.obj_state)
                 #self.z_actor.SetVisibility(self.obj_state)
-
+                #self.object_orientation_torus_actor.SetVisibility(self.obj_state)
+                #self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
         self.Refresh()
 
     def UpdateSeedOffset(self, data):
