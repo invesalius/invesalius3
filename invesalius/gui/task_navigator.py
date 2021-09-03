@@ -566,16 +566,29 @@ class Tracker():
     def AreTrackerFiducialsSet(self):
         return not np.isnan(self.tracker_fiducials).any()
 
+    def GetTrackerCoordinates(self, n_samples=1):
+        coord_raw_samples = {}
+        coord_samples = {}
+
+        for i in range(n_samples):
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+
+            if self.ref_mode_id:
+                coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
+            else:
+                coord = coord_raw[0, :]
+                coord[2] = -coord[2]
+
+            coord_raw_samples[i] = coord_raw
+            coord_samples[i] = coord
+
+        coord_raw_avg = np.mean(list(coord_raw_samples.values()), axis=0)
+        coord_avg = np.mean(list(coord_samples.values()), axis=0)
+
+        return coord_avg, coord_raw_avg
+
     def SetTrackerFiducial(self, fiducial_index):
-        coord = None
-
-        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-
-        if self.ref_mode_id:
-            coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
-        else:
-            coord = coord_raw[0, :]
-            coord[2] = -coord[2]
+        coord, coord_raw = self.GetTrackerCoordinates(n_samples=const.FIDUCIAL_REGISTRATION_TRACKER_SAMPLES)
 
         # Update tracker fiducial with tracker coordinates
         self.tracker_fiducials[fiducial_index, :] = coord[0:3]
