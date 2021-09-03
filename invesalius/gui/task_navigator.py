@@ -718,7 +718,7 @@ class Robot():
         try:
             self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
         except queue.Full:
-            print('full')
+            print('full target')
             pass
 
     def OnObjectTarget(self, state):
@@ -726,7 +726,7 @@ class Robot():
             if self.objattarget_queue:
                 self.objattarget_queue.put_nowait(state)
         except queue.Full:
-            print('full')
+            #print('full flag target')
             pass
 
     def SetRobotQueues(self, queues):
@@ -1494,8 +1494,8 @@ class MarkersPanel(wx.Panel):
         self.mchange = None
         self.flag_target = False
 
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdateSendCoord, self.timer)
+        # self.timer = wx.Timer(self)
+        # self.Bind(wx.EVT_TIMER, self.OnUpdateSendCoord, self.timer)
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1630,8 +1630,8 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
         send_coord_robot = menu_id.Append(3, _('Send coord to robot'))
-        menu_id.Bind(wx.EVT_MENU, self.OnContinuousSendCoord, send_coord_robot)
-        #menu_id.Bind(wx.EVT_MENU, self.OnMenuSendCoord, send_coord_robot)
+        #menu_id.Bind(wx.EVT_MENU, self.OnContinuousSendCoord, send_coord_robot)
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendCoord, send_coord_robot)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1707,22 +1707,22 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
-    def OnContinuousSendCoord(self, evt=None):
-        self.timer.Start(20000)
-
-    def OnUpdateSendCoord(self, evt):
-        self.OnMenuSendCoord(evt=None)
+    # def OnContinuousSendCoord(self, evt=None):
+    #     self.timer.Start(30000)
+    #
+    # def OnUpdateSendCoord(self, evt):
+    #     self.OnMenuSendCoord(evt=None)
 
     def OnMenuSendCoord(self, evt):
-        #if isinstance(evt, int):
-        #    self.lc.Focus(evt)
-        #coord = self.list_coord[self.lc.GetFocusedItem()]
-        coord_target = self.list_coord[3]
-        coord_home = self.list_coord[4]
-        if self.flag_target:
-            coord = coord_home
-        else:
-            coord = coord_target
+        if isinstance(evt, int):
+           self.lc.Focus(evt)
+        coord = self.list_coord[self.lc.GetFocusedItem()]
+        # coord_target = self.list_coord[3]
+        # coord_home = self.list_coord[4]
+        # if self.flag_target:
+        #     coord = coord_home
+        # else:
+        #     coord = coord_target
 
         trans = tr.translation_matrix(coord[14:17])
         a, b, g = np.radians(coord[17:20])

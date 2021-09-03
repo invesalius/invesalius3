@@ -36,13 +36,16 @@ class TrackerCoordinates():
         self.coord = None
         self.markers_flag = [False, False, False]
 
-    def GetCoordinates(self):
+    def SetCoordinates(self, coord, markers_flag):
+        self.coord = coord
+        self.markers_flag = markers_flag
         wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+
+    def GetCoordinates(self):
         return self.coord, self.markers_flag
 
-#TODO: create a thread to get coordinates. Invesalius will get the coord from another class, updated by the thread
-def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
 
+def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
     """
     Read coordinates from spatial tracking devices using
 
@@ -183,66 +186,13 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 def ElfinCoord(trck_init):
     if len(trck_init) > 2:
         robotcoordinates = trck_init[-1]
-        if robotcoordinates.coord is None:
+        coord = robotcoordinates.GetRobotCoordinates()
+        if coord is None:
             coord = np.array([0, 0, 0, 0, 0, 0])
-        else:
-            coord = robotcoordinates.coord
     else:
         coord = np.array([0, 0, 0, 0, 0, 0])
 
     return coord, None
-
-def PolarisP4Coord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
-    trck.Run()
-
-    probe = trck.probe.decode(const.FS_ENCODE)
-    ref = trck.ref.decode(const.FS_ENCODE)
-    obj = trck.obj.decode(const.FS_ENCODE)
-
-    probe = probe[2:]
-    ref = ref[2:]
-    obj = obj[2:]
-
-    if probe[:7] == "MISSING":
-        if not "coord1" in locals():
-            coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        sign = [n for n in range(len(probe)) if probe.find('+', n) == n or probe.find('-', n) == n]
-        if len(sign) == 8:
-            q = [int(probe[sign[i]:sign[i+1]]) * 0.0001 for i in range(4)]
-            t = [int(probe[sign[i]:sign[i+1]]) * 0.01 for i in range(4, 7)]
-            angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-            trans_probe = np.array(t).astype(float)
-            coord1 = np.hstack((trans_probe, angles_probe))
-
-    if ref[:7] == "MISSING":
-        if not "coord2" in locals():
-            coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        sign = [n for n in range(len(ref)) if ref.find('+', n) == n or ref.find('-', n) == n]
-        if len(sign) == 8:
-            q = [int(ref[sign[i]:sign[i+1]]) * 0.0001 for i in range(4)]
-            t = [int(ref[sign[i]:sign[i+1]]) * 0.01 for i in range(4, 7)]
-            angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-            trans_ref = np.array(t).astype(float)
-            coord2 = np.hstack((trans_ref, angles_ref))
-
-    if obj[:7] == "MISSING":
-        if not "coord3" in locals():
-            coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        sign = [n for n in range(len(obj)) if obj.find('+', n) == n or obj.find('-', n) == n]
-        if len(sign) == 8:
-            q = [int(obj[sign[i]:sign[i+1]]) * 0.0001 for i in range(4)]
-            t = [int(obj[sign[i]:sign[i+1]]) * 0.01 for i in range(4, 7)]
-            angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-            trans_obj = np.array(t).astype(float)
-            coord3 = np.hstack((trans_obj, angles_obj))
-
-    coord = np.vstack([coord1, coord2, coord3])
-
-    return coord, [trck.probeID, trck.refID, trck.objID]
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -594,6 +544,5 @@ class ReceiveCoordinates(threading.Thread):
     def run(self):
         while not self.event.is_set():
             coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
-            self.TrackerCoordinates.coord = coord_raw
-            self.TrackerCoordinates.markers_flag = markers_flag
+            self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
             sleep(const.SLEEP_COORDINATES)

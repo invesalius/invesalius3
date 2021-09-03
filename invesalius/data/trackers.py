@@ -157,35 +157,6 @@ def PolarisP4Tracker(tracker_id):
     return trck_init, lib_mode
 
 
-def PolarisP4Tracker(tracker_id):
-    from wx import ID_OK
-    trck_init = None
-    dlg_port = dlg.SetNDIconfigs()
-    if dlg_port.ShowModal() == ID_OK:
-        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
-        try:
-            import pypolarisP4
-            lib_mode = 'wrapper'
-            trck_init = pypolarisP4.pypolarisP4()
-
-            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
-                trck_init = None
-                lib_mode = None
-                print('Could not connect to Polaris P4 tracker.')
-            else:
-                print('Connect to Polaris P4 tracking device.')
-
-        except:
-            lib_mode = 'error'
-            trck_init = None
-            print('Could not connect to Polaris P4 tracker.')
-    else:
-        lib_mode = None
-        print('Could not connect to Polaris P4 tracker.')
-    # return tracker initialization variable and type of connection
-    return trck_init, lib_mode
-
-
 def CameraTracker(tracker_id):
     trck_init = None
     try:
