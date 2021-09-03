@@ -287,7 +287,7 @@ class InnerFoldPanel(wx.Panel):
 
         Publisher.sendMessage('Update serial port', serial_port=com_port)
 
-    def OnShowObject(self, evt=None, flag=None, obj_name=None, polydata=None):
+    def OnShowObject(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if not evt:
             if flag:
                 self.checkobj.Enable(True)
@@ -966,7 +966,7 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateObjectRegistration(self, data=None):
         self.navigation.obj_reg = data
 
-    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         self.navigation.track_obj = flag
 
     def UpdateSerialPort(self, serial_port):
@@ -1320,7 +1320,7 @@ class ObjectRegistrationPanel(wx.Panel):
             dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata = dialog.GetValue()
+                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
@@ -1329,7 +1329,13 @@ class ObjectRegistrationPanel(wx.Panel):
                                               label=_("Ready"))
                         # Enable automatically Track object, Show coil and disable Vol. Camera
                         self.checktrack.SetValue(True)
-                        Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name, polydata=polydata)
+                        Publisher.sendMessage(
+                            'Update track object state',
+                            flag=True,
+                            obj_name=self.obj_name,
+                            polydata=polydata,
+                            use_default_object=use_default_object,
+                        )
                         Publisher.sendMessage('Change camera checkbox', status=False)
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
