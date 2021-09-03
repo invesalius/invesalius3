@@ -705,6 +705,7 @@ class NeuronavigationPanel(wx.Panel):
         self.icp = ICP()
 
         self.nav_status = False
+        self.tracker_fiducial_being_set = None
 
         # Initialize list of buttons and numctrls for wx objects
         self.btns_set_fiducial = [None, None, None, None, None, None]
@@ -737,9 +738,11 @@ class NeuronavigationPanel(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            self.btns_set_fiducial[n] = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
-            self.btns_set_fiducial[n].SetToolTip(wx.ToolTip(tip))
-            self.btns_set_fiducial[n].Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
+            ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
+            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
+
+            self.btns_set_fiducial[n] = ctrl
 
         # Push buttons for tracker fiducials
         for n, fiducial in enumerate(const.TRACKER_FIDUCIALS):
@@ -747,9 +750,11 @@ class NeuronavigationPanel(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            self.btns_set_fiducial[n + 3] = wx.Button(self, button_id, label=label, size=wx.Size(45, 23))
-            self.btns_set_fiducial[n + 3].SetToolTip(wx.ToolTip(tip))
-            self.btns_set_fiducial[n + 3].Bind(wx.EVT_BUTTON, partial(self.OnTrackerFiducials, n))
+            ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
+            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, n, ctrl=ctrl))
+
+            self.btns_set_fiducial[n + 3] = ctrl
 
         # TODO: Find a better allignment between FRE, text and navigate button
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
@@ -1028,9 +1033,29 @@ class NeuronavigationPanel(wx.Panel):
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=np.nan)
             Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
 
-    def OnTrackerFiducials(self, n, evt):
-        fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
-        Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
+    def OnTrackerFiducials(self, n, evt, ctrl):
+
+        # Do not allow several tracker fiducials to be set at the same time.
+        if self.tracker_fiducial_being_set is not None and self.tracker_fiducial_being_set != n:
+            ctrl.SetValue(False)
+            return
+
+        # Called when the button for setting the tracker fiducial is enabled and either pedal is pressed
+        # or the button is pressed again.
+        #
+        def set_fiducial_callback():
+            fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
+            Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
+            self.pedal_connection.remove_callback('fiducial')
+
+            ctrl.SetValue(False)
+            self.tracker_fiducial_being_set = None
+
+        if ctrl.GetValue() is True:
+            self.tracker_fiducial_being_set = n
+            self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
+        else:
+            set_fiducial_callback()
 
     def OnStopNavigation(self):
         select_tracker_elem = self.select_tracker_elem
