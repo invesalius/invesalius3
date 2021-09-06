@@ -1051,7 +1051,7 @@ class NeuronavigationPanel(wx.Panel):
             ctrl.SetValue(False)
             self.tracker_fiducial_being_set = None
 
-        if ctrl.GetValue() is True:
+        if ctrl.GetValue():
             self.tracker_fiducial_being_set = n
             self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
         else:
