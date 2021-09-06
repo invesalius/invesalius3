@@ -3267,6 +3267,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
+        self.use_default_object = False
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3379,8 +3380,9 @@ class ObjectCalibrationDialog(wx.Dialog):
             return 0
 
     def LoadObject(self):
-        default = self.ObjectImportDialog()
-        if not default:
+        self.use_default_object = self.ObjectImportDialog()
+
+        if not self.use_default_object:
             filename = ShowImportMeshFilesDialog()
 
             if filename:
@@ -3398,6 +3400,12 @@ class ObjectCalibrationDialog(wx.Dialog):
             else:
                 filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
                 reader = vtk.vtkSTLReader()
+
+                # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
+                #      use the default object after all. A more logical behavior in that case would be to cancel the
+                #      whole object calibration, but implementing that would need larger refactoring.
+                #
+                self.use_default_object = True
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()
@@ -3531,7 +3539,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
 
     def GetValue(self):
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata, self.use_default_object
 
 class ICPCorregistrationDialog(wx.Dialog):
 

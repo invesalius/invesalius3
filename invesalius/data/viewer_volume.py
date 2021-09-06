@@ -192,6 +192,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor = None
         self.target_mode = False
         self.polydata = None
+        self.use_default_object = True
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
@@ -1022,10 +1023,10 @@ class Viewer(wx.Panel):
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
 
-        if self.polydata:
-            obj_polydata = self.polydata
-        else:
+        if self.use_default_object:
             obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+        else:
+            obj_polydata = self.polydata
 
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
@@ -1610,10 +1611,11 @@ class Viewer(wx.Panel):
             self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
-    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if flag:
             self.obj_name = obj_name
             self.polydata = polydata
+            self.use_default_object = use_default_object
             if not self.obj_actor:
                 self.AddObjectActor(self.obj_name)
         else:
