@@ -64,6 +64,7 @@ import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 from invesalius import utils
+from invesalius.gui import utils as gui_utils
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -738,7 +739,8 @@ class NeuronavigationPanel(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
+            ctrl = wx.ToggleButton(self, button_id, label=label)
+            ctrl.SetMinSize((gui_utils.calc_width_needed(ctrl, 3), -1))
             ctrl.SetToolTip(wx.ToolTip(tip))
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
 
@@ -750,7 +752,8 @@ class NeuronavigationPanel(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(45, 23))
+            ctrl = wx.ToggleButton(self, button_id, label=label)
+            ctrl.SetMinSize((gui_utils.calc_width_needed(ctrl, 3), -1))
             ctrl.SetToolTip(wx.ToolTip(tip))
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, n, ctrl=ctrl))
 
