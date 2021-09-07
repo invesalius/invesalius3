@@ -581,7 +581,7 @@ class Tracker():
         for i in range(n_samples):
             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, ref_mode_id)
 
-            if ref_mode_id:
+            if ref_mode_id == const.DYNAMIC_REF:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             else:
                 coord = coord_raw[0, :]
@@ -598,7 +598,7 @@ class Tracker():
     def SetTrackerFiducial(self, ref_mode_id, fiducial_index):
         coord, coord_raw = self.GetTrackerCoordinates(
             ref_mode_id=ref_mode_id,
-            n_samples=const.FIDUCIAL_REGISTRATION_TRACKER_SAMPLES,
+            n_samples=const.CALIBRATION_TRACKER_SAMPLES,
         )
 
         # Update tracker fiducial with tracker coordinates
