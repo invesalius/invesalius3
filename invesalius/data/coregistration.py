@@ -201,7 +201,7 @@ class CoordinateCorregistrate(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 1
 
-        trck_init, trck_id, trck_mode = self.tracker.GetTrackerInfo()
+        trck_init, trck_id = self.tracker.GetTrackerInfo()
 
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
@@ -211,7 +211,7 @@ class CoordinateCorregistrate(threading.Thread):
                 else:
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
-                coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+                coord_raw = dco.GetCoordinates(trck_init, trck_id, self.ref_mode_id)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
@@ -276,7 +276,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 0
 
-        trck_init, trck_id, trck_mode = self.tracker.GetTrackerInfo()
+        trck_init, trck_id = self.tracker.GetTrackerInfo()
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
@@ -286,7 +286,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
                 #print(self.icp, self.m_icp)
-                coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+                coord_raw = dco.GetCoordinates(trck_init, trck_id, self.ref_mode_id)
                 coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()

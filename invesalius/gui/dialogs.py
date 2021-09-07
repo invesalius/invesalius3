@@ -3260,10 +3260,11 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, nav_prop):
+    def __init__(self, tracker):
+        self.tracker = tracker
 
-        self.tracker_id = nav_prop[0]
-        self.trk_init = nav_prop[1]
+        self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
+
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None

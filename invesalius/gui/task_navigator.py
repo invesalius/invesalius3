@@ -158,6 +158,11 @@ class InnerFoldPanel(wx.Panel):
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 310), 0, fpb.FPB_SINGLE_FOLD)
+
+        # Initialize Tracker object here so that it is available to several panels.
+        #
+        tracker = Tracker()
+
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -166,7 +171,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationPanel(item)
+        ntw = NeuronavigationPanel(item, tracker)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -175,7 +180,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 2 - Object registration panel
         item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
-        otw = ObjectRegistrationPanel(item)
+        otw = ObjectRegistrationPanel(item, tracker)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
@@ -329,6 +334,9 @@ class Navigation():
         self.coord_tracts_queue = QueueCustom(maxsize=1)
         self.tracts_queue = QueueCustom(maxsize=1)
 
+        # Tracker parameters
+        self.ref_mode_id = const.DEFAULT_REF_MODE
+
         # Tractography parameters
         self.trk_inp = None
         self.trekker = None
@@ -364,6 +372,12 @@ class Navigation():
     def SerialPortEnabled(self):
         return self.serial_port is not None
 
+    def SetReferenceMode(self, value):
+        self.ref_mode_id = value
+
+    def GetReferenceMode(self):
+        return self.ref_mode_id
+
     def SetImageFiducial(self, fiducial_index, coord):
         self.image_fiducials[fiducial_index, :] = coord
 
@@ -374,11 +388,10 @@ class Navigation():
 
     def UpdateFiducialRegistrationError(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
-        ref_mode_id = tracker.GetReferenceMode()
 
         self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
 
-        self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, ref_mode_id, self.m_change)
+        self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, self.ref_mode_id, self.m_change)
 
     def GetFiducialRegistrationError(self, icp):
         fre = icp.icp_fre if icp.use_icp else self.fre
@@ -390,7 +403,6 @@ class Navigation():
 
     def StartNavigation(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
-        ref_mode_id = tracker.GetReferenceMode()
 
         # initialize jobs list
         jobs_list = []
@@ -425,8 +437,8 @@ class Navigation():
 
                 coreg_data = [m_change, obj_ref_mode]
 
-                if ref_mode_id:
-                    coord_raw = dco.GetCoordinates(tracker.trk_init, tracker.tracker_id, ref_mode_id)
+                if self.ref_mode_id:
+                    coord_raw = dco.GetCoordinates(tracker.trk_init, tracker.tracker_id, self.ref_mode_id)
                 else:
                     coord_raw = np.array([None])
 
@@ -434,14 +446,14 @@ class Navigation():
                 coreg_data.extend(obj_data)
 
                 queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
-                jobs_list.append(dcr.CoordinateCorregistrate(ref_mode_id, tracker, coreg_data,
+                jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
                                                                 self.target))
         else:
             coreg_data = (m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
-            jobs_list.append(dcr.CoordinateCorregistrateNoObject(ref_mode_id, tracker, coreg_data,
+            jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
                                                                     self.event, self.sleep_nav))
 
@@ -516,7 +528,6 @@ class Tracker():
     def __init__(self):
         self.trk_init = None
         self.tracker_id = const.DEFAULT_TRACKER
-        self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.tracker_fiducials = np.full([3, 3], np.nan)
         self.tracker_fiducials_raw = np.zeros((6, 6))
@@ -536,9 +547,6 @@ class Tracker():
             else:
                 self.tracker_id = new_tracker
                 self.tracker_connected = True
-
-            Publisher.sendMessage('Update tracker initializer',
-                                nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -566,14 +574,14 @@ class Tracker():
     def AreTrackerFiducialsSet(self):
         return not np.isnan(self.tracker_fiducials).any()
 
-    def GetTrackerCoordinates(self, n_samples=1):
+    def GetTrackerCoordinates(self, ref_mode_id, n_samples=1):
         coord_raw_samples = {}
         coord_samples = {}
 
         for i in range(n_samples):
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, ref_mode_id)
 
-            if self.ref_mode_id:
+            if ref_mode_id:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             else:
                 coord = coord_raw[0, :]
@@ -587,8 +595,11 @@ class Tracker():
 
         return coord_avg, coord_raw_avg
 
-    def SetTrackerFiducial(self, fiducial_index):
-        coord, coord_raw = self.GetTrackerCoordinates(n_samples=const.FIDUCIAL_REGISTRATION_TRACKER_SAMPLES)
+    def SetTrackerFiducial(self, ref_mode_id, fiducial_index):
+        coord, coord_raw = self.GetTrackerCoordinates(
+            ref_mode_id=ref_mode_id,
+            n_samples=const.FIDUCIAL_REGISTRATION_TRACKER_SAMPLES,
+        )
 
         # Update tracker fiducial with tracker coordinates
         self.tracker_fiducials[fiducial_index, :] = coord[0:3]
@@ -608,21 +619,7 @@ class Tracker():
         return self.tracker_fiducials, self.tracker_fiducials_raw
 
     def GetTrackerInfo(self):
-        return self.trk_init, self.tracker_id, self.ref_mode_id
-
-    def SetReferenceMode(self, value):
-        self.ref_mode_id = value
-
-        # When ref mode is changed the tracker coordinates are set to zero
-        self.ResetTrackerFiducials()
-
-        # Some trackers do not accept restarting within this time window
-        # TODO: Improve the restarting of trackers after changing reference mode
-        Publisher.sendMessage('Update tracker initializer',
-                              nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
-
-    def GetReferenceMode(self):
-        return self.ref_mode_id
+        return self.trk_init, self.tracker_id
 
     def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
         if self.tracker_connected:
@@ -650,20 +647,22 @@ class ICP():
         self.icp_fre = None
 
     def StartICP(self, navigation, tracker):
+        ref_mode_id = navigation.GetReferenceMode()
+
         if not self.use_icp:
             if dlg.ICPcorregistration(navigation.fre):
                 Publisher.sendMessage('Stop navigation')
-                use_icp, self.m_icp = self.OnICP(tracker, navigation.m_change)
+                use_icp, self.m_icp = self.OnICP(navigation, tracker, navigation.m_change)
                 if use_icp:
                     self.icp_fre = db.calculate_fre(tracker.tracker_fiducials_raw, navigation.all_fiducials,
-                                                    tracker.ref_mode_id, navigation.m_change, self.m_icp)
+                                                    ref_mode_id, navigation.m_change, self.m_icp)
                     self.SetICP(navigation, use_icp)
                 else:
                     print("ICP canceled")
                 Publisher.sendMessage('Start navigation')
 
-    def OnICP(self, tracker, m_change):
-        ref_mode_id = tracker.GetReferenceMode()
+    def OnICP(self, navigation, tracker, m_change):
+        ref_mode_id = navigation.GetReferenceMode()
 
         dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, tracker.tracker_id, tracker.trk_init, ref_mode_id))
 
@@ -697,7 +696,7 @@ class ICP():
         self.icp_fre = None
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, tracker):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -711,11 +710,11 @@ class NeuronavigationPanel(wx.Panel):
 
         # Initialize global variables
         self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
-        self.tracker = Tracker()
         self.navigation = Navigation(
             pedal_connection=self.pedal_connection,
         )
         self.icp = ICP()
+        self.tracker = tracker
 
         self.nav_status = False
 
@@ -920,7 +919,12 @@ class NeuronavigationPanel(wx.Panel):
         fiducial = self.GetFiducialByAttribute(const.TRACKER_FIDUCIALS, 'fiducial_name', fiducial_name)
         fiducial_index = fiducial['fiducial_index']
 
-        self.tracker.SetTrackerFiducial(fiducial_index)
+        # XXX: The reference mode is fetched from navigation object, however it seems like not quite
+        #      navigation-related attribute here, as the reference mode used during the fiducial registration
+        #      is more concerned with the calibration than the navigation.
+        #
+        ref_mode_id = self.navigation.GetReferenceMode()
+        self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
 
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -1010,7 +1014,14 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 
     def OnChooseReferenceMode(self, evt, ctrl):
-        self.tracker.SetReferenceMode(evt.GetSelection())
+        self.navigation.SetReferenceMode(evt.GetSelection())
+
+        # When ref mode is changed the tracker coordinates are set to zero
+        self.tracker.ResetTrackerFiducials()
+
+        # Some trackers do not accept restarting within this time window
+        # TODO: Improve the restarting of trackers after changing reference mode
+
         self.ResetICP()
 
         print("Reference mode changed!")
@@ -1155,7 +1166,7 @@ class NeuronavigationPanel(wx.Panel):
 
 
 class ObjectRegistrationPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, tracker):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1164,6 +1175,8 @@ class ObjectRegistrationPanel(wx.Panel):
         self.SetBackgroundColour(default_colour)
 
         self.coil_list = const.COIL
+
+        self.tracker = tracker
 
         self.nav_prop = None
         self.obj_fiducials = None
@@ -1274,13 +1287,9 @@ class ObjectRegistrationPanel(wx.Panel):
         self.Update()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.OnRemoveObject, 'Remove object data')
-
-    def UpdateTrackerInit(self, nav_prop):
-        self.nav_prop = nav_prop
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
@@ -1329,8 +1338,8 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def OnLinkCreate(self, event=None):
 
-        if self.nav_prop:
-            dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
+        if self.tracker.IsTrackerInitialized():
+            dialog = dlg.ObjectCalibrationDialog(self.tracker)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
