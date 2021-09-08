@@ -795,7 +795,7 @@ SEED_OFFSET = 15
 SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.1
+SLEEP_NAVIGATION = 0.15
 SLEEP_COORDINATES = 0.05
 
 BRAIN_OPACITY = 0.5

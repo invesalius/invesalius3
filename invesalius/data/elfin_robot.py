@@ -269,62 +269,62 @@ class ControlRobot(threading.Thread):
                 if self.process_tracker.head_move_threshold(current_ref_filtered):
                     coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
                                                                             self.m_change_robot2ref)
-                    #if self.coord_inv_old is None:
-                    #    self.coord_inv_old = coord_inv
+                    if self.coord_inv_old is None:
+                       self.coord_inv_old = coord_inv
 
-                    # if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 0.01):
-                    #     # print("At target within range 5")
-                    #     pass
-                    # elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
-                    #     # print("stop")
-                    #     self.trck_init_robot.StopRobot()
-                    #     self.coord_inv_old = coord_inv
-                    # else:
-                    self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
-                        # if self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) < 100 and not self.arcmotion_flag:
-                        #     self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
-                        #
-                        # elif self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) >= 100 or self.arcmotion_flag:
-                        #     actual_point = coord_robot_raw
-                        #     if not self.arcmotion_flag:
-                        #         coord_head = self.process_tracker.estimate_head_center(self.tracker,
-                        #                                                                current_ref_filtered).tolist()
-                        #         pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[
-                        #             5]
-                        #         self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc,
-                        #                                                                       coord_inv)
-                        #         self.arcmotion_flag = True
-                        #         self.arcmotion_step_flag = const.MOTIONS["linear out"]
-                        #
-                        #     if self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["linear out"]:
-                        #         coord = self.target_linearout
-                        #         if np.allclose(np.array(actual_point), np.array(self.target_linearout), 0, 1):
-                        #             self.arcmotion_step_flag = const.MOTIONS["arc"]
-                        #             coord = self.target_arc
-                        #
-                        #     elif self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["arc"]:
-                        #         coord_head = self.process_tracker.estimate_head_center(self.tracker,
-                        #                                                                current_ref_filtered).tolist()
-                        #         pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[
-                        #             5]
-                        #         _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc,
-                        #                                                                       coord_inv)
-                        #         if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
-                        #             None
-                        #         else:
-                        #             if self.process_tracker.correction_distance_calculation_target(coord_inv,
-                        #                                                                         coord_robot_raw) >= 80:
-                        #                 self.target_arc = new_target_arc
-                        #
-                        #         coord = self.target_arc
-                        #
-                        #         if np.allclose(np.array(actual_point), np.array(self.target_arc[3:-1]), 0, 10):
-                        #             self.arcmotion_flag = False
-                        #             self.arcmotion_step_flag = const.MOTIONS["normal"]
-                        #             coord = coord_inv
-                        #
-                        #     self.trck_init_robot.SendCoordinates(coord, self.arcmotion_step_flag)
-                        #self.coord_inv_old = coord_inv
+                    if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 0.01):
+                        # print("At target within range 5")
+                        pass
+                    elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
+                        # print("stop")
+                        self.trck_init_robot.StopRobot()
+                        self.coord_inv_old = coord_inv
+                    else:
+                    #self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
+                        if self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) < 100 and not self.arcmotion_flag:
+                            self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
+
+                        elif self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) >= 100 or self.arcmotion_flag:
+                            actual_point = coord_robot_raw
+                            if not self.arcmotion_flag:
+                                coord_head = self.process_tracker.estimate_head_center(self.tracker,
+                                                                                       current_ref_filtered).tolist()
+                                pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[
+                                    5]
+                                self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc,
+                                                                                              coord_inv)
+                                self.arcmotion_flag = True
+                                self.arcmotion_step_flag = const.MOTIONS["linear out"]
+
+                            if self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["linear out"]:
+                                coord = self.target_linearout
+                                if np.allclose(np.array(actual_point), np.array(self.target_linearout), 0, 1):
+                                    self.arcmotion_step_flag = const.MOTIONS["arc"]
+                                    coord = self.target_arc
+
+                            elif self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["arc"]:
+                                coord_head = self.process_tracker.estimate_head_center(self.tracker,
+                                                                                       current_ref_filtered).tolist()
+                                pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[
+                                    5]
+                                _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc,
+                                                                                              coord_inv)
+                                if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
+                                    None
+                                else:
+                                    if self.process_tracker.correction_distance_calculation_target(coord_inv,
+                                                                                                coord_robot_raw) >= 80:
+                                        self.target_arc = new_target_arc
+
+                                coord = self.target_arc
+
+                                if np.allclose(np.array(actual_point), np.array(self.target_arc[3:-1]), 0, 10):
+                                    self.arcmotion_flag = False
+                                    self.arcmotion_step_flag = const.MOTIONS["normal"]
+                                    coord = coord_inv
+
+                            self.trck_init_robot.SendCoordinates(coord, self.arcmotion_step_flag)
+                        self.coord_inv_old = coord_inv
             else:
                 self.trck_init_robot.StopRobot()
 
@@ -339,11 +339,11 @@ class ControlRobot(threading.Thread):
                 self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
                 self.robottarget_queue.task_done()
 
-            # if self.objattarget_queue.empty():
-            #     None
-            # else:
-            #     self.target_flag = self.objattarget_queue.get_nowait()
-            #     self.objattarget_queue.task_done()
+            if self.objattarget_queue.empty():
+                None
+            else:
+                self.target_flag = self.objattarget_queue.get_nowait()
+                self.objattarget_queue.task_done()
 
             self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
 
@@ -376,5 +376,4 @@ class ControlRobot(threading.Thread):
 
                 csv_writer.writerow(info)
 
-#sem sleep roda melhor
-            #sleep(0.01)
+                sleep(0.02)

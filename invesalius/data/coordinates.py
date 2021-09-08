@@ -39,9 +39,9 @@ class TrackerCoordinates():
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
-        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
 
     def GetCoordinates(self):
+        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
         return self.coord, self.markers_flag
 
 
@@ -87,8 +87,7 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
     obj = obj[2:]
 
     if probe[:7] == "MISSING":
-        if not "coord1" in locals():
-            coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
+        coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
         q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
         t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
@@ -97,8 +96,7 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         coord1 = np.hstack((trans_probe, angles_probe))
 
     if ref[:7] == "MISSING":
-        if not "coord2" in locals():
-            coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
+        coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
         q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
         t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
@@ -107,8 +105,7 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
         coord2 = np.hstack((trans_ref, angles_ref))
 
     if obj[:7] == "MISSING":
-        if not "coord3" in locals():
-            coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
+        coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
         q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
         t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
