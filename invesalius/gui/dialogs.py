@@ -3296,7 +3296,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
+        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChooseReferenceMode)
         choice_ref.SetSelection(1)
         choice_ref.Enable(1)
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
@@ -3396,7 +3396,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                 elif filename.lower().endswith('.vtp'):
                     reader = vtk.vtkXMLPolyDataReader()
                 else:
-                    wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                    wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
                     return
             else:
                 filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
@@ -3482,18 +3482,34 @@ class ObjectCalibrationDialog(wx.Dialog):
         return ball_actor, tactor
 
     def OnGetObjectFiducials(self, evt):
+        if not self.tracker.IsTrackerInitialized():
+            ShowNavigationTrackerWarning(0, 'choose')
+            return
+
         btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
 
-        if self.trk_init and self.tracker_id:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
-            if self.obj_ref_id and btn_id == 4:
-                coord = coord_raw[self.obj_ref_id, :]
-            else:
-                coord = coord_raw[0, :]
-        else:
-            ShowNavigationTrackerWarning(0, 'choose')
+        coord, coord_raw = self.tracker.GetTrackerCoordinates(
+            # XXX: Always use static reference mode when getting the coordinates. This is what the
+            #      code did previously, as well. At some point, it should probably be thought through
+            #      if this is actually what we want or if it should be changed somehow.
+            #
+            ref_mode_id=const.STATIC_REF,
+            n_samples=const.CALIBRATION_TRACKER_SAMPLES,
+        )
 
-        if btn_id == 3:
+        # XXX: The condition below happens when setting the "fixed" coordinate in the object calibration.
+        #      The case is not handled by GetTrackerCoordinates function, therefore redo some computation
+        #      that is already done once by GetTrackerCoordinates, namely, invert the y-coordinate.
+        #
+        #      (What is done here does not seem to be completely consistent with "always use static reference
+        #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
+        #      and not change the function to the point of potentially breaking it.)
+        #
+        if self.obj_ref_id and btn_id == 4:
+            coord = coord_raw[self.obj_ref_id, :]
+            coord[2] = -coord[2]
+
+        if btn_id == 3: 
             coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
@@ -3509,7 +3525,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:
             ShowNavigationTrackerWarning(0, 'choose')
 
-    def OnChoiceRefMode(self, evt):
+    def OnChooseReferenceMode(self, evt):
         # When ref mode is changed the tracker coordinates are set to nan
         # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
         # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
@@ -3517,13 +3533,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         # I use the index 2 directly here to send to the coregistration module where it is possible to access without
         # any conditional statement the correct index of coordinates.
 
-        if evt.GetSelection():
+        if evt.GetSelection() == 1:
             self.obj_ref_id = 2
             if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
             self.choice_sensor.Show(self.obj_ref_id)
+
         for m in range(0, 5):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
