@@ -3,25 +3,23 @@ channels:
   - bioconda
 dependencies:
   - python=3.7
-  - cython==0.29.22
-  - pillow==8.1.1
-  - wxpython==4.1.0
+  - cython==0.29.24
+  - pillow==8.3.2
   - pypubsub==4.0.3
   - configparser==5.0.1
   - h5py==2.10.0
   - imageio==2.9.0
   - nibabel==3.2.1
-  - numpy==1.20.1
-  - pooch==1.4.0
+  - numpy==1.21.2
   - psutil==5.8.0
   - pyserial==3.5
-  - scikit-image==0.18.1
-  - scipy==1.6.1
-  - vtk==9.0.1
-  - wxpython==4.1.0
+  - scikit-image==0.18.3
+  - scipy==1.7.1
+  - vtk==9.0.3
+  - wxpython==4.1.1
   - pip
   - pip:
-    - python-gdcm==3.0.8.1
+    - python-gdcm==3.0.9.1
     - plaidml-keras==0.7.0
     - theano==1.0.5
     - pyacvd==0.2.3
