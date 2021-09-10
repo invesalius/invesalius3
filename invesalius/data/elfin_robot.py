@@ -126,9 +126,11 @@ class TrackerProcessing:
 
         return versorfator
 
-    def arcmotion(self, actual_point, pc, coord_inv):
+    def arcmotion(self, actual_point, coord_head, coord_inv):
 
         p1 = coord_inv
+
+        pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
 
         versorfator1_calculado = self.Versores(pc,actual_point)
         init_ext_point = actual_point[0]+versorfator1_calculado[0],\
@@ -281,17 +283,17 @@ class ControlRobot(threading.Thread):
                         self.coord_inv_old = coord_inv
                     else:
                     #self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
-                        if self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) < 100 and not self.arcmotion_flag:
+                        distance_target = self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw)
+                        if distance_target < 100 and not self.arcmotion_flag:
                             self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
 
-                        elif self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) >= 100 or self.arcmotion_flag:
+                        elif distance_target >= 100 or self.arcmotion_flag:
                             actual_point = coord_robot_raw
                             if not self.arcmotion_flag:
                                 coord_head = self.process_tracker.estimate_head_center(self.tracker,
                                                                                        current_ref_filtered).tolist()
-                                pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[
-                                    5]
-                                self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc,
+
+                                self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
                                                                                               coord_inv)
                                 self.arcmotion_flag = True
                                 self.arcmotion_step_flag = const.MOTIONS["linear out"]
@@ -305,9 +307,8 @@ class ControlRobot(threading.Thread):
                             elif self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["arc"]:
                                 coord_head = self.process_tracker.estimate_head_center(self.tracker,
                                                                                        current_ref_filtered).tolist()
-                                pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[
-                                    5]
-                                _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, pc,
+
+                                _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
                                                                                               coord_inv)
                                 if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
                                     None

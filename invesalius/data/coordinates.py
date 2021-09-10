@@ -458,7 +458,7 @@ def HybridCoord(trk_init, trck_id, ref_mode):
     obj_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[2])
 
     if probe_tracker_in_robot is None:
-        print("Getting raw tracker")
+        #print("Getting raw tracker")
         probe_tracker_in_robot = coord_tracker[0]
         ref_tracker_in_robot = coord_tracker[1]
         obj_tracker_in_robot = coord_tracker[2]
