@@ -209,9 +209,9 @@ class Inv3SplashScreen(SplashScreen):
 
             else:
 
-                path = os.path.join(".","icons", icon_file)
+                path = os.path.join(inv_paths.ICON_DIR, icon_file)
                 if not os.path.exists(path):
-                    path = os.path.join(".", "icons", "splash_en.png")
+                    path = os.path.join(inv_paths.ICON_DIR, "splash_en.png")
 
             bmp = wx.Image(path).ConvertToBitmap()
 
