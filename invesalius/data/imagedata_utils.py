@@ -34,6 +34,7 @@ from vtk.util import numpy_support
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
+import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.data.transformations as tr
 import invesalius.reader.bitmap_reader as bitmap_reader
@@ -573,6 +574,43 @@ def convert_world_to_voxel(xyz, affine):
     ijk = ijk_homo.T[np.newaxis, 0, :3]
 
     return ijk
+
+
+# TODO: Add a description of different coordinate systems, including:
+#       - InVesalius's internal coordinate system,
+#       - the world coordinate system,
+#       - the image coordinate system.
+#
+def convert_invesalius_to_world(xyz):
+    """
+    Convert a coordinate from the Invesalius space to the world space.
+
+    Uses 'affine' matrix defined in the project. If it is undefined, return None.
+
+    More information: https://nipy.org/nibabel/coordinate_systems.html
+
+    :param xyz: a vector of 6 coordinates (three for position and three for orientation) in InVesalius space.
+    :return: a vector of 6 coordinates in world space, or None if 'affine' matrix is not defined in the project.
+    """
+    slice = sl.Slice()
+    affine = slice.affine
+    if slice.affine is None:
+        return None
+
+    world2inv = np.linalg.inv(affine)
+    world2inv[1, -1] -= slice.spacing[1] * slice.matrix.shape[1]
+    inv2world = np.linalg.inv(world2inv)
+
+    M_inv = dco.coordinates_to_transformation_matrix(
+        position=xyz[:3],
+        orientation=xyz[3:],
+        axes='sxyz'
+    )
+    M_world = inv2world @ M_inv
+
+    xyz_world = dco.transformation_matrix_to_coordinates(M_world)
+
+    return xyz_world
 
 
 def create_grid(xy_range, z_range, z_offset, spacing):

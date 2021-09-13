@@ -367,6 +367,38 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     return np.vstack([coord1, coord2, coord3, coord4])
 
 
+def coordinates_to_transformation_matrix(position, orientation, axes='rzyx'):
+    """
+    Transform vectors consisting of position and orientation (in Euler angles) in 3d-space into a 4x4
+    transformation matrix that combines the rotation and translation.
+
+    :param position: A vector of three coordinates.
+    :param orientation: A vector of three Euler angles.
+    :param axes: The order of the axes for which the rotations are done. The first character ('s' or 'r')
+    determines the handedness. Defaults to 'rzyx'.
+    """
+    a, b, g = np.radians(orientation)
+    r_ref = tr.euler_matrix(a, b, g, axes=axes)
+    t_ref = tr.translation_matrix(position)
+    m_img = tr.concatenate_matrices(t_ref, r_ref)
+
+    return m_img
+
+
+def transformation_matrix_to_coordinates(matrix):
+    """
+    Transform a matrix that combines the rotation and translation into a vector that
+    consists of coordinates for position and orientation, the latter in Euler angles.
+
+    :param matrix: A 4x4 transformation matrix.
+    :return: A 1x6 vector consisting of coordinates for position (1x3) and orientation (1x3).
+    """
+    _, _, angles, translation, _ = tr.decompose_matrix(matrix)
+    angles_as_deg = np.degrees(angles)
+
+    return np.hstack((translation, angles_as_deg))
+
+
 def dynamic_reference(probe, reference):
     """
     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
@@ -413,11 +445,10 @@ def dynamic_reference_m(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
-    a, b, g = np.radians(reference[3:6])
-
-    trans = tr.translation_matrix(reference[:3])
-    rot = tr.euler_matrix(a, b, g, 'rzyx')
-    affine = tr.concatenate_matrices(trans, rot)
+    affine = coordinates_to_transformation_matrix(
+        position=reference[:3],
+        orientation=reference[3:],
+    )
     probe_4 = np.vstack((probe[:3].reshape([3, 1]), 1.))
     coord_rot = np.linalg.inv(affine) @ probe_4
     # minus sign to the z coordinate
@@ -440,17 +471,14 @@ def dynamic_reference_m2(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
-
-    a, b, g = np.radians(reference[3:6])
-    a_p, b_p, g_p = np.radians(probe[3:6])
-
-    T = tr.translation_matrix(reference[:3])
-    T_p = tr.translation_matrix(probe[:3])
-    R = tr.euler_matrix(a, b, g, 'rzyx')
-    R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-    M = tr.concatenate_matrices(T, R)
-    M_p = tr.concatenate_matrices(T_p, R_p)
-
+    M = coordinates_to_transformation_matrix(
+        position=reference[:3],
+        orientation=reference[3:],
+    )
+    M_p = coordinates_to_transformation_matrix(
+        position=probe[:3],
+        orientation=probe[3:],
+    )
     M_dyn = np.linalg.inv(M) @ M_p
 
     al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
