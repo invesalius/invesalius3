@@ -581,36 +581,39 @@ def convert_world_to_voxel(xyz, affine):
 #       - the world coordinate system,
 #       - the image coordinate system.
 #
-def convert_invesalius_to_world(xyz):
+def convert_invesalius_to_world(position, orientation):
     """
-    Convert a coordinate from the Invesalius space to the world space.
+    Convert position and orientation from the Invesalius space to the world space.
 
-    Uses 'affine' matrix defined in the project. If it is undefined, return None.
+    Uses 'affine' matrix defined in the project. If it is undefined, return two Nones.
 
     More information: https://nipy.org/nibabel/coordinate_systems.html
 
-    :param xyz: a vector of 6 coordinates (three for position and three for orientation) in InVesalius space.
-    :return: a vector of 6 coordinates in world space, or None if 'affine' matrix is not defined in the project.
+    :param position: a vector of 3 coordinates in InVesalius space.
+    :param orientation: a vector of 3 Euler angles in InVesalius space.
+    :return: a tuple consisting of 3 coordinates and 3 Euler angles in world space, or two Nones if 'affine' matrix
+             is not defined in the project.
     """
     slice = sl.Slice()
+
     affine = slice.affine
     if slice.affine is None:
-        return None
+        return None, None
 
     world2inv = np.linalg.inv(affine)
     world2inv[1, -1] -= slice.spacing[1] * slice.matrix.shape[1]
     inv2world = np.linalg.inv(world2inv)
 
     M_inv = dco.coordinates_to_transformation_matrix(
-        position=xyz[:3],
-        orientation=xyz[3:],
+        position=position,
+        orientation=orientation,
         axes='sxyz'
     )
     M_world = inv2world @ M_inv
 
-    xyz_world = dco.transformation_matrix_to_coordinates(M_world)
+    position_world, orientation_world = dco.transformation_matrix_to_coordinates(M_world)
 
-    return xyz_world
+    return position_world, orientation_world
 
 
 def create_grid(xy_range, z_range, z_offset, spacing):

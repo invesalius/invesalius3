@@ -387,16 +387,16 @@ def coordinates_to_transformation_matrix(position, orientation, axes='rzyx'):
 
 def transformation_matrix_to_coordinates(matrix):
     """
-    Transform a matrix that combines the rotation and translation into a vector that
-    consists of coordinates for position and orientation, the latter in Euler angles.
+    Transform a matrix that combines the rotation and translation into position and orientation.
+    The orientation is defined by the three Euler angles and is in degrees.
 
     :param matrix: A 4x4 transformation matrix.
-    :return: A 1x6 vector consisting of coordinates for position (1x3) and orientation (1x3).
+    :return: The position (1x3 vector) and Euler angles for the orientation (1x3 vector).
     """
     _, _, angles, translation, _ = tr.decompose_matrix(matrix)
     angles_as_deg = np.degrees(angles)
 
-    return np.hstack((translation, angles_as_deg))
+    return translation, angles_as_deg
 
 
 def dynamic_reference(probe, reference):

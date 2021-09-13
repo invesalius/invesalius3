@@ -1909,13 +1909,19 @@ class MarkersPanel(wx.Panel):
         size = size or self.marker_size
         seed = seed or self.current_seed
 
-        coord_world = imagedata_utils.convert_invesalius_to_world(coord)
+        position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position=coord[:3],
+            orientation=coord[3:],
+        )
 
-        # If 'affine' transformation is not defined in the project file, the coordinate transformation
-        # cannot be done. In that case, output zeros.
+        # If 'affine' transformation is not defined in the project file, the transformation from InVesalius
+        # space to world space cannot be done. In that case, output zeros.
         #
-        if coord_world is None:
-            coord_world = (0, 0, 0, 0, 0, 0)
+        if position_world is None:
+            position_world = (0, 0, 0)
+
+        if orientation_world is None:
+            orientation_world = (0, 0, 0)
 
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
@@ -1927,7 +1933,8 @@ class MarkersPanel(wx.Panel):
         # List of lists with coordinates and properties of a marker
         line = []
         line.extend(coord)
-        line.extend(coord_world)
+        line.extend(position_world)
+        line.extend(orientation_world)
         line.extend(colour)
         line.append(size)
         line.append(marker_id)
