@@ -36,6 +36,7 @@ from scipy.spatial import distance
 from imageio import imsave
 
 import invesalius.constants as const
+import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
@@ -984,10 +985,12 @@ class Viewer(wx.Panel):
 
         vtk_colors = vtk.vtkNamedColors()
 
-        a, b, g = np.radians(self.target_coord[3:])
-        r_ref = tr.euler_matrix(a, b, g, 'sxyz')
-        t_ref = tr.translation_matrix(self.target_coord[:3])
-        m_img = np.asmatrix(tr.concatenate_matrices(t_ref, r_ref))
+        m_img = dco.coordinates_to_transformation_matrix(
+            position=self.target_coord[:3],
+            orientation=self.target_coord[3:],
+            axes='sxyz',
+        )
+        m_img = np.asmatrix(m_img)
 
         m_img_vtk = vtk.vtkMatrix4x4()
 
