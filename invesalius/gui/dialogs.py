@@ -2560,6 +2560,41 @@ class PanelFFillConfidence(wx.Panel):
         self.config.confid_iters = self.spin_iters.GetValue()
 
 
+class PanelFFillProgress(wx.Panel):
+    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+        self._init_gui()
+
+    def _init_gui(self):
+        self.progress = wx.Gauge(self, -1)
+        self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
+        self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
+        time_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        time_sizer.Add(self.lbl_progress_caption, 0, wx.EXPAND, 0)
+        time_sizer.Add(self.lbl_time, 1, wx.EXPAND | wx.LEFT, 5)
+        main_sizer.Add(time_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+        main_sizer.SetSizeHints(self)
+
+    def StartTimer(self):
+        self.t0 = time.time()
+
+    def StopTimer(self):
+        fmt = "%H:%M:%S"
+        self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
+        self.progress.SetValue(0)
+
+    def Pulse(self):
+        fmt = "%H:%M:%S"
+        self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
+        self.progress.Pulse()
+
+
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
@@ -2817,6 +2852,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.panel_ffill_confidence.SetMinSize((250, -1))
         self.panel_ffill_confidence.Hide()
 
+        self.panel_ffill_progress = PanelFFillProgress(self, -1, style=wx.TAB_TRAVERSAL)
+        self.panel_ffill_progress.SetMinSize((250, -1))
+        # self.panel_ffill_progress.Hide()
+
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
         # Sizer
@@ -2873,11 +2912,16 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(0, 0, (12, 0))
         except TypeError:
             sizer.AddStretchSpacer((12, 0))
-        sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        sizer.Add(self.panel_ffill_progress, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
         try:
             sizer.Add(0, 0, (14, 0))
         except TypeError:
             sizer.AddStretchSpacer((14, 0))
+        sizer.Add(self.close_btn, (15, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        try:
+            sizer.Add(0, 0, (16, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((16, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)

@@ -2600,6 +2600,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 class FFillSegmentationConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.dlg_visible = False
+        self.dlg = None
         self.target = "2D"
         self.con_2d = 4
         self.con_3d = 6
@@ -2634,7 +2635,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.slice_data = viewer.slice_data
 
         self.config = FFillSegmentationConfig()
-        self.dlg_ffill = None
 
         self._progr_title = _(u"Region growing")
         self._progr_msg = _(u"Segmenting ...")
@@ -2652,14 +2652,14 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 self.config.t1 = int(_max)
 
             self.config.dlg_visible = True
-            self.dlg_ffill = dialogs.FFillSegmentationOptionsDialog(self.config)
-            self.dlg_ffill.Show()
+            self.config.dlg = dialogs.FFillSegmentationOptionsDialog(self.config)
+            self.config.dlg.Show()
 
     def CleanUp(self):
-        if (self.dlg_ffill is not None) and (self.config.dlg_visible):
+        if (self.config.dlg is not None) and (self.config.dlg_visible):
             self.config.dlg_visible = False
-            self.dlg_ffill.Destroy()
-            self.dlg_ffill = None
+            self.config.dlg.Destroy()
+            self.config.dlg = None
 
     def OnFFClick(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
@@ -2787,22 +2787,28 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(self.do_rg_confidence, image, mask, (x, y, z), bstruct)
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=wx.GetApp().GetTopWindow(), style=wx.PD_APP_MODAL|wx.PD_AUTO_HIDE)
+                self.config.dlg.panel_ffill_progress.Enable()
+                self.config.dlg.panel_ffill_progress.StartTimer()
                 while not future.done():
-                    dlg.Pulse()
+                    self.config.dlg.panel_ffill_progress.Pulse()
+                    self.config.dlg.Update()
                     time.sleep(0.1)
-                dlg.Destroy()
+                self.config.dlg.panel_ffill_progress.StopTimer()
+                self.config.dlg.panel_ffill_progress.Disable()
                 out_mask = future.result()
         else:
             out_mask = np.zeros_like(mask)
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=wx.GetApp().GetTopWindow(), style=wx.PD_APP_MODAL|wx.PD_AUTO_HIDE)
+                self.config.dlg.panel_ffill_progress.Enable()
+                self.config.dlg.panel_ffill_progress.StartTimer()
                 while not future.done():
-                    dlg.Pulse()
+                    self.config.dlg.panel_ffill_progress.Pulse()
+                    self.config.dlg.Update()
                     time.sleep(0.1)
-                dlg.Destroy()
+                self.config.dlg.panel_ffill_progress.StopTimer()
+                self.config.dlg.panel_ffill_progress.Disable()
 
         mask[out_mask.astype('bool')] = self.config.fill_value
 
