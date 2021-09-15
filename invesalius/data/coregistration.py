@@ -109,20 +109,25 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # transform raw marker coordinate to object center
     m_probe = object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw)
+
     # transform object center to reference marker if specified as dynamic reference
     if ref_mode_id:
         m_probe_ref = object_to_reference(coord_raw, m_probe)
     else:
         m_probe_ref = m_probe
+
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
     # corregistrate from tracker to image space
     m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
     if icp[0]:
         m_img = bases.transform_icp(m_img, icp[1])
+
     # compute rotation angles
-    _, _, angles, _, _ = tr.decompose_matrix(m_img)
-    # create output coordiante list
+    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+
+    # create output coordinate list
     coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
@@ -146,6 +151,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # transform raw marker coordinate to object center
     m_probe = compute_marker_transformation(coord_raw, obj_ref_mode)
+
     # transform object center to reference marker if specified as dynamic reference
     if ref_mode_id:
         m_ref = compute_marker_transformation(coord_raw, 1)
@@ -155,6 +161,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
     # corregistrate from tracker to image space
     m_img = m_change @ m_probe_ref
 
@@ -162,8 +169,9 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
         m_img = bases.transform_icp(m_img, icp[1])
 
     # compute rotation angles
-    _, _, angles, _, _ = tr.decompose_matrix(m_img)
-    # create output coordiante list
+    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+
+    # create output coordinate list
     coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
