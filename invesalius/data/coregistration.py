@@ -70,12 +70,11 @@ def object_to_reference(coord_raw, m_probe):
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """
-
-    a, b, g = np.radians(coord_raw[1, 3:])
-    r_ref = tr.euler_matrix(a, b, g, 'rzyx')
-    t_ref = tr.translation_matrix(coord_raw[1, :3])
-    m_ref = tr.concatenate_matrices(t_ref, r_ref)
-
+    m_ref = dco.coordinates_to_transformation_matrix(
+        position=coord_raw[1, :3],
+        orientation=coord_raw[1, 3:],
+        axes='rzyx',
+    )
     m_dyn = np.linalg.inv(m_ref) @ m_probe
     return m_dyn
 
@@ -133,10 +132,11 @@ def UpdateICP(self, m_icp, flag):
     self.icp = flag
 
 def compute_marker_transformation(coord_raw, obj_ref_mode):
-    psi, theta, phi = np.radians(coord_raw[obj_ref_mode, 3:])
-    r_probe = tr.euler_matrix(psi, theta, phi, 'rzyx')
-    t_probe = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
-    m_probe = tr.concatenate_matrices(t_probe, r_probe)
+    m_probe = dco.coordinates_to_transformation_matrix(
+        position=coord_raw[obj_ref_mode, :3],
+        orientation=coord_raw[obj_ref_mode, 3:],
+        axes='rzyx',
+    )
     return m_probe
 
 
