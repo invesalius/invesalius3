@@ -320,7 +320,6 @@ class Navigation():
 
         self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
-        self.current_coord = 0, 0, 0
         self.target = None
         self.obj_reg = None
         self.track_obj = False
@@ -719,6 +718,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
+        self.current_coord = 0, 0, 0
 
         # Initialize list of buttons and numctrls for wx objects
         self.btns_set_fiducial = [None, None, None, None, None, None]
@@ -981,7 +981,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
-        self.navigation.current_coord = position
+        self.current_coord = position
 
         for m in [0, 1, 2]:
             if not self.btns_set_fiducial[m].GetValue():
