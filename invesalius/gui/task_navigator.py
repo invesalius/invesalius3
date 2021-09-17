@@ -65,6 +65,7 @@ import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
+from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 
@@ -316,61 +317,6 @@ class InnerFoldPanel(wx.Panel):
             self.checkcamera.SetValue(status)
         Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
 
-
-class ICP():
-    def __init__(self):
-        self.use_icp = False
-        self.m_icp = None
-        self.icp_fre = None
-
-    def StartICP(self, navigation, tracker):
-        ref_mode_id = navigation.GetReferenceMode()
-
-        if not self.use_icp:
-            if dlg.ICPcorregistration(navigation.fre):
-                Publisher.sendMessage('Stop navigation')
-                use_icp, self.m_icp = self.OnICP(navigation, tracker, navigation.m_change)
-                if use_icp:
-                    self.icp_fre = db.calculate_fre(tracker.tracker_fiducials_raw, navigation.all_fiducials,
-                                                    ref_mode_id, navigation.m_change, self.m_icp)
-                    self.SetICP(navigation, use_icp)
-                else:
-                    print("ICP canceled")
-                Publisher.sendMessage('Start navigation')
-
-    def OnICP(self, navigation, tracker, m_change):
-        ref_mode_id = navigation.GetReferenceMode()
-
-        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, tracker.tracker_id, tracker.trk_init, ref_mode_id))
-
-        if dialog.ShowModal() == wx.ID_OK:
-            m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
-            # TODO: checkbox in the dialog to transfer the icp points to 3D viewer
-            #create markers
-            # for i in range(len(point_coord)):
-            #     img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
-            #     transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
-            #     Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
-            #     Publisher.sendMessage('Create marker', coord=transf_coord, marker_id=None, colour=(0,0,1))
-            if m_icp is not None:
-                dlg.ReportICPerror(prev_error, final_error)
-                use_icp = True
-            else:
-                use_icp = False
-
-            return use_icp, m_icp
-
-        else:
-            return self.use_icp, self.m_icp
-
-    def SetICP(self, navigation, use_icp):
-        self.use_icp = use_icp
-        navigation.icp_queue.put_nowait([self.use_icp, self.m_icp])
-
-    def ResetICP(self):
-        self.use_icp = False
-        self.m_icp = None
-        self.icp_fre = None
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent, tracker, pedal_connection):
