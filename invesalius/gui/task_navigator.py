@@ -65,7 +65,7 @@ import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
-from invesalius.neuronavigation.navigation import Navigation
+from invesalius.navigation.navigation import Navigation
 
 HAS_PEDAL_CONNECTION = True
 try:
