@@ -864,14 +864,16 @@ class NeuronavigationPanel(wx.Panel):
         def set_fiducial_callback():
             fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
             Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
-            self.pedal_connection.remove_callback('fiducial')
+            if self.pedal_connection is not None:
+                self.pedal_connection.remove_callback('fiducial')
 
             ctrl.SetValue(False)
             self.tracker_fiducial_being_set = None
 
         if ctrl.GetValue():
             self.tracker_fiducial_being_set = n
-            self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
+            if self.pedal_connection is not None:
+                self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
         else:
             set_fiducial_callback()
 
