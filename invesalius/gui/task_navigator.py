@@ -162,9 +162,10 @@ class InnerFoldPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 310), 0, fpb.FPB_SINGLE_FOLD)
 
-        # Initialize Tracker object here so that it is available to several panels.
+        # Initialize Tracker and PedalConnection objects here so that they are available to several panels.
         #
         tracker = Tracker()
+        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -174,7 +175,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationPanel(item, tracker)
+        ntw = NeuronavigationPanel(item, tracker, pedal_connection)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -183,7 +184,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 2 - Object registration panel
         item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
-        otw = ObjectRegistrationPanel(item, tracker)
+        otw = ObjectRegistrationPanel(item, tracker, pedal_connection)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
@@ -372,7 +373,7 @@ class ICP():
         self.icp_fre = None
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, tracker):
+    def __init__(self, parent, tracker, pedal_connection):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -385,9 +386,9 @@ class NeuronavigationPanel(wx.Panel):
         self.__bind_events()
 
         # Initialize global variables
-        self.pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
+        self.pedal_connection = pedal_connection
         self.navigation = Navigation(
-            pedal_connection=self.pedal_connection,
+            pedal_connection=pedal_connection,
         )
         self.icp = ICP()
         self.tracker = tracker
@@ -451,7 +452,7 @@ class NeuronavigationPanel(wx.Panel):
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         txt_icp = wx.StaticText(self, -1, _('Refine:'))
 
-        if self.pedal_connection is not None and self.pedal_connection.in_use:
+        if pedal_connection is not None and pedal_connection.in_use:
             txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
         else:
             txt_pedal_pressed = None
@@ -480,14 +481,14 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp = checkbox_icp
 
         # An indicator for pedal trigger
-        if self.pedal_connection is not None and self.pedal_connection.in_use:
+        if pedal_connection is not None and pedal_connection.in_use:
             tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
             checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
             checkbox_pedal_pressed.SetValue(False)
             checkbox_pedal_pressed.Enable(False)
             checkbox_pedal_pressed.SetToolTip(tooltip)
 
-            self.pedal_connection.add_callback('gui', checkbox_pedal_pressed.SetValue)
+            pedal_connection.add_callback('gui', checkbox_pedal_pressed.SetValue)
 
             self.checkbox_pedal_pressed = checkbox_pedal_pressed
         else:
@@ -521,7 +522,7 @@ class NeuronavigationPanel(wx.Panel):
                            (checkbox_icp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
         pedal_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        if HAS_PEDAL_CONNECTION and self.pedal_connection.in_use:
+        if HAS_PEDAL_CONNECTION and pedal_connection.in_use:
             pedal_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                                 (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
@@ -872,7 +873,7 @@ class NeuronavigationPanel(wx.Panel):
 
 
 class ObjectRegistrationPanel(wx.Panel):
-    def __init__(self, parent, tracker):
+    def __init__(self, parent, tracker, pedal_connection):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -883,6 +884,7 @@ class ObjectRegistrationPanel(wx.Panel):
         self.coil_list = const.COIL
 
         self.tracker = tracker
+        self.pedal_connection = pedal_connection
 
         self.nav_prop = None
         self.obj_fiducials = None
@@ -1045,7 +1047,7 @@ class ObjectRegistrationPanel(wx.Panel):
     def OnLinkCreate(self, event=None):
 
         if self.tracker.IsTrackerInitialized():
-            dialog = dlg.ObjectCalibrationDialog(self.tracker)
+            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
