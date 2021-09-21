@@ -4992,3 +4992,57 @@ class SetSpacingDialog(wx.Dialog):
 
     def OnCancel(self, evt):
         self.EndModal(wx.ID_CANCEL)
+
+
+class PeelsCreationDlg(wx.Dialog):
+    def __init__(self, parent, *args, **kwds):
+        wx.Dialog.__init__(self, parent, *args, **kwds)
+        self.SetTitle("dialog")
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        ctrl_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(ctrl_sizer, 1, wx.EXPAND, 0)
+
+        lbl_message = wx.StaticText(self, wx.ID_ANY, "Select a mask")
+        ctrl_sizer.Add(lbl_message, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
+
+        self.cb_masks = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
+        ctrl_sizer.Add(self.cb_masks, 0, wx.ALL | wx.EXPAND, 5)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+        main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
+
+        self.btn_ok = wx.Button(self, wx.ID_OK, "")
+        self.btn_ok.SetDefault()
+        btn_sizer.AddButton(self.btn_ok)
+
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "")
+        btn_sizer.AddButton(self.btn_cancel)
+
+        btn_sizer.Realize()
+
+        self.get_all_masks()
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.SetAffirmativeId(self.btn_ok.GetId())
+        self.SetEscapeId(self.btn_cancel.GetId())
+
+        self.Layout()
+
+    def get_all_masks(self):
+        import invesalius.project as prj
+        inv_proj = prj.Project()
+        choices = [i.name for i in inv_proj.mask_dict.values()]
+        try:
+            initial_value = choices[0]
+            enable = True
+        except IndexError:
+            initial_value = ""
+            enable = False
+
+        self.cb_masks.SetItems(choices)
+        self.cb_masks.SetValue(initial_value)
+        self.btn_ok.Enable(enable)

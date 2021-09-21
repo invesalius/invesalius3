@@ -32,6 +32,7 @@ try:
     has_trekker = True
 except ImportError:
     has_trekker = False
+
 try:
     import invesalius.data.elfin as elfin
     import invesalius.data.elfin_processing as elfin_process
@@ -1979,6 +1980,8 @@ class TractographyPanel(wx.Panel):
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
+        peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
+        peels_dlg.ShowModal()
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import brain mask"))
         img_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import T1 anatomical image"))
         # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
