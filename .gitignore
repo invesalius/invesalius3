@@ -24,6 +24,7 @@ invesalius/reader/*.pyc
 tags
 *.c
 
+.idea
 build
 *.patch
 *.tgz
