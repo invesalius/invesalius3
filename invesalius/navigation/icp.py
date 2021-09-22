@@ -23,6 +23,7 @@ import invesalius.data.bases as db
 import invesalius.gui.dialogs as dlg
 from invesalius.pubsub import pub as Publisher
 
+
 class ICP():
     def __init__(self):
         self.use_icp = False

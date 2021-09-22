@@ -19,11 +19,7 @@
 
 from functools import partial
 import csv
-import os
-import queue
-import sys
 import time
-import threading
 
 import nibabel as nb
 import numpy as np
@@ -35,10 +31,8 @@ except ImportError:
 import wx
 
 try:
-    import wx.lib.agw.hyperlink as hl
     import wx.lib.agw.foldpanelbar as fpb
 except ImportError:
-    import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
 import wx.lib.colourselect as csel
@@ -47,18 +41,12 @@ from invesalius.pubsub import pub as Publisher
 from time import sleep
 
 import invesalius.constants as const
-import invesalius.data.bases as db
 
 if has_trekker:
     import invesalius.data.brainmesh_handler as brain
 
-import invesalius.data.coordinates as dco
-import invesalius.data.coregistration as dcr
-import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
-import invesalius.data.trackers as dt
 import invesalius.data.tractography as dti
-import invesalius.data.transformations as tr
 import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
