@@ -24,7 +24,6 @@ invesalius/reader/*.pyc
 tags
 *.c
 
-.idea
 build
 *.patch
 *.tgz
@@ -46,3 +45,5 @@ build
 *.synctex.gz
 *.out
 *.log
+*.code-workspace
+.vscode/*
