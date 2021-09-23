@@ -4997,6 +4997,10 @@ class SetSpacingDialog(wx.Dialog):
 class PeelsCreationDlg(wx.Dialog):
     def __init__(self, parent, *args, **kwds):
         wx.Dialog.__init__(self, parent, *args, **kwds)
+        self._init_gui()
+        self.get_all_masks()
+
+    def _init_gui(self):
         self.SetTitle("dialog")
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -5021,8 +5025,6 @@ class PeelsCreationDlg(wx.Dialog):
         btn_sizer.AddButton(self.btn_cancel)
 
         btn_sizer.Realize()
-
-        self.get_all_masks()
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)

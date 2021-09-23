@@ -7,32 +7,35 @@ import pyvista
 
 
 class Brain:
-    def __init__(self, img_path, mask_path, n_peels, affine_vtk):
+    def __init__(self, image, mask, n_peels, affine_vtk):
         # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
-        # Read the image
-        T1_reader = vtk.vtkNIFTIImageReader()
-        T1_reader.SetFileName(img_path)
-        T1_reader.Update()
+
         # Image
-        self.refImage = T1_reader.GetOutput()
-        # Read the mask
-        mask_reader = vtk.vtkNIFTIImageReader()
-        mask_reader.SetFileName(mask_path)
-        mask_reader.Update()
+        self.refImage = image
+
         # Use the mask to create isosurface
         mc = vtk.vtkContourFilter()
-        mc.SetInputConnection(mask_reader.GetOutputPort())
-        mc.SetValue(0, 1)
+        mc.SetInputData(mask)
+        mc.SetValue(0, 127)
         mc.Update()
+
 
         # Mask isosurface
         refSurface = mc.GetOutput()
+
+        w = vtk.vtkSTLWriter()
+        w.SetFileName("/tmp/manolo.stl")
+        w.SetInputData(refSurface)
+        w.Write()
+
+        print(refSurface)
         # Create a uniformly meshed surface
         tmpPeel = downsample(refSurface)
+        print(f"tmppeel {tmpPeel}")
         # Standard space coordinates
-        mask_sFormMatrix = mask_reader.GetSFormMatrix()
+        mask_sFormMatrix = vtk.vtkMatrix4x4()
 
         # Apply coordinate transform to the meshed mask
         mask_ijk2xyz = vtk.vtkTransform()
@@ -45,19 +48,26 @@ class Brain:
 
         # Smooth the mesh
         tmpPeel = smooth(mask_ijk2xyz_filter.GetOutput())
+        print(f"tmppeel1 {tmpPeel}")
         # Configure calculation of normals
         tmpPeel = fixMesh(tmpPeel)
+        print(f"tmppeel2 {tmpPeel}")
         # Remove duplicate points etc
         tmpPeel = cleanMesh(tmpPeel)
+        print(f"tmppeel3 {tmpPeel}")
         # Generate triangles
         tmpPeel = upsample(tmpPeel)
+        print(f"tmppeel4 {tmpPeel}")
 
         tmpPeel = smooth(tmpPeel)
+        print(f"tmppeel5 {tmpPeel}")
         tmpPeel = fixMesh(tmpPeel)
+        print(f"tmppeel6 {tmpPeel}")
         tmpPeel = cleanMesh(tmpPeel)
+        print(f"tmppeel7 {tmpPeel}")
 
         # Scanner coordinates from image
-        qFormMatrix = T1_reader.GetQFormMatrix()
+        qFormMatrix = vtk.vtkMatrix4x4()
 
         refImageSpace2_xyz_transform = vtk.vtkTransform()
         refImageSpace2_xyz_transform.SetMatrix(qFormMatrix)
@@ -129,6 +139,7 @@ class Brain:
     #     currentPeel = out
 
     def MapImageOnCurrentPeel(self, currentPeel):
+        print(f"currentpeel {currentPeel}")
         self.xyz2_refImageSpace.SetInputData(currentPeel)
         self.xyz2_refImageSpace.Update()
 
@@ -145,6 +156,7 @@ class Brain:
 
     def PeelDown(self, currentPeel):
         for i in range(0, self.numberOfPeels):
+            print(f"{i=}")
             currentPeel = self.SliceDown(currentPeel)
             currentPeel = self.MapImageOnCurrentPeel(currentPeel)
 

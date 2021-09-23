@@ -73,6 +73,7 @@ from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
+from invesalius.data.converters import to_vtk
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -1981,25 +1982,28 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
-        peels_dlg.ShowModal()
-        mask_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import brain mask"))
-        img_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import T1 anatomical image"))
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # mask_file = 'Baran_brain_mask.nii'
-        # mask_path = os.path.join(data_dir, mask_file)
-        # img_file = 'Baran_T1_inFODspace.nii'
-        # img_path = os.path.join(data_dir, img_file)
-
-        if not self.affine_vtk:
+        if peels_dlg.ShowModal() == wx.ID_OK:
+            inv_proj = prj.Project()
+            choices = [i for i in inv_proj.mask_dict.values()]
+            mask_index = peels_dlg.cb_masks.GetSelection()
+            mask = choices[mask_index]
+            mask= np.array(mask.matrix[1:, 1:, 1:])
             slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+            image = slic.matrix
 
-        try:
-            self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
+            mask = to_vtk(mask, spacing=slic.spacing)
+            image = to_vtk(image, spacing=slic.spacing)
+
+            if not self.affine_vtk:
+                matrix_shape = tuple(inv_proj.matrix_shape)
+                try:
+                    self.affine = slic.affine.copy()
+                except AttributeError:
+                    self.affine = np.eye(4)
+                self.affine[1, -1] -= matrix_shape[1]
+                self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+
+            self.brain_peel = brain.Brain(image, mask, self.n_peels, self.affine_vtk)
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
@@ -2012,9 +2016,8 @@ class TractographyPanel(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
-        except:
-            wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
 
+        peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
