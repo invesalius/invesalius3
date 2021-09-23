@@ -46,3 +46,5 @@ build
 *.synctex.gz
 *.out
 *.log
+*.code-workspace
+.vscode/*
