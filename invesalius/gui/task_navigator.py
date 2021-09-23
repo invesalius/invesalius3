@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 
 from functools import partial
+import itertools
 import csv
 import os
 import queue
@@ -715,7 +716,7 @@ class NeuronavigationPanel(wx.Panel):
         fiducial_name = const.IMAGE_FIDUCIALS[n]['fiducial_name']
 
         # XXX: This is still a bit hard to read, could be cleaned up.
-        marker_id = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
+        label = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
 
         if self.btns_set_fiducial[n].GetValue():
             coord = self.numctrls_fiducial[n][0].GetValue(),\
@@ -729,13 +730,13 @@ class NeuronavigationPanel(wx.Panel):
             seed = 3 * [0.]
 
             Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
-                                   marker_id=marker_id, seed=seed)
+                                   marker_id=label, seed=seed)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=np.nan)
-            Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
+            Publisher.sendMessage('Delete fiducial marker', label=label)
 
     def OnTrackerFiducials(self, n, evt, ctrl):
 
@@ -1158,7 +1159,6 @@ class MarkersPanel(wx.Panel):
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
         self.list_coord = []
-        self.marker_ind = 0
         self.tgt_flag = self.tgt_index = None
         self.nav_status = False
 
@@ -1204,7 +1204,7 @@ class MarkersPanel(wx.Panel):
 
         # Buttons to delete or remove markers
         btn_delete_single = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
-        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSingleMarker)
+        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteMultipleMarkers)
 
         btn_delete_all = wx.Button(self, -1, label=_('Delete all'), size=wx.Size(135, 23))
         btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
@@ -1243,7 +1243,7 @@ class MarkersPanel(wx.Panel):
     def __bind_events(self):
         # Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
-        Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
+        Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.CreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -1359,7 +1359,6 @@ class MarkersPanel(wx.Panel):
 
             if result == wx.ID_OK:
                 self.list_coord = []
-                self.marker_ind = 0
                 Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
                 self.lc.DeleteAllItems()
                 Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
@@ -1370,46 +1369,47 @@ class MarkersPanel(wx.Panel):
                     if not hasattr(evt, 'data'):
                         wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
-    def OnDeleteSingleMarker(self, evt=None, marker_id=None):
-        # OnDeleteSingleMarker is used for both pubsub and button click events
+    def OnDeleteMultipleMarkers(self, evt=None, label=None):
+        # OnDeleteMultipleMarkers is used for both pubsub and button click events
         # Pubsub is used for fiducial handle and button click for all others
 
-        if not evt:
-            if self.lc.GetItemCount():
+        if not evt: # called through pubsub
+            index = []
+            allowed_labels = itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS))
+
+            if label and (label in allowed_labels):
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
-                    if item.GetText() == marker_id:
-                        for i in const.BTNS_IMG_MARKERS:
-                            if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                self.lc.Focus(item.GetId())
-                index = [self.lc.GetFocusedItem()]
-        else:
-            if self.lc.GetFirstSelected() != -1:
-                index = self.GetSelectedItems()
-            else:
-                index = None
+                    if item.GetText() == label:
+                        self.lc.Focus(item.GetId())
+                        index = [self.lc.GetFocusedItem()]
 
-        #TODO: There are bugs when no marker is selected, test and improve
+        else:       # called from button click
+            index = self.__getSelectedItems()
+
+        #TODO: Bug - when deleting multiple markers and target is not the first marker
         if index:
             if self.tgt_flag and self.tgt_index == index[0]:
                 self.tgt_flag = self.tgt_index = None
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
-                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+                wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
-            self.DeleteMarker(index)
+            self.__deleteMultipleMarkers(index)
         else:
-            wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
 
-    def DeleteMarker(self, index):
+    def __deleteMultipleMarkers(self, index):
+        """ Delete multiple markers indexed by index. index must be sorted in
+        the ascending order.
+        """
         for i in reversed(index):
             del self.list_coord[i]
             self.lc.DeleteItem(i)
             for n in range(0, self.lc.GetItemCount()):
                 self.lc.SetItem(n, 0, str(n+1))
-            self.marker_ind -= 1
         Publisher.sendMessage('Remove marker', index=index)
 
-    def OnCreateMarker(self, evt=None, coord=None, marker_id=None, colour=None):
+    def OnCreateMarker(self, evt):
         self.CreateMarker()
 
     def OnLoadMarkers(self, evt):
@@ -1471,7 +1471,7 @@ class MarkersPanel(wx.Panel):
                             marker_id = '*'
 
                     self.CreateMarker(coord=coord, colour=colour, size=size,
-                                      marker_id=marker_id, target_id=target_id, seed=seed)
+                                      label=marker_id, target_id=target_id, seed=seed)
 
                     # if there are multiple TARGETS will set the last one
                     if target:
@@ -1526,7 +1526,7 @@ class MarkersPanel(wx.Panel):
                     target_id = line[14]
 
                     self.CreateMarker(coord=coord, colour=colour, size=size,
-                                      marker_id=marker_id, target_id=target_id, seed=seed)
+                                      label=marker_id, target_id=target_id, seed=seed)
 
                     # if there are multiple TARGETS will set the last one
                     if target:
@@ -1581,7 +1581,7 @@ class MarkersPanel(wx.Panel):
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
 
-    def CreateMarker(self, coord=None, colour=None, size=None, marker_id='*', target_id='*', seed=None):
+    def CreateMarker(self, coord=None, colour=None, size=None, label='*', target_id='*', seed=None):
         coord = coord or self.current_coord
         colour = colour or self.marker_colour
         size = size or self.marker_size
@@ -1590,16 +1590,14 @@ class MarkersPanel(wx.Panel):
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
-        Publisher.sendMessage('Add marker', ball_id=self.marker_ind, size=size, colour=colour,  coord=coord[0:3])
-
-        self.marker_ind += 1
+        Publisher.sendMessage('Add marker', ball_id=len(self.list_coord), size=size, colour=colour,  coord=coord[0:3])
 
         # List of lists with coordinates and properties of a marker
         line = []
         line.extend(coord)
         line.extend(colour)
         line.append(size)
-        line.append(marker_id)
+        line.append(label)
         line.extend(seed)
         line.append(target_id)
 
@@ -1615,20 +1613,23 @@ class MarkersPanel(wx.Panel):
         self.lc.SetItem(num_items, 1, str(round(coord[0], 2)))
         self.lc.SetItem(num_items, 2, str(round(coord[1], 2)))
         self.lc.SetItem(num_items, 3, str(round(coord[2], 2)))
-        self.lc.SetItem(num_items, 4, str(marker_id))
+        self.lc.SetItem(num_items, 4, str(label))
         self.lc.EnsureVisible(num_items)
 
-    def GetSelectedItems(self):
+    def __getSelectedItems(self):
         """    
-        Returns a list of the selected items in the list control.
+        Returns a (possibly empty) list of the selected items in the list control.
         """
         selection = []
-        index = self.lc.GetFirstSelected()
-        selection.append(index)
-        while len(selection) != self.lc.GetSelectedItemCount():
-            index = self.lc.GetNextSelected(index)
-            selection.append(index)
+
+        next = self.lc.GetFirstSelected()
+               
+        while next != -1:
+            selection.append(next)
+            next = self.lc.GetNextSelected(next)
+
         return selection
+
 
 class DbsPanel(wx.Panel):
     def __init__(self, parent):
