@@ -7,10 +7,12 @@ import pyvista
 
 
 class Brain:
-    def __init__(self, image, mask, n_peels, affine_vtk):
+    def __init__(self, image, mask, n_peels, affine_vtk, ww, wl):
         # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
+        self.ww = ww
+        self.wl = wl
 
         # Image
         self.refImage = image
@@ -21,19 +23,11 @@ class Brain:
         mc.SetValue(0, 127)
         mc.Update()
 
-
         # Mask isosurface
         refSurface = mc.GetOutput()
 
-        w = vtk.vtkSTLWriter()
-        w.SetFileName("/tmp/manolo.stl")
-        w.SetInputData(refSurface)
-        w.Write()
-
-        print(refSurface)
         # Create a uniformly meshed surface
         tmpPeel = downsample(refSurface)
-        print(f"tmppeel {tmpPeel}")
         # Standard space coordinates
         mask_sFormMatrix = vtk.vtkMatrix4x4()
 
@@ -48,23 +42,16 @@ class Brain:
 
         # Smooth the mesh
         tmpPeel = smooth(mask_ijk2xyz_filter.GetOutput())
-        print(f"tmppeel1 {tmpPeel}")
         # Configure calculation of normals
         tmpPeel = fixMesh(tmpPeel)
-        print(f"tmppeel2 {tmpPeel}")
         # Remove duplicate points etc
         tmpPeel = cleanMesh(tmpPeel)
-        print(f"tmppeel3 {tmpPeel}")
         # Generate triangles
-        tmpPeel = upsample(tmpPeel)
-        print(f"tmppeel4 {tmpPeel}")
+        #tmpPeel = upsample(tmpPeel)
 
         tmpPeel = smooth(tmpPeel)
-        print(f"tmppeel5 {tmpPeel}")
         tmpPeel = fixMesh(tmpPeel)
-        print(f"tmppeel6 {tmpPeel}")
         tmpPeel = cleanMesh(tmpPeel)
-        print(f"tmppeel7 {tmpPeel}")
 
         # Scanner coordinates from image
         qFormMatrix = vtk.vtkMatrix4x4()
@@ -76,7 +63,7 @@ class Brain:
         self.refImageSpace2_xyz.SetTransform(refImageSpace2_xyz_transform)
 
         xyz2_refImageSpace_transform = vtk.vtkTransform()
-        qFormMatrix.Invert()
+        # qFormMatrix.Invert()
         xyz2_refImageSpace_transform.SetMatrix(qFormMatrix)
 
         self.xyz2_refImageSpace = vtk.vtkTransformPolyDataFilter()
@@ -139,7 +126,6 @@ class Brain:
     #     currentPeel = out
 
     def MapImageOnCurrentPeel(self, currentPeel):
-        print(f"currentpeel {currentPeel}")
         self.xyz2_refImageSpace.SetInputData(currentPeel)
         self.xyz2_refImageSpace.Update()
 
@@ -156,7 +142,6 @@ class Brain:
 
     def PeelDown(self, currentPeel):
         for i in range(0, self.numberOfPeels):
-            print(f"{i=}")
             currentPeel = self.SliceDown(currentPeel)
             currentPeel = self.MapImageOnCurrentPeel(currentPeel)
 
@@ -182,27 +167,31 @@ class Brain:
         return currentPeel
 
     def GetPeelActor(self, p, affine_vtk):
-        colors = vtk.vtkNamedColors()
         # Create the color map
         colorLookupTable = vtk.vtkLookupTable()
-        colorLookupTable.SetNumberOfColors(512)
+        colorLookupTable.SetNumberOfColors(256)
         colorLookupTable.SetSaturationRange(0, 0)
         colorLookupTable.SetHueRange(0, 0)
         colorLookupTable.SetValueRange(0, 1)
         # colorLookupTable.SetTableRange(0, 1000)
         # colorLookupTable.SetTableRange(0, 250)
-        colorLookupTable.SetTableRange(0, 200)
+        colorLookupTable.SetTableRange(0, 4000)
         # colorLookupTable.SetTableRange(0, 150)
         colorLookupTable.Build()
 
+        lut = vtk.vtkWindowLevelLookupTable()
+        lut.SetWindow(self.ww)
+        lut.SetLevel(self.wl)
+        lut.Build()
+
         # Set mapper auto
-        mapper = vtk.vtkOpenGLPolyDataMapper()
+        mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.peel[p])
         # mapper.SetScalarRange(0, 1000)
-        # mapper.SetScalarRange(0, 250)
-        mapper.SetScalarRange(0, 200)
+        mapper.SetScalarRange(self.refImage.GetScalarRange())
+        # mapper.SetScalarRange(0, 4000)
         # mapper.SetScalarRange(0, 150)
-        mapper.SetLookupTable(colorLookupTable)
+        mapper.SetLookupTable(lut)
         mapper.InterpolateScalarsBeforeMappingOn()
 
         # Set actor

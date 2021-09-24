@@ -1994,6 +1994,9 @@ class TractographyPanel(wx.Panel):
             mask = to_vtk(mask, spacing=slic.spacing)
             image = to_vtk(image, spacing=slic.spacing)
 
+            ww = slic.window_width
+            wl = slic.window_level
+
             if not self.affine_vtk:
                 matrix_shape = tuple(inv_proj.matrix_shape)
                 try:
@@ -2003,7 +2006,7 @@ class TractographyPanel(wx.Panel):
                 self.affine[1, -1] -= matrix_shape[1]
                 self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-            self.brain_peel = brain.Brain(image, mask, self.n_peels, self.affine_vtk)
+            self.brain_peel = brain.Brain(image, mask, self.n_peels, self.affine_vtk, ww, wl)
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
