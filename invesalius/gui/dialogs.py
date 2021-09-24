@@ -3304,8 +3304,9 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, tracker):
+    def __init__(self, tracker, pedal_connection):
         self.tracker = tracker
+        self.pedal_connection = pedal_connection
 
         self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
 
@@ -3313,6 +3314,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.obj_name = None
         self.polydata = None
         self.use_default_object = False
+        self.object_fiducial_being_set = None
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3322,6 +3324,11 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self._init_gui()
         self.LoadObject()
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetObjectFiducial, 'Set object fiducial')
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3373,15 +3380,17 @@ class ObjectCalibrationDialog(wx.Dialog):
                              choice_sensor])
 
         # Push buttons for object fiducials
-        btns_obj = const.BTNS_OBJ
-        tips_obj = const.TIPS_OBJ
+        for object_fiducial in const.OBJECT_FIDUCIALS:
+            index = object_fiducial['fiducial_index']
+            label = object_fiducial['label']
+            button_id = object_fiducial['button_id']
+            tip = object_fiducial['tip']
 
-        for k in btns_obj:
-            n = list(btns_obj[k].keys())[0]
-            lab = list(btns_obj[k].values())[0]
-            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
-            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_obj[n]))
-            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnGetObjectFiducials)
+            ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(60, 23))
+            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnObjectFiducialButton, index, ctrl=ctrl))
+
+            self.btns_coord[index] = ctrl
 
         for m in range(0, 5):
             for n in range(0, 3):
@@ -3525,13 +3534,42 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ren.AddActor(ball_actor)
         return ball_actor, tactor
 
-    def OnGetObjectFiducials(self, evt):
+    def OnObjectFiducialButton(self, index, evt, ctrl):
         if not self.tracker.IsTrackerInitialized():
             ShowNavigationTrackerWarning(0, 'choose')
             return
 
-        btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
+        # TODO: The code below until the end of the function is essentially copy-paste from
+        #       OnTrackerFiducials function in NeuronavigationPanel class. Probably the easiest
+        #       way to deduplicate this would be to create a Fiducial class, which would contain
+        #       this code just once.
+        #
 
+        # Do not allow several object fiducials to be set at the same time.
+        if self.object_fiducial_being_set is not None and self.object_fiducial_being_set != index:
+            ctrl.SetValue(False)
+            return
+
+        # Called when the button for setting the object fiducial is enabled and either pedal is pressed
+        # or the button is pressed again.
+        #
+        def set_fiducial_callback():
+            Publisher.sendMessage('Set object fiducial', fiducial_index=index)
+            if self.pedal_connection is not None:
+                self.pedal_connection.remove_callback('fiducial')
+
+            ctrl.SetValue(False)
+            self.object_fiducial_being_set = None
+
+        if ctrl.GetValue():
+            self.object_fiducial_being_set = index
+
+            if self.pedal_connection is not None:
+                self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
+        else:
+            set_fiducial_callback()
+
+    def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(
             # XXX: Always use static reference mode when getting the coordinates. This is what the
             #      code did previously, as well. At some point, it should probably be thought through
@@ -3549,22 +3587,22 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
         #      and not change the function to the point of potentially breaking it.)
         #
-        if self.obj_ref_id and btn_id == 4:
+        if self.obj_ref_id and fiducial_index == 4:
             coord = coord_raw[self.obj_ref_id, :]
             coord[2] = -coord[2]
 
-        if btn_id == 3: 
+        if fiducial_index == 3:
             coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
-            self.obj_fiducials[btn_id, :] = coord[:3]
-            self.obj_orients[btn_id, :] = coord[3:]
-            for n in [0, 1, 2]:
-                self.txt_coord[btn_id][n].SetLabel(str(round(coord[n], 1)))
-                if self.text_actors[btn_id]:
-                    self.text_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
-                    self.ball_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
+            self.obj_fiducials[fiducial_index, :] = coord[:3]
+            self.obj_orients[fiducial_index, :] = coord[3:]
+            for i in [0, 1, 2]:
+                self.txt_coord[fiducial_index][i].SetLabel(str(round(coord[i], 1)))
+                if self.text_actors[fiducial_index]:
+                    self.text_actors[fiducial_index].GetProperty().SetColor(0.0, 1.0, 0.0)
+                    self.ball_actors[fiducial_index].GetProperty().SetColor(0.0, 1.0, 0.0)
             self.Refresh()
         else:
             ShowNavigationTrackerWarning(0, 'choose')

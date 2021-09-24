@@ -188,6 +188,13 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
     # compute initial alignment of probe fixed in the object in source frame
+
+    # XXX: Some duplicate processing is done here: the Euler angles are calculated once by
+    #      the lines below, and then again in dco.coordinates_to_transformation_matrix.
+    #
+    a, b, g = np.radians(coords[3, 3:])
+    r_s0_raw = tr.euler_matrix(a, b, g, axes='rzyx')
+
     s0_raw = dco.coordinates_to_transformation_matrix(
         position=coords[3, :3],
         orientation=coords[3, 3:],

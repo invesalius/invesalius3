@@ -761,17 +761,38 @@ OBJA = wx.NewId()
 OBJC = wx.NewId()
 OBJF = wx.NewId()
 
-BTNS_OBJ = {OBJL: {0: _('Left')},
-            OBJR: {1: _('Right')},
-            OBJA: {2: _('Anterior')},
-            OBJC: {3: _('Center')},
-            OBJF: {4: _('Fixed')}}
-
-TIPS_OBJ = [_("Select left object fiducial"),
-            _("Select right object fiducial"),
-            _("Select anterior object fiducial"),
-            _("Select object center"),
-            _("Attach sensor to object")]
+OBJECT_FIDUCIALS = [
+    {
+        'fiducial_index': 0,
+        'button_id': OBJL,
+        'label': _('Left'),
+        'tip': _("Select left object fiducial"),
+    },
+    {
+        'fiducial_index': 1,
+        'button_id': OBJR,
+        'label': _('Right'),
+        'tip': _("Select right object fiducial"),
+    },
+    {
+        'fiducial_index': 2,
+        'button_id': OBJA,
+        'label': _('Anterior'),
+        'tip': _("Select anterior object fiducial"),
+    },
+    {
+        'fiducial_index': 3,
+        'button_id': OBJC,
+        'label': _('Center'),
+        'tip': _("Select object center"),
+    },
+    {
+        'fiducial_index': 4,
+        'button_id': OBJF,
+        'label': _('Fixed'),
+        'tip': _("Attach sensor to object"),
+    },
+]
 
 MTC_PROBE_NAME = "1Probe"
 MTC_REF_NAME = "2Ref"
