@@ -184,11 +184,14 @@ class Brain:
         lut.SetLevel(self.wl)
         lut.Build()
 
+        init = self.wl - self.ww / 2
+        end = self.wl + self.ww / 2
+
         # Set mapper auto
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.peel[p])
         # mapper.SetScalarRange(0, 1000)
-        mapper.SetScalarRange(self.refImage.GetScalarRange())
+        mapper.SetScalarRange(init, end)
         # mapper.SetScalarRange(0, 4000)
         # mapper.SetScalarRange(0, 150)
         mapper.SetLookupTable(lut)
