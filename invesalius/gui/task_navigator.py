@@ -1982,7 +1982,9 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
-        if peels_dlg.ShowModal() == wx.ID_OK:
+        ret = peels_dlg.ShowModal()
+        peels_dlg.Destroy()
+        if ret == wx.ID_OK:
             inv_proj = prj.Project()
             choices = [i for i in inv_proj.mask_dict.values()]
             mask_index = peels_dlg.cb_masks.GetSelection()
@@ -2020,7 +2022,6 @@ class TractographyPanel(wx.Panel):
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
 
-        peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):

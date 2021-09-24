@@ -45,9 +45,9 @@ class Brain:
         # Configure calculation of normals
         tmpPeel = fixMesh(tmpPeel)
         # Remove duplicate points etc
-        tmpPeel = cleanMesh(tmpPeel)
+        # tmpPeel = cleanMesh(tmpPeel)
         # Generate triangles
-        #tmpPeel = upsample(tmpPeel)
+        tmpPeel = upsample(tmpPeel)
 
         tmpPeel = smooth(tmpPeel)
         tmpPeel = fixMesh(tmpPeel)
