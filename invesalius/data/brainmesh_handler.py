@@ -7,12 +7,12 @@ import pyvista
 
 
 class Brain:
-    def __init__(self, image, mask, n_peels, affine_vtk, ww, wl):
+    def __init__(self, image, mask, n_peels, affine_vtk, window_width, window_level):
         # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
-        self.ww = ww
-        self.wl = wl
+        self.window_width = window_width
+        self.window_level = window_level
 
         # Image
         self.refImage = image
@@ -180,12 +180,12 @@ class Brain:
         colorLookupTable.Build()
 
         lut = vtk.vtkWindowLevelLookupTable()
-        lut.SetWindow(self.ww)
-        lut.SetLevel(self.wl)
+        lut.SetWindow(self.window_width)
+        lut.SetLevel(self.window_level)
         lut.Build()
 
-        init = self.wl - self.ww / 2
-        end = self.wl + self.ww / 2
+        init = self.window_level - self.window_width / 2
+        end = self.window_level + self.window_width / 2
 
         # Set mapper auto
         mapper = vtk.vtkPolyDataMapper()
