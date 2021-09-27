@@ -46,6 +46,7 @@ import invesalius.constants as const
 if has_trekker:
     import invesalius.data.brainmesh_handler as brain
 
+import invesalius.data.imagedata_utils as imagedata_utils
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
 import invesalius.data.record_coords as rec
@@ -664,7 +665,7 @@ class NeuronavigationPanel(wx.Panel):
             seed = 3 * [0.]
 
             Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
-                                   marker_id=label, seed=seed)
+                                   label=label, seed=seed)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
@@ -1445,11 +1446,11 @@ class MarkersPanel(wx.Panel):
                     target = None
     
                     coord = [float(s) for s in line[:6]]
-                    colour = [float(s) for s in line[6:9]]
-                    size = float(line[9])
-                    marker_id = line[10]
+                    colour = [float(s) for s in line[12:15]]
+                    size = float(line[15])
+                    marker_id = line[16]
 
-                    seed = [float(s) for s in line[11:14]]
+                    seed = [float(s) for s in line[17:20]]
 
                     for i in const.BTNS_IMG_MARKERS:
                         if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
@@ -1457,7 +1458,7 @@ class MarkersPanel(wx.Panel):
                         elif marker_id == 'TARGET':
                             target = count_line
 
-                    target_id = line[14]
+                    target_id = line[20]
 
                     self.CreateMarker(coord=coord, colour=colour, size=size,
                                       label=marker_id, target_id=target_id, seed=seed)
@@ -1494,8 +1495,9 @@ class MarkersPanel(wx.Panel):
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename=default_filename)
 
-        header_titles = ['x', 'y', 'z', 'alpha', 'beta', 'gamma', 'r', 'g', 'b',
-                         'size', 'marker_id', 'x_seed', 'y_seed', 'z_seed', 'target_id']
+        header_titles = ['x', 'y', 'z', 'alpha', 'beta', 'gamma',
+                         'x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world',
+                         'r', 'g', 'b', 'size', 'marker_id', 'x_seed', 'y_seed', 'z_seed', 'target_id']
 
         if filename:
             if self.list_coord:
@@ -1521,6 +1523,11 @@ class MarkersPanel(wx.Panel):
         size = size or self.marker_size
         seed = seed or self.current_seed
 
+        position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position=coord[:3],
+            orientation=coord[3:],
+        )
+
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
@@ -1529,6 +1536,8 @@ class MarkersPanel(wx.Panel):
         # List of lists with coordinates and properties of a marker
         line = []
         line.extend(coord)
+        line.extend(position_world)
+        line.extend(orientation_world)
         line.extend(colour)
         line.append(size)
         line.append(label)
