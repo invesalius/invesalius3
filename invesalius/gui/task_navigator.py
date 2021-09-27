@@ -665,7 +665,7 @@ class NeuronavigationPanel(wx.Panel):
             seed = 3 * [0.]
 
             Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
-                                   marker_id=label, seed=seed)
+                                   label=label, seed=seed)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
