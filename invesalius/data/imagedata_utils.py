@@ -630,7 +630,7 @@ def convert_invesalius_to_world(position, orientation):
         orientation=orientation,
         axes='sxyz',
     )
-    M_world = slice.affine @ M_invesalius
+    M_world = np.linalg.inv(slice.affine) @ M_invesalius
 
     position_world, orientation_world = dco.transformation_matrix_to_coordinates(
         M_world,
