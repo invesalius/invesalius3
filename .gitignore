@@ -194,7 +194,7 @@ tags
 [._]*.un~
 
 ### VisualStudioCode ###
-.vscode/*
+.vscode/
 *.code-workspace
 
 # Local History for Visual Studio Code
