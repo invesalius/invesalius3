@@ -504,14 +504,14 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
 
-    def LoadImageFiducials(self, marker_id, coord):
-        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', marker_id)
+    def LoadImageFiducials(self, label, coord):
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
 
         fiducial_index = fiducial['fiducial_index']
         fiducial_name = fiducial['fiducial_name']
 
         if self.btns_set_fiducial[fiducial_index].GetValue():
-            print("Fiducial {} already set, not resetting".format(marker_id))
+            print("Fiducial {} already set, not resetting".format(label))
             return
 
         Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
@@ -1350,77 +1350,12 @@ class MarkersPanel(wx.Panel):
     def OnLoadMarkers(self, evt):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
                                           wildcard=const.WILDCARD_MARKER_FILES)
-        
-        def __legacy_load_markers(filename):
-            """Code for  loading markers in the old .mks format. To be deprecated at some point."""
-            try:
-                count_line = self.lc.GetItemCount()
                 
-                # read lines from the file
-                with open(filename, 'r') as file:
-                    reader = csv.reader(file, delimiter='\t')
-                    content = [row for row in reader]
-
-                # parse the lines and update the markers list
-                for line in content:
-                    target = None
-                    if len(line) > 8:
-                        coord = [float(s) for s in line[:6]]
-                        colour = [float(s) for s in line[6:9]]
-                        size = float(line[9])
-                        marker_id = line[10]
-
-                        if len(line) > 11:
-                            seed = [float(s) for s in line[11:14]]
-                        else:
-                            seed = 3 * [0.]
-
-                        if len(line) >= 11:
-                            for i in const.BTNS_IMG_MARKERS:
-                                if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
-                                elif marker_id == 'TARGET':
-                                    target = count_line
-                        else:
-                            marker_id = '*'
-
-                        if len(line) == 15:
-                            target_id = line[14]
-                        else:
-                            target_id = '*'
-                    else:
-                        # for compatibility with previous version without the extra seed and target columns
-                        coord = float(line[0]), float(line[1]), float(line[2]), 0, 0, 0
-                        colour = float(line[3]), float(line[4]), float(line[5])
-                        size = float(line[6])
-
-                        seed = 3 * [0]
-                        target_id = '*'
-
-                        if len(line) == 8:
-                            marker_id = line[7]
-                            for i in const.BTNS_IMG_MARKERS:
-                                if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
-                        else:
-                            marker_id = '*'
-
-                    self.CreateMarker(coord=coord, colour=colour, size=size,
-                                      label=marker_id, target_id=target_id, seed=seed)
-
-                    # if there are multiple TARGETS will set the last one
-                    if target:
-                        self.OnMenuSetTarget(target)
-
-                    count_line += 1
-            except:
-                wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
-        
         if not filename:
             return
 
         if filename.lower().endswith('.mks'):
-            __legacy_load_markers(filename)
+            wx.MessageBox(_(".mks files are no longer supported. Convert them to .mkss with the conversion tool."), _("InVesalius 3"))
             return
         
         # Treat any extension othjer than .mks as 'new' format that has magick
