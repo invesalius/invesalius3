@@ -22,6 +22,22 @@ HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
 PLAIDML_DEVICES = {}
 
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
+if HAS_TORCH:
+    TORCH_DEVICES = {}
+    if torch.cuda.is_available():
+        for i in range(torch.cuda.device_count()):
+            name = torch.cuda.get_device_name()
+            device_id = f'cuda:{i}'
+            TORCH_DEVICES[name] = device_id
+    TORCH_DEVICES['CPU'] = 'cpu'
+
+
 
 if HAS_PLAIDML:
     with multiprocessing.Pool(1) as p:
@@ -43,12 +59,15 @@ class BrainSegmenterDialog(wx.Dialog):
             style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
         )
         backends = []
+        if HAS_TORCH:
+            backends.append("Pytorch")
         if HAS_PLAIDML:
             backends.append("PlaidML")
         if HAS_THEANO:
             backends.append("Theano")
         #  self.segmenter = segment.BrainSegmenter()
         #  self.pg_dialog = None
+        self.torch_devices = TORCH_DEVICES
         self.plaidml_devices = PLAIDML_DEVICES
 
         self.ps = None
@@ -65,13 +84,19 @@ class BrainSegmenterDialog(wx.Dialog):
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in backends)))
         self.cb_backends.SetMinClientSize((w, -1))
         self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
-        if HAS_PLAIDML:
+        if HAS_TORCH or HAS_PLAIDML:
+            if HAS_TORCH:
+                choices = list(self.torch_devices.keys())
+                value = choices[0]
+            else:
+                choices = list(self.plaidml_devices.keys())
+                value = choices[0]
             self.lbl_device = wx.StaticText(self, -1, _("Device"))
             self.cb_devices = wx.ComboBox(
                 self,
                 wx.ID_ANY,
-                choices=list(self.plaidml_devices.keys()),
-                value=list(self.plaidml_devices.keys())[0],
+                choices=choices,
+                value=value,
                 style=wx.CB_DROPDOWN | wx.CB_READONLY,
             )
         self.sld_threshold = wx.Slider(self, wx.ID_ANY, 75, 0, 100)
@@ -109,7 +134,7 @@ class BrainSegmenterDialog(wx.Dialog):
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.chk_use_gpu, 0, wx.ALL, 5)
         sizer_devices = wx.BoxSizer(wx.HORIZONTAL)
-        if HAS_PLAIDML:
+        if HAS_TORCH or HAS_PLAIDML:
             sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
             sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
@@ -177,8 +202,21 @@ class BrainSegmenterDialog(wx.Dialog):
         return width, height
 
     def OnSetBackend(self, evt=None):
-        if self.cb_backends.GetValue().lower() == "plaidml":
+        if self.cb_backends.GetValue().lower() == "pytorch":
+            if HAS_TORCH:
+                choices = list(self.torch_devices.keys())
+                self.cb_devices.Clear()
+                self.cb_devices.SetItems(choices)
+                self.cb_devices.SetValue(choices[0])
+                self.lbl_device.Show()
+                self.cb_devices.Show()
+            self.chk_use_gpu.Hide()
+        elif self.cb_backends.GetValue().lower() == "plaidml":
             if HAS_PLAIDML:
+                choices = list(self.plaidml_devices.keys())
+                self.cb_devices.Clear()
+                self.cb_devices.SetItems(choices)
+                self.cb_devices.SetValue(choices[0])
                 self.lbl_device.Show()
                 self.cb_devices.Show()
             self.chk_use_gpu.Hide()
