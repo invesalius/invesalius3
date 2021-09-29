@@ -254,10 +254,16 @@ class BrainSegmenterDialog(wx.Dialog):
         self.elapsed_time_timer.Start(1000)
         image = slc.Slice().matrix
         backend = self.cb_backends.GetValue()
-        try:
-            device_id = self.plaidml_devices[self.cb_devices.GetValue()]
-        except (KeyError, AttributeError):
-            device_id = "llvm_cpu.0"
+        if backend.lower() == "pytorch":
+            try:
+                device_id = self.torch_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+        else:
+            try:
+                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "llvm_cpu.0"
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()

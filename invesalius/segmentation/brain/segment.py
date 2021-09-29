@@ -64,6 +64,17 @@ def predict_patch(sub_image, patch, nn_model, patch_size=SIZE):
         0 : ez - iz, 0 : ey - iy, 0 : ex - ix
     ]
 
+def predict_patch_torch(sub_image, patch, nn_model, device, patch_size=SIZE):
+    import torch
+    with torch.no_grad():
+        (iz, ez), (iy, ey), (ix, ex) = patch
+        sub_mask = nn_model(
+            torch.from_numpy(sub_image.reshape(1, 1, patch_size, patch_size, patch_size)).to(device)
+        ).cpu().numpy()
+        return sub_mask.reshape(patch_size, patch_size, patch_size)[
+            0 : ez - iz, 0 : ey - iy, 0 : ex - ix
+        ]
+
 
 def brain_segment(image, probability_array, comm_array):
     import keras
@@ -88,6 +99,33 @@ def brain_segment(image, probability_array, comm_array):
     probability_array /= sums
     comm_array[0] = np.Inf
 
+
+def brain_segment_torch(image, device_id, probability_array, comm_array):
+    import torch
+    from .model import Unet3D
+    device = torch.device(device_id)
+    state_dict = torch.hub.load_state_dict_from_url("https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt")
+    model = Unet3D()
+    model.load_state_dict(state_dict["model_state_dict"])
+    model.to(device)
+    model.eval()
+
+    print(f"{state_dict['mean']=}, {state_dict['std']=}")
+
+    image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
+    sums = np.zeros_like(image)
+    # segmenting by patches
+    for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+        comm_array[0] = completion
+        (iz, ez), (iy, ey), (ix, ex) = patch
+        sub_mask = predict_patch_torch(sub_image, patch, model, device, SIZE)
+        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
+        sums[iz:ez, iy:ey, ix:ex] += 1
+
+    probability_array /= sums
+    print(probability_array.min(), probability_array.max())
+    print(sums.min(), sums.max())
+    comm_array[0] = np.Inf
 
 ctx = multiprocessing.get_context('spawn')
 class SegmentProcess(ctx.Process):
@@ -139,7 +177,7 @@ class SegmentProcess(ctx.Process):
         )
 
         print(image.min(), image.max())
-        if self.apply_segment_threshold:
+        if self.apply_wwwl:
             print("Applying window level")
             image = get_LUT_value(image, self.window_width, self.window_level)
 
@@ -153,8 +191,11 @@ class SegmentProcess(ctx.Process):
             self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
         )
 
-        utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
-        brain_segment(image, probability_array, comm_array)
+        if self.backend.lower() == "pytorch":
+            brain_segment_torch(image, self.device_id, probability_array, comm_array)
+        else:
+            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
+            brain_segment(image, probability_array, comm_array)
 
     @property
     def exception(self):
