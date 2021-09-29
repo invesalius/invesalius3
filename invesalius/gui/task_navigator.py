@@ -1437,12 +1437,9 @@ class MarkersPanel(wx.Panel):
         if filename:
             if self.list_coord:
                 with open(filename, 'w', newline='') as file:
-                    if filename.lower().endswith('.mks'):
-                        writer = csv.writer(file, delimiter='\t')
-                    else:
-                        file.writelines(['%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)])
-                        writer = csv.writer(file, dialect='markers_dialect')
-                        writer.writerow(header_titles)
+                    file.writelines(['%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)])
+                    writer = csv.writer(file, dialect='markers_dialect')
+                    writer.writerow(header_titles)
 
                     writer.writerows(self.list_coord)
 
