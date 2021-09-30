@@ -110,8 +110,6 @@ def brain_segment_torch(image, device_id, probability_array, comm_array):
     model.to(device)
     model.eval()
 
-    print(f"{state_dict['mean']=}, {state_dict['std']=}")
-
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
@@ -123,8 +121,6 @@ def brain_segment_torch(image, device_id, probability_array, comm_array):
         sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
-    print(probability_array.min(), probability_array.max())
-    print(sums.min(), sums.max())
     comm_array[0] = np.Inf
 
 ctx = multiprocessing.get_context('spawn')
@@ -176,7 +172,6 @@ class SegmentProcess(ctx.Process):
             mode="r",
         )
 
-        print(image.min(), image.max())
         if self.apply_wwwl:
             print("Applying window level")
             image = get_LUT_value(image, self.window_width, self.window_level)
