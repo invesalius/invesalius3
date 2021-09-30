@@ -14,6 +14,22 @@ class Brain:
         self.window_width = window_width
         self.window_level = window_level
 
+        flip = vtk.vtkImageFlip()
+        flip.SetInputData(image)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.ReleaseDataFlagOn()
+        flip.Update()
+        image = flip.GetOutput()
+
+        flip = vtk.vtkImageFlip()
+        flip.SetInputData(mask)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.ReleaseDataFlagOn()
+        flip.Update()
+        mask = flip.GetOutput()
+
         # Image
         self.refImage = image
 

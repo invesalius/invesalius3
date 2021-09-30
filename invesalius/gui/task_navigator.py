@@ -41,6 +41,7 @@ except ImportError:
     has_robot = False
 
 import wx
+import vtk
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -2007,6 +2008,8 @@ class TractographyPanel(wx.Panel):
                     self.affine = np.eye(4)
                 self.affine[1, -1] -= matrix_shape[1]
                 self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+
+            self.affine_vtk = vtk.vtkMatrix4x4()
 
             self.brain_peel = brain.Brain(image, mask, self.n_peels, self.affine_vtk, ww, wl)
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
