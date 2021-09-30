@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import dataclasses
 from functools import partial
 import itertools
 import csv
@@ -1078,6 +1079,76 @@ class ObjectRegistrationPanel(wx.Panel):
 
 
 class MarkersPanel(wx.Panel):
+    @dataclasses.dataclass
+    class Marker:
+        """Class for storing markers. @dataclass decorator simplifies
+        setting default values, serialization, etc."""
+        x : float = 0
+        y : float = 0
+        z : float = 0
+        alpha : float = 0
+        beta : float = 0
+        gamma : float = 0
+        r : float = 0
+        g : float = 1
+        b : float = 0
+        size : int = 2
+        label : str = '*'
+        x_seed : float = 0
+        y_seed : float = 0
+        z_seed : float = 0
+        is_target : int = 0 # is_target is int instead of boolean to avoid
+                            # problems with CSV export
+
+        # x, y, z, alpha, beta, gamma can be jointly accessed as coord
+        @property
+        def coord(self):
+            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma),)
+
+        @coord.setter
+        def coord(self, new_coord):
+            self.x, self.y, self.z, self.alpha, self.beta, self.gamma = new_coord
+
+        # r, g, b can be jointly accessed as colour
+        @property
+        def colour(self):
+            return list((self.r, self.g, self.b),)
+
+        @colour.setter
+        def colour(self, new_colour):
+            self.r, self.g, self.b = new_colour
+
+        # x_seed, y_seed, z_seed can be jointly accessed as seed
+        @property
+        def seed(self):
+            return list((self.x_seed, self.y_seed, self.z_seed),)
+
+        @seed.setter
+        def seed(self, new_seed):
+            self.x_seed, self.y_seed, self.z_seed = new_seed
+
+        @classmethod
+        def get_headers(cls):
+            """Return the list of field names (headers) for exporting to csv."""
+            res = [field.name for field in dataclasses.fields(cls)]
+            res.extend(['x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world'])
+            return res
+
+        def get_values(self):
+            """Return the list of values for exporting to csv."""
+            res = []
+            res.extend(dataclasses.astuple(self))
+
+            # Add world coordinates (in addition to the internal ones).
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                position=[self.x, self.y, self.z],
+                orientation=[self.alpha, self.beta, self.gamma],
+            )
+            res.extend(position_world)
+            res.extend(orientation_world)
+
+            return res
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         try:
@@ -1093,8 +1164,7 @@ class MarkersPanel(wx.Panel):
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
-        self.list_coord = []
-        self.tgt_flag = self.tgt_index = None
+        self.markers = []
         self.nav_status = False
 
         self.marker_colour = const.MARKER_COLOUR
@@ -1155,11 +1225,15 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertColumn(2, 'Y')
         self.lc.InsertColumn(3, 'Z')
         self.lc.InsertColumn(4, 'ID')
+        self.lc.InsertColumn(5, 'Target')
+
         self.lc.SetColumnWidth(0, 28)
         self.lc.SetColumnWidth(1, 50)
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 60)
+        self.lc.SetColumnWidth(5, 60)
+
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
         self.lc.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
@@ -1184,6 +1258,70 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
 
+    def __find_target_marker(self):
+        """Return the index of the marker currently selected as target (there
+        should be at most one). If there is no such marker, return -1."""
+        for i in range(len(self.markers)):
+            if self.markers[i].is_target:
+                return i
+                
+        return -1
+
+    def __get_selected_items(self):
+        """    
+        Returns a (possibly empty) list of the selected items in the list control.
+        """
+        selection = []
+
+        next = self.lc.GetFirstSelected()
+               
+        while next != -1:
+            selection.append(next)
+            next = self.lc.GetNextSelected(next)
+
+        return selection
+
+    def __delete_multiple_markers(self, index):
+        """ Delete multiple markers indexed by index. index must be sorted in
+        the ascending order.
+        """
+        for i in reversed(index):
+            del self.markers[i]
+            self.lc.DeleteItem(i)
+            for n in range(0, self.lc.GetItemCount()):
+                self.lc.SetItem(n, 0, str(n+1))
+        Publisher.sendMessage('Remove multiple markers', index=index)
+
+    def __set_marker_as_target(self, idx):
+        """Set marker indexed by idx as the new target. idx must be a valid index."""
+        # Find the previous target
+        prev_idx = self.__find_target_marker()
+
+        # If the new target is same as the previous do nothing.
+        if prev_idx == idx:
+            return
+
+        # Unset the previous target
+        if prev_idx != -1:
+            self.markers[prev_idx].is_target = 0
+            self.lc.SetItemBackgroundColour(prev_idx, 'white')
+            Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
+            self.lc.SetItem(prev_idx, 5, "")
+
+        # Set the new target
+        self.markers[idx].is_target = 1
+        self.lc.SetItemBackgroundColour(idx, 'RED')
+        self.lc.SetItem(idx, 5, _("Yes"))
+
+        Publisher.sendMessage('Update target', coord=self.markers[idx].coord)
+        Publisher.sendMessage('Set target transparency', status=True, index=idx)
+        wx.MessageBox(_("New target selected."), _("InVesalius 3"))
+
+    @staticmethod
+    def __list_fiducial_labels():
+        """Return the list of marker labels denoting fucials."""
+        return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
+
     def UpdateCurrentCoord(self, position):
         self.current_coord = position
         #self.current_angle = pubsub_evt.data[1][3:]
@@ -1203,7 +1341,7 @@ class MarkersPanel(wx.Panel):
         # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
         edit_id = menu_id.Append(0, _('Edit ID'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerLabel, edit_id)
         color_id = menu_id.Append(2, _('Edit color'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
         menu_id.AppendSeparator()
@@ -1223,54 +1361,29 @@ class MarkersPanel(wx.Panel):
     def OnStopItemBlink(self, evt):
         Publisher.sendMessage('Stop Blink Marker')
 
-    def OnMenuEditMarkerId(self, evt):
+    def OnMenuEditMarkerLabel(self, evt):
         list_index = self.lc.GetFocusedItem()
-        if evt == 'TARGET':
-            id_label = evt
+        if list_index != -1:
+            new_label = dlg.ShowEnterMarkerID(self.lc.GetItemText(list_index, 4))
+            self.markers[list_index].label = str(new_label)
+            self.lc.SetItem(list_index, 4, new_label)
         else:
-            id_label = dlg.ShowEnterMarkerID(self.lc.GetItemText(list_index, 4))
-            if id_label == 'TARGET':
-                id_label = '*'
-                wx.MessageBox(_("Invalid TARGET ID."), _("InVesalius 3"))
-
-        # Add the new ID to exported list
-        if len(self.list_coord[list_index]) > 8:
-            self.list_coord[list_index][10] = str(id_label)
-        else:
-            self.list_coord[list_index][7] = str(id_label)
-
-        self.lc.SetItem(list_index, 4, id_label)
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
 
     def OnMenuSetTarget(self, evt):
-        if isinstance(evt, int):
-            self.lc.Focus(evt)
-
-        if self.tgt_flag:
-            marker_id = '*'
-
-            self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
-            Publisher.sendMessage('Set target transparency', status=False, index=self.tgt_index)
-            self.lc.SetItem(self.tgt_index, 4, marker_id)
-
-            # Add the new ID to exported list
-            if len(self.list_coord[self.tgt_index]) > 8:
-                self.list_coord[self.tgt_index][10] = marker_id
-            else:
-                self.list_coord[self.tgt_index][7] = marker_id
-
-        self.tgt_index = self.lc.GetFocusedItem()
-        self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
-
-        Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index][:6])
-        Publisher.sendMessage('Set target transparency', status=True, index=self.tgt_index)
-        self.OnMenuEditMarkerId('TARGET')
-        self.tgt_flag = True
-        wx.MessageBox(_("New target selected."), _("InVesalius 3"))
+        idx = self.lc.GetFocusedItem()
+        if idx != -1:
+            self.__set_marker_as_target(idx)
+        else:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
 
     def OnMenuSetColor(self, evt):
         index = self.lc.GetFocusedItem()
+        if index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
 
-        color_current = [self.list_coord[index][n] * 255 for n in range(6, 9)]
+        color_current = [ch * 255 for ch in self.markers[index].colour]
 
         color_new = dlg.ShowColorDialog(color_current=color_current)
 
@@ -1280,29 +1393,28 @@ class MarkersPanel(wx.Panel):
             # XXX: Seems like a slightly too early point for rounding; better to round only when the value
             #      is printed to the screen or file.
             #
-            self.list_coord[index][6:9] = [round(s/255.0, 3) for s in color_new]
+            self.markers[index].colour = [round(s/255.0, 3) for s in color_new]
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
     def OnDeleteAllMarkers(self, evt=None):
-        if self.list_coord:
-            if evt is None:
-                result = wx.ID_OK
-            else:
-                # result = dlg.DeleteAllMarkers()
-                result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
+        if evt is None:
+            result = wx.ID_OK
+        else:
+            result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
 
-            if result == wx.ID_OK:
-                self.list_coord = []
-                Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
-                self.lc.DeleteAllItems()
-                Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
+        if result != wx.ID_OK:
+            return
 
-                if self.tgt_flag:
-                    self.tgt_flag = self.tgt_index = None
-                    Publisher.sendMessage('Disable or enable coil tracker', status=False)
-                    if not hasattr(evt, 'data'):
-                        wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
+        if self.__find_target_marker() != -1:
+            Publisher.sendMessage('Disable or enable coil tracker', status=False)
+            if evt is not None:
+                wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
+
+        self.markers = []
+        Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
+        self.lc.DeleteAllItems()
+        Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
 
     def OnDeleteMultipleMarkers(self, evt=None, label=None):
         # OnDeleteMultipleMarkers is used for both pubsub and button click events
@@ -1310,9 +1422,8 @@ class MarkersPanel(wx.Panel):
 
         if not evt: # called through pubsub
             index = []
-            allowed_labels = itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS))
-
-            if label and (label in allowed_labels):
+            
+            if label and (label in self.__list_fiducial_labels()):
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
                     if item.GetText() == label:
@@ -1320,49 +1431,32 @@ class MarkersPanel(wx.Panel):
                         index = [self.lc.GetFocusedItem()]
 
         else:       # called from button click
-            index = self.__getSelectedItems()
+            index = self.__get_selected_items()
 
-        #TODO: Bug - when deleting multiple markers and target is not the first marker
         if index:
-            if self.tgt_flag and self.tgt_index == index[0]:
-                self.tgt_flag = self.tgt_index = None
+            if self.__find_target_marker() in index:
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
-            self.__deleteMultipleMarkers(index)
+            self.__delete_multiple_markers(index)
         else:
-            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
-
-    def __deleteMultipleMarkers(self, index):
-        """ Delete multiple markers indexed by index. index must be sorted in
-        the ascending order.
-        """
-        for i in reversed(index):
-            del self.list_coord[i]
-            self.lc.DeleteItem(i)
-            for n in range(0, self.lc.GetItemCount()):
-                self.lc.SetItem(n, 0, str(n+1))
-        Publisher.sendMessage('Remove marker', index=index)
+            if evt: # Don't show the warning if called through pubsub
+                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
 
     def OnCreateMarker(self, evt):
         self.CreateMarker()
 
     def OnLoadMarkers(self, evt):
+        """Loads markers from file and appends them to the current marker list.
+        The file should contain no more than a single target marker. Also the
+        file should not contain any fiducials already in the list."""
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
                                           wildcard=const.WILDCARD_MARKER_FILES)
                 
         if not filename:
             return
-
-        if filename.lower().endswith('.mks'):
-            wx.MessageBox(_(".mks files are no longer supported. Convert them to .mkss with the conversion tool."), _("InVesalius 3"))
-            return
         
-        # Treat any extension othjer than .mks as 'new' format that has magick
-        # string and version number
         try:
-            count_line = self.lc.GetItemCount()
-            
             with open(filename, 'r') as file:
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
@@ -1371,39 +1465,22 @@ class MarkersPanel(wx.Panel):
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
                 
-                # read lines from the file
                 reader = csv.reader(file, dialect='markers_dialect')
                 next(reader) # skip the header line
-                content = [row for row in reader]
-                
-                # parse the lines and update the markers list
-                for line in content:
-                    target = None
-    
-                    coord = [float(s) for s in line[:6]]
-                    colour = [float(s) for s in line[12:15]]
-                    size = float(line[15])
-                    marker_id = line[16]
 
-                    seed = [float(s) for s in line[17:20]]
+                # Read the data lines and create markers
+                for line in reader:
+                    marker = self.Marker(*line[:-6]) # Discard the last 6 fields (the world coordinates)
+                    self.CreateMarker(coord=marker.coord, colour=marker.colour, size=marker.size,
+                                      label=marker.label, is_target=0, seed=marker.seed)
 
-                    for i in const.BTNS_IMG_MARKERS:
-                        if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                            Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
-                        elif marker_id == 'TARGET':
-                            target = count_line
+                    if marker.label in self.__list_fiducial_labels():
+                        Publisher.sendMessage('Load image fiducials', label=marker.label, coord=marker.coord)
 
-                    target_id = line[20]
-
-                    self.CreateMarker(coord=coord, colour=colour, size=size,
-                                      label=marker_id, target_id=target_id, seed=seed)
-
-                    # if there are multiple TARGETS will set the last one
-                    if target:
-                        self.OnMenuSetTarget(target)
-
-                    count_line += 1
-          
+                    # If the new marker has is_target=1 (True), we first create
+                    # a marker with is_target=0 (False), and then call __set_marker_as_target
+                    if marker.is_target:
+                        self.__set_marker_as_target(len(self.markers)-1)
         except:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
 
@@ -1430,81 +1507,50 @@ class MarkersPanel(wx.Panel):
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename=default_filename)
 
-        header_titles = ['x', 'y', 'z', 'alpha', 'beta', 'gamma',
-                         'x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world',
-                         'r', 'g', 'b', 'size', 'marker_id', 'x_seed', 'y_seed', 'z_seed', 'target_id']
+        if not filename:
+            return
 
-        if filename:
-            if self.list_coord:
-                with open(filename, 'w', newline='') as file:
-                    file.writelines(['%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)])
-                    writer = csv.writer(file, dialect='markers_dialect')
-                    writer.writerow(header_titles)
-
-                    writer.writerows(self.list_coord)
+        try:
+            with open(filename, 'w', newline='') as file:
+                file.writelines(['%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)])
+                writer = csv.writer(file, dialect='markers_dialect')
+                writer.writerow(self.Marker.get_headers())
+                writer.writerows(marker.get_values() for marker in self.markers)
+                file.close()
+        except:
+            wx.MessageBox(_("Error writing markers file."), _("InVesalius 3"))  
 
     def OnSelectColour(self, evt, ctrl):
-        self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()]
+        #TODO: Make sure GetValue returns 3 numbers (without alpha)
+        self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()][:3]
 
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
 
-    def CreateMarker(self, coord=None, colour=None, size=None, label='*', target_id='*', seed=None):
-        coord = coord or self.current_coord
-        colour = colour or self.marker_colour
-        size = size or self.marker_size
-        seed = seed or self.current_seed
+    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=0, seed=None):
+        new_marker = self.Marker()
+        new_marker.coord = coord or self.current_coord
+        new_marker.colour = colour or self.marker_colour
+        new_marker.size = size or self.marker_size
+        new_marker.label = label
+        new_marker.is_target = is_target
+        new_marker.seed = seed or self.current_seed
 
-        position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-            position=coord[:3],
-            orientation=coord[3:],
-        )
-
-        # TODO: Use matrix coordinates and not world coordinates as current method.
-        # This makes easier for inter-software comprehension.
-
-        Publisher.sendMessage('Add marker', ball_id=len(self.list_coord), size=size, colour=colour,  coord=coord[0:3])
-
-        # List of lists with coordinates and properties of a marker
-        line = []
-        line.extend(coord)
-        line.extend(position_world)
-        line.extend(orientation_world)
-        line.extend(colour)
-        line.append(size)
-        line.append(label)
-        line.extend(seed)
-        line.append(target_id)
-
-        # Adding current line to a list of all markers already created
-        if not self.list_coord:
-            self.list_coord = [line]
-        else:
-            self.list_coord.append(line)
+        # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
+        Publisher.sendMessage('Add marker', ball_id=len(self.markers),
+                                            size=new_marker.size,
+                                            colour=new_marker.colour,
+                                            coord=new_marker.coord[:3])
+        self.markers.append(new_marker)
 
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()
         self.lc.InsertItem(num_items, str(num_items + 1))
-        self.lc.SetItem(num_items, 1, str(round(coord[0], 2)))
-        self.lc.SetItem(num_items, 2, str(round(coord[1], 2)))
-        self.lc.SetItem(num_items, 3, str(round(coord[2], 2)))
-        self.lc.SetItem(num_items, 4, str(label))
+        self.lc.SetItem(num_items, 1, str(round(new_marker.x, 2)))
+        self.lc.SetItem(num_items, 2, str(round(new_marker.y, 2)))
+        self.lc.SetItem(num_items, 3, str(round(new_marker.z, 2)))
+        self.lc.SetItem(num_items, 4, str(new_marker.label))
         self.lc.EnsureVisible(num_items)
-
-    def __getSelectedItems(self):
-        """    
-        Returns a (possibly empty) list of the selected items in the list control.
-        """
-        selection = []
-
-        next = self.lc.GetFirstSelected()
-               
-        while next != -1:
-            selection.append(next)
-            next = self.lc.GetNextSelected(next)
-
-        return selection
-
 
 class DbsPanel(wx.Panel):
     def __init__(self, parent):
