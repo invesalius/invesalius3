@@ -339,7 +339,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select tracker:")] + self.tracker.get_trackers()
-        select_tracker_elem = wx.ComboBox(self, -1, "",
+        select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
                                           choices=tracker_options, style=wx.CB_DROPDOWN|wx.CB_READONLY)
 
         tooltip = wx.ToolTip(_("Choose the tracking device"))
@@ -1269,8 +1269,7 @@ class MarkersPanel(wx.Panel):
 
     def OnMenuSetColor(self, evt):
         index = self.lc.GetFocusedItem()
-
-        color_current = [self.list_coord[index][n] * 255 for n in range(6, 9)]
+        color_current = [self.list_coord[index][n] * 255 for n in range(12, 15)]
 
         color_new = dlg.ShowColorDialog(color_current=color_current)
 
@@ -1280,7 +1279,7 @@ class MarkersPanel(wx.Panel):
             # XXX: Seems like a slightly too early point for rounding; better to round only when the value
             #      is printed to the screen or file.
             #
-            self.list_coord[index][6:9] = [round(s/255.0, 3) for s in color_new]
+            self.list_coord[index][12:15] = [round(s/255.0, 3) for s in color_new]
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
@@ -1383,20 +1382,20 @@ class MarkersPanel(wx.Panel):
                     coord = [float(s) for s in line[:6]]
                     colour = [float(s) for s in line[12:15]]
                     size = float(line[15])
-                    marker_id = line[16]
+                    label = line[16]
 
                     seed = [float(s) for s in line[17:20]]
 
                     for i in const.BTNS_IMG_MARKERS:
-                        if marker_id in list(const.BTNS_IMG_MARKERS[i].values())[0]:
-                            Publisher.sendMessage('Load image fiducials', marker_id=marker_id, coord=coord)
-                        elif marker_id == 'TARGET':
+                        if label in list(const.BTNS_IMG_MARKERS[i].values())[0]:
+                            Publisher.sendMessage('Load image fiducials', label=label, coord=coord)
+                        elif label == 'TARGET':
                             target = count_line
 
                     target_id = line[20]
 
                     self.CreateMarker(coord=coord, colour=colour, size=size,
-                                      label=marker_id, target_id=target_id, seed=seed)
+                                      label=label, target_id=target_id, seed=seed)
 
                     # if there are multiple TARGETS will set the last one
                     if target:
@@ -1444,7 +1443,7 @@ class MarkersPanel(wx.Panel):
                     writer.writerows(self.list_coord)
 
     def OnSelectColour(self, evt, ctrl):
-        self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()]
+        self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()[:3]]
 
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
