@@ -37,6 +37,7 @@ class Brain:
         mc = vtk.vtkContourFilter()
         mc.SetInputData(mask)
         mc.SetValue(0, 127)
+        mc.ComputeNormalsOn()
         mc.Update()
 
         # Mask isosurface
@@ -183,18 +184,6 @@ class Brain:
         return currentPeel
 
     def GetPeelActor(self, p, affine_vtk):
-        # Create the color map
-        colorLookupTable = vtk.vtkLookupTable()
-        colorLookupTable.SetNumberOfColors(256)
-        colorLookupTable.SetSaturationRange(0, 0)
-        colorLookupTable.SetHueRange(0, 0)
-        colorLookupTable.SetValueRange(0, 1)
-        # colorLookupTable.SetTableRange(0, 1000)
-        # colorLookupTable.SetTableRange(0, 250)
-        colorLookupTable.SetTableRange(0, 4000)
-        # colorLookupTable.SetTableRange(0, 150)
-        colorLookupTable.Build()
-
         lut = vtk.vtkWindowLevelLookupTable()
         lut.SetWindow(self.window_width)
         lut.SetLevel(self.window_level)
@@ -206,10 +195,7 @@ class Brain:
         # Set mapper auto
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.peel[p])
-        # mapper.SetScalarRange(0, 1000)
         mapper.SetScalarRange(init, end)
-        # mapper.SetScalarRange(0, 4000)
-        # mapper.SetScalarRange(0, 150)
         mapper.SetLookupTable(lut)
         mapper.InterpolateScalarsBeforeMappingOn()
 
@@ -226,34 +212,26 @@ class Brain:
         return self.currentPeelActor
 
     def GetCurrentPeelActor(self, currentPeel):
-        colors = vtk.vtkNamedColors()
+        lut = vtk.vtkWindowLevelLookupTable()
+        lut.SetWindow(self.window_width)
+        lut.SetLevel(self.window_level)
+        lut.Build()
 
-        # Create the color map
-        colorLookupTable = vtk.vtkLookupTable()
-        colorLookupTable.SetNumberOfColors(512)
-        colorLookupTable.SetSaturationRange(0, 0)
-        colorLookupTable.SetHueRange(0, 0)
-        colorLookupTable.SetValueRange(0, 1)
-        # colorLookupTable.SetTableRange(0, 1000)
-        # colorLookupTable.SetTableRange(0, 250)
-        colorLookupTable.SetTableRange(0, 200)
-        # colorLookupTable.SetTableRange(0, 150)
-        colorLookupTable.Build()
+        init = self.window_level - self.window_width / 2
+        end = self.window_level + self.window_width / 2
 
         # Set mapper auto
-        mapper = vtk.vtkOpenGLPolyDataMapper()
+        mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(currentPeel)
-        # mapper.SetScalarRange(0, 1000)
-        # mapper.SetScalarRange(0, 250)
-        mapper.SetScalarRange(0, 200)
-        # mapper.SetScalarRange(0, 150)
-        mapper.SetLookupTable(colorLookupTable)
+        mapper.SetScalarRange(init, end)
+        mapper.SetLookupTable(lut)
         mapper.InterpolateScalarsBeforeMappingOn()
 
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
         self.currentPeelActor.GetProperty().SetBackfaceCulling(1)
         self.currentPeelActor.GetProperty().SetOpacity(0.5)
+        self.currentPeelActor.GetProperty().SetSpecular(0.25)
 
         return self.currentPeelActor
 
