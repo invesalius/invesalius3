@@ -154,7 +154,8 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((coord3, angles_coil))
 
     coord = np.vstack([coord1, coord2, coord3])
-    return coord, None
+
+    return coord, [trck.probeID, trck.HeadID, trck.coilID]
 
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
