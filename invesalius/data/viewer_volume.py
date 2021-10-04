@@ -707,7 +707,7 @@ class Viewer(wx.Panel):
             self.index = False
 
     def SetNewColor(self, index, color):
-        self.staticballs[index].GetProperty().SetColor(color)
+        self.staticballs[index].GetProperty().SetColor([round(s/255.0, 3) for s in color])
         self.Refresh()
 
     def OnTargetMarkerTransparency(self, status, index):

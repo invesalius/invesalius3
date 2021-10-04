@@ -340,7 +340,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select tracker:")] + self.tracker.get_trackers()
-        select_tracker_elem = wx.ComboBox(self, -1, "",
+        select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
                                           choices=tracker_options, style=wx.CB_DROPDOWN|wx.CB_READONLY)
 
         tooltip = wx.ToolTip(_("Choose the tracking device"))
@@ -1481,6 +1481,7 @@ class MarkersPanel(wx.Panel):
                     # a marker with is_target=0 (False), and then call __set_marker_as_target
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers)-1)
+
         except:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
 
