@@ -3804,7 +3804,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def GetCurrentCoord(self):
-        coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, const.DYNAMIC_REF)
+        coord_raw = dco.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
         return coord[:3]
 
