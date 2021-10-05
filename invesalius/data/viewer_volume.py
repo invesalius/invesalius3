@@ -280,7 +280,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
-        Publisher.subscribe(self.RemoveMarker, 'Remove marker')
+        Publisher.subscribe(self.RemoveMultipleMarkers, 'Remove multiple markers')
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
@@ -676,7 +676,7 @@ class Viewer(wx.Panel):
         self.staticballs = []
         self.UpdateRender()
 
-    def RemoveMarker(self, index):
+    def RemoveMultipleMarkers(self, index):
         for i in reversed(index):
             self.ren.RemoveActor(self.staticballs[i])
             del self.staticballs[i]
