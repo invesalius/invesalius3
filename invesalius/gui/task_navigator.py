@@ -684,14 +684,15 @@ class NeuronavigationPanel(wx.Panel):
         # Called when the button for setting the tracker fiducial is enabled and either pedal is pressed
         # or the button is pressed again.
         #
-        def set_fiducial_callback():
-            fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
-            Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
-            if self.pedal_connection is not None:
-                self.pedal_connection.remove_callback('fiducial')
+        def set_fiducial_callback(state):
+            if state:
+                fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
+                Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
+                if self.pedal_connection is not None:
+                    self.pedal_connection.remove_callback('fiducial')
 
-            ctrl.SetValue(False)
-            self.tracker_fiducial_being_set = None
+                ctrl.SetValue(False)
+                self.tracker_fiducial_being_set = None
 
         if ctrl.GetValue():
             self.tracker_fiducial_being_set = n
