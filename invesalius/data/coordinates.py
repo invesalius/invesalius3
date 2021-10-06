@@ -39,9 +39,9 @@ class TrackerCoordinates():
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
+        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
 
     def GetCoordinates(self):
-        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
         return self.coord, self.markers_flag
 
 
@@ -137,7 +137,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     coord = np.vstack([coord1, coord2, coord3])
 
-    return coord, [trck.probeID, trck.refID, trck.coilID]
+    return coord, [trck.probeID, trck.refID, trck.objID]
 
 
 def PolarisP4Coord(trck_init, trck_id, ref_mode):
