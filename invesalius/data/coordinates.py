@@ -74,48 +74,6 @@ def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
 
     return coord, markers_flag
 
-def PolarisP4Coord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
-    trck.Run()
-
-    probe = trck.probe.decode(const.FS_ENCODE)
-    ref = trck.ref.decode(const.FS_ENCODE)
-    obj = trck.obj.decode(const.FS_ENCODE)
-
-    probe = probe[2:]
-    ref = ref[2:]
-    obj = obj[2:]
-
-    if probe[:7] == "MISSING":
-        coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_probe = np.array(t).astype(float)
-        coord1 = np.hstack((trans_probe, angles_probe))
-
-    if ref[:7] == "MISSING":
-        coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_ref = np.array(t).astype(float)
-        coord2 = np.hstack((trans_ref, angles_ref))
-
-    if obj[:7] == "MISSING":
-        coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_obj = np.array(t).astype(float)
-        coord3 = np.hstack((trans_obj, angles_obj))
-
-    coord = np.vstack([coord1, coord2, coord3])
-
-    return coord, [trck.probeID, trck.refID, trck.objID]
 
 def OptitrackCoord(trck_init, trck_id, ref_mode):
     """
@@ -181,16 +139,49 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
-def ElfinCoord(trck_init):
-    if len(trck_init) > 2:
-        robotcoordinates = trck_init[-1]
-        coord = robotcoordinates.GetRobotCoordinates()
-        if coord is None:
-            coord = np.array([0, 0, 0, 0, 0, 0])
-    else:
-        coord = np.array([0, 0, 0, 0, 0, 0])
 
-    return coord, None
+def PolarisP4Coord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    trck.Run()
+
+    probe = trck.probe.decode(const.FS_ENCODE)
+    ref = trck.ref.decode(const.FS_ENCODE)
+    obj = trck.obj.decode(const.FS_ENCODE)
+
+    probe = probe[2:]
+    ref = ref[2:]
+    obj = obj[2:]
+
+    if probe[:7] == "MISSING":
+        coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
+    else:
+        q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+        trans_probe = np.array(t).astype(float)
+        coord1 = np.hstack((trans_probe, angles_probe))
+        if ref[:7] == "MISSING":
+            coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
+        else:
+            q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+            t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+            angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_ref = np.array(t).astype(float)
+            coord2 = np.hstack((trans_ref, angles_ref))
+
+        if obj[:7] == "MISSING":
+            coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
+        else:
+            q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+            t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+            angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_obj = np.array(t).astype(float)
+            coord3 = np.hstack((trans_obj, angles_obj))
+
+        coord = np.vstack([coord1, coord2, coord3])
+
+        return coord, [trck.probeID, trck.refID, trck.objID]
+
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -384,8 +375,6 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    #Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
-
     return np.vstack([coord1, coord2, coord3, coord4]), [int(uniform(0, 5)), int(uniform(0, 5)), int(uniform(0, 5))]
 
 
@@ -471,11 +460,11 @@ def dynamic_reference_m(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
-    a, b, g = np.radians(reference[3:6])
-
-    trans = tr.translation_matrix(reference[:3])
-    rot = tr.euler_matrix(a, b, g, 'rzyx')
-    affine = tr.concatenate_matrices(trans, rot)
+    affine = coordinates_to_transformation_matrix(
+        position=reference[:3],
+        orientation=reference[3:],
+        axes='rzyx',
+    )
     probe_4 = np.vstack((probe[:3].reshape([3, 1]), 1.))
     coord_rot = np.linalg.inv(affine) @ probe_4
     # minus sign to the z coordinate
@@ -499,15 +488,16 @@ def dynamic_reference_m2(probe, reference):
     :return: rotated and translated coordinates
     """
 
-    a, b, g = np.radians(reference[3:6])
-    a_p, b_p, g_p = np.radians(probe[3:6])
-
-    T = tr.translation_matrix(reference[:3])
-    T_p = tr.translation_matrix(probe[:3])
-    R = tr.euler_matrix(a, b, g, 'rzyx')
-    R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-    M = tr.concatenate_matrices(T, R)
-    M_p = tr.concatenate_matrices(T_p, R_p)
+    M = coordinates_to_transformation_matrix(
+        position=reference[:3],
+        orientation=reference[3:],
+        axes='rzyx',
+    )
+    M_p = coordinates_to_transformation_matrix(
+        position=probe[:3],
+        orientation=probe[3:],
+        axes='rzyx',
+    )
 
     M_dyn = np.linalg.inv(M) @ M_p
 
