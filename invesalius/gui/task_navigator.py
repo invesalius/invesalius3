@@ -699,7 +699,7 @@ class NeuronavigationPanel(wx.Panel):
             if self.pedal_connection is not None:
                 self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
         else:
-            set_fiducial_callback()
+            set_fiducial_callback(True)
 
     def OnStopNavigation(self):
         select_tracker_elem = self.select_tracker_elem

@@ -3568,7 +3568,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             if self.pedal_connection is not None:
                 self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
         else:
-            set_fiducial_callback()
+            set_fiducial_callback(True)
 
     def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(
