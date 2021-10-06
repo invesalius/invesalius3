@@ -37,6 +37,8 @@ class Tracker():
 
         self.tracker_connected = False
 
+        self.thread_coord = None
+
         self.event_coord = threading.Event()
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
@@ -54,8 +56,9 @@ class Tracker():
             else:
                 self.tracker_id = new_tracker
                 self.tracker_connected = True
-                dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
-                                       self.event_coord).start()
+                self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
+                                       self.event_coord)
+                self.thread_coord.start()
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -68,6 +71,11 @@ class Tracker():
             if not self.trk_init[0]:
                 self.tracker_connected = False
                 self.tracker_id = 0
+
+                if self.thread_coord:
+                    self.event_coord.set()
+                    self.thread_coord.join()
+                    self.event_coord.clear()
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
