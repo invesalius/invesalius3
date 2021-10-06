@@ -3647,8 +3647,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         import invesalius.project as prj
 
         self.m_change = nav_prop[0]
-        self.tracker_id = nav_prop[1]
-        self.trk_init = nav_prop[2]
+        self.tracker = nav_prop[1]
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3804,7 +3803,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def GetCurrentCoord(self):
-        coord_raw = dco.TrackerCoordinates.GetCoordinates()
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
         return coord[:3]
 

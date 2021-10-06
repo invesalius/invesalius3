@@ -48,7 +48,7 @@ class ICP():
     def OnICP(self, navigation, tracker, m_change):
         ref_mode_id = navigation.GetReferenceMode()
 
-        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, tracker.tracker_id, tracker.trk_init, ref_mode_id))
+        dialog = dlg.ICPCorregistrationDialog(nav_prop=(m_change, tracker, ref_mode_id))
 
         if dialog.ShowModal() == wx.ID_OK:
             m_icp, point_coord, transformed_points, prev_error, final_error = dialog.GetValue()
