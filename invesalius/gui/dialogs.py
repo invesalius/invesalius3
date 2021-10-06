@@ -3553,13 +3553,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         # Called when the button for setting the object fiducial is enabled and either pedal is pressed
         # or the button is pressed again.
         #
-        def set_fiducial_callback():
-            Publisher.sendMessage('Set object fiducial', fiducial_index=index)
-            if self.pedal_connection is not None:
-                self.pedal_connection.remove_callback('fiducial')
+        def set_fiducial_callback(state):
+            if state:
+                Publisher.sendMessage('Set object fiducial', fiducial_index=index)
+                if self.pedal_connection is not None:
+                    self.pedal_connection.remove_callback('fiducial')
 
-            ctrl.SetValue(False)
-            self.object_fiducial_being_set = None
+                ctrl.SetValue(False)
+                self.object_fiducial_being_set = None
 
         if ctrl.GetValue():
             self.object_fiducial_being_set = index
