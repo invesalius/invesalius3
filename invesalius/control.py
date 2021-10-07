@@ -915,6 +915,16 @@ class Controller():
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(name, matrix, matrix_filename)
                 self.LoadProject()
+                if group.affine.any():
+                    # TODO: replace the inverse of the affine by the actual affine in the whole code
+                    # remove scaling factor for non-unitary voxel dimensions
+                    # self.affine = image_utils.world2invspace(affine=group.affine)
+                    scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
+                    self.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
+                                                                angles=angs, translate=trans, perspective=persp))
+                    # print("repos_img: {}".format(repos_img))
+                    self.Slice.affine = self.affine
+                    Publisher.sendMessage('Update affine matrix', affine=self.affine)
                 Publisher.sendMessage("Enable state project", state=True)
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
@@ -1042,17 +1052,6 @@ class Controller():
         self.Slice.spacing = dimsf
         self.Slice.window_level = wl
         self.Slice.window_width = ww
-
-        if group.affine.any():
-            # TODO: replace the inverse of the affine by the actual affine in the whole code
-            # remove scaling factor for non-unitary voxel dimensions
-            # self.affine = image_utils.world2invspace(affine=group.affine)
-            scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
-            self.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
-                                                          angles=angs, translate=trans, perspective=persp))
-            # print("repos_img: {}".format(repos_img))
-            self.Slice.affine = self.affine
-            Publisher.sendMessage('Update affine matrix', affine=self.affine)
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
         Publisher.sendMessage('Update threshold limits list',

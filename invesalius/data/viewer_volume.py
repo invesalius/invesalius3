@@ -36,6 +36,7 @@ from scipy.spatial import distance
 from imageio import imsave
 
 import invesalius.constants as const
+import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
@@ -192,6 +193,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor = None
         self.target_mode = False
         self.polydata = None
+        self.use_default_object = True
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
@@ -278,7 +280,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
-        Publisher.subscribe(self.RemoveMarker, 'Remove marker')
+        Publisher.subscribe(self.RemoveMultipleMarkers, 'Remove multiple markers')
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
@@ -343,18 +345,23 @@ class Viewer(wx.Panel):
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = True
             # self._check_and_set_ball_visibility()
+            #if not self.actor_peel:
             self._ball_ref_visibility = True
+            #else:
+            #    self._ball_ref_visibility = False
             # if self._to_show_ball:
-            if not self.ball_actor:
+            if not self.ball_actor: #and not self.actor_peel:
                 self.CreateBallReference()
-
+                #self.ball_actor.SetVisibility(1)
+            #else:
+             #   self.ball_actor.SetVisibility(0)
             self.interactor.Render()
 
     def _uncheck_ball_reference(self, style):
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = False
             # self.RemoveBallReference()
-            self._ball_ref_visibility = False
+            self._ball_ref_visibility = True
             if self.ball_actor:
                 self.ren.RemoveActor(self.ball_actor)
                 self.ball_actor = None
@@ -671,7 +678,7 @@ class Viewer(wx.Panel):
         self.staticballs = []
         self.UpdateRender()
 
-    def RemoveMarker(self, index):
+    def RemoveMultipleMarkers(self, index):
         for i in reversed(index):
             self.ren.RemoveActor(self.staticballs[i])
             del self.staticballs[i]
@@ -702,7 +709,7 @@ class Viewer(wx.Panel):
             self.index = False
 
     def SetNewColor(self, index, color):
-        self.staticballs[index].GetProperty().SetColor(color)
+        self.staticballs[index].GetProperty().SetColor([round(s/255.0, 3) for s in color])
         self.Refresh()
 
     def OnTargetMarkerTransparency(self, status, index):
@@ -980,10 +987,12 @@ class Viewer(wx.Panel):
 
         vtk_colors = vtk.vtkNamedColors()
 
-        a, b, g = np.radians(self.target_coord[3:])
-        r_ref = tr.euler_matrix(a, b, g, 'sxyz')
-        t_ref = tr.translation_matrix(self.target_coord[:3])
-        m_img = np.asmatrix(tr.concatenate_matrices(t_ref, r_ref))
+        m_img = dco.coordinates_to_transformation_matrix(
+            position=self.target_coord[:3],
+            orientation=self.target_coord[3:],
+            axes='sxyz',
+        )
+        m_img = np.asmatrix(m_img)
 
         m_img_vtk = vtk.vtkMatrix4x4()
 
@@ -1019,10 +1028,10 @@ class Viewer(wx.Panel):
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
 
-        if self.polydata:
-            obj_polydata = self.polydata
-        else:
+        if self.use_default_object:
             obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+        else:
+            obj_polydata = self.polydata
 
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
@@ -1238,6 +1247,7 @@ class Viewer(wx.Panel):
     #     self.UpdateCameraBallPosition(None, position)
 
     def UpdateCameraBallPosition(self, position):
+        #if not self.actor_peel:
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
         self.ball_actor.SetPosition(coord_flip)
@@ -1328,6 +1338,9 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.x_actor)
         self.ren.AddActor(self.y_actor)
         self.ren.AddActor(self.z_actor)
+        self.x_actor.SetVisibility(0)
+        self.y_actor.SetVisibility(0)
+        self.z_actor.SetVisibility(0)
         #self.ren.AddActor(self.obj_projection_arrow_actor)
         #self.ren.AddActor(self.object_orientation_torus_actor)
         # self.obj_axes = vtk.vtkAxesActor()
@@ -1442,6 +1455,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.actor_peel = None
+            self.ball_actor.SetVisibility(1)
+
         if flag and actor:
             self.ren.AddActor(actor)
             self.actor_peel = actor
@@ -1499,7 +1514,7 @@ class Viewer(wx.Panel):
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_torus_actor)
-
+                    self.ball_actor.SetVisibility(0)
                     self.obj_projection_arrow_actor.SetPosition(closestPoint)
                     self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
@@ -1520,6 +1535,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.x_actor)
+            self.ball_actor.SetVisibility(1)
+
             #self.ren.RemoveActor(self.y_actor)
         self.Refresh()
 
@@ -1531,9 +1548,9 @@ class Viewer(wx.Panel):
             self.pTarget = self.CenterOfMass()
             if self.obj_actor:
                 self.obj_actor.SetVisibility(self.obj_state)
-                self.x_actor.SetVisibility(self.obj_state)
-                self.y_actor.SetVisibility(self.obj_state)
-                self.z_actor.SetVisibility(self.obj_state)
+                #self.x_actor.SetVisibility(self.obj_state)
+                #self.y_actor.SetVisibility(self.obj_state)
+                #self.z_actor.SetVisibility(self.obj_state)
                 #self.object_orientation_torus_actor.SetVisibility(self.obj_state)
                 #self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
         self.Refresh()
@@ -1599,10 +1616,11 @@ class Viewer(wx.Panel):
             self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
-    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if flag:
             self.obj_name = obj_name
             self.polydata = polydata
+            self.use_default_object = use_default_object
             if not self.obj_actor:
                 self.AddObjectActor(self.obj_name)
         else:
@@ -1630,7 +1648,10 @@ class Viewer(wx.Panel):
             self.x_actor.SetVisibility(self.obj_state)
             self.y_actor.SetVisibility(self.obj_state)
             self.z_actor.SetVisibility(self.obj_state)
-
+            #if self.actor_peel:
+            #    self.ball_actor.SetVisibility(0)
+            #else:
+            #    self.ball_actor.SetVisibility(1)
         self.Refresh()
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None):

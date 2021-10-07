@@ -188,10 +188,18 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
     # compute initial alignment of probe fixed in the object in source frame
-    t_s0_raw = tr.translation_matrix(coords[3, :3])
-    r_s0_raw = tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
-                             np.radians(coords[3, 5]), 'rzyx')
-    s0_raw = tr.concatenate_matrices(t_s0_raw, r_s0_raw)
+
+    # XXX: Some duplicate processing is done here: the Euler angles are calculated once by
+    #      the lines below, and then again in dco.coordinates_to_transformation_matrix.
+    #
+    a, b, g = np.radians(coords[3, 3:])
+    r_s0_raw = tr.euler_matrix(a, b, g, axes='rzyx')
+
+    s0_raw = dco.coordinates_to_transformation_matrix(
+        position=coords[3, :3],
+        orientation=coords[3, 3:],
+        axes='rzyx',
+    )
 
     # compute change of basis for object fiducials in source frame
     base_obj_raw, q_obj_raw = base_creation(fids_raw[:3, :3])
@@ -210,10 +218,11 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         fids_dyn[ic, 2] = -fids_dyn[ic, 2]
 
         # compute object fiducials in vtk head frame
-        a, b, g = np.radians(fids_dyn[ic, 3:])
-        T_p = tr.translation_matrix(fids_dyn[ic, :3])
-        R_p = tr.euler_matrix(a, b, g, 'rzyx')
-        M_p = tr.concatenate_matrices(T_p, R_p)
+        M_p = dco.coordinates_to_transformation_matrix(
+            position=fids_dyn[ic, :3],
+            orientation=fids_dyn[ic, 3:],
+            axes='rzyx',
+        )
         M_img = m_change @ M_p
 
         angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
@@ -228,10 +237,11 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     r_obj_img[:3, :3] = base_obj_img[:3, :3]
 
     # compute initial alignment of probe fixed in the object in reference (or static) frame
-    s0_trans_dyn = tr.translation_matrix(fids_dyn[3, :3])
-    s0_rot_dyn = tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
-                                             np.radians(fids_dyn[3, 5]), 'rzyx')
-    s0_dyn = tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn)
+    s0_dyn = dco.coordinates_to_transformation_matrix(
+        position=fids_dyn[3, :3],
+        orientation=fids_dyn[3, 3:],
+        axes='rzyx',
+    )
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
 

@@ -34,6 +34,7 @@ from vtk.util import numpy_support
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
+import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.data.transformations as tr
 import invesalius.reader.bitmap_reader as bitmap_reader
@@ -555,24 +556,88 @@ def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     return output
 
 
+# TODO: Add a description of different coordinate systems, namely:
+#       - the world coordinate system,
+#       - the voxel coordinate system.
+#       - InVesalius's internal coordinate system,
+#
 def convert_world_to_voxel(xyz, affine):
     """
     Convert a coordinate from the world space ((x, y, z); scanner space; millimeters) to the
     voxel space ((i, j, k)). This is achieved by multiplying a coordinate by the inverse
     of the affine transformation.
+
     More information: https://nipy.org/nibabel/coordinate_systems.html
+
     :param xyz: a list or array of 3 coordinates (x, y, z) in the world coordinates
     :param affine: a 4x4 array containing the image affine transformation in homogeneous coordinates
     :return: a 1x3 array with the point coordinates in image space (i, j, k)
     """
-
-    # print("xyz: ", xyz, "\naffine", affine)
     # convert xyz coordinate to 1x4 homogeneous coordinates array
     xyz_homo = np.hstack((xyz, 1.0)).reshape([4, 1])
     ijk_homo = np.linalg.inv(affine) @ xyz_homo
     ijk = ijk_homo.T[np.newaxis, 0, :3]
 
     return ijk
+
+
+def convert_invesalius_to_voxel(position):
+    """
+    Convert position from InVesalius space to the voxel space.
+
+    The two spaces are otherwise identical, but InVesalius space has a reverted y-axis
+    (increasing y-coordinate moves posterior in InVesalius space, but anterior in the voxel space).
+
+    For instance, if the size of the voxel image is 256 x 256 x 160, the y-coordinate 0 in
+    InVesalius space corresponds to the y-coordinate 255 in the voxel space.
+
+    :param position: a vector of 3 coordinates (x, y, z) in InVesalius space.
+    :return: a vector of 3 coordinates in the voxel space
+    """
+    slice = sl.Slice()
+    return np.array((position[0], slice.matrix.shape[1] - position[1] - 1, position[2]))
+
+
+def convert_invesalius_to_world(position, orientation):
+    """
+    Convert position and orientation from InVesalius space to the world space.
+
+    The axis definition for the Euler angles returned is 'sxyz', see transformations.py for more
+    information.
+
+    Uses 'affine' matrix defined in the project created or opened by the user. If it is
+    undefined, return Nones as the coordinates for both position and orientation.
+
+    More information: https://nipy.org/nibabel/coordinate_systems.html
+
+    :param position: a vector of 3 coordinates in InVesalius space.
+    :param orientation: a vector of 3 Euler angles in InVesalius space.
+    :return: a pair consisting of 3 coordinates and 3 Euler angles in the world space, or Nones if
+             'affine' matrix is not defined in the project.
+    """
+    slice = sl.Slice()
+
+    if slice.affine is None:
+        position_world = (None, None, None)
+        orientation_world = (None, None, None)
+
+        return position_world, orientation_world
+
+    position_voxel = convert_invesalius_to_voxel(position)
+
+    M_invesalius = dco.coordinates_to_transformation_matrix(
+        position=position_voxel,
+        orientation=orientation,
+        axes='sxyz',
+    )
+    M_world = np.linalg.inv(slice.affine) @ M_invesalius
+
+    position_world, orientation_world = dco.transformation_matrix_to_coordinates(
+        M_world,
+        axes='sxyz',
+    )
+
+    return position_world, orientation_world
 
 
 def create_grid(xy_range, z_range, z_offset, spacing):

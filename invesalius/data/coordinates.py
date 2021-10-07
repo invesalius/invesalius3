@@ -39,9 +39,9 @@ class TrackerCoordinates():
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
+        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
 
     def GetCoordinates(self):
-        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
         return self.coord, self.markers_flag
 
 
@@ -179,7 +179,7 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     coord = np.vstack([coord1, coord2, coord3])
 
-    return coord, [trck.probeID, trck.refID, trck.coilID]
+    return coord, [trck.probeID, trck.refID, trck.objID]
 
 def ElfinCoord(trck_init):
     if len(trck_init) > 2:
@@ -384,9 +384,43 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    #Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
-
     return np.vstack([coord1, coord2, coord3, coord4]), [int(uniform(0, 5)), int(uniform(0, 5)), int(uniform(0, 5))]
+
+
+def coordinates_to_transformation_matrix(position, orientation, axes='sxyz'):
+    """
+    Transform vectors consisting of position and orientation (in Euler angles) in 3d-space into a 4x4
+    transformation matrix that combines the rotation and translation.
+    :param position: A vector of three coordinates.
+    :param orientation: A vector of three Euler angles in degrees.
+    :param axes: The order in which the rotations are done for the axes. See transformations.py for details. Defaults to 'sxyz'.
+    :return: The transformation matrix (4x4).
+    """
+    a, b, g = np.radians(orientation)
+
+    r_ref = tr.euler_matrix(a, b, g, axes=axes)
+    t_ref = tr.translation_matrix(position)
+
+    m_img = tr.concatenate_matrices(t_ref, r_ref)
+
+    return m_img
+
+
+def transformation_matrix_to_coordinates(matrix, axes='sxyz'):
+    """
+    Given a matrix that combines the rotation and translation, return the position and the orientation
+    determined by the matrix. The orientation is given as three Euler angles.
+    The inverse of coordinates_of_transformation_matrix when the parameter 'axes' matches.
+    :param matrix: A 4x4 transformation matrix.
+    :param axes: The order in which the rotations are done for the axes. See transformations.py for details. Defaults to 'sxyz'.
+    :return: The position (a vector of length 3) and Euler angles for the orientation in degrees (a vector of length 3).
+    """
+    angles = tr.euler_from_matrix(matrix, axes=axes)
+    angles_as_deg = np.degrees(angles)
+
+    translation = tr.translation_from_matrix(matrix)
+
+    return translation, angles_as_deg
 
 
 def dynamic_reference(probe, reference):
@@ -435,11 +469,11 @@ def dynamic_reference_m(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
-    a, b, g = np.radians(reference[3:6])
-
-    trans = tr.translation_matrix(reference[:3])
-    rot = tr.euler_matrix(a, b, g, 'rzyx')
-    affine = tr.concatenate_matrices(trans, rot)
+    affine = coordinates_to_transformation_matrix(
+        position=reference[:3],
+        orientation=reference[3:],
+        axes='rzyx',
+    )
     probe_4 = np.vstack((probe[:3].reshape([3, 1]), 1.))
     coord_rot = np.linalg.inv(affine) @ probe_4
     # minus sign to the z coordinate
@@ -479,15 +513,16 @@ def dynamic_reference_m2(probe, reference):
     :return: rotated and translated coordinates
     """
 
-    a, b, g = np.radians(reference[3:6])
-    a_p, b_p, g_p = np.radians(probe[3:6])
-
-    T = tr.translation_matrix(reference[:3])
-    T_p = tr.translation_matrix(probe[:3])
-    R = tr.euler_matrix(a, b, g, 'rzyx')
-    R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
-    M = tr.concatenate_matrices(T, R)
-    M_p = tr.concatenate_matrices(T_p, R_p)
+    M = coordinates_to_transformation_matrix(
+        position=reference[:3],
+        orientation=reference[3:],
+        axes='rzyx',
+    )
+    M_p = coordinates_to_transformation_matrix(
+        position=probe[:3],
+        orientation=probe[3:],
+        axes='rzyx',
+    )
 
     M_dyn = np.linalg.inv(M) @ M_p
 

@@ -2563,6 +2563,41 @@ class PanelFFillConfidence(wx.Panel):
         self.config.confid_iters = self.spin_iters.GetValue()
 
 
+class PanelFFillProgress(wx.Panel):
+    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+        self._init_gui()
+
+    def _init_gui(self):
+        self.progress = wx.Gauge(self, -1)
+        self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
+        self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.progress, 0, wx.EXPAND | wx.ALL, 5)
+        time_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        time_sizer.Add(self.lbl_progress_caption, 0, wx.EXPAND, 0)
+        time_sizer.Add(self.lbl_time, 1, wx.EXPAND | wx.LEFT, 5)
+        main_sizer.Add(time_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+        main_sizer.SetSizeHints(self)
+
+    def StartTimer(self):
+        self.t0 = time.time()
+
+    def StopTimer(self):
+        fmt = "%H:%M:%S"
+        self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
+        self.progress.SetValue(0)
+
+    def Pulse(self):
+        fmt = "%H:%M:%S"
+        self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
+        self.progress.Pulse()
+
+
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
@@ -2820,6 +2855,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.panel_ffill_confidence.SetMinSize((250, -1))
         self.panel_ffill_confidence.Hide()
 
+        self.panel_ffill_progress = PanelFFillProgress(self, -1, style=wx.TAB_TRAVERSAL)
+        self.panel_ffill_progress.SetMinSize((250, -1))
+        # self.panel_ffill_progress.Hide()
+
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
         # Sizer
@@ -2876,11 +2915,16 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(0, 0, (12, 0))
         except TypeError:
             sizer.AddStretchSpacer((12, 0))
-        sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        sizer.Add(self.panel_ffill_progress, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
         try:
             sizer.Add(0, 0, (14, 0))
         except TypeError:
             sizer.AddStretchSpacer((14, 0))
+        sizer.Add(self.close_btn, (15, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        try:
+            sizer.Add(0, 0, (16, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((16, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -3263,14 +3307,17 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, nav_prop):
+    def __init__(self, tracker, pedal_connection):
+        self.tracker = tracker
+        self.pedal_connection = pedal_connection
 
-        self.tracker_id = nav_prop[0]
-        self.trk_init = nav_prop[1]
-        self.TrackerCoordinates = nav_prop[2]
+        self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
+        #self.TrackerCoordinates = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
+        self.use_default_object = False
+        self.object_fiducial_being_set = None
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3280,6 +3327,11 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self._init_gui()
         self.LoadObject()
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetObjectFiducial, 'Set object fiducial')
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3298,7 +3350,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
+        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChooseReferenceMode)
         choice_ref.SetSelection(1)
         choice_ref.Enable(1)
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
@@ -3331,15 +3383,17 @@ class ObjectCalibrationDialog(wx.Dialog):
                              choice_sensor])
 
         # Push buttons for object fiducials
-        btns_obj = const.BTNS_OBJ
-        tips_obj = const.TIPS_OBJ
+        for object_fiducial in const.OBJECT_FIDUCIALS:
+            index = object_fiducial['fiducial_index']
+            label = object_fiducial['label']
+            button_id = object_fiducial['button_id']
+            tip = object_fiducial['tip']
 
-        for k in btns_obj:
-            n = list(btns_obj[k].keys())[0]
-            lab = list(btns_obj[k].values())[0]
-            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
-            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_obj[n]))
-            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnGetObjectFiducials)
+            ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(60, 23))
+            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnObjectFiducialButton, index, ctrl=ctrl))
+
+            self.btns_coord[index] = ctrl
 
         for m in range(0, 5):
             for n in range(0, 3):
@@ -3383,8 +3437,9 @@ class ObjectCalibrationDialog(wx.Dialog):
             return 0
 
     def LoadObject(self):
-        default = self.ObjectImportDialog()
-        if not default:
+        self.use_default_object = self.ObjectImportDialog()
+
+        if not self.use_default_object:
             filename = ShowImportMeshFilesDialog()
 
             if filename:
@@ -3397,11 +3452,17 @@ class ObjectCalibrationDialog(wx.Dialog):
                 elif filename.lower().endswith('.vtp'):
                     reader = vtk.vtkXMLPolyDataReader()
                 else:
-                    wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                    wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
                     return
             else:
                 filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
                 reader = vtk.vtkSTLReader()
+
+                # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
+                #      use the default object after all. A more logical behavior in that case would be to cancel the
+                #      whole object calibration, but implementing that would need larger refactoring.
+                #
+                self.use_default_object = True
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()
@@ -3476,39 +3537,87 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ren.AddActor(ball_actor)
         return ball_actor, tactor
 
-    def OnGetObjectFiducials(self, evt):
-        btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
-
-        if self.trk_init and self.tracker_id:
-            coord_raw, markers_flag = self.TrackerCoordinates.GetCoordinates()
-            if self.obj_ref_id and btn_id == 4:
-                if self.tracker_id == const.ROBOT:
-                    trck_init_robot = self.trk_init[1][0]
-                    coord = trck_init_robot.Run()
-                else:
-                    coord = coord_raw[self.obj_ref_id, :]
-            else:
-                coord = coord_raw[0, :]
-        else:
+    def OnObjectFiducialButton(self, index, evt, ctrl):
+        if not self.tracker.IsTrackerInitialized():
             ShowNavigationTrackerWarning(0, 'choose')
+            return
 
-        if btn_id == 3:
+        # TODO: The code below until the end of the function is essentially copy-paste from
+        #       OnTrackerFiducials function in NeuronavigationPanel class. Probably the easiest
+        #       way to deduplicate this would be to create a Fiducial class, which would contain
+        #       this code just once.
+        #
+
+        # Do not allow several object fiducials to be set at the same time.
+        if self.object_fiducial_being_set is not None and self.object_fiducial_being_set != index:
+            ctrl.SetValue(False)
+            return
+
+        # Called when the button for setting the object fiducial is enabled and either pedal is pressed
+        # or the button is pressed again.
+        #
+        def set_fiducial_callback(state):
+            if state:
+                Publisher.sendMessage('Set object fiducial', fiducial_index=index)
+                if self.pedal_connection is not None:
+                    self.pedal_connection.remove_callback('fiducial')
+
+                ctrl.SetValue(False)
+                self.object_fiducial_being_set = None
+
+        if ctrl.GetValue():
+            self.object_fiducial_being_set = index
+
+            if self.pedal_connection is not None:
+                self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
+        else:
+            set_fiducial_callback(True)
+
+    def SetObjectFiducial(self, fiducial_index):
+        coord, coord_raw = self.tracker.GetTrackerCoordinates(
+            # XXX: Always use static reference mode when getting the coordinates. This is what the
+            #      code did previously, as well. At some point, it should probably be thought through
+            #      if this is actually what we want or if it should be changed somehow.
+            #
+            ref_mode_id=const.STATIC_REF,
+            n_samples=const.CALIBRATION_TRACKER_SAMPLES,
+        )
+
+        # XXX: The condition below happens when setting the "fixed" coordinate in the object calibration.
+        #      The case is not handled by GetTrackerCoordinates function, therefore redo some computation
+        #      that is already done once by GetTrackerCoordinates, namely, invert the y-coordinate.
+        #
+        #      (What is done here does not seem to be completely consistent with "always use static reference
+        #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
+        #      and not change the function to the point of potentially breaking it.)
+        #
+        if self.obj_ref_id and fiducial_index == 4:
+            if self.tracker_id == const.ROBOT:
+                trck_init_robot = self.trk_init[1][0]
+                coord = trck_init_robot.Run()
+            else:
+                coord = coord_raw[self.obj_ref_id, :]
+        else:
+            coord = coord_raw[0, :]
+        coord[2] = -coord[2]
+
+        if fiducial_index == 3:
             coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
-            self.obj_fiducials[btn_id, :] = coord[:3]
-            self.obj_orients[btn_id, :] = coord[3:]
-            for n in [0, 1, 2]:
-                self.txt_coord[btn_id][n].SetLabel(str(round(coord[n], 1)))
-                if self.text_actors[btn_id]:
-                    self.text_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
-                    self.ball_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
+            self.obj_fiducials[fiducial_index, :] = coord[:3]
+            self.obj_orients[fiducial_index, :] = coord[3:]
+            for i in [0, 1, 2]:
+                self.txt_coord[fiducial_index][i].SetLabel(str(round(coord[i], 1)))
+                if self.text_actors[fiducial_index]:
+                    self.text_actors[fiducial_index].GetProperty().SetColor(0.0, 1.0, 0.0)
+                    self.ball_actors[fiducial_index].GetProperty().SetColor(0.0, 1.0, 0.0)
             self.Refresh()
         else:
             ShowNavigationTrackerWarning(0, 'choose')
 
-    def OnChoiceRefMode(self, evt):
+    def OnChooseReferenceMode(self, evt):
         # When ref mode is changed the tracker coordinates are set to nan
         # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
         # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
@@ -3516,13 +3625,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         # I use the index 2 directly here to send to the coregistration module where it is possible to access without
         # any conditional statement the correct index of coordinates.
 
-        if evt.GetSelection():
+        if evt.GetSelection() == 1:
             self.obj_ref_id = 2
             if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0
             self.choice_sensor.Show(self.obj_ref_id)
+
         for m in range(0, 5):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
@@ -3539,7 +3649,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
 
     def GetValue(self):
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata, self.use_default_object
 
 class ICPCorregistrationDialog(wx.Dialog):
 

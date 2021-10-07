@@ -659,6 +659,8 @@ BOOLEAN_XOR = 4
 
 MARKER_COLOUR = (1.0, 1.0, 0.)
 MARKER_SIZE = 2
+
+CALIBRATION_TRACKER_SAMPLES = 10
 FIDUCIAL_REGISTRATION_ERROR_THRESHOLD = 3.0
 
 SELECT = 0
@@ -760,21 +762,42 @@ OBJA = wx.NewId()
 OBJC = wx.NewId()
 OBJF = wx.NewId()
 
-BTNS_OBJ = {OBJL: {0: _('Left')},
-            OBJR: {1: _('Right')},
-            OBJA: {2: _('Anterior')},
-            OBJC: {3: _('Center')},
-            OBJF: {4: _('Fixed')}}
-
-TIPS_OBJ = [_("Select left object fiducial"),
-            _("Select right object fiducial"),
-            _("Select anterior object fiducial"),
-            _("Select object center"),
-            _("Attach sensor to object")]
+OBJECT_FIDUCIALS = [
+    {
+        'fiducial_index': 0,
+        'button_id': OBJL,
+        'label': _('Left'),
+        'tip': _("Select left object fiducial"),
+    },
+    {
+        'fiducial_index': 1,
+        'button_id': OBJR,
+        'label': _('Right'),
+        'tip': _("Select right object fiducial"),
+    },
+    {
+        'fiducial_index': 2,
+        'button_id': OBJA,
+        'label': _('Anterior'),
+        'tip': _("Select anterior object fiducial"),
+    },
+    {
+        'fiducial_index': 3,
+        'button_id': OBJC,
+        'label': _('Center'),
+        'tip': _("Select object center"),
+    },
+    {
+        'fiducial_index': 4,
+        'button_id': OBJF,
+        'label': _('Fixed'),
+        'tip': _("Attach sensor to object"),
+    },
+]
 
 MTC_PROBE_NAME = "1Probe"
 MTC_REF_NAME = "2Ref"
-MTC_OBJ_NAME = "3bigcoil"
+MTC_OBJ_NAME = "3Coil"
 
 # Object tracking
 ARROW_SCALE = 6
@@ -805,8 +828,9 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
                   'write_interval': 50, 'numb_threads': '', 'max_lenth': 200,
                   'min_lenth': 20, 'max_sampling_step': 100}
 
-WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") + "|" +\
-                        _("Marker files (*.mks)|*.mks")
+MARKER_FILE_MAGICK_STRING = "INVESALIUS3_MARKER_FILE_"
+CURRENT_MARKER_FILE_VERSION = 0
+WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 ROBOT_ElFIN_IP = ['Select robot IP:', '143.107.220.251', '169.254.153.251', '127.0.0.1']
 ROBOT_ElFIN_PORT = 10003

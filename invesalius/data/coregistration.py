@@ -69,12 +69,11 @@ def object_to_reference(coord_raw, m_probe):
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """
-
-    a, b, g = np.radians(coord_raw[1, 3:])
-    r_ref = tr.euler_matrix(a, b, g, 'rzyx')
-    t_ref = tr.translation_matrix(coord_raw[1, :3])
-    m_ref = tr.concatenate_matrices(t_ref, r_ref)
-
+    m_ref = dco.coordinates_to_transformation_matrix(
+        position=coord_raw[1, :3],
+        orientation=coord_raw[1, 3:],
+        axes='rzyx',
+    )
     m_dyn = np.linalg.inv(m_ref) @ m_probe
     return m_dyn
 
@@ -108,20 +107,25 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # transform raw marker coordinate to object center
     m_probe = object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw)
+
     # transform object center to reference marker if specified as dynamic reference
     if ref_mode_id:
         m_probe_ref = object_to_reference(coord_raw, m_probe)
     else:
         m_probe_ref = m_probe
+
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
     # corregistrate from tracker to image space
     m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
     if icp[0]:
         m_img = bases.transform_icp(m_img, icp[1])
+
     # compute rotation angles
-    _, _, angles, _, _ = tr.decompose_matrix(m_img)
-    # create output coordiante list
+    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+
+    # create output coordinate list
     coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
@@ -132,10 +136,11 @@ def UpdateICP(self, m_icp, flag):
     self.icp = flag
 
 def compute_marker_transformation(coord_raw, obj_ref_mode):
-    psi, theta, phi = np.radians(coord_raw[obj_ref_mode, 3:])
-    r_probe = tr.euler_matrix(psi, theta, phi, 'rzyx')
-    t_probe = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
-    m_probe = tr.concatenate_matrices(t_probe, r_probe)
+    m_probe = dco.coordinates_to_transformation_matrix(
+        position=coord_raw[obj_ref_mode, :3],
+        orientation=coord_raw[obj_ref_mode, 3:],
+        axes='rzyx',
+    )
     return m_probe
 
 
@@ -145,6 +150,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # transform raw marker coordinate to object center
     m_probe = compute_marker_transformation(coord_raw, obj_ref_mode)
+
     # transform object center to reference marker if specified as dynamic reference
     if ref_mode_id:
         m_ref = compute_marker_transformation(coord_raw, 1)
@@ -154,6 +160,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
     # corregistrate from tracker to image space
     m_img = m_change @ m_probe_ref
 
@@ -161,8 +168,9 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
         m_img = bases.transform_icp(m_img, icp[1])
 
     # compute rotation angles
-    _, _, angles, _, _ = tr.decompose_matrix(m_img)
-    # create output coordiante list
+    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+
+    # create output coordinate list
     coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
@@ -204,7 +212,7 @@ class CoordinateCorregistrate(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 1
 
-        trck_init, trck_id, trck_mode = self.tracker.GetTrackerInfo()
+        trck_init, trck_id = self.tracker.GetTrackerInfo()
 
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
@@ -284,7 +292,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 0
 
-        trck_init, trck_id, trck_mode = self.tracker.GetTrackerInfo()
+        trck_init, trck_id = self.tracker.GetTrackerInfo()
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:

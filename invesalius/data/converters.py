@@ -149,6 +149,7 @@ def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
 # Based on http://gdcm.sourceforge.net/html/ConvertNumpy_8py-example.html
 def gdcm_to_numpy(image, apply_intercep_scale=True):
     map_gdcm_np = {
+        gdcm.PixelFormat.SINGLEBIT: np.uint8,
         gdcm.PixelFormat.UINT8: np.uint8,
         gdcm.PixelFormat.INT8: np.int8,
         gdcm.PixelFormat.UINT12: np.uint16,
@@ -177,6 +178,8 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
     np_array = np.frombuffer(
         gdcm_array.encode("utf-8", errors="surrogateescape"), dtype=dtype
     )
+    if pf.GetScalarType() == gdcm.PixelFormat.SINGLEBIT:
+        np_array = np.unpackbits(np_array)
     np_array.shape = shape
     np_array = np_array.squeeze()
 
