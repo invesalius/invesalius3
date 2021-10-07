@@ -20,11 +20,9 @@
 import numpy as np
 import queue
 import threading
-from time import time, sleep
-import csv
+from time import  sleep
 
 import invesalius.constants as const
-import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
 
@@ -202,13 +200,6 @@ class CoordinateCorregistrate(threading.Thread):
             #
             self.target[1] = -self.target[1]
 
-        # self.time_start = time()
-        # self.fieldnames = ["time",
-        #                    "x_nav", "y_nav", "z_nav", "a_nav", "b_nav", "c_nav", "target"]
-        # with open('data_nav.csv', 'w', newline='') as csv_file:
-        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-        #     csv_writer.writeheader()
-
     def run(self):
         coreg_data = self.coreg_data
         view_obj = 1
@@ -268,22 +259,6 @@ class CoordinateCorregistrate(threading.Thread):
 
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
-
-                # with open('data_nav.csv', 'a', newline='') as csv_file:
-                #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-                #
-                #     info = {
-                #         "time": time() - self.time_start,
-                #         "x_nav": coord[0],
-                #         "y_nav": coord[1],
-                #         "z_nav": coord[2],
-                #         "a_nav": coord[3],
-                #         "b_nav": coord[4],
-                #         "c_nav": coord[5],
-                #         "target": self.target_flag
-                #     }
-                #
-                #     csv_writer.writerow(info)
                 # The sleep has to be in both threads
                 sleep(self.sle)
             except queue.Full:

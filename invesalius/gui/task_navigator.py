@@ -1045,7 +1045,7 @@ class NeuronavigationPanel(wx.Panel):
         #                        self.tracker.TrackerCoordinates, self.navigation.event).start()
         #sleep(5)
 
-        if self.tracker.tracker_id == const.HYBRID:
+        if self.tracker.tracker_id == const.ROBOT:
             self.robot.SetRobotQueues([self.navigation.robottarget_queue,
                                        self.navigation.objattarget_queue])
             self.robot.OnRobotConnection(self.tracker, self.robotcoordinates)
@@ -1143,8 +1143,6 @@ class NeuronavigationPanel(wx.Panel):
                 btn_c.Enable(False)
 
             self.navigation.StartNavigation(self.tracker)
-            #if self.tracker.tracker_id == const.HYBRID:
-            #    self.robot.StartRobotNavigation(self.tracker, self.navigation.coord_queue, self.navigation.robot_event)
 
             if not self.CheckFiducialRegistrationError():
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok

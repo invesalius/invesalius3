@@ -875,9 +875,9 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
+            const.ROBOT: 'Robotic navigation',
             const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
-            const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)',
-            const.HYBRID: 'Hybrid tracker device'}
+            const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
@@ -3482,7 +3482,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         if self.trk_init and self.tracker_id:
             coord_raw, markers_flag = self.TrackerCoordinates.GetCoordinates()
             if self.obj_ref_id and btn_id == 4:
-                if self.tracker_id == const.HYBRID:
+                if self.tracker_id == const.ROBOT:
                     trck_init_robot = self.trk_init[1][0]
                     coord = trck_init_robot.Run()
                 else:

@@ -65,9 +65,9 @@ def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
                     const.POLARIS: PolarisCoord,
                     const.POLARISP4: PolarisP4Coord,
                     const.OPTITRACK: OptitrackCoord,
+                    const.ROBOT: RobotCoord,
                     const.DEBUGTRACKRANDOM: DebugCoordRandom,
-                    const.DEBUGTRACKAPPROACH: DebugCoordRandom,
-                    const.HYBRID: HybridCoord}
+                    const.DEBUGTRACKAPPROACH: DebugCoordRandom}
         coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
@@ -450,7 +450,7 @@ def dynamic_reference_m(probe, reference):
     return coord_rot
 
 
-def HybridCoord(trk_init, trck_id, ref_mode):
+def RobotCoord(trk_init, trck_id, ref_mode):
     coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[2], ref_mode)
     coord_robot, _ = ElfinCoord(trk_init[1:])
 
@@ -459,7 +459,6 @@ def HybridCoord(trk_init, trck_id, ref_mode):
     obj_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[2])
 
     if probe_tracker_in_robot is None:
-        #print("Getting raw tracker")
         probe_tracker_in_robot = coord_tracker[0]
         ref_tracker_in_robot = coord_tracker[1]
         obj_tracker_in_robot = coord_tracker[2]

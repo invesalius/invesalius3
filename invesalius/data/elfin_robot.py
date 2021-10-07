@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 from time import time, sleep
 import threading
-import csv
 
 import invesalius.data.elfin as elfin
 import invesalius.data.transformations as tr
@@ -10,12 +9,10 @@ import invesalius.data.coregistration as dcr
 import invesalius.constants as const
 
 
-
 class elfin_server():
     def __init__(self, server_ip, port_number):
         self.server_ip = server_ip
         self.port_number = port_number
-        #print(cobot.ReadPcsActualPos())
 
     def Initialize(self):
         SIZE = 1024
@@ -25,16 +22,14 @@ class elfin_server():
         print("conected!")
 
     def Run(self):
-        #target = [540.0, -30.0, 850.0, 140.0, -81.0, -150.0]
-        #print("starting move")
         return self.cobot.ReadPcsActualPos()
 
-    def SendCoordinates(self, target, type=const.MOTIONS["normal"]):
+    def SendCoordinates(self, target, type=const.ROBOT_MOTIONS["normal"]):
         status = self.cobot.ReadMoveState()
-        if type == const.MOTIONS["normal"] or type == const.MOTIONS["linear out"]:
+        if type == const.ROBOT_MOTIONS["normal"] or type == const.ROBOT_MOTIONS["linear out"]:
             if status != 1009:
                 self.cobot.MoveL(target)
-        elif type == const.MOTIONS["arc"]:
+        elif type == const.ROBOT_MOTIONS["arc"]:
             if status != 1009:
                 self.cobot.MoveC(target)
 
@@ -45,8 +40,8 @@ class elfin_server():
     def Close(self):
         self.cobot.close()
 
-class KalmanTracker:
 
+class KalmanTracker:
     def __init__(self,
                  state_num=2,
                  cov_process=0.001,
@@ -77,6 +72,7 @@ class KalmanTracker:
         self.filter.correct(self.measurement)
         self.state = self.filter.statePost
 
+
 class TrackerProcessing:
     def __init__(self):
         self.coord_vel = []
@@ -89,7 +85,6 @@ class TrackerProcessing:
             state_num=2,
             cov_process=0.001,
             cov_measure=0.1) for _ in range(6)]
-
 
     def kalman_filter(self, coord_tracker):
         kalman_array = []
@@ -108,7 +103,6 @@ class TrackerProcessing:
 
         return coord_kalman
 
-
     def estimate_head_velocity(self, coord_vel, timestamp):
         coord_vel = np.vstack(np.array(coord_vel))
         coord_init = coord_vel[:int(len(coord_vel)/2)].mean(axis=0)
@@ -118,36 +112,35 @@ class TrackerProcessing:
 
         return velocity, distance
 
-    def Versores(self,init_point, final_point):
+    def versors(self, init_point, final_point):
         init_point = np.array(init_point)
         final_point = np.array(final_point)
         norm = (sum((final_point-init_point)**2))**0.5
-        versorfator = (((final_point-init_point)/norm)*70).tolist()
+        versorfactor = (((final_point-init_point)/norm)*70).tolist()
 
-        return versorfator
+        return versorfactor
 
     def arcmotion(self, actual_point, coord_head, coord_inv):
-
         p1 = coord_inv
 
         pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
 
-        versorfator1_calculado = self.Versores(pc,actual_point)
-        init_ext_point = actual_point[0]+versorfator1_calculado[0],\
-                         actual_point[1]+versorfator1_calculado[1],\
-                         actual_point[2]+versorfator1_calculado[2], \
+        versorfactor1 = self.versors(pc, actual_point)
+        init_ext_point = actual_point[0]+versorfactor1[0],\
+                         actual_point[1]+versorfactor1[1],\
+                         actual_point[2]+versorfactor1[2], \
                          actual_point[3], actual_point[4], actual_point[5]
 
-        pm = ((p1[0]+actual_point[0])/2, (p1[1]+actual_point[1])/2,(p1[2]+actual_point[2])/2,0,0,0 ) #ponto médio da trajetória
+        middle_point = ((p1[0]+actual_point[0])/2, (p1[1]+actual_point[1])/2, (p1[2]+actual_point[2])/2, 0, 0, 0)
 
-        newarr = (np.array(self.Versores(pc,pm)))*2
-        pontointermediario = pm[0]+newarr[0],pm[1]+newarr[1],pm[2]+newarr[2]
+        newarr = (np.array(self.versors(pc, middle_point)))*2
+        middle_arc_point = middle_point[0]+newarr[0], middle_point[1]+newarr[1], middle_point[2]+newarr[2]
 
-        versorfator3 = self.Versores(pc,p1)
-        final_ext_point = p1[0]+versorfator3[0],p1[1]+versorfator3[1],p1[2]+versorfator3[2], coord_inv[3], coord_inv[4], coord_inv[5]
-        final_ext_point_arc = final_ext_point = p1[0]+versorfator3[0],p1[1]+versorfator3[1],p1[2]+versorfator3[2], coord_inv[3], coord_inv[4], coord_inv[5],0
-        #type_arc = 0
-        target_arc = pontointermediario+final_ext_point_arc
+        versorfactor3 = self.versors(pc, p1)
+
+        final_ext_arc_point = p1[0]+versorfactor3[0], p1[1]+versorfactor3[1], p1[2]+versorfactor3[2], \
+                                                coord_inv[3], coord_inv[4], coord_inv[5], 0
+        target_arc = middle_arc_point+final_ext_arc_point
 
         return init_ext_point, target_arc
 
@@ -165,14 +158,13 @@ class TrackerProcessing:
                 self.velocity_std = np.std(self.velocity_vector)
                 del self.velocity_vector[0]
 
-            if self.velocity_std > 10:
+            if self.velocity_std > const.ROBOT_HEAD_VELOCITY_THRESHOLD:
                 print('Velocity threshold activated')
                 return False
             else:
                 return True
 
         return False
-
 
     def head_move_compensation(self, current_ref, m_change_robot2ref):
         trans = tr.translation_matrix(current_ref[:3])
@@ -184,8 +176,7 @@ class TrackerProcessing:
         _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
         angles = np.degrees(angles)
 
-        return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
-                    angles[2]
+        return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], angles[2]
 
     def estimate_head_center(self, tracker, current_ref):
         m_probe_ref_left, m_probe_ref_right, m_probe_ref_nasion = tracker.GetMatrixTrackerFiducials()
@@ -196,12 +187,11 @@ class TrackerProcessing:
 
         return (m_ear_left_new[:3, -1] + m_ear_right_new[:3, -1])/2
 
-    def correction_distance_calculation_target(self, coord_inv,actual_point):
-        #a posição atual do robo está embaixo disso
+    def correction_distance_calculation_target(self, coord_inv, actual_point):
         sum = (coord_inv[0]-actual_point[0])**2\
-              +(coord_inv[1]-actual_point[1])**2\
-              +(coord_inv[2]-actual_point[2])**2
-        correction_distance_compensation = pow(sum,0.5)
+              + (coord_inv[1]-actual_point[1])**2\
+              + (coord_inv[2]-actual_point[2])**2
+        correction_distance_compensation = pow(sum, 0.5)
 
         return correction_distance_compensation
 
@@ -215,6 +205,7 @@ class RobotCoordinates():
 
     def GetRobotCoordinates(self):
         return self.coord
+
 
 class ControlRobot(threading.Thread):
     def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event):
@@ -240,15 +231,6 @@ class ControlRobot(threading.Thread):
         self.target_linearin = None
         self.target_arc = None
 
-        self.time_start = time()
-        self.fieldnames = ["time",
-                           "x_robot", "y_robot", "z_robot", "a_robot", "b_robot", "c_robot",
-                           "x_tracker_obj", "y_tracker_obj", "z_tracker_obj", "a_tracker_obj", "b_tracker_obj", "c_tracker_obj",
-                           "velocity_std", "target"]
-        with open('data_robot_and_tracker.csv', 'w', newline='') as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-            csv_writer.writeheader()
-
     def getcoordsfromdevices(self):
         coord_robot_raw = self.trck_init_robot.Run()
         coord_robot = np.array(coord_robot_raw)
@@ -259,6 +241,49 @@ class ControlRobot(threading.Thread):
 
         return coord_raw, coord_robot_raw, markers_flag
 
+    def robot_move_decision(self, distance_target, coord_inv, coord_robot_raw, current_ref_filtered):
+        if distance_target < const.ROBOT_ARC_THRESHOLD_DISTANCE and not self.arcmotion_flag:
+            self.trck_init_robot.SendCoordinates(coord_inv, const.ROBOT_MOTIONS["normal"])
+
+        elif distance_target >= const.ROBOT_ARC_THRESHOLD_DISTANCE or self.arcmotion_flag:
+            actual_point = coord_robot_raw
+            if not self.arcmotion_flag:
+                coord_head = self.process_tracker.estimate_head_center(self.tracker,
+                                                                       current_ref_filtered).tolist()
+
+                self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
+                                                                                        coord_inv)
+                self.arcmotion_flag = True
+                self.arcmotion_step_flag = const.ROBOT_MOTIONS["linear out"]
+
+            if self.arcmotion_flag and self.arcmotion_step_flag == const.ROBOT_MOTIONS["linear out"]:
+                coord = self.target_linearout
+                if np.allclose(np.array(actual_point), np.array(self.target_linearout), 0, 1):
+                    self.arcmotion_step_flag = const.ROBOT_MOTIONS["arc"]
+                    coord = self.target_arc
+
+            elif self.arcmotion_flag and self.arcmotion_step_flag == const.ROBOT_MOTIONS["arc"]:
+                coord_head = self.process_tracker.estimate_head_center(self.tracker,
+                                                                       current_ref_filtered).tolist()
+
+                _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
+                                                                   coord_inv)
+                if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
+                    None
+                else:
+                    if self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) >= \
+                            const.ROBOT_ARC_THRESHOLD_DISTANCE*0.8:
+                        self.target_arc = new_target_arc
+
+                coord = self.target_arc
+
+                if np.allclose(np.array(actual_point), np.array(self.target_arc[3:-1]), 0, 10):
+                    self.arcmotion_flag = False
+                    self.arcmotion_step_flag = const.ROBOT_MOTIONS["normal"]
+                    coord = coord_inv
+
+            self.trck_init_robot.SendCoordinates(coord, self.arcmotion_step_flag)
+
     def control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
         coord_ref_tracker_in_robot = coords_tracker_in_robot[1]
         coord_obj_tracker_in_robot = coords_tracker_in_robot[2]
@@ -266,8 +291,7 @@ class ControlRobot(threading.Thread):
         if self.robot_tracker_flag:
             current_ref = coord_ref_tracker_in_robot
             if current_ref is not None and markers_flag[1]:
-                #current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
-                current_ref_filtered = current_ref
+                current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
                 if self.process_tracker.head_move_threshold(current_ref_filtered):
                     coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
                                                                             self.m_change_robot2ref)
@@ -275,62 +299,19 @@ class ControlRobot(threading.Thread):
                        self.coord_inv_old = coord_inv
 
                     if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 0.01):
-                        # print("At target within range 5")
+                        # print("At target within range 1")
                         pass
                     elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
-                        # print("stop")
                         self.trck_init_robot.StopRobot()
                         self.coord_inv_old = coord_inv
                     else:
-                    #self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
                         distance_target = self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw)
-                        if distance_target < 100 and not self.arcmotion_flag:
-                            self.trck_init_robot.SendCoordinates(coord_inv, const.MOTIONS["normal"])
-
-                        elif distance_target >= 100 or self.arcmotion_flag:
-                            actual_point = coord_robot_raw
-                            if not self.arcmotion_flag:
-                                coord_head = self.process_tracker.estimate_head_center(self.tracker,
-                                                                                       current_ref_filtered).tolist()
-
-                                self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
-                                                                                              coord_inv)
-                                self.arcmotion_flag = True
-                                self.arcmotion_step_flag = const.MOTIONS["linear out"]
-
-                            if self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["linear out"]:
-                                coord = self.target_linearout
-                                if np.allclose(np.array(actual_point), np.array(self.target_linearout), 0, 1):
-                                    self.arcmotion_step_flag = const.MOTIONS["arc"]
-                                    coord = self.target_arc
-
-                            elif self.arcmotion_flag and self.arcmotion_step_flag == const.MOTIONS["arc"]:
-                                coord_head = self.process_tracker.estimate_head_center(self.tracker,
-                                                                                       current_ref_filtered).tolist()
-
-                                _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
-                                                                                              coord_inv)
-                                if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
-                                    None
-                                else:
-                                    if self.process_tracker.correction_distance_calculation_target(coord_inv,
-                                                                                                coord_robot_raw) >= 80:
-                                        self.target_arc = new_target_arc
-
-                                coord = self.target_arc
-
-                                if np.allclose(np.array(actual_point), np.array(self.target_arc[3:-1]), 0, 10):
-                                    self.arcmotion_flag = False
-                                    self.arcmotion_step_flag = const.MOTIONS["normal"]
-                                    coord = coord_inv
-
-                            self.trck_init_robot.SendCoordinates(coord, self.arcmotion_step_flag)
+                        self.robot_move_decision(distance_target, coord_inv, coord_robot_raw, current_ref_filtered)
                         self.coord_inv_old = coord_inv
             else:
                 self.trck_init_robot.StopRobot()
 
     def run(self):
-
         while not self.event.is_set():
             coords_tracker_in_robot, coord_robot_raw, markers_flag = self.getcoordsfromdevices()
 
@@ -348,33 +329,4 @@ class ControlRobot(threading.Thread):
 
             self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
 
-            # if not self.robottarget_queue.empty():
-            #     self.robottarget_queue.task_done()
-            # if not self.objattarget_queue.empty():
-            #     self.objattarget_queue.task_done()
-
-
-            with open('data_robot_and_tracker.csv', 'a', newline='') as csv_file:
-                csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-
-                info = {
-                    "time": time() - self.time_start,
-                    "x_robot": coord_robot_raw[0],
-                    "y_robot": coord_robot_raw[1],
-                    "z_robot": coord_robot_raw[2],
-                    "a_robot": coord_robot_raw[3],
-                    "b_robot": coord_robot_raw[4],
-                    "c_robot": coord_robot_raw[5],
-                    "x_tracker_obj": coords_tracker_in_robot[2][0],
-                    "y_tracker_obj": coords_tracker_in_robot[2][1],
-                    "z_tracker_obj": coords_tracker_in_robot[2][2],
-                    "a_tracker_obj": coords_tracker_in_robot[2][3],
-                    "b_tracker_obj": coords_tracker_in_robot[2][4],
-                    "c_tracker_obj": coords_tracker_in_robot[2][5],
-                    "velocity_std": self.process_tracker.velocity_std,
-                    "target": self.target_flag
-                }
-
-                csv_writer.writerow(info)
-
-                sleep(0.02)
+            sleep(0.01)
