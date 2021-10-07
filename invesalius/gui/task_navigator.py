@@ -425,7 +425,7 @@ class NeuronavigationPanel(wx.Panel):
             checkbox_pedal_pressed.Enable(False)
             checkbox_pedal_pressed.SetToolTip(tooltip)
 
-            pedal_connection.add_callback('gui', checkbox_pedal_pressed.SetValue)
+            pedal_connection.add_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
 
             self.checkbox_pedal_pressed = checkbox_pedal_pressed
         else:
@@ -688,18 +688,24 @@ class NeuronavigationPanel(wx.Panel):
             if state:
                 fiducial_name = const.TRACKER_FIDUCIALS[n]['fiducial_name']
                 Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
-                if self.pedal_connection is not None:
-                    self.pedal_connection.remove_callback('fiducial')
 
                 ctrl.SetValue(False)
                 self.tracker_fiducial_being_set = None
 
         if ctrl.GetValue():
             self.tracker_fiducial_being_set = n
+
             if self.pedal_connection is not None:
-                self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
+                self.pedal_connection.add_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
+
+            if self.pedal_connection is not None:
+                self.pedal_connection.remove_callback(name='fiducial')
 
     def OnStopNavigation(self):
         select_tracker_elem = self.select_tracker_elem

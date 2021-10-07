@@ -3556,8 +3556,6 @@ class ObjectCalibrationDialog(wx.Dialog):
         def set_fiducial_callback(state):
             if state:
                 Publisher.sendMessage('Set object fiducial', fiducial_index=index)
-                if self.pedal_connection is not None:
-                    self.pedal_connection.remove_callback('fiducial')
 
                 ctrl.SetValue(False)
                 self.object_fiducial_being_set = None
@@ -3566,9 +3564,16 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.object_fiducial_being_set = index
 
             if self.pedal_connection is not None:
-                self.pedal_connection.add_callback('fiducial', set_fiducial_callback)
+                self.pedal_connection.add_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
+
+            if self.pedal_connection is not None:
+                self.pedal_connection.remove_callback(name='fiducial')
 
     def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(
