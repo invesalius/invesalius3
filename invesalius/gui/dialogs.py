@@ -2920,11 +2920,6 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(0, 0, (14, 0))
         except TypeError:
             sizer.AddStretchSpacer((14, 0))
-        sizer.Add(self.close_btn, (15, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
-        try:
-            sizer.Add(0, 0, (16, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((16, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -4329,7 +4324,7 @@ class SetTrackerDevice2Robot(wx.Dialog):
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
-        tracker_options = [_("Select tracker:")] + const.TRACKERS[:-3]
+        tracker_options = [_("Select tracker:")] + const.TRACKERS[:-1]
         choice_trck = wx.ComboBox(self, -1, "",
                                   choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_trck.SetToolTip(tooltip)

@@ -20,11 +20,12 @@
 import numpy as np
 import queue
 import threading
-from time import  sleep
+from time import sleep
 
 import invesalius.constants as const
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
+import invesalius.data.coordinates as dco
 
 
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline

@@ -68,6 +68,8 @@ from invesalius.gui import utils as gui_utils
 from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
+from invesalius.navigation.robot import Robot
+import invesalius.data.transformations as tr
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -647,6 +649,7 @@ class NeuronavigationPanel(wx.Panel):
             self.robot.OnRobotConnection(self.tracker, self.robotcoordinates)
             trk_init_robot = self.tracker.trk_init[1][0]
             if trk_init_robot:
+                #todo: create a variable to stop thread
                 self.robot.StartRobotNavigation(self.tracker, self.robotcoordinates,
                                                 self.navigation.coord_queue)
 
@@ -684,9 +687,11 @@ class NeuronavigationPanel(wx.Panel):
             colour = (0., 1., 0.)
             size = 2
             seed = 3 * [0.]
+            head = 6 * [0.]
+            robot = 6 * [0.]
 
             Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
-                                   label=label, seed=seed)
+                                   label=label, seed=seed, head=head, robot=robot)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
@@ -1119,6 +1124,18 @@ class MarkersPanel(wx.Panel):
         x_seed : float = 0
         y_seed : float = 0
         z_seed : float = 0
+        x_head : float = 0
+        y_head : float = 0
+        z_head : float = 0
+        alpha_head : float = 0
+        beta_head : float = 0
+        gamma_head : float = 0
+        x_robot : float = 0
+        y_robot : float = 0
+        z_robot : float = 0
+        alpha_robot : float = 0
+        beta_robot: float = 0
+        gamma_robot : float = 0
         is_target : int = 0 # is_target is int instead of boolean to avoid
                             # problems with CSV export
 
@@ -1148,6 +1165,24 @@ class MarkersPanel(wx.Panel):
         @seed.setter
         def seed(self, new_seed):
             self.x_seed, self.y_seed, self.z_seed = new_seed
+
+        # x_head, y_head, z_head, alpha_head, beta_head, gamma_head can be jointly accessed as robot
+        @property
+        def head(self):
+            return list((self.x_head, self.y_head, self.z_head, self.alpha_head, self.beta_head, self.gamma_head),)
+
+        @head.setter
+        def head(self, new_head):
+            self.x_head, self.y_head, self.z_head, self.alpha_head, self.beta_head, self.gamma_head = new_head
+
+        # x_robot, y_robot, z_robot, alpha_robot, beta_robot, gamma_robot can be jointly accessed as robot
+        @property
+        def robot(self):
+            return list((self.x_robot, self.y_robot, self.z_robot, self.alpha_robot, self.beta_robot, self.gamma_robot),)
+
+        @robot.setter
+        def robot(self, new_robot):
+            self.x_robot, self.y_robot, self.z_robot, self.alpha_robot, self.beta_robot, self.gamma_robot = new_robot
 
         @classmethod
         def get_headers(cls):
@@ -1288,7 +1323,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.UpdateMchange, 'Update matrix change')
         Publisher.subscribe(self.UpdateMRef, 'Update ref matrix')
-        Publisher.subscribe(self.UpdateRawCoord, 'Update raw coord')
+        Publisher.subscribe(self.UpdateRobotCoord, 'Update raw coord')
         Publisher.subscribe(self.UpdateObjectMarker2Center, 'Update object marker to center')
         Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
 
@@ -1377,8 +1412,8 @@ class MarkersPanel(wx.Panel):
     def UpdateMchange(self, mchange):
         self.mchange = mchange
 
-    def UpdateRawCoord(self, coord_raw, markers_flag):
-        self.current_ref = coord_raw[1]
+    def UpdateRobotCoord(self, coord_raw, markers_flag):
+        self.current_head = coord_raw[1]
         self.current_robot = coord_raw[2]
 
     def UpdateObjectMarker2Center(self, s0_raw, t_offset):
@@ -1452,16 +1487,13 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
-    # def OnContinuousSendCoord(self, evt=None):
-    #     self.timer.Start(30000)
-    #
-    # def OnUpdateSendCoord(self, evt):
-    #     self.OnMenuSendCoord(evt=None)
-
     def OnMenuSendCoord(self, evt):
         if isinstance(evt, int):
            self.lc.Focus(evt)
-        coord = self.list_coord[self.lc.GetFocusedItem()]
+
+        robot = self.markers[self.lc.GetFocusedItem()].robot
+        head = self.markers[self.lc.GetFocusedItem()].head
+        print(robot)
         # coord_target = self.list_coord[3]
         # coord_home = self.list_coord[4]
         # if self.flag_target:
@@ -1469,13 +1501,13 @@ class MarkersPanel(wx.Panel):
         # else:
         #     coord = coord_target
 
-        trans = tr.translation_matrix(coord[14:17])
-        a, b, g = np.radians(coord[17:20])
+        trans = tr.translation_matrix(robot[:3])
+        a, b, g = np.radians(robot[3:])
         rot = tr.euler_matrix(a, b, g, 'rzyx')
         m_robot_target = tr.concatenate_matrices(trans, rot)
 
-        trans = tr.translation_matrix(coord[20:23])
-        a, b, g = np.radians(coord[23:26])
+        trans = tr.translation_matrix(head[:3])
+        a, b, g = np.radians(head[3:])
         rot = tr.euler_matrix(a, b, g, 'rzyx')
         m_ref_target = tr.concatenate_matrices(trans, rot)
 
@@ -1618,7 +1650,7 @@ class MarkersPanel(wx.Panel):
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
 
-    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=0, seed=None, robot=None, ref=None):
+    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=0, seed=None, head=None, robot=None):
         new_marker = self.Marker()
         new_marker.coord = coord or self.current_coord
         new_marker.colour = colour or self.marker_colour
@@ -1626,8 +1658,8 @@ class MarkersPanel(wx.Panel):
         new_marker.label = label
         new_marker.is_target = is_target
         new_marker.seed = seed or self.current_seed
+        new_marker.head = head or self.current_head
         new_marker.robot = robot or self.current_robot
-        new_marker.ref = ref or self.current_ref
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         Publisher.sendMessage('Add marker', ball_id=len(self.markers),
