@@ -40,7 +40,7 @@ class PedalConnection(Thread, metaclass=Singleton):
 
         self._midi_in = None
         self._active_inputs = None
-        self._callbacks = {}
+        self._callback_infos = []
 
     def _midi_to_pedal(self, msg):
         # TODO: At this stage, interpret all note_on messages as the pedal being pressed,
@@ -48,24 +48,24 @@ class PedalConnection(Thread, metaclass=Singleton):
         #       message types and be more stringent about the messages.
         #
         if msg.type == 'note_on':
-            if not self._callbacks:
-                print("Pedal pressed, no callbacks registered")
-            else:
-                Publisher.sendMessage('Pedal state changed', state=True)
-
-                for callback in self._callbacks.values():
-                    callback(True)
+            print("Pedal pressed")
+            state = True
 
         elif msg.type == 'note_off':
-            if not self._callbacks:
-                print("Pedal released, no callbacks registered")
-            else:
-                Publisher.sendMessage('Pedal state changed', state=False)
+            print("Pedal released")
+            state = False
 
-                for callback in self._callbacks.values():
-                    callback(False)
         else:
             print("Unknown message type received from MIDI device")
+            return
+
+        Publisher.sendMessage('Pedal state changed', state=state)
+        for callback_info in self._callback_infos:
+            callback = callback_info['callback']
+            callback(state)
+
+        if not state:
+            self._callback_infos = [callback_info for callback_info in self._callback_infos if not callback_info['remove_when_released']]
 
     def _connect_if_disconnected(self):
         if self._midi_in is None and len(self._midi_inputs) > 0:
@@ -93,12 +93,15 @@ class PedalConnection(Thread, metaclass=Singleton):
     def is_connected(self):
         return self._midi_in is not None
 
-    def add_callback(self, name, callback):
-        self._callbacks[name] = callback
+    def add_callback(self, name, callback, remove_when_released=False):
+        self._callback_infos.append({
+            'name': name,
+            'callback': callback,
+            'remove_when_released': remove_when_released,
+        })
 
     def remove_callback(self, name):
-        if name in self._callbacks:
-            del self._callbacks[name]
+        self._callback_infos = [callback_info for callback_info in self._callback_infos if callback_info['name'] != name]
 
     def run(self):
         self.in_use = True
