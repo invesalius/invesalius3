@@ -48,11 +48,9 @@ class PedalConnection(Thread, metaclass=Singleton):
         #       message types and be more stringent about the messages.
         #
         if msg.type == 'note_on':
-            print("Pedal pressed")
             state = True
 
         elif msg.type == 'note_off':
-            print("Pedal released")
             state = False
 
         else:
