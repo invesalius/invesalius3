@@ -255,7 +255,7 @@ class Navigation():
                 coreg_data = [m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
-                    coord_raw = dco.GetCoordinates(tracker.trk_init, tracker.tracker_id, self.ref_mode_id)
+                    coord_raw, markers_flag = tracker.TrackerCoordinates.GetCoordinates()
                 else:
                     coord_raw = np.array([None])
 

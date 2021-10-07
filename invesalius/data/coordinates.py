@@ -19,6 +19,9 @@
 
 from math import sin, cos
 import numpy as np
+import queue
+import threading
+import wx
 
 import invesalius.data.bases as db
 import invesalius.data.transformations as tr
@@ -28,9 +31,21 @@ from time import sleep
 from random import uniform
 from invesalius.pubsub import pub as Publisher
 
+class TrackerCoordinates():
+    def __init__(self):
+        self.coord = None
+        self.markers_flag = [False, False, False]
 
-def GetCoordinates(trck_init, trck_id, ref_mode):
+    def SetCoordinates(self, coord, markers_flag):
+        self.coord = coord
+        self.markers_flag = markers_flag
+        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
 
+    def GetCoordinates(self):
+        return self.coord, self.markers_flag
+
+
+def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
     """
     Read coordinates from spatial tracking devices using
 
@@ -52,11 +67,13 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     const.OPTITRACK: OptitrackCoord,
                     const.DEBUGTRACKRANDOM: DebugCoordRandom,
                     const.DEBUGTRACKAPPROACH: DebugCoordRandom}
-        coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
+
+        coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
 
-    return coord
+    return coord, markers_flag
+
 
 def OptitrackCoord(trck_init, trck_id, ref_mode):
     """
@@ -93,8 +110,10 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     coord3 = np.array([float(trck.PositionCoilZ1) * scale[0], float(trck.PositionCoilX1) * scale[1],
                        float(trck.PositionCoilY1) * scale[2]])
     coord3 = np.hstack((coord3, angles_coil))
+
     coord = np.vstack([coord1, coord2, coord3])
-    return coord
+
+    return coord, [trck.probeID, trck.HeadID, trck.coilID]
 
 
 def PolarisCoord(trck_init, trck_id, ref_mode):
@@ -117,9 +136,9 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     coord3 = np.hstack((trans_obj, angles_obj))
 
     coord = np.vstack([coord1, coord2, coord3])
-    # Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
 
-    return coord
+    return coord, [trck.probeID, trck.refID, trck.objID]
+
 
 def PolarisP4Coord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -134,45 +153,41 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
     obj = obj[2:]
 
     if probe[:7] == "MISSING":
-        if not "coord1" in locals():
-            coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
+        coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
         q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
         t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
         angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
         trans_probe = np.array(t).astype(float)
         coord1 = np.hstack((trans_probe, angles_probe))
-
-    if ref[:7] == "MISSING":
-        if not "coord2" in locals():
+        if ref[:7] == "MISSING":
             coord2 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_ref = np.array(t).astype(float)
-        coord2 = np.hstack((trans_ref, angles_ref))
+        else:
+            q = [int(ref[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+            t = [int(ref[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+            angles_ref = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_ref = np.array(t).astype(float)
+            coord2 = np.hstack((trans_ref, angles_ref))
 
-    if obj[:7] == "MISSING":
-        if not "coord3" in locals():
+        if obj[:7] == "MISSING":
             coord3 = np.hstack(([0, 0, 0], [0, 0, 0]))
-    else:
-        q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
-        angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
-        trans_obj = np.array(t).astype(float)
-        coord3 = np.hstack((trans_obj, angles_obj))
+        else:
+            q = [int(obj[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+            t = [int(obj[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+            angles_obj = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
+            trans_obj = np.array(t).astype(float)
+            coord3 = np.hstack((trans_obj, angles_obj))
 
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID, obj_id=trck.objID)
-    coord = np.vstack([coord1, coord2, coord3])
+        coord = np.vstack([coord1, coord2, coord3])
 
-    return coord
+        return coord, [trck.probeID, trck.refID, trck.objID]
+
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
-    coord, probeID, refID = trck.Run()
-    Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
-    return coord
+    coord, probeID, refID, coilID = trck.Run()
+
+    return coord, [probeID, refID, coilID]
 
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -193,9 +208,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
 
     coord = np.vstack([coord1, coord2, coord3])
 
-    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
-
-    return coord
+    return coord, [trck.probeID, trck.refID, trck.coilID]
 
 
 def PolhemusCoord(trck, trck_id, ref_mode):
@@ -210,7 +223,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
     elif trck[1] == 'wrapper':
         coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
 
-    return coord
+    return coord, None
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
@@ -362,16 +375,13 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)), obj_id=int(uniform(0, 5)))
-
-    return np.vstack([coord1, coord2, coord3, coord4])
+    return np.vstack([coord1, coord2, coord3, coord4]), [int(uniform(0, 5)), int(uniform(0, 5)), int(uniform(0, 5))]
 
 
 def coordinates_to_transformation_matrix(position, orientation, axes='sxyz'):
     """
     Transform vectors consisting of position and orientation (in Euler angles) in 3d-space into a 4x4
     transformation matrix that combines the rotation and translation.
-
     :param position: A vector of three coordinates.
     :param orientation: A vector of three Euler angles in degrees.
     :param axes: The order in which the rotations are done for the axes. See transformations.py for details. Defaults to 'sxyz'.
@@ -391,9 +401,7 @@ def transformation_matrix_to_coordinates(matrix, axes='sxyz'):
     """
     Given a matrix that combines the rotation and translation, return the position and the orientation
     determined by the matrix. The orientation is given as three Euler angles.
-
     The inverse of coordinates_of_transformation_matrix when the parameter 'axes' matches.
-
     :param matrix: A 4x4 transformation matrix.
     :param axes: The order in which the rotations are done for the axes. See transformations.py for details. Defaults to 'sxyz'.
     :return: The position (a vector of length 3) and Euler angles for the orientation in degrees (a vector of length 3).
@@ -479,6 +487,7 @@ def dynamic_reference_m2(probe, reference):
     :param reference: sensor two defined as reference
     :return: rotated and translated coordinates
     """
+
     M = coordinates_to_transformation_matrix(
         position=reference[:3],
         orientation=reference[3:],
@@ -489,6 +498,7 @@ def dynamic_reference_m2(probe, reference):
         orientation=probe[3:],
         axes='rzyx',
     )
+
     M_dyn = np.linalg.inv(M) @ M_p
 
     al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
@@ -529,3 +539,17 @@ def offset_coordinate(p_old, norm_vec, offset):
     """
     p_offset = p_old - offset * norm_vec
     return p_offset
+
+class ReceiveCoordinates(threading.Thread):
+    def __init__(self, trck_init, trck_id, TrackerCoordinates, event):
+        threading.Thread.__init__(self, name='ReceiveCoordinates')
+        self.trck_init = trck_init
+        self.trck_id = trck_id
+        self.event = event
+        self.TrackerCoordinates = TrackerCoordinates
+
+    def run(self):
+        while not self.event.is_set():
+            coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
+            self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
+            sleep(const.SLEEP_COORDINATES)

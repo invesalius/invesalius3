@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 
 import numpy as np
+import threading
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
@@ -36,6 +37,12 @@ class Tracker():
 
         self.tracker_connected = False
 
+        self.thread_coord = None
+
+        self.event_coord = threading.Event()
+
+        self.TrackerCoordinates = dco.TrackerCoordinates()
+
     def SetTracker(self, new_tracker):
         if new_tracker:
             self.DisconnectTracker()
@@ -49,6 +56,9 @@ class Tracker():
             else:
                 self.tracker_id = new_tracker
                 self.tracker_connected = True
+                self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
+                                       self.event_coord)
+                self.thread_coord.start()
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -61,6 +71,11 @@ class Tracker():
             if not self.trk_init[0]:
                 self.tracker_connected = False
                 self.tracker_id = 0
+
+                if self.thread_coord:
+                    self.event_coord.set()
+                    self.thread_coord.join()
+                    self.event_coord.clear()
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
@@ -81,7 +96,7 @@ class Tracker():
         coord_samples = {}
 
         for i in range(n_samples):
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, ref_mode_id)
+            coord_raw, markers_flag = self.TrackerCoordinates.GetCoordinates()
 
             if ref_mode_id == const.DYNAMIC_REF:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])

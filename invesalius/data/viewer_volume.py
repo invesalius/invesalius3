@@ -368,7 +368,9 @@ class Viewer(wx.Panel):
 
             self.interactor.Render()
 
-    def OnSensors(self, probe_id, ref_id, obj_id=0):
+    def OnSensors(self, markers_flag):
+        probe_id, ref_id, obj_id = markers_flag
+
         if not self.probe:
             self.CreateSensorID()
 
