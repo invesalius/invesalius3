@@ -313,13 +313,13 @@ class Navigation():
                 # del jobs
 
             if self.pedal_connection is not None:
-                self.pedal_connection.add_callback('navigation', self.PedalStateChanged)
+                self.pedal_connection.add_callback(name='navigation', callback=self.PedalStateChanged)
 
     def StopNavigation(self):
         self.event.set()
 
         if self.pedal_connection is not None:
-            self.pedal_connection.remove_callback('navigation')
+            self.pedal_connection.remove_callback(name='navigation')
 
         self.coord_queue.clear()
         self.coord_queue.join()
