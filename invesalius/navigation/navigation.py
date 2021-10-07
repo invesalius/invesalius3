@@ -324,9 +324,10 @@ class Navigation():
         self.coord_queue.clear()
         self.coord_queue.join()
 
-        if self.SerialPortEnabled():
+        if self.serial_port_connection is not None:
             self.serial_port_connection.join()
 
+        if self.SerialPortEnabled():
             self.serial_port_queue.clear()
             self.serial_port_queue.join()
 
