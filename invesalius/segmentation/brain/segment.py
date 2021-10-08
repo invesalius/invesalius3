@@ -13,6 +13,8 @@ import invesalius.data.slice_ as slc
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 from invesalius.utils import new_name_by_pattern
+from invesalius.net.utils import download_url_to_file
+from invesalius import inv_paths
 
 from . import utils
 
@@ -100,11 +102,24 @@ def brain_segment(image, probability_array, comm_array):
     comm_array[0] = np.Inf
 
 
+def download_callback(comm_array):
+    def _download_callback(value):
+        comm_array[0] = value
+    return _download_callback
+
 def brain_segment_torch(image, device_id, probability_array, comm_array):
     import torch
     from .model import Unet3D
     device = torch.device(device_id)
-    state_dict = torch.hub.load_state_dict_from_url("https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt")
+    state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath("brain_mri_t1.pt")
+    if not state_dict_file.exists():
+        download_url_to_file(
+                "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt",
+                state_dict_file,
+                "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22",
+                download_callback(comm_array)
+                )
+    state_dict = torch.load(str(state_dict_file))
     model = Unet3D()
     model.load_state_dict(state_dict["model_state_dict"])
     model.to(device)
