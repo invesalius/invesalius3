@@ -830,3 +830,7 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
 MARKER_FILE_MAGICK_STRING = "INVESALIUS3_MARKER_FILE_"
 CURRENT_MARKER_FILE_VERSION = 0
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") 
+
+# Serial port
+BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
+BAUD_RATE_DEFAULT_SELECTION = 4
