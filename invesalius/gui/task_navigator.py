@@ -340,8 +340,7 @@ class NeuronavigationPanel(wx.Panel):
         )
         self.icp = ICP()
         self.tracker = tracker
-        self.robot = Robot()
-        self.robotcoordinates = elfin_process.RobotCoordinates()
+        self.robot = Robot(tracker)
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
@@ -644,14 +643,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.tracker.SetTracker(choice)
         if self.tracker.tracker_id == const.ROBOT:
-            self.robot.SetRobotQueues([self.navigation.robottarget_queue,
-                                       self.navigation.objattarget_queue])
-            self.robot.OnRobotConnection(self.tracker, self.robotcoordinates)
-            trk_init_robot = self.tracker.trk_init[1][0]
-            if trk_init_robot:
-                #todo: create a variable to stop thread
-                self.robot.StartRobotNavigation(self.tracker, self.robotcoordinates,
-                                                self.navigation.coord_queue)
+            self.tracker.ConnectToRobot(self.navigation, self.tracker, self.robot)
 
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -1499,13 +1491,6 @@ class MarkersPanel(wx.Panel):
         robot = self.markers[self.lc.GetFocusedItem()].robot
         head = self.markers[self.lc.GetFocusedItem()].head
 
-        # coord_target = self.list_coord[3]
-        # coord_home = self.list_coord[4]
-        # if self.flag_target:
-        #     coord = coord_home
-        # else:
-        #     coord = coord_target
-
         trans = tr.translation_matrix(robot[:3])
         a, b, g = np.radians(robot[3:])
         rot = tr.euler_matrix(a, b, g, 'rzyx')
@@ -1519,7 +1504,6 @@ class MarkersPanel(wx.Panel):
         m_change_robot2ref = np.linalg.inv(m_ref_target) @ m_robot_target
 
         Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot2ref=m_change_robot2ref)
-
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is None:
@@ -1613,7 +1597,6 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
-
         if ctrl.GetValue():
             Publisher.sendMessage('Hide all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Show')

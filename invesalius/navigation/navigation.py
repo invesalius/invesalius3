@@ -342,3 +342,5 @@ class Navigation():
 
         vis_components = [self.SerialPortEnabled(), self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
+                              m_change_robot2ref=None)

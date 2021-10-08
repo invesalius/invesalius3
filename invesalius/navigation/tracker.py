@@ -92,6 +92,13 @@ class Tracker():
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
 
+    def ConnectToRobot(self, navigation, tracker, robot):
+        robot.SetRobotQueues([navigation.robottarget_queue, navigation.objattarget_queue])
+        robot.OnRobotConnection()
+        trk_init_robot = self.trk_init[1][0]
+        if trk_init_robot:
+            robot.StartRobotThreadNavigation(tracker, navigation.coord_queue)
+
     def IsTrackerInitialized(self):
         return self.trk_init and self.tracker_id and self.tracker_connected
 
