@@ -4,10 +4,6 @@
 # This scripts allows sending events to InVesalius via Socket.IO, mimicking InVesalius's
 # internal communication. It can be useful for developing and debugging InVesalius.
 #
-# Install the requirements by running:
-#
-#     pip install aioconsole nest-asyncio python-socketio[client] requests uvicorn[standard]
-#
 # Example usage:
 #
 #     - (In console window 1) Run the script by: python scripts/invesalius_server.py 5000
