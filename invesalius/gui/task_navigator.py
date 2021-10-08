@@ -20,7 +20,6 @@
 import dataclasses
 from functools import partial
 import itertools
-import csv
 import time
 
 import nibabel as nb
@@ -207,6 +206,13 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(self.dbs_item, dtw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         self.dbs_item.Hide()
+
+        # Fold 6 - Sessions
+        item = fold_panel.AddFoldPanel(_("Sessions"), collapsed=False)
+        stw = SessionPanel(item)
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, stw, spacing= 0,
+                                      leftSpacing=0, rightSpacing=0)
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
@@ -1104,8 +1110,8 @@ class MarkersPanel(wx.Panel):
         x_seed : float = 0
         y_seed : float = 0
         z_seed : float = 0
-        is_target : int = 0 # is_target is int instead of boolean to avoid
-                            # problems with CSV export
+        is_target : bool = False
+        session_id : int = 1
 
         # x, y, z, alpha, beta, gamma can be jointly accessed as coord
         @property
@@ -1135,26 +1141,43 @@ class MarkersPanel(wx.Panel):
             self.x_seed, self.y_seed, self.z_seed = new_seed
 
         @classmethod
-        def get_headers(cls):
-            """Return the list of field names (headers) for exporting to csv."""
+        def to_string_headers(cls):
+            """Return the string containing tab-separated list of field names (headers)."""
             res = [field.name for field in dataclasses.fields(cls)]
             res.extend(['x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world'])
-            return res
+            return '\t'.join(map(lambda x: '\"%s\"' % x, res))
 
-        def get_values(self):
-            """Return the list of values for exporting to csv."""
-            res = []
-            res.extend(dataclasses.astuple(self))
+        def to_string(self):
+            """Serialize to excel-friendly tab-separated string"""
+            res = ''
+            for field in dataclasses.fields(self.__class__):
+                if field.type is str:
+                    res += ('\"%s\"\t' % getattr(self, field.name))
+                else:
+                    res += ('%s\t' % str(getattr(self, field.name)))
 
             # Add world coordinates (in addition to the internal ones).
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
                 position=[self.x, self.y, self.z],
                 orientation=[self.alpha, self.beta, self.gamma],
             )
-            res.extend(position_world)
-            res.extend(orientation_world)
 
+            res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
             return res
+
+        def from_string(self, str):
+            """Deserialize from a tab-separated string. If the string is not 
+            properly formatted, might throw an exception and leave the object
+            in an inconsistent state."""
+            for field, str_val in zip(dataclasses.fields(self.__class__), str.split('\t')):
+                if field.type is float:
+                    setattr(self, field.name, float(str_val))
+                if field.type is int:
+                    setattr(self, field.name, int(str_val))
+                if field.type is str:
+                    setattr(self, field.name, str_val[1:-1]) # remove the quotation marks
+                if field.type is bool:
+                    setattr(self, field.name, str_val=='True')
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -1176,9 +1199,7 @@ class MarkersPanel(wx.Panel):
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
-        
-        # Define CSV dialect for saving/loading markers
-        csv.register_dialect('markers_dialect', delimiter='\t', quoting=csv.QUOTE_NONNUMERIC)
+        self.current_session = 1
 
         # Change marker size
         spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
@@ -1233,6 +1254,7 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertColumn(3, 'Z')
         self.lc.InsertColumn(4, 'ID')
         self.lc.InsertColumn(5, 'Target')
+        self.lc.InsertColumn(6, 'Session')
 
         self.lc.SetColumnWidth(0, 28)
         self.lc.SetColumnWidth(1, 50)
@@ -1240,6 +1262,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 60)
         self.lc.SetColumnWidth(5, 60)
+        self.lc.SetColumnWidth(5, 50)
 
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
@@ -1264,6 +1287,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.CreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
+        Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
 
     def __find_target_marker(self):
         """Return the index of the marker currently selected as target (there
@@ -1310,13 +1334,13 @@ class MarkersPanel(wx.Panel):
 
         # Unset the previous target
         if prev_idx != -1:
-            self.markers[prev_idx].is_target = 0
+            self.markers[prev_idx].is_target = False
             self.lc.SetItemBackgroundColour(prev_idx, 'white')
             Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
             self.lc.SetItem(prev_idx, 5, "")
 
         # Set the new target
-        self.markers[idx].is_target = 1
+        self.markers[idx].is_target = True
         self.lc.SetItemBackgroundColour(idx, 'RED')
         self.lc.SetItem(idx, 5, _("Yes"))
 
@@ -1347,7 +1371,7 @@ class MarkersPanel(wx.Panel):
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
-        edit_id = menu_id.Append(0, _('Edit ID'))
+        edit_id = menu_id.Append(0, _('Edit label'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerLabel, edit_id)
         color_id = menu_id.Append(2, _('Edit color'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
@@ -1472,20 +1496,20 @@ class MarkersPanel(wx.Panel):
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
                 
-                reader = csv.reader(file, dialect='markers_dialect')
-                next(reader) # skip the header line
+                file.readline() # skip the header line
 
                 # Read the data lines and create markers
-                for line in reader:
-                    marker = self.Marker(*line[:-6]) # Discard the last 6 fields (the world coordinates)
+                for line in file.readlines():
+                    marker = self.Marker()
+                    marker.from_string(line)
                     self.CreateMarker(coord=marker.coord, colour=marker.colour, size=marker.size,
-                                      label=marker.label, is_target=0, seed=marker.seed)
+                                      label=marker.label, is_target=False, seed=marker.seed, session_id=marker.session_id)
 
                     if marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, coord=marker.coord)
 
-                    # If the new marker has is_target=1 (True), we first create
-                    # a marker with is_target=0 (False), and then call __set_marker_as_target
+                    # If the new marker has is_target=True, we first create
+                    # a marker with is_target=False, and then call __set_marker_as_target
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers)-1)
 
@@ -1521,9 +1545,8 @@ class MarkersPanel(wx.Panel):
         try:
             with open(filename, 'w', newline='') as file:
                 file.writelines(['%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)])
-                writer = csv.writer(file, dialect='markers_dialect')
-                writer.writerow(self.Marker.get_headers())
-                writer.writerows(marker.get_values() for marker in self.markers)
+                file.writelines(['%s\n' % self.Marker.to_string_headers()])
+                file.writelines('%s\n' % marker.to_string() for marker in self.markers)
                 file.close()
         except:
             wx.MessageBox(_("Error writing markers file."), _("InVesalius 3"))  
@@ -1535,7 +1558,10 @@ class MarkersPanel(wx.Panel):
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
 
-    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=0, seed=None):
+    def OnChangeCurrentSession(self, new_session_id):
+        self.current_session = new_session_id
+
+    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
         new_marker = self.Marker()
         new_marker.coord = coord or self.current_coord
         new_marker.colour = colour or self.marker_colour
@@ -1543,6 +1569,7 @@ class MarkersPanel(wx.Panel):
         new_marker.label = label
         new_marker.is_target = is_target
         new_marker.seed = seed or self.current_seed
+        new_marker.session_id = session_id or self.current_session
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         Publisher.sendMessage('Add marker', ball_id=len(self.markers),
@@ -1557,7 +1584,8 @@ class MarkersPanel(wx.Panel):
         self.lc.SetItem(num_items, 1, str(round(new_marker.x, 2)))
         self.lc.SetItem(num_items, 2, str(round(new_marker.y, 2)))
         self.lc.SetItem(num_items, 3, str(round(new_marker.z, 2)))
-        self.lc.SetItem(num_items, 4, str(new_marker.label))
+        self.lc.SetItem(num_items, 4, new_marker.label)
+        self.lc.SetItem(num_items, 6, str(new_marker.session_id))
         self.lc.EnsureVisible(num_items)
 
 class DbsPanel(wx.Panel):
@@ -2010,6 +2038,30 @@ class TractographyPanel(wx.Panel):
 
         Publisher.sendMessage('Remove tracts')
 
+
+class SessionPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+        
+        # session count spinner
+        self.__spin_session = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        self.__spin_session.SetRange(1, 99)
+        self.__spin_session.SetValue(1)
+
+        self.__spin_session.Bind(wx.EVT_TEXT, self.OnSessionChanged)
+        self.__spin_session.Bind(wx.EVT_SPINCTRL, self.OnSessionChanged)
+                
+        sizer_create = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
+        sizer_create.AddMany([(self.__spin_session, 1)])
+
+    def OnSessionChanged(self, evt):
+        Publisher.sendMessage('Current session changed', new_session_id=self.__spin_session.GetValue())
+        
 
 class InputAttributes(object):
     # taken from https://stackoverflow.com/questions/2466191/set-attributes-from-dictionary-in-python
