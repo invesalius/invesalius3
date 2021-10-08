@@ -1,7 +1,40 @@
 #!/usr/bin/env python3
 
 import sys
+from time import sleep
 from socket import socket, AF_INET, SOCK_DGRAM, SOCK_STREAM
+import invesalius.constants as const
+
+class elfin_server():
+    def __init__(self, server_ip, port_number):
+        self.server_ip = server_ip
+        self.port_number = port_number
+
+    def Initialize(self):
+        SIZE = 1024
+        rbtID = 0
+        self.cobot = elfin()
+        self.cobot.connect(self.server_ip, self.port_number, SIZE, rbtID)
+        print("conected!")
+
+    def Run(self):
+        return self.cobot.ReadPcsActualPos()
+
+    def SendCoordinates(self, target, type=const.ROBOT_MOTIONS["normal"]):
+        status = self.cobot.ReadMoveState()
+        if type == const.ROBOT_MOTIONS["normal"] or type == const.ROBOT_MOTIONS["linear out"]:
+            if status != 1009:
+                self.cobot.MoveL(target)
+        elif type == const.ROBOT_MOTIONS["arc"]:
+            if status != 1009:
+                self.cobot.MoveC(target)
+
+    def StopRobot(self):
+        self.cobot.GrpStop()
+        sleep(0.1)
+
+    def Close(self):
+        self.cobot.close()
 
 class elfin:
     def __init__(self):

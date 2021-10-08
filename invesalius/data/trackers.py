@@ -222,7 +222,7 @@ def OptitrackTracker(tracker_id):
 def ElfinRobot(robot_IP):
     trck_init = None
     try:
-        import invesalius.data.elfin_robot as elfin
+        import invesalius.data.elfin as elfin
         print("Trying to connect Robot via: ", robot_IP)
         trck_init = elfin.elfin_server(robot_IP, const.ROBOT_ElFIN_PORT)
         trck_init.Initialize()
