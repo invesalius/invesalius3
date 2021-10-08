@@ -287,12 +287,15 @@ class InnerFoldPanel(wx.Panel):
     def OnEnableSerialPort(self, evt, ctrl):
         if ctrl.GetValue():
             from wx import ID_OK
-            dlg_port = dlg.SetCOMPort(select_baud_rate=True)
+            dlg_port = dlg.SetCOMPort(select_baud_rate=False)
+
             if dlg_port.ShowModal() != ID_OK:
                 ctrl.SetValue(False)
                 return
 
-            com_port, baud_rate = dlg_port.GetValue()
+            com_port = dlg_port.GetValue()
+            baud_rate = 115200
+
             Publisher.sendMessage('Update serial port', serial_port_in_use=True, com_port=com_port, baud_rate=baud_rate)
         else:
             Publisher.sendMessage('Update serial port', serial_port_in_use=False)
