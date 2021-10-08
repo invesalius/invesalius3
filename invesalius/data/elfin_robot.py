@@ -329,4 +329,3 @@ class ControlRobot(threading.Thread):
 
             self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
 
-            sleep(0.01)
