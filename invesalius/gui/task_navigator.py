@@ -195,7 +195,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 3 - Markers panel
         item = fold_panel.AddFoldPanel(_("Markers"), collapsed=True)
-        mtw = MarkersPanel(item)
+        mtw = MarkersPanel(item, tracker)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
@@ -1206,7 +1206,7 @@ class MarkersPanel(wx.Panel):
 
             return res
 
-    def __init__(self, parent):
+    def __init__(self, parent, tracker):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1216,13 +1216,15 @@ class MarkersPanel(wx.Panel):
 
         self.SetAutoLayout(1)
 
+        self.tracker = tracker
+
         self.__bind_events()
 
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
         self.markers = []
-        self.current_ref = 0, 0, 0, 0, 0, 0
+        self.current_head = 0, 0, 0, 0, 0, 0
         self.current_robot = 0, 0, 0, 0, 0, 0
         self.list_coord = []
         self.marker_ind = 0
@@ -1434,9 +1436,12 @@ class MarkersPanel(wx.Panel):
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
-        send_coord_robot = menu_id.Append(3, _('Send coord to robot'))
-        #menu_id.Bind(wx.EVT_MENU, self.OnContinuousSendCoord, send_coord_robot)
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendCoord, send_coord_robot)
+        send_target_2_robot = menu_id.Append(3, _('Send target to robot'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTarget2Robot, send_target_2_robot)
+        if self.tracker.tracker_id == const.ROBOT:
+            send_target_2_robot.Enable(True)
+        else:
+            send_target_2_robot.Enable(False)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1487,13 +1492,13 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
-    def OnMenuSendCoord(self, evt):
+    def OnMenuSendTarget2Robot(self, evt):
         if isinstance(evt, int):
            self.lc.Focus(evt)
 
         robot = self.markers[self.lc.GetFocusedItem()].robot
         head = self.markers[self.lc.GetFocusedItem()].head
-        print(robot)
+
         # coord_target = self.list_coord[3]
         # coord_home = self.list_coord[4]
         # if self.flag_target:
