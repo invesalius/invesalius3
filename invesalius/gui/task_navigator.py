@@ -636,6 +636,8 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp.SetValue(False)
 
     def OnDisconnectTracker(self):
+        if self.tracker.tracker_id == const.ROBOT:
+            self.robot.StopRobotThreadNavigation()
         self.tracker.DisconnectTracker()
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -736,6 +738,9 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = self.choice_ref
 
         self.navigation.StopNavigation()
+        if self.tracker.tracker_id == const.ROBOT:
+            Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
+                                  m_change_robot2ref=None)
 
         # Enable all navigation buttons
         choice_ref.Enable(True)
@@ -838,7 +843,7 @@ class NeuronavigationPanel(wx.Panel):
         )
         self.tracker.__init__()
         self.icp.__init__()
-        self.robot.__init__()
+        self.robot.__init__(self.tracker)
 
 
 class ObjectRegistrationPanel(wx.Panel):
