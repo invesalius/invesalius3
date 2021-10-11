@@ -4322,7 +4322,8 @@ class SetNDIconfigs(wx.Dialog):
         self._init_gui()
 
     def serial_ports(self):
-        """ Lists serial port names and pre-select the description containing NDI
+        """
+        Lists serial port names and pre-select the description containing NDI
         """
         import serial.tools.list_ports
 
@@ -4430,13 +4431,16 @@ class SetNDIconfigs(wx.Dialog):
         return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
 
 
-class SetCOMport(wx.Dialog):
-    def __init__(self, title=_("Select COM port")):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+class SetCOMPort(wx.Dialog):
+    def __init__(self, select_baud_rate, title=_("Select COM port")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP)
+
+        self.select_baud_rate = select_baud_rate
         self._init_gui()
 
     def serial_ports(self):
-        """ Lists serial port names
+        """
+        Lists serial port names
         """
         import serial.tools.list_ports
         if sys.platform.startswith('win'):
@@ -4446,12 +4450,26 @@ class SetCOMport(wx.Dialog):
         return ports
 
     def _init_gui(self):
-        self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        # COM port selection
         ports = self.serial_ports()
-        self.com_ports.Append(ports)
+        self.com_port_dropdown = wx.ComboBox(self, -1, choices=ports, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.com_port_dropdown.SetSelection(0)
 
-       # self.goto_orientation.SetSelection(cb_init)
+        com_port_text_and_dropdown = wx.BoxSizer(wx.VERTICAL)
+        com_port_text_and_dropdown.Add(wx.StaticText(self, wx.ID_ANY, "COM port"), 0, wx.TOP | wx.RIGHT,5)
+        com_port_text_and_dropdown.Add(self.com_port_dropdown, 0, wx.EXPAND)
 
+        # Baud rate selection
+        if self.select_baud_rate:
+            baud_rates_as_strings = [str(baud_rate) for baud_rate in const.BAUD_RATES]
+            self.baud_rate_dropdown = wx.ComboBox(self, -1, choices=baud_rates_as_strings, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+            self.baud_rate_dropdown.SetSelection(const.BAUD_RATE_DEFAULT_SELECTION)
+
+            baud_rate_text_and_dropdown = wx.BoxSizer(wx.VERTICAL)
+            baud_rate_text_and_dropdown.Add(wx.StaticText(self, wx.ID_ANY, "Baud rate"), 0, wx.TOP | wx.RIGHT,5)
+            baud_rate_text_and_dropdown.Add(self.baud_rate_dropdown, 0, wx.EXPAND)
+
+        # OK and Cancel buttons
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
@@ -4464,10 +4482,16 @@ class SetCOMport(wx.Dialog):
         btnsizer.AddButton(btn_cancel)
         btnsizer.Realize()
 
+        # Set up the main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         main_sizer.Add((5, 5))
-        main_sizer.Add(self.com_ports, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add(com_port_text_and_dropdown, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+
+        if self.select_baud_rate:
+            main_sizer.Add((5, 5))
+            main_sizer.Add(baud_rate_text_and_dropdown, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+
         main_sizer.Add((5, 5))
         main_sizer.Add(btnsizer, 0, wx.EXPAND)
         main_sizer.Add((5, 5))
@@ -4478,7 +4502,14 @@ class SetCOMport(wx.Dialog):
         self.CenterOnParent()
 
     def GetValue(self):
-        return self.com_ports.GetString(self.com_ports.GetSelection())
+        com_port = self.com_port_dropdown.GetString(self.com_port_dropdown.GetSelection())
+
+        if self.select_baud_rate:
+            baud_rate = self.baud_rate_dropdown.GetString(self.baud_rate_dropdown.GetSelection())
+        else:
+            baud_rate = None
+
+        return com_port, baud_rate
 
 
 class ManualWWWLDialog(wx.Dialog):

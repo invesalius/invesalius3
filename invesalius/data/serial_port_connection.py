@@ -28,7 +28,7 @@ from invesalius.pubsub import pub as Publisher
 class SerialPortConnection(threading.Thread):
     BINARY_PULSE = b'\x01'
 
-    def __init__(self, port, serial_port_queue, event, sleep_nav):
+    def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav):
         """
         Thread created to communicate using the serial port to interact with software during neuronavigation.
         """
@@ -37,28 +37,29 @@ class SerialPortConnection(threading.Thread):
         self.connection = None
         self.stylusplh = False
 
-        self.port = port
+        self.com_port = com_port
+        self.baud_rate = baud_rate
         self.serial_port_queue = serial_port_queue
         self.event = event
         self.sleep_nav = sleep_nav
 
     def Connect(self):
-        if self.port is None:
+        if self.com_port is None:
             print("Serial port init error: COM port is unset.")
             return
         try:
             import serial
-            self.connection = serial.Serial(self.port, baudrate=115200, timeout=0)
-            print("Connection to port {} opened.".format(self.port))
+            self.connection = serial.Serial(self.com_port, baudrate=self.baud_rate, timeout=0)
+            print("Connection to port {} opened.".format(self.com_port))
 
             Publisher.sendMessage('Serial port connection', state=True)
         except:
-            print("Serial port init error: Connecting to port {} failed.".format(self.port))
+            print("Serial port init error: Connecting to port {} failed.".format(self.com_port))
 
     def Disconnect(self):
         if self.connection:
             self.connection.close()
-            print("Connection to port {} closed.".format(self.port))
+            print("Connection to port {} closed.".format(self.com_port))
 
             Publisher.sendMessage('Serial port connection', state=False)
 
@@ -74,11 +75,10 @@ class SerialPortConnection(threading.Thread):
             trigger_on = False
             try:
                 lines = self.connection.readlines()
+                if lines:
+                    trigger_on = True
             except:
                 print("Error: Serial port could not be read.")
-
-            if lines:
-                trigger_on = True
 
             if self.stylusplh:
                 trigger_on = True

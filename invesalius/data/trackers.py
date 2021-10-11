@@ -266,7 +266,7 @@ def PlhSerialConnection(tracker_id):
     import serial
     from wx import ID_OK
     trck_init = None
-    dlg_port = dlg.SetCOMport()
+    dlg_port = dlg.SetCOMPort(select_baud_rate=False)
     if dlg_port.ShowModal() == ID_OK:
         com_port = dlg_port.GetValue()
         try:

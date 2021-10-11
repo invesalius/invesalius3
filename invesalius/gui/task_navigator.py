@@ -222,8 +222,8 @@ class InnerFoldPanel(wx.Panel):
         checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
         self.checkcamera = checkcamera
 
-        # Check box to create markers from serial port
-        tooltip = wx.ToolTip(_("Enable serial port communication for creating markers"))
+        # Check box to use serial port to trigger pulse signal and create markers
+        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
         checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
         checkbox_serial_port.SetToolTip(tooltip)
         checkbox_serial_port.SetValue(False)
@@ -285,14 +285,20 @@ class InnerFoldPanel(wx.Panel):
                 self.checkobj.Enable(True)
 
     def OnEnableSerialPort(self, evt, ctrl):
-        com_port = None
         if ctrl.GetValue():
             from wx import ID_OK
-            dlg_port = dlg.SetCOMport()
-            if dlg_port.ShowModal() == ID_OK:
-                com_port = dlg_port.GetValue()
+            dlg_port = dlg.SetCOMPort(select_baud_rate=False)
 
-        Publisher.sendMessage('Update serial port', serial_port=com_port)
+            if dlg_port.ShowModal() != ID_OK:
+                ctrl.SetValue(False)
+                return
+
+            com_port = dlg_port.GetValue()
+            baud_rate = 115200
+
+            Publisher.sendMessage('Update serial port', serial_port_in_use=True, com_port=com_port, baud_rate=baud_rate)
+        else:
+            Publisher.sendMessage('Update serial port', serial_port_in_use=False)
 
     def OnShowObject(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if not evt:
@@ -490,7 +496,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
         Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
-        Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
@@ -613,9 +618,6 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         self.navigation.track_obj = flag
-
-    def UpdateSerialPort(self, serial_port):
-        self.navigation.serial_port = serial_port
 
     def ResetICP(self):
         self.icp.ResetICP()
