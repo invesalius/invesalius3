@@ -1,3 +1,7 @@
+aioconsole==0.3.2
 mido==1.2.10
+nest-asyncio==1.5.1
 python-rtmidi==1.4.9
 python-socketio[client]==5.3.0
+requests==2.26.0
+uvicorn[standard]==0.15.0
