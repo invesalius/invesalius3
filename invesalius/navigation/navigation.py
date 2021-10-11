@@ -171,7 +171,9 @@ class Navigation():
         self.sleep_nav = const.SLEEP_NAVIGATION
 
         # Serial port
-        self.serial_port = None
+        self.serial_port_in_use = False
+        self.com_port = None
+        self.baud_rate = None
         self.serial_port_connection = None
 
         # During navigation
@@ -181,6 +183,7 @@ class Navigation():
 
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
+        Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -189,8 +192,10 @@ class Navigation():
         self.sleep_nav = sleep
         self.serial_port_connection.sleep_nav = sleep
 
-    def SerialPortEnabled(self):
-        return self.serial_port is not None
+    def UpdateSerialPort(self, serial_port_in_use, com_port=None, baud_rate=None):
+        self.serial_port_in_use = serial_port_in_use
+        self.com_port = com_port
+        self.baud_rate = baud_rate
 
     def SetReferenceMode(self, value):
         self.ref_mode_id = value
@@ -218,7 +223,7 @@ class Navigation():
         return fre, fre <= const.FIDUCIAL_REGISTRATION_ERROR_THRESHOLD
 
     def PedalStateChanged(self, state):
-        if state is True and self.coil_at_target and self.SerialPortEnabled():
+        if state is True and self.coil_at_target and self.serial_port_in_use:
             self.serial_port_connection.SendPulse()
 
     def StartNavigation(self, tracker):
@@ -230,7 +235,7 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.SerialPortEnabled(), self.view_tracts, self.peel_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -279,12 +284,13 @@ class Navigation():
 
         if not errors:
             #TODO: Test the serial port thread
-            if self.SerialPortEnabled():
+            if self.serial_port_in_use:
                 self.serial_port_connection = spc.SerialPortConnection(
-                    self.serial_port,
-                    self.serial_port_queue,
-                    self.event,
-                    self.sleep_nav,
+                    com_port=self.com_port,
+                    baud_rate=self.baud_rate,
+                    serial_port_queue=self.serial_port_queue,
+                    event=self.event,
+                    sleep_nav=self.sleep_nav,
                 )
                 self.serial_port_connection.Connect()
                 jobs_list.append(self.serial_port_connection)
@@ -330,7 +336,7 @@ class Navigation():
         if self.serial_port_connection is not None:
             self.serial_port_connection.join()
 
-        if self.SerialPortEnabled():
+        if self.serial_port_in_use:
             self.serial_port_queue.clear()
             self.serial_port_queue.join()
 
@@ -341,5 +347,5 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.SerialPortEnabled(), self.view_tracts,  self.peel_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)

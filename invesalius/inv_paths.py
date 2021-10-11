@@ -27,6 +27,7 @@ CONF_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", USER_DIR.joinpath(".co
 USER_INV_DIR = CONF_DIR.joinpath("invesalius")
 USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")
 USER_LOG_DIR = USER_INV_DIR.joinpath("logs")
+USER_DL_WEIGHTS = USER_INV_DIR.joinpath("deep_learning/weights/")
 USER_RAYCASTING_PRESETS_DIRECTORY = USER_PRESET_DIR.joinpath("raycasting")
 TEMP_DIR = tempfile.gettempdir()
 
@@ -97,6 +98,7 @@ def create_conf_folders():
     USER_INV_DIR.mkdir(parents=True, exist_ok=True)
     USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
     USER_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    USER_DL_WEIGHTS.mkdir(parents=True, exist_ok=True)
     USER_PLUGINS_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
