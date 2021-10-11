@@ -89,9 +89,9 @@ class TrackerProcessing:
 
     def estimate_head_velocity(self, coord_vel, timestamp):
         coord_vel = np.vstack(np.array(coord_vel))
-        coord_init = coord_vel[:int(len(coord_vel)/2)].mean(axis=0)
-        coord_final = coord_vel[int(len(coord_vel)/2):].mean(axis=0)
-        velocity = (coord_final - coord_init)/(timestamp[-1]-timestamp[0])
+        coord_init = coord_vel[:int(len(coord_vel) / 2)].mean(axis=0)
+        coord_final = coord_vel[int(len(coord_vel) / 2):].mean(axis=0)
+        velocity = (coord_final - coord_init)/(timestamp[-1] - timestamp[0])
         distance = (coord_final - coord_init)
 
         return velocity, distance
@@ -99,32 +99,40 @@ class TrackerProcessing:
     def versors(self, init_point, final_point):
         init_point = np.array(init_point)
         final_point = np.array(final_point)
-        norm = (sum((final_point-init_point)**2))**0.5
-        versorfactor = (((final_point-init_point)/norm)*70).tolist()
+        norm = (sum((final_point - init_point) ** 2)) ** 0.5
+        versorfactor = (((final_point-init_point) / norm) * const.ROBOT_VERSOR_SCALE_FACTOR).tolist()
 
         return versorfactor
 
-    def arcmotion(self, actual_point, coord_head, coord_inv):
+    def compute_arc_motion(self, actual_point, coord_head, coord_inv):
         p1 = coord_inv
 
         pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
 
         versorfactor1 = self.versors(pc, actual_point)
-        init_ext_point = actual_point[0]+versorfactor1[0],\
-                         actual_point[1]+versorfactor1[1],\
-                         actual_point[2]+versorfactor1[2], \
+        init_ext_point = actual_point[0] + versorfactor1[0], \
+                         actual_point[1] + versorfactor1[1], \
+                         actual_point[2] + versorfactor1[2], \
                          actual_point[3], actual_point[4], actual_point[5]
 
-        middle_point = ((p1[0]+actual_point[0])/2, (p1[1]+actual_point[1])/2, (p1[2]+actual_point[2])/2, 0, 0, 0)
+        middle_point = ((p1[0] + actual_point[0]) / 2,
+                        (p1[1] + actual_point[1]) / 2,
+                        (p1[2] + actual_point[2]) / 2,
+                        0, 0, 0)
 
-        newarr = (np.array(self.versors(pc, middle_point)))*2
-        middle_arc_point = middle_point[0]+newarr[0], middle_point[1]+newarr[1], middle_point[2]+newarr[2]
+        newarr = (np.array(self.versors(pc, middle_point))) * 2
+        middle_arc_point = middle_point[0] + newarr[0], \
+                           middle_point[1] + newarr[1], \
+                           middle_point[2] + newarr[2]
 
         versorfactor3 = self.versors(pc, p1)
 
-        final_ext_arc_point = p1[0]+versorfactor3[0], p1[1]+versorfactor3[1], p1[2]+versorfactor3[2], \
-                                                coord_inv[3], coord_inv[4], coord_inv[5], 0
-        target_arc = middle_arc_point+final_ext_arc_point
+        final_ext_arc_point = p1[0] + versorfactor3[0], \
+                              p1[1] + versorfactor3[1], \
+                              p1[2] + versorfactor3[2], \
+                              coord_inv[3], coord_inv[4], coord_inv[5], 0
+
+        target_arc = middle_arc_point + final_ext_arc_point
 
         return init_ext_point, target_arc
 
@@ -150,13 +158,13 @@ class TrackerProcessing:
 
         return False
 
-    def head_move_compensation(self, current_ref, m_change_robot2ref):
+    def head_move_compensation(self, current_ref, m_change_robot_to_head):
         trans = tr.translation_matrix(current_ref[:3])
         a, b, g = np.radians(current_ref[3:6])
         rot = tr.euler_matrix(a, b, g, 'rzyx')
         M_current_ref = tr.concatenate_matrices(trans, rot)
 
-        m_robot_new = M_current_ref @ m_change_robot2ref
+        m_robot_new = M_current_ref @ m_change_robot_to_head
         _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
         angles = np.degrees(angles)
 
@@ -172,9 +180,9 @@ class TrackerProcessing:
         return (m_ear_left_new[:3, -1] + m_ear_right_new[:3, -1])/2
 
     def correction_distance_calculation_target(self, coord_inv, actual_point):
-        sum = (coord_inv[0]-actual_point[0])**2\
-              + (coord_inv[1]-actual_point[1])**2\
-              + (coord_inv[2]-actual_point[2])**2
+        sum = (coord_inv[0]-actual_point[0]) ** 2\
+              + (coord_inv[1]-actual_point[1]) ** 2\
+              + (coord_inv[2]-actual_point[2]) ** 2
         correction_distance_compensation = pow(sum, 0.5)
 
         return correction_distance_compensation

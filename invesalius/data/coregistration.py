@@ -190,11 +190,10 @@ class CoordinateCorregistrate(threading.Thread):
         self.event = event
         self.sle = sle
         self.icp_queue = queues[2]
-        self.objattarget_queue = queues[3]
+        self.object_at_target_queue = queues[3]
         self.icp = None
         self.m_icp = None
         self.robot_tracker_flag = None
-        self.m_change_robot2ref = None
         self.last_coord = None
         self.tracker_id = tracker_id
         self.target = target
@@ -223,10 +222,10 @@ class CoordinateCorregistrate(threading.Thread):
                 else:
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
 
-                if self.objattarget_queue.empty():
+                if self.object_at_target_queue.empty():
                     None
                 else:
-                    self.target_flag = self.objattarget_queue.get_nowait()
+                    self.target_flag = self.object_at_target_queue.get_nowait()
 
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()

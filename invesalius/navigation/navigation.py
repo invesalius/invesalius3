@@ -82,7 +82,7 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
-        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue = vis_queues
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue = vis_queues
         self.sle = sle
         self.event = event
 
@@ -91,7 +91,7 @@ class UpdateNavigationScene(threading.Thread):
         while not self.event.is_set():
             got_coords = False
             try:
-                coord, [coord_raw, markers_flag], m_img, view_obj = self.coord_queue.get_nowait()
+                coord, [coordinates_raw, markers_flag], m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
@@ -116,7 +116,7 @@ class UpdateNavigationScene(threading.Thread):
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update raw coord', coord_raw=coord_raw, markers_flag=markers_flag)
+                wx.CallAfter(Publisher.sendMessage, 'Update raw coordinates', coordinates_raw=coordinates_raw, markers_flag=markers_flag)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
 
                 if view_obj:
@@ -147,8 +147,8 @@ class Navigation():
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
-        self.objattarget_queue = QueueCustom(maxsize=1)
-        self.robottarget_queue = QueueCustom(maxsize=1)
+        self.object_at_target_queue = QueueCustom(maxsize=1)
+        self.robot_target_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -236,7 +236,7 @@ class Navigation():
             self.event.clear()
 
         vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robottarget_queue]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
@@ -270,7 +270,7 @@ class Navigation():
                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                 coreg_data.extend(obj_data)
 
-                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.objattarget_queue]
+                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue]
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,

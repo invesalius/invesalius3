@@ -488,9 +488,9 @@ def RobotCoord(trk_init, trck_id, ref_mode):
     coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[2], ref_mode)
     coord_robot, _ = ElfinCoord(trk_init[1:])
 
-    probe_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[0])
-    ref_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[1])
-    obj_tracker_in_robot = db.transform_tracker_2_robot().transformation_tracker_2_robot(coord_tracker[2])
+    probe_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[0])
+    ref_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[1])
+    obj_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[2])
 
     if probe_tracker_in_robot is None:
         probe_tracker_in_robot = coord_tracker[0]

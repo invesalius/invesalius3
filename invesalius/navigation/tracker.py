@@ -92,7 +92,7 @@ class Tracker():
                 print("Tracker still connected!")
 
     def ConnectToRobot(self, navigation, tracker, robot):
-        robot.SetRobotQueues([navigation.robottarget_queue, navigation.objattarget_queue])
+        robot.SetRobotQueues([navigation.robot_target_queue, navigation.object_at_target_queue])
         robot.OnRobotConnection()
         trk_init_robot = self.trk_init[1][0]
         if trk_init_robot:

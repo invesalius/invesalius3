@@ -4323,7 +4323,7 @@ class SetOptitrackconfigs(wx.Dialog):
 
         return fn_cal, fn_userprofile
 
-class SetTrackerDevice2Robot(wx.Dialog):
+class SetTrackerDeviceToRobot(wx.Dialog):
     def __init__(self, title=_("Setting tracker device:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)

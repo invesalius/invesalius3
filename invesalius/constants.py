@@ -830,7 +830,6 @@ TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_qualit
 
 MARKER_FILE_MAGICK_STRING = "INVESALIUS3_MARKER_FILE_"
 CURRENT_MARKER_FILE_VERSION = 0
-
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Serial port
@@ -840,8 +839,8 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 #Robot
 ROBOT_ElFIN_IP = ['Select robot IP:', '143.107.220.251', '169.254.153.251', '127.0.0.1']
 ROBOT_ElFIN_PORT = 10003
-
 ROBOT_MOTIONS = {"normal": 0, "linear out": 1, "arc": 2}
-
 ROBOT_HEAD_VELOCITY_THRESHOLD = 10
 ROBOT_ARC_THRESHOLD_DISTANCE = 100
+ROBOT_VERSOR_SCALE_FACTOR = 70
+

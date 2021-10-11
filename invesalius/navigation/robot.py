@@ -37,8 +37,8 @@ class Robot():
     def __init__(self, tracker):
         self.tracker = tracker
         self.trk_init = None
-        self.robottarget_queue = None
-        self.objattarget_queue = None
+        self.robot_target_queue = None
+        self.object_at_target_queue = None
         self.process_tracker = None
 
         self.thread_robot = None
@@ -62,8 +62,8 @@ class Robot():
             self.process_tracker = elfin_process.TrackerProcessing()
             dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
             if dlg_correg_robot.ShowModal() == wx.ID_OK:
-                M_tracker_2_robot = dlg_correg_robot.GetValue()
-                db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
+                M_tracker_to_robot = dlg_correg_robot.GetValue()
+                db.transform_tracker_to_robot.M_tracker_to_robot = M_tracker_to_robot
                 self.robot_server = self.tracker.trk_init[1][0]
                 self.trk_init = self.tracker.trk_init
             else:
@@ -76,31 +76,33 @@ class Robot():
         if tracker.event_robot.is_set():
             tracker.event_robot.clear()
         self.thread_robot = ControlRobot(self.trk_init, tracker, self.robotcoordinates,
-                                        [coord_queue, self.robottarget_queue, self.objattarget_queue],
-                                        self.process_tracker, tracker.event_robot)
+                                         [coord_queue, self.robot_target_queue, self.object_at_target_queue],
+                                         self.process_tracker, tracker.event_robot)
         self.thread_robot.start()
 
     def StopRobotThreadNavigation(self):
         self.thread_robot.join()
+        #TODO: initialize process_tracker every time a "send coordinates to robot" is requested
+        self.process_tracker.__init__()
 
     def OnSendCoordinates(self, coord):
         self.robot_server.SendCoordinates(coord)
 
-    def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot2ref):
+    def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot_to_head):
         try:
-            self.robottarget_queue.put_nowait([robot_tracker_flag, m_change_robot2ref])
+            self.robot_target_queue.put_nowait([robot_tracker_flag, m_change_robot_to_head])
         except queue.Full:
             pass
 
     def OnObjectTarget(self, state):
         try:
-            if self.objattarget_queue:
-                self.objattarget_queue.put_nowait(state)
+            if self.object_at_target_queue:
+                self.object_at_target_queue.put_nowait(state)
         except queue.Full:
             pass
 
     def SetRobotQueues(self, queues):
-        self.robottarget_queue, self.objattarget_queue = queues
+        self.robot_target_queue, self.object_at_target_queue = queues
 
 
 class RobotCoordinates():
@@ -115,7 +117,7 @@ class RobotCoordinates():
 
 
 class ControlRobot(threading.Thread):
-    def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event):
+    def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event_robot):
         threading.Thread.__init__(self, name='ControlRobot')
 
         self.trck_init_robot = trck_init[1][0]
@@ -126,20 +128,20 @@ class ControlRobot(threading.Thread):
         self.robot_tracker_flag = False
         self.objattarget_flag = False
         self.target_flag = False
-        self.m_change_robot2ref = None
+        self.m_change_robot_to_head = None
         self.coord_inv_old = None
         self.coord_queue = queues[0]
-        self.robottarget_queue = queues[1]
-        self.objattarget_queue = queues[2]
+        self.robot_target_queue = queues[1]
+        self.object_at_target_queue = queues[2]
         self.process_tracker = process_tracker
-        self.event = event
-        self.arcmotion_flag = False
-        self.arcmotion_step_flag = None
-        self.target_linearout = None
-        self.target_linearin = None
+        self.event_robot = event_robot
+        self.arc_motion_flag = False
+        self.arc_motion_step_flag = None
+        self.target_linear_out = None
+        self.target_linear_in = None
         self.target_arc = None
 
-    def getcoordsfromdevices(self):
+    def get_coordinates_from_tracker_devices(self):
         coord_robot_raw = self.trck_init_robot.Run()
         coord_robot = np.array(coord_robot_raw)
         coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
@@ -150,32 +152,32 @@ class ControlRobot(threading.Thread):
         return coord_raw, coord_robot_raw, markers_flag
 
     def robot_move_decision(self, distance_target, coord_inv, coord_robot_raw, current_ref_filtered):
-        if distance_target < const.ROBOT_ARC_THRESHOLD_DISTANCE and not self.arcmotion_flag:
+        if distance_target < const.ROBOT_ARC_THRESHOLD_DISTANCE and not self.arc_motion_flag:
             self.trck_init_robot.SendCoordinates(coord_inv, const.ROBOT_MOTIONS["normal"])
 
-        elif distance_target >= const.ROBOT_ARC_THRESHOLD_DISTANCE or self.arcmotion_flag:
+        elif distance_target >= const.ROBOT_ARC_THRESHOLD_DISTANCE or self.arc_motion_flag:
             actual_point = coord_robot_raw
-            if not self.arcmotion_flag:
+            if not self.arc_motion_flag:
                 coord_head = self.process_tracker.estimate_head_center(self.tracker,
                                                                        current_ref_filtered).tolist()
 
-                self.target_linearout, self.target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
-                                                                                        coord_inv)
-                self.arcmotion_flag = True
-                self.arcmotion_step_flag = const.ROBOT_MOTIONS["linear out"]
+                self.target_linear_out, self.target_arc = self.process_tracker.compute_arc_motion(coord_robot_raw, coord_head,
+                                                                                                  coord_inv)
+                self.arc_motion_flag = True
+                self.arc_motion_step_flag = const.ROBOT_MOTIONS["linear out"]
 
-            if self.arcmotion_flag and self.arcmotion_step_flag == const.ROBOT_MOTIONS["linear out"]:
-                coord = self.target_linearout
-                if np.allclose(np.array(actual_point), np.array(self.target_linearout), 0, 1):
-                    self.arcmotion_step_flag = const.ROBOT_MOTIONS["arc"]
+            if self.arc_motion_flag and self.arc_motion_step_flag == const.ROBOT_MOTIONS["linear out"]:
+                coord = self.target_linear_out
+                if np.allclose(np.array(actual_point), np.array(self.target_linear_out), 0, 1):
+                    self.arc_motion_step_flag = const.ROBOT_MOTIONS["arc"]
                     coord = self.target_arc
 
-            elif self.arcmotion_flag and self.arcmotion_step_flag == const.ROBOT_MOTIONS["arc"]:
+            elif self.arc_motion_flag and self.arc_motion_step_flag == const.ROBOT_MOTIONS["arc"]:
                 coord_head = self.process_tracker.estimate_head_center(self.tracker,
                                                                        current_ref_filtered).tolist()
 
-                _, new_target_arc = self.process_tracker.arcmotion(coord_robot_raw, coord_head,
-                                                                   coord_inv)
+                _, new_target_arc = self.process_tracker.compute_arc_motion(coord_robot_raw, coord_head,
+                                                                            coord_inv)
                 if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
                     None
                 else:
@@ -186,11 +188,11 @@ class ControlRobot(threading.Thread):
                 coord = self.target_arc
 
                 if np.allclose(np.array(actual_point), np.array(self.target_arc[3:-1]), 0, 10):
-                    self.arcmotion_flag = False
-                    self.arcmotion_step_flag = const.ROBOT_MOTIONS["normal"]
+                    self.arc_motion_flag = False
+                    self.arc_motion_step_flag = const.ROBOT_MOTIONS["normal"]
                     coord = coord_inv
 
-            self.trck_init_robot.SendCoordinates(coord, self.arcmotion_step_flag)
+            self.trck_init_robot.SendCoordinates(coord, self.arc_motion_step_flag)
 
     def control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
         coord_ref_tracker_in_robot = coords_tracker_in_robot[1]
@@ -202,7 +204,7 @@ class ControlRobot(threading.Thread):
                 current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
                 if self.process_tracker.head_move_threshold(current_ref_filtered):
                     coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
-                                                                            self.m_change_robot2ref)
+                                                                            self.m_change_robot_to_head)
                     if self.coord_inv_old is None:
                        self.coord_inv_old = coord_inv
 
@@ -220,19 +222,19 @@ class ControlRobot(threading.Thread):
                 self.trck_init_robot.StopRobot()
 
     def run(self):
-        while not self.event.is_set():
-            coords_tracker_in_robot, coord_robot_raw, markers_flag = self.getcoordsfromdevices()
+        while not self.event_robot.is_set():
+            coords_tracker_in_robot, coord_robot_raw, markers_flag = self.get_coordinates_from_tracker_devices()
 
-            if self.robottarget_queue.empty():
+            if self.robot_target_queue.empty():
                 None
             else:
-                self.robot_tracker_flag, self.m_change_robot2ref = self.robottarget_queue.get_nowait()
-                self.robottarget_queue.task_done()
+                self.robot_tracker_flag, self.m_change_robot_to_head = self.robot_target_queue.get_nowait()
+                self.robot_target_queue.task_done()
 
-            if self.objattarget_queue.empty():
+            if self.object_at_target_queue.empty():
                 None
             else:
-                self.target_flag = self.objattarget_queue.get_nowait()
-                self.objattarget_queue.task_done()
+                self.target_flag = self.object_at_target_queue.get_nowait()
+                self.object_at_target_queue.task_done()
 
             self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)

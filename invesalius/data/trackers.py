@@ -242,7 +242,7 @@ def RobotTracker(tracker_id):
     trck_init = None
     trck_init_robot = None
     tracker_id = None
-    dlg_device = dlg.SetTrackerDevice2Robot()
+    dlg_device = dlg.SetTrackerDeviceToRobot()
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         if tracker_id:

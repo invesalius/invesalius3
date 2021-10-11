@@ -11,10 +11,10 @@ class elfin_server():
         self.port_number = port_number
 
     def Initialize(self):
-        SIZE = 1024
-        rbtID = 0
+        message_size = 1024
+        robot_id = 0
         self.cobot = elfin()
-        self.cobot.connect(self.server_ip, self.port_number, SIZE, rbtID)
+        self.cobot.connect(self.server_ip, self.port_number, message_size, robot_id)
         print("conected!")
 
     def Run(self):
@@ -40,17 +40,17 @@ class elfin:
     def __init__(self):
         self.end_msg = ",;"
 
-    def connect(self, SERVER_IP, PORT_NUMBER, SIZE, rbtID):
+    def connect(self, server_ip, port_number, message_size, robot_id):
         mySocket = socket(AF_INET, SOCK_STREAM)
-        mySocket.connect((SERVER_IP, PORT_NUMBER))
+        mySocket.connect((server_ip, port_number))
 
-        self.size = SIZE
-        self.rbtID = str(rbtID)
+        self.message_size = message_size
+        self.robot_id = str(robot_id)
         self.mySocket = mySocket
 
     def send(self, message):
         self.mySocket.sendall(message.encode('utf-8'))
-        data = self.mySocket.recv(self.size).decode('utf-8').split(',')
+        data = self.mySocket.recv(self.message_size).decode('utf-8').split(',')
         status = self.check_status(data)
         if status and type(data) != bool:
             if len(data) > 3:
@@ -124,7 +124,7 @@ class elfin:
             if Error Return False
             if not Error Return True
         """
-        message = "GrpPowerOn," + self.rbtID + self.end_msg
+        message = "GrpPowerOn," + self.robot_id + self.end_msg
         status = self.send(message)
         return status
 
@@ -135,7 +135,7 @@ class elfin:
             if Error Return False
             if not Error Return True
         """
-        message = "GrpPowerOff," + self.rbtID + self.end_msg
+        message = "GrpPowerOff," + self.robot_id + self.end_msg
         status = self.send(message)
         return status
 
@@ -146,7 +146,7 @@ class elfin:
             if Error Return False
             if not Error Return True
         """
-        message = "GrpStop," + self.rbtID + self.end_msg
+        message = "GrpStop," + self.robot_id + self.end_msg
         status = self.send(message)
         return status
 
@@ -160,7 +160,7 @@ class elfin:
             if not Error Return True
         """
 
-        message = "SetOverride," + self.rbtID + ',' + str(override) + self.end_msg
+        message = "SetOverride," + self.robot_id + ',' + str(override) + self.end_msg
         status = self.send(message)
         return status
 
@@ -170,7 +170,7 @@ class elfin:
             if True Return x,y,z,a,b,c
             if Error Return False
         """
-        message = "ReadPcsActualPos," + self.rbtID + self.end_msg
+        message = "ReadPcsActualPos," + self.robot_id + self.end_msg
         coord = self.send(message)
         if coord:
             return [float(s) for s in coord]
@@ -185,7 +185,7 @@ class elfin:
         """
         target = [str(s) for s in target]
         target = (",".join(target))
-        message = "MoveL," + self.rbtID + ',' + target + self.end_msg
+        message = "MoveL," + self.robot_id + ',' + target + self.end_msg
         return self.send(message)
 
     def SetToolCoordinateMotion(self, status):
@@ -196,7 +196,7 @@ class elfin:
             if Error Return False
             if not Error Return True
         """
-        message = "SetToolCoordinateMotion," + self.rbtID + ',' + str(status) + self.end_msg
+        message = "SetToolCoordinateMotion," + self.robot_id + ',' + str(status) + self.end_msg
         status = self.send(message)
         return status
 
@@ -210,7 +210,7 @@ class elfin:
             1013=waiting for execution;
             1025 =Error reporting
         """
-        message = "ReadMoveState," + self.rbtID + self.end_msg
+        message = "ReadMoveState," + self.robot_id + self.end_msg
         status = int(self.send(message)[0])
         return status
 
@@ -221,7 +221,7 @@ class elfin:
             if Error Return False
             if not Error Return True
         """
-        message = "MoveHoming," + self.rbtID + self.end_msg
+        message = "MoveHoming," + self.robot_id + self.end_msg
         status = self.send(message)
         return status
 
@@ -233,5 +233,5 @@ class elfin:
         """
         target = [str(s) for s in target]
         target = (",".join(target))
-        message = "MoveC," + self.rbtID + ',' + target + self.end_msg
+        message = "MoveC," + self.robot_id + ',' + target + self.end_msg
         return self.send(message)

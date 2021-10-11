@@ -742,7 +742,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.StopNavigation()
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
-                                  m_change_robot2ref=None)
+                                  m_change_robot_to_head=None)
 
         # Enable all navigation buttons
         choice_ref.Enable(True)
@@ -1348,7 +1348,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
-        Publisher.subscribe(self.UpdateRobotCoord, 'Update raw coord')
+        Publisher.subscribe(self.UpdateRobotCoordinates, 'Update raw coordinates')
 
     def __find_target_marker(self):
         """Return the index of the marker currently selected as target (there
@@ -1429,9 +1429,9 @@ class MarkersPanel(wx.Panel):
     def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0)):
         self.current_seed = coord_offset
 
-    def UpdateRobotCoord(self, coord_raw, markers_flag):
-        self.current_head = coord_raw[1]
-        self.current_robot = coord_raw[2]
+    def UpdateRobotCoordinates(self, coordinates_raw, markers_flag):
+        self.current_head = coordinates_raw[1]
+        self.current_robot = coordinates_raw[2]
 
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
@@ -1444,12 +1444,12 @@ class MarkersPanel(wx.Panel):
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
-        send_target_2_robot = menu_id.Append(3, _('Send target to robot'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTarget2Robot, send_target_2_robot)
+        send_target_to_robot = menu_id.Append(3, _('Send target to robot'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
         if self.tracker.tracker_id == const.ROBOT:
-            send_target_2_robot.Enable(True)
+            send_target_to_robot.Enable(True)
         else:
-            send_target_2_robot.Enable(False)
+            send_target_to_robot.Enable(False)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1500,7 +1500,7 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
-    def OnMenuSendTarget2Robot(self, evt):
+    def OnMenuSendTargetToRobot(self, evt):
         if isinstance(evt, int):
            self.lc.Focus(evt)
 
@@ -1517,9 +1517,9 @@ class MarkersPanel(wx.Panel):
         rot = tr.euler_matrix(a, b, g, 'rzyx')
         m_ref_target = tr.concatenate_matrices(trans, rot)
 
-        m_change_robot2ref = np.linalg.inv(m_ref_target) @ m_robot_target
+        m_change_robot_to_head = np.linalg.inv(m_ref_target) @ m_robot_target
 
-        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot2ref=m_change_robot2ref)
+        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_change_robot_to_head)
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is None:
@@ -1561,7 +1561,7 @@ class MarkersPanel(wx.Panel):
             if self.__find_target_marker() in index:
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
-                                      m_change_robot2ref=None)
+                                      m_change_robot_to_head=None)
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
