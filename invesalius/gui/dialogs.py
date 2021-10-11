@@ -2920,6 +2920,11 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(0, 0, (14, 0))
         except TypeError:
             sizer.AddStretchSpacer((14, 0))
+        sizer.Add(self.close_btn, (15, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        try:
+            sizer.Add(0, 0, (16, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((16, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -3307,7 +3312,6 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.pedal_connection = pedal_connection
 
         self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
-        #self.TrackerCoordinates = nav_prop[2]
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None

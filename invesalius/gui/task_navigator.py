@@ -1654,7 +1654,7 @@ class MarkersPanel(wx.Panel):
     def OnChangeCurrentSession(self, new_session_id):
         self.current_session = new_session_id
 
-    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=0, seed=None, head=None, robot=None, session_id=None):
+    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, head=None, robot=None, session_id=None):
         new_marker = self.Marker()
         new_marker.coord = coord or self.current_coord
         new_marker.colour = colour or self.marker_colour

@@ -79,7 +79,6 @@ class Tracker():
                     self.event_coord.set()
                     self.event_robot.set()
                     self.thread_coord.join()
-                    #get the robot thread??
                     self.event_coord.clear()
                     self.event_robot.clear()
 
