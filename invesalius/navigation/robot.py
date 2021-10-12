@@ -51,6 +51,7 @@ class Robot():
         Publisher.subscribe(self.OnSendCoordinates, 'Send coord to robot')
         Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
         Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
+        Publisher.subscribe(self.OnResetProcessTracker, 'Reset robot process')
 
     def OnRobotConnection(self):
         if not self.tracker.trk_init[0][0] or not self.tracker.trk_init[1][0]:
@@ -82,7 +83,9 @@ class Robot():
 
     def StopRobotThreadNavigation(self):
         self.thread_robot.join()
-        #TODO: initialize process_tracker every time a "send coordinates to robot" is requested
+        self.OnResetProcessTracker()
+
+    def OnResetProcessTracker(self):
         self.process_tracker.__init__()
 
     def OnSendCoordinates(self, coord):

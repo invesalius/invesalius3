@@ -1489,6 +1489,7 @@ class MarkersPanel(wx.Panel):
 
         m_target_robot = self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix
 
+        Publisher.sendMessage('Reset robot process')
         Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_target_robot)
 
     def OnDeleteAllMarkers(self, evt=None):
