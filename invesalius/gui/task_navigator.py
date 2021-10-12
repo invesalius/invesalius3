@@ -1237,6 +1237,7 @@ class MarkersPanel(wx.Panel):
         self.markers = []
         self.robot_markers = []
         self.nav_status = False
+        self.raw_target_robot = None, None
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1412,9 +1413,7 @@ class MarkersPanel(wx.Panel):
         self.current_seed = coord_offset
 
     def UpdateRobotCoordinates(self, coordinates_raw, markers_flag):
-        head = coordinates_raw[1]
-        robot = coordinates_raw[2]
-        self.current_robot_target_matrix = db.compute_robot_target_matrix(head, robot)
+        self.raw_target_robot = coordinates_raw[1], coordinates_raw[2]
 
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
@@ -1641,7 +1640,9 @@ class MarkersPanel(wx.Panel):
         new_marker.seed = seed or self.current_seed
         new_marker.session_id = session_id or self.current_session
 
-        if not self.tracker.tracker_id == const.ROBOT or not self.nav_status:
+        if self.tracker.tracker_id == const.ROBOT and self.nav_status:
+            self.current_robot_target_matrix = db.compute_robot_target_matrix(self.raw_target_robot)
+        else:
             self.current_robot_target_matrix = [None] * 9
 
         new_robot_marker = self.Robot_Marker()

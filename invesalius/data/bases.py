@@ -245,13 +245,14 @@ def object_registration(fiducials, orients, coord_raw, m_change):
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
 
-def compute_robot_target_matrix(head, robot):
+def compute_robot_target_matrix(raw_target_robot):
     """
     :param head: nx6 array of head coordinates from tracking device in robot space
     :param robot: nx6 array of robot coordinates
 
     :return: target_robot_matrix: 3x3 array representing change of basis from robot to head in robot system
     """
+    head, robot = raw_target_robot
     # compute head target matrix
     m_head_target = dco.coordinates_to_transformation_matrix(
         position=head[:3],
