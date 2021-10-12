@@ -22,17 +22,6 @@ SIZE = 48
 OVERLAP = SIZE // 2 + 1
 
 
-def get_LUT_value(data, window, level):
-    shape = data.shape
-    data_ = data.ravel()
-    data = np.piecewise(data_,
-                        [data_ <= (level - 0.5 - (window-1)/2),
-                         data_ > (level - 0.5 + (window-1)/2)],
-                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
-    data.shape = shape
-    return data
-
-
 def gen_patches(image, patch_size, overlap):
     sz, sy, sx = image.shape
     i_cuts = list(
@@ -188,8 +177,7 @@ class SegmentProcess(ctx.Process):
         )
 
         if self.apply_wwwl:
-            print("Applying window level")
-            image = get_LUT_value(image, self.window_width, self.window_level)
+            image = imagedata_utils.get_LUT_value(image, self.window_width, self.window_level)
 
         probability_array = np.memmap(
             self._prob_array_filename,
