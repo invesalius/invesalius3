@@ -63,13 +63,13 @@ import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
+import invesalius.data.bases as db
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
 from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
-import invesalius.data.transformations as tr
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -690,11 +690,9 @@ class NeuronavigationPanel(wx.Panel):
             colour = (0., 1., 0.)
             size = 2
             seed = 3 * [0.]
-            head = 6 * [0.]
-            robot = 6 * [0.]
 
-            Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
-                                   label=label, seed=seed, head=head, robot=robot)
+            Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size, label=label, seed=seed)
+
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
@@ -1136,18 +1134,6 @@ class MarkersPanel(wx.Panel):
         x_seed : float = 0
         y_seed : float = 0
         z_seed : float = 0
-        x_head : float = 0
-        y_head : float = 0
-        z_head : float = 0
-        alpha_head : float = 0
-        beta_head : float = 0
-        gamma_head : float = 0
-        x_robot : float = 0
-        y_robot : float = 0
-        z_robot : float = 0
-        alpha_robot : float = 0
-        beta_robot: float = 0
-        gamma_robot : float = 0
         is_target : bool = False
         session_id : int = 1
 
@@ -1177,24 +1163,6 @@ class MarkersPanel(wx.Panel):
         @seed.setter
         def seed(self, new_seed):
             self.x_seed, self.y_seed, self.z_seed = new_seed
-
-        # x_head, y_head, z_head, alpha_head, beta_head, gamma_head can be jointly accessed as robot
-        @property
-        def head(self):
-            return list((self.x_head, self.y_head, self.z_head, self.alpha_head, self.beta_head, self.gamma_head),)
-
-        @head.setter
-        def head(self, new_head):
-            self.x_head, self.y_head, self.z_head, self.alpha_head, self.beta_head, self.gamma_head = new_head
-
-        # x_robot, y_robot, z_robot, alpha_robot, beta_robot, gamma_robot can be jointly accessed as robot
-        @property
-        def robot(self):
-            return list((self.x_robot, self.y_robot, self.z_robot, self.alpha_robot, self.beta_robot, self.gamma_robot),)
-
-        @robot.setter
-        def robot(self, new_robot):
-            self.x_robot, self.y_robot, self.z_robot, self.alpha_robot, self.beta_robot, self.gamma_robot = new_robot
 
         @classmethod
         def to_string_headers(cls):
@@ -1235,6 +1203,19 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
+    @dataclasses.dataclass
+    class Robot_Marker:
+        """Class for storing robot target."""
+        m_robot_target : list = None
+
+        @property
+        def robot_target_matrix(self):
+            return self.m_robot_target
+
+        @robot_target_matrix.setter
+        def robot_target_matrix(self, new_m_robot_target):
+            self.m_robot_target = new_m_robot_target
+
     def __init__(self, parent, tracker):
         wx.Panel.__init__(self, parent)
         try:
@@ -1252,9 +1233,9 @@ class MarkersPanel(wx.Panel):
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
+        self.current_robot_target_matrix = [None] * 9
         self.markers = []
-        self.current_head = 0, 0, 0, 0, 0, 0
-        self.current_robot = 0, 0, 0, 0, 0, 0
+        self.robot_markers = []
         self.nav_status = False
 
         self.marker_colour = const.MARKER_COLOUR
@@ -1379,6 +1360,7 @@ class MarkersPanel(wx.Panel):
         """
         for i in reversed(index):
             del self.markers[i]
+            del self.robot_markers[i]
             self.lc.DeleteItem(i)
             for n in range(0, self.lc.GetItemCount()):
                 self.lc.SetItem(n, 0, str(n+1))
@@ -1430,8 +1412,9 @@ class MarkersPanel(wx.Panel):
         self.current_seed = coord_offset
 
     def UpdateRobotCoordinates(self, coordinates_raw, markers_flag):
-        self.current_head = coordinates_raw[1]
-        self.current_robot = coordinates_raw[2]
+        head = coordinates_raw[1]
+        robot = coordinates_raw[2]
+        self.current_robot_target_matrix = db.compute_robot_target_matrix(head, robot)
 
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
@@ -1504,22 +1487,9 @@ class MarkersPanel(wx.Panel):
         if isinstance(evt, int):
            self.lc.Focus(evt)
 
-        robot = self.markers[self.lc.GetFocusedItem()].robot
-        head = self.markers[self.lc.GetFocusedItem()].head
+        m_target_robot = self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix
 
-        trans = tr.translation_matrix(robot[:3])
-        a, b, g = np.radians(robot[3:])
-        rot = tr.euler_matrix(a, b, g, 'rzyx')
-        m_robot_target = tr.concatenate_matrices(trans, rot)
-
-        trans = tr.translation_matrix(head[:3])
-        a, b, g = np.radians(head[3:])
-        rot = tr.euler_matrix(a, b, g, 'rzyx')
-        m_ref_target = tr.concatenate_matrices(trans, rot)
-
-        m_change_robot_to_head = np.linalg.inv(m_ref_target) @ m_robot_target
-
-        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_change_robot_to_head)
+        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_target_robot)
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is None:
@@ -1536,6 +1506,7 @@ class MarkersPanel(wx.Panel):
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
         self.markers = []
+        self.robot_markers = []
         Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
         self.lc.DeleteAllItems()
         Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
@@ -1656,7 +1627,7 @@ class MarkersPanel(wx.Panel):
     def OnChangeCurrentSession(self, new_session_id):
         self.current_session = new_session_id
 
-    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, head=None, robot=None, session_id=None):
+    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
         new_marker = self.Marker()
         new_marker.coord = coord or self.current_coord
         new_marker.colour = colour or self.marker_colour
@@ -1664,9 +1635,9 @@ class MarkersPanel(wx.Panel):
         new_marker.label = label
         new_marker.is_target = is_target
         new_marker.seed = seed or self.current_seed
-        new_marker.head = head or self.current_head
-        new_marker.robot = robot or self.current_robot
         new_marker.session_id = session_id or self.current_session
+        new_robot_marker = self.Robot_Marker()
+        new_robot_marker.robot_target_matrix = self.current_robot_target_matrix
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         Publisher.sendMessage('Add marker', ball_id=len(self.markers),
@@ -1674,6 +1645,7 @@ class MarkersPanel(wx.Panel):
                                             colour=new_marker.colour,
                                             coord=new_marker.coord[:3])
         self.markers.append(new_marker)
+        self.robot_markers.append(new_robot_marker)
 
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()
