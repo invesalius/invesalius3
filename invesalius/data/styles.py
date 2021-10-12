@@ -45,6 +45,7 @@ import invesalius.utils as utils
 from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
                                       PolygonDensityMeasure)
 
+from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius_cy import floodfill
 
 # For tracts
@@ -68,26 +69,6 @@ BRUSH_ERASE=0
 WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
                         _("Foreground"): BRUSH_FOREGROUND,
                         _("Background"): BRUSH_BACKGROUND,}
-
-def get_LUT_value(data, window, level):
-    shape = data.shape
-    data_ = data.ravel()
-    data = np.piecewise(data_,
-                        [data_ <= (level - 0.5 - (window-1)/2),
-                         data_ > (level - 0.5 + (window-1)/2)],
-                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
-    data.shape = shape
-    return data
-
-def get_LUT_value_255(data, window, level):
-    shape = data.shape
-    data_ = data.ravel()
-    data = np.piecewise(data_,
-                        [data_ <= (level - 0.5 - (window-1)/2),
-                         data_ > (level - 0.5 + (window-1)/2)],
-                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
-    data.shape = shape
-    return data
 
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
