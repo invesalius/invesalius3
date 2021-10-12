@@ -96,7 +96,7 @@ class TrackerProcessing:
 
         return velocity, distance
 
-    def versors(self, init_point, final_point):
+    def compute_versors(self, init_point, final_point):
         init_point = np.array(init_point)
         final_point = np.array(final_point)
         norm = (sum((final_point - init_point) ** 2)) ** 0.5
@@ -109,7 +109,7 @@ class TrackerProcessing:
 
         pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
 
-        versorfactor1 = self.versors(pc, actual_point)
+        versorfactor1 = self.compute_versors(pc, actual_point)
         init_ext_point = actual_point[0] + versorfactor1[0], \
                          actual_point[1] + versorfactor1[1], \
                          actual_point[2] + versorfactor1[2], \
@@ -120,12 +120,12 @@ class TrackerProcessing:
                         (p1[2] + actual_point[2]) / 2,
                         0, 0, 0)
 
-        newarr = (np.array(self.versors(pc, middle_point))) * 2
+        newarr = (np.array(self.compute_versors(pc, middle_point))) * 2
         middle_arc_point = middle_point[0] + newarr[0], \
                            middle_point[1] + newarr[1], \
                            middle_point[2] + newarr[2]
 
-        versorfactor3 = self.versors(pc, p1)
+        versorfactor3 = self.compute_versors(pc, p1)
 
         final_ext_arc_point = p1[0] + versorfactor3[0], \
                               p1[1] + versorfactor3[1], \
@@ -136,7 +136,7 @@ class TrackerProcessing:
 
         return init_ext_point, target_arc
 
-    def head_move_threshold(self, current_ref):
+    def compute_head_move_threshold(self, current_ref):
         self.coord_vel.append(current_ref)
         self.timestamp.append(time())
         if len(self.coord_vel) >= 10:

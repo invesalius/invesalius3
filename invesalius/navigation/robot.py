@@ -194,7 +194,7 @@ class ControlRobot(threading.Thread):
 
             self.trck_init_robot.SendCoordinates(coord, self.arc_motion_step_flag)
 
-    def control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
+    def robot_control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
         coord_ref_tracker_in_robot = coords_tracker_in_robot[1]
         coord_obj_tracker_in_robot = coords_tracker_in_robot[2]
 
@@ -202,7 +202,7 @@ class ControlRobot(threading.Thread):
             current_ref = coord_ref_tracker_in_robot
             if current_ref is not None and markers_flag[1]:
                 current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
-                if self.process_tracker.head_move_threshold(current_ref_filtered):
+                if self.process_tracker.compute_head_move_threshold(current_ref_filtered):
                     coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
                                                                             self.m_change_robot_to_head)
                     if self.coord_inv_old is None:
@@ -237,4 +237,4 @@ class ControlRobot(threading.Thread):
                 self.target_flag = self.object_at_target_queue.get_nowait()
                 self.object_at_target_queue.task_done()
 
-            self.control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
+            self.robot_control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
