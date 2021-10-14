@@ -595,7 +595,7 @@ def convert_invesalius_to_voxel(position):
     :return: a vector of 3 coordinates in the voxel space
     """
     slice = sl.Slice()
-    return np.array((position[0], (slice.spacing[1]*slice.matrix.shape[1] - 1) - position[1], position[2]))
+    return np.array((position[0], slice.spacing[1]*(slice.matrix.shape[1] - 1) - position[1], position[2]))
 
 
 def convert_invesalius_to_world(position, orientation):
