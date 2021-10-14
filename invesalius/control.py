@@ -122,8 +122,6 @@ class Controller():
 
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
-        Publisher.subscribe(self.Send_affine, 'Get affine matrix')
-
         Publisher.subscribe(self.create_project_from_matrix, 'Create project from matrix')
 
         Publisher.subscribe(self.show_mask_preview, 'Show mask preview')
@@ -506,8 +504,9 @@ class Controller():
                 utils.debug("No medical images found on given directory")
                 return
 
-            matrix, matrix_filename = self.OpenOtherFiles(group)
-            self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
+            if group:
+                matrix, matrix_filename = self.OpenOtherFiles(group)
+                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
             # OPTION 4: Nothing...
 
         self.LoadProject()
@@ -623,6 +622,11 @@ class Controller():
         Publisher.sendMessage(('Set scroll position', 'AXIAL'), index=proj.matrix_shape[0]/2)
         Publisher.sendMessage(('Set scroll position', 'SAGITAL'),index=proj.matrix_shape[1]/2)
         Publisher.sendMessage(('Set scroll position', 'CORONAL'),index=proj.matrix_shape[2]/2)
+
+        if self.Slice.affine is not None:
+            Publisher.sendMessage('Enable Go-to-Coord', status=True)
+        else:
+            Publisher.sendMessage('Enable Go-to-Coord', status=False)
         
         Publisher.sendMessage('End busy cursor')
 
@@ -715,9 +719,6 @@ class Controller():
         proj.matrix_dtype = matrix.dtype.name
         proj.matrix_filename = matrix_filename
 
-        if self.affine is not None:
-            proj.affine = self.affine.tolist()
-
         # Orientation must be CORONAL in order to as_closes_canonical and
         # swap axis in img2memmap to work in a standardized way.
         # TODO: Create standard import image for all acquisition orientations
@@ -730,6 +731,8 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
+        if self.Slice.affine is not None:
+            proj.affine = self.Slice.affine.tolist()
 
         ######
         session = ses.Session()
@@ -915,16 +918,7 @@ class Controller():
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(name, matrix, matrix_filename)
                 self.LoadProject()
-                if group.affine.any():
-                    # TODO: replace the inverse of the affine by the actual affine in the whole code
-                    # remove scaling factor for non-unitary voxel dimensions
-                    # self.affine = image_utils.world2invspace(affine=group.affine)
-                    scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
-                    self.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
-                                                                angles=angs, translate=trans, perspective=persp))
-                    # print("repos_img: {}".format(repos_img))
-                    self.Slice.affine = self.affine
-                    Publisher.sendMessage('Update affine matrix', affine=self.affine)
+
                 Publisher.sendMessage("Enable state project", state=True)
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
@@ -1034,13 +1028,7 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
-        # if group.affine.any():
-        #     self.affine = group.affine
-        #     Publisher.sendMessage('Update affine matrix',
-        #                           affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
-        dims = hdr.get_zooms()
-        dimsf = tuple([float(s) for s in dims])
 
         wl = float((scalar_range[0] + scalar_range[1]) * 0.5)
         ww = float((scalar_range[1] - scalar_range[0]))
@@ -1048,19 +1036,29 @@ class Controller():
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
-
-        self.Slice.spacing = dimsf
+        # even though the axes 0 and 2 are swapped when creating self.matrix
+        # the spacing should be kept the original, as it is modified somewhere later
+        # otherwise generate wrong results
+        # also need to convert to float because original get_zooms return numpy.float32
+        # which is unsupported by the plist for saving the project
+        self.Slice.spacing = tuple([float(s) for s in hdr.get_zooms()])
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
+        if group.affine.any():
+            # remove scaling factor for non-unitary voxel dimensions
+            scale, shear, angs, trans, persp = tr.decompose_matrix(group.affine)
+            self.Slice.affine = np.linalg.inv(tr.compose_matrix(scale=None, shear=shear,
+                                                                angles=angs, translate=trans, perspective=persp))
+        else:
+            self.Slice.affine = None
+
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
+
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=scalar_range)
-        return self.matrix, self.filename
 
-    def Send_affine(self):
-        if self.affine is not None:
-            Publisher.sendMessage('Update affine matrix', affine=self.affine)
+        return self.matrix, self.filename
 
     def LoadImagedataInfo(self):
         proj = prj.Project()

@@ -51,6 +51,7 @@ else:
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as iu
+import invesalius.data.slice_ as sl
 import invesalius.data.polydata_utils as pu
 import invesalius.project as prj
 import invesalius.session as ses
@@ -159,7 +160,6 @@ class SurfaceManager():
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
-        self.affine_vtk = None
         self.convert2inv = None
         self.__bind_events()
 
@@ -207,7 +207,6 @@ class SurfaceManager():
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
-        Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
         Publisher.subscribe(self.UpdateConvert2InvFlag, 'Update convert2inv flag')
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
@@ -338,16 +337,6 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
-    def UpdateAffineMatrix(self, affine):
-        if affine is not None:
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            affine = affine.copy()
-            affine[1, -1] -= matrix_shape[1]
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-        else:
-            self.affine_vtk = None
-
     def UpdateConvert2InvFlag(self, convert2inv=False):
         self.convert2inv = convert2inv
 
@@ -373,12 +362,17 @@ class SurfaceManager():
         actor.SetMapper(mapper)
         actor.GetProperty().SetBackfaceCulling(1)
 
-        if self.convert2inv and (self.affine_vtk is not None):
-            actor.SetUserMatrix(self.affine_vtk)
+        if self.convert2inv:
+            # convert between invesalius and world space with shift in the Y coordinate
+            affine = sl.Slice().affine
+            if affine is not None:
+                affine[1, -1] -= sl.Slice().spacing[1] * (sl.Slice().matrix.shape[1] - 1)
+                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                actor.SetUserMatrix(affine_vtk)
 
         if overwrite:
             if index is None:
-                index =  self.last_surface_index
+                index = self.last_surface_index
             surface = Surface(index=index)
         else:
             surface = Surface()
