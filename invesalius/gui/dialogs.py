@@ -4383,8 +4383,9 @@ class SetRobotIP(wx.Dialog):
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
         choice_IP = wx.ComboBox(self, -1, "",
-                                  choices=const.ROBOT_ElFIN_IP, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+                                  choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
         choice_IP.SetSelection(const.DEFAULT_TRACKER)
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
@@ -4591,8 +4592,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         M_robot_2_tracker = self.affine_correg(tracker_coord, robot_coord)
         M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
-        #db.transform_tracker_2_robot.M_tracker_2_robot = M_tracker_2_robot
         self.M_tracker_2_robot = M_tracker_2_robot
+
         self.btn_save.Enable(True)
         self.btn_ok.Enable(True)
 

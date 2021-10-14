@@ -1641,7 +1641,7 @@ class MarkersPanel(wx.Panel):
         new_marker.session_id = session_id or self.current_session
 
         if self.tracker.tracker_id == const.ROBOT and self.nav_status:
-            self.current_robot_target_matrix = db.compute_robot_target_matrix(self.raw_target_robot)
+            self.current_robot_target_matrix = db.compute_robot_to_head_matrix(self.raw_target_robot)
         else:
             self.current_robot_target_matrix = [None] * 9
 

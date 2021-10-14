@@ -217,14 +217,10 @@ class CoordinateCorregistrate(threading.Thread):
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
-                if self.icp_queue.empty():
-                    None
-                else:
+                if not self.icp_queue.empty():
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
 
-                if self.object_at_target_queue.empty():
-                    None
-                else:
+                if not self.object_at_target_queue.empty():
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
                 # print(f"Set the coordinate")

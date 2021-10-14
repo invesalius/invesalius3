@@ -190,7 +190,7 @@ def ElfinCoord(trck_init):
     else:
         coord = np.array([0, 0, 0, 0, 0, 0])
 
-    return coord, None
+    return coord
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -486,7 +486,7 @@ def dynamic_reference_m(probe, reference):
 
 def RobotCoord(trk_init, trck_id, ref_mode):
     coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[2], ref_mode)
-    coord_robot, _ = ElfinCoord(trk_init[1:])
+    coord_robot = ElfinCoord(trk_init[1:])
 
     probe_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[0])
     ref_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[1])

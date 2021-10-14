@@ -245,7 +245,7 @@ def object_registration(fiducials, orients, coord_raw, m_change):
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
 
-def compute_robot_target_matrix(raw_target_robot):
+def compute_robot_to_head_matrix(raw_target_robot):
     """
     :param head: nx6 array of head coordinates from tracking device in robot space
     :param robot: nx6 array of robot coordinates
@@ -266,26 +266,26 @@ def compute_robot_target_matrix(raw_target_robot):
         orientation=robot[3:],
         axes='rzyx',
     )
-    target_robot_matrix = np.linalg.inv(m_head_target) @ m_robot_target
+    robot_to_head_matrix = np.linalg.inv(m_head_target) @ m_robot_target
 
-    return target_robot_matrix
+    return robot_to_head_matrix
 
 
 class transform_tracker_to_robot(object):
     M_tracker_to_robot = np.array([])
     def transformation_tracker_to_robot(self, tracker_coord):
         if not transform_tracker_to_robot.M_tracker_to_robot.any():
-            #print("matrix tracker2robot is not define")
             return None
-        else:
-            trans = tr.translation_matrix(tracker_coord[:3])
-            a, b, g = np.radians(tracker_coord[3:6])
-            rot = tr.euler_matrix(a, b, g, 'rzyx')
-            M_tracker = tr.concatenate_matrices(trans, rot)
-            M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker
 
-            _, _, angles, translate, _ = tr.decompose_matrix(M_tracker_in_robot)
-            tracker_in_robot = [translate[0], translate[1], translate[2], \
-                                np.degrees(angles[2]), np.degrees(angles[1]), np.degrees(angles[0])]
+        M_tracker = dco.coordinates_to_transformation_matrix(
+            position=tracker_coord[:3],
+            orientation= tracker_coord[3:6],
+            axes='rzyx',
+        )
+        M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker
 
-            return tracker_in_robot
+        angles_as_deg, translate = dco.transformation_matrix_to_coordinates(M_tracker_in_robot, axes='rxyz')
+        #TODO: check this with robot
+        tracker_in_robot = list(translate) + list(angles_as_deg)
+
+        return tracker_in_robot

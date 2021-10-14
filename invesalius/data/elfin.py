@@ -2,10 +2,10 @@
 
 import sys
 from time import sleep
-from socket import socket, AF_INET, SOCK_DGRAM, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM
 import invesalius.constants as const
 
-class elfin_server():
+class Elfin_Server():
     def __init__(self, server_ip, port_number):
         self.server_ip = server_ip
         self.port_number = port_number
@@ -13,20 +13,19 @@ class elfin_server():
     def Initialize(self):
         message_size = 1024
         robot_id = 0
-        self.cobot = elfin()
+        self.cobot = Elfin()
         self.cobot.connect(self.server_ip, self.port_number, message_size, robot_id)
-        print("conected!")
+        print("connected!")
 
     def Run(self):
         return self.cobot.ReadPcsActualPos()
 
     def SendCoordinates(self, target, type=const.ROBOT_MOTIONS["normal"]):
         status = self.cobot.ReadMoveState()
-        if type == const.ROBOT_MOTIONS["normal"] or type == const.ROBOT_MOTIONS["linear out"]:
-            if status != 1009:
+        if status != 1009:
+            if type == const.ROBOT_MOTIONS["normal"] or type == const.ROBOT_MOTIONS["linear out"]:
                 self.cobot.MoveL(target)
-        elif type == const.ROBOT_MOTIONS["arc"]:
-            if status != 1009:
+            elif type == const.ROBOT_MOTIONS["arc"]:
                 self.cobot.MoveC(target)
 
     def StopRobot(self):
@@ -36,7 +35,7 @@ class elfin_server():
     def Close(self):
         self.cobot.close()
 
-class elfin:
+class Elfin:
     def __init__(self):
         self.end_msg = ",;"
 
