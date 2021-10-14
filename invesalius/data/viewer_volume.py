@@ -1455,7 +1455,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.actor_peel = None
-            self.ball_actor.SetVisibility(1)
+            if self.ball_actor:
+                self.ball_actor.SetVisibility(1)
 
         if flag and actor:
             self.ren.AddActor(actor)
