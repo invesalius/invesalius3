@@ -279,7 +279,7 @@ class transform_tracker_to_robot(object):
 
         M_tracker = dco.coordinates_to_transformation_matrix(
             position=tracker_coord[:3],
-            orientation= tracker_coord[3:6],
+            orientation=tracker_coord[3:6],
             axes='rzyx',
         )
         M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker

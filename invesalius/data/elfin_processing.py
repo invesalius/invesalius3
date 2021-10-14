@@ -20,16 +20,21 @@ import numpy as np
 import cv2
 from time import time
 
-import invesalius.data.transformations as tr
 import invesalius.data.coregistration as dcr
+import invesalius.data.coordinates as dco
 import invesalius.constants as const
 
 
 class KalmanTracker:
+    """
+    Kalman filter to avoid sudden fluctuation from tracker device.
+    The filter strength can be set by the cov_process, and cov_measure parameter
+    It is required to create one instance for each variable (x, y, z, a, b, g)
+    """
     def __init__(self,
                  state_num=2,
-                 cov_process=0.001,
-                 cov_measure=0.1):
+                 covariance_process=0.001,
+                 covariance_measure=0.1):
 
         self.state_num = state_num
         measure_num = 1
@@ -46,8 +51,8 @@ class KalmanTracker:
                                                  [0, 1]], np.float32)
         self.filter.measurementMatrix = np.array([[1, 1]], np.float32)
         self.filter.processNoiseCov = np.array([[1, 0],
-                                                [0, 1]], np.float32) * cov_process
-        self.filter.measurementNoiseCov = np.array( [[1]], np.float32) * cov_measure
+                                                [0, 1]], np.float32) * covariance_process
+        self.filter.measurementNoiseCov = np.array([[1]], np.float32) * covariance_measure
 
     def update_kalman(self, measurement):
         self.prediction = self.filter.predict()
@@ -67,8 +72,8 @@ class TrackerProcessing:
 
         self.tracker_stabilizers = [KalmanTracker(
             state_num=2,
-            cov_process=0.001,
-            cov_measure=0.1) for _ in range(6)]
+            covariance_process=0.001,
+            covariance_measure=0.1) for _ in range(6)]
 
     def kalman_filter(self, coord_tracker):
         kalman_array = []
@@ -100,41 +105,39 @@ class TrackerProcessing:
         init_point = np.array(init_point)
         final_point = np.array(final_point)
         norm = (sum((final_point - init_point) ** 2)) ** 0.5
-        versorfactor = (((final_point-init_point) / norm) * const.ROBOT_VERSOR_SCALE_FACTOR).tolist()
+        versor_factor = (((final_point-init_point) / norm) * const.ROBOT_VERSOR_SCALE_FACTOR).tolist()
 
-        return versorfactor
+        return versor_factor
 
-    def compute_arc_motion(self, actual_point, coord_head, coord_inv):
-        p1 = coord_inv
 
-        pc = coord_head[0], coord_head[1], coord_head[2], coord_inv[3], coord_inv[4], coord_inv[5]
+    def compute_arc_motion(self, current_robot_coordinates, head_center_coordinates, new_robot_coordinates):
+        head_center = head_center_coordinates[0], head_center_coordinates[1], head_center_coordinates[2], \
+                      new_robot_coordinates[3], new_robot_coordinates[4], new_robot_coordinates[5]
 
-        versorfactor1 = self.compute_versors(pc, actual_point)
-        init_ext_point = actual_point[0] + versorfactor1[0], \
-                         actual_point[1] + versorfactor1[1], \
-                         actual_point[2] + versorfactor1[2], \
-                         actual_point[3], actual_point[4], actual_point[5]
+        versor_factor_move_out = self.compute_versors(head_center, current_robot_coordinates)
+        init_move_out_point = current_robot_coordinates[0] + versor_factor_move_out[0], \
+                              current_robot_coordinates[1] + versor_factor_move_out[1], \
+                              current_robot_coordinates[2] + versor_factor_move_out[2], \
+                              current_robot_coordinates[3], current_robot_coordinates[4], current_robot_coordinates[5]
 
-        middle_point = ((p1[0] + actual_point[0]) / 2,
-                        (p1[1] + actual_point[1]) / 2,
-                        (p1[2] + actual_point[2]) / 2,
+        middle_point = ((new_robot_coordinates[0] + current_robot_coordinates[0]) / 2,
+                        (new_robot_coordinates[1] + current_robot_coordinates[1]) / 2,
+                        (new_robot_coordinates[2] + current_robot_coordinates[2]) / 2,
                         0, 0, 0)
+        versor_factor_middle_arc = (np.array(self.compute_versors(head_center, middle_point))) * 2
+        middle_arc_point = middle_point[0] + versor_factor_middle_arc[0], \
+                           middle_point[1] + versor_factor_middle_arc[1], \
+                           middle_point[2] + versor_factor_middle_arc[2]
 
-        newarr = (np.array(self.compute_versors(pc, middle_point))) * 2
-        middle_arc_point = middle_point[0] + newarr[0], \
-                           middle_point[1] + newarr[1], \
-                           middle_point[2] + newarr[2]
-
-        versorfactor3 = self.compute_versors(pc, p1)
-
-        final_ext_arc_point = p1[0] + versorfactor3[0], \
-                              p1[1] + versorfactor3[1], \
-                              p1[2] + versorfactor3[2], \
-                              coord_inv[3], coord_inv[4], coord_inv[5], 0
+        versor_factor_arc = self.compute_versors(head_center, new_robot_coordinates)
+        final_ext_arc_point = new_robot_coordinates[0] + versor_factor_arc[0], \
+                              new_robot_coordinates[1] + versor_factor_arc[1], \
+                              new_robot_coordinates[2] + versor_factor_arc[2], \
+                              new_robot_coordinates[3], new_robot_coordinates[4], new_robot_coordinates[5], 0
 
         target_arc = middle_arc_point + final_ext_arc_point
 
-        return init_ext_point, target_arc
+        return init_move_out_point, target_arc
 
     def compute_head_move_threshold(self, current_ref):
         self.coord_vel.append(current_ref)
@@ -158,24 +161,23 @@ class TrackerProcessing:
 
         return False
 
-    def head_move_compensation(self, current_ref, m_change_robot_to_head):
-        trans = tr.translation_matrix(current_ref[:3])
-        a, b, g = np.radians(current_ref[3:6])
-        rot = tr.euler_matrix(a, b, g, 'rzyx')
-        M_current_ref = tr.concatenate_matrices(trans, rot)
+    def compute_head_move_compensation(self, current_head, M_change_robot_to_head):
+        M_current_head = dco.coordinates_to_transformation_matrix(
+            position=current_head[:3],
+            orientation=current_head[3:6],
+            axes='rzyx',
+        )
+        M_robot_new = M_current_head @ M_change_robot_to_head
+        angles_as_deg, translate = dco.transformation_matrix_to_coordinates(M_robot_new, axes='rzyx')
+        #TODO: check this with robot
+        return list(translate) + list(angles_as_deg)
 
-        m_robot_new = M_current_ref @ m_change_robot_to_head
-        _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
-        angles = np.degrees(angles)
+    def estimate_head_center(self, tracker, current_head):
+        m_probe_head_left, m_probe_head_right, m_probe_head_nasion = tracker.GetMatrixTrackerFiducials()
+        m_current_head = dcr.compute_marker_transformation(np.array([current_head]), 0)
 
-        return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], angles[2]
-
-    def estimate_head_center(self, tracker, current_ref):
-        m_probe_ref_left, m_probe_ref_right, m_probe_ref_nasion = tracker.GetMatrixTrackerFiducials()
-        m_current_ref = dcr.compute_marker_transformation(np.array([current_ref]), 0)
-
-        m_ear_left_new = m_current_ref @ m_probe_ref_left
-        m_ear_right_new = m_current_ref @ m_probe_ref_right
+        m_ear_left_new = m_current_head @ m_probe_head_left
+        m_ear_right_new = m_current_head @ m_probe_head_right
 
         return (m_ear_left_new[:3, -1] + m_ear_right_new[:3, -1])/2
 

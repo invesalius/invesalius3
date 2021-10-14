@@ -4324,6 +4324,10 @@ class SetOptitrackconfigs(wx.Dialog):
         return fn_cal, fn_userprofile
 
 class SetTrackerDeviceToRobot(wx.Dialog):
+    """
+    Robot navigation requires a tracker device to tracker the head position and the object (coil) position.
+    A dialog pops up showing a combobox with all trackers but debugs and the robot itself (const.TRACKERS[:-3])
+    """
     def __init__(self, title=_("Setting tracker device:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
@@ -4339,7 +4343,6 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         choice_trck.SetToolTip(tooltip)
         choice_trck.SetSelection(const.DEFAULT_TRACKER)
         choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
-        #self.choice_trck = choice_trck
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")

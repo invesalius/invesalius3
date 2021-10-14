@@ -154,18 +154,18 @@ class ControlRobot(threading.Thread):
 
         return coord_raw, coord_robot_raw, markers_flag
 
-    def robot_move_decision(self, distance_target, coord_inv, coord_robot_raw, current_ref_filtered):
+    def robot_move_decision(self, distance_target, new_robot_coordinates, current_robot_coordinates, current_head_filtered):
         if distance_target < const.ROBOT_ARC_THRESHOLD_DISTANCE and not self.arc_motion_flag:
-            self.trck_init_robot.SendCoordinates(coord_inv, const.ROBOT_MOTIONS["normal"])
+            self.trck_init_robot.SendCoordinates(new_robot_coordinates, const.ROBOT_MOTIONS["normal"])
 
         elif distance_target >= const.ROBOT_ARC_THRESHOLD_DISTANCE or self.arc_motion_flag:
-            actual_point = coord_robot_raw
+            actual_point = current_robot_coordinates
             if not self.arc_motion_flag:
-                coord_head = self.process_tracker.estimate_head_center(self.tracker,
-                                                                       current_ref_filtered).tolist()
+                head_center_coordinates = self.process_tracker.estimate_head_center(self.tracker,
+                                                                       current_head_filtered).tolist()
 
-                self.target_linear_out, self.target_arc = self.process_tracker.compute_arc_motion(coord_robot_raw, coord_head,
-                                                                                                  coord_inv)
+                self.target_linear_out, self.target_arc = self.process_tracker.compute_arc_motion(current_robot_coordinates, head_center_coordinates,
+                                                                                                  new_robot_coordinates)
                 self.arc_motion_flag = True
                 self.arc_motion_step_flag = const.ROBOT_MOTIONS["linear out"]
 
@@ -176,15 +176,15 @@ class ControlRobot(threading.Thread):
                     coord = self.target_arc
 
             elif self.arc_motion_flag and self.arc_motion_step_flag == const.ROBOT_MOTIONS["arc"]:
-                coord_head = self.process_tracker.estimate_head_center(self.tracker,
-                                                                       current_ref_filtered).tolist()
+                head_center_coordinates = self.process_tracker.estimate_head_center(self.tracker,
+                                                                       current_head_filtered).tolist()
 
-                _, new_target_arc = self.process_tracker.compute_arc_motion(coord_robot_raw, coord_head,
-                                                                            coord_inv)
+                _, new_target_arc = self.process_tracker.compute_arc_motion(current_robot_coordinates, head_center_coordinates,
+                                                                            new_robot_coordinates)
                 if np.allclose(np.array(new_target_arc[3:-1]), np.array(self.target_arc[3:-1]), 0, 1):
                     None
                 else:
-                    if self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw) >= \
+                    if self.process_tracker.correction_distance_calculation_target(new_robot_coordinates, current_robot_coordinates) >= \
                             const.ROBOT_ARC_THRESHOLD_DISTANCE*0.8:
                         self.target_arc = new_target_arc
 
@@ -193,40 +193,42 @@ class ControlRobot(threading.Thread):
                 if np.allclose(np.array(actual_point), np.array(self.target_arc[3:-1]), 0, 10):
                     self.arc_motion_flag = False
                     self.arc_motion_step_flag = const.ROBOT_MOTIONS["normal"]
-                    coord = coord_inv
+                    coord = new_robot_coordinates
 
             self.trck_init_robot.SendCoordinates(coord, self.arc_motion_step_flag)
 
-    def robot_control(self, coords_tracker_in_robot, coord_robot_raw, markers_flag):
-        coord_ref_tracker_in_robot = coords_tracker_in_robot[1]
-        coord_obj_tracker_in_robot = coords_tracker_in_robot[2]
+    def robot_control(self, current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag):
+        coord_head_tracker_in_robot = current_tracker_coordinates_in_robot[1]
+        marker_head_flag = markers_flag[1]
+        coord_obj_tracker_in_robot = current_tracker_coordinates_in_robot[2]
+        marker_obj_flag = markers_flag[2]
 
         if self.robot_tracker_flag:
-            current_ref = coord_ref_tracker_in_robot
-            if current_ref is not None and markers_flag[1]:
-                current_ref_filtered = self.process_tracker.kalman_filter(current_ref)
-                if self.process_tracker.compute_head_move_threshold(current_ref_filtered):
-                    coord_inv = self.process_tracker.head_move_compensation(current_ref_filtered,
-                                                                            self.m_change_robot_to_head)
+            current_head = coord_head_tracker_in_robot
+            if current_head is not None and marker_head_flag:
+                current_head_filtered = self.process_tracker.kalman_filter(current_head)
+                if self.process_tracker.compute_head_move_threshold(current_head_filtered):
+                    new_robot_coordinates = self.process_tracker.compute_head_move_compensation(current_head_filtered,
+                                                                                    self.m_change_robot_to_head)
                     if self.coord_inv_old is None:
-                       self.coord_inv_old = coord_inv
+                       self.coord_inv_old = new_robot_coordinates
 
-                    if np.allclose(np.array(coord_inv), np.array(coord_robot_raw), 0, 0.01):
+                    if np.allclose(np.array(new_robot_coordinates), np.array(current_robot_coordinates), 0, 0.01):
                         # print("At target within range 1")
                         pass
-                    elif not np.allclose(np.array(coord_inv), np.array(self.coord_inv_old), 0, 5):
+                    elif not np.allclose(np.array(new_robot_coordinates), np.array(self.coord_inv_old), 0, 5):
                         self.trck_init_robot.StopRobot()
-                        self.coord_inv_old = coord_inv
+                        self.coord_inv_old = new_robot_coordinates
                     else:
-                        distance_target = self.process_tracker.correction_distance_calculation_target(coord_inv, coord_robot_raw)
-                        self.robot_move_decision(distance_target, coord_inv, coord_robot_raw, current_ref_filtered)
-                        self.coord_inv_old = coord_inv
+                        distance_target = self.process_tracker.correction_distance_calculation_target(new_robot_coordinates, current_robot_coordinates)
+                        self.robot_move_decision(distance_target, new_robot_coordinates, current_robot_coordinates, current_head_filtered)
+                        self.coord_inv_old = new_robot_coordinates
             else:
                 self.trck_init_robot.StopRobot()
 
     def run(self):
         while not self.event_robot.is_set():
-            coords_tracker_in_robot, coord_robot_raw, markers_flag = self.get_coordinates_from_tracker_devices()
+            current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag = self.get_coordinates_from_tracker_devices()
 
             if self.robot_target_queue.empty():
                 None
@@ -240,4 +242,4 @@ class ControlRobot(threading.Thread):
                 self.target_flag = self.object_at_target_queue.get_nowait()
                 self.object_at_target_queue.task_done()
 
-            self.robot_control(coords_tracker_in_robot, coord_robot_raw, markers_flag)
+            self.robot_control(current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag)
