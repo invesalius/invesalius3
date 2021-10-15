@@ -1918,7 +1918,7 @@ class TractographyPanel(wx.Panel):
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
                                   normals=self.brain_peel.peel_normals)
@@ -1951,7 +1951,7 @@ class TractographyPanel(wx.Panel):
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data=self.peel_loaded)
         else:
@@ -1990,13 +1990,8 @@ class TractographyPanel(wx.Panel):
             choices = [i for i in inv_proj.mask_dict.values()]
             mask_index = peels_dlg.cb_masks.GetSelection()
             mask = choices[mask_index]
-            mask= np.array(mask.matrix[1:, 1:, 1:])
+
             slic = sl.Slice()
-            image = slic.matrix
-
-            mask = to_vtk(mask, spacing=slic.spacing)
-            image = to_vtk(image, spacing=slic.spacing)
-
             ww = slic.window_width
             wl = slic.window_level
 
@@ -2011,8 +2006,9 @@ class TractographyPanel(wx.Panel):
 
             self.affine_vtk = vtk.vtkMatrix4x4()
 
-            self.brain_peel = brain.Brain(image, mask, self.n_peels, self.affine_vtk, ww, wl)
-            self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            self.brain_peel = brain.Brain(self.n_peels, ww, wl, self.affine_vtk)
+            self.brain_peel.from_mask(mask)
+            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,

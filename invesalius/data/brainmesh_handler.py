@@ -2,17 +2,30 @@ import vtk
 import pyacvd
 # import os
 import pyvista
-# import numpy as np
+import numpy as np
 # import Trekker
+
+import invesalius.data.slice_ as sl
+from invesalius.data.converters import to_vtk
 
 
 class Brain:
-    def __init__(self, image, mask, n_peels, affine_vtk, window_width, window_level):
+    def __init__(self, n_peels, window_width, window_level, affine_vtk=None):
         # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
         self.window_width = window_width
         self.window_level = window_level
+        self.numberOfPeels = n_peels
+        self.affine_vtk = affine_vtk
+
+    def from_mask(self, mask):
+        mask= np.array(mask.matrix[1:, 1:, 1:])
+        slic = sl.Slice()
+        image = slic.matrix
+
+        mask = to_vtk(mask, spacing=slic.spacing)
+        image = to_vtk(image, spacing=slic.spacing)
 
         flip = vtk.vtkImageFlip()
         flip.SetInputData(image)
@@ -80,7 +93,7 @@ class Brain:
         self.refImageSpace2_xyz.SetTransform(refImageSpace2_xyz_transform)
 
         xyz2_refImageSpace_transform = vtk.vtkTransform()
-        # qFormMatrix.Invert()
+        qFormMatrix.Invert()
         xyz2_refImageSpace_transform.SetMatrix(qFormMatrix)
 
         self.xyz2_refImageSpace = vtk.vtkTransformPolyDataFilter()
@@ -97,16 +110,16 @@ class Brain:
         self.peel_centers = vtk.vtkFloatArray()
         self.peel.append(newPeel)
         self.currentPeelActor = vtk.vtkActor()
-        self.currentPeelActor.SetUserMatrix(affine_vtk)
+        if self.affine_vtk:
+            self.currentPeelActor.SetUserMatrix(self.affine_vtk)
         self.GetCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
         # locator will later find the triangle on the peel surface where the coil's normal intersect
         self.locator = vtk.vtkCellLocator()
-        self.numberOfPeels = n_peels
         self.PeelDown(currentPeel)
 
-    def get_actor(self, n, affine_vtk):
-        return self.GetPeelActor(n, affine_vtk)
+    def get_actor(self, n):
+        return self.GetPeelActor(n)
 
     def SliceDown(self, currentPeel):
         # Warp using the normals
@@ -173,9 +186,10 @@ class Brain:
 
             self.currentPeelNo += 1
 
-    def TransformPeelPosition(self, p, affine_vtk):
+    def TransformPeelPosition(self, p):
         peel_transform = vtk.vtkTransform()
-        peel_transform.SetMatrix(affine_vtk)
+        if self.affine_vtk:
+            peel_transform.SetMatrix(self.affine_vtk)
         refpeelspace = vtk.vtkTransformPolyDataFilter()
         refpeelspace.SetInputData(self.peel[p])
         refpeelspace.SetTransform(peel_transform)
@@ -183,7 +197,7 @@ class Brain:
         currentPeel = refpeelspace.GetOutput()
         return currentPeel
 
-    def GetPeelActor(self, p, affine_vtk):
+    def GetPeelActor(self, p):
         lut = vtk.vtkWindowLevelLookupTable()
         lut.SetWindow(self.window_width)
         lut.SetLevel(self.window_level)
@@ -202,7 +216,7 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
-        currentPeel = self.TransformPeelPosition(p, affine_vtk)
+        currentPeel = self.TransformPeelPosition(p)
 
         self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
