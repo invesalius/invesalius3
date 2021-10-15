@@ -46,6 +46,38 @@ class Brain:
         # Image
         self.refImage = image
 
+        self._do_surface_creation(mask)
+
+
+    def from_files(self, img_path, mask_path):
+        # Read the image
+        T1_reader = vtk.vtkNIFTIImageReader()
+        T1_reader.SetFileName(img_path)
+        T1_reader.Update()
+        #
+        # Read the mask
+        mask_reader = vtk.vtkNIFTIImageReader()
+        mask_reader.SetFileName(mask_path)
+        mask_reader.Update()
+
+        mask = mask_reader.GetOutput()
+
+        mask_sFormMatrix = mask_reader.GetSFormMatrix()
+        qFormMatrix = T1_reader.GetQFormMatrix()
+
+        # Image
+        self.refImage = T1_reader.GetOutput()
+
+        self._do_surface_creation(mask, mask_sFormMatrix, qFormMatrix)
+
+
+    def _do_surface_creation(self, mask, mask_sFormMatrix=None, qFormMatrix=None):
+        if mask_sFormMatrix is None:
+            mask_sFormMatrix = vtk.vtkMatrix4x4()
+
+        if qFormMatrix is None:
+            qFormMatrix = vtk.vtkMatrix4x4()
+
         # Use the mask to create isosurface
         mc = vtk.vtkContourFilter()
         mc.SetInputData(mask)
@@ -59,7 +91,6 @@ class Brain:
         # Create a uniformly meshed surface
         tmpPeel = downsample(refSurface)
         # Standard space coordinates
-        mask_sFormMatrix = vtk.vtkMatrix4x4()
 
         # Apply coordinate transform to the meshed mask
         mask_ijk2xyz = vtk.vtkTransform()
@@ -82,9 +113,6 @@ class Brain:
         tmpPeel = smooth(tmpPeel)
         tmpPeel = fixMesh(tmpPeel)
         tmpPeel = cleanMesh(tmpPeel)
-
-        # Scanner coordinates from image
-        qFormMatrix = vtk.vtkMatrix4x4()
 
         refImageSpace2_xyz_transform = vtk.vtkTransform()
         refImageSpace2_xyz_transform.SetMatrix(qFormMatrix)
