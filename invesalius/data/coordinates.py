@@ -236,7 +236,6 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
-
     trck.Run()
     scale = 10.0 * np.array([1., 1., 1.])
 

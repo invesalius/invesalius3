@@ -140,6 +140,9 @@ class TrackerProcessing:
         return init_move_out_point, target_arc
 
     def compute_head_move_threshold(self, current_ref):
+        """
+        Checks if the head velocity is bellow the threshold
+        """
         self.coord_vel.append(current_ref)
         self.timestamp.append(time())
         if len(self.coord_vel) >= 10:
@@ -161,18 +164,24 @@ class TrackerProcessing:
 
         return False
 
-    def compute_head_move_compensation(self, current_head, M_change_robot_to_head):
+    def compute_head_move_compensation(self, current_head, m_change_robot_to_head):
+        """
+        Estimates the new robot position to reach the target
+        """
         M_current_head = dco.coordinates_to_transformation_matrix(
             position=current_head[:3],
             orientation=current_head[3:6],
             axes='rzyx',
         )
-        M_robot_new = M_current_head @ M_change_robot_to_head
-        angles_as_deg, translate = dco.transformation_matrix_to_coordinates(M_robot_new, axes='rzyx')
+        m_robot_new = M_current_head @ m_change_robot_to_head
+        angles_as_deg, translate = dco.transformation_matrix_to_coordinates(m_robot_new, axes='rzyx')
         #TODO: check this with robot
         return list(translate) + list(angles_as_deg)
 
     def estimate_head_center(self, tracker, current_head):
+        """
+        Estimates the actual head center position using fiducials
+        """
         m_probe_head_left, m_probe_head_right, m_probe_head_nasion = tracker.GetMatrixTrackerFiducials()
         m_current_head = dcr.compute_marker_transformation(np.array([current_head]), 0)
 
@@ -182,10 +191,13 @@ class TrackerProcessing:
         return (m_ear_left_new[:3, -1] + m_ear_right_new[:3, -1])/2
 
     def correction_distance_calculation_target(self, coord_inv, actual_point):
-        sum = (coord_inv[0]-actual_point[0]) ** 2\
-              + (coord_inv[1]-actual_point[1]) ** 2\
-              + (coord_inv[2]-actual_point[2]) ** 2
-        correction_distance_compensation = pow(sum, 0.5)
+        """
+        Estimates the Euclidean distance between the actual position and the target
+        """
+        square_sum = (coord_inv[0]-actual_point[0]) ** 2 +\
+                     (coord_inv[1]-actual_point[1]) ** 2 +\
+                     (coord_inv[2]-actual_point[2]) ** 2
+        correction_distance_compensation = pow(square_sum, 0.5)
 
         return correction_distance_compensation
 

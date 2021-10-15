@@ -6,6 +6,10 @@ from socket import socket, AF_INET, SOCK_STREAM
 import invesalius.constants as const
 
 class Elfin_Server():
+    """
+    This class is similar to tracker devices wrappers.
+    It follows the same functions as the others (Initialize, Run and Close)
+    """
     def __init__(self, server_ip, port_number):
         self.server_ip = server_ip
         self.port_number = port_number
@@ -21,6 +25,10 @@ class Elfin_Server():
         return self.cobot.ReadPcsActualPos()
 
     def SendCoordinates(self, target, type=const.ROBOT_MOTIONS["normal"]):
+        """
+        It's not possible to send a move command to elfin if the robot is during a move.
+         Status 1009 means robot in motion.
+        """
         status = self.cobot.ReadMoveState()
         if status != 1009:
             if type == const.ROBOT_MOTIONS["normal"] or type == const.ROBOT_MOTIONS["linear out"]:
@@ -29,6 +37,8 @@ class Elfin_Server():
                 self.cobot.MoveC(target)
 
     def StopRobot(self):
+        # Takes some microseconds to the robot actual stops after the command.
+        # The sleep time is required to guarantee the stop
         self.cobot.GrpStop()
         sleep(0.1)
 
@@ -37,6 +47,9 @@ class Elfin_Server():
 
 class Elfin:
     def __init__(self):
+        """
+        Class to communicate with elfin robot. This class follows "HansRobot Communication Protocol Interface".
+        """
         self.end_msg = ",;"
 
     def connect(self, server_ip, port_number, message_size, robot_id):

@@ -35,6 +35,10 @@ except ImportError:
 
 class Robot():
     def __init__(self, tracker):
+        """
+        Class to establish the connection between the robot and InVesalius
+        :param tracker: tracker.py  instance
+        """
         self.tracker = tracker
         self.trk_init = None
         self.robot_target_queue = None
@@ -109,6 +113,10 @@ class Robot():
 
 
 class RobotCoordinates():
+    """
+    Class to set/get robot coordinates. Robot coordinates are acquired in ControlRobot thread.
+    The class is required to avoid acquisition conflict with different threads (coordinates and navigation)
+    """
     def __init__(self):
         self.coord = None
 
@@ -121,6 +129,19 @@ class RobotCoordinates():
 
 class ControlRobot(threading.Thread):
     def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event_robot):
+        """Class (threading) to perform the robot control.
+        A distinguish thread is required to increase perform and separate robot control from navigation thread
+        (safetly layer for robot positining).
+
+        There is no GUI involved, them no Sleep is required
+
+        :param trck_init: Initialization variable of tracking device and connection type. See tracker.py.
+        :param tracker: tracker.py  instance
+        :param robotcoordinates: RobotCoordinates() instance
+        :param queues: Queue instance that manage coordinates and robot target
+        :param process_tracker: TrackerProcessing() instance from elfin_process
+        :param event_robot: Threading event to ControlRobot when tasks is done
+        """
         threading.Thread.__init__(self, name='ControlRobot')
 
         self.trck_init_robot = trck_init[1][0]
@@ -155,6 +176,24 @@ class ControlRobot(threading.Thread):
         return coord_raw, coord_robot_raw, markers_flag
 
     def robot_move_decision(self, distance_target, new_robot_coordinates, current_robot_coordinates, current_head_filtered):
+        """
+        There are two types of robot movements.
+        We can imagine in two concentric spheres of different sizes. The inside sphere is to compensate for small head movements.
+         It was named "normal" moves.
+        The outside sphere is for the arc motion. The arc motion is a safety feature for long robot movements.
+         Even for a new target or a sudden huge head movement.
+        1) normal:
+            A linear move from the actual position until the target position.
+            This movement just happens when move distance is below a threshold (const.ROBOT_ARC_THRESHOLD_DISTANCE)
+        2) arc motion:
+            It can be divided into three parts.
+                The first one represents the movement from the inner sphere to the outer sphere.
+                 The robot moves back using a radial move (it use the center of the head as a reference).
+                The second step is the actual arc motion (along the outer sphere).
+                 A middle point, between the actual position and the target, is required.
+                The last step is to make a linear move until the target (goes to the inner sphere)
+
+        """
         if distance_target < const.ROBOT_ARC_THRESHOLD_DISTANCE and not self.arc_motion_flag:
             self.trck_init_robot.SendCoordinates(new_robot_coordinates, const.ROBOT_MOTIONS["normal"])
 
@@ -214,9 +253,10 @@ class ControlRobot(threading.Thread):
                        self.coord_inv_old = new_robot_coordinates
 
                     if np.allclose(np.array(new_robot_coordinates), np.array(current_robot_coordinates), 0, 0.01):
-                        # print("At target within range 1")
+                        #avoid small movements (0.01 mm)
                         pass
                     elif not np.allclose(np.array(new_robot_coordinates), np.array(self.coord_inv_old), 0, 5):
+                        #if the head moves (>5mm) before the robot reach the target
                         self.trck_init_robot.StopRobot()
                         self.coord_inv_old = new_robot_coordinates
                     else:
@@ -230,15 +270,11 @@ class ControlRobot(threading.Thread):
         while not self.event_robot.is_set():
             current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag = self.get_coordinates_from_tracker_devices()
 
-            if self.robot_target_queue.empty():
-                None
-            else:
+            if not self.robot_target_queue.empty():
                 self.robot_tracker_flag, self.m_change_robot_to_head = self.robot_target_queue.get_nowait()
                 self.robot_target_queue.task_done()
 
-            if self.object_at_target_queue.empty():
-                None
-            else:
+            if not self.object_at_target_queue.empty():
                 self.target_flag = self.object_at_target_queue.get_nowait()
                 self.object_at_target_queue.task_done()
 
