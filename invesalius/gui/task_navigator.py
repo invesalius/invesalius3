@@ -1167,11 +1167,11 @@ class MarkersPanel(wx.Panel):
             res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
             return res
 
-        def from_string(self, str):
+        def from_string(self, inp_str):
             """Deserialize from a tab-separated string. If the string is not 
             properly formatted, might throw an exception and leave the object
             in an inconsistent state."""
-            for field, str_val in zip(dataclasses.fields(self.__class__), str.split('\t')):
+            for field, str_val in zip(dataclasses.fields(self.__class__), inp_str.split('\t')):
                 if field.type is float:
                     setattr(self, field.name, float(str_val))
                 if field.type is int:
@@ -1254,7 +1254,7 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertColumn(1, 'X')
         self.lc.InsertColumn(2, 'Y')
         self.lc.InsertColumn(3, 'Z')
-        self.lc.InsertColumn(4, 'ID')
+        self.lc.InsertColumn(4, 'Label')
         self.lc.InsertColumn(5, 'Target')
         self.lc.InsertColumn(6, 'Session')
 
