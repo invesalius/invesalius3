@@ -350,6 +350,15 @@ class NeuronavigationPanel(wx.Panel):
         self.btns_set_fiducial = [None, None, None, None, None, None]
         self.numctrls_fiducial = [[], [], [], [], [], []]
 
+        # Selection for navigation mode
+        navigation_mode_options = [_("Select navigation mode:")] + const.NAVIGATION_MODES
+        navigation_mode_dropdown = wx.ComboBox(self, -1, "", size=(245, -1),
+                                               choices=navigation_mode_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        tooltip = wx.ToolTip(_("Choose the navigation mode"))
+        navigation_mode_dropdown.SetToolTip(tooltip)
+        navigation_mode_dropdown.SetSelection(0)
+        navigation_mode_dropdown.Bind(wx.EVT_COMBOBOX, self.OnChooseNavigationMode)
+
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select tracker:")] + self.tracker.get_trackers()
         select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
@@ -449,7 +458,10 @@ class NeuronavigationPanel(wx.Panel):
                 self.numctrls_fiducial[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
-        # Sizer to group all GUI objects
+        # Sizers to group all GUI objects
+        navigation_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        navigation_mode_sizer.AddMany([(navigation_mode_dropdown, wx.LEFT)])
+
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         choice_sizer.AddMany([(select_tracker_elem, wx.LEFT),
                               (choice_ref, wx.RIGHT)])
@@ -481,7 +493,8 @@ class NeuronavigationPanel(wx.Panel):
         group_sizer.AddGrowableRow(1, 1)
         group_sizer.AddGrowableRow(2, 1)
         group_sizer.SetFlexibleDirection(wx.BOTH)
-        group_sizer.AddMany([(choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+        group_sizer.AddMany([(navigation_mode_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                             (choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (coord_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (pedal_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
@@ -629,6 +642,22 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
+    def OnChooseNavigationMode(self, evt):
+        if hasattr(evt, 'GetSelection'):
+            choice = evt.GetSelection()
+        else:
+            choice = None
+
+        if choice == 0:
+            navigation_mode = None
+        else:
+            # XXX: The selection 0 corresponds to "Select navigation mode:" text in the dropdown menu, thus
+            #      decrement to get an index that matches the navigation modes listed in const.NAVIGATION_MODES.
+            #
+            navigation_mode = const.NAVIGATION_MODES[choice - 1]
+
+        self.navigation.SetNavigationMode(navigation_mode)
+
     def OnChooseTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
                               label=_("Configuring tracker ..."))
@@ -744,7 +773,14 @@ class NeuronavigationPanel(wx.Panel):
         select_tracker_elem = self.select_tracker_elem
         choice_ref = self.choice_ref
 
-        if not self.tracker.AreTrackerFiducialsSet() or not self.navigation.AreImageFiducialsSet():
+        # TODO: These checks could be moved from the UI to inside Navigation and Tracker classes;
+        #       the navigation and tracker objects should know if the navigation and tracking are ready,
+        #       respectively.
+        #
+        if not self.navigation.navigation_mode:
+            wx.MessageBox(_("Navigation mode not selected."), _("InVesalius 3"))
+
+        elif not self.tracker.AreTrackerFiducialsSet() or not self.navigation.AreImageFiducialsSet():
             wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
 
         elif not self.tracker.IsTrackerInitialized():

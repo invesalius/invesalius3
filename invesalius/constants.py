@@ -663,6 +663,9 @@ MARKER_SIZE = 2
 CALIBRATION_TRACKER_SAMPLES = 10
 FIDUCIAL_REGISTRATION_ERROR_THRESHOLD = 3.0
 
+NAVIGATION_MODES = [_("Target-based navigation"),
+                    _("Free navigation")]
+
 SELECT = 0
 MTC = 1
 FASTRAK = 2
