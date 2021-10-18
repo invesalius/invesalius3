@@ -691,8 +691,8 @@ class NeuronavigationPanel(wx.Panel):
             size = 2
             seed = 3 * [0.]
 
-            Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size, label=label, seed=seed)
-
+            Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
+                                   label=label, seed=seed)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
@@ -1189,11 +1189,11 @@ class MarkersPanel(wx.Panel):
             res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
             return res
 
-        def from_string(self, str):
-            """Deserialize from a tab-separated string. If the string is not
+        def from_string(self, inp_str):
+            """Deserialize from a tab-separated string. If the string is not 
             properly formatted, might throw an exception and leave the object
             in an inconsistent state."""
-            for field, str_val in zip(dataclasses.fields(self.__class__), str.split('\t')):
+            for field, str_val in zip(dataclasses.fields(self.__class__), inp_str.split('\t')):
                 if field.type is float:
                     setattr(self, field.name, float(str_val))
                 if field.type is int:
@@ -1294,7 +1294,7 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertColumn(1, 'X')
         self.lc.InsertColumn(2, 'Y')
         self.lc.InsertColumn(3, 'Z')
-        self.lc.InsertColumn(4, 'ID')
+        self.lc.InsertColumn(4, 'Label')
         self.lc.InsertColumn(5, 'Target')
         self.lc.InsertColumn(6, 'Session')
 
@@ -2125,7 +2125,7 @@ class SessionPanel(wx.Panel):
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
-
+        
         # session count spinner
         self.__spin_session = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
         self.__spin_session.SetRange(1, 99)
@@ -2133,13 +2133,13 @@ class SessionPanel(wx.Panel):
 
         self.__spin_session.Bind(wx.EVT_TEXT, self.OnSessionChanged)
         self.__spin_session.Bind(wx.EVT_SPINCTRL, self.OnSessionChanged)
-
+                
         sizer_create = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
         sizer_create.AddMany([(self.__spin_session, 1)])
 
     def OnSessionChanged(self, evt):
         Publisher.sendMessage('Current session changed', new_session_id=self.__spin_session.GetValue())
-
+        
 
 class InputAttributes(object):
     # taken from https://stackoverflow.com/questions/2466191/set-attributes-from-dictionary-in-python

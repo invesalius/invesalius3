@@ -329,8 +329,6 @@ class Project(metaclass=Singleton):
 
         if project.get("affine", ""):
             self.affine = project["affine"]
-            Publisher.sendMessage('Update affine matrix',
-                                  affine=np.asarray(self.affine).reshape(4, 4))
 
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()

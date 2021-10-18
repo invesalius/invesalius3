@@ -892,7 +892,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
-        sub(self.OnEnableGotoCoord, "Update affine matrix")
+        sub(self.OnEnableGotoCoord, "Enable Go-to-Coord")
         sub(self.OnEnableNavigation, "Navigation status")
 
         sub(self.OnAddMask, "Add mask")
@@ -1242,15 +1242,13 @@ class MenuBar(wx.MenuBar):
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
 
-    def OnEnableGotoCoord(self, affine):
+    def OnEnableGotoCoord(self, status=True):
         """
-        Disable goto coord either if there is no affine matrix or affine is wrongly imported.
-        :param status: Affine matrix status
+        Enable or disable goto coord depending on the imported affine matrix.
+        :param status: True for enabling and False for disabling the Go-To-Coord
         """
-        if affine is not None:
-            self.FindItemById(const.ID_GOTO_COORD).Enable(True)
-        else:
-            self.FindItemById(const.ID_GOTO_COORD).Enable(False)
+
+        self.FindItemById(const.ID_GOTO_COORD).Enable(status)
 
     def OnEnableNavigation(self, nav_status, vis_status):
         """

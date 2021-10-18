@@ -4208,37 +4208,23 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.__bind_events()
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-        Publisher.sendMessage('Get affine matrix')
 
     def __bind_events(self):
         Publisher.subscribe(self.SetNewFocalPoint, 'Cross focal point')
-        Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
-
-    def UpdateAffineMatrix(self, affine):
-        self.affine = affine
 
     def SetNewFocalPoint(self, coord, spacing):
         Publisher.sendMessage('Update cross pos', coord=self.result*spacing)
 
     def OnOk(self, evt):
-        from numpy.linalg import inv
         import invesalius.data.slice_ as slc
         try:
-            #get affine from image import
-            if self.affine is not None:
-                affine = self.affine
-            #get affine from project
-            else:
-                from invesalius.project import Project
-                affine = Project().affine
-
             point = [float(self.goto_sagital.GetValue()),
                      float(self.goto_coronal.GetValue()),
                      float(self.goto_axial.GetValue())]
 
             # transformation from scanner coordinates to inv coord system
-            affine = inv(affine)
-            self.result = np.dot(affine[:3, :3], np.transpose(point[0:3])) + affine[:3, 3]
+            affine_inverse = np.linalg.inv(slc.Slice().affine)
+            self.result = np.dot(affine_inverse[:3, :3], np.transpose(point[0:3])) + affine_inverse[:3, 3]
             self.result[1] = slc.Slice().GetMaxSliceNumber(const.CORONAL_STR) - self.result[1]
 
             Publisher.sendMessage('Update status text in GUI', label=_("Calculating the transformation ..."))

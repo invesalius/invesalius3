@@ -549,6 +549,17 @@ def get_LUT_value_255(data, window, level):
     return data
 
 
+def get_LUT_value(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
+    data.shape = shape
+    return data
+
+
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
@@ -595,7 +606,7 @@ def convert_invesalius_to_voxel(position):
     :return: a vector of 3 coordinates in the voxel space
     """
     slice = sl.Slice()
-    return np.array((position[0], slice.matrix.shape[1] - position[1] - 1, position[2]))
+    return np.array((position[0], slice.spacing[1]*(slice.matrix.shape[1] - 1) - position[1], position[2]))
 
 
 def convert_invesalius_to_world(position, orientation):
