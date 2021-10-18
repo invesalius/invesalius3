@@ -293,7 +293,7 @@ class InnerFoldPanel(wx.Panel):
                 ctrl.SetValue(False)
                 return
 
-            com_port = dlg_port.GetValue()
+            com_port = dlg_port.GetCOMPort()
             baud_rate = 115200
 
             Publisher.sendMessage('Update serial port', serial_port_in_use=True, com_port=com_port, baud_rate=baud_rate)

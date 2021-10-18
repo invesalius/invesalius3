@@ -268,9 +268,11 @@ def PlhSerialConnection(tracker_id):
     trck_init = None
     dlg_port = dlg.SetCOMPort(select_baud_rate=False)
     if dlg_port.ShowModal() == ID_OK:
-        com_port = dlg_port.GetValue()
+        com_port = dlg_port.GetCOMPort()
+        baud_rate = 115200
+
         try:
-            trck_init = serial.Serial(com_port, baudrate=115200, timeout=0.03)
+            trck_init = serial.Serial(com_port, baudrate=baud_rate, timeout=0.03)
 
             if tracker_id == 2:
                 # Polhemus FASTRAK needs configurations first
