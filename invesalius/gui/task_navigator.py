@@ -53,6 +53,7 @@ import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
+import invesalius.session as ses
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
 from invesalius.navigation.icp import ICP
@@ -1212,6 +1213,8 @@ class MarkersPanel(wx.Panel):
 
         self.__bind_events()
 
+        self.session = ses.Session()
+
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
@@ -1281,14 +1284,15 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertColumn(const.TARGET_COLUMN, 'Target')
         self.lc.SetColumnWidth(const.TARGET_COLUMN, 45)
 
-        self.lc.InsertColumn(const.X_COLUMN, 'X')
-        self.lc.SetColumnWidth(const.X_COLUMN, 45)
+        if self.session.debug:
+            self.lc.InsertColumn(const.X_COLUMN, 'X')
+            self.lc.SetColumnWidth(const.X_COLUMN, 45)
 
-        self.lc.InsertColumn(const.Y_COLUMN, 'Y')
-        self.lc.SetColumnWidth(const.Y_COLUMN, 45)
+            self.lc.InsertColumn(const.Y_COLUMN, 'Y')
+            self.lc.SetColumnWidth(const.Y_COLUMN, 45)
 
-        self.lc.InsertColumn(const.Z_COLUMN, 'Z')
-        self.lc.SetColumnWidth(const.Z_COLUMN, 45)
+            self.lc.InsertColumn(const.Z_COLUMN, 'Z')
+            self.lc.SetColumnWidth(const.Z_COLUMN, 45)
 
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
@@ -1611,9 +1615,12 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertItem(num_items, str(num_items + 1))
         self.lc.SetItem(num_items, const.SESSION_COLUMN, str(new_marker.session_id))
         self.lc.SetItem(num_items, const.LABEL_COLUMN, new_marker.label)
-        self.lc.SetItem(num_items, const.X_COLUMN, str(round(new_marker.x, 1)))
-        self.lc.SetItem(num_items, const.Y_COLUMN, str(round(new_marker.y, 1)))
-        self.lc.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
+
+        if self.session.debug:
+            self.lc.SetItem(num_items, const.X_COLUMN, str(round(new_marker.x, 1)))
+            self.lc.SetItem(num_items, const.Y_COLUMN, str(round(new_marker.y, 1)))
+            self.lc.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
+
         self.lc.EnsureVisible(num_items)
 
 class DbsPanel(wx.Panel):
