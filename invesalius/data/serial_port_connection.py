@@ -22,12 +22,12 @@ import threading
 import time
 
 import wx
+
+from invesalius import constants
 from invesalius.pubsub import pub as Publisher
 
 
 class SerialPortConnection(threading.Thread):
-    BINARY_PULSE = b'\x01'
-
     def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav):
         """
         Thread created to communicate using the serial port to interact with software during neuronavigation.
@@ -65,7 +65,7 @@ class SerialPortConnection(threading.Thread):
 
     def SendPulse(self):
         try:
-            self.connection.write(self.BINARY_PULSE)
+            self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
             Publisher.sendMessage('Serial port pulse triggered')
         except:
             print("Error: Serial port could not be written into.")
