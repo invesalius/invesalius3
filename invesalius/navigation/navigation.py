@@ -177,6 +177,7 @@ class Navigation():
         self.serial_port_connection = None
 
         # During navigation
+        self.lock_to_target = False
         self.coil_at_target = False
 
         self.__bind_events()
@@ -196,6 +197,9 @@ class Navigation():
         self.serial_port_in_use = serial_port_in_use
         self.com_port = com_port
         self.baud_rate = baud_rate
+
+    def SetLockToTarget(self, value):
+        self.lock_to_target = value
 
     def SetReferenceMode(self, value):
         self.ref_mode_id = value
@@ -223,7 +227,13 @@ class Navigation():
         return fre, fre <= const.FIDUCIAL_REGISTRATION_ERROR_THRESHOLD
 
     def PedalStateChanged(self, state):
-        if state is True and self.coil_at_target and self.serial_port_in_use:
+        if not self.serial_port_in_use:
+            return
+
+        permission_to_stimulate = (self.lock_to_target and self.coil_at_target) or \
+                                  not self.lock_to_target
+
+        if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
     def StartNavigation(self, tracker):

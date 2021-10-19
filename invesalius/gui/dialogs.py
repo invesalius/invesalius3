@@ -4809,15 +4809,16 @@ class SetCOMPort(wx.Dialog):
 
         self.CenterOnParent()
 
-    def GetValue(self):
+    def GetCOMPort(self):
         com_port = self.com_port_dropdown.GetString(self.com_port_dropdown.GetSelection())
+        return com_port
 
-        if self.select_baud_rate:
-            baud_rate = self.baud_rate_dropdown.GetString(self.baud_rate_dropdown.GetSelection())
-        else:
-            baud_rate = None
+    def GetBaudRate(self):
+        if not self.select_baud_rate:
+            return None
 
-        return com_port, baud_rate
+        baud_rate = self.baud_rate_dropdown.GetString(self.baud_rate_dropdown.GetSelection())
+        return baud_rate
 
 
 class ManualWWWLDialog(wx.Dialog):

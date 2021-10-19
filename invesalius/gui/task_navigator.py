@@ -305,7 +305,7 @@ class InnerFoldPanel(wx.Panel):
                 ctrl.SetValue(False)
                 return
 
-            com_port = dlg_port.GetValue()
+            com_port = dlg_port.GetCOMPort()
             baud_rate = 115200
 
             Publisher.sendMessage('Update serial port', serial_port_in_use=True, com_port=com_port, baud_rate=baud_rate)
@@ -410,16 +410,10 @@ class NeuronavigationPanel(wx.Panel):
 
             self.btns_set_fiducial[n + 3] = ctrl
 
-        # TODO: Find a better allignment between FRE, text and navigate button
+        # TODO: Find a better alignment between FRE, text and navigate button
+
+        # Fiducial registration error text and checkbox
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
-        txt_icp = wx.StaticText(self, -1, _('Refine:'))
-
-        if pedal_connection is not None and pedal_connection.in_use:
-            txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
-        else:
-            txt_pedal_pressed = None
-
-        # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
         txtctrl_fre = wx.TextCtrl(self, value="", size=wx.Size(60, -1), style=wx.TE_CENTRE)
         txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -434,6 +428,8 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav.SetToolTip(tooltip)
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=btn_nav))
 
+        # "Refine" text and checkbox
+        txt_icp = wx.StaticText(self, -1, _('Refine:'))
         tooltip = wx.ToolTip(_(u"Refine the coregistration"))
         checkbox_icp = wx.CheckBox(self, -1, _(' '))
         checkbox_icp.SetValue(False)
@@ -442,8 +438,9 @@ class NeuronavigationPanel(wx.Panel):
         checkbox_icp.SetToolTip(tooltip)
         self.checkbox_icp = checkbox_icp
 
-        # An indicator for pedal trigger
+        # "Pedal pressed" text and an indicator (checkbox) for pedal press
         if pedal_connection is not None and pedal_connection.in_use:
+            txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
             tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
             checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
             checkbox_pedal_pressed.SetValue(False)
@@ -454,7 +451,19 @@ class NeuronavigationPanel(wx.Panel):
 
             self.checkbox_pedal_pressed = checkbox_pedal_pressed
         else:
+            txt_pedal_pressed = None
             self.checkbox_pedal_pressed = None
+
+        # "Lock to target" text and checkbox
+        tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
+        lock_to_target_text = wx.StaticText(self, -1, _('Lock to target:'))
+        lock_to_target_checkbox = wx.CheckBox(self, -1, _(' '))
+        lock_to_target_checkbox.SetValue(False)
+        lock_to_target_checkbox.Enable(False)
+        lock_to_target_checkbox.Bind(wx.EVT_CHECKBOX, partial(self.OnLockToTargetCheckbox, ctrl=lock_to_target_checkbox))
+        lock_to_target_checkbox.SetToolTip(tooltip)
+
+        self.lock_to_target_checkbox = lock_to_target_checkbox
 
         # Image and tracker coordinates number controls
         for m in range(len(self.btns_set_fiducial)):
@@ -462,7 +471,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.numctrls_fiducial[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
-        # Sizer to group all GUI objects
+        # Sizers to group all GUI objects
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         choice_sizer.AddMany([(select_tracker_elem, wx.LEFT),
                               (choice_ref, wx.RIGHT)])
@@ -483,10 +492,13 @@ class NeuronavigationPanel(wx.Panel):
                            (txt_icp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                            (checkbox_icp, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
-        pedal_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        if HAS_PEDAL_CONNECTION and pedal_connection.in_use:
-            pedal_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
-                                (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+        checkboxes_sizer = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        checkboxes_sizer.AddMany([(lock_to_target_text, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                                  (lock_to_target_checkbox, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
+
+        if pedal_connection is not None and pedal_connection.in_use:
+            checkboxes_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                                      (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
         group_sizer = wx.FlexGridSizer(rows=10, cols=1, hgap=5, vgap=5)
         group_sizer.AddGrowableCol(0, 1)
@@ -497,7 +509,7 @@ class NeuronavigationPanel(wx.Panel):
         group_sizer.AddMany([(choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (coord_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
                              (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                             (pedal_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
+                             (checkboxes_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_sizer.Add(group_sizer, 1)# wx.ALIGN_CENTER_HORIZONTAL, 10)
@@ -575,7 +587,6 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
-
     def UpdatePeelVisualization(self, data):
         self.navigation.peel_loaded = data
 
@@ -614,6 +625,10 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTarget(self, coord):
         self.navigation.target = coord
 
+        self.lock_to_target_checkbox.Enable(True)
+        self.lock_to_target_checkbox.SetValue(True)
+        self.navigation.SetLockToTarget(True)
+
     def EnableACT(self, data):
         self.navigation.enable_act = data
 
@@ -643,6 +658,10 @@ class NeuronavigationPanel(wx.Panel):
         self.tracker.DisconnectTracker()
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
+
+    def OnLockToTargetCheckbox(self, evt, ctrl):
+        value = ctrl.GetValue()
+        self.navigation.SetLockToTarget(value)
 
     def OnChooseTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI',
@@ -1394,7 +1413,7 @@ class MarkersPanel(wx.Panel):
 
     @staticmethod
     def __list_fiducial_labels():
-        """Return the list of marker labels denoting fucials."""
+        """Return the list of marker labels denoting fiducials."""
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
     def UpdateCurrentCoord(self, position):

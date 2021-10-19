@@ -726,9 +726,13 @@ class Viewer(wx.Panel):
         self.distthreshold = dist_threshold
 
     def ActivateTargetMode(self, evt=None, target_mode=None):
+
         vtk_colors = vtk.vtkNamedColors()
         self.target_mode = target_mode
         if self.target_coord and self.target_mode:
+            if self.actor_peel:
+                self.object_orientation_torus_actor.SetVisibility(0)
+                self.obj_projection_arrow_actor.SetVisibility(0)
             self.CreateTargetAim()
 
             # Create a line
@@ -831,6 +835,9 @@ class Viewer(wx.Panel):
 
         else:
             self.DisableCoilTracker()
+            if self.actor_peel:
+                self.object_orientation_torus_actor.SetVisibility(1)
+                self.obj_projection_arrow_actor.SetVisibility(1)
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
 
