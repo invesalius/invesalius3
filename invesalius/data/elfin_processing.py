@@ -20,6 +20,7 @@ import numpy as np
 import cv2
 from time import time
 
+import invesalius.data.transformations as tr
 import invesalius.data.coregistration as dcr
 import invesalius.data.coordinates as dco
 import invesalius.constants as const
@@ -174,9 +175,11 @@ class TrackerProcessing:
             axes='rzyx',
         )
         m_robot_new = M_current_head @ m_change_robot_to_head
-        angles_as_deg, translate = dco.transformation_matrix_to_coordinates(m_robot_new, axes='rzyx')
-        #TODO: check this with robot
-        return list(translate) + list(angles_as_deg)
+        _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
+        angles = np.degrees(angles)
+
+        return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
+                    angles[2]
 
     def estimate_head_center(self, tracker, current_head):
         """

@@ -284,8 +284,8 @@ class transform_tracker_to_robot(object):
         )
         M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker
 
-        angles_as_deg, translate = dco.transformation_matrix_to_coordinates(M_tracker_in_robot, axes='rxyz')
-        #TODO: check this with robot
-        tracker_in_robot = list(translate) + list(angles_as_deg)
+        _, _, angles, translate, _ = tr.decompose_matrix(M_tracker_in_robot)
+        tracker_in_robot = [translate[0], translate[1], translate[2], \
+                            np.degrees(angles[2]), np.degrees(angles[1]), np.degrees(angles[0])]
 
         return tracker_in_robot
