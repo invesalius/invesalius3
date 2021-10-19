@@ -87,11 +87,11 @@ session = ses.Session()
 if session.ReadSession():
     lang = session.GetLanguage()
     if lang:
-        LANG = lang
         try:
             _ = i18n.InstallLanguage(lang)
+            LANG = lang
         except FileNotFoundError:
-            LANG = None
+            pass
 
 
 class InVesalius(wx.App):
@@ -134,7 +134,7 @@ class Inv3SplashScreen(SplashScreen):
     Splash screen to be shown in InVesalius initialization.
     """
     def __init__(self):
-        # Splash screen image will depend on currently language
+        # Splash screen image will depend on the current language
         lang = LANG
         self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
 
@@ -143,22 +143,20 @@ class Inv3SplashScreen(SplashScreen):
         # should be created
         create_session = LANG is None
 
-        install_lang = 0
+        install_lang = False
         if lang:
             _ = i18n.InstallLanguage(lang)
-            install_lang = 1
-        else:
-            install_lang = 0
+            install_lang = True
 
         # If no language is set into session file, show dialog so
         # user can select language
-        if install_lang == 0:
+        if not install_lang:
             dialog = lang_dlg.LanguageDialog()
 
             # FIXME: This works ok in linux2, darwin and win32,
             # except on win64, due to wxWidgets bug
             try:
-                ok = (dialog.ShowModal() == wx.ID_OK)
+                ok = dialog.ShowModal() == wx.ID_OK
             except wx._core.PyAssertionError:
                 ok = True
             finally:
@@ -174,9 +172,8 @@ class Inv3SplashScreen(SplashScreen):
 
             dialog.Destroy()
 
-        # Session file should be created... So we set the recent
-        # choosen language
-        if (create_session):
+        # Session file should be created... So we set the recently chosen language.
+        if create_session:
             session.CreateItens()
             session.SetLanguage(lang)
             session.WriteSessionFile()
@@ -184,8 +181,7 @@ class Inv3SplashScreen(SplashScreen):
         #  session.SaveConfigFileBackup()
 
 
-        # Only after language was defined, splash screen will be
-        # shown
+        # Only after language was defined, splash screen will be shown.
         if lang:
 
             #import locale
@@ -206,9 +202,7 @@ class Inv3SplashScreen(SplashScreen):
                 abs_file_path = os.path.abspath(".." + os.sep)
                 path = abs_file_path
                 path = os.path.join(path, 'icons', icon_file)
-
             else:
-
                 path = os.path.join(inv_paths.ICON_DIR, icon_file)
                 if not os.path.exists(path):
                     path = os.path.join(inv_paths.ICON_DIR, "splash_en.png")
@@ -241,7 +235,7 @@ class Inv3SplashScreen(SplashScreen):
         self.control = Controller(self.main)
 
         self.fc = wx.CallLater(200, self.ShowMain)
-        options, args = parse_comand_line()
+        options, args = parse_command_line()
         wx.CallLater(1, use_cmd_optargs, options, args)
 
         # Check for updates
@@ -292,7 +286,7 @@ def non_gui_startup(options, args):
 # ------------------------------------------------------------------
 
 
-def parse_comand_line():
+def parse_command_line():
     """
     Handle command line arguments.
     """
@@ -302,7 +296,7 @@ def parse_comand_line():
     # Parse command line arguments
     parser = op.OptionParser()
 
-    # -d or --debug: print all pubsub messagessent
+    # -d or --debug: print all pubsub messages sent
     parser.add_option("-d", "--debug",
                       action="store_true",
                       dest="debug")
@@ -494,11 +488,12 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     """
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
+
 def main():
     """
     Initialize InVesalius GUI
     """
-    options, args = parse_comand_line()
+    options, args = parse_command_line()
 
     if options.remote_host is not None:
         from invesalius.net.remote_control import RemoteControl
@@ -516,6 +511,7 @@ def main():
     else:
         application = InVesalius(0)
         application.MainLoop()
+
 
 if __name__ == '__main__':
     #Is needed because of pyinstaller
