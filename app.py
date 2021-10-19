@@ -347,12 +347,6 @@ def parse_command_line():
 
 
 def use_cmd_optargs(options, args):
-    # If debug argument...
-    if options.debug:
-        Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
-        session = ses.Session()
-        session.debug = 1
-
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
@@ -494,6 +488,12 @@ def main():
     Initialize InVesalius GUI
     """
     options, args = parse_command_line()
+
+    session = ses.Session()
+    session.debug = options.debug
+
+    if options.debug:
+        Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
 
     if options.remote_host is not None:
         from invesalius.net.remote_control import RemoteControl

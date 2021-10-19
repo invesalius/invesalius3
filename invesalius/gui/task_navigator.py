@@ -53,6 +53,7 @@ import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
+import invesalius.session as ses
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
 from invesalius.navigation.icp import ICP
@@ -1212,6 +1213,8 @@ class MarkersPanel(wx.Panel):
 
         self.__bind_events()
 
+        self.session = ses.Session()
+
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
@@ -1269,21 +1272,27 @@ class MarkersPanel(wx.Panel):
 
         # List of markers
         self.lc = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
-        self.lc.InsertColumn(0, '#')
-        self.lc.InsertColumn(1, 'X')
-        self.lc.InsertColumn(2, 'Y')
-        self.lc.InsertColumn(3, 'Z')
-        self.lc.InsertColumn(4, 'Label')
-        self.lc.InsertColumn(5, 'Target')
-        self.lc.InsertColumn(6, 'Session')
+        self.lc.InsertColumn(const.ID_COLUMN, '#')
+        self.lc.SetColumnWidth(const.ID_COLUMN, 28)
 
-        self.lc.SetColumnWidth(0, 28)
-        self.lc.SetColumnWidth(1, 50)
-        self.lc.SetColumnWidth(2, 50)
-        self.lc.SetColumnWidth(3, 50)
-        self.lc.SetColumnWidth(4, 60)
-        self.lc.SetColumnWidth(5, 60)
-        self.lc.SetColumnWidth(5, 50)
+        self.lc.InsertColumn(const.SESSION_COLUMN, 'Session')
+        self.lc.SetColumnWidth(const.SESSION_COLUMN, 52)
+
+        self.lc.InsertColumn(const.LABEL_COLUMN, 'Label')
+        self.lc.SetColumnWidth(const.LABEL_COLUMN, 118)
+
+        self.lc.InsertColumn(const.TARGET_COLUMN, 'Target')
+        self.lc.SetColumnWidth(const.TARGET_COLUMN, 45)
+
+        if self.session.debug:
+            self.lc.InsertColumn(const.X_COLUMN, 'X')
+            self.lc.SetColumnWidth(const.X_COLUMN, 45)
+
+            self.lc.InsertColumn(const.Y_COLUMN, 'Y')
+            self.lc.SetColumnWidth(const.Y_COLUMN, 45)
+
+            self.lc.InsertColumn(const.Z_COLUMN, 'Z')
+            self.lc.SetColumnWidth(const.Z_COLUMN, 45)
 
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
@@ -1301,7 +1310,6 @@ class MarkersPanel(wx.Panel):
         self.Update()
 
     def __bind_events(self):
-        # Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
@@ -1311,13 +1319,15 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
 
     def __find_target_marker(self):
-        """Return the index of the marker currently selected as target (there
-        should be at most one). If there is no such marker, return -1."""
+        """
+        Return the index of the marker currently selected as target (there
+        should be at most one). If there is no such marker, return None.
+        """
         for i in range(len(self.markers)):
             if self.markers[i].is_target:
                 return i
                 
-        return -1
+        return None
 
     def __get_selected_items(self):
         """    
@@ -1327,25 +1337,28 @@ class MarkersPanel(wx.Panel):
 
         next = self.lc.GetFirstSelected()
                
-        while next != -1:
+        while next is not None:
             selection.append(next)
             next = self.lc.GetNextSelected(next)
 
         return selection
 
     def __delete_multiple_markers(self, index):
-        """ Delete multiple markers indexed by index. index must be sorted in
+        """
+        Delete multiple markers indexed by index. index must be sorted in
         the ascending order.
         """
         for i in reversed(index):
             del self.markers[i]
             self.lc.DeleteItem(i)
             for n in range(0, self.lc.GetItemCount()):
-                self.lc.SetItem(n, 0, str(n+1))
+                self.lc.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', index=index)
 
     def __set_marker_as_target(self, idx):
-        """Set marker indexed by idx as the new target. idx must be a valid index."""
+        """
+        Set marker indexed by idx as the new target. idx must be a valid index.
+        """
         # Find the previous target
         prev_idx = self.__find_target_marker()
 
@@ -1354,16 +1367,16 @@ class MarkersPanel(wx.Panel):
             return
 
         # Unset the previous target
-        if prev_idx != -1:
+        if prev_idx is not None:
             self.markers[prev_idx].is_target = False
             self.lc.SetItemBackgroundColour(prev_idx, 'white')
             Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
-            self.lc.SetItem(prev_idx, 5, "")
+            self.lc.SetItem(prev_idx, const.TARGET_COLUMN, "")
 
         # Set the new target
         self.markers[idx].is_target = True
         self.lc.SetItemBackgroundColour(idx, 'RED')
-        self.lc.SetItem(idx, 5, _("Yes"))
+        self.lc.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
         Publisher.sendMessage('Update target', coord=self.markers[idx].coord)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
@@ -1416,9 +1429,9 @@ class MarkersPanel(wx.Panel):
     def OnMenuEditMarkerLabel(self, evt):
         list_index = self.lc.GetFocusedItem()
         if list_index != -1:
-            new_label = dlg.ShowEnterMarkerID(self.lc.GetItemText(list_index, 4))
+            new_label = dlg.ShowEnterMarkerID(self.lc.GetItemText(list_index, const.LABEL_COLUMN))
             self.markers[list_index].label = str(new_label)
-            self.lc.SetItem(list_index, 4, new_label)
+            self.lc.SetItem(list_index, const.LABEL_COLUMN, new_label)
         else:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
 
@@ -1445,20 +1458,17 @@ class MarkersPanel(wx.Panel):
             # XXX: Seems like a slightly too early point for rounding; better to round only when the value
             #      is printed to the screen or file.
             #
-            self.markers[index].colour = [round(s/255.0, 3) for s in color_new]
+            self.markers[index].colour = [round(s / 255.0, 3) for s in color_new]
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
     def OnDeleteAllMarkers(self, evt=None):
-        if evt is None:
-            result = wx.ID_OK
-        else:
+        if evt is not None:
             result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
+            if result != wx.ID_OK:
+                return
 
-        if result != wx.ID_OK:
-            return
-
-        if self.__find_target_marker() != -1:
+        if self.__find_target_marker() is not None:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             if evt is not None:
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
@@ -1472,17 +1482,19 @@ class MarkersPanel(wx.Panel):
         # OnDeleteMultipleMarkers is used for both pubsub and button click events
         # Pubsub is used for fiducial handle and button click for all others
 
-        if not evt: # called through pubsub
+        # called through pubsub
+        if not evt:
             index = []
             
             if label and (label in self.__list_fiducial_labels()):
                 for id_n in range(self.lc.GetItemCount()):
-                    item = self.lc.GetItem(id_n, 4)
+                    item = self.lc.GetItem(id_n, const.LABEL_COLUMN)
                     if item.GetText() == label:
                         self.lc.Focus(item.GetId())
                         index = [self.lc.GetFocusedItem()]
 
-        else:       # called from button click
+        # called from button click
+        else:
             index = self.__get_selected_items()
 
         if index:
@@ -1532,13 +1544,12 @@ class MarkersPanel(wx.Panel):
                     # If the new marker has is_target=True, we first create
                     # a marker with is_target=False, and then call __set_marker_as_target
                     if marker.is_target:
-                        self.__set_marker_as_target(len(self.markers)-1)
+                        self.__set_marker_as_target(len(self.markers) - 1)
 
         except:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
 
     def OnMarkersVisibility(self, evt, ctrl):
-
         if ctrl.GetValue():
             Publisher.sendMessage('Hide all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Show')
@@ -1573,8 +1584,8 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("Error writing markers file."), _("InVesalius 3"))  
 
     def OnSelectColour(self, evt, ctrl):
-        #TODO: Make sure GetValue returns 3 numbers (without alpha)
-        self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()][:3]
+        # TODO: Make sure GetValue returns 3 numbers (without alpha)
+        self.marker_colour = [colour / 255.0 for colour in ctrl.GetValue()][:3]
 
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
@@ -1602,11 +1613,14 @@ class MarkersPanel(wx.Panel):
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()
         self.lc.InsertItem(num_items, str(num_items + 1))
-        self.lc.SetItem(num_items, 1, str(round(new_marker.x, 2)))
-        self.lc.SetItem(num_items, 2, str(round(new_marker.y, 2)))
-        self.lc.SetItem(num_items, 3, str(round(new_marker.z, 2)))
-        self.lc.SetItem(num_items, 4, new_marker.label)
-        self.lc.SetItem(num_items, 6, str(new_marker.session_id))
+        self.lc.SetItem(num_items, const.SESSION_COLUMN, str(new_marker.session_id))
+        self.lc.SetItem(num_items, const.LABEL_COLUMN, new_marker.label)
+
+        if self.session.debug:
+            self.lc.SetItem(num_items, const.X_COLUMN, str(round(new_marker.x, 1)))
+            self.lc.SetItem(num_items, const.Y_COLUMN, str(round(new_marker.y, 1)))
+            self.lc.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
+
         self.lc.EnsureVisible(num_items)
 
 class DbsPanel(wx.Panel):
