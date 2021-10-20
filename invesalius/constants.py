@@ -655,6 +655,18 @@ BOOLEAN_DIFF = 2
 BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
 
+# -------------- User interface ---------------------
+
+# The column order in the marker panel
+#
+ID_COLUMN = 0
+SESSION_COLUMN = 1
+LABEL_COLUMN = 2
+TARGET_COLUMN = 3
+X_COLUMN = 4
+Y_COLUMN = 5
+Z_COLUMN = 6
+
 #------------ Navigation defaults -------------------
 
 MARKER_COLOUR = (1.0, 1.0, 0.)
