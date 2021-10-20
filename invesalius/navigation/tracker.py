@@ -24,6 +24,7 @@ import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.trackers as dt
 import invesalius.gui.dialogs as dlg
+import invesalius.data.coregistration as dcr
 from invesalius.pubsub import pub as Publisher
 
 
@@ -34,12 +35,14 @@ class Tracker():
 
         self.tracker_fiducials = np.full([3, 3], np.nan)
         self.tracker_fiducials_raw = np.zeros((6, 6))
+        self.m_tracker_fiducials_raw = np.zeros((6, 4, 4))
 
         self.tracker_connected = False
 
         self.thread_coord = None
 
         self.event_coord = threading.Event()
+        self.event_robot = threading.Event()
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
@@ -74,8 +77,11 @@ class Tracker():
 
                 if self.thread_coord:
                     self.event_coord.set()
+                    self.event_robot.set()
                     self.thread_coord.join()
                     self.event_coord.clear()
+                    self.event_robot.clear()
+
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
@@ -84,6 +90,13 @@ class Tracker():
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
+
+    def ConnectToRobot(self, navigation, tracker, robot):
+        robot.SetRobotQueues([navigation.robot_target_queue, navigation.object_at_target_queue])
+        robot.OnRobotConnection()
+        trk_init_robot = self.trk_init[1][0]
+        if trk_init_robot:
+            robot.StartRobotThreadNavigation(tracker, navigation.coord_queue)
 
     def IsTrackerInitialized(self):
         return self.trk_init and self.tracker_id and self.tracker_connected
@@ -126,6 +139,9 @@ class Tracker():
         self.tracker_fiducials_raw[2 * fiducial_index, :] = coord_raw[0, :]
         self.tracker_fiducials_raw[2 * fiducial_index + 1, :] = coord_raw[1, :]
 
+        self.m_tracker_fiducials_raw[2 * fiducial_index, :] = dcr.compute_marker_transformation(coord_raw, 0)
+        self.m_tracker_fiducials_raw[2 * fiducial_index + 1, :] = dcr.compute_marker_transformation(coord_raw, 1)
+
         print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
 
     def ResetTrackerFiducials(self):
@@ -134,6 +150,13 @@ class Tracker():
 
     def GetTrackerFiducials(self):
         return self.tracker_fiducials, self.tracker_fiducials_raw
+
+    def GetMatrixTrackerFiducials(self):
+        m_probe_ref_left = np.linalg.inv(self.m_tracker_fiducials_raw[1]) @ self.m_tracker_fiducials_raw[0]
+        m_probe_ref_right = np.linalg.inv(self.m_tracker_fiducials_raw[3]) @ self.m_tracker_fiducials_raw[2]
+        m_probe_ref_nasion = np.linalg.inv(self.m_tracker_fiducials_raw[5]) @ self.m_tracker_fiducials_raw[4]
+
+        return [m_probe_ref_left, m_probe_ref_right, m_probe_ref_nasion]
 
     def GetTrackerInfo(self):
         return self.trk_init, self.tracker_id

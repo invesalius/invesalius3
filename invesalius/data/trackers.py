@@ -41,7 +41,8 @@ def TrackerConnection(tracker_id, trck_init, action):
                     const.CAMERA: CameraTracker,      # CAMERA
                     const.POLARIS: PolarisTracker,      # POLARIS
                     const.POLARISP4: PolarisP4Tracker,  # POLARISP4
-                    const.OPTITRACK: OptitrackTracker,   #Optitrack
+                    const.OPTITRACK: OptitrackTracker, #Optitrack
+                    const.ROBOT: RobotTracker,   #Robot
                     const.DEBUGTRACKRANDOM: DebugTrackerRandom,
                     const.DEBUGTRACKAPPROACH: DebugTrackerApproach}
 
@@ -64,6 +65,127 @@ def DefaultTracker(tracker_id):
 
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
+
+def ClaronTracker(tracker_id):
+    import invesalius.constants as const
+    from invesalius import inv_paths
+
+    trck_init = None
+    try:
+        import pyclaron
+
+        lib_mode = 'wrapper'
+        trck_init = pyclaron.pyclaron()
+        trck_init.CalibrationDir = inv_paths.MTC_CAL_DIR.encode(const.FS_ENCODE)
+        trck_init.MarkerDir = inv_paths.MTC_MAR_DIR.encode(const.FS_ENCODE)
+        trck_init.NumberFramesProcessed = 1
+        trck_init.FramesExtrapolated = 0
+        trck_init.PROBE_NAME = const.MTC_PROBE_NAME.encode(const.FS_ENCODE)
+        trck_init.REF_NAME = const.MTC_REF_NAME.encode(const.FS_ENCODE)
+        trck_init.OBJ_NAME = const.MTC_OBJ_NAME.encode(const.FS_ENCODE)
+        trck_init.Initialize()
+
+        if trck_init.GetIdentifyingCamera():
+            trck_init.Run()
+            print("MicronTracker camera identified.")
+        else:
+            trck_init = None
+
+    except ImportError:
+        lib_mode = 'error'
+        print('The ClaronTracker library is not installed.')
+
+    return trck_init, lib_mode
+
+def PolhemusTracker(tracker_id):
+    try:
+        trck_init = PlhWrapperConnection(tracker_id)
+        lib_mode = 'wrapper'
+        if not trck_init:
+            print('Could not connect with Polhemus wrapper, trying USB connection...')
+            trck_init = PlhUSBConnection(tracker_id)
+            lib_mode = 'usb'
+            if not trck_init:
+                print('Could not connect with Polhemus USB, trying serial connection...')
+                trck_init = PlhSerialConnection(tracker_id)
+                lib_mode = 'serial'
+    except:
+        trck_init = None
+        lib_mode = 'error'
+        print('Could not connect to Polhemus by any method.')
+
+    return trck_init, lib_mode
+
+def CameraTracker(tracker_id):
+    trck_init = None
+    try:
+        import invesalius.data.camera_tracker as cam
+        trck_init = cam.camera()
+        trck_init.Initialize()
+        print('Connect to camera tracking device.')
+
+    except:
+        print('Could not connect to camera tracker.')
+
+    # return tracker initialization variable and type of connection
+    return trck_init, 'wrapper'
+
+def PolarisTracker(tracker_id):
+    from wx import ID_OK
+    trck_init = None
+    dlg_port = dlg.SetNDIconfigs()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
+        try:
+            import pypolaris
+            lib_mode = 'wrapper'
+            trck_init = pypolaris.pypolaris()
+
+            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
+                trck_init = None
+                lib_mode = None
+                print('Could not connect to polaris tracker.')
+            else:
+                print('Connect to polaris tracking device.')
+
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to polaris tracker.')
+    else:
+        lib_mode = None
+        print('Could not connect to polaris tracker.')
+
+    # return tracker initialization variable and type of connection
+    return trck_init, lib_mode
+
+def PolarisP4Tracker(tracker_id):
+    from wx import ID_OK
+    trck_init = None
+    dlg_port = dlg.SetNDIconfigs()
+    if dlg_port.ShowModal() == ID_OK:
+        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
+        try:
+            import pypolarisP4
+            lib_mode = 'wrapper'
+            trck_init = pypolarisP4.pypolarisP4()
+
+            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
+                trck_init = None
+                lib_mode = None
+                print('Could not connect to Polaris P4 tracker.')
+            else:
+                print('Connect to Polaris P4 tracking device.')
+
+        except:
+            lib_mode = 'error'
+            trck_init = None
+            print('Could not connect to Polaris P4 tracker.')
+    else:
+        lib_mode = None
+        print('Could not connect to Polaris P4 tracker.')
+    # return tracker initialization variable and type of connection
+    return trck_init, lib_mode
 
 def OptitrackTracker(tracker_id):
     """
@@ -97,131 +219,42 @@ def OptitrackTracker(tracker_id):
         print('#####')
     return trck_init, 'wrapper'
 
-def PolarisTracker(tracker_id):
-    from wx import ID_OK
-    trck_init = None
-    dlg_port = dlg.SetNDIconfigs()
-    if dlg_port.ShowModal() == ID_OK:
-        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
-        try:
-            import pypolaris
-            lib_mode = 'wrapper'
-            trck_init = pypolaris.pypolaris()
-
-            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
-                trck_init = None
-                lib_mode = None
-                print('Could not connect to default tracker.')
-            else:
-                print('Connect to polaris tracking device.')
-
-        except:
-            lib_mode = 'error'
-            trck_init = None
-            print('Could not connect to default tracker.')
-    else:
-        lib_mode = None
-        print('Could not connect to default tracker.')
-
-    # return tracker initialization variable and type of connection
-    return trck_init, lib_mode
-
-
-def PolarisP4Tracker(tracker_id):
-    from wx import ID_OK
-    trck_init = None
-    dlg_port = dlg.SetNDIconfigs()
-    if dlg_port.ShowModal() == ID_OK:
-        com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
-        try:
-            import pypolarisP4
-            lib_mode = 'wrapper'
-            trck_init = pypolarisP4.pypolarisP4()
-
-            if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
-                trck_init = None
-                lib_mode = None
-                print('Could not connect to Polaris P4 tracker.')
-            else:
-                print('Connect to Polaris P4 tracking device.')
-
-        except:
-            lib_mode = 'error'
-            trck_init = None
-            print('Could not connect to Polaris P4 tracker.')
-    else:
-        lib_mode = None
-        print('Could not connect to Polaris P4 tracker.')
-    # return tracker initialization variable and type of connection
-    return trck_init, lib_mode
-
-
-def CameraTracker(tracker_id):
+def ElfinRobot(robot_IP):
     trck_init = None
     try:
-        import invesalius.data.camera_tracker as cam
-        trck_init = cam.camera()
+        import invesalius.data.elfin as elfin
+        print("Trying to connect Robot via: ", robot_IP)
+        trck_init = elfin.Elfin_Server(robot_IP, const.ROBOT_ElFIN_PORT)
         trck_init.Initialize()
-        print('Connect to camera tracking device.')
+        lib_mode = 'wrapper'
+        print('Connect to elfin robot tracking device.')
 
     except:
-        print('Could not connect to default tracker.')
-
-    # return tracker initialization variable and type of connection
-    return trck_init, 'wrapper'
-
-
-def ClaronTracker(tracker_id):
-    import invesalius.constants as const
-    from invesalius import inv_paths
-
-    trck_init = None
-    try:
-        import pyclaron
-
-        lib_mode = 'wrapper'
-        trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = inv_paths.MTC_CAL_DIR.encode(const.FS_ENCODE)
-        trck_init.MarkerDir = inv_paths.MTC_MAR_DIR.encode(const.FS_ENCODE)
-        trck_init.NumberFramesProcessed = 1
-        trck_init.FramesExtrapolated = 0
-        trck_init.PROBE_NAME = const.MTC_PROBE_NAME.encode(const.FS_ENCODE)
-        trck_init.REF_NAME = const.MTC_REF_NAME.encode(const.FS_ENCODE)
-        trck_init.OBJ_NAME = const.MTC_OBJ_NAME.encode(const.FS_ENCODE)
-        trck_init.Initialize()
-
-        if trck_init.GetIdentifyingCamera():
-            trck_init.Run()
-            print("MicronTracker camera identified.")
-        else:
-            trck_init = None
-
-    except ImportError:
-        lib_mode = 'error'
-        print('The ClaronTracker library is not installed.')
-
-    return trck_init, lib_mode
-
-
-def PolhemusTracker(tracker_id):
-    try:
-        trck_init = PlhWrapperConnection(tracker_id)
-        lib_mode = 'wrapper'
-        if not trck_init:
-            print('Could not connect with Polhemus wrapper, trying USB connection...')
-            trck_init = PlhUSBConnection(tracker_id)
-            lib_mode = 'usb'
-            if not trck_init:
-                print('Could not connect with Polhemus USB, trying serial connection...')
-                trck_init = PlhSerialConnection(tracker_id)
-                lib_mode = 'serial'
-    except:
+        lib_mode = 'disconnect'
         trck_init = None
-        lib_mode = 'error'
-        print('Could not connect to Polhemus by any method.')
+        print('Could not connect to elfin robot tracker.')
 
+    # return tracker initialization variable and type of connection
     return trck_init, lib_mode
 
+def RobotTracker(tracker_id):
+    from wx import ID_OK
+    trck_init = None
+    trck_init_robot = None
+    tracker_id = None
+    dlg_device = dlg.SetTrackerDeviceToRobot()
+    if dlg_device.ShowModal() == ID_OK:
+        tracker_id = dlg_device.GetValue()
+        if tracker_id:
+            trck_connection = TrackerConnection(tracker_id, None, 'connect')
+            if trck_connection[0]:
+                dlg_ip = dlg.SetRobotIP()
+                if dlg_ip.ShowModal() == ID_OK:
+                    robot_IP = dlg_ip.GetValue()
+                    trck_init = trck_connection
+                    trck_init_robot = ElfinRobot(robot_IP)
+
+    return [trck_init, trck_init_robot, tracker_id]
 
 def DebugTrackerRandom(tracker_id):
     trck_init = True
@@ -294,10 +327,10 @@ def PlhSerialConnection(tracker_id):
         except:
             lib_mode = 'error'
             trck_init = None
-            print('Could not connect to default tracker.')
+            print('Could not connect to Polhemus tracker.')
     else:
         lib_mode = None
-        print('Could not connect to default tracker.')
+        print('Could not connect to Polhemus tracker.')
 
     return trck_init
 
@@ -335,7 +368,6 @@ def PlhUSBConnection(tracker_id):
 
     return trck_init
 
-
 def DisconnectTracker(tracker_id, trck_init):
     """
     Disconnect current spatial tracker
@@ -354,6 +386,11 @@ def DisconnectTracker(tracker_id, trck_init):
                 trck_init.close()
                 trck_init = False
                 lib_mode = 'serial'
+                print('Tracker disconnected.')
+            elif tracker_id == const.ROBOT:
+                trck_init[0].Close()
+                trck_init = False
+                lib_mode = 'wrapper'
                 print('Tracker disconnected.')
             else:
                 trck_init.Close()

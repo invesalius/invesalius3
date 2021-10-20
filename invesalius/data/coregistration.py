@@ -23,9 +23,9 @@ import threading
 from time import sleep
 
 import invesalius.constants as const
-import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
+import invesalius.data.coordinates as dco
 
 
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
@@ -88,9 +88,9 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     :type m_probe_ref: numpy.ndarray
     :param r_obj_img: Object coordinate system in image space (3d model)
     :type r_obj_img: numpy.ndarray
-    :param m_obj_raw: Object basis in raw coordinates from tacker
+    :param m_obj_raw: Object basis in raw coordinates from tracker
     :type m_obj_raw: numpy.ndarray
-    :param s0_dyn:
+    :param s0_dyn: Initial alignment of probe fixed in the object in reference (or static) frame
     :type s0_dyn: numpy.ndarray
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
@@ -190,11 +190,14 @@ class CoordinateCorregistrate(threading.Thread):
         self.event = event
         self.sle = sle
         self.icp_queue = queues[2]
+        self.object_at_target_queue = queues[3]
         self.icp = None
         self.m_icp = None
+        self.robot_tracker_flag = None
         self.last_coord = None
         self.tracker_id = tracker_id
         self.target = target
+        self.target_flag = False
 
         if self.target is not None:
             self.target = np.array(self.target)
@@ -214,10 +217,12 @@ class CoordinateCorregistrate(threading.Thread):
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
-                if self.icp_queue.empty():
-                    None
-                else:
+                if not self.icp_queue.empty():
                     self.icp, self.m_icp = self.icp_queue.get_nowait()
+
+                if not self.object_at_target_queue.empty():
+                    self.target_flag = self.object_at_target_queue.get_nowait()
+
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.icp, self.m_icp])
@@ -249,7 +254,7 @@ class CoordinateCorregistrate(threading.Thread):
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
-                self.coord_queue.put_nowait([coord, m_img, view_obj])
+                self.coord_queue.put_nowait([coord, [coord_raw, markers_flag], m_img, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
 
@@ -258,7 +263,6 @@ class CoordinateCorregistrate(threading.Thread):
 
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
-
                 # The sleep has to be in both threads
                 sleep(self.sle)
             except queue.Full:
@@ -303,7 +307,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
-                self.coord_queue.put_nowait([coord, m_img, view_obj])
+                self.coord_queue.put_nowait([coord, [coord_raw, markers_flag], m_img, view_obj])
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)

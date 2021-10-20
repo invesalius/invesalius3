@@ -633,7 +633,7 @@ class ComputeTractsThreadSingleBlock(threading.Thread):
         # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
-                coord, m_img, m_img_flip = self.coord_queue.get_nowait()
+                coord, [coord_raw, markers_flag], m_img, m_img_flip = self.coord_queue.get_nowait()
 
                 # translate the coordinate along the normal vector of the object/coil
                 coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
