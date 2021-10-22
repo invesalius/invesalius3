@@ -20,7 +20,6 @@ import numpy as np
 import cv2
 from time import time
 
-import invesalius.data.transformations as tr
 import invesalius.data.coregistration as dcr
 import invesalius.data.coordinates as dco
 import invesalius.constants as const
