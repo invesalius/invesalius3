@@ -175,7 +175,7 @@ class TrackerProcessing:
             axes='rzyx',
         )
         m_robot_new = M_current_head @ m_change_robot_to_head
-        #TODO: check this with robot
+
         translation, angles_as_deg = dco.transformation_matrix_to_coordinates(m_robot_new, axes='sxyz')
         new_robot_position = list(translation) + list(angles_as_deg)
 

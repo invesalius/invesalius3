@@ -284,7 +284,6 @@ class transform_tracker_to_robot(object):
         )
         M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker
 
-        # TODO: check this with robot
         translation, angles_as_deg = dco.transformation_matrix_to_coordinates(M_tracker_in_robot, axes='rzyx')
         tracker_in_robot = list(translation) + list(angles_as_deg)
 
