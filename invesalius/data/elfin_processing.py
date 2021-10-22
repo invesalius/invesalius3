@@ -175,11 +175,11 @@ class TrackerProcessing:
             axes='rzyx',
         )
         m_robot_new = M_current_head @ m_change_robot_to_head
-        _, _, angles, translate, _ = tr.decompose_matrix(m_robot_new)
-        angles = np.degrees(angles)
+        #TODO: check this with robot
+        translation, angles_as_deg = dco.transformation_matrix_to_coordinates(m_robot_new, axes='sxyz')
+        new_robot_position = list(translation) + list(angles_as_deg)
 
-        return m_robot_new[0, -1], m_robot_new[1, -1], m_robot_new[2, -1], angles[0], angles[1], \
-                    angles[2]
+        return new_robot_position
 
     def estimate_head_center(self, tracker, current_head):
         """
