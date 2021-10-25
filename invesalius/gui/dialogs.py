@@ -46,6 +46,7 @@ except ImportError:
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
+import wx.lib.filebrowsebutton as filebrowse
 from wx.lib.wordwrap import wordwrap
 from invesalius.pubsub import pub as Publisher
 import csv
@@ -5003,16 +5004,12 @@ class PeelsCreationDlg(wx.Dialog):
     def _init_gui(self):
         self.SetTitle("dialog")
 
+        from_mask_stbox = self._from_mask_gui()
+        from_files_stbox = self._from_files_gui()
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        ctrl_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(ctrl_sizer, 1, wx.EXPAND, 0)
-
-        lbl_message = wx.StaticText(self, wx.ID_ANY, "Select a mask")
-        ctrl_sizer.Add(lbl_message, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
-
-        self.cb_masks = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        ctrl_sizer.Add(self.cb_masks, 0, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(from_mask_stbox, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(from_files_stbox, 0, wx.EXPAND | wx.ALL, 5)
 
         btn_sizer = wx.StdDialogButtonSizer()
         main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
@@ -5033,6 +5030,41 @@ class PeelsCreationDlg(wx.Dialog):
         self.SetEscapeId(self.btn_cancel.GetId())
 
         self.Layout()
+
+    def _from_mask_gui(self):
+        mask_box = wx.StaticBox(self, -1, _("From mask"))
+        from_mask_stbox = wx.StaticBoxSizer(mask_box, wx.VERTICAL)
+
+        self.cb_masks = wx.ComboBox(self, wx.ID_ANY, choices=[])
+        self.from_mask_rb = wx.RadioButton(self, -1, "", style = wx.RB_GROUP)
+
+        internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        internal_sizer.Add(self.from_mask_rb, 0, wx.ALL | wx.EXPAND, 5)
+        internal_sizer.Add(self.cb_masks, 0, wx.ALL | wx.EXPAND, 5)
+
+        from_mask_stbox.Add(internal_sizer, 0, wx.EXPAND)
+
+        return from_mask_stbox
+
+    def _from_files_gui(self):
+        files_box = wx.StaticBox(self, -1, _("From files"))
+        from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
+
+        self.image_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Image file"))
+        self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"))
+        self.from_files_rb = wx.RadioButton(self, -1, "", style = wx.RB_GROUP)
+
+        ctrl_sizer = wx.BoxSizer(wx.VERTICAL)
+        ctrl_sizer.Add(self.image_file_browse, 0, wx.ALL | wx.EXPAND, 5)
+        ctrl_sizer.Add(self.mask_file_browse, 0, wx.ALL | wx.EXPAND, 5)
+
+        internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        internal_sizer.Add(self.from_files_rb, 0, wx.ALL | wx.EXPAND, 5)
+        internal_sizer.Add(ctrl_sizer, 0, wx.ALL | wx.EXPAND, 5)
+
+        from_files_stbox.Add(internal_sizer, 0, wx.EXPAND)
+
+        return from_files_stbox
 
     def get_all_masks(self):
         import invesalius.project as prj
