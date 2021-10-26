@@ -1379,7 +1379,7 @@ class MarkersPanel(wx.Panel):
 
         next = self.lc.GetFirstSelected()
                
-        while next is not None:
+        while next is not -1:
             selection.append(next)
             next = self.lc.GetNextSelected(next)
 
@@ -1566,8 +1566,9 @@ class MarkersPanel(wx.Panel):
         if index:
             if self.__find_target_marker() in index:
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
-                Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
-                                      m_change_robot_to_head=None)
+                if self.tracker.tracker_id == const.ROBOT:
+                    Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
+                                          m_change_robot_to_head=[])
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)

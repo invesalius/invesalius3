@@ -4691,7 +4691,8 @@ class SetNDIconfigs(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
-        btn_ok.Enable(False)
+        if not port_selec:
+            btn_ok.Enable(False)
         self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
