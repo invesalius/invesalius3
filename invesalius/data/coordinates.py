@@ -19,7 +19,6 @@
 
 from math import sin, cos
 import numpy as np
-import queue
 import threading
 import wx
 
@@ -35,11 +34,14 @@ class TrackerCoordinates():
     def __init__(self):
         self.coord = None
         self.markers_flag = [False, False, False]
+        self.previous_markers_flag = self.markers_flag
 
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
-        wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+        if self.previous_markers_flag != self.markers_flag:
+            wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+            self.previous_markers_flag = self.markers_flag
 
     def GetCoordinates(self):
         return self.coord, self.markers_flag
@@ -232,7 +234,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
     elif trck[1] == 'wrapper':
         coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
 
-    return coord, None
+    return coord, [False, False, False]
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
