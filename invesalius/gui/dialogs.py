@@ -4996,9 +4996,17 @@ class SetSpacingDialog(wx.Dialog):
 
 
 class PeelsCreationDlg(wx.Dialog):
+    FROM_MASK = 1
+    FROM_FILES = 2
     def __init__(self, parent, *args, **kwds):
         wx.Dialog.__init__(self, parent, *args, **kwds)
+
+        self.image_path = ''
+        self.mask_path = ''
+        self.method = self.FROM_MASK
+
         self._init_gui()
+        self._bind_events_wx()
         self.get_all_masks()
 
     def _init_gui(self):
@@ -5040,7 +5048,7 @@ class PeelsCreationDlg(wx.Dialog):
 
         internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
         internal_sizer.Add(self.from_mask_rb, 0, wx.ALL | wx.EXPAND, 5)
-        internal_sizer.Add(self.cb_masks, 0, wx.ALL | wx.EXPAND, 5)
+        internal_sizer.Add(self.cb_masks, 1, wx.ALL | wx.EXPAND, 5)
 
         from_mask_stbox.Add(internal_sizer, 0, wx.EXPAND)
 
@@ -5050,9 +5058,11 @@ class PeelsCreationDlg(wx.Dialog):
         files_box = wx.StaticBox(self, -1, _("From files"))
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
 
-        self.image_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Image file"))
-        self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"))
-        self.from_files_rb = wx.RadioButton(self, -1, "", style = wx.RB_GROUP)
+        self.image_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Image file"),
+                changeCallback=lambda evt: self._set_files_callback(image_path=evt.GetString()))
+        self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"),
+                changeCallback=lambda evt: self._set_files_callback(mask_path=evt.GetString()))
+        self.from_files_rb = wx.RadioButton(self, -1, "")
 
         ctrl_sizer = wx.BoxSizer(wx.VERTICAL)
         ctrl_sizer.Add(self.image_file_browse, 0, wx.ALL | wx.EXPAND, 5)
@@ -5065,6 +5075,10 @@ class PeelsCreationDlg(wx.Dialog):
         from_files_stbox.Add(internal_sizer, 0, wx.EXPAND)
 
         return from_files_stbox
+
+    def _bind_events_wx(self):
+        self.from_mask_rb.Bind(wx.EVT_RADIOBUTTON, self.on_select_method)
+        self.from_files_rb.Bind(wx.EVT_RADIOBUTTON, self.on_select_method)
 
     def get_all_masks(self):
         import invesalius.project as prj
@@ -5080,3 +5094,35 @@ class PeelsCreationDlg(wx.Dialog):
         self.cb_masks.SetItems(choices)
         self.cb_masks.SetValue(initial_value)
         self.btn_ok.Enable(enable)
+
+    def on_select_method(self, evt):
+        radio_selected = evt.GetEventObject()
+        if radio_selected is self.from_mask_rb:
+            self.method = self.FROM_MASK
+            if self.cb_masks.GetItems():
+                self.btn_ok.Enable(True)
+            else:
+                self.btn_ok.Enable(False)
+        else:
+            self.method = self.FROM_FILES
+            if self._check_if_files_exists():
+                self.btn_ok.Enable(True)
+            else:
+                self.btn_ok.Enable(False)
+
+    def _set_files_callback(self, image_path='', mask_path=''):
+        if image_path:
+            self.image_path = image_path
+        elif mask_path:
+            self.mask_path = mask_path
+        if self.method == self.FROM_FILES:
+            if self._check_if_files_exists():
+                self.btn_ok.Enable(True)
+            else:
+                self.btn_ok.Enable(False)
+
+    def _check_if_files_exists(self):
+            if self.image_path and os.path.exists(self.image_path) and self.mask_path and os.path.exists(self.mask_path):
+                return True
+            else:
+                return False
