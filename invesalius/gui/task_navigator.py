@@ -1379,7 +1379,7 @@ class MarkersPanel(wx.Panel):
 
         next = self.lc.GetFirstSelected()
                
-        while next is not -1:
+        while next != -1:
             selection.append(next)
             next = self.lc.GetNextSelected(next)
 
