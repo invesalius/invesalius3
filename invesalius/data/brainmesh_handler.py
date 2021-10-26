@@ -78,10 +78,12 @@ class Brain:
         if qFormMatrix is None:
             qFormMatrix = vtk.vtkMatrix4x4()
 
+        value = np.mean(mask.GetScalarRange())
+
         # Use the mask to create isosurface
         mc = vtk.vtkContourFilter()
         mc.SetInputData(mask)
-        mc.SetValue(0, 127)
+        mc.SetValue(0, value)
         mc.ComputeNormalsOn()
         mc.Update()
 

@@ -1982,19 +1982,14 @@ class TractographyPanel(wx.Panel):
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
+        inv_proj = prj.Project()
         peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
         ret = peels_dlg.ShowModal()
-        peels_dlg.Destroy()
+        method = peels_dlg.method
         if ret == wx.ID_OK:
-            inv_proj = prj.Project()
-            choices = [i for i in inv_proj.mask_dict.values()]
-            mask_index = peels_dlg.cb_masks.GetSelection()
-            mask = choices[mask_index]
-
             slic = sl.Slice()
             ww = slic.window_width
             wl = slic.window_level
-
             if not self.affine_vtk:
                 matrix_shape = tuple(inv_proj.matrix_shape)
                 try:
@@ -2007,7 +2002,15 @@ class TractographyPanel(wx.Panel):
             self.affine_vtk = vtk.vtkMatrix4x4()
 
             self.brain_peel = brain.Brain(self.n_peels, ww, wl, self.affine_vtk)
-            self.brain_peel.from_mask(mask)
+            if method == peels_dlg.FROM_MASK:
+                choices = [i for i in inv_proj.mask_dict.values()]
+                mask_index = peels_dlg.cb_masks.GetSelection()
+                mask = choices[mask_index]
+                self.brain_peel.from_mask(mask)
+            else:
+                image_path = peels_dlg.image_path
+                mask_path = peels_dlg.mask_path
+                self.brain_peel.from_files(image_path, mask_path)
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
@@ -2021,6 +2024,7 @@ class TractographyPanel(wx.Panel):
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
 
+        peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
