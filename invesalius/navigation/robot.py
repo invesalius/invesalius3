@@ -49,6 +49,7 @@ class Robot():
         self.thread_robot = None
 
         self.robotcoordinates = RobotCoordinates()
+        self.coordinates = Coordinates()
 
         self.__bind_events()
 
@@ -57,6 +58,7 @@ class Robot():
         Publisher.subscribe(self.OnUpdateRobotTargetMatrix, 'Robot target matrix')
         Publisher.subscribe(self.OnObjectTarget, 'Coil at target')
         Publisher.subscribe(self.OnResetProcessTracker, 'Reset robot process')
+        Publisher.subscribe(self.OnUpdateCoordinates, 'Send tracker coordinates')
 
     def OnRobotConnection(self):
         if not self.tracker.trk_init[0][0][0] or not self.tracker.trk_init[0][1][0]:
@@ -81,7 +83,7 @@ class Robot():
     def StartRobotThreadNavigation(self, tracker, coord_queue):
         if tracker.event_robot.is_set():
             tracker.event_robot.clear()
-        self.thread_robot = ControlRobot(self.trk_init, tracker, self.robotcoordinates,
+        self.thread_robot = ControlRobot(self.trk_init, tracker, self.robotcoordinates, self.coordinates,
                                          [coord_queue, self.robot_target_queue, self.object_at_target_queue],
                                          self.process_tracker, tracker.event_robot)
         self.thread_robot.start()
@@ -95,6 +97,9 @@ class Robot():
 
     def OnSendCoordinates(self, coord):
         self.robot_server.SendCoordinates(coord)
+
+    def OnUpdateCoordinates(self, coord):
+        self.coordinates.SetCoordinates(coord)
 
     def OnUpdateRobotTargetMatrix(self, robot_tracker_flag, m_change_robot_to_head):
         try:
@@ -127,9 +132,22 @@ class RobotCoordinates():
     def GetRobotCoordinates(self):
         return self.coord
 
+class Coordinates():
+    """
+    Class to set/get coordinates. Robot coordinates are acquired in ControlRobot thread.
+    The class is required to avoid acquisition conflict with different threads (coordinates and navigation)
+    """
+    def __init__(self):
+        self.coord = None
+
+    def SetCoordinates(self, coord):
+        self.coord = coord
+
+    def GetCoordinates(self):
+        return self.coord
 
 class ControlRobot(threading.Thread):
-    def __init__(self, trck_init, tracker, robotcoordinates, queues, process_tracker, event_robot):
+    def __init__(self, trck_init, tracker, robotcoordinates, coordinates, queues, process_tracker, event_robot):
         """Class (threading) to perform the robot control.
         A distinguish thread is required to increase perform and separate robot control from navigation thread
         (safetly layer for robot positining).
@@ -150,6 +168,7 @@ class ControlRobot(threading.Thread):
         self.trk_id = trck_init[1]
         self.tracker = tracker
         self.robotcoordinates = robotcoordinates
+        self.coordinates = coordinates
         self.robot_tracker_flag = False
         self.objattarget_flag = False
         self.target_flag = False
@@ -173,7 +192,7 @@ class ControlRobot(threading.Thread):
         coord_robot[3], coord_robot[5] = coord_robot[5], coord_robot[3]
         self.robotcoordinates.SetRobotCoordinates(coord_robot)
 
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw, markers_flag = self.coordinates.GetCoordinates()
 
         return coord_raw, coord_robot_raw, markers_flag
 

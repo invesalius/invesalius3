@@ -47,6 +47,7 @@ class TrackerCoordinates():
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
+        Publisher.sendMessage('Send tracker coordinates', coord=coord)
         if self.previous_markers_flag != self.markers_flag and not self.nav_status:
             wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
             self.previous_markers_flag = self.markers_flag
