@@ -453,7 +453,6 @@ class ComputeTractsACTThread(threading.Thread):
                 # the new interval is defined to have no 0 opacity (minimum is 51, i.e., 20%)
                 alpha = (n_param - 1) * (255 - 51) / (10 - 1) + 51
                 trekker.minFODamp(n_param * 0.01)
-                trekker.dataSupportExponent(n_param * 0.1)
                 # ---
 
                 # When moving the coil further than the seed_radius restart the bundle computation
@@ -680,16 +679,17 @@ def set_trekker_parameters(trekker, params):
     :rtype: list
     """
     trekker.seed_maxTrials(params['seed_max'])
-    # trekker.stepSize(params['step_size'])
+    trekker.stepSize(params['step_size'])
     trekker.minFODamp(params['min_fod'])
-    # trekker.probeQuality(params['probe_quality'])
-    # trekker.maxEstInterval(params['max_interval'])
-    # trekker.minRadiusOfCurvature(params['min_radius_curv'])
-    # trekker.probeLength(params['probe_length'])
+    trekker.probeQuality(params['probe_quality'])
+    trekker.maxEstInterval(params['max_interval'])
+    trekker.minRadiusOfCurvature(params['min_radius_curvature'])
+    trekker.probeLength(params['probe_length'])
     trekker.writeInterval(params['write_interval'])
-    trekker.maxLength(params['max_lenth'])
-    trekker.minLength(params['min_lenth'])
+    trekker.maxLength(params['max_length'])
+    trekker.minLength(params['min_length'])
     trekker.maxSamplingPerStep(params['max_sampling_step'])
+    trekker.dataSupportExponent(params['data_support_exponent'])
 
     # check number if number of cores is valid in configuration file,
     # otherwise use the maximum number of threads which is usually 2*N_CPUS

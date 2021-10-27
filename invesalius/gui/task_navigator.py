@@ -2135,6 +2135,9 @@ class TractographyPanel(wx.Panel):
                                self.n_tracts)
 
     def OnCloseProject(self):
+        self.trekker = None
+        self.trekker_cfg = const.TREKKER_CONFIG
+
         self.checktracts.SetValue(False)
         self.checktracts.Enable(0)
         self.checkpeeling.SetValue(False)
