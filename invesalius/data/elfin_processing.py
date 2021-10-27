@@ -197,11 +197,17 @@ class TrackerProcessing:
         """
         Estimates the Euclidean distance between the actual position and the target
         """
-        square_sum = (coord_inv[0]-actual_point[0]) ** 2 +\
-                     (coord_inv[1]-actual_point[1]) ** 2 +\
-                     (coord_inv[2]-actual_point[2]) ** 2
-        correction_distance_compensation = pow(square_sum, 0.5)
+        correction_distance_compensation = np.sqrt((coord_inv[0]-actual_point[0]) ** 2 +
+                                                   (coord_inv[1]-actual_point[1]) ** 2 +
+                                                   (coord_inv[2]-actual_point[2]) ** 2)
 
         return correction_distance_compensation
 
+    def estimate_robot_target_length(self, robot_target):
+        """
+        Estimates the length of the 3D vector of the robot target
+        """
+        robot_target_length = np.sqrt(robot_target[0] ** 2 + robot_target[1] ** 2 + robot_target[2] ** 2)
+
+        return robot_target_length
 
