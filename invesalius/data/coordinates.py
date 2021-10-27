@@ -35,15 +35,27 @@ class TrackerCoordinates():
         self.coord = None
         self.markers_flag = [False, False, False]
         self.previous_markers_flag = self.markers_flag
+        self.nav_status = False
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnUpdateNavigationStatus, 'Navigation status')
+
+    def OnUpdateNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
 
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
-        if self.previous_markers_flag != self.markers_flag:
+        if self.previous_markers_flag != self.markers_flag and not self.nav_status:
             wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
             self.previous_markers_flag = self.markers_flag
 
     def GetCoordinates(self):
+        if self.previous_markers_flag != self.markers_flag and self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+            self.previous_markers_flag = self.markers_flag
+
         return self.coord, self.markers_flag
 
 
