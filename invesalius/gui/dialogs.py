@@ -4540,7 +4540,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
     def OnCreatePoint(self, evt):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         #robot thread is not initialized yet
-        coord_raw_robot = self.tracker.trk_init[1][0].Run()
+        coord_raw_robot = self.tracker.trk_init[0][1][0].Run()
         coord_raw_tracker_obj = coord_raw[3]
 
         if markers_flag[2]:

@@ -211,13 +211,17 @@ def OptitrackTracker(tracker_id):
 
             if trck_init.Initialize(Cal_optitrack, User_profile_optitrack)==0:
                 trck_init.Run() #Runs once Run function, to update cameras.
+                lib_mode = 'wrapper'
             else:
                 trck_init = None
+                lib_mode = 'error'
         except ImportError:
+            lib_mode = 'error'
             print('Error')
     else:
+        lib_mode = None
         print('#####')
-    return trck_init, 'wrapper'
+    return trck_init, lib_mode
 
 def ElfinRobot(robot_IP):
     trck_init = None
@@ -230,7 +234,7 @@ def ElfinRobot(robot_IP):
         print('Connect to elfin robot tracking device.')
 
     except:
-        lib_mode = 'disconnect'
+        lib_mode = 'error'
         trck_init = None
         print('Could not connect to elfin robot tracker.')
 
@@ -254,7 +258,7 @@ def RobotTracker(tracker_id):
                     trck_init = trck_connection
                     trck_init_robot = ElfinRobot(robot_IP)
 
-    return [trck_init, trck_init_robot, tracker_id]
+    return [(trck_init, trck_init_robot), tracker_id]
 
 def DebugTrackerRandom(tracker_id):
     trck_init = True
@@ -388,7 +392,8 @@ def DisconnectTracker(tracker_id, trck_init):
                 lib_mode = 'serial'
                 print('Tracker disconnected.')
             elif tracker_id == const.ROBOT:
-                trck_init[0].Close()
+                trck_init[0][0].Close()
+                trck_init[1][0].Close()
                 trck_init = False
                 lib_mode = 'wrapper'
                 print('Tracker disconnected.')

@@ -20,6 +20,7 @@ import numpy as np
 import wx
 import queue
 import threading
+from time import sleep
 
 import invesalius.data.bases as db
 import invesalius.gui.dialogs as dlg
@@ -58,7 +59,7 @@ class Robot():
         Publisher.subscribe(self.OnResetProcessTracker, 'Reset robot process')
 
     def OnRobotConnection(self):
-        if not self.tracker.trk_init[0][0] or not self.tracker.trk_init[1][0]:
+        if not self.tracker.trk_init[0][0][0] or not self.tracker.trk_init[0][1][0]:
             dlg.ShowNavigationTrackerWarning(self.tracker.tracker_id, self.tracker.trk_init[1])
             self.tracker.tracker_id = 0
             self.tracker.tracker_connected = False
@@ -69,7 +70,7 @@ class Robot():
             if dlg_correg_robot.ShowModal() == wx.ID_OK:
                 M_tracker_to_robot = dlg_correg_robot.GetValue()
                 db.transform_tracker_to_robot.M_tracker_to_robot = M_tracker_to_robot
-                self.robot_server = self.tracker.trk_init[1][0]
+                self.robot_server = self.tracker.trk_init[0][1][0]
                 self.trk_init = self.tracker.trk_init
             else:
                 dlg.ShowNavigationTrackerWarning(self.tracker.tracker_id, 'disconnect')
@@ -144,9 +145,9 @@ class ControlRobot(threading.Thread):
         """
         threading.Thread.__init__(self, name='ControlRobot')
 
-        self.trck_init_robot = trck_init[1][0]
-        self.trck_init_tracker = trck_init[0]
-        self.trk_id = trck_init[2]
+        self.trck_init_robot = trck_init[0][1][0]
+        self.trck_init_tracker = trck_init[0][0][0]
+        self.trk_id = trck_init[1]
         self.tracker = tracker
         self.robotcoordinates = robotcoordinates
         self.robot_tracker_flag = False
@@ -243,14 +244,19 @@ class ControlRobot(threading.Thread):
                         coord = new_robot_coordinates
 
                 self.trck_init_robot.SendCoordinates(coord, self.arc_motion_step_flag)
+            robot_status = True
         else:
             print("Head is too far from the robot basis")
+            robot_status = False
+
+        return robot_status
 
     def robot_control(self, current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag):
         coord_head_tracker_in_robot = current_tracker_coordinates_in_robot[1]
         marker_head_flag = markers_flag[1]
         coord_obj_tracker_in_robot = current_tracker_coordinates_in_robot[2]
         marker_obj_flag = markers_flag[2]
+        robot_status = False
 
         if self.robot_tracker_flag:
             current_head = coord_head_tracker_in_robot
@@ -259,6 +265,7 @@ class ControlRobot(threading.Thread):
                 if self.process_tracker.compute_head_move_threshold(current_head_filtered):
                     new_robot_coordinates = self.process_tracker.compute_head_move_compensation(current_head_filtered,
                                                                                     self.m_change_robot_to_head)
+                    robot_status = True
                     if self.coord_inv_old is None:
                        self.coord_inv_old = new_robot_coordinates
 
@@ -271,10 +278,12 @@ class ControlRobot(threading.Thread):
                         self.coord_inv_old = new_robot_coordinates
                     else:
                         distance_target = self.process_tracker.correction_distance_calculation_target(new_robot_coordinates, current_robot_coordinates)
-                        self.robot_move_decision(distance_target, new_robot_coordinates, current_robot_coordinates, current_head_filtered)
+                        robot_status = self.robot_move_decision(distance_target, new_robot_coordinates, current_robot_coordinates, current_head_filtered)
                         self.coord_inv_old = new_robot_coordinates
             else:
                 self.trck_init_robot.StopRobot()
+
+        wx.CallAfter(Publisher.sendMessage, 'Update robot status', robot_status=robot_status)
 
     def run(self):
         while not self.event_robot.is_set():
@@ -290,3 +299,4 @@ class ControlRobot(threading.Thread):
                 self.object_at_target_queue.task_done()
 
             self.robot_control(current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag)
+            sleep(const.SLEEP_ROBOT)

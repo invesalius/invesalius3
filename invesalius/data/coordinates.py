@@ -498,8 +498,8 @@ def dynamic_reference_m(probe, reference):
 
 
 def RobotCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[2], ref_mode)
-    coord_robot = ElfinCoord(trk_init[1:])
+    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0][0], trk_init[1], ref_mode)
+    coord_robot = ElfinCoord([trk_init[0][1]]+trk_init[1:])
 
     probe_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[0])
     ref_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[1])
