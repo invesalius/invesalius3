@@ -858,3 +858,7 @@ ROBOT_ARC_THRESHOLD_DISTANCE = 100 #mm
 ROBOT_VERSOR_SCALE_FACTOR = 70
 #Robot Working Space is defined as 800mm in Elfin manual. For safety, the value is reduced by 5%.
 ROBOT_WORKING_SPACE = 760 #mm
+ROBOT_MOVE_STATE = {"free to move": 0,
+                    "in motion": 1009,
+                    "waiting for execution": 1013,
+                    "error": 1025}

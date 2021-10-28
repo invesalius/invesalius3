@@ -277,6 +277,9 @@ class ControlRobot(threading.Thread):
 
             if not self.robot_target_queue.empty():
                 self.robot_tracker_flag, self.m_change_robot_to_head = self.robot_target_queue.get_nowait()
+                self.trck_init_robot.StopRobot()
+                self.arc_motion_flag = False
+                self.arc_motion_step_flag = const.ROBOT_MOTIONS["normal"]
                 self.robot_target_queue.task_done()
 
             if not self.object_at_target_queue.empty():
