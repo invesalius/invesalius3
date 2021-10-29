@@ -4323,7 +4323,10 @@ class SetTrackerDeviceToRobot(wx.Dialog):
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
-        tracker_options = [_("Select tracker:")] + const.TRACKERS[:-3]
+        trackers = const.TRACKERS
+        if not ses.Session().debug:
+            del trackers[-3:]
+        tracker_options = [_("Select tracker:")] + trackers
         choice_trck = wx.ComboBox(self, -1, "",
                                   choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_trck.SetToolTip(tooltip)

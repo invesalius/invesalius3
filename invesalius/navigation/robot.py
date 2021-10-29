@@ -165,6 +165,7 @@ class ControlRobot(threading.Thread):
         self.target_linear_out = None
         self.target_linear_in = None
         self.target_arc = None
+        self.previous_robot_status = False
 
     def get_coordinates_from_tracker_devices(self):
         coord_robot_raw = self.trck_init_robot.Run()
@@ -283,7 +284,7 @@ class ControlRobot(threading.Thread):
             else:
                 self.trck_init_robot.StopRobot()
 
-        wx.CallAfter(Publisher.sendMessage, 'Update robot status', robot_status=robot_status)
+        return robot_status
 
     def run(self):
         while not self.event_robot.is_set():
@@ -298,5 +299,10 @@ class ControlRobot(threading.Thread):
                 self.target_flag = self.object_at_target_queue.get_nowait()
                 self.object_at_target_queue.task_done()
 
-            self.robot_control(current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag)
+            robot_status = self.robot_control(current_tracker_coordinates_in_robot, current_robot_coordinates, markers_flag)
+
+            if self.previous_robot_status != robot_status:
+                wx.CallAfter(Publisher.sendMessage, 'Update robot status', robot_status=robot_status)
+                self.previous_robot_status = robot_status
+
             sleep(const.SLEEP_ROBOT)

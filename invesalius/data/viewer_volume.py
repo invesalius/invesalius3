@@ -1687,8 +1687,7 @@ class Viewer(wx.Panel):
             self.Refresh()
 
     def ActivateRobotMode(self, robot_mode=None):
-        self.robot_mode = robot_mode
-        if self.robot_mode:
+        if robot_mode:
             self.ren_robot = vtk.vtkRenderer()
             self.ren_robot.SetLayer(1)
 
@@ -1723,12 +1722,10 @@ class Viewer(wx.Panel):
             self.Refresh()
 
     def DisableRobotMode(self):
-        try:
+        if self.dummy_robot_actor:
+            self.ren_robot.RemoveActor(self.dummy_robot_actor)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren_robot)
-            self.ren.RemoveActor(self.dummy_robot_actor)
             self.interactor.Render()
-        except:
-            None
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
