@@ -4418,7 +4418,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class CreateTransformationMatrixRobot(wx.Dialog):
-    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
+    def __init__(self, tracker, robot_coordinates, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -4431,6 +4431,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.robot_angles = []
 
         self.tracker = tracker
+        self.robot_coordinates = robot_coordinates
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
@@ -4543,7 +4544,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
     def OnCreatePoint(self, evt):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         #robot thread is not initialized yet
-        coord_raw_robot = self.tracker.trk_init[0][1][0].Run()
+        coord_raw_robot = self.robot_coordinates.GetRobotCoordinates()
         coord_raw_tracker_obj = coord_raw[3]
 
         if markers_flag[2]:
@@ -4567,7 +4568,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.tracker_angles = []
         self.robot_coord = []
         self.robot_angles = []
-        self.M_tracker_2_robot = []
+        self.matrix_tracker_to_robot = []
         self.txt_number.SetLabel('0')
 
         self.btn_apply_reg.Enable(False)
@@ -4582,9 +4583,9 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         tracker_coord = np.array(self.tracker_coord)
         robot_coord = np.array(self.robot_coord)
 
-        M_robot_2_tracker = self.affine_correg(tracker_coord, robot_coord)
-        M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
-        self.M_tracker_2_robot = M_tracker_2_robot
+        matrix_robot_to_tracker = self.affine_correg(tracker_coord, robot_coord)
+        matrix_tracker_to_robot = tr.inverse_matrix(matrix_robot_to_tracker)
+        self.matrix_tracker_to_robot = matrix_tracker_to_robot
 
         self.btn_save.Enable(True)
         self.btn_ok.Enable(True)
@@ -4598,10 +4599,10 @@ class CreateTransformationMatrixRobot(wx.Dialog):
                                           default_filename="robottransform.rbtf", save_ext="rbtf")
 
         if filename:
-            if self.M_tracker_2_robot is not None:
+            if self.matrix_tracker_to_robot is not None:
                 with open(filename, 'w', newline='') as file:
                     writer = csv.writer(file, delimiter='\t')
-                    writer.writerows(self.M_tracker_2_robot)
+                    writer.writerows(self.matrix_tracker_to_robot)
 
     def OnLoadReg(self, evt):
         filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
@@ -4611,12 +4612,12 @@ class CreateTransformationMatrixRobot(wx.Dialog):
                 reader = csv.reader(file, delimiter='\t')
                 content = [row for row in reader]
 
-            self.M_tracker_2_robot = np.vstack(list(np.float_(content)))
-            print("Matrix tracker to robot:", self.M_tracker_2_robot)
+            self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+            print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
             self.btn_ok.Enable(True)
 
     def GetValue(self):
-        return self.M_tracker_2_robot
+        return self.matrix_tracker_to_robot
 
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):

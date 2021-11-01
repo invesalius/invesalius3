@@ -47,15 +47,20 @@ class TrackerCoordinates():
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
-        Publisher.sendMessage('Send tracker coordinates', coord=coord)
-        if self.previous_markers_flag != self.markers_flag and not self.nav_status:
-            wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
-            self.previous_markers_flag = self.markers_flag
+        if not self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker coordinates',
+                         coord=self.coord.tolist(), markers_flag=self.markers_flag)
+            if self.previous_markers_flag != self.markers_flag:
+                wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+                self.previous_markers_flag = self.markers_flag
 
     def GetCoordinates(self):
-        if self.previous_markers_flag != self.markers_flag and self.nav_status:
-            wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
-            self.previous_markers_flag = self.markers_flag
+        if self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker coordinates',
+                         coord=self.coord.tolist(), markers_flag=self.markers_flag)
+            if self.previous_markers_flag != self.markers_flag:
+                wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+                self.previous_markers_flag = self.markers_flag
 
         return self.coord, self.markers_flag
 
@@ -80,7 +85,6 @@ def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
                     const.POLARIS: PolarisCoord,
                     const.POLARISP4: PolarisP4Coord,
                     const.OPTITRACK: OptitrackCoord,
-                    const.ROBOT: RobotCoord,
                     const.DEBUGTRACKRANDOM: DebugCoordRandom,
                     const.DEBUGTRACKAPPROACH: DebugCoordRandom}
         coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
@@ -196,16 +200,6 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.objID]
 
-def ElfinCoord(trck_init):
-    if len(trck_init) > 2:
-        robotcoordinates = trck_init[-1]
-        coord = robotcoordinates.GetRobotCoordinates()
-        if coord is None:
-            coord = np.array([0, 0, 0, 0, 0, 0])
-    else:
-        coord = np.array([0, 0, 0, 0, 0, 0])
-
-    return coord
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -498,22 +492,6 @@ def dynamic_reference_m(probe, reference):
     return coord_rot
 
 
-def RobotCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0][0], trk_init[1], ref_mode)
-    coord_robot = ElfinCoord([trk_init[0][1]]+trk_init[1:])
-
-    probe_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[0])
-    ref_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[1])
-    obj_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[2])
-
-    if probe_tracker_in_robot is None:
-        probe_tracker_in_robot = coord_tracker[0]
-        ref_tracker_in_robot = coord_tracker[1]
-        obj_tracker_in_robot = coord_tracker[2]
-
-    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot, obj_tracker_in_robot]), markers_flag
-
-
 def dynamic_reference_m2(probe, reference):
     """
     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
@@ -584,6 +562,8 @@ class ReceiveCoordinates(threading.Thread):
         threading.Thread.__init__(self, name='ReceiveCoordinates')
         self.trck_init = trck_init
         self.trck_id = trck_id
+        if trck_id == const.ROBOT:
+            self.trck_id = trck_init[1]
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
 
