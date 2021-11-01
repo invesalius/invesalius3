@@ -32,12 +32,6 @@ try:
     has_trekker = True
 except ImportError:
     has_trekker = False
-try:
-    import invesalius.data.elfin as elfin
-    import invesalius.data.elfin_processing as elfin_process
-    has_robot = True
-except ImportError:
-    has_robot = False
 
 import wx
 
@@ -675,7 +669,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.tracker.SetTracker(choice)
         if self.tracker.tracker_id == const.ROBOT:
-            self.tracker.ConnectToRobot(self.navigation, self.tracker, self.robot)
+            self.tracker.ConnectToRobot(self.robot)
 
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -1524,8 +1518,11 @@ class MarkersPanel(wx.Panel):
 
         m_target_robot = self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix
 
-        Publisher.sendMessage('Reset robot process')
-        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_target_robot)
+        Publisher.sendMessage('Reset robot process', data=None)
+        matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
+        Publisher.sendMessage('Update tracker fiducials matrix',
+                              matrix_tracker_fiducials=matrix_tracker_fiducials)
+        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_target_robot.tolist())
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
@@ -1568,7 +1565,7 @@ class MarkersPanel(wx.Panel):
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 if self.tracker.tracker_id == const.ROBOT:
                     Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
-                                          m_change_robot_to_head=[])
+                                          m_change_robot_to_head=None)
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
