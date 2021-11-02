@@ -93,9 +93,7 @@ class Tracker():
                 print("Tracker still connected!")
 
     def ConnectToRobot(self, robot):
-        robot.OnRobotConnection()
-        trk_init_robot = self.trk_init[0][1][0]
-        if trk_init_robot:
+        if robot.OnRobotConnection():
             Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 
     def IsTrackerInitialized(self):
