@@ -1078,17 +1078,15 @@ class ObjectRegistrationPanel(wx.Panel):
 
         try:
             if filename:
-                #TODO: Improve method to read the file, using "with" similar to OnLoadParameters
-                data = np.loadtxt(filename, delimiter='\t')
-                self.obj_fiducials = data[:, :3]
-                self.obj_orients = data[:, 3:]
+                with open(filename, 'r') as text_file:
+                    data = [s.split('\t') for s in text_file.readlines()]
 
-                text_file = open(filename, "r")
-                header = text_file.readline().split('\t')
-                text_file.close()
+                registration_coordinates = np.array(data[1:]).astype(np.float32)
+                self.obj_fiducials = registration_coordinates[:, :3]
+                self.obj_orients = registration_coordinates[:, 3:]
 
-                self.obj_name = header[1]
-                self.obj_ref_mode = int(header[-1])
+                self.obj_name = data[0][1]
+                self.obj_ref_mode = int(data[0][-1])
 
                 self.checktrack.Enable(1)
                 self.checktrack.SetValue(True)
@@ -1098,7 +1096,9 @@ class ObjectRegistrationPanel(wx.Panel):
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
                 Publisher.sendMessage('Change camera checkbox', status=False)
-                # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+                wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+            else:
+                wx.MessageBox(_("Object filename not recognized"), _("Load"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
