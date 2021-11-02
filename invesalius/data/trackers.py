@@ -231,7 +231,7 @@ def RobotTracker(tracker_id):
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         if tracker_id:
-            trck_init = TrackerConnection(tracker_id, None, 'connect')
+            trck_init = TrackerConnection(tracker_id, None, 'connect')[0]
 
     return trck_init, tracker_id
 

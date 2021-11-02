@@ -38,7 +38,6 @@ class Robot():
         Publisher.subscribe(self.OnSetRobotCoordinates, 'Update Robot Coordinates')
 
     def OnSetRobotCoordinates(self, coord):
-        print(coord)
         self.robot_coordinates.SetRobotCoordinates(coord)
 
     def OnRobotConnection(self):
@@ -50,6 +49,8 @@ class Robot():
             if dlg_correg_robot.ShowModal() == wx.ID_OK:
                 m_tracker_to_robot = dlg_correg_robot.GetValue()
                 Publisher.sendMessage('Update robot transformation matrix', m_tracker_to_robot=m_tracker_to_robot.tolist())
+                return True
+        return False
 
 class RobotCoordinates:
     """
