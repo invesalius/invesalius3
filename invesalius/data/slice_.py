@@ -1185,6 +1185,7 @@ class Slice(metaclass=utils.Singleton):
         future_mask = proj.GetMask(index)
         future_mask.is_shown = True
         self.current_mask = future_mask
+        self.current_mask.on_show()
 
         colour = future_mask.colour
         self.SetMaskColour(index, colour, update=False)
