@@ -264,8 +264,6 @@ class Slice(metaclass=utils.Singleton):
     def OnRemoveMasks(self, mask_indexes):
         proj = Project()
         for item in mask_indexes:
-            proj.RemoveMask(item)
-
             # if the deleted mask is the current mask, cleans the current mask
             # and discard from buffer all datas related to mask.
             if self.current_mask is not None and item == self.current_mask.index:
@@ -277,6 +275,7 @@ class Slice(metaclass=utils.Singleton):
 
                 Publisher.sendMessage("Show mask", index=item, value=False)
                 Publisher.sendMessage("Reload actual slice")
+            proj.RemoveMask(item)
 
     def OnDuplicateMasks(self, mask_indexes):
         proj = Project()
