@@ -1264,6 +1264,7 @@ class MarkersPanel(wx.Panel):
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
+        self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
         # Change marker size
@@ -1615,7 +1616,8 @@ class MarkersPanel(wx.Panel):
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers) - 1)
 
-        except:
+        except Exception as e:
+            print('hereee',e)
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
 
     def OnMarkersVisibility(self, evt, ctrl):
@@ -1681,14 +1683,18 @@ class MarkersPanel(wx.Panel):
         new_robot_marker.robot_target_matrix = self.current_robot_target_matrix
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                            size=new_marker.size,
-                                            colour=new_marker.colour,
-                                            coord=new_marker.coord[:3])
-        # Publisher.sendMessage('Add arrow marker', ball_id=len(self.markers),
-        #                       size=new_marker.size,
-        #                       colour=new_marker.colour,
-        #                       coord=new_marker.coord[:3])
+        if label not in self.__list_fiducial_labels():
+            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
+                                  size=self.arrow_marker_size,
+                                  color=new_marker.colour,
+                                  coord=new_marker.coord)
+        else:
+             Publisher.sendMessage('Add marker', ball_id=len(self.markers),
+                                                 size=new_marker.size,
+                                                 colour=new_marker.colour,
+                                                 coord=new_marker.coord[:3])
+        print("marker marker",new_marker.size)
+
 
         self.markers.append(new_marker)
         self.robot_markers.append(new_robot_marker)
