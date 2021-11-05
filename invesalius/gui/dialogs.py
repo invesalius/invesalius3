@@ -48,6 +48,7 @@ from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
 from invesalius.pubsub import pub as Publisher
+import csv
 
 try:
     from wx.adv import AboutDialogInfo, AboutBox
@@ -56,6 +57,7 @@ except ImportError:
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
+import invesalius.data.transformations as tr
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -873,6 +875,7 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
+            const.ROBOT: 'Robotic navigation',
             const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
             const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
@@ -3309,7 +3312,6 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.pedal_connection = pedal_connection
 
         self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
-
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
@@ -3594,8 +3596,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      and not change the function to the point of potentially breaking it.)
         #
         if self.obj_ref_id and fiducial_index == 4:
-            coord = coord_raw[self.obj_ref_id, :]
-            coord[2] = -coord[2]
+            if self.tracker_id == const.ROBOT:
+                trck_init_robot = self.trk_init[1][0]
+                coord = trck_init_robot.Run()
+            else:
+                coord = coord_raw[self.obj_ref_id, :]
+        else:
+            coord = coord_raw[0, :]
+        coord[2] = -coord[2]
 
         if fiducial_index == 3:
             coord = np.zeros([6,])
@@ -4301,6 +4309,312 @@ class SetOptitrackconfigs(wx.Dialog):
 
         return fn_cal, fn_userprofile
 
+class SetTrackerDeviceToRobot(wx.Dialog):
+    """
+    Robot navigation requires a tracker device to tracker the head position and the object (coil) position.
+    A dialog pops up showing a combobox with all trackers but debugs and the robot itself (const.TRACKERS[:-3])
+    """
+    def __init__(self, title=_("Setting tracker device:")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        self.tracker_id = const.DEFAULT_TRACKER
+        self._init_gui()
+
+    def _init_gui(self):
+        # ComboBox for spatial tracker device selection
+        tooltip = wx.ToolTip(_("Choose the tracking device"))
+        tracker_options = [_("Select tracker:")] + const.TRACKERS[:-3]
+        choice_trck = wx.ComboBox(self, -1, "",
+                                  choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        choice_trck.SetToolTip(tooltip)
+        choice_trck.SetSelection(const.DEFAULT_TRACKER)
+        choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(choice_trck, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def OnChoiceTracker(self, evt, ctrl):
+        choice = evt.GetSelection()
+        self.tracker_id = choice
+
+    def GetValue(self):
+        return self.tracker_id
+
+class SetRobotIP(wx.Dialog):
+    def __init__(self, title=_("Setting Robot IP")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        self.robot_ip = None
+        self._init_gui()
+
+    def _init_gui(self):
+        # ComboBox for spatial tracker device selection
+        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        choice_IP = wx.ComboBox(self, -1, "",
+                                  choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        choice_IP.SetToolTip(tooltip)
+        choice_IP.SetSelection(const.DEFAULT_TRACKER)
+        choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
+        choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        main_sizer.Add((5, 5))
+        main_sizer.Add(choice_IP, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add((15, 15))
+        main_sizer.Add(btnsizer, 0, wx.EXPAND)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def OnTxt_Ent(self, evt, ctrl):
+        self.robot_ip = str(ctrl.GetValue())
+
+    def OnChoiceIP(self, evt, ctrl):
+        self.robot_ip = ctrl.GetStringSelection()
+
+    def GetValue(self):
+        return self.robot_ip
+
+class CreateTransformationMatrixRobot(wx.Dialog):
+    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
+        '''
+        M_robot_2_tracker is created by an affine transformation. Robot TCP should be calibrated to the center of the tracker marker
+        '''
+        #TODO: make aboutbox
+        self.tracker_coord = []
+        self.tracker_angles = []
+        self.robot_coord = []
+        self.robot_angles = []
+
+        self.tracker = tracker
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+
+        self._init_gui()
+
+    def _init_gui(self):
+        # Buttons to acquire and remove points
+        txt_acquisition = wx.StaticText(self, -1, _('Poses acquisition for robot registration:'))
+
+        btn_create_point = wx.Button(self, -1, label=_('Single'))
+        btn_create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+
+        btn_cont_point = wx.ToggleButton(self, -1, label=_('Continuous'))
+        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=btn_cont_point))
+        self.btn_cont_point = btn_cont_point
+
+        txt_number = wx.StaticText(self, -1, _('0'))
+        txt_recorded = wx.StaticText(self, -1, _('Poses recorded'))
+        self.txt_number = txt_number
+
+        btn_reset = wx.Button(self, -1, label=_('Reset'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+
+        btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
+        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
+        btn_apply_reg.Enable(False)
+        self.btn_apply_reg = btn_apply_reg
+
+        # Buttons to save and load
+        txt_file = wx.StaticText(self, -1, _('Registration file'))
+
+        btn_save = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
+        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
+        btn_save.Enable(False)
+        self.btn_save = btn_save
+
+        btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+
+        # Create a horizontal sizers
+        border = 1
+        acquisition = wx.BoxSizer(wx.HORIZONTAL)
+        acquisition.AddMany([(btn_create_point, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                             (btn_cont_point, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        txt_pose = wx.BoxSizer(wx.HORIZONTAL)
+        txt_pose.AddMany([(txt_number, 1,  wx.LEFT, 50),
+                          (txt_recorded, 1, wx.LEFT, border)])
+
+        apply_reset = wx.BoxSizer(wx.HORIZONTAL)
+        apply_reset.AddMany([(btn_reset, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                             (btn_apply_reg, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        save_load = wx.BoxSizer(wx.HORIZONTAL)
+        save_load.AddMany([(btn_save, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                           (btn_load, 1, wx.ALL | wx.EXPAND | wx.GROW, border)])
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetHelpText("")
+        btn_ok.SetDefault()
+        btn_ok.Enable(False)
+        self.btn_ok = btn_ok
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        # Add line sizers into main sizer
+        border = 10
+        border_last = 10
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(txt_acquisition, 0, wx.BOTTOM |  wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_HORIZONTAL , border)
+        main_sizer.Add(acquisition, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
+        main_sizer.Add(txt_pose, 0,  wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(apply_reset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT , border_last)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border/2)
+        main_sizer.Add(save_load, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
+        main_sizer.Add(btnsizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
+        main_sizer.Fit(self)
+
+        self.SetSizer(main_sizer)
+        self.Update()
+        main_sizer.Fit(self)
+
+        self.CenterOnParent()
+
+    def affine_correg(self, tracker, robot):
+        m_change = tr.affine_matrix_from_points(robot[:].T, tracker[:].T,
+                                                shear=False, scale=False, usesvd=False)
+        return m_change
+
+    def OnContinuousAcquisition(self, evt=None, btn=None):
+        value = btn.GetValue()
+        if value:
+            self.timer.Start(500)
+        else:
+            self.timer.Stop()
+
+    def OnUpdate(self, evt):
+        self.OnCreatePoint(evt=None)
+
+    def OnCreatePoint(self, evt):
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        #robot thread is not initialized yet
+        coord_raw_robot = self.tracker.trk_init[1][0].Run()
+        coord_raw_tracker_obj = coord_raw[3]
+
+        if markers_flag[2]:
+            self.tracker_coord.append(coord_raw_tracker_obj[:3])
+            self.tracker_angles.append(coord_raw_tracker_obj[3:])
+            self.robot_coord.append(coord_raw_robot[:3])
+            self.robot_angles.append(coord_raw_robot[3:])
+            self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
+        else:
+            print('Cannot detect the coil markers, pls try again')
+
+        if len(self.tracker_coord) >= 3:
+            self.btn_apply_reg.Enable(True)
+
+    def OnReset(self, evt):
+        if self.btn_cont_point:
+            self.btn_cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+
+        self.tracker_coord = []
+        self.tracker_angles = []
+        self.robot_coord = []
+        self.robot_angles = []
+        self.M_tracker_2_robot = []
+        self.txt_number.SetLabel('0')
+
+        self.btn_apply_reg.Enable(False)
+        self.btn_save.Enable(False)
+        self.btn_ok.Enable(False)
+
+    def OnApply(self, evt):
+        if self.btn_cont_point:
+            self.btn_cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+
+        tracker_coord = np.array(self.tracker_coord)
+        robot_coord = np.array(self.robot_coord)
+
+        M_robot_2_tracker = self.affine_correg(tracker_coord, robot_coord)
+        M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
+        self.M_tracker_2_robot = M_tracker_2_robot
+
+        self.btn_save.Enable(True)
+        self.btn_ok.Enable(True)
+
+        #TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
+
+    def OnSaveReg(self, evt):
+        filename = ShowLoadSaveDialog(message=_(u"Save robot transformation file as..."),
+                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename="robottransform.rbtf", save_ext="rbtf")
+
+        if filename:
+            if self.M_tracker_2_robot is not None:
+                with open(filename, 'w', newline='') as file:
+                    writer = csv.writer(file, delimiter='\t')
+                    writer.writerows(self.M_tracker_2_robot)
+
+    def OnLoadReg(self, evt):
+        filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
+                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"))
+        if filename:
+            with open(filename, 'r') as file:
+                reader = csv.reader(file, delimiter='\t')
+                content = [row for row in reader]
+
+            self.M_tracker_2_robot = np.vstack(list(np.float_(content)))
+            print("Matrix tracker to robot:", self.M_tracker_2_robot)
+            self.btn_ok.Enable(True)
+
+    def GetValue(self):
+        return self.M_tracker_2_robot
+
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
@@ -4329,16 +4643,19 @@ class SetNDIconfigs(wx.Dialog):
         return port_list, port_selec
 
     def _init_gui(self):
-        self.com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
         row_com = wx.BoxSizer(wx.VERTICAL)
         row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
-        row_com.Add(self.com_ports, 0, wx.EXPAND)
+        row_com.Add(com_ports, 0, wx.EXPAND)
 
         port_list, port_selec = self.serial_ports()
 
-        self.com_ports.Append(port_list)
+        com_ports.Append(port_list)
         if port_selec:
-            self.com_ports.SetSelection(port_selec[0])
+            com_ports.SetSelection(port_selec[0])
+
+        self.com_ports = com_ports
 
         session = ses.Session()
         last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
@@ -4374,6 +4691,9 @@ class SetNDIconfigs(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
+        if not port_selec:
+            btn_ok.Enable(False)
+        self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
@@ -4401,6 +4721,9 @@ class SetNDIconfigs(wx.Dialog):
         main_sizer.Fit(self)
 
         self.CenterOnParent()
+
+    def OnChoicePort(self, evt, ctrl):
+        self.btn_ok.Enable(True)
 
     def GetValue(self):
         fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)

@@ -244,3 +244,47 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     )
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
+
+def compute_robot_to_head_matrix(raw_target_robot):
+    """
+    :param head: nx6 array of head coordinates from tracking device in robot space
+    :param robot: nx6 array of robot coordinates
+
+    :return: target_robot_matrix: 3x3 array representing change of basis from robot to head in robot system
+    """
+    head, robot = raw_target_robot
+    # compute head target matrix
+    m_head_target = dco.coordinates_to_transformation_matrix(
+        position=head[:3],
+        orientation=head[3:],
+        axes='rzyx',
+    )
+
+    # compute robot target matrix
+    m_robot_target = dco.coordinates_to_transformation_matrix(
+        position=robot[:3],
+        orientation=robot[3:],
+        axes='rzyx',
+    )
+    robot_to_head_matrix = np.linalg.inv(m_head_target) @ m_robot_target
+
+    return robot_to_head_matrix
+
+
+class transform_tracker_to_robot(object):
+    M_tracker_to_robot = np.array([])
+    def transformation_tracker_to_robot(self, tracker_coord):
+        if not transform_tracker_to_robot.M_tracker_to_robot.any():
+            return None
+
+        M_tracker = dco.coordinates_to_transformation_matrix(
+            position=tracker_coord[:3],
+            orientation=tracker_coord[3:6],
+            axes='rzyx',
+        )
+        M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker
+
+        translation, angles_as_deg = dco.transformation_matrix_to_coordinates(M_tracker_in_robot, axes='rzyx')
+        tracker_in_robot = list(translation) + list(angles_as_deg)
+
+        return tracker_in_robot

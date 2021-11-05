@@ -655,6 +655,18 @@ BOOLEAN_DIFF = 2
 BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
 
+# -------------- User interface ---------------------
+
+# The column order in the marker panel
+#
+ID_COLUMN = 0
+SESSION_COLUMN = 1
+LABEL_COLUMN = 2
+TARGET_COLUMN = 3
+X_COLUMN = 4
+Y_COLUMN = 5
+Z_COLUMN = 6
+
 #------------ Navigation defaults -------------------
 
 MARKER_COLOUR = (1.0, 1.0, 0.)
@@ -672,18 +684,19 @@ CAMERA = 5
 POLARIS = 6
 POLARISP4 = 7
 OPTITRACK = 8
-DEBUGTRACKRANDOM = 9
-DEBUGTRACKAPPROACH = 10
+ROBOT = 9
+DEBUGTRACKRANDOM = 10
+DEBUGTRACKAPPROACH = 11
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
 
 TRACKERS = [_("Claron MicronTracker"),
-            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
-            _("Polhemus PATRIOT"), _("Camera tracker"),
-            _("NDI Polaris"), _("NDI Polaris P4"),
-            _("Optitrack"), _("Debug tracker (random)"),
-            _("Debug tracker (approach)")]
+           _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
+           _("Polhemus PATRIOT"), _("Camera tracker"),
+           _("NDI Polaris"), _("NDI Polaris P4"),
+           _("Optitrack"), _("Robot tracker"),
+           _("Debug tracker (random)"), _("Debug tracker (approach)")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -835,3 +848,13 @@ WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
 BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
+
+#Robot
+ROBOT_ElFIN_IP = ['143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_ElFIN_PORT = 10003
+ROBOT_MOTIONS = {"normal": 0, "linear out": 1, "arc": 2}
+ROBOT_HEAD_VELOCITY_THRESHOLD = 10 #mm/s
+ROBOT_ARC_THRESHOLD_DISTANCE = 100 #mm
+ROBOT_VERSOR_SCALE_FACTOR = 70
+#Robot Working Space is defined as 800mm in Elfin manual. For safety, the value is reduced by 5%.
+ROBOT_WORKING_SPACE = 760 #mm

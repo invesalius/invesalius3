@@ -987,10 +987,10 @@ class Viewer(wx.Panel):
 
             if thrdist and thrcoordx and thrcoordy and thrcoordz:
                 self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
-                Publisher.sendMessage('Coil at target', state=True)
+                wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=True)
             else:
                 self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
-                Publisher.sendMessage('Coil at target', state=False)
+                wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=False)
 
             self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                     arrow_pitch_y1, arrow_pitch_y2
