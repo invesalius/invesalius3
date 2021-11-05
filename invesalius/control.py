@@ -965,7 +965,7 @@ class Controller():
                 re_dialog = dialog.ResizeImageDialog()
                 re_dialog.SetValue(int(resolution_percentage*100))
                 re_dialog_value = re_dialog.ShowModal()
-                re_dialog.Close() 
+                re_dialog.Close()
 
                 if re_dialog_value == wx.ID_OK:
                     percentage = re_dialog.GetValue()
@@ -1143,7 +1143,7 @@ class Controller():
     def show_mask_preview(self, index, flag=True):
         proj = prj.Project()
         mask = proj.mask_dict[index]
-        slc = self.Slice.do_threshold_to_all_slices(mask)
+        self.Slice.do_threshold_to_all_slices(mask)
         mask.create_3d_preview()
         Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=flag)
         Publisher.sendMessage("Reload actual slice")
