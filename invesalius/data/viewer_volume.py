@@ -604,7 +604,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
     def AddMarkerwithOrientation(self, arrow_marker_id, size, color, coord):
         """
-        Markers with orientation created by navigation tools and rendered in volume viewer.
+        Markers arrow with orientation created by navigation tools and rendered in volume viewer.
         """
         self.arrow_marker_id = arrow_marker_id
         coord_flip = list(coord)
