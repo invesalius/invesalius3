@@ -836,8 +836,10 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
             if self.actor_peel:
-                self.object_orientation_torus_actor.SetVisibility(1)
-                self.obj_projection_arrow_actor.SetVisibility(1)
+                if self.object_orientation_torus_actor:
+                    self.object_orientation_torus_actor.SetVisibility(1)
+                if self.obj_projection_arrow_actor:
+                    self.obj_projection_arrow_actor.SetVisibility(1)
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
 

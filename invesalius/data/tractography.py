@@ -29,13 +29,10 @@ import time
 import numpy as np
 import queue
 from invesalius.pubsub import pub as Publisher
-from scipy.stats import norm
 import vtk
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as img_utils
-
-import invesalius.project as prj
 
 # Nice print for arrays
 # np.set_printoptions(precision=2)
@@ -199,7 +196,7 @@ def compute_tracts(trekker, position, affine, affine_vtk, n_tracts):
     trekker.seed_coordinates(np.repeat(seed_trk, n_tracts, axis=0))
     # print("trk list len: ", len(trekker.run()))
     trk_list = trekker.run()
-    if trk_list:
+    if len(trk_list) > 2:
         root = tracts_computation(trk_list, root, 0)
         Publisher.sendMessage('Remove tracts')
         Publisher.sendMessage('Update tracts', root=root, affine_vtk=affine_vtk, coord_offset=position)
@@ -312,7 +309,7 @@ class ComputeTractsThread(threading.Thread):
                 # run the trekker, this is the slowest line of code, be careful to just use once!
                 trk_list = trekker.run()
 
-                if trk_list:
+                if len(trk_list) > 2:
                     # print("dist: {}".format(dist))
                     if dist >= seed_radius:
                         # when moving the coil further than the seed_radius restart the bundle computation
@@ -409,6 +406,7 @@ class ComputeTractsACTThread(threading.Thread):
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
 
         # n_threads = n_tracts_total
+        n_threads = int(n_threads/2)
         p_old = np.array([[0., 0., 0.]])
         p_old_pre = np.array([[0., 0., 0.]])
         coord_offset = None
@@ -527,7 +525,7 @@ class ComputeTractsACTThread(threading.Thread):
                     trk_list = trekker.run()
 
                     # check if any tract was found, otherwise doesn't count
-                    if trk_list:
+                    if len(trk_list) > 2:
                         bundle = vtk.vtkMultiBlockDataSet()
                         branch = tracts_computation_branch(trk_list, alpha)
                         bundle.SetBlock(n_branches, branch)
@@ -540,7 +538,7 @@ class ComputeTractsACTThread(threading.Thread):
 
                 elif dist < dist_radius and n_tracts < n_tracts_total:
                     trk_list = trekker.run()
-                    if trk_list:
+                    if len(trk_list) > 2:
                         # compute tract blocks and add to bundle until reaches the maximum number of tracts
                         # the alpha changes depending on the parameter set
                         branch = tracts_computation_branch(trk_list, alpha)
@@ -654,7 +652,7 @@ class ComputeTractsThreadSingleBlock(threading.Thread):
                 # run the trekker, this is the slowest line of code, be careful to just use once!
                 trk_list = trekker.run()
 
-                if trk_list:
+                if len(trk_list) > 2:
                     # if the seed is outside the defined radius, restart the bundle computation
                     if dist >= seed_radius:
                         root = tracts_computation(trk_list, root, 0)

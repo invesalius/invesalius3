@@ -118,10 +118,11 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update raw coordinates', coordinates_raw=coordinates_raw, markers_flag=markers_flag)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
+                wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord, flag= self.peel_loaded)
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1

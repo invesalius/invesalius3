@@ -824,16 +824,16 @@ CAM_MODE = True
 
 # Tractography visualization
 N_TRACTS = 100
-PEEL_DEPTH = 5
-MAX_PEEL_DEPTH = 30
-SEED_OFFSET = 15
+PEEL_DEPTH = 10
+MAX_PEEL_DEPTH = 40
+SEED_OFFSET = 20
 SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.15
+SLEEP_NAVIGATION = 0.3
 SLEEP_COORDINATES = 0.05
 
-BRAIN_OPACITY = 0.5
+BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
 TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.03125, 'min_fod': 0.05, 'probe_quality': 4,
                   'max_interval': 1, 'min_radius_curvature': 0.625, 'probe_length': 0.15625,

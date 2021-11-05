@@ -1096,9 +1096,7 @@ class ObjectRegistrationPanel(wx.Panel):
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
                 Publisher.sendMessage('Change camera checkbox', status=False)
-                wx.MessageBox(_("Object file successfully loaded"), _("Load"))
-            else:
-                wx.MessageBox(_("Object filename not recognized"), _("Load"))
+                wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
