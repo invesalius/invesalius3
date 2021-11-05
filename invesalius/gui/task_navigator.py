@@ -1597,6 +1597,11 @@ class MarkersPanel(wx.Panel):
                                             size=new_marker.size,
                                             colour=new_marker.colour,
                                             coord=new_marker.coord[:3])
+        # Publisher.sendMessage('Add arrow marker', ball_id=len(self.markers),
+        #                       size=new_marker.size,
+        #                       colour=new_marker.colour,
+        #                       coord=new_marker.coord[:3])
+
         self.markers.append(new_marker)
 
         # Add item to list control in panel

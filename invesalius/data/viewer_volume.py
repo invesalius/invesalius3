@@ -277,6 +277,7 @@ class Viewer(wx.Panel):
 
         # Related to marker creation in navigation tools
         Publisher.subscribe(self.AddMarker, 'Add marker')
+        Publisher.subscribe(self.AddMarkerwithOrientation, 'Add arrow marker')
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
@@ -601,6 +602,36 @@ class Viewer(wx.Panel):
             self.RemoveTarget()
 
         self.UpdateRender()
+    def AddMarkerwithOrientation(self, arrow_marker_id, size, color, coord):
+        """
+        Markers with orientation created by navigation tools and rendered in volume viewer.
+        """
+        self.arrow_marker_id = arrow_marker_id
+        coord_flip = list(coord)
+        coord_flip[1] = -coord_flip[1]
+        self.static_arrows.append(self.Add_ObjectArrow(self, coord_flip, coord_flip, color, size))
+        # ball_ref = vtk.vtkSphereSource()
+        # ball_ref.SetRadius(size)
+        # ball_ref.SetCenter(coord_flip)
+        #
+        # mapper = vtk.vtkPolyDataMapper()
+        # mapper.SetInputConnection(ball_ref.GetOutputPort())
+        #
+        # prop = vtk.vtkProperty()
+        # prop.SetColor(colour)
+
+        # adding a new actor for the present ball
+        #self.static_arrows.append(vtk.vtkActor())
+
+        # self.static_arrows[self.arrow_marker_id].SetMapper(mapper)
+        # self.static_arrows[self.arrow_marker_id].SetProperty(prop)
+
+        self.ren.AddActor(self.static_arrows[self.arrow_marker_id])
+        self.arrow_marker_id += 1
+
+        #self.UpdateRender()
+        self.Refresh()
+
 
     def AddMarker(self, ball_id, size, colour, coord):
         """
