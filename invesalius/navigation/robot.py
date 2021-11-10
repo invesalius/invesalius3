@@ -175,6 +175,11 @@ class ControlRobot(threading.Thread):
 
         return coord_raw, coord_robot_raw, markers_flag
 
+    def robot_motion_reset(self):
+        self.trck_init_robot.StopRobot()
+        self.arc_motion_flag = False
+        self.arc_motion_step_flag = const.ROBOT_MOTIONS["normal"]
+
     def robot_move_decision(self, distance_target, new_robot_coordinates, current_robot_coordinates, current_head_filtered):
         """
         There are two types of robot movements.
@@ -277,6 +282,7 @@ class ControlRobot(threading.Thread):
 
             if not self.robot_target_queue.empty():
                 self.robot_tracker_flag, self.m_change_robot_to_head = self.robot_target_queue.get_nowait()
+                self.robot_motion_reset()
                 self.robot_target_queue.task_done()
 
             if not self.object_at_target_queue.empty():
