@@ -359,7 +359,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
-        self.current_coord = 0, 0, 0
+        self.current_coord = 0, 0, 0, None, None, None
 
         # Initialize list of buttons and numctrls for wx objects
         self.btns_set_fiducial = [None, None, None, None, None, None]
@@ -704,7 +704,7 @@ class NeuronavigationPanel(wx.Panel):
         if self.btns_set_fiducial[n].GetValue():
             coord = self.numctrls_fiducial[n][0].GetValue(),\
                     self.numctrls_fiducial[n][1].GetValue(),\
-                    self.numctrls_fiducial[n][2].GetValue(), 0, 0, 0
+                    self.numctrls_fiducial[n][2].GetValue(), None, None, None
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
 
@@ -1144,9 +1144,9 @@ class MarkersPanel(wx.Panel):
         x : float = 0
         y : float = 0
         z : float = 0
-        alpha : float = 0
-        beta : float = 0
-        gamma : float = 0
+        alpha : float = None
+        beta : float = None
+        gamma : float = None
         r : float = 0
         g : float = 1
         b : float = 0
@@ -1161,6 +1161,7 @@ class MarkersPanel(wx.Panel):
         # x, y, z, alpha, beta, gamma can be jointly accessed as coord
         @property
         def coord(self):
+            print(self.alpha)
             return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma),)
 
         @coord.setter
@@ -1253,8 +1254,8 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.current_coord = 0, 0, 0, 0, 0, 0
-        self.current_angle = 0, 0, 0
+        self.current_coord = 0, 0, 0, None, None, None
+        self.current_angle =  None, None, None
         self.current_seed = 0, 0, 0
         self.current_robot_target_matrix = [None] * 9
         self.markers = []
@@ -1688,12 +1689,16 @@ class MarkersPanel(wx.Panel):
                                   size=self.arrow_marker_size,
                                   color=new_marker.colour,
                                   coord=new_marker.coord)
+        elif new_marker.coord[5] is None:
+            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
+                                  size=new_marker.size,
+                                  colour=new_marker.colour,
+                                  coord=new_marker.coord[:3])
         else:
              Publisher.sendMessage('Add marker', ball_id=len(self.markers),
                                                  size=new_marker.size,
                                                  colour=new_marker.colour,
                                                  coord=new_marker.coord[:3])
-        print("marker marker",new_marker.size)
 
 
         self.markers.append(new_marker)
