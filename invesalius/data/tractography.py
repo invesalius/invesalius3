@@ -716,21 +716,21 @@ def grid_offset(data, coord_list_w_tr, img_shift):
 
     # extract the first occurrence of a specific label from the MRI image
     labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
-    # lab_first = np.where(labs == 1)
-    # if not lab_first:
-    #     pt_found_inv = None
-    # else:
-    #     pt_found = coord_list_w_tr[:, lab_first[0][0]][:3]
-    #     # convert coordinate back to invesalius 3D space
-    #     pt_found_inv = pt_found - np.array([0., img_shift, 0.])
-
-    lab_first = np.argmax(labs == 1)
-    if labs[lab_first] == 1:
-        pt_found = coord_list_w_tr_mri[lab_first, :]
+    lab_first = np.where(labs == 1)
+    if not lab_first:
+        pt_found_inv = None
+    else:
+        pt_found = coord_list_w_tr[:, lab_first[0][0]][:3]
         # convert coordinate back to invesalius 3D space
         pt_found_inv = pt_found - np.array([0., img_shift, 0.])
-    else:
-        pt_found_inv = None
+
+    # lab_first = np.argmax(labs == 1)
+    # if labs[lab_first] == 1:
+    #     pt_found = coord_list_w_tr_mri[lab_first, :]
+    #     # convert coordinate back to invesalius 3D space
+    #     pt_found_inv = pt_found - np.array([0., img_shift, 0.])
+    # else:
+    #     pt_found_inv = None
 
     # # convert to world coordinate space to use as seed for fiber tracking
     # pt_found_tr = np.append(pt_found, 1)[np.newaxis, :].T
