@@ -262,6 +262,7 @@ class ComputeTractsThread(threading.Thread):
 
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
         # n_threads = n_tracts_total
+        n_threads = int(n_threads/4)
         p_old = np.array([[0., 0., 0.]])
         n_tracts = 0
 
@@ -406,7 +407,7 @@ class ComputeTractsACTThread(threading.Thread):
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
 
         # n_threads = n_tracts_total
-        n_threads = int(n_threads/2)
+        n_threads = int(n_threads/4)
         p_old = np.array([[0., 0., 0.]])
         p_old_pre = np.array([[0., 0., 0.]])
         coord_offset = None
@@ -678,16 +679,21 @@ def set_trekker_parameters(trekker, params):
     """
     trekker.seed_maxTrials(params['seed_max'])
     trekker.stepSize(params['step_size'])
-    trekker.minFODamp(params['min_fod'])
+    # minFODamp is not set because it should vary in the loop to create the
+    # different transparency tracts
+    # trekker.minFODamp(params['min_fod'])
     trekker.probeQuality(params['probe_quality'])
     trekker.maxEstInterval(params['max_interval'])
     trekker.minRadiusOfCurvature(params['min_radius_curvature'])
     trekker.probeLength(params['probe_length'])
     trekker.writeInterval(params['write_interval'])
-    trekker.maxLength(params['max_length'])
-    trekker.minLength(params['min_length'])
+    # these two does not need to be set in the new package
+    # trekker.maxLength(params['max_length'])
+    # trekker.minLength(params['min_length'])
     trekker.maxSamplingPerStep(params['max_sampling_step'])
     trekker.dataSupportExponent(params['data_support_exponent'])
+    trekker.useBestAtInit(params['use_best_init'])
+    trekker.initMaxEstTrials(params['init_max_est_trials'])
 
     # check number if number of cores is valid in configuration file,
     # otherwise use the maximum number of threads which is usually 2*N_CPUS
@@ -710,6 +716,14 @@ def grid_offset(data, coord_list_w_tr, img_shift):
 
     # extract the first occurrence of a specific label from the MRI image
     labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
+    # lab_first = np.where(labs == 1)
+    # if not lab_first:
+    #     pt_found_inv = None
+    # else:
+    #     pt_found = coord_list_w_tr[:, lab_first[0][0]][:3]
+    #     # convert coordinate back to invesalius 3D space
+    #     pt_found_inv = pt_found - np.array([0., img_shift, 0.])
+
     lab_first = np.argmax(labs == 1)
     if labs[lab_first] == 1:
         pt_found = coord_list_w_tr_mri[lab_first, :]

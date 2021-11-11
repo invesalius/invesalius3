@@ -1989,8 +1989,10 @@ class TractographyPanel(wx.Panel):
             slic = sl.Slice()
             prj_data = prj.Project()
             matrix_shape = tuple(prj_data.matrix_shape)
+            spacing = tuple(prj_data.spacing)
+            img_shift = spacing[1] * (matrix_shape[1] - 1)
             self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
+            self.affine[1, -1] -= img_shift
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
         try:
@@ -2013,7 +2015,7 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
-        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+
         Publisher.sendMessage('Begin busy cursor')
         filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import Trekker FOD"))
         # Juuso
@@ -2029,64 +2031,88 @@ class TractographyPanel(wx.Panel):
         #     self.affine = slic.affine
         #     self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        if not self.affine_vtk:
-            slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+        try:
+            if filename:
+                Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
 
-        # try:
+                if not self.affine_vtk:
+                    slic = sl.Slice()
+                    prj_data = prj.Project()
+                    matrix_shape = tuple(prj_data.matrix_shape)
+                    spacing = tuple(prj_data.spacing)
+                    img_shift = spacing[1] * (matrix_shape[1] - 1)
+                    self.affine = slic.affine.copy()
+                    self.affine[1, -1] -= img_shift
+                    self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        self.trekker = Trekker.initialize(filename.encode('utf-8'))
-        self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
+                # try:
 
-        self.checktracts.Enable(1)
-        self.checktracts.SetValue(True)
-        self.view_tracts = True
-        Publisher.sendMessage('Update Trekker object', data=self.trekker)
-        Publisher.sendMessage('Update number of threads', data=n_threads)
-        Publisher.sendMessage('Update tracts visualization', data=1)
-        Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
-        # except:
-        #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
+                self.trekker = Trekker.initialize(filename.encode('utf-8'))
+                self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
+
+                self.checktracts.Enable(1)
+                self.checktracts.SetValue(True)
+                self.view_tracts = True
+                Publisher.sendMessage('Update Trekker object', data=self.trekker)
+                Publisher.sendMessage('Update number of threads', data=n_threads)
+                Publisher.sendMessage('Update tracts visualization', data=1)
+                Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
+                # except:
+                #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
+        except:
+            wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
 
     def OnLoadACT(self, event=None):
-        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
-        Publisher.sendMessage('Begin busy cursor')
-        filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import anatomical labels"))
-        # Baran
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
-        # filename = os.path.join(data_dir, act_path)
 
-        act_data = nb.squeeze_image(nb.load(filename))
-        act_data = nb.as_closest_canonical(act_data)
-        act_data.update_header()
-        act_data_arr = act_data.get_fdata()
+        if self.trekker:
 
-        if not self.affine_vtk:
-            slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+            Publisher.sendMessage('Begin busy cursor')
+            filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import anatomical labels"))
+            # Baran
+            # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
+            # act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
+            # filename = os.path.join(data_dir, act_path)
+            try:
+                if filename:
+                    Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
 
-        self.checkACT.Enable(1)
-        self.checkACT.SetValue(True)
+                    act_data = nb.squeeze_image(nb.load(filename))
+                    act_data = nb.as_closest_canonical(act_data)
+                    act_data.update_header()
+                    act_data_arr = act_data.get_fdata()
 
-        Publisher.sendMessage('Update ACT data', data=act_data_arr)
-        Publisher.sendMessage('Enable ACT', data=True)
-        # Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
-        # Publisher.sendMessage('Update number of threads', data=n_threads)
-        # Publisher.sendMessage('Update tracts visualization', data=1)
-        Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
+                    if not self.affine_vtk:
+                        slic = sl.Slice()
+                        prj_data = prj.Project()
+                        matrix_shape = tuple(prj_data.matrix_shape)
+                        spacing = tuple(prj_data.spacing)
+                        img_shift = spacing[1] * (matrix_shape[1] - 1)
+                        self.affine = slic.affine.copy()
+                        self.affine[1, -1] -= img_shift
+                        self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        Publisher.sendMessage('End busy cursor')
+                    self.checkACT.Enable(1)
+                    self.checkACT.SetValue(True)
+
+                    # ACT rules should be as follows:
+                    self.trekker.pathway_stop_at_entry(filename.encode('utf-8'), -1)  # outside
+                    self.trekker.pathway_discard_if_ends_inside(filename.encode('utf-8'), 1)  # wm
+                    self.trekker.pathway_discard_if_enters(filename.encode('utf-8'), 0)  # csf
+
+                    Publisher.sendMessage('Update ACT data', data=act_data_arr)
+                    Publisher.sendMessage('Enable ACT', data=True)
+                    # Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
+                    # Publisher.sendMessage('Update number of threads', data=n_threads)
+                    # Publisher.sendMessage('Update tracts visualization', data=1)
+                    Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
+            except:
+                wx.MessageBox(_("Unable to load ACT."), _("InVesalius 3"))
+
+            Publisher.sendMessage('End busy cursor')
+        else:
+            wx.MessageBox(_("Load FOD image before the ACT."), _("InVesalius 3"))
 
     def OnLoadParameters(self, event=None):
         import json
