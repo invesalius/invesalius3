@@ -192,7 +192,7 @@ class Navigation():
 
     def UpdateSleep(self, sleep):
         self.sleep_nav = sleep
-        self.serial_port_connection.sleep_nav = sleep
+        # self.serial_port_connection.sleep_nav = sleep
 
     def UpdateSerialPort(self, serial_port_in_use, com_port=None, baud_rate=None):
         self.serial_port_in_use = serial_port_in_use
@@ -311,12 +311,15 @@ class Navigation():
                 slic = sl.Slice()
                 prj_data = prj.Project()
                 matrix_shape = tuple(prj_data.matrix_shape)
+                spacing = tuple(prj_data.spacing)
+                img_shift = spacing[1] * (matrix_shape[1] - 1)
                 affine = slic.affine.copy()
-                affine[1, -1] -= matrix_shape[1]
+                affine[1, -1] -= img_shift
+                # affine[1, -1] -= matrix_shape[1]
                 affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
                 Publisher.sendMessage("Update marker offset state", create=True)
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
-                                self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
+                                self.n_threads, self.act_data, affine_vtk, img_shiftgit
                 # print("Appending the tract computation thread!")
                 queues = [self.coord_tracts_queue, self.tracts_queue]
                 if self.enable_act:
