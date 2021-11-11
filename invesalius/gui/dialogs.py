@@ -3597,8 +3597,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         #
         if self.obj_ref_id and fiducial_index == 4:
             if self.tracker_id == const.ROBOT:
-                trck_init_robot = self.trk_init[1][0]
-                coord = trck_init_robot.Run()
+                trk_init_robot = self.trk_init[0][1]
+                coord = trk_init_robot.GetRobotCoordinates()
             else:
                 coord = coord_raw[self.obj_ref_id, :]
         else:
@@ -4418,7 +4418,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class CreateTransformationMatrixRobot(wx.Dialog):
-    def __init__(self, tracker, robot_coordinates, title=_("Create transformation matrix to robot space")):
+    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -4431,7 +4431,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.robot_angles = []
 
         self.tracker = tracker
-        self.robot_coordinates = robot_coordinates
+        self.robot_coordinates = tracker.GetTrackerInfo()[0][0][1]
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
@@ -4543,7 +4543,6 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
     def OnCreatePoint(self, evt):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-        #robot thread is not initialized yet
         coord_raw_robot = self.robot_coordinates.GetRobotCoordinates()
         coord_raw_tracker_obj = coord_raw[3]
 

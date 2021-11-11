@@ -16,41 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import wx
-
-import invesalius.gui.dialogs as dlg
 from invesalius.pubsub import pub as Publisher
 
-
-class Robot():
-    def __init__(self, tracker):
-        """
-        Class to establish the connection between the robot and InVesalius
-        :param tracker: tracker.py  instance
-        """
-        self.tracker = tracker
-        self.trk_init = None
-
-        self.robot_coordinates = RobotCoordinates()
-        self.__bind_events()
-
-    def __bind_events(self):
-        Publisher.subscribe(self.OnSetRobotCoordinates, 'Update Robot Coordinates')
-
-    def OnSetRobotCoordinates(self, coord):
-        self.robot_coordinates.SetRobotCoordinates(coord)
-
-    def OnRobotConnection(self):
-        dlg_ip = dlg.SetRobotIP()
-        if dlg_ip.ShowModal() == wx.ID_OK:
-            robot_IP = dlg_ip.GetValue()
-            Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
-            dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker, self.robot_coordinates)
-            if dlg_correg_robot.ShowModal() == wx.ID_OK:
-                m_tracker_to_robot = dlg_correg_robot.GetValue()
-                Publisher.sendMessage('Update robot transformation matrix', m_tracker_to_robot=m_tracker_to_robot.tolist())
-                return True
-        return False
 
 class RobotCoordinates:
     """
@@ -59,6 +26,10 @@ class RobotCoordinates:
     """
     def __init__(self):
         self.coord = 6*[0]
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetRobotCoordinates, 'Update Robot Coordinates')
 
     def SetRobotCoordinates(self, coord):
         self.coord = coord

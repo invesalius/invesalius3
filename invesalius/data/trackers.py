@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
+from invesalius.pubsub import pub as Publisher
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
 # TODO: Redesign error messages. No point in having "Could not connect to default tracker" in all trackers
@@ -224,7 +225,9 @@ def OptitrackTracker(tracker_id):
     return trck_init, lib_mode
 
 def RobotTracker(tracker_id):
+    from invesalius.navigation.robot import RobotCoordinates
     from wx import ID_OK
+
     trck_init = True
     tracker_id = None
     dlg_device = dlg.SetTrackerDeviceToRobot()
@@ -232,6 +235,12 @@ def RobotTracker(tracker_id):
         tracker_id = dlg_device.GetValue()
         if tracker_id:
             trck_init = TrackerConnection(tracker_id, None, 'connect')[0]
+            dlg_ip = dlg.SetRobotIP()
+            if dlg_ip.ShowModal() == ID_OK:
+                robot_IP = dlg_ip.GetValue()
+                Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
+                trck_init_robot = RobotCoordinates()
+                trck_init = [trck_init, trck_init_robot]
 
     return trck_init, tracker_id
 

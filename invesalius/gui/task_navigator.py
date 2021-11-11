@@ -65,7 +65,7 @@ from invesalius.gui import utils as gui_utils
 from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
-from invesalius.navigation.robot import Robot
+
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -349,7 +349,6 @@ class NeuronavigationPanel(wx.Panel):
         )
         self.icp = ICP()
         self.tracker = tracker
-        self.robot = Robot(tracker)
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
@@ -669,7 +668,11 @@ class NeuronavigationPanel(wx.Panel):
 
         self.tracker.SetTracker(choice)
         if self.tracker.tracker_id == const.ROBOT:
-            self.tracker.ConnectToRobot(self.robot)
+            dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
+            if dlg_correg_robot.ShowModal() == wx.ID_OK:
+                m_tracker_to_robot = dlg_correg_robot.GetValue()
+                Publisher.sendMessage('Update robot transformation matrix', m_tracker_to_robot=m_tracker_to_robot.tolist())
+                Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)

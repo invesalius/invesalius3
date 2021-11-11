@@ -85,6 +85,7 @@ def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
                     const.POLARIS: PolarisCoord,
                     const.POLARISP4: PolarisP4Coord,
                     const.OPTITRACK: OptitrackCoord,
+                    const.ROBOT: RobotCoord,
                     const.DEBUGTRACKRANDOM: DebugCoordRandom,
                     const.DEBUGTRACKAPPROACH: DebugCoordRandom}
         coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
@@ -341,6 +342,18 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
 
     return coord
 
+def RobotCoord(trk_init, trck_id, ref_mode):
+    if len(trk_init[0]) == 2:
+        coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0][0], trk_init[1], ref_mode)
+        robotcoordinates = trk_init[0][-1]
+        coord_robot = robotcoordinates.GetRobotCoordinates()
+        if coord_robot is None:
+            coord_robot = np.array([0, 0, 0, 0, 0, 0])
+    else:
+        coord_tracker, markers_flag = GetCoordinatesForThread(trk_init, trk_init[1], ref_mode)
+        coord_robot = np.array([0, 0, 0, 0, 0, 0])
+
+    return np.vstack([coord_tracker[0], coord_tracker[1], coord_robot, coord_tracker[2]]), markers_flag
 
 def DebugCoordRandom(trk_init, trck_id, ref_mode):
     """
@@ -366,13 +379,15 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     #
     # else:
 
-    dx = [-70, 70]
+    dx = [-40, 40]
     dt = [-180, 180]
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                       uniform(*dt), uniform(*dt), uniform(*dt)])
-    coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-                      uniform(*dt), uniform(*dt), uniform(*dt)])
+    # coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+    #                   uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord2 = np.array([40, 50, 40,
+                      10, 20, 30])
     coord3 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                        uniform(*dt), uniform(*dt), uniform(*dt)])
     coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
@@ -562,8 +577,6 @@ class ReceiveCoordinates(threading.Thread):
         threading.Thread.__init__(self, name='ReceiveCoordinates')
         self.trck_init = trck_init
         self.trck_id = trck_id
-        if trck_id == const.ROBOT:
-            self.trck_id = trck_init[1]
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
 
