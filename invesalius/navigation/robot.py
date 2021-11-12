@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import invesalius.data.bases as db
 from invesalius.pubsub import pub as Publisher
 
 
@@ -35,4 +36,8 @@ class RobotCoordinates:
         self.coord = coord
 
     def GetRobotCoordinates(self):
-        return self.coord
+        coil_robot_in_tracker = db.transform_robot_to_tracker().transformation_tracker_to_robot(self.coord)
+        if coil_robot_in_tracker is None:
+            coil_robot_in_tracker = self.coord
+
+        return coil_robot_in_tracker

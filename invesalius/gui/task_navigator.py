@@ -670,7 +670,8 @@ class NeuronavigationPanel(wx.Panel):
         if self.tracker.tracker_id == const.ROBOT:
             dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
             if dlg_correg_robot.ShowModal() == wx.ID_OK:
-                m_tracker_to_robot = dlg_correg_robot.GetValue()
+                m_tracker_to_robot, m_robot_to_tracker = dlg_correg_robot.GetValue()
+                db.transform_robot_to_tracker.M_robot_to_tracker = m_robot_to_tracker
                 Publisher.sendMessage('Update robot transformation matrix', m_tracker_to_robot=m_tracker_to_robot.tolist())
                 Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 

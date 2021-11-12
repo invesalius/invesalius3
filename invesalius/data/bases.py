@@ -271,18 +271,18 @@ def compute_robot_to_head_matrix(raw_target_robot):
     return robot_to_head_matrix
 
 
-class transform_tracker_to_robot(object):
-    M_tracker_to_robot = np.array([])
-    def transformation_tracker_to_robot(self, tracker_coord):
-        if not transform_tracker_to_robot.M_tracker_to_robot.any():
+class transform_robot_to_tracker(object):
+    M_robot_to_tracker = np.array([])
+    def transformation_tracker_to_robot(self, robot_coord):
+        if not transform_robot_to_tracker.M_robot_to_tracker.any():
             return None
 
-        M_tracker = dco.coordinates_to_transformation_matrix(
-            position=tracker_coord[:3],
-            orientation=tracker_coord[3:6],
+        M_robot = dco.coordinates_to_transformation_matrix(
+            position=robot_coord[:3],
+            orientation=robot_coord[3:6],
             axes='rzyx',
         )
-        M_tracker_in_robot = transform_tracker_to_robot.M_tracker_to_robot @ M_tracker
+        M_tracker_in_robot = transform_robot_to_tracker.M_robot_to_tracker @ M_robot
 
         translation, angles_as_deg = dco.transformation_matrix_to_coordinates(M_tracker_in_robot, axes='rzyx')
         tracker_in_robot = list(translation) + list(angles_as_deg)

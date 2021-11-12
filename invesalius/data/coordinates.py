@@ -22,7 +22,6 @@ import numpy as np
 import threading
 import wx
 
-import invesalius.data.bases as db
 import invesalius.data.transformations as tr
 import invesalius.constants as const
 
@@ -344,7 +343,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
 
 def RobotCoord(trk_init, trck_id, ref_mode):
     if len(trk_init[0]) == 2:
-        coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0][0], trk_init[1], ref_mode)
+        coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[1], ref_mode)
         robotcoordinates = trk_init[0][-1]
         coord_robot = robotcoordinates.GetRobotCoordinates()
         if coord_robot is None:

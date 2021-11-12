@@ -228,7 +228,7 @@ def RobotTracker(tracker_id):
     from invesalius.navigation.robot import RobotCoordinates
     from wx import ID_OK
 
-    trck_init = True
+    trck_init = None
     tracker_id = None
     dlg_device = dlg.SetTrackerDeviceToRobot()
     if dlg_device.ShowModal() == ID_OK:
@@ -241,6 +241,9 @@ def RobotTracker(tracker_id):
                 Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
                 trck_init_robot = RobotCoordinates()
                 trck_init = [trck_init, trck_init_robot]
+            else:
+                trck_init = None
+                tracker_id = None
 
     return trck_init, tracker_id
 
