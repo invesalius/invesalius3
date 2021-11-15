@@ -51,7 +51,7 @@ class Tracker():
             self.DisconnectTracker()
 
             self.trk_init = dt.TrackerConnection(new_tracker, None, 'connect')
-            if not self.trk_init[0]:
+            if not all(list(self.trk_init)):
                 dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
 
                 self.tracker_id = 0
@@ -70,6 +70,7 @@ class Tracker():
                                     label=_("Disconnecting tracker ..."))
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
+            Publisher.sendMessage('Robot navigation mode', robot_mode=False)
             self.trk_init = dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
             if not self.trk_init[0]:
                 self.tracker_connected = False
@@ -94,9 +95,10 @@ class Tracker():
     def ConnectToRobot(self, navigation, tracker, robot):
         robot.SetRobotQueues([navigation.robot_target_queue, navigation.object_at_target_queue])
         robot.OnRobotConnection()
-        trk_init_robot = self.trk_init[1][0]
+        trk_init_robot = self.trk_init[0][1][0]
         if trk_init_robot:
             robot.StartRobotThreadNavigation(tracker, navigation.coord_queue)
+            Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 
     def IsTrackerInitialized(self):
         return self.trk_init and self.tracker_id and self.tracker_connected

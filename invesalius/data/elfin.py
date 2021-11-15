@@ -45,7 +45,8 @@ class Elfin_Server():
         sleep(0.1)
 
     def Close(self):
-        self.cobot.close()
+        self.StopRobot()
+        #TODO: robot function to close? self.cobot.close()
 
 class Elfin:
     def __init__(self):

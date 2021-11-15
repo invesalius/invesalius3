@@ -191,6 +191,7 @@ class Viewer(wx.Panel):
         self.target_coord = None
         self.aim_actor = None
         self.dummy_coil_actor = None
+        self.dummy_robot_actor = None
         self.target_mode = False
         self.polydata = None
         self.use_default_object = True
@@ -312,6 +313,10 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
+
+        # Related to robot tracking during neuronavigation
+        Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
+        Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
 
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
@@ -1680,6 +1685,47 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.actor_tracts)
             self.actor_tracts = None
             self.Refresh()
+
+    def ActivateRobotMode(self, robot_mode=None):
+        if robot_mode:
+            self.ren_robot = vtk.vtkRenderer()
+            self.ren_robot.SetLayer(1)
+
+            self.interactor.GetRenderWindow().AddRenderer(self.ren_robot)
+            self.ren_robot.SetViewport(0.02, 0.82, 0.08, 0.92)
+            filename = os.path.join(inv_paths.OBJ_DIR, "robot.stl")
+
+            reader = vtk.vtkSTLReader()
+            reader.SetFileName(filename)
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(reader.GetOutputPort())
+
+            dummy_robot_actor = vtk.vtkActor()
+            dummy_robot_actor.SetMapper(mapper)
+            dummy_robot_actor.GetProperty().SetColor(1, 1, 1)
+            dummy_robot_actor.GetProperty().SetOpacity(1.)
+            self.dummy_robot_actor = dummy_robot_actor
+
+            self.ren_robot.AddActor(dummy_robot_actor)
+            self.ren_robot.InteractiveOff()
+
+            self.interactor.Render()
+        else:
+            self.DisableRobotMode()
+
+    def OnUpdateRobotStatus(self, robot_status):
+        if self.dummy_robot_actor:
+            if robot_status:
+                self.dummy_robot_actor.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.dummy_robot_actor.GetProperty().SetColor(1, 0, 0)
+            self.Refresh()
+
+    def DisableRobotMode(self):
+        if self.dummy_robot_actor:
+            self.ren_robot.RemoveActor(self.dummy_robot_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_robot)
+            self.interactor.Render()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
