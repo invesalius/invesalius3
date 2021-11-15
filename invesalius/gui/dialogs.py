@@ -3596,12 +3596,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      and not change the function to the point of potentially breaking it.)
         #
         if self.obj_ref_id and fiducial_index == 4:
-            if self.tracker_id == const.ROBOT:
-                trk_init_robot = self.trk_init[0][1]
-                coord = trk_init_robot.GetRobotCoordinates()
-                #coord[3], coord[5] = coord[5], coord[3]
-            else:
-                coord = coord_raw[self.obj_ref_id, :]
+            coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
         coord[2] = -coord[2]
@@ -4429,7 +4424,6 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.matrix_tracker_to_robot = []
 
         self.tracker = tracker
-        self.robot_coordinates = tracker.GetTrackerInfo()[0][0][1]
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
@@ -4602,8 +4596,6 @@ class CreateTransformationMatrixRobot(wx.Dialog):
             self.btn_ok.Enable(True)
             Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
-    def GetValue(self):
-        return self.matrix_tracker_to_robot, tr.inverse_matrix(self.matrix_tracker_to_robot)
 
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):

@@ -670,8 +670,6 @@ class NeuronavigationPanel(wx.Panel):
         if self.tracker.tracker_id == const.ROBOT:
             dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
             if dlg_correg_robot.ShowModal() == wx.ID_OK:
-                m_tracker_to_robot, m_robot_to_tracker = dlg_correg_robot.GetValue()
-                db.transform_robot_to_tracker.M_robot_to_tracker = m_robot_to_tracker
                 Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 
         self.ResetICP()
@@ -757,8 +755,8 @@ class NeuronavigationPanel(wx.Panel):
 
         self.navigation.StopNavigation()
         if self.tracker.tracker_id == const.ROBOT:
-            Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
-                                  m_change_robot_to_head=None)
+            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                  target_index=None)
 
         # Enable all navigation buttons
         choice_ref.Enable(True)
@@ -861,7 +859,6 @@ class NeuronavigationPanel(wx.Panel):
         )
         self.tracker.__init__()
         self.icp.__init__()
-        self.robot.__init__(self.tracker)
 
 
 class ObjectRegistrationPanel(wx.Panel):
@@ -1221,19 +1218,6 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
-    @dataclasses.dataclass
-    class Robot_Marker:
-        """Class for storing robot target."""
-        m_robot_target : list = None
-
-        @property
-        def robot_target_matrix(self):
-            return self.m_robot_target
-
-        @robot_target_matrix.setter
-        def robot_target_matrix(self, new_m_robot_target):
-            self.m_robot_target = new_m_robot_target
-
     def __init__(self, parent, tracker):
         wx.Panel.__init__(self, parent)
         try:
@@ -1253,11 +1237,9 @@ class MarkersPanel(wx.Panel):
         self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.current_seed = 0, 0, 0
-        self.current_robot_target_matrix = [None] * 9
+
         self.markers = []
-        self.robot_markers = []
         self.nav_status = False
-        self.raw_target_robot = None, None
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1355,7 +1337,6 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
-        Publisher.subscribe(self.UpdateRobotCoordinates, 'Update raw coordinates')
 
     def __find_target_marker(self):
         """
@@ -1389,7 +1370,6 @@ class MarkersPanel(wx.Panel):
         """
         for i in reversed(index):
             del self.markers[i]
-            del self.robot_markers[i]
             self.lc.DeleteItem(i)
             for n in range(0, self.lc.GetItemCount()):
                 self.lc.SetItem(n, 0, str(n + 1))
@@ -1442,9 +1422,6 @@ class MarkersPanel(wx.Panel):
     def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0)):
         self.current_seed = coord_offset
 
-    def UpdateRobotCoordinates(self, coordinates_raw, markers_flag):
-        self.raw_target_robot = coordinates_raw[1], coordinates_raw[2]
-
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
@@ -1460,8 +1437,8 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
-        m_target_robot = np.array([self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix])
-        if self.tracker.tracker_id == const.ROBOT and self.nav_status and m_target_robot.any():
+        #m_target_robot = np.array([self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix])
+        if self.tracker.tracker_id == const.ROBOT and self.nav_status: #and m_target_robot.any():
             send_target_to_robot.Enable(True)
         else:
             send_target_to_robot.Enable(False)
@@ -1519,13 +1496,11 @@ class MarkersPanel(wx.Panel):
         if isinstance(evt, int):
            self.lc.Focus(evt)
 
-        m_target_robot = self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix
-
         Publisher.sendMessage('Reset robot process', data=None)
         matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
-        Publisher.sendMessage('Robot target matrix', robot_tracker_flag=True, m_change_robot_to_head=m_target_robot.tolist())
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem())
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
@@ -1537,9 +1512,11 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             if evt is not None:
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
+            if self.tracker.tracker_id == const.ROBOT:
+                Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                      target_index=None)
 
         self.markers = []
-        self.robot_markers = []
         Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
         self.lc.DeleteAllItems()
         Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
@@ -1567,8 +1544,8 @@ class MarkersPanel(wx.Panel):
             if self.__find_target_marker() in index:
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 if self.tracker.tracker_id == const.ROBOT:
-                    Publisher.sendMessage('Robot target matrix', robot_tracker_flag=False,
-                                          m_change_robot_to_head=None)
+                    Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                          target_index=None)
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
@@ -1673,12 +1650,11 @@ class MarkersPanel(wx.Panel):
         new_marker.session_id = session_id or self.current_session
 
         if self.tracker.tracker_id == const.ROBOT and self.nav_status:
-            self.current_robot_target_matrix = db.compute_robot_to_head_matrix(self.raw_target_robot)
+            current_head_robot_target_status = True
         else:
-            self.current_robot_target_matrix = [None] * 9
+            current_head_robot_target_status = False
 
-        new_robot_marker = self.Robot_Marker()
-        new_robot_marker.robot_target_matrix = self.current_robot_target_matrix
+        Publisher.sendMessage('Add marker to robot control', data=current_head_robot_target_status)
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         Publisher.sendMessage('Add marker', ball_id=len(self.markers),
@@ -1686,7 +1662,6 @@ class MarkersPanel(wx.Panel):
                                             colour=new_marker.colour,
                                             coord=new_marker.coord[:3])
         self.markers.append(new_marker)
-        self.robot_markers.append(new_robot_marker)
 
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()

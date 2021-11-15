@@ -254,7 +254,7 @@ class CoordinateCorregistrate(threading.Thread):
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
-                self.coord_queue.put_nowait([coord, [coord_raw, markers_flag], m_img, view_obj])
+                self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
 
@@ -307,7 +307,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
-                self.coord_queue.put_nowait([coord, [coord_raw, markers_flag], m_img, view_obj])
+                self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)

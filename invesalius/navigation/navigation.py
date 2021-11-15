@@ -91,7 +91,7 @@ class UpdateNavigationScene(threading.Thread):
         while not self.event.is_set():
             got_coords = False
             try:
-                coord, [coordinates_raw, markers_flag], m_img, view_obj = self.coord_queue.get_nowait()
+                coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
@@ -116,7 +116,6 @@ class UpdateNavigationScene(threading.Thread):
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update raw coordinates', coordinates_raw=coordinates_raw, markers_flag=markers_flag)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
 
                 if view_obj:

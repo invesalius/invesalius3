@@ -225,7 +225,6 @@ def OptitrackTracker(tracker_id):
     return trck_init, lib_mode
 
 def RobotTracker(tracker_id):
-    from invesalius.navigation.robot import RobotCoordinates
     from wx import ID_OK
 
     trck_init = None
@@ -239,8 +238,6 @@ def RobotTracker(tracker_id):
             if dlg_ip.ShowModal() == ID_OK:
                 robot_IP = dlg_ip.GetValue()
                 Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
-                trck_init_robot = RobotCoordinates()
-                trck_init = [trck_init, trck_init_robot]
             else:
                 trck_init = None
                 tracker_id = None
