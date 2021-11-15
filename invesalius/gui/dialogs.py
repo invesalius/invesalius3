@@ -4426,10 +4426,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         M_robot_2_tracker is created by an affine transformation. Robot TCP should be calibrated to the center of the tracker marker
         '''
         #TODO: make aboutbox
-        self.tracker_coord = []
-        self.tracker_angles = []
-        self.robot_coord = []
-        self.robot_angles = []
+        self.matrix_tracker_to_robot = []
 
         self.tracker = tracker
         self.robot_coordinates = tracker.GetTrackerInfo()[0][0][1]
@@ -4526,11 +4523,11 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         main_sizer.Fit(self)
 
         self.CenterOnParent()
+        self.__bind_events()
 
-    def affine_correg(self, tracker, robot):
-        m_change = tr.affine_matrix_from_points(robot[:].T, tracker[:].T,
-                                                shear=False, scale=False, usesvd=False)
-        return m_change
+    def __bind_events(self):
+        Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
+        Publisher.subscribe(self.OnCoordinatesAdquired, 'Coordinates for the robot transformation matrix collected')
 
     def OnContinuousAcquisition(self, evt=None, btn=None):
         value = btn.GetValue()
@@ -4543,54 +4540,42 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-        coord_raw_robot = self.robot_coordinates.GetRobotCoordinates()
-        coord_raw_tracker_obj = coord_raw[3]
+        Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
 
-        if markers_flag[2]:
-            self.tracker_coord.append(coord_raw_tracker_obj[:3])
-            self.tracker_angles.append(coord_raw_tracker_obj[3:])
-            self.robot_coord.append(coord_raw_robot[:3])
-            self.robot_angles.append(coord_raw_robot[3:])
-            self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
-        else:
-            print('Cannot detect the coil markers, pls try again')
+    def OnCoordinatesAdquired(self):
+        self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
 
-        if len(self.tracker_coord) >= 3:
+        if int(self.txt_number.GetLabel()) >= 3:
             self.btn_apply_reg.Enable(True)
 
     def OnReset(self, evt):
+        Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
 
-        self.tracker_coord = []
-        self.tracker_angles = []
-        self.robot_coord = []
-        self.robot_angles = []
-        self.matrix_tracker_to_robot = []
         self.txt_number.SetLabel('0')
 
         self.btn_apply_reg.Enable(False)
         self.btn_save.Enable(False)
         self.btn_ok.Enable(False)
 
+        self.matrix_tracker_to_robot = []
+
     def OnApply(self, evt):
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
 
-        tracker_coord = np.array(self.tracker_coord)
-        robot_coord = np.array(self.robot_coord)
-
-        matrix_robot_to_tracker = self.affine_correg(tracker_coord, robot_coord)
-        matrix_tracker_to_robot = tr.inverse_matrix(matrix_robot_to_tracker)
-        self.matrix_tracker_to_robot = matrix_tracker_to_robot
+        Publisher.sendMessage('Robot transformation matrix estimation', data=None)
 
         self.btn_save.Enable(True)
         self.btn_ok.Enable(True)
 
         #TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
+
+    def OnUpdateTransformationMatrix(self, data):
+        self.matrix_tracker_to_robot = np.array(data)
 
     def OnSaveReg(self, evt):
         filename = ShowLoadSaveDialog(message=_(u"Save robot transformation file as..."),
@@ -4615,6 +4600,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
             self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
             print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
             self.btn_ok.Enable(True)
+            Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
     def GetValue(self):
         return self.matrix_tracker_to_robot, tr.inverse_matrix(self.matrix_tracker_to_robot)

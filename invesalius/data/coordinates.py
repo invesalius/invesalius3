@@ -352,7 +352,7 @@ def RobotCoord(trk_init, trck_id, ref_mode):
         coord_tracker, markers_flag = GetCoordinatesForThread(trk_init, trk_init[1], ref_mode)
         coord_robot = np.array([0, 0, 0, 0, 0, 0])
 
-    return np.vstack([coord_tracker[0], coord_tracker[1], coord_robot, coord_tracker[2]]), markers_flag
+    return np.vstack([coord_tracker[0], coord_tracker[1], coord_tracker[2]]), markers_flag
 
 def DebugCoordRandom(trk_init, trck_id, ref_mode):
     """
