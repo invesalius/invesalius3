@@ -648,8 +648,7 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp.SetValue(False)
 
     def OnDisconnectTracker(self):
-        if self.tracker.tracker_id == const.ROBOT:
-            self.robot.StopRobotThreadNavigation()
+        #TODO: stop robot?
         self.tracker.DisconnectTracker()
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
