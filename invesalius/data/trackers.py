@@ -233,7 +233,7 @@ def RobotTracker(tracker_id):
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         if tracker_id:
-            trck_init = TrackerConnection(tracker_id, None, 'connect')[0]
+            trck_init = TrackerConnection(tracker_id, None, 'connect')
             dlg_ip = dlg.SetRobotIP()
             if dlg_ip.ShowModal() == ID_OK:
                 robot_IP = dlg_ip.GetValue()
