@@ -319,7 +319,7 @@ class Navigation():
                 affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
                 Publisher.sendMessage("Update marker offset state", create=True)
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
-                                self.n_threads, self.act_data, affine_vtk, img_shiftgit
+                                self.n_threads, self.act_data, affine_vtk, img_shift
                 # print("Appending the tract computation thread!")
                 queues = [self.coord_tracts_queue, self.tracts_queue]
                 if self.enable_act:

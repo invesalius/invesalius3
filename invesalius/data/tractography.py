@@ -407,7 +407,8 @@ class ComputeTractsACTThread(threading.Thread):
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
 
         # n_threads = n_tracts_total
-        n_threads = int(n_threads/4)
+        # n_threads = int(n_threads/4)
+        # n_threads = 1000
         p_old = np.array([[0., 0., 0.]])
         p_old_pre = np.array([[0., 0., 0.]])
         coord_offset = None
@@ -454,107 +455,140 @@ class ComputeTractsACTThread(threading.Thread):
                 trekker.minFODamp(n_param * 0.01)
                 # ---
 
+                try:
+                    # TODO: Create a dialog error to say when the ACT data is not loaded and prevent
+                    # the interface from freezing. Give the user a chance to load it (maybe in task_navigator)
+                    coord_list_w_tr = m_img_flip @ self.coord_list_w
+                    coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
+                except IndexError:
+                    # This error might be caused by the coordinate exceeding the image array dimensions.
+                    # Needs further verification.
+                    coord_offset = None
+                # ---
+
+                # Translate the coordinate along the normal vector of the object/coil ---
+                if coord_offset is None:
+                    # apply the coil transformation matrix
+                    coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
+                # ---
+
+                # convert the world coordinates to the voxel space for using as a seed in Trekker
+                # seed_trk.shape == [1, 3]
+                seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
+                # print("Desired: {}".format(seed_trk.shape))
+
+                # DEBUG: uncomment the seed_trk below
+                # Juuso's
+                # seed_trk = np.array([[-8.49, -8.39, 2.5]])
+                # Baran M1
+                # seed_trk = np.array([[27.53, -77.37, 46.42]])
+                # print("Given: {}".format(seed_trk.shape))
+                # print("Seed: {}".format(seed))
+                # joonas seed that has good tracts
+                # seed_trk = np.array([[29.12, -13.33, 31.65]])
+                # seed_trk_img = np.array([[117, 127, 161]])
+
+                # Spherical sampling of seed coordinates ---
+                # if sph_sampling:
+                # CHECK: We use ACT only for the origin seed, but not for all the other coordinates.
+                # Check how this can be solved. Applying ACT to all coordinates is maybe too much.
+                # Maybe it doesn't matter because the ACT is just to help finding the closest location to
+                # the TMS coil center. Also, note that the spherical sampling is applied only when the coil
+                # location changes, all further iterations used the fixed n_threads samples to compute the
+                # remaining tracts.
+
+                # compute the samples of a sphere centered on seed coordinate offset by the grid
+                # given in the invesalius-vtk space
+                samples = np.random.choice(coord_list_sph.shape[1], size=100)
+                m_seed[:-1, -1] = coord_offset.copy()
+                seed_trk_r_inv = m_seed @ coord_list_sph[:, samples]
+
+                try:
+                    # find only the samples inside the white matter as with the ACT enables in the Trekker,
+                    # it does not compute any tracts outside the white matter
+                    seed_trk_r_mri = seed_trk_r_inv[:3, :].T.astype(int) + np.array([[0, img_shift, 0]], dtype=np.int32)
+                    labs = act_data[seed_trk_r_mri[..., 0], seed_trk_r_mri[..., 1], seed_trk_r_mri[..., 2]]
+                    labs_id = np.where(labs == 1)
+                    if len(labs_id[0]) > n_threads:
+                        seed_trk_r_inv_sampled = seed_trk_r_inv[:, labs_id[0][:n_threads]]
+                    else:
+                        seed_trk_r_inv_sampled = seed_trk_r_inv[:, labs_id[0]]
+
+                except IndexError:
+                    # print("Index error!!!")
+                    seed_trk_r_inv_sampled = np.hstack((coord_offset, 1.0)).reshape([4, 1])
+
+                seed_trk_r_world_sampled = np.linalg.inv(affine) @ seed_trk_r_inv_sampled
+                seed_trk_r_world_sampled = seed_trk_r_world_sampled.T[:, :3]
+                # seed_trk_r_world_sampled = seed_trk_r_world_sampled + np.array([[0, img_shift, 0]])
+
+                # Trekker has internal multiprocessing approach done in C. Here the number of available threads is
+                # given, but in case a large number of tracts is requested, it will compute all in parallel
+                # automatically for a more fluent navigation, better to compute the maximum number the computer
+                # handles
+
+
                 # When moving the coil further than the seed_radius restart the bundle computation
                 # Currently, it stops to compute tracts when the maximum number of tracts is reached maybe keep
                 # computing even if reaches the maximum
                 if dist >= dist_radius:
+                    # print("New SEED minFOD {} at {}/{}: {}".format(n_param * 0.01, n_tracts, n_tracts_total, seed_trk))
+                    bundle = None
+                    n_branches = 0
+                    n_tracts = 0
                     # Anatomic constrained seed computation ---
                     # The original seed location is replaced by the gray-white  matter interface that is closest to
                     # the coil center
-                    try:
-                        #TODO: Create a dialog error to say when the ACT data is not loaded and prevent
-                        # the interface from freezing. Give the user a chance to load it (maybe in task_navigator)
-                        coord_list_w_tr = m_img_flip @ self.coord_list_w
-                        coord_offset = grid_offset(act_data, coord_list_w_tr, img_shift)
-                    except IndexError:
-                        # This error might be caused by the coordinate exceeding the image array dimensions.
-                        # Needs further verification.
-                        coord_offset = None
-                    # ---
 
-                    # Translate the coordinate along the normal vector of the object/coil ---
-                    if coord_offset is None:
-                        # apply the coil transformation matrix
-                        coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
-                    # ---
-
-                    # convert the world coordinates to the voxel space for using as a seed in Trekker
-                    # seed_trk.shape == [1, 3]
-                    seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
-                    # print("Desired: {}".format(seed_trk.shape))
-
-                    # DEBUG: uncomment the seed_trk below
-                    # Juuso's
-                    # seed_trk = np.array([[-8.49, -8.39, 2.5]])
-                    # Baran M1
-                    # seed_trk = np.array([[27.53, -77.37, 46.42]])
-                    # print("Given: {}".format(seed_trk.shape))
-                    # print("Seed: {}".format(seed))
-
-                    # Spherical sampling of seed coordinates ---
-                    if sph_sampling:
-                        # CHECK: We use ACT only for the origin seed, but not for all the other coordinates.
-                        # Check how this can be solved. Applying ACT to all coordinates is maybe too much.
-                        # Maybe it doesn't matter because the ACT is just to help finding the closest location to
-                        # the TMS coil center. Also, note that the spherical sampling is applied only when the coil
-                        # location changes, all further iterations used the fixed n_threads samples to compute the
-                        # remaining tracts.
-
-                        # samples = np.random.choice(self.sph_idx, size=n_threads, p=self.pdf)
-                        # m_seed[:-1, -1] = seed_trk
-                        # sph_seed = m_seed @ self.coord_list_sph
-                        # seed_trk_r = sph_seed[samples, :]
-                        samples = np.random.choice(coord_list_sph.shape[1], size=n_threads)
-                        m_seed[:-1, -1] = seed_trk
-                        seed_trk_r = m_seed @ coord_list_sph[:, samples]
-                        seed_trk_r = seed_trk_r[:-1, :].T
-                    else:
-                        # set the seeds for trekker, one seed is repeated n_threads times
-                        # shape (24, 3)
-                        seed_trk_r = np.repeat(seed_trk, n_threads, axis=0)
-
-                    # ---
-
-                    # Trekker has internal multiprocessing approach done in C. Here the number of available threads is
-                    # given, but in case a large number of tracts is requested, it will compute all in parallel
-                    # automatically for a more fluent navigation, better to compute the maximum number the computer
-                    # handles
-                    trekker.seed_coordinates(seed_trk_r)
+                    trekker.seed_coordinates(seed_trk_r_world_sampled[::2, :])
                     # trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
-
-                    # run the trekker, this is the slowest line of code, be careful to just use once!
                     trk_list = trekker.run()
 
+
+                    # run the trekker, this is the slowest line of code, be careful to just use once!
+
+
                     # check if any tract was found, otherwise doesn't count
-                    if len(trk_list) > 2:
+                    if len(trk_list):
                         bundle = vtk.vtkMultiBlockDataSet()
                         branch = tracts_computation_branch(trk_list, alpha)
                         bundle.SetBlock(n_branches, branch)
                         n_branches = 1
                         n_tracts = branch.GetNumberOfBlocks()
-                    else:
-                        bundle = None
-                        n_branches = 0
-                        n_tracts = 0
+                    # else:
+
 
                 elif dist < dist_radius and n_tracts < n_tracts_total:
+                    if not bundle:
+                        bundle = vtk.vtkMultiBlockDataSet()
+                        n_branches = 0
+                        n_tracts = 0
+                        trekker.seed_coordinates(seed_trk_r_world_sampled[::2, :])
+                    else:
+                        trekker.seed_coordinates(seed_trk_r_world_sampled)
+                    # trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
                     trk_list = trekker.run()
-                    if len(trk_list) > 2:
+                    # print("Computing more minFOD {} at {}/{}: {}".format(n_param * 0.01, n_tracts, n_tracts_total, seed_trk))
+                    # trk_list = trekker.run()
+                    if len(trk_list):
                         # compute tract blocks and add to bundle until reaches the maximum number of tracts
                         # the alpha changes depending on the parameter set
                         branch = tracts_computation_branch(trk_list, alpha)
-                        if bundle:
-                            bundle.SetBlock(n_branches, branch)
-                            n_tracts += branch.GetNumberOfBlocks()
-                            n_branches += 1
-                        else:
-                            bundle = vtk.vtkMultiBlockDataSet()
-                            bundle.SetBlock(n_branches, branch)
-                            n_branches = 1
-                            n_tracts = branch.GetNumberOfBlocks()
-                    # else:
-                    #     bundle = None
+                        # if bundle:
+                        bundle.SetBlock(n_branches, branch)
+                        n_tracts += branch.GetNumberOfBlocks()
+                        n_branches += 1
+                        # else:
 
+                            # bundle.SetBlock(n_branches, branch)
+                            # n_branches = 1
+                            # n_tracts = branch.GetNumberOfBlocks()
+                    else:
+                        # if bundle:
+                        n_branches += 1
+
+                # elif n_tracts >= n_tracts_total:
+                    # print("Reached minFOD {} at {}/{} MAAAXXXXXX!!!! {}".format(n_param * 0.01, n_tracts, n_tracts_total, seed_trk))
                 # else:
                 #     bundle = None
 
@@ -689,16 +723,16 @@ def set_trekker_parameters(trekker, params):
     trekker.writeInterval(params['write_interval'])
     # these two does not need to be set in the new package
     # trekker.maxLength(params['max_length'])
-    # trekker.minLength(params['min_length'])
+    trekker.minLength(params['min_length'])
     trekker.maxSamplingPerStep(params['max_sampling_step'])
     trekker.dataSupportExponent(params['data_support_exponent'])
-    trekker.useBestAtInit(params['use_best_init'])
-    trekker.initMaxEstTrials(params['init_max_est_trials'])
+    #trekker.useBestAtInit(params['use_best_init'])
+    #trekker.initMaxEstTrials(params['init_max_est_trials'])
 
     # check number if number of cores is valid in configuration file,
     # otherwise use the maximum number of threads which is usually 2*N_CPUS
-    n_threads = 2 * const.N_CPU
-    if isinstance((params['numb_threads']), int) and params['numb_threads'] <= 2*const.N_CPU:
+    n_threads = 2 * const.N_CPU - 1
+    if isinstance((params['numb_threads']), int) and params['numb_threads'] <= (2*const.N_CPU-1):
         n_threads = params['numb_threads']
 
     trekker.numberOfThreads(n_threads)
