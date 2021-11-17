@@ -24,17 +24,19 @@ class Elfin_Server():
     def Run(self):
         return self.cobot.ReadPcsActualPos()
 
-    def SendCoordinates(self, target, type=const.ROBOT_MOTIONS["normal"]):
+    def SendCoordinates(self, target, motion_type=const.ROBOT_MOTIONS["normal"]):
         """
         It's not possible to send a move command to elfin if the robot is during a move.
          Status 1009 means robot in motion.
         """
         status = self.cobot.ReadMoveState()
-        if status != 1009:
-            if type == const.ROBOT_MOTIONS["normal"] or type == const.ROBOT_MOTIONS["linear out"]:
+        if status == const.ROBOT_MOVE_STATE["free to move"]:
+            if motion_type == const.ROBOT_MOTIONS["normal"] or motion_type == const.ROBOT_MOTIONS["linear out"]:
                 self.cobot.MoveL(target)
-            elif type == const.ROBOT_MOTIONS["arc"]:
+            elif motion_type == const.ROBOT_MOTIONS["arc"]:
                 self.cobot.MoveC(target)
+        elif status == const.ROBOT_MOVE_STATE["error"]:
+            self.StopRobot()
 
     def StopRobot(self):
         # Takes some microseconds to the robot actual stops after the command.
@@ -43,7 +45,8 @@ class Elfin_Server():
         sleep(0.1)
 
     def Close(self):
-        self.cobot.close()
+        self.StopRobot()
+        #TODO: robot function to close? self.cobot.close()
 
 class Elfin:
     def __init__(self):
