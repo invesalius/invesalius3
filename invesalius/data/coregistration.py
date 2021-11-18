@@ -427,7 +427,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
 #             # seed_aux = pos_world.reshape([1, 4])[0, :3]
 #             # seed = seed_aux[np.newaxis, :]
 #             #
-#             # self.tracts = dtr.compute_tracts(tracker, seed, affine_vtk, True)
+#             # self.tracts = dtr.compute_and_visualize_tracts(tracker, seed, affine_vtk, True)
 #
 #             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
 #             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)
@@ -654,7 +654,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
 #             # seed_aux = pos_world.reshape([1, 4])[0, :3]
 #             # seed = seed_aux[np.newaxis, :]
 #
-#             # self.tracts = dtr.compute_tracts(tracker, seed, affine_vtk, True)
+#             # self.tracts = dtr.compute_and_visualize_tracts(tracker, seed, affine_vtk, True)
 #
 #             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
 #             wx.CallAfter(Publisher.sendMessage, 'Update cross position', arg=m_img, position=coord)

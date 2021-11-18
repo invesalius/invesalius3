@@ -165,7 +165,7 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 310), 0, fpb.FPB_SINGLE_FOLD)
+                                      (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
         # Initialize Tracker and PedalConnection objects here so that they are available to several panels.
         #
@@ -2066,6 +2066,9 @@ class TractographyPanel(wx.Panel):
 
     def OnLoadACT(self, event=None):
 
+        # TODO: Create a dialog error to say when the ACT data is not loaded and prevent
+        #  the interface from freezing. Give the user a chance to cancel it.
+
         if self.trekker:
 
             Publisher.sendMessage('Begin busy cursor')
@@ -2103,9 +2106,6 @@ class TractographyPanel(wx.Panel):
 
                     Publisher.sendMessage('Update ACT data', data=act_data_arr)
                     Publisher.sendMessage('Enable ACT', data=True)
-                    # Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
-                    # Publisher.sendMessage('Update number of threads', data=n_threads)
-                    # Publisher.sendMessage('Update tracts visualization', data=1)
                     Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
             except:
                 wx.MessageBox(_("Unable to load ACT."), _("InVesalius 3"))
@@ -2155,8 +2155,8 @@ class TractographyPanel(wx.Panel):
             # print("Running during navigation")
             coord_flip = list(position[:3])
             coord_flip[1] = -coord_flip[1]
-            dti.compute_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
-                               self.n_tracts)
+            dti.compute_and_visualize_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
+                                             self.n_tracts)
 
     def OnCloseProject(self):
         self.trekker = None
