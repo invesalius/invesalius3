@@ -1144,9 +1144,9 @@ class MarkersPanel(wx.Panel):
         x : float = 0
         y : float = 0
         z : float = 0
-        alpha : float = None
-        beta : float = None
-        gamma : float = None
+        alpha : float = dataclasses.field(default = None)
+        beta : float = dataclasses.field(default = None)
+        gamma : float = dataclasses.field(default = None)
         r : float = 0
         g : float = 1
         b : float = 0
@@ -1161,8 +1161,7 @@ class MarkersPanel(wx.Panel):
         # x, y, z, alpha, beta, gamma can be jointly accessed as coord
         @property
         def coord(self):
-            print(self.alpha)
-            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma),)
+            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma))
 
         @coord.setter
         def coord(self, new_coord):
@@ -1255,7 +1254,7 @@ class MarkersPanel(wx.Panel):
         self.session = ses.Session()
 
         self.current_coord = 0, 0, 0, None, None, None
-        self.current_angle =  None, None, None
+        self.current_angle = None, None, None
         self.current_seed = 0, 0, 0
         self.current_robot_target_matrix = [None] * 9
         self.markers = []
@@ -1684,21 +1683,22 @@ class MarkersPanel(wx.Panel):
         new_robot_marker.robot_target_matrix = self.current_robot_target_matrix
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        if label not in self.__list_fiducial_labels():
-            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
-                                  size=self.arrow_marker_size,
-                                  color=new_marker.colour,
-                                  coord=new_marker.coord)
+        if label in self.__list_fiducial_labels():
+            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
+                                  size=new_marker.size,
+                                  colour=new_marker.colour,
+                                  coord=new_marker.coord[:3])
+
         elif new_marker.coord[5] is None:
             Publisher.sendMessage('Add marker', ball_id=len(self.markers),
                                   size=new_marker.size,
                                   colour=new_marker.colour,
                                   coord=new_marker.coord[:3])
         else:
-             Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                                 size=new_marker.size,
-                                                 colour=new_marker.colour,
-                                                 coord=new_marker.coord[:3])
+              Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
+                                  size=self.arrow_marker_size,
+                                  color=new_marker.colour,
+                                  coord=new_marker.coord)
 
 
         self.markers.append(new_marker)
