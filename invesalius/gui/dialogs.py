@@ -5059,10 +5059,10 @@ class PeelsCreationDlg(wx.Dialog):
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
 
         self.image_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Image file"),
-                fileMask=WILDCARD_NIFTI,
+                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose T1 Image file"),
                 changeCallback=lambda evt: self._set_files_callback(image_path=evt.GetString()))
         self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"),
-                fileMask=WILDCARD_NIFTI,
+                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose Mask file"),
                 changeCallback=lambda evt: self._set_files_callback(mask_path=evt.GetString()))
         self.from_files_rb = wx.RadioButton(self, -1, "")
 
