@@ -5055,14 +5055,17 @@ class PeelsCreationDlg(wx.Dialog):
         return from_mask_stbox
 
     def _from_files_gui(self):
+        session = ses.Session()
+        last_directory = session.get('paths', 'last_directory_%d' % const.ID_NIFTI_IMPORT, '')
+
         files_box = wx.StaticBox(self, -1, _("From files"))
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
 
         self.image_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Image file"),
-                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose T1 Image file"),
+                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose T1 Image file"), startDirectory = last_directory,
                 changeCallback=lambda evt: self._set_files_callback(image_path=evt.GetString()))
         self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"),
-                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose Mask file"),
+                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose Mask file"), startDirectory = last_directory,
                 changeCallback=lambda evt: self._set_files_callback(mask_path=evt.GetString()))
         self.from_files_rb = wx.RadioButton(self, -1, "")
 
