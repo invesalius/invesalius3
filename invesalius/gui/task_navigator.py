@@ -1689,16 +1689,16 @@ class MarkersPanel(wx.Panel):
                                   colour=new_marker.colour,
                                   coord=new_marker.coord[:3])
 
-        elif new_marker.coord[5] is None:
+        elif new_marker.coord[3:] is not None and self.nav_status:
+            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
+                                  size=self.arrow_marker_size,
+                                  color=new_marker.colour,
+                                  coord=new_marker.coord)
+        else:
             Publisher.sendMessage('Add marker', ball_id=len(self.markers),
                                   size=new_marker.size,
                                   colour=new_marker.colour,
                                   coord=new_marker.coord[:3])
-        else:
-              Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
-                                  size=self.arrow_marker_size,
-                                  color=new_marker.colour,
-                                  coord=new_marker.coord)
 
 
         self.markers.append(new_marker)
