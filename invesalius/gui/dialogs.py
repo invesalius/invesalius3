@@ -56,8 +56,6 @@ except ImportError:
     from wx import AboutDialogInfo, AboutBox
 
 import invesalius.constants as const
-import invesalius.data.coordinates as dco
-import invesalius.data.transformations as tr
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
