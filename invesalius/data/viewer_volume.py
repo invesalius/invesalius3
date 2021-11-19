@@ -70,7 +70,7 @@ class Viewer(wx.Panel):
 
         self.initial_focus = None
 
-        self.staticballs = []
+        self.static_markers = []
         self.static_arrows =[]
         self.style = None
 
@@ -580,7 +580,7 @@ class Viewer(wx.Panel):
         """
         Set all markers, overwriting the previous markers.
         """
-        self.RemoveAllMarkers(len(self.staticballs))
+        self.RemoveAllMarkers(len(self.static_markers))
 
         target_selected = False
         for marker in markers:
@@ -617,8 +617,8 @@ class Viewer(wx.Panel):
         coord_flip[1] = -coord_flip[1]
 
         arrow_actor = self.Add_ObjectArrow(coord_flip[:3], coord_flip[3:6], color, size)
-        self.staticballs.append(arrow_actor)
-        self.ren.AddActor(self.staticballs[self.arrow_marker_id])
+        self.static_markers.append(arrow_actor)
+        self.ren.AddActor(self.static_markers[self.arrow_marker_id])
         self.arrow_marker_id +=1
         #self.UpdateRender()
         self.Refresh()
@@ -643,12 +643,12 @@ class Viewer(wx.Panel):
         prop.SetColor(colour)
 
         # adding a new actor for the present ball
-        self.staticballs.append(vtk.vtkActor())
+        self.static_markers.append(vtk.vtkActor())
 
-        self.staticballs[self.ball_id].SetMapper(mapper)
-        self.staticballs[self.ball_id].SetProperty(prop)
+        self.static_markers[self.ball_id].SetMapper(mapper)
+        self.static_markers[self.ball_id].SetProperty(prop)
 
-        self.ren.AddActor(self.staticballs[self.ball_id])
+        self.ren.AddActor(self.static_markers[self.ball_id])
         self.ball_id += 1
 
         #self.UpdateRender()
@@ -684,33 +684,33 @@ class Viewer(wx.Panel):
     def HideAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.staticballs[i].SetVisibility(0)
+            self.static_markers[i].SetVisibility(0)
         self.UpdateRender()
 
     def ShowAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.staticballs[i].SetVisibility(1)
+            self.static_markers[i].SetVisibility(1)
         self.UpdateRender()
 
     def RemoveAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.ren.RemoveActor(self.staticballs[i])
-        self.staticballs = []
+            self.ren.RemoveActor(self.static_markers[i])
+        self.static_markers = []
         self.UpdateRender()
 
     def RemoveMultipleMarkers(self, index):
         for i in reversed(index):
-            self.ren.RemoveActor(self.staticballs[i])
-            del self.staticballs[i]
+            self.ren.RemoveActor(self.static_markers[i])
+            del self.static_markers[i]
             self.ball_id = self.ball_id - 1
         self.UpdateRender()
 
     def BlinkMarker(self, index):
         if self.timer:
             self.timer.Stop()
-            self.staticballs[self.index].SetVisibility(1)
+            self.static_markers[self.index].SetVisibility(1)
         self.index = index
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnBlinkMarker, self.timer)
@@ -718,7 +718,7 @@ class Viewer(wx.Panel):
         self.timer_count = 0
 
     def OnBlinkMarker(self, evt):
-        self.staticballs[self.index].SetVisibility(int(self.timer_count % 2))
+        self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
         self.Refresh()
         self.timer_count += 1
 
@@ -726,20 +726,20 @@ class Viewer(wx.Panel):
         if self.timer:
             self.timer.Stop()
             if index is None:
-                self.staticballs[self.index].SetVisibility(1)
+                self.static_markers[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
 
     def SetNewColor(self, index, color):
-        self.staticballs[index].GetProperty().SetColor([round(s/255.0, 3) for s in color])
+        self.static_markers[index].GetProperty().SetColor([round(s / 255.0, 3) for s in color])
         self.Refresh()
 
     def OnTargetMarkerTransparency(self, status, index):
         if status:
-            self.staticballs[index].GetProperty().SetOpacity(1)
+            self.static_markers[index].GetProperty().SetOpacity(1)
             # self.staticballs[index].GetProperty().SetOpacity(0.4)
         else:
-            self.staticballs[index].GetProperty().SetOpacity(1)
+            self.static_markers[index].GetProperty().SetOpacity(1)
 
     def OnUpdateAngleThreshold(self, angle):
         self.anglethreshold = angle

@@ -1617,8 +1617,8 @@ class MarkersPanel(wx.Panel):
                         self.__set_marker_as_target(len(self.markers) - 1)
 
         except Exception as e:
-            print('hereee',e)
-            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
+
+            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():
@@ -1689,7 +1689,7 @@ class MarkersPanel(wx.Panel):
                                   colour=new_marker.colour,
                                   coord=new_marker.coord[:3])
 
-        elif new_marker.coord[3:] is not None and self.nav_status:
+        elif new_marker.coord[3:] is not None and self.nav_status or session_id is not None:
             Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
                                   size=self.arrow_marker_size,
                                   color=new_marker.colour,
