@@ -244,22 +244,3 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     )
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
-
-
-class transform_robot_to_tracker(object):
-    M_robot_to_tracker = np.array([])
-    def transformation_tracker_to_robot(self, robot_coord):
-        if not transform_robot_to_tracker.M_robot_to_tracker.any():
-            return None
-
-        M_robot = dco.coordinates_to_transformation_matrix(
-            position=robot_coord[:3],
-            orientation=robot_coord[3:6],
-            axes='rzyx',
-        )
-        M_tracker_in_robot = transform_robot_to_tracker.M_robot_to_tracker @ M_robot
-
-        translation, angles_as_deg = dco.transformation_matrix_to_coordinates(M_tracker_in_robot, axes='rzyx')
-        tracker_in_robot = list(translation) + list(angles_as_deg)
-
-        return tracker_in_robot

@@ -648,7 +648,6 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp.SetValue(False)
 
     def OnDisconnectTracker(self):
-        #TODO: stop robot?
         self.tracker.DisconnectTracker()
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -1436,7 +1435,6 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
-        #m_target_robot = np.array([self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix])
         if self.tracker.tracker_id == const.ROBOT and self.nav_status: #and m_target_robot.any():
             send_target_to_robot.Enable(True)
         else:

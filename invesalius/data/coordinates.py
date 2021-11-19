@@ -342,7 +342,10 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     return coord
 
 def RobotCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[1], ref_mode)
+    #trck_id is the tracker related to the robot ID. To get the tracker ID, combined with the robot,
+    # it is required to get trk_init[1]
+    tracker_id = trk_init[1]
+    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], tracker_id, ref_mode)
 
     return np.vstack([coord_tracker[0], coord_tracker[1], coord_tracker[2]]), markers_flag
 

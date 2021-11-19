@@ -193,7 +193,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.object_at_target_queue = queues[3]
         self.icp = None
         self.m_icp = None
-        self.robot_tracker_flag = None
         self.last_coord = None
         self.tracker_id = tracker_id
         self.target = target

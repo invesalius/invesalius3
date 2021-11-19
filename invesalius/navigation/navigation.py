@@ -82,7 +82,7 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
-        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue = vis_queues
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
 
@@ -147,7 +147,6 @@ class Navigation():
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
-        self.robot_target_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -245,7 +244,7 @@ class Navigation():
             self.event.clear()
 
         vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 

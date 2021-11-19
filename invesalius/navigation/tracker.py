@@ -42,7 +42,6 @@ class Tracker():
         self.thread_coord = None
 
         self.event_coord = threading.Event()
-        self.event_robot = threading.Event()
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
@@ -78,11 +77,8 @@ class Tracker():
 
                 if self.thread_coord:
                     self.event_coord.set()
-                    self.event_robot.set()
                     self.thread_coord.join()
                     self.event_coord.clear()
-                    self.event_robot.clear()
-
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
