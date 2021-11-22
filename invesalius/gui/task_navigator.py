@@ -1432,7 +1432,8 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
-        if self.tracker.tracker_id == const.ROBOT and self.nav_status: #and m_target_robot.any():
+        check_target_angles = np.all(self.markers[self.lc.GetFocusedItem()].coord[3:])
+        if self.tracker.tracker_id == const.ROBOT and self.nav_status and check_target_angles:
             send_target_to_robot.Enable(True)
         else:
             send_target_to_robot.Enable(False)
