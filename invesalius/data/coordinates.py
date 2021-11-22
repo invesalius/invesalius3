@@ -378,10 +378,8 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                       uniform(*dt), uniform(*dt), uniform(*dt)])
-    # coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-    #                   uniform(*dt), uniform(*dt), uniform(*dt)])
-    coord2 = np.array([40, 50, 40,
-                      10, 20, 30])
+    coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
+                      uniform(*dt), uniform(*dt), uniform(*dt)])
     coord3 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                        uniform(*dt), uniform(*dt), uniform(*dt)])
     coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
