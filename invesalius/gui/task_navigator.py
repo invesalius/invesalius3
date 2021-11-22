@@ -532,6 +532,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTarget, 'Update target')
         Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
+        Publisher.subscribe(self.OnDialogRobotDestroy, 'Dialog robot destroy')
 
     def LoadImageFiducials(self, label, coord):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
@@ -663,8 +664,8 @@ class NeuronavigationPanel(wx.Panel):
 
         self.tracker.SetTracker(choice)
         if self.tracker.tracker_id == const.ROBOT:
-            dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
-            if dlg_correg_robot.ShowModal() == wx.ID_OK:
+            self.dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
+            if self.dlg_correg_robot.ShowModal() == wx.ID_OK:
                 Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 
         self.ResetICP()
@@ -759,6 +760,12 @@ class NeuronavigationPanel(wx.Panel):
 
         for btn_c in self.btns_set_fiducial:
             btn_c.Enable(True)
+
+    def OnDialogRobotDestroy(self):
+        if self.dlg_correg_robot:
+            self.dlg_correg_robot.Destroy()
+        Publisher.sendMessage('Disconnect tracker')
+        wx.MessageBox(_("Not possible to connect to the robot."), _("InVesalius 3"))
 
     def CheckFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker)
