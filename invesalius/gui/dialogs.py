@@ -5001,7 +5001,6 @@ class PeelsCreationDlg(wx.Dialog):
     def __init__(self, parent, *args, **kwds):
         wx.Dialog.__init__(self, parent, *args, **kwds)
 
-        self.image_path = ''
         self.mask_path = ''
         self.method = self.FROM_MASK
 
@@ -5061,16 +5060,12 @@ class PeelsCreationDlg(wx.Dialog):
         files_box = wx.StaticBox(self, -1, _("From files"))
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
 
-        self.image_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Image file"),
-                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose T1 Image file"), startDirectory = last_directory,
-                changeCallback=lambda evt: self._set_files_callback(image_path=evt.GetString()))
         self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"),
                 fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose Mask file"), startDirectory = last_directory,
                 changeCallback=lambda evt: self._set_files_callback(mask_path=evt.GetString()))
         self.from_files_rb = wx.RadioButton(self, -1, "")
 
         ctrl_sizer = wx.BoxSizer(wx.VERTICAL)
-        ctrl_sizer.Add(self.image_file_browse, 0, wx.ALL | wx.EXPAND, 5)
         ctrl_sizer.Add(self.mask_file_browse, 0, wx.ALL | wx.EXPAND, 5)
 
         internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -5115,10 +5110,8 @@ class PeelsCreationDlg(wx.Dialog):
             else:
                 self.btn_ok.Enable(False)
 
-    def _set_files_callback(self, image_path='', mask_path=''):
-        if image_path:
-            self.image_path = image_path
-        elif mask_path:
+    def _set_files_callback(self, mask_path=''):
+        if mask_path:
             self.mask_path = mask_path
         if self.method == self.FROM_FILES:
             if self._check_if_files_exists():
@@ -5127,7 +5120,7 @@ class PeelsCreationDlg(wx.Dialog):
                 self.btn_ok.Enable(False)
 
     def _check_if_files_exists(self):
-            if self.image_path and os.path.exists(self.image_path) and self.mask_path and os.path.exists(self.mask_path):
+            if self.mask_path and os.path.exists(self.mask_path):
                 return True
             else:
                 return False

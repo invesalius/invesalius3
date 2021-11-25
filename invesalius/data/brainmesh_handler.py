@@ -49,12 +49,11 @@ class Brain:
         self._do_surface_creation(mask)
 
 
-    def from_files(self, img_path, mask_path):
-        # Read the image
-        T1_reader = vtk.vtkNIFTIImageReader()
-        T1_reader.SetFileName(img_path)
-        T1_reader.Update()
-        #
+    def from_mask_file(self, mask_path):
+        slic = sl.Slice()
+        image = slic.matrix
+        image = to_vtk(image, spacing=slic.spacing)
+
         # Read the mask
         mask_reader = vtk.vtkNIFTIImageReader()
         mask_reader.SetFileName(mask_path)
@@ -63,12 +62,11 @@ class Brain:
         mask = mask_reader.GetOutput()
 
         mask_sFormMatrix = mask_reader.GetSFormMatrix()
-        qFormMatrix = T1_reader.GetQFormMatrix()
 
         # Image
-        self.refImage = T1_reader.GetOutput()
+        self.refImage = image
 
-        self._do_surface_creation(mask, mask_sFormMatrix, qFormMatrix)
+        self._do_surface_creation(mask, mask_sFormMatrix)
 
 
     def _do_surface_creation(self, mask, mask_sFormMatrix=None, qFormMatrix=None):

@@ -31,7 +31,7 @@ try:
     import Trekker
     has_trekker = True
 except ImportError:
-    has_trekker = False
+    has_trekker = True
 
 try:
     import invesalius.data.elfin as elfin
@@ -2008,9 +2008,8 @@ class TractographyPanel(wx.Panel):
                 mask = choices[mask_index]
                 self.brain_peel.from_mask(mask)
             else:
-                image_path = peels_dlg.image_path
                 mask_path = peels_dlg.mask_path
-                self.brain_peel.from_files(image_path, mask_path)
+                self.brain_peel.from_mask_file(mask_path)
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
