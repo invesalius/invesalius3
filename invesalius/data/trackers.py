@@ -376,6 +376,7 @@ def DisconnectTracker(tracker_id, trck_init):
                 lib_mode = 'serial'
                 print('Tracker disconnected.')
             elif tracker_id == const.ROBOT:
+                Publisher.sendMessage('Reset robot', data=None)
                 if trck_init[1] == const.DEBUGTRACKRANDOM or trck_init[1] == const.DEBUGTRACKAPPROACH:
                     trck_init[0].Close()
                 trck_init = False

@@ -667,6 +667,9 @@ class NeuronavigationPanel(wx.Panel):
             self.dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
             if self.dlg_correg_robot.ShowModal() == wx.ID_OK:
                 Publisher.sendMessage('Robot navigation mode', robot_mode=True)
+            else:
+                Publisher.sendMessage('Disconnect tracker')
+                wx.MessageBox(_("Not possible to connect to the robot."), _("InVesalius 3"))
 
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
@@ -764,8 +767,6 @@ class NeuronavigationPanel(wx.Panel):
     def OnDialogRobotDestroy(self):
         if self.dlg_correg_robot:
             self.dlg_correg_robot.Destroy()
-        Publisher.sendMessage('Disconnect tracker')
-        wx.MessageBox(_("Not possible to connect to the robot."), _("InVesalius 3"))
 
     def CheckFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker)

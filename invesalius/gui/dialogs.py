@@ -4317,7 +4317,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
-        trackers = const.TRACKERS
+        trackers = const.TRACKERS.copy()
         if not ses.Session().debug:
             del trackers[-3:]
         tracker_options = [_("Select tracker:")] + trackers
@@ -4420,6 +4420,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         '''
         #TODO: make aboutbox
         self.matrix_tracker_to_robot = []
+        self.robot_status = False
 
         self.tracker = tracker
 
@@ -4461,6 +4462,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+        btn_load.Enable(False)
+        self.btn_load = btn_load
 
         # Create a horizontal sizers
         border = 1
@@ -4520,6 +4523,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
     def __bind_events(self):
         Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
         Publisher.subscribe(self.OnCoordinatesAdquired, 'Coordinates for the robot transformation matrix collected')
+        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
 
     def OnContinuousAcquisition(self, evt=None, btn=None):
         value = btn.GetValue()
@@ -4537,8 +4541,15 @@ class CreateTransformationMatrixRobot(wx.Dialog):
     def OnCoordinatesAdquired(self):
         self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
 
-        if int(self.txt_number.GetLabel()) >= 3:
+        if self.robot_status and int(self.txt_number.GetLabel()) >= 3:
             self.btn_apply_reg.Enable(True)
+
+    def OnRobotConnectionStatus(self, data):
+        self.robot_status = data
+        if self.robot_status:
+            self.btn_load.Enable(True)
+            if int(self.txt_number.GetLabel()) >= 3:
+                self.btn_apply_reg.Enable(True)
 
     def OnReset(self, evt):
         Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
@@ -4591,8 +4602,9 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
             self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
             print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
-            self.btn_ok.Enable(True)
             Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+            if self.robot_status:
+                self.btn_ok.Enable(True)
 
 
 class SetNDIconfigs(wx.Dialog):
