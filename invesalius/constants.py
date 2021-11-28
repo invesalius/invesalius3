@@ -823,14 +823,14 @@ COIL_ANGLE_ARROW_PROJECTION_THRESHOLD = 5
 CAM_MODE = True
 
 # Tractography visualization
-N_TRACTS = 100
+N_TRACTS = 200
 PEEL_DEPTH = 10
 MAX_PEEL_DEPTH = 40
-SEED_OFFSET = 20
+SEED_OFFSET = 30
 SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.3
+SLEEP_NAVIGATION = 0.2
 SLEEP_COORDINATES = 0.05
 
 BRAIN_OPACITY = 0.6
