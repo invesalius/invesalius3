@@ -1440,8 +1440,8 @@ class MarkersPanel(wx.Panel):
         else:
             self.nav_status = True
 
-    def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0)):
-        self.current_seed = coord_offset
+    def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)):
+        self.current_seed = coord_offset_w
 
     def UpdateRobotCoordinates(self, coordinates_raw, markers_flag):
         self.raw_target_robot = coordinates_raw[1], coordinates_raw[2]

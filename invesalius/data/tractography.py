@@ -201,7 +201,8 @@ def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts
 
     Publisher.sendMessage('Remove tracts')
     if n_tracts:
-        Publisher.sendMessage('Update tracts', root=bundle, affine_vtk=affine_vtk, coord_offset=position)
+        Publisher.sendMessage('Update tracts', root=bundle, affine_vtk=affine_vtk,
+                              coord_offset=position, coord_offset_w=seed_trk[0].tolist())
 
 
 class ComputeTractsThread(threading.Thread):
@@ -435,6 +436,8 @@ class ComputeTractsACTThread(threading.Thread):
                 # translate the spherical grid samples to the coil location in invesalius-vtk space
                 seed_trk_r_inv = m_seed @ coord_list_sphere[:, samples]
 
+                coord_offset_w = np.hstack((coord_offset, 1.0)).reshape([4, 1])
+
                 try:
                     # Anatomic constrained seed computation ---
                     # find only the samples inside the white matter as with the ACT enabled in the Trekker,
@@ -454,11 +457,15 @@ class ComputeTractsACTThread(threading.Thread):
                     # same as on the grid offset above, if the coil is too far from the mri volume the array indices
                     # are beyond the mri boundaries
                     # in this case use the grid center instead of the spherical samples
-                    seed_trk_r_inv_sampled = np.hstack((coord_offset, 1.0)).reshape([4, 1])
+                    seed_trk_r_inv_sampled = coord_offset_w.copy()
 
                 # convert to the world coordinate system for trekker
                 seed_trk_r_world_sampled = np.linalg.inv(affine) @ seed_trk_r_inv_sampled
                 seed_trk_r_world_sampled = seed_trk_r_world_sampled.T[:, :3]
+
+                # convert to the world coordinate system for saving in the marker list
+                coord_offset_w = np.linalg.inv(affine) @ coord_offset_w
+                coord_offset_w = np.squeeze(coord_offset_w.T[:, :3])
 
                 # DEBUG: uncomment the seed_trk below
                 # seed_trk.shape == [1, 3]
@@ -532,7 +539,7 @@ class ComputeTractsACTThread(threading.Thread):
                 # use "nowait" to ensure maximum speed and avoid visualizing old tracts in the queue, this might
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
-                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset))
+                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset, coord_offset_w))
                 self.coord_tracts_queue.task_done()
 
                 # sleep required to prevent user interface from being unresponsive
