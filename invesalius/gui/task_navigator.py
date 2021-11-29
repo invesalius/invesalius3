@@ -1222,8 +1222,10 @@ class MarkersPanel(wx.Panel):
             properly formatted, might throw an exception and leave the object
             in an inconsistent state."""
             for field, str_val in zip(dataclasses.fields(self.__class__), inp_str.split('\t')):
-                if field.type is float:
+                if field.type is float and str_val != 'None':
                     setattr(self, field.name, float(str_val))
+                if field.type is float and str_val == 'None':
+                    setattr(self, field.name, None)
                 if field.type is int:
                     setattr(self, field.name, int(str_val))
                 if field.type is str:
@@ -1261,7 +1263,6 @@ class MarkersPanel(wx.Panel):
         self.session = ses.Session()
 
         self.current_coord = 0, 0, 0, None, None, None
-        self.current_angle = None, None, None
         self.current_seed = 0, 0, 0
         self.current_robot_target_matrix = [None] * 9
         self.markers = []
@@ -1439,13 +1440,11 @@ class MarkersPanel(wx.Panel):
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
     def UpdateCurrentCoord(self, position):
-        self.current_coord = position
-        #self.current_angle = pubsub_evt.data[1][3:]
+        self.current_coord = list(position)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
-            sleep(0.5)
-            #self.current_coord[3:] = 0, 0, 0
+            self.current_coord[3:] = None, None, None
             self.nav_status = False
         else:
             self.nav_status = True
@@ -1696,7 +1695,7 @@ class MarkersPanel(wx.Panel):
                                   colour=new_marker.colour,
                                   coord=new_marker.coord[:3])
 
-        elif new_marker.coord[3:] is not None and self.nav_status or session_id is not None:
+        elif all([elem is not None for elem in new_marker.coord[3:]]):
             Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
                                   size=self.arrow_marker_size,
                                   color=new_marker.colour,
