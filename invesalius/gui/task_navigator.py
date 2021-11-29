@@ -1201,11 +1201,18 @@ class MarkersPanel(wx.Panel):
                 else:
                     res += ('%s\t' % str(getattr(self, field.name)))
 
-            # Add world coordinates (in addition to the internal ones).
-            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                position=[self.x, self.y, self.z],
-                orientation=[self.alpha, self.beta, self.gamma],
-            )
+            if self.alpha is not None and self.beta is not None and self.gamma is not None:
+                # Add world coordinates (in addition to the internal ones).
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.x, self.y, self.z],
+                    orientation=[self.alpha, self.beta, self.gamma],
+                )
+
+            else:
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                      position=[self.x, self.y, self.z],
+                      orientation=[0,0,0],
+                 )
 
             res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
             return res
