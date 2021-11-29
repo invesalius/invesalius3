@@ -359,7 +359,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
-        self.current_coord = 0, 0, 0
+        self.current_coord = 0, 0, 0, None, None, None
 
         # Initialize list of buttons and numctrls for wx objects
         self.btns_set_fiducial = [None, None, None, None, None, None]
@@ -704,7 +704,7 @@ class NeuronavigationPanel(wx.Panel):
         if self.btns_set_fiducial[n].GetValue():
             coord = self.numctrls_fiducial[n][0].GetValue(),\
                     self.numctrls_fiducial[n][1].GetValue(),\
-                    self.numctrls_fiducial[n][2].GetValue(), 0, 0, 0
+                    self.numctrls_fiducial[n][2].GetValue(), None, None, None
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
 
@@ -1144,9 +1144,9 @@ class MarkersPanel(wx.Panel):
         x : float = 0
         y : float = 0
         z : float = 0
-        alpha : float = 0
-        beta : float = 0
-        gamma : float = 0
+        alpha : float = dataclasses.field(default = None)
+        beta : float = dataclasses.field(default = None)
+        gamma : float = dataclasses.field(default = None)
         r : float = 0
         g : float = 1
         b : float = 0
@@ -1161,7 +1161,7 @@ class MarkersPanel(wx.Panel):
         # x, y, z, alpha, beta, gamma can be jointly accessed as coord
         @property
         def coord(self):
-            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma),)
+            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma))
 
         @coord.setter
         def coord(self, new_coord):
@@ -1201,11 +1201,18 @@ class MarkersPanel(wx.Panel):
                 else:
                     res += ('%s\t' % str(getattr(self, field.name)))
 
-            # Add world coordinates (in addition to the internal ones).
-            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                position=[self.x, self.y, self.z],
-                orientation=[self.alpha, self.beta, self.gamma],
-            )
+            if self.alpha is not None and self.beta is not None and self.gamma is not None:
+                # Add world coordinates (in addition to the internal ones).
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.x, self.y, self.z],
+                    orientation=[self.alpha, self.beta, self.gamma],
+                )
+
+            else:
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                      position=[self.x, self.y, self.z],
+                      orientation=[0,0,0],
+                 )
 
             res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
             return res
@@ -1215,8 +1222,10 @@ class MarkersPanel(wx.Panel):
             properly formatted, might throw an exception and leave the object
             in an inconsistent state."""
             for field, str_val in zip(dataclasses.fields(self.__class__), inp_str.split('\t')):
-                if field.type is float:
+                if field.type is float and str_val != 'None':
                     setattr(self, field.name, float(str_val))
+                if field.type is float and str_val == 'None':
+                    setattr(self, field.name, None)
                 if field.type is int:
                     setattr(self, field.name, int(str_val))
                 if field.type is str:
@@ -1253,8 +1262,7 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.current_coord = 0, 0, 0, 0, 0, 0
-        self.current_angle = 0, 0, 0
+        self.current_coord = 0, 0, 0, None, None, None
         self.current_seed = 0, 0, 0
         self.current_robot_target_matrix = [None] * 9
         self.markers = []
@@ -1264,6 +1272,7 @@ class MarkersPanel(wx.Panel):
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
+        self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
         # Change marker size
@@ -1431,13 +1440,11 @@ class MarkersPanel(wx.Panel):
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
     def UpdateCurrentCoord(self, position):
-        self.current_coord = position
-        #self.current_angle = pubsub_evt.data[1][3:]
+        self.current_coord = list(position)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
-            sleep(0.5)
-            #self.current_coord[3:] = 0, 0, 0
+            self.current_coord[3:] = None, None, None
             self.nav_status = False
         else:
             self.nav_status = True
@@ -1615,8 +1622,8 @@ class MarkersPanel(wx.Panel):
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers) - 1)
 
-        except:
-            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
+        except Exception as e:
+            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():
@@ -1681,10 +1688,18 @@ class MarkersPanel(wx.Panel):
         new_robot_marker.robot_target_matrix = self.current_robot_target_matrix
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                            size=new_marker.size,
-                                            colour=new_marker.colour,
-                                            coord=new_marker.coord[:3])
+        if all([elem is not None for elem in new_marker.coord[3:]]):
+            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
+                                  size=self.arrow_marker_size,
+                                  color=new_marker.colour,
+                                  coord=new_marker.coord)
+        else:
+            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
+                                  size=new_marker.size,
+                                  colour=new_marker.colour,
+                                  coord=new_marker.coord[:3])
+
+
         self.markers.append(new_marker)
         self.robot_markers.append(new_robot_marker)
 
