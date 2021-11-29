@@ -306,6 +306,9 @@ class Navigation():
 
             if self.view_tracts:
                 # initialize Trekker parameters
+                # TODO: This affine and affine_vtk are created 4 times. To improve, create a new affine object inside
+                #  Slice() that contains the transformation with the img_shift. Rename it to avoid confusion to the
+                #  affine, for instance it can be: affine_world_to_invesalius_vtk
                 slic = sl.Slice()
                 prj_data = prj.Project()
                 matrix_shape = tuple(prj_data.matrix_shape)
@@ -313,9 +316,10 @@ class Navigation():
                 img_shift = spacing[1] * (matrix_shape[1] - 1)
                 affine = slic.affine.copy()
                 affine[1, -1] -= img_shift
-                # affine[1, -1] -= matrix_shape[1]
                 affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+
                 Publisher.sendMessage("Update marker offset state", create=True)
+
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
                                 self.n_threads, self.act_data, affine_vtk, img_shift
                 # print("Appending the tract computation thread!")

@@ -836,11 +836,21 @@ SLEEP_COORDINATES = 0.05
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
 # the max_sampling_step can be set to something different as well. Above 100 is probably not necessary
-TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.03125, 'min_fod': 0.05, 'probe_quality': 3,
-                  'max_interval': 1, 'min_radius_curvature': 0.625, 'probe_length': 0.15625,
-                  'write_interval': 50, 'numb_threads': '', 'max_length': 250,
-                  'min_length': 10, 'max_sampling_step': 100, 'data_support_exponent': 0.5,
-                  'use_best_init': True, 'init_max_est_trials': 100}
+TREKKER_CONFIG = {'seed_max': 1,
+                  'step_size': 0.03125,
+                  'min_fod': 0.05,
+                  'probe_quality': 3,
+                  'max_interval': 1,
+                  'min_radius_curvature': 0.625,
+                  'probe_length': 0.15625,
+                  'write_interval': 50,
+                  'numb_threads': '',
+                  'max_length': 250,
+                  'min_length': 10,
+                  'max_sampling_step': 100,
+                  'data_support_exponent': 0.5,
+                  'use_best_init': True,
+                  'init_max_est_trials': 100}
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
 CURRENT_MARKER_FILE_VERSION = 0

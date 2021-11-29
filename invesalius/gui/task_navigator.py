@@ -1718,7 +1718,7 @@ class TractographyPanel(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        self.affine = None
+        self.affine = np.identity(4)
         self.affine_vtk = None
         self.trekker = None
         self.n_tracts = const.N_TRACTS
@@ -1975,7 +1975,6 @@ class TractographyPanel(wx.Panel):
         self.nav_status = nav_status
 
     def OnLinkBrain(self, event=None):
-        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import brain mask"))
         img_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import T1 anatomical image"))
@@ -1995,27 +1994,31 @@ class TractographyPanel(wx.Panel):
             self.affine[1, -1] -= img_shift
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        try:
-            self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-            self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
-            self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
-            Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
-            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
-                                  normals=self.brain_peel.peel_normals)
-            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
-            self.checkpeeling.Enable(1)
-            self.checkpeeling.SetValue(True)
-            self.spin_opacity.Enable(1)
-            Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
-            self.peel_loaded = True
-            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
-        except:
-            wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
+        if mask_path and img_path:
+            Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+            try:
+                self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
+                self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+                self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+
+                self.checkpeeling.Enable(1)
+                self.checkpeeling.SetValue(True)
+                self.spin_opacity.Enable(1)
+                self.peel_loaded = True
+
+                Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+                Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                      normals=self.brain_peel.peel_normals)
+                Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
+                Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+                Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
+            except:
+                Publisher.sendMessage('Update status text in GUI', label=_("Brain mask initialization failed."))
+                wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
-
         Publisher.sendMessage('Begin busy cursor')
         filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import Trekker FOD"))
         # Juuso
@@ -2026,75 +2029,64 @@ class TractographyPanel(wx.Panel):
         # FOD_path = 'Baran_FOD.nii'
         # filename = os.path.join(data_dir, FOD_path)
 
-        # if not self.affine_vtk:
-        #     slic = sl.Slice()
-        #     self.affine = slic.affine
-        #     self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+        if not self.affine_vtk:
+            slic = sl.Slice()
+            prj_data = prj.Project()
+            matrix_shape = tuple(prj_data.matrix_shape)
+            spacing = tuple(prj_data.spacing)
+            img_shift = spacing[1] * (matrix_shape[1] - 1)
+            self.affine = slic.affine.copy()
+            self.affine[1, -1] -= img_shift
+            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        try:
-            if filename:
-                Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
-
-                if not self.affine_vtk:
-                    slic = sl.Slice()
-                    prj_data = prj.Project()
-                    matrix_shape = tuple(prj_data.matrix_shape)
-                    spacing = tuple(prj_data.spacing)
-                    img_shift = spacing[1] * (matrix_shape[1] - 1)
-                    self.affine = slic.affine.copy()
-                    self.affine[1, -1] -= img_shift
-                    self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
-
-                # try:
-
+        if filename:
+            Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+            try:
                 self.trekker = Trekker.initialize(filename.encode('utf-8'))
                 self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
 
                 self.checktracts.Enable(1)
                 self.checktracts.SetValue(True)
                 self.view_tracts = True
+
                 Publisher.sendMessage('Update Trekker object', data=self.trekker)
                 Publisher.sendMessage('Update number of threads', data=n_threads)
                 Publisher.sendMessage('Update tracts visualization', data=1)
                 Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
                 # except:
                 #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
-        except:
-            wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
+            except:
+                Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialization failed."))
+                wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
 
     def OnLoadACT(self, event=None):
-
-        # TODO: Create a dialog error to say when the ACT data is not loaded and prevent
-        #  the interface from freezing. Give the user a chance to cancel it.
-
         if self.trekker:
-
             Publisher.sendMessage('Begin busy cursor')
             filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import anatomical labels"))
             # Baran
             # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
             # act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
             # filename = os.path.join(data_dir, act_path)
-            try:
-                if filename:
-                    Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
 
+            if not self.affine_vtk:
+                slic = sl.Slice()
+                prj_data = prj.Project()
+                matrix_shape = tuple(prj_data.matrix_shape)
+                spacing = tuple(prj_data.spacing)
+                img_shift = spacing[1] * (matrix_shape[1] - 1)
+                self.affine = slic.affine.copy()
+                self.affine[1, -1] -= img_shift
+                self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+
+            try:
+                Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+                if filename:
                     act_data = nb.squeeze_image(nb.load(filename))
                     act_data = nb.as_closest_canonical(act_data)
                     act_data.update_header()
                     act_data_arr = act_data.get_fdata()
-
-                    if not self.affine_vtk:
-                        slic = sl.Slice()
-                        prj_data = prj.Project()
-                        matrix_shape = tuple(prj_data.matrix_shape)
-                        spacing = tuple(prj_data.spacing)
-                        img_shift = spacing[1] * (matrix_shape[1] - 1)
-                        self.affine = slic.affine.copy()
-                        self.affine[1, -1] -= img_shift
-                        self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
                     self.checkACT.Enable(1)
                     self.checkACT.SetValue(True)
@@ -2108,6 +2100,7 @@ class TractographyPanel(wx.Panel):
                     Publisher.sendMessage('Enable ACT', data=True)
                     Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
             except:
+                Publisher.sendMessage('Update status text in GUI', label=_("ACT initialization failed."))
                 wx.MessageBox(_("Unable to load ACT."), _("InVesalius 3"))
 
             Publisher.sendMessage('End busy cursor')
