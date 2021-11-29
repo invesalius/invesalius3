@@ -4203,7 +4203,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         main_sizer.Fit(self)
 
         self.orientation = None
-        self.affine = None
+        self.affine = np.identity(4)
 
         self.__bind_events()
 

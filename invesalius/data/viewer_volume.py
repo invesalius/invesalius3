@@ -307,7 +307,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
-        Publisher.subscribe(self.UpdateMarkerOffsetPosition, 'Update marker offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
@@ -857,8 +856,10 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
             if self.actor_peel:
-                self.object_orientation_torus_actor.SetVisibility(1)
-                self.obj_projection_arrow_actor.SetVisibility(1)
+                if self.object_orientation_torus_actor:
+                    self.object_orientation_torus_actor.SetVisibility(1)
+                if self.obj_projection_arrow_actor:
+                    self.obj_projection_arrow_actor.SetVisibility(1)
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
 
@@ -1607,10 +1608,6 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.mark_actor)
         self.Refresh()
 
-    def UpdateMarkerOffsetPosition(self, coord_offset):
-        self.mark_actor.SetPosition(coord_offset)
-        self.Refresh()
-
     def UpdateObjectOrientation(self, m_img, coord):
         # print("Update object orientation")
 
@@ -1687,7 +1684,7 @@ class Viewer(wx.Panel):
             #    self.ball_actor.SetVisibility(1)
         self.Refresh()
 
-    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None):
+    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
         mapper = vtk.vtkCompositePolyDataMapper2()
         mapper.SetInputDataObject(root)
 
