@@ -1623,7 +1623,6 @@ class MarkersPanel(wx.Panel):
                         self.__set_marker_as_target(len(self.markers) - 1)
 
         except Exception as e:
-
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
@@ -1689,13 +1688,7 @@ class MarkersPanel(wx.Panel):
         new_robot_marker.robot_target_matrix = self.current_robot_target_matrix
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        if label in self.__list_fiducial_labels():
-            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                  size=new_marker.size,
-                                  colour=new_marker.colour,
-                                  coord=new_marker.coord[:3])
-
-        elif all([elem is not None for elem in new_marker.coord[3:]]):
+        if all([elem is not None for elem in new_marker.coord[3:]]):
             Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
                                   size=self.arrow_marker_size,
                                   color=new_marker.colour,

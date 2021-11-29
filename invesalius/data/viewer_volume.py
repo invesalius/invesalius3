@@ -71,7 +71,7 @@ class Viewer(wx.Panel):
         self.initial_focus = None
 
         self.static_markers = []
-        self.static_arrows =[]
+        self.static_arrows = []
         self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
@@ -607,11 +607,11 @@ class Viewer(wx.Panel):
             self.RemoveTarget()
 
         self.UpdateRender()
+
     def AddMarkerwithOrientation(self, arrow_id, size, color, coord):
         """
         Markers arrow with orientation created by navigation tools and rendered in volume viewer.
         """
-
         self.arrow_marker_id = arrow_id
         coord_flip = list(coord)
         coord_flip[1] = -coord_flip[1]
@@ -619,10 +619,9 @@ class Viewer(wx.Panel):
         arrow_actor = self.Add_ObjectArrow(coord_flip[:3], coord_flip[3:6], color, size)
         self.static_markers.append(arrow_actor)
         self.ren.AddActor(self.static_markers[self.arrow_marker_id])
-        self.arrow_marker_id +=1
-        #self.UpdateRender()
-        self.Refresh()
+        self.arrow_marker_id += 1
 
+        self.Refresh()
 
     def AddMarker(self, ball_id, size, colour, coord):
         """
@@ -1009,16 +1008,10 @@ class Viewer(wx.Panel):
             self.RemoveTarget()
             self.DisableCoilTracker()
 
-    def CreateTargetAim(self):
-        if self.aim_actor:
-            self.RemoveTargetAim()
-            self.aim_actor = None
-
-        vtk_colors = vtk.vtkNamedColors()
-
+    def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
-            position=self.target_coord[:3],
-            orientation=self.target_coord[3:],
+            position=direction,
+            orientation=orientation,
             axes='sxyz',
         )
         m_img = np.asmatrix(m_img)
@@ -1029,7 +1022,16 @@ class Viewer(wx.Panel):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
-        self.m_img_vtk = m_img_vtk
+        return m_img_vtk
+
+    def CreateTargetAim(self):
+        if self.aim_actor:
+            self.RemoveTargetAim()
+            self.aim_actor = None
+
+        vtk_colors = vtk.vtkNamedColors()
+
+        self.m_img_vtk = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
 
         filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
 
@@ -1040,7 +1042,7 @@ class Viewer(wx.Panel):
 
         # Transform the polydata
         transform = vtk.vtkTransform()
-        transform.SetMatrix(m_img_vtk)
+        transform.SetMatrix(self.m_img_vtk)
         transformPD = vtk.vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
@@ -1088,7 +1090,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
         self.dummy_coil_actor.SetVisibility(1)
-        self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
+        self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)
 
@@ -1441,8 +1443,9 @@ class Viewer(wx.Panel):
         actor.GetProperty().SetLineWidth(5)
         actor.AddPosition(0, 0, 0)
         actor.SetScale(size)
-        actor.SetPosition(direction)
-        actor.SetOrientation(orientation)
+
+        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
+        actor.SetUserMatrix(m_img_vtk)
 
         return actor
 
