@@ -371,7 +371,7 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     #
     # else:
 
-    dx = [-70, 70]
+    dx = [-30, 30]
     dt = [-180, 180]
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
@@ -498,8 +498,8 @@ def dynamic_reference_m(probe, reference):
 
 
 def RobotCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], trk_init[2], ref_mode)
-    coord_robot = ElfinCoord(trk_init[1:])
+    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0][0], trk_init[1], ref_mode)
+    coord_robot = ElfinCoord([trk_init[0][1]]+trk_init[1:])
 
     probe_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[0])
     ref_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[1])

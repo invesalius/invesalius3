@@ -671,7 +671,7 @@ Z_COLUMN = 6
 
 MARKER_COLOUR = (1.0, 1.0, 0.)
 MARKER_SIZE = 2
-
+ARROW_MARKER_SIZE = 10
 CALIBRATION_TRACKER_SAMPLES = 10
 FIDUCIAL_REGISTRATION_ERROR_THRESHOLD = 3.0
 
@@ -823,22 +823,35 @@ COIL_ANGLE_ARROW_PROJECTION_THRESHOLD = 5
 CAM_MODE = True
 
 # Tractography visualization
-N_TRACTS = 100
-PEEL_DEPTH = 5
-MAX_PEEL_DEPTH = 30
-SEED_OFFSET = 15
+N_TRACTS = 200
+PEEL_DEPTH = 10
+MAX_PEEL_DEPTH = 40
+SEED_OFFSET = 30
 SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.15
+SLEEP_NAVIGATION = 0.2
 SLEEP_COORDINATES = 0.05
+SLEEP_ROBOT = 0.01
 
-BRAIN_OPACITY = 0.5
+BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
-TREKKER_CONFIG = {'seed_max': 1, 'step_size': 0.1, 'min_fod': 0.1, 'probe_quality': 3,
-                  'max_interval': 1, 'min_radius_curv': 0.8, 'probe_length': 0.4,
-                  'write_interval': 50, 'numb_threads': '', 'max_lenth': 200,
-                  'min_lenth': 20, 'max_sampling_step': 100}
+# the max_sampling_step can be set to something different as well. Above 100 is probably not necessary
+TREKKER_CONFIG = {'seed_max': 1,
+                  'step_size': 0.03125,
+                  'min_fod': 0.05,
+                  'probe_quality': 3,
+                  'max_interval': 1,
+                  'min_radius_curvature': 0.625,
+                  'probe_length': 0.15625,
+                  'write_interval': 50,
+                  'numb_threads': '',
+                  'max_length': 250,
+                  'min_length': 10,
+                  'max_sampling_step': 100,
+                  'data_support_exponent': 0.5,
+                  'use_best_init': True,
+                  'init_max_est_trials': 100}
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
 CURRENT_MARKER_FILE_VERSION = 0
@@ -858,3 +871,7 @@ ROBOT_ARC_THRESHOLD_DISTANCE = 100 #mm
 ROBOT_VERSOR_SCALE_FACTOR = 70
 #Robot Working Space is defined as 800mm in Elfin manual. For safety, the value is reduced by 5%.
 ROBOT_WORKING_SPACE = 760 #mm
+ROBOT_MOVE_STATE = {"free to move": 0,
+                    "in motion": 1009,
+                    "waiting for execution": 1013,
+                    "error": 1025}

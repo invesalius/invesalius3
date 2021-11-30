@@ -69,7 +69,7 @@ class Controller():
         #DICOM = 1
         #TIFF uCT = 2
         self.img_type = 0
-        self.affine = None
+        self.affine = np.identity(4)
 
         #Init session
         session = ses.Session()
@@ -340,7 +340,7 @@ class Controller():
         if proj.affine:
             self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
         else:
-            self.Slice.affine = None
+            self.Slice.affine = np.identity(4)
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
@@ -623,6 +623,8 @@ class Controller():
         Publisher.sendMessage(('Set scroll position', 'SAGITAL'),index=proj.matrix_shape[1]/2)
         Publisher.sendMessage(('Set scroll position', 'CORONAL'),index=proj.matrix_shape[2]/2)
 
+        # TODO: Check that this is needed with the new way of using affine
+        #  now the affine should be at least the identity(4) and never None
         if self.Slice.affine is not None:
             Publisher.sendMessage('Enable Go-to-Coord', status=True)
         else:
@@ -731,6 +733,8 @@ class Controller():
         proj.level = self.Slice.window_level
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
+        # TODO: Check that this is needed with the new way of using affine
+        #  now the affine should be at least the identity(4) and never None
         if self.Slice.affine is not None:
             proj.affine = self.Slice.affine.tolist()
 

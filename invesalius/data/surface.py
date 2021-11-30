@@ -365,9 +365,16 @@ class SurfaceManager():
         if self.convert2inv:
             # convert between invesalius and world space with shift in the Y coordinate
             affine = sl.Slice().affine
+            # TODO: Check that this is needed with the new way of using affine
+            #  now the affine should be at least the identity(4) and never None
             if affine is not None:
-                affine[1, -1] -= sl.Slice().spacing[1] * (sl.Slice().matrix.shape[1] - 1)
+                matrix_shape = sl.Slice().matrix.shape
+                spacing = sl.Slice().spacing
+                img_shift = spacing[1] * (matrix_shape[1] - 1)
+                affine = sl.Slice().affine.copy()
+                affine[1, -1] -= img_shift
                 affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+
                 actor.SetUserMatrix(affine_vtk)
 
         if overwrite:

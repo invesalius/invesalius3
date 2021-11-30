@@ -486,7 +486,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
-        Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
+        Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
         Publisher.sendMessage('Update slice viewer')
 
     def OnScrollBar(self, *args, **kwargs):
@@ -494,7 +494,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # the actual orientation.
         x, y, z = self.viewer.cross.GetFocalPoint()
         self.viewer.UpdateSlicesPosition([x, y, z])
-        Publisher.sendMessage('Set cross focal point', position=[x, y, z, 0., 0., 0.])
+        Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
         Publisher.sendMessage('Update slice viewer')
 
 
@@ -544,7 +544,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
 
     def OnTractsMouseClick(self, obj, evt):
         # print("Single mouse click")
-        # self.tracts = dtr.compute_tracts(self.tracker, self.seed, self.left_pressed)
+        # self.tracts = dtr.compute_and_visualize_tracts(self.tracker, self.seed, self.left_pressed)
         self.ChangeTracts(True)
 
     def OnTractsReleaseLeftButton(self, obj, evt):
@@ -554,7 +554,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
 
     def ChangeTracts(self, pressed):
         # print("Trying to compute tracts")
-        self.tracts = dtr.compute_tracts(self.tracker, self.seed, self.affine_vtk, pressed)
+        self.tracts = dtr.compute_and_visualize_tracts(self.tracker, self.seed, self.affine_vtk, pressed)
         # mouse_x, mouse_y = iren.GetEventPosition()
         # wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         # px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
