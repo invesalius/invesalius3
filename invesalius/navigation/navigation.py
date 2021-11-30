@@ -235,9 +235,14 @@ class Navigation():
         if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
-    def StartNavigation(self, tracker):
+    def EstimateTransformationMatrix(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
+        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        # fiducials matrix
+        self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
+                                                shear=False, scale=False)
 
+    def StartNavigation(self, tracker):
         # initialize jobs list
         jobs_list = []
 
@@ -248,14 +253,6 @@ class Navigation():
         vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-
-        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
-
-        # fiducials matrix
-        m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
-                                                shear=False, scale=False)
-        self.m_change = m_change
-
         errors = False
 
         if self.track_obj:
@@ -269,14 +266,14 @@ class Navigation():
                 # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                 obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
 
-                coreg_data = [m_change, obj_ref_mode]
+                coreg_data = [self.m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
                     coord_raw, markers_flag = tracker.TrackerCoordinates.GetCoordinates()
                 else:
                     coord_raw = np.array([None])
 
-                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
+                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
                 coreg_data.extend(obj_data)
 
                 queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue]
@@ -285,7 +282,7 @@ class Navigation():
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
                                                                 self.target))
         else:
-            coreg_data = (m_change, 0)
+            coreg_data = (self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
             jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
