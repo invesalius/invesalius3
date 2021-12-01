@@ -35,7 +35,6 @@ class ICP():
 
         if not self.use_icp:
             if dlg.ICPcorregistration(navigation.fre):
-                Publisher.sendMessage('Stop navigation')
                 use_icp, self.m_icp = self.OnICP(navigation, tracker, navigation.m_change)
                 if use_icp:
                     self.icp_fre = db.calculate_fre(tracker.tracker_fiducials_raw, navigation.all_fiducials,
@@ -43,7 +42,6 @@ class ICP():
                     self.SetICP(navigation, use_icp)
                 else:
                     print("ICP canceled")
-                Publisher.sendMessage('Start navigation')
 
     def OnICP(self, navigation, tracker, m_change):
         ref_mode_id = navigation.GetReferenceMode()

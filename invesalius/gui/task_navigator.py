@@ -802,7 +802,7 @@ class NeuronavigationPanel(wx.Panel):
             for btn_c in self.btns_set_fiducial:
                 btn_c.Enable(False)
 
-            self.navigation.StartNavigation(self.tracker)
+            self.navigation.EstimateTransformationMatrix(self.tracker)
 
             if not self.CheckFiducialRegistrationError():
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
@@ -812,9 +812,11 @@ class NeuronavigationPanel(wx.Panel):
             if self.icp.use_icp:
                 self.checkbox_icp.Enable(True)
                 self.checkbox_icp.SetValue(True)
-            # Update FRE once more after starting the navigation, due to the optional use of ICP,
-            # which improves FRE.
-            self.CheckFiducialRegistrationError()
+                # Update FRE once more after starting the navigation, due to the optional use of ICP,
+                # which improves FRE.
+                self.CheckFiducialRegistrationError()
+
+            self.navigation.StartNavigation(self.tracker)
 
     def OnNavigate(self, evt, btn_nav):
         select_tracker_elem = self.select_tracker_elem
