@@ -227,22 +227,20 @@ def OptitrackTracker(tracker_id):
 def RobotTracker(tracker_id):
     from wx import ID_OK
 
-    trck_init = None
-    tracker_id = None
     dlg_device = dlg.SetTrackerDeviceToRobot()
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         if tracker_id:
             trck_init = TrackerConnection(tracker_id, None, 'connect')
-            dlg_ip = dlg.SetRobotIP()
-            if dlg_ip.ShowModal() == ID_OK:
-                robot_IP = dlg_ip.GetValue()
-                Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
-            else:
-                trck_init = None
-                tracker_id = None
+            if trck_init[0]:
+                dlg_ip = dlg.SetRobotIP()
+                if dlg_ip.ShowModal() == ID_OK:
+                    robot_IP = dlg_ip.GetValue()
+                    Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
 
-    return trck_init, tracker_id
+                    return trck_init, tracker_id
+
+    return None, None
 
 def DebugTrackerRandom(tracker_id):
     trck_init = True
