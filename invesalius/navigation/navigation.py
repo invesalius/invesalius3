@@ -27,7 +27,6 @@ import numpy as np
 import invesalius.constants as const
 import invesalius.project as prj
 import invesalius.data.bases as db
-import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
@@ -98,12 +97,11 @@ class UpdateNavigationScene(threading.Thread):
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
-                    bundle, affine_vtk, coord_offset = self.tracts_queue.get_nowait()
+                    bundle, affine_vtk, coord_offset, coord_offset_w = self.tracts_queue.get_nowait()
                     #TODO: Check if possible to combine the Remove tracts with Update tracts in a single command
                     wx.CallAfter(Publisher.sendMessage, 'Remove tracts')
-                    wx.CallAfter(Publisher.sendMessage, 'Update tracts', root=bundle,
-                                 affine_vtk=affine_vtk, coord_offset=coord_offset)
-                    # wx.CallAfter(Publisher.sendMessage, 'Update marker offset', coord_offset=coord_offset)
+                    wx.CallAfter(Publisher.sendMessage, 'Update tracts', root=bundle, affine_vtk=affine_vtk,
+                                 coord_offset=coord_offset, coord_offset_w=coord_offset_w)
                     self.tracts_queue.task_done()
 
                 if self.serial_port_enabled:
@@ -117,10 +115,11 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
+                wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix',m_img=m_img, coord=coord, flag= self.peel_loaded)
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
@@ -189,7 +188,7 @@ class Navigation():
 
     def UpdateSleep(self, sleep):
         self.sleep_nav = sleep
-        self.serial_port_connection.sleep_nav = sleep
+        # self.serial_port_connection.sleep_nav = sleep
 
     def UpdateSerialPort(self, serial_port_in_use, com_port=None, baud_rate=None):
         self.serial_port_in_use = serial_port_in_use
@@ -305,15 +304,22 @@ class Navigation():
 
             if self.view_tracts:
                 # initialize Trekker parameters
+                # TODO: This affine and affine_vtk are created 4 times. To improve, create a new affine object inside
+                #  Slice() that contains the transformation with the img_shift. Rename it to avoid confusion to the
+                #  affine, for instance it can be: affine_world_to_invesalius_vtk
                 slic = sl.Slice()
                 prj_data = prj.Project()
                 matrix_shape = tuple(prj_data.matrix_shape)
+                spacing = tuple(prj_data.spacing)
+                img_shift = spacing[1] * (matrix_shape[1] - 1)
                 affine = slic.affine.copy()
-                affine[1, -1] -= matrix_shape[1]
+                affine[1, -1] -= img_shift
                 affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+
                 Publisher.sendMessage("Update marker offset state", create=True)
+
                 self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
-                                self.n_threads, self.act_data, affine_vtk, matrix_shape[1]
+                                self.n_threads, self.act_data, affine_vtk, img_shift
                 # print("Appending the tract computation thread!")
                 queues = [self.coord_tracts_queue, self.tracts_queue]
                 if self.enable_act:

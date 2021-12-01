@@ -373,7 +373,7 @@ def DebugCoordRandom(trk_init, trck_id, ref_mode):
     #
     # else:
 
-    dx = [-40, 40]
+    dx = [-30, 30]
     dt = [-180, 180]
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),

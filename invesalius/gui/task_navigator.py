@@ -156,7 +156,7 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 310), 0, fpb.FPB_SINGLE_FOLD)
+                                      (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
         # Initialize Tracker and PedalConnection objects here so that they are available to several panels.
         #
@@ -349,7 +349,7 @@ class NeuronavigationPanel(wx.Panel):
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
-        self.current_coord = 0, 0, 0
+        self.current_coord = 0, 0, 0, None, None, None
 
         # Initialize list of buttons and numctrls for wx objects
         self.btns_set_fiducial = [None, None, None, None, None, None]
@@ -698,7 +698,7 @@ class NeuronavigationPanel(wx.Panel):
         if self.btns_set_fiducial[n].GetValue():
             coord = self.numctrls_fiducial[n][0].GetValue(),\
                     self.numctrls_fiducial[n][1].GetValue(),\
-                    self.numctrls_fiducial[n][2].GetValue(), 0, 0, 0
+                    self.numctrls_fiducial[n][2].GetValue(), None, None, None
 
             Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
 
@@ -1075,17 +1075,15 @@ class ObjectRegistrationPanel(wx.Panel):
 
         try:
             if filename:
-                #TODO: Improve method to read the file, using "with" similar to OnLoadParameters
-                data = np.loadtxt(filename, delimiter='\t')
-                self.obj_fiducials = data[:, :3]
-                self.obj_orients = data[:, 3:]
+                with open(filename, 'r') as text_file:
+                    data = [s.split('\t') for s in text_file.readlines()]
 
-                text_file = open(filename, "r")
-                header = text_file.readline().split('\t')
-                text_file.close()
+                registration_coordinates = np.array(data[1:]).astype(np.float32)
+                self.obj_fiducials = registration_coordinates[:, :3]
+                self.obj_orients = registration_coordinates[:, 3:]
 
-                self.obj_name = header[1]
-                self.obj_ref_mode = int(header[-1])
+                self.obj_name = data[0][1]
+                self.obj_ref_mode = int(data[0][-1])
 
                 self.checktrack.Enable(1)
                 self.checktrack.SetValue(True)
@@ -1095,7 +1093,7 @@ class ObjectRegistrationPanel(wx.Panel):
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
                 Publisher.sendMessage('Change camera checkbox', status=False)
-                # wx.MessageBox(_("Object file successfully loaded"), _("Load"))
+                wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
@@ -1141,9 +1139,9 @@ class MarkersPanel(wx.Panel):
         x : float = 0
         y : float = 0
         z : float = 0
-        alpha : float = 0
-        beta : float = 0
-        gamma : float = 0
+        alpha : float = dataclasses.field(default = None)
+        beta : float = dataclasses.field(default = None)
+        gamma : float = dataclasses.field(default = None)
         r : float = 0
         g : float = 1
         b : float = 0
@@ -1158,7 +1156,7 @@ class MarkersPanel(wx.Panel):
         # x, y, z, alpha, beta, gamma can be jointly accessed as coord
         @property
         def coord(self):
-            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma),)
+            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma))
 
         @coord.setter
         def coord(self, new_coord):
@@ -1198,11 +1196,18 @@ class MarkersPanel(wx.Panel):
                 else:
                     res += ('%s\t' % str(getattr(self, field.name)))
 
-            # Add world coordinates (in addition to the internal ones).
-            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                position=[self.x, self.y, self.z],
-                orientation=[self.alpha, self.beta, self.gamma],
-            )
+            if self.alpha is not None and self.beta is not None and self.gamma is not None:
+                # Add world coordinates (in addition to the internal ones).
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.x, self.y, self.z],
+                    orientation=[self.alpha, self.beta, self.gamma],
+                )
+
+            else:
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                      position=[self.x, self.y, self.z],
+                      orientation=[0,0,0],
+                 )
 
             res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
             return res
@@ -1212,8 +1217,10 @@ class MarkersPanel(wx.Panel):
             properly formatted, might throw an exception and leave the object
             in an inconsistent state."""
             for field, str_val in zip(dataclasses.fields(self.__class__), inp_str.split('\t')):
-                if field.type is float:
+                if field.type is float and str_val != 'None':
                     setattr(self, field.name, float(str_val))
+                if field.type is float and str_val == 'None':
+                    setattr(self, field.name, None)
                 if field.type is int:
                     setattr(self, field.name, int(str_val))
                 if field.type is str:
@@ -1237,8 +1244,7 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.current_coord = 0, 0, 0, 0, 0, 0
-        self.current_angle = 0, 0, 0
+        self.current_coord = 0, 0, 0, None, None, None
         self.current_seed = 0, 0, 0
 
         self.markers = []
@@ -1246,6 +1252,7 @@ class MarkersPanel(wx.Panel):
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
+        self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
         # Change marker size
@@ -1411,19 +1418,17 @@ class MarkersPanel(wx.Panel):
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
     def UpdateCurrentCoord(self, position):
-        self.current_coord = position
-        #self.current_angle = pubsub_evt.data[1][3:]
+        self.current_coord = list(position)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
-            sleep(0.5)
-            #self.current_coord[3:] = 0, 0, 0
+            self.current_coord[3:] = None, None, None
             self.nav_status = False
         else:
             self.nav_status = True
 
-    def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0)):
-        self.current_seed = coord_offset
+    def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)):
+        self.current_seed = coord_offset_w
 
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
@@ -1595,8 +1600,8 @@ class MarkersPanel(wx.Panel):
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers) - 1)
 
-        except:
-            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))     
+        except Exception as e:
+            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():
@@ -1660,10 +1665,18 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Add marker to robot control', data=current_head_robot_target_status)
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                            size=new_marker.size,
-                                            colour=new_marker.colour,
-                                            coord=new_marker.coord[:3])
+        if all([elem is not None for elem in new_marker.coord[3:]]):
+            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
+                                  size=self.arrow_marker_size,
+                                  color=new_marker.colour,
+                                  coord=new_marker.coord)
+        else:
+            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
+                                  size=new_marker.size,
+                                  colour=new_marker.colour,
+                                  coord=new_marker.coord[:3])
+
+
         self.markers.append(new_marker)
 
         # Add item to list control in panel
@@ -1698,7 +1711,7 @@ class TractographyPanel(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        self.affine = None
+        self.affine = np.identity(4)
         self.affine_vtk = None
         self.trekker = None
         self.n_tracts = const.N_TRACTS
@@ -1955,7 +1968,6 @@ class TractographyPanel(wx.Panel):
         self.nav_status = nav_status
 
     def OnLinkBrain(self, event=None):
-        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         mask_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import brain mask"))
         img_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import T1 anatomical image"))
@@ -1969,31 +1981,37 @@ class TractographyPanel(wx.Panel):
             slic = sl.Slice()
             prj_data = prj.Project()
             matrix_shape = tuple(prj_data.matrix_shape)
+            spacing = tuple(prj_data.spacing)
+            img_shift = spacing[1] * (matrix_shape[1] - 1)
             self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
+            self.affine[1, -1] -= img_shift
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        try:
-            self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-            self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
-            self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
-            Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
-            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
-                                  normals=self.brain_peel.peel_normals)
-            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
-            self.checkpeeling.Enable(1)
-            self.checkpeeling.SetValue(True)
-            self.spin_opacity.Enable(1)
-            Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
-            self.peel_loaded = True
-            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
-        except:
-            wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
+        if mask_path and img_path:
+            Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+            try:
+                self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
+                self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+                self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+
+                self.checkpeeling.Enable(1)
+                self.checkpeeling.SetValue(True)
+                self.spin_opacity.Enable(1)
+                self.peel_loaded = True
+
+                Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+                Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                      normals=self.brain_peel.peel_normals)
+                Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
+                Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+                Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
+            except:
+                Publisher.sendMessage('Update status text in GUI', label=_("Brain mask initialization failed."))
+                wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
-        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
         Publisher.sendMessage('Begin busy cursor')
         filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import Trekker FOD"))
         # Juuso
@@ -2004,69 +2022,83 @@ class TractographyPanel(wx.Panel):
         # FOD_path = 'Baran_FOD.nii'
         # filename = os.path.join(data_dir, FOD_path)
 
-        # if not self.affine_vtk:
-        #     slic = sl.Slice()
-        #     self.affine = slic.affine
-        #     self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
-
         if not self.affine_vtk:
             slic = sl.Slice()
             prj_data = prj.Project()
             matrix_shape = tuple(prj_data.matrix_shape)
+            spacing = tuple(prj_data.spacing)
+            img_shift = spacing[1] * (matrix_shape[1] - 1)
             self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
+            self.affine[1, -1] -= img_shift
             self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        # try:
+        if filename:
+            Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+            try:
+                self.trekker = Trekker.initialize(filename.encode('utf-8'))
+                self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
 
-        self.trekker = Trekker.initialize(filename.encode('utf-8'))
-        self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
+                self.checktracts.Enable(1)
+                self.checktracts.SetValue(True)
+                self.view_tracts = True
 
-        self.checktracts.Enable(1)
-        self.checktracts.SetValue(True)
-        self.view_tracts = True
-        Publisher.sendMessage('Update Trekker object', data=self.trekker)
-        Publisher.sendMessage('Update number of threads', data=n_threads)
-        Publisher.sendMessage('Update tracts visualization', data=1)
-        Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
-        # except:
-        #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
+                Publisher.sendMessage('Update Trekker object', data=self.trekker)
+                Publisher.sendMessage('Update number of threads', data=n_threads)
+                Publisher.sendMessage('Update tracts visualization', data=1)
+                Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
+                # except:
+                #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
+            except:
+                Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialization failed."))
+                wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
 
     def OnLoadACT(self, event=None):
-        Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
-        Publisher.sendMessage('Begin busy cursor')
-        filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import anatomical labels"))
-        # Baran
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
-        # filename = os.path.join(data_dir, act_path)
+        if self.trekker:
+            Publisher.sendMessage('Begin busy cursor')
+            filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import anatomical labels"))
+            # Baran
+            # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
+            # act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
+            # filename = os.path.join(data_dir, act_path)
 
-        act_data = nb.squeeze_image(nb.load(filename))
-        act_data = nb.as_closest_canonical(act_data)
-        act_data.update_header()
-        act_data_arr = act_data.get_fdata()
+            if not self.affine_vtk:
+                slic = sl.Slice()
+                prj_data = prj.Project()
+                matrix_shape = tuple(prj_data.matrix_shape)
+                spacing = tuple(prj_data.spacing)
+                img_shift = spacing[1] * (matrix_shape[1] - 1)
+                self.affine = slic.affine.copy()
+                self.affine[1, -1] -= img_shift
+                self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
-        if not self.affine_vtk:
-            slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= matrix_shape[1]
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+            try:
+                Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+                if filename:
+                    act_data = nb.squeeze_image(nb.load(filename))
+                    act_data = nb.as_closest_canonical(act_data)
+                    act_data.update_header()
+                    act_data_arr = act_data.get_fdata()
 
-        self.checkACT.Enable(1)
-        self.checkACT.SetValue(True)
+                    self.checkACT.Enable(1)
+                    self.checkACT.SetValue(True)
 
-        Publisher.sendMessage('Update ACT data', data=act_data_arr)
-        Publisher.sendMessage('Enable ACT', data=True)
-        # Publisher.sendMessage('Create grid', data=act_data_arr, affine=self.affine)
-        # Publisher.sendMessage('Update number of threads', data=n_threads)
-        # Publisher.sendMessage('Update tracts visualization', data=1)
-        Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
+                    # ACT rules should be as follows:
+                    self.trekker.pathway_stop_at_entry(filename.encode('utf-8'), -1)  # outside
+                    self.trekker.pathway_discard_if_ends_inside(filename.encode('utf-8'), 1)  # wm
+                    self.trekker.pathway_discard_if_enters(filename.encode('utf-8'), 0)  # csf
 
-        Publisher.sendMessage('End busy cursor')
+                    Publisher.sendMessage('Update ACT data', data=act_data_arr)
+                    Publisher.sendMessage('Enable ACT', data=True)
+                    Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
+            except:
+                Publisher.sendMessage('Update status text in GUI', label=_("ACT initialization failed."))
+                wx.MessageBox(_("Unable to load ACT."), _("InVesalius 3"))
+
+            Publisher.sendMessage('End busy cursor')
+        else:
+            wx.MessageBox(_("Load FOD image before the ACT."), _("InVesalius 3"))
 
     def OnLoadParameters(self, event=None):
         import json
@@ -2109,10 +2141,13 @@ class TractographyPanel(wx.Panel):
             # print("Running during navigation")
             coord_flip = list(position[:3])
             coord_flip[1] = -coord_flip[1]
-            dti.compute_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
-                               self.n_tracts)
+            dti.compute_and_visualize_tracts(self.trekker, coord_flip, self.affine, self.affine_vtk,
+                                             self.n_tracts)
 
     def OnCloseProject(self):
+        self.trekker = None
+        self.trekker_cfg = const.TREKKER_CONFIG
+
         self.checktracts.SetValue(False)
         self.checktracts.Enable(0)
         self.checkpeeling.SetValue(False)

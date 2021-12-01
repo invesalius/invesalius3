@@ -332,7 +332,7 @@ class Project(metaclass=Singleton):
 
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
-        for index in project.get("masks", []):
+        for index in sorted(project.get("masks", []), key=lambda x: int(x)):
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
@@ -343,7 +343,7 @@ class Project(metaclass=Singleton):
 
         # Opening the surfaces
         self.surface_dict = {}
-        for index in project.get("surfaces", []):
+        for index in sorted(project.get("surfaces", []), key=lambda x: int(x)):
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
             s = srf.Surface(int(index))

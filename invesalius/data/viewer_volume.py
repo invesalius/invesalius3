@@ -70,8 +70,8 @@ class Viewer(wx.Panel):
 
         self.initial_focus = None
 
-        self.staticballs = []
-
+        self.static_markers = []
+        self.static_arrows = []
         self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
@@ -278,6 +278,7 @@ class Viewer(wx.Panel):
 
         # Related to marker creation in navigation tools
         Publisher.subscribe(self.AddMarker, 'Add marker')
+        Publisher.subscribe(self.AddMarkerwithOrientation, 'Add arrow marker')
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
@@ -306,7 +307,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
-        Publisher.subscribe(self.UpdateMarkerOffsetPosition, 'Update marker offset')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
@@ -579,7 +579,7 @@ class Viewer(wx.Panel):
         """
         Set all markers, overwriting the previous markers.
         """
-        self.RemoveAllMarkers(len(self.staticballs))
+        self.RemoveAllMarkers(len(self.static_markers))
 
         target_selected = False
         for marker in markers:
@@ -607,6 +607,21 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
+    def AddMarkerwithOrientation(self, arrow_id, size, color, coord):
+        """
+        Markers arrow with orientation created by navigation tools and rendered in volume viewer.
+        """
+        self.arrow_marker_id = arrow_id
+        coord_flip = list(coord)
+        coord_flip[1] = -coord_flip[1]
+
+        arrow_actor = self.Add_ObjectArrow(coord_flip[:3], coord_flip[3:6], color, size)
+        self.static_markers.append(arrow_actor)
+        self.ren.AddActor(self.static_markers[self.arrow_marker_id])
+        self.arrow_marker_id += 1
+
+        self.Refresh()
+
     def AddMarker(self, ball_id, size, colour, coord):
         """
         Markers created by navigation tools and rendered in volume viewer.
@@ -626,12 +641,12 @@ class Viewer(wx.Panel):
         prop.SetColor(colour)
 
         # adding a new actor for the present ball
-        self.staticballs.append(vtk.vtkActor())
+        self.static_markers.append(vtk.vtkActor())
 
-        self.staticballs[self.ball_id].SetMapper(mapper)
-        self.staticballs[self.ball_id].SetProperty(prop)
+        self.static_markers[self.ball_id].SetMapper(mapper)
+        self.static_markers[self.ball_id].SetProperty(prop)
 
-        self.ren.AddActor(self.staticballs[self.ball_id])
+        self.ren.AddActor(self.static_markers[self.ball_id])
         self.ball_id += 1
 
         #self.UpdateRender()
@@ -667,33 +682,33 @@ class Viewer(wx.Panel):
     def HideAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.staticballs[i].SetVisibility(0)
+            self.static_markers[i].SetVisibility(0)
         self.UpdateRender()
 
     def ShowAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.staticballs[i].SetVisibility(1)
+            self.static_markers[i].SetVisibility(1)
         self.UpdateRender()
 
     def RemoveAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.ren.RemoveActor(self.staticballs[i])
-        self.staticballs = []
+            self.ren.RemoveActor(self.static_markers[i])
+        self.static_markers = []
         self.UpdateRender()
 
     def RemoveMultipleMarkers(self, index):
         for i in reversed(index):
-            self.ren.RemoveActor(self.staticballs[i])
-            del self.staticballs[i]
+            self.ren.RemoveActor(self.static_markers[i])
+            del self.static_markers[i]
             self.ball_id = self.ball_id - 1
         self.UpdateRender()
 
     def BlinkMarker(self, index):
         if self.timer:
             self.timer.Stop()
-            self.staticballs[self.index].SetVisibility(1)
+            self.static_markers[self.index].SetVisibility(1)
         self.index = index
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnBlinkMarker, self.timer)
@@ -701,7 +716,7 @@ class Viewer(wx.Panel):
         self.timer_count = 0
 
     def OnBlinkMarker(self, evt):
-        self.staticballs[self.index].SetVisibility(int(self.timer_count % 2))
+        self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
         self.Refresh()
         self.timer_count += 1
 
@@ -709,20 +724,20 @@ class Viewer(wx.Panel):
         if self.timer:
             self.timer.Stop()
             if index is None:
-                self.staticballs[self.index].SetVisibility(1)
+                self.static_markers[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
 
     def SetNewColor(self, index, color):
-        self.staticballs[index].GetProperty().SetColor([round(s/255.0, 3) for s in color])
+        self.static_markers[index].GetProperty().SetColor([round(s / 255.0, 3) for s in color])
         self.Refresh()
 
     def OnTargetMarkerTransparency(self, status, index):
         if status:
-            self.staticballs[index].GetProperty().SetOpacity(1)
+            self.static_markers[index].GetProperty().SetOpacity(1)
             # self.staticballs[index].GetProperty().SetOpacity(0.4)
         else:
-            self.staticballs[index].GetProperty().SetOpacity(1)
+            self.static_markers[index].GetProperty().SetOpacity(1)
 
     def OnUpdateAngleThreshold(self, angle):
         self.anglethreshold = angle
@@ -841,8 +856,10 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
             if self.actor_peel:
-                self.object_orientation_torus_actor.SetVisibility(1)
-                self.obj_projection_arrow_actor.SetVisibility(1)
+                if self.object_orientation_torus_actor:
+                    self.object_orientation_torus_actor.SetVisibility(1)
+                if self.obj_projection_arrow_actor:
+                    self.obj_projection_arrow_actor.SetVisibility(1)
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
 
@@ -992,16 +1009,10 @@ class Viewer(wx.Panel):
             self.RemoveTarget()
             self.DisableCoilTracker()
 
-    def CreateTargetAim(self):
-        if self.aim_actor:
-            self.RemoveTargetAim()
-            self.aim_actor = None
-
-        vtk_colors = vtk.vtkNamedColors()
-
+    def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
-            position=self.target_coord[:3],
-            orientation=self.target_coord[3:],
+            position=direction,
+            orientation=orientation,
             axes='sxyz',
         )
         m_img = np.asmatrix(m_img)
@@ -1012,7 +1023,16 @@ class Viewer(wx.Panel):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
-        self.m_img_vtk = m_img_vtk
+        return m_img_vtk
+
+    def CreateTargetAim(self):
+        if self.aim_actor:
+            self.RemoveTargetAim()
+            self.aim_actor = None
+
+        vtk_colors = vtk.vtkNamedColors()
+
+        self.m_img_vtk = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
 
         filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
 
@@ -1023,7 +1043,7 @@ class Viewer(wx.Panel):
 
         # Transform the polydata
         transform = vtk.vtkTransform()
-        transform.SetMatrix(m_img_vtk)
+        transform.SetMatrix(self.m_img_vtk)
         transformPD = vtk.vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
@@ -1071,7 +1091,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
         self.dummy_coil_actor.SetVisibility(1)
-        self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
+        self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)
 
@@ -1424,8 +1444,9 @@ class Viewer(wx.Panel):
         actor.GetProperty().SetLineWidth(5)
         actor.AddPosition(0, 0, 0)
         actor.SetScale(size)
-        actor.SetPosition(direction)
-        actor.SetOrientation(orientation)
+
+        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
+        actor.SetUserMatrix(m_img_vtk)
 
         return actor
 
@@ -1587,10 +1608,6 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.mark_actor)
         self.Refresh()
 
-    def UpdateMarkerOffsetPosition(self, coord_offset):
-        self.mark_actor.SetPosition(coord_offset)
-        self.Refresh()
-
     def UpdateObjectOrientation(self, m_img, coord):
         # print("Update object orientation")
 
@@ -1667,7 +1684,7 @@ class Viewer(wx.Panel):
             #    self.ball_actor.SetVisibility(1)
         self.Refresh()
 
-    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None):
+    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
         mapper = vtk.vtkCompositePolyDataMapper2()
         mapper.SetInputDataObject(root)
 
