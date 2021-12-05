@@ -1,7 +1,10 @@
 import numpy as np
 from scipy import ndimage
 from scipy.ndimage import watershed_ift, generate_binary_structure
-from skimage.morphology import watershed
+try:
+    from skimage.segmentation import watershed
+except ImportError:
+    from skimage.morphology import watershed
 
 def get_LUT_value(data, window, level):
     shape = data.shape
