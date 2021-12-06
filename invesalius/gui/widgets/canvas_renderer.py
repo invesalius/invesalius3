@@ -147,6 +147,7 @@ class CanvasRendererCTX:
             self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
     def _resize_canvas(self, w, h):
+        print(f"Resize {w=} {h=}")
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
         self._cv_image = converters.np_rgba_to_vtk(self._array)
         self.mapper.SetInputData(self._cv_image)
@@ -301,9 +302,12 @@ class CanvasRendererCTX:
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
         w, h = size
+        ew, eh = self.evt_renderer.GetSize()
         if self._size != size:
             self._size = size
             self._resize_canvas(w, h)
+
+        print(f"OnPaint {w=} {h=}, {ew=}, {eh=}")
 
         cam_modif_time = self.evt_renderer.GetActiveCamera().GetMTime()
         if (not self.modified) and cam_modif_time == self.last_cam_modif_time:
@@ -334,6 +338,8 @@ class CanvasRendererCTX:
         gc.SetPen(pen)
         gc.SetBrush(brush)
         gc.Scale(1, -1)
+
+        self.draw_rectangle((5, 5), w - 20, h - 20, fill_colour=(255, 0, 0, 128))
 
         self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
         for l, d in self._ordered_draw_list: #sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):

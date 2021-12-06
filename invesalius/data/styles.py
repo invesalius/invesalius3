@@ -771,6 +771,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def OnMoveMeasurePoint(self, obj, evt):
         x, y, z = self._get_pos_clicked()
+        print(evt, type(evt))
         if self.selected:
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))
@@ -802,8 +803,14 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def _get_pos_clicked(self):
         iren = self.viewer.interactor
+        w,h = iren.GetSize()
+        vw, vh = self.viewer.GetSize()
         mx,my = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mx, my)
+        rw, rh = render.GetSize()
+        print(f"Click position {mx=}, {my=}, {w=}, {h=}, {vw=}, {vh=}, {rw/w=}, {rh/h=}")
+        mx = rw / w * mx
+        my = rh / h * my
         self.picker.AddPickList(self.slice_data.actor)
         self.picker.Pick(mx, my, 0, render)
         x, y, z = self.picker.GetPickPosition()
