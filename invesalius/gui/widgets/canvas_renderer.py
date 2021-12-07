@@ -634,17 +634,18 @@ class CanvasRendererCTX:
 
         if font is None:
             font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.Scale(self.viewer.GetContentScaleFactor())
 
-        font = gc.CreateFont(font, txt_colour)
+        _font = gc.CreateFont(font, txt_colour)
         px, py = pos
         for t in text.split('\n'):
             t = t.strip()
             _py = -py
             _px = px
-            gc.SetFont(font)
+            gc.SetFont(_font)
             gc.DrawText(t, _px, _py)
 
-            w, h = self.calc_text_size(t)
+            w, h = self.calc_text_size(t, font)
             py -= h
 
         self._drawn = True
@@ -667,10 +668,11 @@ class CanvasRendererCTX:
 
         if font is None:
             font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.Scale(self.viewer.GetContentScaleFactor())
 
         _font = gc.CreateFont(font, txt_colour)
         gc.SetFont(_font)
-        w, h = self.calc_text_size(text)
+        w, h = self.calc_text_size(text, font)
 
         px, py = pos
 

@@ -808,7 +808,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         mx,my = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mx, my)
         rw, rh = render.GetSize()
-        print(f"Click position {mx=}, {my=}, {w=}, {h=}, {vw=}, {vh=}, {rw/w=}, {rh/h=}")
+        rww, rwh = iren.GetRenderWindow().GetActualSize()
+        print(f"Click position {mx=}, {my=}, {w=}, {h=}, {vw=}, {rww=}, {rwh=}, {vh=}, {rw/w=}, {rh/h=}, {iren.GetContentScaleFactor()=}")
         mx = rw / w * mx
         my = rh / h * my
         self.picker.AddPickList(self.slice_data.actor)
