@@ -30,7 +30,11 @@ import wx
 from scipy import ndimage
 from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
-from skimage.morphology import watershed
+try:
+    # Skimage >= 0.19
+    from skimage.segmentation import watershed
+except ImportError:
+    from skimage.morphology import watershed
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
