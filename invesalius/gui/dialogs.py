@@ -119,7 +119,7 @@ class NumberDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(label, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
         sizer.Add(num_ctrl, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
-        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.ALL, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)

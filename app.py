@@ -29,6 +29,13 @@ import traceback
 
 import re
 
+if sys.platform  == "darwin":
+    try:
+        import certifi
+        os.environ["SSL_CERT_FILE"] = certifi.where()
+    except ImportError:
+        pass
+
 if sys.platform == 'win32':
     try:
         import winreg
