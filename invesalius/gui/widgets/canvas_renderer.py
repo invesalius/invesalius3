@@ -339,8 +339,6 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        self.draw_rectangle((5, 5), w - 20, h - 20, fill_colour=(255, 0, 0, 128))
-
         self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
         for l, d in self._ordered_draw_list: #sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
             d.draw_to_canvas(gc, self)

@@ -77,6 +77,8 @@ WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
+        self.viewer = viewer
+
         self.right_pressed = False
         self.left_pressed = False
         self.middle_pressed = False
@@ -109,6 +111,27 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
     def OnMiddleButtonReleaseEvent(self, evt, obj):
         self.middle_pressed = False
+
+    def GetMousePosition(self):
+        iren = self.viewer.interactor
+        w,h = iren.GetSize()
+        vw, vh = self.viewer.GetSize()
+        mx,my = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mx, my)
+        rw, rh = render.GetSize()
+        rww, rwh = iren.GetRenderWindow().GetActualSize()
+        mx = int(rw / w * mx)
+        my = int(rh / h * my)
+        return mx, my
+
+    def GetPickPosition(self):
+        iren = self.viewer.interactor
+        mx, my = self.GetMousePosition()
+        render = iren.FindPokedRenderer(mx, my)
+        self.picker.Pick(mx, my, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        return (x, y, z)
+
 
 
 class DefaultInteractorStyle(BaseImageInteractorStyle):
@@ -771,7 +794,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def OnMoveMeasurePoint(self, obj, evt):
         x, y, z = self._get_pos_clicked()
-        print(evt, type(evt))
+        print(f"{self.viewer.interactor.GetSize()}, {self.viewer.interactor.GetRenderWindow().GetSize()}, {self.viewer.slice_data.renderer.GetSize()}")
         if self.selected:
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))
@@ -802,19 +825,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.viewer.scroll_enabled = True
 
     def _get_pos_clicked(self):
-        iren = self.viewer.interactor
-        w,h = iren.GetSize()
-        vw, vh = self.viewer.GetSize()
-        mx,my = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(mx, my)
-        rw, rh = render.GetSize()
-        rww, rwh = iren.GetRenderWindow().GetActualSize()
-        print(f"Click position {mx=}, {my=}, {w=}, {h=}, {vw=}, {rww=}, {rwh=}, {vh=}, {rw/w=}, {rh/h=}, {iren.GetContentScaleFactor()=}")
-        mx = rw / w * mx
-        my = rh / h * my
         self.picker.AddPickList(self.slice_data.actor)
-        self.picker.Pick(mx, my, 0, render)
-        x, y, z = self.picker.GetPickPosition()
+        x, y, z = self.GetPickPosition()
         self.picker.DeletePickList(self.slice_data.actor)
         return (x, y, z)
 
@@ -931,7 +943,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         return (mx, my)
 
     def _get_pos_clicked(self):
-        mouse_x, mouse_y = self._pick_position()
+        mouse_x, mouse_y = self.GetMousePosition()
         position = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         return position
 
