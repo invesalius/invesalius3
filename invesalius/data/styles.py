@@ -1252,15 +1252,14 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
-         
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
         if self.viewer.interactor.HitTest((x, y)) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
-            
+
             y = self.viewer.interactor.GetSize()[1] - y
             w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
             self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
-            
+
             self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
             self.viewer.interactor.Render()
 
@@ -1339,7 +1338,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -1371,7 +1370,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
