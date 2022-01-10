@@ -490,10 +490,44 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
 
+def init():
+    """
+    Initialize InVesalius.
+
+    Mostly file-system related initializations.
+    """
+    #Is needed because of pyinstaller
+    multiprocessing.freeze_support()
+
+    #Needed in win 32 exe
+    if hasattr(sys,"frozen") and sys.platform.startswith('win'):
+
+        #Click in the .inv3 file support
+        root = winreg.HKEY_CLASSES_ROOT
+        key = "InVesalius 3.1\InstallationDir"
+        hKey = winreg.OpenKey (root, key, 0, winreg.KEY_READ)
+        value, type_ = winreg.QueryValueEx (hKey, "")
+        path = os.path.join(value,'dist')
+
+        os.chdir(path)
+
+    if not inv_paths.USER_INV_DIR.exists():
+        inv_paths.create_conf_folders()
+        if inv_paths.OLD_USER_INV_DIR.exists():
+            inv_paths.copy_old_files()
+
+    if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
+        # Set system standard error output to file
+        path = inv_paths.USER_LOG_DIR.join("stderr.log")
+        sys.stderr = open(path, "w")
+
+
 def main():
     """
-    Initialize InVesalius GUI
+    Start InVesalius.
     """
+    init()
+
     options, args = parse_command_line()
 
     session = ses.Session()
@@ -521,30 +555,4 @@ def main():
 
 
 if __name__ == '__main__':
-    #Is needed because of pyinstaller
-    multiprocessing.freeze_support()
-
-    #Needed in win 32 exe
-    if hasattr(sys,"frozen") and sys.platform.startswith('win'):
-
-        #Click in the .inv3 file support
-        root = winreg.HKEY_CLASSES_ROOT
-        key = "InVesalius 3.1\InstallationDir"
-        hKey = winreg.OpenKey (root, key, 0, winreg.KEY_READ)
-        value, type_ = winreg.QueryValueEx (hKey, "")
-        path = os.path.join(value,'dist')
-
-        os.chdir(path)
-
-    if not inv_paths.USER_INV_DIR.exists():
-        inv_paths.create_conf_folders()
-        if inv_paths.OLD_USER_INV_DIR.exists():
-            inv_paths.copy_old_files()
-
-    if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
-        # Set system standard error output to file
-        path = inv_paths.USER_LOG_DIR.join("stderr.log")
-        sys.stderr = open(path, "w")
-
-    # Init application
     main()
