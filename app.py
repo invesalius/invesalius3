@@ -490,7 +490,7 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
 
-def main():
+def main(connection=None):
     """
     Initialize InVesalius GUI
     """
@@ -512,6 +512,10 @@ def main():
         from invesalius.net.pedal_connection import PedalConnection
 
         PedalConnection().start()
+
+    from invesalius.net.neuronavigation_api import NeuronavigationApi
+
+    NeuronavigationApi(connection)
 
     if options.no_gui:
         non_gui_startup(options, args)
