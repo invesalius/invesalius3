@@ -1442,7 +1442,7 @@ class MarkersPanel(wx.Panel):
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
-            self.current_coord[3:] = None, None, None
+            self.current_coord = list([None, None, None])
             self.nav_status = False
         else:
             self.nav_status = True
