@@ -1373,6 +1373,8 @@ class Viewer(wx.Panel):
         self.x_actor.SetVisibility(0)
         self.y_actor.SetVisibility(0)
         self.z_actor.SetVisibility(0)
+        self.object_orientation_torus_actor.SetVisibility(0)
+        self.obj_projection_arrow_actor.SetVisibility(0)
         #self.ren.AddActor(self.obj_projection_arrow_actor)
         #self.ren.AddActor(self.object_orientation_torus_actor)
         # self.obj_axes = vtk.vtkAxesActor()
@@ -1585,8 +1587,8 @@ class Viewer(wx.Panel):
                 #self.x_actor.SetVisibility(self.obj_state)
                 #self.y_actor.SetVisibility(self.obj_state)
                 #self.z_actor.SetVisibility(self.obj_state)
-                #self.object_orientation_torus_actor.SetVisibility(self.obj_state)
-                #self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
+                self.object_orientation_torus_actor.SetVisibility(self.obj_state)
+                self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
         self.Refresh()
 
     def UpdateSeedOffset(self, data):
