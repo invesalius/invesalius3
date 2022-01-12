@@ -19,6 +19,9 @@
 
 from invesalius.utils import Singleton
 
+import numpy as np
+from vtk.numpy_interface import dataset_adapter
+
 class NeuronavigationApi(metaclass=Singleton):
     """
     An API used internally in InVesalius to communicate with the
@@ -33,6 +36,8 @@ class NeuronavigationApi(metaclass=Singleton):
 
     If connection object is not given or it is None, skip doing the updates.
     """
+    N_VERTICES_IN_POLYGON = 3
+
     def __init__(self, connection=None):
         if connection is not None:
             assert self._hasmethod(connection, 'update_coil_pose')
@@ -48,3 +53,28 @@ class NeuronavigationApi(metaclass=Singleton):
                 position=position,
                 orientation=orientation,
             )
+
+    def update_coil_mesh(self, polydata):
+        wrapped = dataset_adapter.WrapDataObject(polydata)
+
+        points = np.array(wrapped.Points)
+        polygons_raw = np.array(wrapped.Polygons)
+
+        # The polygons are returned as 1d-array of the form
+        #
+        # [n_0, id_0(0), id_0(1), ..., id_0(n_0),
+        #  n_1, id_1(0), id_1(1), ..., id_1(n_1),
+        #  ...]
+        #
+        # where n_i is the number of vertices in polygon i, and id_i's are indices to the vertex list.
+        #
+        # Assert that all polygons have an equal number of vertices, reshape the array, and drop n_i's.
+        #
+        assert all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
+
+        polygons = polygons_raw.reshape(-1, self.N_VERTICES_IN_POLYGON + 1)[:, 1:]
+
+        self.connection.update_coil_mesh(
+            points=points,
+            polygons=polygons,
+        )
