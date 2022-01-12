@@ -198,7 +198,12 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 2 - Object registration panel
         item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
-        otw = ObjectRegistrationPanel(item, tracker, pedal_connection)
+        otw = ObjectRegistrationPanel(
+            parent=item,
+            tracker=tracker,
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
@@ -879,7 +884,7 @@ class NeuronavigationPanel(wx.Panel):
 
 
 class ObjectRegistrationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection):
+    def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -891,6 +896,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
         self.tracker = tracker
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
 
         self.nav_prop = None
         self.obj_fiducials = None
@@ -907,7 +913,7 @@ class ObjectRegistrationPanel(wx.Panel):
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
-        btn_new.Bind(wx.EVT_BUTTON, self.OnLinkCreate)
+        btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
         self.btn_new = btn_new
 
         # Button for import config coil file
@@ -1050,13 +1056,16 @@ class ObjectRegistrationPanel(wx.Panel):
         coil_index = evt.GetSelection()
         Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
 
-    def OnLinkCreate(self, event=None):
+    def OnCreateNewCoil(self, event=None):
 
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
+
+                    self.neuronavigation_api.update_coil_mesh(polydata)
+
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
