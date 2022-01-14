@@ -2420,14 +2420,12 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         Publisher.subscribe(self.CropMask, "Crop mask")
 
     def OnMove(self, obj, evt):
-        iren = self.viewer.interactor
-        x, y = iren.GetEventPosition()
+        x, y = self.GetMousePosition()
         self.draw_retangle.MouseMove(x,y)
 
     def OnLeftPressed(self, obj, evt):
         self.draw_retangle.mouse_pressed = True
-        iren = self.viewer.interactor
-        x, y = iren.GetEventPosition()
+        x, y = self.GetMousePosition()
         self.draw_retangle.LeftPressed(x,y)
 
     def OnReleaseLeftButton(self, obj, evt):
@@ -2435,13 +2433,12 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.draw_retangle.ReleaseLeft()
 
     def SetUp(self):
-        
         self.draw_retangle = geom.DrawCrop2DRetangle()
         self.draw_retangle.SetViewer(self.viewer)
 
         self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
-        
+
         if not(self.config.dlg_visible):
             self.config.dlg_visible = True
 
