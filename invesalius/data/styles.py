@@ -736,7 +736,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def OnInsertMeasurePoint(self, obj, evt):
         slice_number = self.slice_data.number
         x, y, z = self._get_pos_clicked()
-        mx, my = self.viewer.interactor.GetEventPosition()
+        mx, my = self.GetMousePosition()
 
         if self.selected:
             self.selected = None
@@ -808,7 +808,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.viewer.UpdateCanvas()
 
         else:
-            mx, my = self.viewer.interactor.GetEventPosition()
+            mx, my = self.GetMousePosition()
             if self._verify_clicked_display(mx, my):
                 self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             else:
@@ -939,7 +939,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def _pick_position(self):
         iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
+        mx, my = self.GetMousePosition()
         return (mx, my)
 
     def _get_pos_clicked(self):
@@ -1421,7 +1421,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         viewer = self.viewer
         if iren.GetControlKey():
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
@@ -1439,7 +1439,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         viewer = self.viewer
         if iren.GetControlKey():
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
@@ -2052,7 +2052,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         if self._over_center:
             self.dragging = True
         else:
-            x, y = self.viewer.interactor.GetEventPosition()
+            x, y = self.GetMousePosition()
             w, h = self.viewer.interactor.GetSize()
 
             self.picker.Pick(h/2.0, w/2.0, 0, self.viewer.slice_data.renderer)
