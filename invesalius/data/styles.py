@@ -300,7 +300,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -339,7 +339,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
         operation = self.config.operation
