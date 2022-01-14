@@ -2313,7 +2313,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
 
         viewer = self.viewer
         iren = viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
