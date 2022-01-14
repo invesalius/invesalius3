@@ -509,7 +509,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             self.ChangeCrossPosition(iren)
 
     def ChangeCrossPosition(self, iren):
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
