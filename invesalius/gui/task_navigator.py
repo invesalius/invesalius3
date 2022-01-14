@@ -73,6 +73,8 @@ from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
 
+from invesalius.net.neuronavigation_api import NeuronavigationApi
+
 HAS_PEDAL_CONNECTION = True
 try:
     from invesalius.net.pedal_connection import PedalConnection
@@ -172,6 +174,8 @@ class InnerFoldPanel(wx.Panel):
         tracker = Tracker()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
 
+        neuronavigation_api = NeuronavigationApi()
+
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -180,7 +184,12 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationPanel(item, tracker, pedal_connection)
+        ntw = NeuronavigationPanel(
+            parent=item,
+            tracker=tracker,
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -336,7 +345,7 @@ class InnerFoldPanel(wx.Panel):
 
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection):
+    def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -350,8 +359,10 @@ class NeuronavigationPanel(wx.Panel):
 
         # Initialize global variables
         self.pedal_connection = pedal_connection
+
         self.navigation = Navigation(
             pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
         )
         self.icp = ICP()
         self.tracker = tracker

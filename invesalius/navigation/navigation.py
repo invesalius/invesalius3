@@ -64,7 +64,7 @@ class QueueCustom(queue.Queue):
 
 class UpdateNavigationScene(threading.Thread):
 
-    def __init__(self, vis_queues, vis_components, event, sle):
+    def __init__(self, vis_queues, vis_components, event, sle, neuronavigation_api):
         """Class (threading) to update the navigation scene with all graphical elements.
 
         Sleep function in run method is used to avoid blocking GUI and more fluent, real-time navigation
@@ -77,6 +77,8 @@ class UpdateNavigationScene(threading.Thread):
         :type event: threading.Event
         :param sle: Sleep pause in seconds
         :type sle: float
+        :param neuronavigation_api: An API object for communicating the coil position.
+        :type neuronavigation_api: invesalius.net.neuronavigation_api.NeuronavigationAPI
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
@@ -84,6 +86,7 @@ class UpdateNavigationScene(threading.Thread):
         self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue = vis_queues
         self.sle = sle
         self.event = event
+        self.neuronavigation_api = neuronavigation_api
 
     def run(self):
         # count = 0
@@ -121,6 +124,12 @@ class UpdateNavigationScene(threading.Thread):
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
+
+                self.neuronavigation_api.update_coil_pose(
+                    position=coord[:3],
+                    orientation=coord[3:],
+                )
+
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
@@ -132,8 +141,9 @@ class UpdateNavigationScene(threading.Thread):
 
 
 class Navigation():
-    def __init__(self, pedal_connection):
+    def __init__(self, pedal_connection, neuronavigation_api):
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
 
         self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
@@ -329,8 +339,15 @@ class Navigation():
                 else:
                     jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
 
-            jobs_list.append(UpdateNavigationScene(vis_queues, vis_components,
-                                                    self.event, self.sleep_nav))
+            jobs_list.append(
+                UpdateNavigationScene(
+                    vis_queues=vis_queues,
+                    vis_components=vis_components,
+                    event=self.event,
+                    sle=self.sleep_nav,
+                    neuronavigation_api=self.neuronavigation_api,
+                )
+            )
 
             for jobs in jobs_list:
                 # jobs.daemon = True
