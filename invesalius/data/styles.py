@@ -649,7 +649,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     def OnWindowLevelMove(self, obj, evt):
         if (self.left_pressed):
             iren = obj.GetInteractor()
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             self.acum_achange_window += mouse_x - self.last_x
             self.acum_achange_level += mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
