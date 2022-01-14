@@ -2082,7 +2082,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         else:
             # Getting mouse position
             iren = self.viewer.interactor
-            mx, my = iren.GetEventPosition()
+            mx, my = self.GetMousePosition()
 
             # Getting center value
             center = self.viewer.slice_.center
@@ -2128,7 +2128,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def _move_center_rot(self):
         iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
+        mx, my = self.GetMousePosition()
 
         icx, icy, icz = self.viewer.slice_.center
 
@@ -2150,7 +2150,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
     def _rotate(self):
         # Getting mouse position
         iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
+        mx, my = self.GetMousePosition()
 
         cx, cy, cz = self.viewer.slice_.center
 
