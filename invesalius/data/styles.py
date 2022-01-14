@@ -2566,7 +2566,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             return
 
         iren = self.viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
@@ -2686,7 +2686,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def do_2d_seg(self):
         viewer = self.viewer
         iren = viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
@@ -2752,7 +2752,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def do_3d_seg(self):
         viewer = self.viewer
         iren = viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
