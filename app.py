@@ -522,9 +522,20 @@ def init():
         sys.stderr = open(path, "w")
 
 
-def main():
+def main(connection=None):
     """
     Start InVesalius.
+
+    Parameters:
+        connection: An object to communicate with the outside world.
+          In theory, can be any object supports certain function calls.
+          See invesalius.net.neuronavigation_api for a comprehensive
+          description of how the object is used.
+
+          Note that if InVesalius is started in the usual way by running
+          app.py, the connection object defaults to None. To enable this
+          functionality, InVesalius needs to be started by calling the main
+          function directly with a proper connection object.
     """
     init()
 
@@ -546,6 +557,10 @@ def main():
         from invesalius.net.pedal_connection import PedalConnection
 
         PedalConnection().start()
+
+    from invesalius.net.neuronavigation_api import NeuronavigationApi
+
+    NeuronavigationApi(connection)
 
     if options.no_gui:
         non_gui_startup(options, args)
