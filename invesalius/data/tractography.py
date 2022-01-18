@@ -28,7 +28,7 @@ import time
 
 import numpy as np
 import queue
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import vtk
 
 import invesalius.constants as const

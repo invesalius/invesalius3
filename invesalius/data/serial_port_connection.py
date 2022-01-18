@@ -24,7 +24,7 @@ import time
 import wx
 
 from invesalius import constants
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 
 class SerialPortConnection(threading.Thread):

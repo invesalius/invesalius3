@@ -24,7 +24,7 @@ import textwrap
 import wx
 import numpy as np
 
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as image_utils

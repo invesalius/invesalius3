@@ -28,7 +28,7 @@ import invesalius.constants as const
 
 from time import sleep
 from random import uniform
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 class TrackerCoordinates():
     def __init__(self):

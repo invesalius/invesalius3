@@ -1,6 +1,6 @@
 # Singleton and Publisher-Subscriber design patterns example.
 
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 class Singleton(type):
     # This is a Gary Robinson implementation:

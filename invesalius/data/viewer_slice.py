@@ -31,7 +31,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import invesalius.data.styles as styles
 import wx
 import sys
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 try:
     from agw import floatspin as FS

@@ -19,7 +19,7 @@
 import wx
 import sys
 import wx.gizmos as gizmos
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import wx.lib.splitter as spl
 
 import invesalius.constants as const

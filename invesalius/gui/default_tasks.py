@@ -22,7 +22,7 @@ try:
     import wx.lib.agw.foldpanelbar as fpb
 except ModuleNotFoundError:
     import wx.lib.foldpanelbar as fpb
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.gui.data_notebook as nb

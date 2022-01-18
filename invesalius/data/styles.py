@@ -35,7 +35,7 @@ try:
     from skimage.segmentation import watershed
 except ImportError:
     from skimage.morphology import watershed
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.converters as converters

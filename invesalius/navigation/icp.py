@@ -21,7 +21,7 @@ import wx
 
 import invesalius.data.bases as db
 import invesalius.gui.dialogs as dlg
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 
 class ICP():

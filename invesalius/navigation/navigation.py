@@ -33,7 +33,7 @@ import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 
 class QueueCustom(queue.Queue):

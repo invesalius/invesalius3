@@ -22,7 +22,7 @@ from threading import Thread
 
 import mido
 
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 class PedalConnection(Thread, metaclass=Singleton):

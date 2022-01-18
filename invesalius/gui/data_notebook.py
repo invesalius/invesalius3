@@ -34,7 +34,7 @@ except ImportError:
     import wx.lib.flatnotebook as fnb
 
 import wx.lib.platebtn as pbtn
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_

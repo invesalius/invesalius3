@@ -47,7 +47,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import csv
 
 try:

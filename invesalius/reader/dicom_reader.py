@@ -38,7 +38,7 @@ import invesalius.session as session
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 if sys.platform == "win32":
     try:

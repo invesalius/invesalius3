@@ -25,7 +25,7 @@ import invesalius.data.coordinates as dco
 import invesalius.data.trackers as dt
 import invesalius.gui.dialogs as dlg
 import invesalius.data.coregistration as dcr
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 
 class Tracker():

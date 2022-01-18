@@ -24,7 +24,7 @@ import sys
 
 import numpy
 import wx
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.gui.dialogs as dialog
 import invesalius.constants as const

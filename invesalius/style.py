@@ -17,7 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 
 # mode.py

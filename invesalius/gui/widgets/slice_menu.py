@@ -26,7 +26,7 @@ except(ImportError):
     from ordereddict import OrderedDict
 
 import wx
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.slice_ as sl

@@ -18,7 +18,7 @@
 #--------------------------------------------------------------------------
 
 import math
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 import vtk
 
 AXIAL = 2

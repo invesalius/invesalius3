@@ -48,7 +48,7 @@ except ImportError:
 
 import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
-from invesalius.pubsub import pub as Publisher
+from pubsub import pub as Publisher
 from time import sleep
 
 import invesalius.constants as const
