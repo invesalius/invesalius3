@@ -36,11 +36,27 @@ class NeuronavigationApi(metaclass=Singleton):
     def __init__(self, connection=None):
         if connection is not None:
             assert self._hasmethod(connection, 'update_coil_pose')
+            self.__bind_events()
 
         self.connection = connection
 
     def _hasmethod(self, obj, name):
         return hasattr(obj, name) and callable(getattr(obj, name))
+
+    def __bind_events(self):
+        Publisher.subscribe(self.update_focus, 'Set cross focal point')
+
+    # TODO: Not the cleanest API; for an example of a better API, see update_coil_pose
+    #   below, for which position and orientation are sent separately. Changing this
+    #   would require changing 'Set cross focal point' publishers and subscribers
+    #   throughout the code.
+    #
+    def update_focus(self, position):
+        if self.connection is not None:
+            self.connection.update_focus(
+                position=position[:3],
+                orientation=position[3:],
+            )
 
     def update_coil_pose(self, position, orientation):
         if self.connection is not None:
