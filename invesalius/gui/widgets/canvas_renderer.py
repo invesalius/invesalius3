@@ -186,8 +186,7 @@ class CanvasRendererCTX:
         self.viewer.interactor.Render()
 
     def OnMouseMove(self, evt):
-        x, y = evt.GetPosition()
-        y = self.viewer.interactor.GetSize()[1] - y
+        x, y = self.viewer.get_vtk_mouse_position()
         redraw = False
 
         if self._drag_obj:
@@ -231,8 +230,7 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonPress(self, evt):
-        x, y = evt.GetPosition()
-        y = self.viewer.interactor.GetSize()[1] - y
+        x, y = self.viewer.get_vtk_mouse_position()
         if self._over_obj and hasattr(self._over_obj, 'on_mouse_move'):
             if hasattr(self._over_obj, 'on_select'):
                 try:
@@ -287,8 +285,7 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnDoubleClick(self, evt):
-        x, y = evt.GetPosition()
-        y = self.viewer.interactor.GetSize()[1] - y
+        x, y = self.viewer.get_vtk_mouse_position()
         evt_obj = CanvasEvent('double_left_click', None, (x, y), self.viewer, self.evt_renderer,
                               control_down=evt.ControlDown(),
                               alt_down=evt.AltDown(),
