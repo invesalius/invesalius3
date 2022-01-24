@@ -651,14 +651,14 @@ class Viewer(wx.Panel):
         return int(mx), int(my)
 
     def get_vtk_mouse_position(self):
-        iren = self.interactor
-        w,h = iren.GetSize()
-        mx,my = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(mx, my)
-        rw, rh = render.GetSize()
-        mx = int(rw / w * mx)
-        my = int(rh / h * my)
-        return mx, my
+        mposx, mposy = wx.GetMousePosition()
+        cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
+        mx, my = cposx, self.interactor.GetSize()[1] - cposy
+        if sys.platform == 'darwin':
+            scale = self.interactor.GetContentScaleFactor()
+            mx *= scale
+            my *= scale
+        return int(mx), int(my)
 
     def get_coordinate_cursor(self, mx, my, picker=None):
         """

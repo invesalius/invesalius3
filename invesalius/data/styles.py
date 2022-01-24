@@ -113,7 +113,8 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
         self.middle_pressed = False
 
     def GetMousePosition(self):
-        return self.viewer.get_vtk_mouse_position()
+        mx, my = self.viewer.get_vtk_mouse_position()
+        return mx, my
 
     def GetPickPosition(self, mouse_position=None):
         if mouse_position is None:

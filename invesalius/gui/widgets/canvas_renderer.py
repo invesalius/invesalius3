@@ -879,11 +879,13 @@ class CircleHandler(CanvasHandlerBase):
 
     def draw_to_canvas(self, gc, canvas):
         if self.visible:
+            viewer = canvas.viewer
+            scale = viewer.GetContentScaleFactor()
             if self.is_3d:
                 px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
             else:
                 px, py = self.position
-            x, y, w, h = canvas.draw_circle((px, py), self.radius,
+            x, y, w, h = canvas.draw_circle((px, py), self.radius * scale,
                                             line_colour=self.line_colour,
                                             fill_colour=self.fill_colour)
             self.bbox = (x - w/2, y - h/2, x + w/2, y + h/2)
