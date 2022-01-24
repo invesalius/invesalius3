@@ -319,10 +319,21 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
 
     def get_vtk_mouse_position(self):
+        """
+        Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
+        tuple with X and Y position.
+        Please use this instead of using iren.GetEventPosition because it's
+        not returning the correct values on Mac with HighDPI display, maybe
+        the same is happing with Windows and Linux, we need to test.
+        """
         mposx, mposy = wx.GetMousePosition()
         cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
         mx, my = cposx, self.interactor.GetSize()[1] - cposy
         if sys.platform == 'darwin':
+            # It's needed to mutiple by scale factor in HighDPI because of
+            # https://docs.wxpython.org/wx.glcanvas.GLCanvas.html
+            # For now we are doing this only on Mac but it may be needed on
+            # Windows and Linux too.
             scale = self.interactor.GetContentScaleFactor()
             mx *= scale
             my *= scale
