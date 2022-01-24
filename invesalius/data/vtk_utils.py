@@ -233,6 +233,7 @@ class TextZero(object):
 
     def SetSize(self, size):
         self.property.SetFontSize(size)
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetSymbolicSize(self, size):
         self.symbolic_syze = size

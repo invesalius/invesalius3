@@ -116,6 +116,9 @@ class Viewer(wx.Panel):
         self.text = vtku.TextZero()
         self.text.SetValue("")
         self.text.SetPosition(const.TEXT_POS_LEFT_UP)
+        if sys.platform == 'darwin':
+            font_size = const.TEXT_SIZE_LARGE * self.GetContentScaleFactor()
+            self.text.SetSize(int(round(font_size, 0)))
         self.ren.AddActor(self.text.actor)
 
         #  self.polygon = Polygon(None, is_3d=False)
