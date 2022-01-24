@@ -318,6 +318,16 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
 
+    def get_vtk_mouse_position(self):
+        mposx, mposy = wx.GetMousePosition()
+        cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
+        mx, my = cposx, self.interactor.GetSize()[1] - cposy
+        if sys.platform == 'darwin':
+            scale = self.interactor.GetContentScaleFactor()
+            mx *= scale
+            my *= scale
+        return int(mx), int(my)
+
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
 

@@ -300,8 +300,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def OnWindowLevelMove(self, obj, evt):
         if self.changing_wwwl:
-            iren = obj.GetInteractor()
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
             diff_x = mouse_x - self.last_x
             diff_y = mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
@@ -311,8 +310,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Render volume viewer')
 
     def OnWindowLevelClick(self, obj, evt):
-        iren = obj.GetInteractor()
-        self.last_x, self.last_y = iren.GetLastEventPosition()
+        self.last_x, self.last_y = self.viewer.get_vtk_mouse_position()
         self.changing_wwwl = True
 
     def OnWindowLevelRelease(self, obj, evt):
@@ -345,7 +343,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Remove incomplete measurements")
 
     def OnInsertLinearMeasurePoint(self, obj, evt):
-        x,y = self.viewer.interactor.GetEventPosition()
+        x,y = self.viewer.get_vtk_mouse_position()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor():
@@ -384,7 +382,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Remove incomplete measurements")
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
-        x,y = self.viewer.interactor.GetEventPosition()
+        x,y = self.viewer.get_vtk_mouse_position()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor():
@@ -412,7 +410,7 @@ class SeedInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertSeed)
 
     def OnInsertSeed(self, obj, evt):
-        x,y = self.viewer.interactor.GetEventPosition()
+        x,y = self.viewer.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.viewer.ren)
         point_id = self.picker.GetPointId()
         if point_id > -1:
