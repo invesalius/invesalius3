@@ -788,7 +788,6 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def OnMoveMeasurePoint(self, obj, evt):
         x, y, z = self._get_pos_clicked()
-        print(f"{self.viewer.interactor.GetSize()}, {self.viewer.interactor.GetRenderWindow().GetSize()}, {self.viewer.slice_data.renderer.GetSize()}")
         if self.selected:
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))

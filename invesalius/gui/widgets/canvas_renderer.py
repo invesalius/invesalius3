@@ -147,7 +147,6 @@ class CanvasRendererCTX:
             self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
     def _resize_canvas(self, w, h):
-        print(f"Resize {w=} {h=}")
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
         self._cv_image = converters.np_rgba_to_vtk(self._array)
         self.mapper.SetInputData(self._cv_image)
@@ -181,7 +180,6 @@ class CanvasRendererCTX:
         return False
 
     def Refresh(self):
-        print('Refresh')
         self.modified = True
         self.viewer.interactor.Render()
 
@@ -303,8 +301,6 @@ class CanvasRendererCTX:
         if self._size != size:
             self._size = size
             self._resize_canvas(w, h)
-
-        print(f"OnPaint {w=} {h=}, {ew=}, {eh=}")
 
         cam_modif_time = self.evt_renderer.GetActiveCamera().GetMTime()
         if (not self.modified) and cam_modif_time == self.last_cam_modif_time:
