@@ -28,7 +28,7 @@ from invesalius import utils
 from invesalius import inv_paths
 
 #from invesalius.project import Project
-INVESALIUS_VERSION = "3.1.99996"
+INVESALIUS_VERSION = "3.1.99997"
 
 INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 
