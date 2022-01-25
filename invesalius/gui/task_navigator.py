@@ -2002,18 +2002,18 @@ class TractographyPanel(wx.Panel):
             slic = sl.Slice()
             ww = slic.window_width
             wl = slic.window_level
-            if not self.affine_vtk:
+            affine_vtk = vtk.vtkMatrix4x4()
+
+            if method == peels_dlg.FROM_FILES:
                 matrix_shape = tuple(inv_proj.matrix_shape)
                 try:
-                    self.affine = slic.affine.copy()
+                    affine = slic.affine.copy()
                 except AttributeError:
-                    self.affine = np.eye(4)
-                self.affine[1, -1] -= matrix_shape[1]
-                self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+                    affine = np.eye(4)
+                affine[1, -1] -= matrix_shape[1]
+                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
 
-            self.affine_vtk = vtk.vtkMatrix4x4()
-
-            self.brain_peel = brain.Brain(self.n_peels, ww, wl, self.affine_vtk)
+            self.brain_peel = brain.Brain(self.n_peels, ww, wl, affine_vtk)
             if method == peels_dlg.FROM_MASK:
                 choices = [i for i in inv_proj.mask_dict.values()]
                 mask_index = peels_dlg.cb_masks.GetSelection()
