@@ -77,6 +77,8 @@ WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
+        self.viewer = viewer
+
         self.right_pressed = False
         self.left_pressed = False
         self.middle_pressed = False
@@ -109,6 +111,22 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
     def OnMiddleButtonReleaseEvent(self, evt, obj):
         self.middle_pressed = False
+
+    def GetMousePosition(self):
+        mx, my = self.viewer.get_vtk_mouse_position()
+        return mx, my
+
+    def GetPickPosition(self, mouse_position=None):
+        if mouse_position is None:
+            mx, my = self.GetMousePosition()
+        else:
+            mx, my = mouse_position
+        iren = self.viewer.interactor
+        render = iren.FindPokedRenderer(mx, my)
+        self.picker.Pick(mx, my, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        return (x, y, z)
+
 
 
 class DefaultInteractorStyle(BaseImageInteractorStyle):
@@ -277,7 +295,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -316,7 +334,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
         operation = self.config.operation
@@ -486,7 +504,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             self.ChangeCrossPosition(iren)
 
     def ChangeCrossPosition(self, iren):
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
@@ -626,7 +644,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     def OnWindowLevelMove(self, obj, evt):
         if (self.left_pressed):
             iren = obj.GetInteractor()
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             self.acum_achange_window += mouse_x - self.last_x
             self.acum_achange_level += mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
@@ -713,7 +731,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def OnInsertMeasurePoint(self, obj, evt):
         slice_number = self.slice_data.number
         x, y, z = self._get_pos_clicked()
-        mx, my = self.viewer.interactor.GetEventPosition()
+        mx, my = self.GetMousePosition()
 
         if self.selected:
             self.selected = None
@@ -784,7 +802,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.viewer.UpdateCanvas()
 
         else:
-            mx, my = self.viewer.interactor.GetEventPosition()
+            mx, my = self.GetMousePosition()
             if self._verify_clicked_display(mx, my):
                 self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             else:
@@ -801,12 +819,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.viewer.scroll_enabled = True
 
     def _get_pos_clicked(self):
-        iren = self.viewer.interactor
-        mx,my = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(mx, my)
         self.picker.AddPickList(self.slice_data.actor)
-        self.picker.Pick(mx, my, 0, render)
-        x, y, z = self.picker.GetPickPosition()
+        x, y, z = self.GetPickPosition()
         self.picker.DeletePickList(self.slice_data.actor)
         return (x, y, z)
 
@@ -919,11 +933,11 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def _pick_position(self):
         iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
+        mx, my = self.GetMousePosition()
         return (mx, my)
 
     def _get_pos_clicked(self):
-        mouse_x, mouse_y = self._pick_position()
+        mouse_x, mouse_y = self.GetMousePosition()
         position = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         return position
 
@@ -1232,15 +1246,14 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
-         
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
         if self.viewer.interactor.HitTest((x, y)) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
-            
+
             y = self.viewer.interactor.GetSize()[1] - y
             w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
             self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
-            
+
             self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
             self.viewer.interactor.Render()
 
@@ -1319,7 +1332,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -1351,7 +1364,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -1402,7 +1415,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         viewer = self.viewer
         if iren.GetControlKey():
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
@@ -1420,7 +1433,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         viewer = self.viewer
         if iren.GetControlKey():
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
@@ -1545,11 +1558,11 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
         if self.viewer.interactor.HitTest((x, y)) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
-            
+
             y = self.viewer.interactor.GetSize()[1] - y
             w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
             self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
-            
+
             self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
             self.viewer.interactor.Render()
 
@@ -1622,7 +1635,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         viewer = self.viewer
         if iren.GetControlKey():
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
@@ -1640,7 +1653,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         viewer = self.viewer
         if iren.GetControlKey():
-            mouse_x, mouse_y = iren.GetEventPosition()
+            mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
@@ -1663,7 +1676,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -1710,7 +1723,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         viewer._set_editor_cursor_visibility(1)
 
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
@@ -2033,7 +2046,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         if self._over_center:
             self.dragging = True
         else:
-            x, y = self.viewer.interactor.GetEventPosition()
+            x, y = self.GetMousePosition()
             w, h = self.viewer.interactor.GetSize()
 
             self.picker.Pick(h/2.0, w/2.0, 0, self.viewer.slice_data.renderer)
@@ -2063,7 +2076,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         else:
             # Getting mouse position
             iren = self.viewer.interactor
-            mx, my = iren.GetEventPosition()
+            mx, my = self.GetMousePosition()
 
             # Getting center value
             center = self.viewer.slice_.center
@@ -2109,7 +2122,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def _move_center_rot(self):
         iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
+        mx, my = self.GetMousePosition()
 
         icx, icy, icz = self.viewer.slice_.center
 
@@ -2131,7 +2144,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
     def _rotate(self):
         # Getting mouse position
         iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
+        mx, my = self.GetMousePosition()
 
         cx, cy, cz = self.viewer.slice_.center
 
@@ -2294,7 +2307,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
 
         viewer = self.viewer
         iren = viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
@@ -2401,14 +2414,12 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         Publisher.subscribe(self.CropMask, "Crop mask")
 
     def OnMove(self, obj, evt):
-        iren = self.viewer.interactor
-        x, y = iren.GetEventPosition()
+        x, y = self.GetMousePosition()
         self.draw_retangle.MouseMove(x,y)
 
     def OnLeftPressed(self, obj, evt):
         self.draw_retangle.mouse_pressed = True
-        iren = self.viewer.interactor
-        x, y = iren.GetEventPosition()
+        x, y = self.GetMousePosition()
         self.draw_retangle.LeftPressed(x,y)
 
     def OnReleaseLeftButton(self, obj, evt):
@@ -2416,13 +2427,12 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.draw_retangle.ReleaseLeft()
 
     def SetUp(self):
-        
         self.draw_retangle = geom.DrawCrop2DRetangle()
         self.draw_retangle.SetViewer(self.viewer)
 
         self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
-        
+
         if not(self.config.dlg_visible):
             self.config.dlg_visible = True
 
@@ -2550,7 +2560,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             return
 
         iren = self.viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
@@ -2670,7 +2680,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def do_2d_seg(self):
         viewer = self.viewer
         iren = viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
@@ -2736,7 +2746,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def do_3d_seg(self):
         viewer = self.viewer
         iren = viewer.interactor
-        mouse_x, mouse_y = iren.GetEventPosition()
+        mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
