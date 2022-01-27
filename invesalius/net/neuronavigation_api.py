@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 class NeuronavigationApi(metaclass=Singleton):
