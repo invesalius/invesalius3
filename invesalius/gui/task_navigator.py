@@ -31,7 +31,8 @@ try:
     import Trekker
     has_trekker = True
 except ImportError:
-    has_trekker = False
+    has_trekker = True
+
 try:
     import invesalius.data.elfin as elfin
     import invesalius.data.elfin_processing as elfin_process
@@ -40,6 +41,7 @@ except ImportError:
     has_robot = False
 
 import wx
+import vtk
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -72,6 +74,7 @@ from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
+from invesalius.data.converters import to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 
@@ -1939,7 +1942,7 @@ class TractographyPanel(wx.Panel):
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
                                   normals=self.brain_peel.peel_normals)
@@ -1972,7 +1975,7 @@ class TractographyPanel(wx.Panel):
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data=self.peel_loaded)
         else:
@@ -2002,46 +2005,48 @@ class TractographyPanel(wx.Panel):
 
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
-        mask_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import brain mask"))
-        img_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import T1 anatomical image"))
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # mask_file = 'Baran_brain_mask.nii'
-        # mask_path = os.path.join(data_dir, mask_file)
-        # img_file = 'Baran_T1_inFODspace.nii'
-        # img_path = os.path.join(data_dir, img_file)
-
-        if not self.affine_vtk:
+        inv_proj = prj.Project()
+        peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
+        ret = peels_dlg.ShowModal()
+        method = peels_dlg.method
+        if ret == wx.ID_OK:
             slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            spacing = tuple(prj_data.spacing)
-            img_shift = spacing[1] * (matrix_shape[1] - 1)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= img_shift
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+            ww = slic.window_width
+            wl = slic.window_level
+            affine_vtk = vtk.vtkMatrix4x4()
 
-        if mask_path and img_path:
-            Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
-            try:
-                self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-                self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
-                self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+            if method == peels_dlg.FROM_FILES:
+                matrix_shape = tuple(inv_proj.matrix_shape)
+                try:
+                    affine = slic.affine.copy()
+                except AttributeError:
+                    affine = np.eye(4)
+                affine[1, -1] -= matrix_shape[1]
+                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
 
-                self.checkpeeling.Enable(1)
-                self.checkpeeling.SetValue(True)
-                self.spin_opacity.Enable(1)
-                self.peel_loaded = True
+            self.brain_peel = brain.Brain(self.n_peels, ww, wl, affine_vtk)
+            if method == peels_dlg.FROM_MASK:
+                choices = [i for i in inv_proj.mask_dict.values()]
+                mask_index = peels_dlg.cb_masks.GetSelection()
+                mask = choices[mask_index]
+                self.brain_peel.from_mask(mask)
+            else:
+                mask_path = peels_dlg.mask_path
+                self.brain_peel.from_mask_file(mask_path)
+            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
+            self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+            Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                  normals=self.brain_peel.peel_normals)
+            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
+            self.checkpeeling.Enable(1)
+            self.checkpeeling.SetValue(True)
+            self.spin_opacity.Enable(1)
+            Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+            self.peel_loaded = True
+            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
 
-                Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
-                Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
-                                      normals=self.brain_peel.peel_normals)
-                Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
-                Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
-                Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
-            except:
-                Publisher.sendMessage('Update status text in GUI', label=_("Brain mask initialization failed."))
-                wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
-
+        peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):
