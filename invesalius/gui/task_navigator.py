@@ -31,7 +31,7 @@ try:
     import Trekker
     has_trekker = True
 except ImportError:
-    has_trekker = True
+    has_trekker = False
 
 try:
     import invesalius.data.elfin as elfin
