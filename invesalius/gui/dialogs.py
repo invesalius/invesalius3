@@ -4528,7 +4528,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
     def OnContinuousAcquisition(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
-            self.timer.Start(500)
+            self.timer.Start(100)
         else:
             self.timer.Stop()
 
@@ -4590,7 +4590,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
             if self.matrix_tracker_to_robot is not None:
                 with open(filename, 'w', newline='') as file:
                     writer = csv.writer(file, delimiter='\t')
-                    writer.writerows(self.matrix_tracker_to_robot)
+                    writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
 
     def OnLoadReg(self, evt):
         filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
