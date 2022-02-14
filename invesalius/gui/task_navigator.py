@@ -52,7 +52,7 @@ import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
 import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
-import invesalius.data.bases as db
+import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 import invesalius.session as ses
@@ -160,8 +160,12 @@ class InnerFoldPanel(wx.Panel):
 
         # Initialize Tracker and PedalConnection objects here so that they are available to several panels.
         #
+        # Initialize global variables
         tracker = Tracker()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
+        navigation = Navigation(
+            pedal_connection=pedal_connection,
+        )
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -171,7 +175,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationPanel(item, tracker, pedal_connection)
+        ntw = NeuronavigationPanel(item, tracker, pedal_connection, navigation)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -188,7 +192,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 3 - Markers panel
         item = fold_panel.AddFoldPanel(_("Markers"), collapsed=True)
-        mtw = MarkersPanel(item, tracker)
+        mtw = MarkersPanel(item, tracker, navigation)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
@@ -327,7 +331,7 @@ class InnerFoldPanel(wx.Panel):
 
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection):
+    def __init__(self, parent, tracker, pedal_connection, navigation):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -341,9 +345,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Initialize global variables
         self.pedal_connection = pedal_connection
-        self.navigation = Navigation(
-            pedal_connection=pedal_connection,
-        )
+        self.navigation = navigation
         self.icp = ICP()
         self.tracker = tracker
 
@@ -755,7 +757,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.StopNavigation()
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None)
+                                  target_index=None, target=None)
 
         # Enable all navigation buttons
         choice_ref.Enable(True)
@@ -1230,7 +1232,7 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
-    def __init__(self, parent, tracker):
+    def __init__(self, parent, tracker, navigation):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1241,6 +1243,7 @@ class MarkersPanel(wx.Panel):
         self.SetAutoLayout(1)
 
         self.tracker = tracker
+        self.navigation = navigation
 
         self.__bind_events()
 
@@ -1443,15 +1446,17 @@ class MarkersPanel(wx.Panel):
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
-        send_target_to_robot = menu_id.Append(3, _('Send target to robot'))
+        send_target_to_robot_compensation = menu_id.Append(3, _('Sets target to robot head move compensation'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompesantion, send_target_to_robot_compensation)
+        send_target_to_robot = menu_id.Append(4, _('Send target to robot'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         check_target_angles = np.all(self.markers[self.lc.GetFocusedItem()].coord[3:])
         if self.tracker.tracker_id == const.ROBOT and self.nav_status and check_target_angles:
-            send_target_to_robot.Enable(True)
+            send_target_to_robot_compensation.Enable(True)
         else:
-            send_target_to_robot.Enable(False)
+            send_target_to_robot_compensation.Enable(False)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
@@ -1502,7 +1507,7 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Set new color', index=index, color=color_new)
 
-    def OnMenuSendTargetToRobot(self, evt):
+    def OnMenuSetRobotCompesantion(self, evt):
         if isinstance(evt, int):
            self.lc.Focus(evt)
 
@@ -1510,7 +1515,23 @@ class MarkersPanel(wx.Panel):
         matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem())
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=None)
+
+    def OnMenuSendTargetToRobot(self, evt):
+        if isinstance(evt, int):
+           self.lc.Focus(evt)
+        index = self.lc.GetFocusedItem()
+        if index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        Publisher.sendMessage('Reset robot process', data=None)
+        matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
+        Publisher.sendMessage('Update tracker fiducials matrix',
+                              matrix_tracker_fiducials=matrix_tracker_fiducials)
+        target = dcr.image_to_tracker(self.navigation.m_change, self.markers[index].coord)
+
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=target.tolist())
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
@@ -1524,7 +1545,7 @@ class MarkersPanel(wx.Panel):
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
             if self.tracker.tracker_id == const.ROBOT:
                 Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                      target_index=None)
+                                      target_index=None, target=None)
 
         self.markers = []
         Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
@@ -1555,7 +1576,7 @@ class MarkersPanel(wx.Panel):
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 if self.tracker.tracker_id == const.ROBOT:
                     Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                          target_index=None)
+                                          target_index=None, target=None)
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
