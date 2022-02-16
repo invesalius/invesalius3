@@ -1529,7 +1529,9 @@ class MarkersPanel(wx.Panel):
         matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
-        target = dcr.image_to_tracker(self.navigation.m_change, self.markers[index].coord)
+
+        target_coord = self.markers[index].coord[:3]
+        target = dcr.image_to_tracker(self.navigation.m_change, target_coord)
 
         Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=target.tolist())
 

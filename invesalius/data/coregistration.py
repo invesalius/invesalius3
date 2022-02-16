@@ -117,14 +117,17 @@ def image_to_tracker(m_change, target):
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """
-    m_target = dco.coordinates_to_transformation_matrix(
+    m_target_in_image = dco.coordinates_to_transformation_matrix(
         position=target[:3],
-        orientation=target[3:],
-        axes='rzyx',
+        orientation=[0, 0, 0],
+        axes='sxyz',
     )
-    m_probe_ref = np.linalg.inv(m_change) @ m_target
+    m_target_in_tracker = np.linalg.inv(m_change) @ m_target_in_image
 
-    return m_probe_ref
+    # invert y coordinate
+    m_target_in_tracker[2, -1] = -m_target_in_tracker[2, -1]
+
+    return m_target_in_tracker
 
 def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
