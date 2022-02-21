@@ -163,6 +163,12 @@ def transform_icp(m_img, m_icp):
 
     return m_img
 
+def inverse_transform_icp(m_img, m_icp):
+    coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
+    m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = np.linalg.inv(m_icp) @ coord_img
+    m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
+
+    return m_img
 
 def object_registration(fiducials, orients, coord_raw, m_change):
     """

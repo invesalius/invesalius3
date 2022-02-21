@@ -101,7 +101,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     m_img[:3, :3] = r_obj[:3, :3]
     return m_img
 
-def image_to_tracker(m_change, target):
+def image_to_tracker(m_change, target, icp):
     """Compute affine transformation matrix to the reference basis
 
     :param m_change: Corregistration transformation obtained from fiducials
@@ -122,6 +122,8 @@ def image_to_tracker(m_change, target):
         orientation=[0, 0, 0],
         axes='sxyz',
     )
+    if icp.use_icp:
+        m_target_in_image = bases.inverse_transform_icp(m_target_in_image, icp.m_icp)
     m_target_in_tracker = np.linalg.inv(m_change) @ m_target_in_image
 
     # invert y coordinate

@@ -166,6 +166,7 @@ class InnerFoldPanel(wx.Panel):
         navigation = Navigation(
             pedal_connection=pedal_connection,
         )
+        icp = ICP()
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -175,7 +176,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationPanel(item, tracker, pedal_connection, navigation)
+        ntw = NeuronavigationPanel(item, tracker, pedal_connection, navigation, icp)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -192,7 +193,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 3 - Markers panel
         item = fold_panel.AddFoldPanel(_("Markers"), collapsed=True)
-        mtw = MarkersPanel(item, tracker, navigation)
+        mtw = MarkersPanel(item, tracker, navigation, icp)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
@@ -331,7 +332,7 @@ class InnerFoldPanel(wx.Panel):
 
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection, navigation):
+    def __init__(self, parent, tracker, pedal_connection, navigation, icp):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -346,7 +347,7 @@ class NeuronavigationPanel(wx.Panel):
         # Initialize global variables
         self.pedal_connection = pedal_connection
         self.navigation = navigation
-        self.icp = ICP()
+        self.icp = icp
         self.tracker = tracker
 
         self.nav_status = False
@@ -1232,7 +1233,7 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
-    def __init__(self, parent, tracker, navigation):
+    def __init__(self, parent, tracker, navigation, icp):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1244,6 +1245,7 @@ class MarkersPanel(wx.Panel):
 
         self.tracker = tracker
         self.navigation = navigation
+        self.icp = icp
 
         self.__bind_events()
 
@@ -1531,7 +1533,7 @@ class MarkersPanel(wx.Panel):
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
 
         target_coord = self.markers[index].coord[:3]
-        target = dcr.image_to_tracker(self.navigation.m_change, target_coord)
+        target = dcr.image_to_tracker(self.navigation.m_change, target_coord, self.icp)
 
         Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=target.tolist())
 
