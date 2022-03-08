@@ -1532,6 +1532,30 @@ class Viewer(wx.Panel):
         self.locator = locator
         self.Refresh()
 
+    def GetCellIntersectionEfield(self, p1, p2, coil_norm, coil_dir):
+        # This find store the triangles that intersect the coil's normal
+        intersectingCellIds = vtk.vtkIdList()
+        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+
+        closestDist = 50
+
+        # if find intersection , calculate angle and add actors
+        if intersectingCellIds.GetNumberOfIds() != 0:
+            for i in range(intersectingCellIds.GetNumberOfIds()):
+                cellId = intersectingCellIds.GetId(i)
+                point = np.array(self.peel_centers.GetPoint(cellId)) ###########centers
+                distance = np.linalg.norm(point - p1)
+
+                if distance < closestDist:
+                    closestDist = distance
+                    closestPoint = point
+                    pointnormal = np.array(self.peel_normals.GetTuple(cellId))##########centers
+                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    # change color of arrow and disk according to angle
+                    if angle < self.angle_arrow_projection_threshold:
+                        print('normal')
+        self.Refresh()
+
     def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
 
         vtk_colors = vtk.vtkNamedColors()
