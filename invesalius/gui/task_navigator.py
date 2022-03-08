@@ -2231,20 +2231,20 @@ class E_fieldPanel(wx.Panel):
 
         # Button for creating new coil
         tooltip = wx.ToolTip(_("Load e-field mesh"))
-        btn_mesh = wx.Button(self, -1, _("E-field mesh"), size=wx.Size(50, 23))
+        btn_mesh = wx.Button(self, -1, _("E-field mesh"), size=wx.Size(80, 80))
         btn_mesh.SetToolTip(tooltip)
         btn_mesh.Enable(1)
         btn_mesh.Bind(wx.EVT_BUTTON, self.OnAddEfieldMesh)
 
         # Create a horizontal sizer to represent button save
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_mesh, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns.Add(btn_mesh, 2, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border = 1
         border_last = 5
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
+        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_RIGHT)
         self.SetSizer(main_sizer)
 
     def OnEnableEfield(self, evt, ctrl):
