@@ -3604,7 +3604,6 @@ class ObjectCalibrationDialog(wx.Dialog):
                 coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-        coord[2] = -coord[2]
 
         if fiducial_index == 3:
             coord = np.zeros([6,])
