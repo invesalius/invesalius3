@@ -362,6 +362,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Initialize global variables
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
 
         self.navigation = Navigation(
             pedal_connection=pedal_connection,
@@ -875,6 +876,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.StopNavigation()
         self.navigation.__init__(
             pedal_connection=self.pedal_connection,
+            neuronavigation_api=self.neuronavigation_api
         )
         self.tracker.__init__()
         self.icp.__init__()
