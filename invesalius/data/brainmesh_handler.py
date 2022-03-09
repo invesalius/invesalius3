@@ -248,8 +248,8 @@ class Brain:
 
         self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
-        self.peel_centers = self.GetCenters(currentPeel)
-        self.peel_normals = self.GetNormals(currentPeel)
+        self.peel_centers = GetCenters(currentPeel)
+        self.peel_normals = GetNormals(currentPeel)
 
         return self.currentPeelActor
 
@@ -277,7 +277,7 @@ class Brain:
 
         return self.currentPeelActor
 
-    def GetCenters(self, mesh):
+def GetCenters(mesh):
         # Compute centers of triangles
         centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the mesh
         centerComputer.SetInputData(mesh)
@@ -286,7 +286,7 @@ class Brain:
         centers = centerComputer.GetOutput()
         return centers
 
-    def GetNormals(self, mesh):
+def GetNormals(mesh):
         # Compute normals of triangles
         normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the mesh
         normalComputer.SetInputData(mesh)
@@ -296,7 +296,6 @@ class Brain:
         # This converts to the normals to an array for easy access
         normals = normalComputer.GetOutput().GetCellData().GetNormals()
         return normals
-
 
 def cleanMesh(inp):
     cleaned = vtk.vtkCleanPolyData()
