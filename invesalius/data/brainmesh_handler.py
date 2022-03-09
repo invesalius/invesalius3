@@ -283,8 +283,8 @@ class Brain:
         centerComputer.SetInputData(mesh)
         centerComputer.Update()
         # This stores the centers for easy access
-        peel_centers = centerComputer.GetOutput()
-        return peel_centers
+        centers = centerComputer.GetOutput()
+        return centers
 
     def GetNormals(self, mesh):
         # Compute normals of triangles
@@ -294,8 +294,8 @@ class Brain:
         normalComputer.ComputeCellNormalsOn()
         normalComputer.Update()
         # This converts to the normals to an array for easy access
-        peel_normals = normalComputer.GetOutput().GetCellData().GetNormals()
-        return peel_normals
+        normals = normalComputer.GetOutput().GetCellData().GetNormals()
+        return normals
 
 
 def cleanMesh(inp):
