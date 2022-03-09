@@ -20,7 +20,10 @@
 import dataclasses
 from functools import partial
 import itertools
+import csv
+import queue
 import time
+import threading
 
 import nibabel as nb
 import numpy as np
@@ -30,7 +33,15 @@ try:
 except ImportError:
     has_trekker = False
 
+try:
+    import invesalius.data.elfin as elfin
+    import invesalius.data.elfin_processing as elfin_process
+    has_robot = True
+except ImportError:
+    has_robot = False
+
 import wx
+import vtk
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -52,6 +63,7 @@ import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
 import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
+import invesalius.data.bases as db
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
@@ -62,7 +74,9 @@ from invesalius.gui import utils as gui_utils
 from invesalius.navigation.icp import ICP
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
+from invesalius.data.converters import to_vtk
 
+from invesalius.net.neuronavigation_api import NeuronavigationApi
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -158,16 +172,16 @@ class InnerFoldPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
-        # Initialize Tracker and PedalConnection objects here so that they are available to several panels.
+        # Initialize Navigation, Tracker and PedalConnection objects here so that they are available to several panels.
         #
-        # Initialize global variables
         tracker = Tracker()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
+        icp = ICP()
+        neuronavigation_api = NeuronavigationApi()
         navigation = Navigation(
             pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
         )
-        icp = ICP()
-
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -176,7 +190,14 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationPanel(item, tracker, pedal_connection, navigation, icp)
+        ntw = NeuronavigationPanel(
+            parent=item,
+            navigation=navigation,
+            tracker=tracker,
+            icp=icp,
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -193,7 +214,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 3 - Markers panel
         item = fold_panel.AddFoldPanel(_("Markers"), collapsed=True)
-        mtw = MarkersPanel(item, tracker, navigation, icp)
+        mtw = MarkersPanel(item, navigation, tracker, icp)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
@@ -332,7 +353,7 @@ class InnerFoldPanel(wx.Panel):
 
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection, navigation, icp):
+    def __init__(self, parent, navigation, tracker, icp, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -346,6 +367,8 @@ class NeuronavigationPanel(wx.Panel):
 
         # Initialize global variables
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
+
         self.navigation = navigation
         self.icp = icp
         self.tracker = tracker
@@ -864,6 +887,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.StopNavigation()
         self.navigation.__init__(
             pedal_connection=self.pedal_connection,
+            neuronavigation_api=self.neuronavigation_api
         )
         self.tracker.__init__()
         self.icp.__init__()
@@ -1233,7 +1257,20 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
-    def __init__(self, parent, tracker, navigation, icp):
+    @dataclasses.dataclass
+    class Robot_Marker:
+        """Class for storing robot target."""
+        m_robot_target : list = None
+
+        @property
+        def robot_target_matrix(self):
+            return self.m_robot_target
+
+        @robot_target_matrix.setter
+        def robot_target_matrix(self, new_m_robot_target):
+            self.m_robot_target = new_m_robot_target
+
+    def __init__(self, parent, navigation, tracker, icp):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1243,8 +1280,8 @@ class MarkersPanel(wx.Panel):
 
         self.SetAutoLayout(1)
 
-        self.tracker = tracker
         self.navigation = navigation
+        self.tracker = tracker
         self.icp = icp
 
         self.__bind_events()
@@ -1426,11 +1463,13 @@ class MarkersPanel(wx.Panel):
 
     def UpdateCurrentCoord(self, position):
         self.current_coord = list(position)
+        if not self.navigation.track_obj:
+            self.current_coord[3:] = None, None, None
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
-            self.current_coord[3:] = None, None, None
             self.nav_status = False
+            self.current_coord[3:] = None, None, None
         else:
             self.nav_status = True
 
@@ -1453,6 +1492,11 @@ class MarkersPanel(wx.Panel):
         send_target_to_robot = menu_id.Append(4, _('Send target to robot'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
+        if all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]]):
+            target_menu.Enable(True)
+        else:
+            target_menu.Enable(False)
+
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         check_target_angles = np.all(self.markers[self.lc.GetFocusedItem()].coord[3:])
         if self.tracker.tracker_id == const.ROBOT and self.nav_status and check_target_angles:
@@ -1463,7 +1507,6 @@ class MarkersPanel(wx.Panel):
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
 
-        target_menu.Enable(True)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
@@ -1693,15 +1736,15 @@ class MarkersPanel(wx.Panel):
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         if all([elem is not None for elem in new_marker.coord[3:]]):
-            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
-                                  size=self.arrow_marker_size,
-                                  color=new_marker.colour,
-                                  coord=new_marker.coord)
+            arrow_flag = True
         else:
-            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                  size=new_marker.size,
-                                  colour=new_marker.colour,
-                                  coord=new_marker.coord[:3])
+            arrow_flag = False
+
+        Publisher.sendMessage('Add marker', marker_id=len(self.markers),
+                              size=new_marker.size,
+                              colour=new_marker.colour,
+                              coord=new_marker.coord,
+                              arrow_flag=arrow_flag)
 
 
         self.markers.append(new_marker)
@@ -1933,7 +1976,7 @@ class TractographyPanel(wx.Panel):
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
             Publisher.sendMessage('Update peel', flag=True, actor=actor)
             Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
                                   normals=self.brain_peel.peel_normals)
@@ -1966,7 +2009,7 @@ class TractographyPanel(wx.Panel):
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
         if ctrl.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
+            actor = self.brain_peel.get_actor(self.peel_depth)
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data=self.peel_loaded)
         else:
@@ -1996,46 +2039,48 @@ class TractographyPanel(wx.Panel):
 
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
-        mask_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import brain mask"))
-        img_path = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, _("Import T1 anatomical image"))
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # mask_file = 'Baran_brain_mask.nii'
-        # mask_path = os.path.join(data_dir, mask_file)
-        # img_file = 'Baran_T1_inFODspace.nii'
-        # img_path = os.path.join(data_dir, img_file)
-
-        if not self.affine_vtk:
+        inv_proj = prj.Project()
+        peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
+        ret = peels_dlg.ShowModal()
+        method = peels_dlg.method
+        if ret == wx.ID_OK:
             slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            spacing = tuple(prj_data.spacing)
-            img_shift = spacing[1] * (matrix_shape[1] - 1)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= img_shift
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+            ww = slic.window_width
+            wl = slic.window_level
+            affine_vtk = vtk.vtkMatrix4x4()
 
-        if mask_path and img_path:
-            Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
-            try:
-                self.brain_peel = brain.Brain(img_path, mask_path, self.n_peels, self.affine_vtk)
-                self.brain_actor = self.brain_peel.get_actor(self.peel_depth, self.affine_vtk)
-                self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+            if method == peels_dlg.FROM_FILES:
+                matrix_shape = tuple(inv_proj.matrix_shape)
+                try:
+                    affine = slic.affine.copy()
+                except AttributeError:
+                    affine = np.eye(4)
+                affine[1, -1] -= matrix_shape[1]
+                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
 
-                self.checkpeeling.Enable(1)
-                self.checkpeeling.SetValue(True)
-                self.spin_opacity.Enable(1)
-                self.peel_loaded = True
+            self.brain_peel = brain.Brain(self.n_peels, ww, wl, affine_vtk)
+            if method == peels_dlg.FROM_MASK:
+                choices = [i for i in inv_proj.mask_dict.values()]
+                mask_index = peels_dlg.cb_masks.GetSelection()
+                mask = choices[mask_index]
+                self.brain_peel.from_mask(mask)
+            else:
+                mask_path = peels_dlg.mask_path
+                self.brain_peel.from_mask_file(mask_path)
+            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
+            self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
+            Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
+            Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
+                                  normals=self.brain_peel.peel_normals)
+            Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
+            self.checkpeeling.Enable(1)
+            self.checkpeeling.SetValue(True)
+            self.spin_opacity.Enable(1)
+            Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
+            self.peel_loaded = True
+            Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
 
-                Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
-                Publisher.sendMessage('Get peel centers and normals', centers=self.brain_peel.peel_centers,
-                                      normals=self.brain_peel.peel_normals)
-                Publisher.sendMessage('Get init locator', locator=self.brain_peel.locator)
-                Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
-                Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
-            except:
-                Publisher.sendMessage('Update status text in GUI', label=_("Brain mask initialization failed."))
-                wx.MessageBox(_("Unable to load brain mask."), _("InVesalius 3"))
-
+        peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
 
     def OnLinkFOD(self, event=None):

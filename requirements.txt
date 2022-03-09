@@ -1,5 +1,5 @@
 Cython==0.29.24
-Pillow==8.3.2
+Pillow==9.0.0
 Pypubsub==4.0.3
 configparser==5.0.1
 h5py==2.10.0
@@ -16,3 +16,4 @@ vtk==9.0.3
 wxPython==4.1.1
 Theano==1.0.5
 torch==1.9.1
+pyacvd==0.2.7

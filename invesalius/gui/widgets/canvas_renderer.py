@@ -180,13 +180,11 @@ class CanvasRendererCTX:
         return False
 
     def Refresh(self):
-        print('Refresh')
         self.modified = True
         self.viewer.interactor.Render()
 
     def OnMouseMove(self, evt):
-        x, y = evt.GetPosition()
-        y = self.viewer.interactor.GetSize()[1] - y
+        x, y = self.viewer.get_vtk_mouse_position()
         redraw = False
 
         if self._drag_obj:
@@ -230,8 +228,7 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonPress(self, evt):
-        x, y = evt.GetPosition()
-        y = self.viewer.interactor.GetSize()[1] - y
+        x, y = self.viewer.get_vtk_mouse_position()
         if self._over_obj and hasattr(self._over_obj, 'on_mouse_move'):
             if hasattr(self._over_obj, 'on_select'):
                 try:
@@ -286,8 +283,7 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnDoubleClick(self, evt):
-        x, y = evt.GetPosition()
-        y = self.viewer.interactor.GetSize()[1] - y
+        x, y = self.viewer.get_vtk_mouse_position()
         evt_obj = CanvasEvent('double_left_click', None, (x, y), self.viewer, self.evt_renderer,
                               control_down=evt.ControlDown(),
                               alt_down=evt.AltDown(),
@@ -301,6 +297,7 @@ class CanvasRendererCTX:
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
         w, h = size
+        ew, eh = self.evt_renderer.GetSize()
         if self._size != size:
             self._size = size
             self._resize_canvas(w, h)
@@ -628,17 +625,18 @@ class CanvasRendererCTX:
 
         if font is None:
             font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.Scale(self.viewer.GetContentScaleFactor())
 
-        font = gc.CreateFont(font, txt_colour)
+        _font = gc.CreateFont(font, txt_colour)
         px, py = pos
         for t in text.split('\n'):
             t = t.strip()
             _py = -py
             _px = px
-            gc.SetFont(font)
+            gc.SetFont(_font)
             gc.DrawText(t, _px, _py)
 
-            w, h = self.calc_text_size(t)
+            w, h = self.calc_text_size(t, font)
             py -= h
 
         self._drawn = True
@@ -661,10 +659,11 @@ class CanvasRendererCTX:
 
         if font is None:
             font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.Scale(self.viewer.GetContentScaleFactor())
 
         _font = gc.CreateFont(font, txt_colour)
         gc.SetFont(_font)
-        w, h = self.calc_text_size(text)
+        w, h = self.calc_text_size(text, font)
 
         px, py = pos
 
@@ -880,11 +879,13 @@ class CircleHandler(CanvasHandlerBase):
 
     def draw_to_canvas(self, gc, canvas):
         if self.visible:
+            viewer = canvas.viewer
+            scale = viewer.GetContentScaleFactor()
             if self.is_3d:
                 px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
             else:
                 px, py = self.position
-            x, y, w, h = canvas.draw_circle((px, py), self.radius,
+            x, y, w, h = canvas.draw_circle((px, py), self.radius * scale,
                                             line_colour=self.line_colour,
                                             fill_colour=self.fill_colour)
             self.bbox = (x - w/2, y - h/2, x + w/2, y + h/2)

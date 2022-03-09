@@ -233,6 +233,7 @@ class TextZero(object):
 
     def SetSize(self, size):
         self.property.SetFontSize(size)
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetSymbolicSize(self, size):
         self.symbolic_syze = size
@@ -288,8 +289,8 @@ class TextZero(object):
         coord.SetValue(*self.position)
         x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        #  font.SetWeight(wx.FONTWEIGHT_BOLD)
         font.SetSymbolicSize(self.symbolic_syze)
+        font.Scale(canvas.viewer.GetContentScaleFactor())
         if self.bottom_pos or self.right_pos:
             w, h = canvas.calc_text_size(self.text, font)
             if self.right_pos:

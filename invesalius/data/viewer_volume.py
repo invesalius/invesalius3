@@ -116,6 +116,9 @@ class Viewer(wx.Panel):
         self.text = vtku.TextZero()
         self.text.SetValue("")
         self.text.SetPosition(const.TEXT_POS_LEFT_UP)
+        if sys.platform == 'darwin':
+            font_size = const.TEXT_SIZE_LARGE * self.GetContentScaleFactor()
+            self.text.SetSize(int(round(font_size, 0)))
         self.ren.AddActor(self.text.actor)
 
         #  self.polygon = Polygon(None, is_3d=False)
@@ -278,7 +281,6 @@ class Viewer(wx.Panel):
 
         # Related to marker creation in navigation tools
         Publisher.subscribe(self.AddMarker, 'Add marker')
-        Publisher.subscribe(self.AddMarkerwithOrientation, 'Add arrow marker')
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
@@ -317,6 +319,27 @@ class Viewer(wx.Panel):
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
+
+    def get_vtk_mouse_position(self):
+        """
+        Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
+        tuple with X and Y position.
+        Please use this instead of using iren.GetEventPosition because it's
+        not returning the correct values on Mac with HighDPI display, maybe
+        the same is happing with Windows and Linux, we need to test.
+        """
+        mposx, mposy = wx.GetMousePosition()
+        cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
+        mx, my = cposx, self.interactor.GetSize()[1] - cposy
+        if sys.platform == 'darwin':
+            # It's needed to mutiple by scale factor in HighDPI because of
+            # https://docs.wxpython.org/wx.glcanvas.GLCanvas.html
+            # For now we are doing this only on Mac but it may be needed on
+            # Windows and Linux too.
+            scale = self.interactor.GetContentScaleFactor()
+            mx *= scale
+            my *= scale
+        return int(mx), int(my)
 
     def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
@@ -592,7 +615,7 @@ class Viewer(wx.Panel):
             target = marker["target"]
 
             self.AddMarker(
-                ball_id=ball_id,
+                marker_id=ball_id,
                 size=size,
                 colour=colour,
                 coord=position,
@@ -607,49 +630,28 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def AddMarkerwithOrientation(self, arrow_id, size, color, coord):
-        """
-        Markers arrow with orientation created by navigation tools and rendered in volume viewer.
-        """
-        self.arrow_marker_id = arrow_id
-        coord_flip = list(coord)
-        coord_flip[1] = -coord_flip[1]
-
-        arrow_actor = self.Add_ObjectArrow(coord_flip[:3], coord_flip[3:6], color, size)
-        self.static_markers.append(arrow_actor)
-        self.ren.AddActor(self.static_markers[self.arrow_marker_id])
-        self.arrow_marker_id += 1
-
-        self.Refresh()
-
-    def AddMarker(self, ball_id, size, colour, coord):
+    def AddMarker(self, marker_id, size, colour, coord, arrow_flag):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
-        self.ball_id = ball_id
+        self.marker_id = marker_id
         coord_flip = list(coord)
         coord_flip[1] = -coord_flip[1]
 
-        ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(size)
-        ball_ref.SetCenter(coord_flip)
+        if arrow_flag:
+            """
+            Markers arrow with orientation created by navigation tools and rendered in volume viewer.
+            """
+            marker_actor = self.CreateActorArrow(coord_flip[:3], coord_flip[3:6], colour, const.ARROW_MARKER_SIZE)
+        else:
+            marker_actor = self.CreateActorBall(coord_flip[:3], colour, size)
 
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(ball_ref.GetOutputPort())
+        # adding a new actor for the marker
+        self.static_markers.append(marker_actor)
 
-        prop = vtk.vtkProperty()
-        prop.SetColor(colour)
+        self.ren.AddActor(self.static_markers[self.marker_id])
+        self.marker_id += 1
 
-        # adding a new actor for the present ball
-        self.static_markers.append(vtk.vtkActor())
-
-        self.static_markers[self.ball_id].SetMapper(mapper)
-        self.static_markers[self.ball_id].SetProperty(prop)
-
-        self.ren.AddActor(self.static_markers[self.ball_id])
-        self.ball_id += 1
-
-        #self.UpdateRender()
         self.Refresh()
 
     def add_marker(self, coord, color):
@@ -702,7 +704,7 @@ class Viewer(wx.Panel):
         for i in reversed(index):
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
-            self.ball_id = self.ball_id - 1
+            self.marker_id = self.marker_id - 1
         self.UpdateRender()
 
     def BlinkMarker(self, index):
@@ -1359,8 +1361,8 @@ class Viewer(wx.Panel):
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
-        self.obj_projection_arrow_actor = self.Add_ObjectArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
-                                                               8)
+        self.obj_projection_arrow_actor = self.CreateActorArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
+                                                                8)
         self.object_orientation_torus_actor = self.Add_Torus([0., 0., 0.], [0., 0., 0.],
                                                              vtk_colors.GetColor3d('Red'))
 
@@ -1425,9 +1427,24 @@ class Viewer(wx.Panel):
 
         return torusActor
 
-    def Add_ObjectArrow(self, direction, orientation, color=[0.0, 0.0, 1.0], size=2):
-        vtk_colors = vtk.vtkNamedColors()
+    def CreateActorBall(self, coord_flip, colour=[0.0, 0.0, 1.0], size=2):
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(size)
+        ball_ref.SetCenter(coord_flip)
 
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_ref.GetOutputPort())
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(colour)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.SetProperty(prop)
+
+        return actor
+
+    def CreateActorArrow(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
         arrow = vtk.vtkArrowSource()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
@@ -1440,7 +1457,7 @@ class Viewer(wx.Panel):
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetLineWidth(5)
         actor.AddPosition(0, 0, 0)
         actor.SetScale(size)

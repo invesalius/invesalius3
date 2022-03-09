@@ -21,6 +21,7 @@ from invesalius.gui import dialogs
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
 PLAIDML_DEVICES = {}
+TORCH_DEVICES = {}
 
 try:
     import torch

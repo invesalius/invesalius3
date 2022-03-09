@@ -650,6 +650,27 @@ class Viewer(wx.Panel):
             my = round((z - zi)/self.slice_.spacing[2], 0)
         return int(mx), int(my)
 
+    def get_vtk_mouse_position(self):
+        """
+        Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
+        tuple with X and Y position.
+        Please use this instead of using iren.GetEventPosition because it's
+        not returning the correct values on Mac with HighDPI display, maybe
+        the same is happing with Windows and Linux, we need to test.
+        """
+        mposx, mposy = wx.GetMousePosition()
+        cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
+        mx, my = cposx, self.interactor.GetSize()[1] - cposy
+        if sys.platform == 'darwin':
+            # It's needed to mutiple by scale factor in HighDPI because of
+            # https://docs.wxpython.org/wx.glcanvas.GLCanvas.html
+            # For now we are doing this only on Mac but it may be needed on
+            # Windows and Linux too.
+            scale = self.interactor.GetContentScaleFactor()
+            mx *= scale
+            my *= scale
+        return int(mx), int(my)
+
     def get_coordinate_cursor(self, mx, my, picker=None):
         """
         Given the mx, my screen position returns the x, y, z position in world
@@ -1028,7 +1049,7 @@ class Viewer(wx.Panel):
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
-        # self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
+        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
@@ -1413,12 +1434,13 @@ class Viewer(wx.Panel):
             self.OnScrollBar()
 
     def OnSize(self, evt):
-        w, h = evt.GetSize()
-        w = float(w)
-        h = float(h)
-        if self.slice_data:
-            self.slice_data.SetSize((w, h))
-        evt.Skip()
+        print("OnSize")
+        w, h = self.GetSize()
+        rwin = self.interactor.GetRenderWindow()
+        rwin.SetSize(w, h)
+        # if self.slice_data:
+        #     self.slice_data.SetSize((w, h))
+        # evt.Skip()
 
     def OnSetMIPSize(self, number_slices):
         self.number_slices = number_slices

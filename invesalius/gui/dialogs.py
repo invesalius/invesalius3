@@ -46,6 +46,7 @@ except ImportError:
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
+import wx.lib.filebrowsebutton as filebrowse
 from wx.lib.wordwrap import wordwrap
 from invesalius.pubsub import pub as Publisher
 import csv
@@ -116,7 +117,7 @@ class NumberDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(label, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
         sizer.Add(num_ctrl, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
-        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.ALL, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1179,7 +1180,7 @@ def ShowAboutDialog(parent):
     info = AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = const.INVESALIUS_VERSION
-    info.Copyright = _("(c) 2007-2019 Center for Information Technology Renato Archer - CTI")
+    info.Copyright = _("(c) 2007-2022 Center for Information Technology Renato Archer - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
@@ -3597,7 +3598,6 @@ class ObjectCalibrationDialog(wx.Dialog):
             coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-        coord[2] = -coord[2]
 
         if fiducial_index == 3:
             coord = np.zeros([6,])
@@ -4984,3 +4984,134 @@ class SetSpacingDialog(wx.Dialog):
 
     def OnCancel(self, evt):
         self.EndModal(wx.ID_CANCEL)
+
+
+class PeelsCreationDlg(wx.Dialog):
+    FROM_MASK = 1
+    FROM_FILES = 2
+    def __init__(self, parent, *args, **kwds):
+        wx.Dialog.__init__(self, parent, *args, **kwds)
+
+        self.mask_path = ''
+        self.method = self.FROM_MASK
+
+        self._init_gui()
+        self._bind_events_wx()
+        self.get_all_masks()
+
+    def _init_gui(self):
+        self.SetTitle("dialog")
+
+        from_mask_stbox = self._from_mask_gui()
+        from_files_stbox = self._from_files_gui()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(from_mask_stbox, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(from_files_stbox, 0, wx.EXPAND | wx.ALL, 5)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+        main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
+
+        self.btn_ok = wx.Button(self, wx.ID_OK, "")
+        self.btn_ok.SetDefault()
+        btn_sizer.AddButton(self.btn_ok)
+
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "")
+        btn_sizer.AddButton(self.btn_cancel)
+
+        btn_sizer.Realize()
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        self.SetAffirmativeId(self.btn_ok.GetId())
+        self.SetEscapeId(self.btn_cancel.GetId())
+
+        self.Layout()
+
+    def _from_mask_gui(self):
+        mask_box = wx.StaticBox(self, -1, _("From mask"))
+        from_mask_stbox = wx.StaticBoxSizer(mask_box, wx.VERTICAL)
+
+        self.cb_masks = wx.ComboBox(self, wx.ID_ANY, choices=[])
+        self.from_mask_rb = wx.RadioButton(self, -1, "", style = wx.RB_GROUP)
+
+        internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        internal_sizer.Add(self.from_mask_rb, 0, wx.ALL | wx.EXPAND, 5)
+        internal_sizer.Add(self.cb_masks, 1, wx.ALL | wx.EXPAND, 5)
+
+        from_mask_stbox.Add(internal_sizer, 0, wx.EXPAND)
+
+        return from_mask_stbox
+
+    def _from_files_gui(self):
+        session = ses.Session()
+        last_directory = session.get('paths', 'last_directory_%d' % const.ID_NIFTI_IMPORT, '')
+
+        files_box = wx.StaticBox(self, -1, _("From files"))
+        from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
+
+        self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"),
+                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose Mask file"), startDirectory = last_directory,
+                changeCallback=lambda evt: self._set_files_callback(mask_path=evt.GetString()))
+        self.from_files_rb = wx.RadioButton(self, -1, "")
+
+        ctrl_sizer = wx.BoxSizer(wx.VERTICAL)
+        ctrl_sizer.Add(self.mask_file_browse, 0, wx.ALL | wx.EXPAND, 5)
+
+        internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        internal_sizer.Add(self.from_files_rb, 0, wx.ALL | wx.EXPAND, 5)
+        internal_sizer.Add(ctrl_sizer, 0, wx.ALL | wx.EXPAND, 5)
+
+        from_files_stbox.Add(internal_sizer, 0, wx.EXPAND)
+
+        return from_files_stbox
+
+    def _bind_events_wx(self):
+        self.from_mask_rb.Bind(wx.EVT_RADIOBUTTON, self.on_select_method)
+        self.from_files_rb.Bind(wx.EVT_RADIOBUTTON, self.on_select_method)
+
+    def get_all_masks(self):
+        import invesalius.project as prj
+        inv_proj = prj.Project()
+        choices = [i.name for i in inv_proj.mask_dict.values()]
+        try:
+            initial_value = choices[0]
+            enable = True
+        except IndexError:
+            initial_value = ""
+            enable = False
+
+        self.cb_masks.SetItems(choices)
+        self.cb_masks.SetValue(initial_value)
+        self.btn_ok.Enable(enable)
+
+    def on_select_method(self, evt):
+        radio_selected = evt.GetEventObject()
+        if radio_selected is self.from_mask_rb:
+            self.method = self.FROM_MASK
+            if self.cb_masks.GetItems():
+                self.btn_ok.Enable(True)
+            else:
+                self.btn_ok.Enable(False)
+        else:
+            self.method = self.FROM_FILES
+            if self._check_if_files_exists():
+                self.btn_ok.Enable(True)
+            else:
+                self.btn_ok.Enable(False)
+
+    def _set_files_callback(self, mask_path=''):
+        if mask_path:
+            self.mask_path = mask_path
+        if self.method == self.FROM_FILES:
+            if self._check_if_files_exists():
+                self.btn_ok.Enable(True)
+            else:
+                self.btn_ok.Enable(False)
+
+    def _check_if_files_exists(self):
+            if self.mask_path and os.path.exists(self.mask_path):
+                return True
+            else:
+                return False

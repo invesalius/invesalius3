@@ -29,6 +29,13 @@ import traceback
 
 import re
 
+if sys.platform  == "darwin":
+    try:
+        import certifi
+        os.environ["SSL_CERT_FILE"] = certifi.where()
+    except ImportError:
+        pass
+
 if sys.platform == 'win32':
     try:
         import winreg
@@ -483,37 +490,12 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
 
-def main():
+def init():
     """
-    Initialize InVesalius GUI
+    Initialize InVesalius.
+
+    Mostly file-system related initializations.
     """
-    options, args = parse_command_line()
-
-    session = ses.Session()
-    session.debug = options.debug
-
-    if options.debug:
-        Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
-
-    if options.remote_host is not None:
-        from invesalius.net.remote_control import RemoteControl
-
-        remote_control = RemoteControl(options.remote_host)
-        remote_control.connect()
-
-    if options.use_pedal:
-        from invesalius.net.pedal_connection import PedalConnection
-
-        PedalConnection().start()
-
-    if options.no_gui:
-        non_gui_startup(options, args)
-    else:
-        application = InVesalius(0)
-        application.MainLoop()
-
-
-if __name__ == '__main__':
     #Is needed because of pyinstaller
     multiprocessing.freeze_support()
 
@@ -539,5 +521,53 @@ if __name__ == '__main__':
         path = inv_paths.USER_LOG_DIR.join("stderr.log")
         sys.stderr = open(path, "w")
 
-    # Init application
+
+def main(connection=None):
+    """
+    Start InVesalius.
+
+    Parameters:
+        connection: An object to communicate with the outside world.
+          In theory, can be any object supports certain function calls.
+          See invesalius.net.neuronavigation_api for a comprehensive
+          description of how the object is used.
+
+          Note that if InVesalius is started in the usual way by running
+          app.py, the connection object defaults to None. To enable this
+          functionality, InVesalius needs to be started by calling the main
+          function directly with a proper connection object.
+    """
+    init()
+
+    options, args = parse_command_line()
+
+    session = ses.Session()
+    session.debug = options.debug
+
+    if options.debug:
+        Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
+
+    if options.remote_host is not None:
+        from invesalius.net.remote_control import RemoteControl
+
+        remote_control = RemoteControl(options.remote_host)
+        remote_control.connect()
+
+    if options.use_pedal:
+        from invesalius.net.pedal_connection import PedalConnection
+
+        PedalConnection().start()
+
+    from invesalius.net.neuronavigation_api import NeuronavigationApi
+
+    NeuronavigationApi(connection)
+
+    if options.no_gui:
+        non_gui_startup(options, args)
+    else:
+        application = InVesalius(0)
+        application.MainLoop()
+
+
+if __name__ == '__main__':
     main()
