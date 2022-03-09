@@ -2222,6 +2222,8 @@ class E_fieldPanel(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        self.e_field_brain = None
+        self.e_field_mesh = None
         #  Check box to enable e-field visualization
         enable_efield = wx.CheckBox(self, -1, _('Enable E-field'))
         enable_efield.SetValue(False)
@@ -2251,6 +2253,12 @@ class E_fieldPanel(wx.Panel):
         self.efield_enabled = ctrl.GetValue()
         if self.efield_enabled:
             print('True')
+            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
+            Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers,
+                                  normals=self.e_field_brain.e_field_mesh_normals)
+            Publisher.sendMessage('Get init efield locator', locator = self.e_field_brain.locator_efield)
+            print('normal',self.e_field_brain.e_field_mesh_normals)
+
         else:
             print('False')
 
@@ -2260,9 +2268,15 @@ class E_fieldPanel(wx.Panel):
         try:
             if filename:
                 print('success')
+                reader = vtk.vtkSTLReader()
+                reader.SetFileName(filename)
+                reader.Update()
+                self.e_field_mesh = reader.GetOutput()
+
         except (AssertionError):
             wx.MessageBox(_("File incompatible"), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
+        return self.e_field_mesh
 
         self.Update()
 

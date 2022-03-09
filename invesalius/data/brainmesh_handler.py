@@ -277,11 +277,27 @@ class Brain:
 
         return self.currentPeelActor
 
+class E_field_brain:
+    def __init__(self, e_field_mesh):
+
+        self.locator_efield = vtk.vtkPointLocator()
+        self.locator_efield.SetDataSet(e_field_mesh)
+        self.locator_efield.BuildLocator()
+
+
+
+        self.e_field_mesh_normals = vtk.vtkFloatArray()
+        self.e_field_mesh_centers = vtk.vtkFloatArray()
+
+        self.e_field_mesh_normals = GetNormals(e_field_mesh)
+        self.e_field_mesh_centers = GetCenters(e_field_mesh)
+
 def GetCenters(mesh):
         # Compute centers of triangles
         centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the mesh
         centerComputer.SetInputData(mesh)
         centerComputer.Update()
+
         # This stores the centers for easy access
         centers = centerComputer.GetOutput()
         return centers
