@@ -1487,6 +1487,11 @@ class MarkersPanel(wx.Panel):
         send_target_to_robot = menu_id.Append(3, _('Send target to robot'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
+        if all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]]):
+            target_menu.Enable(True)
+        else:
+            target_menu.Enable(False)
+
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         m_target_robot = np.array([self.robot_markers[self.lc.GetFocusedItem()].robot_target_matrix])
         if self.tracker.tracker_id == const.ROBOT and self.nav_status and m_target_robot.any():
@@ -1497,7 +1502,6 @@ class MarkersPanel(wx.Panel):
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
 
-        target_menu.Enable(True)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
