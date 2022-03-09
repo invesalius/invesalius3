@@ -172,13 +172,16 @@ class InnerFoldPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
-        # Initialize Tracker and PedalConnection objects here so that they are available to several panels.
+        # Initialize Navigation, Tracker and PedalConnection objects here so that they are available to several panels.
         #
         tracker = Tracker()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
 
         neuronavigation_api = NeuronavigationApi()
-
+        navigation = Navigation(
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -189,6 +192,7 @@ class InnerFoldPanel(wx.Panel):
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
         ntw = NeuronavigationPanel(
             parent=item,
+            navigation=navigation,
             tracker=tracker,
             pedal_connection=pedal_connection,
             neuronavigation_api=neuronavigation_api,
@@ -209,7 +213,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 3 - Markers panel
         item = fold_panel.AddFoldPanel(_("Markers"), collapsed=True)
-        mtw = MarkersPanel(item, tracker)
+        mtw = MarkersPanel(item, navigation, tracker)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
@@ -348,7 +352,7 @@ class InnerFoldPanel(wx.Panel):
 
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -364,10 +368,7 @@ class NeuronavigationPanel(wx.Panel):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.navigation = Navigation(
-            pedal_connection=pedal_connection,
-            neuronavigation_api=neuronavigation_api,
-        )
+        self.navigation = navigation
         self.icp = ICP()
         self.tracker = tracker
         self.robot = Robot(tracker)
@@ -1260,7 +1261,7 @@ class MarkersPanel(wx.Panel):
         def robot_target_matrix(self, new_m_robot_target):
             self.m_robot_target = new_m_robot_target
 
-    def __init__(self, parent, tracker):
+    def __init__(self, parent, navigation, tracker):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1270,6 +1271,7 @@ class MarkersPanel(wx.Panel):
 
         self.SetAutoLayout(1)
 
+        self.navigation = navigation
         self.tracker = tracker
 
         self.__bind_events()
@@ -1455,11 +1457,13 @@ class MarkersPanel(wx.Panel):
 
     def UpdateCurrentCoord(self, position):
         self.current_coord = list(position)
+        if not self.navigation.track_obj:
+            self.current_coord[3:] = None, None, None
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
-            self.current_coord = [None, None, None]
             self.nav_status = False
+            self.current_coord[3:] = None, None, None
         else:
             self.nav_status = True
 
@@ -1703,15 +1707,15 @@ class MarkersPanel(wx.Panel):
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         if all([elem is not None for elem in new_marker.coord[3:]]):
-            Publisher.sendMessage('Add arrow marker', arrow_id=len(self.markers),
-                                  size=self.arrow_marker_size,
-                                  color=new_marker.colour,
-                                  coord=new_marker.coord)
+            arrow_flag = True
         else:
-            Publisher.sendMessage('Add marker', ball_id=len(self.markers),
-                                  size=new_marker.size,
-                                  colour=new_marker.colour,
-                                  coord=new_marker.coord[:3])
+            arrow_flag = False
+
+        Publisher.sendMessage('Add marker', marker_id=len(self.markers),
+                              size=new_marker.size,
+                              colour=new_marker.colour,
+                              coord=new_marker.coord,
+                              arrow_flag=arrow_flag)
 
 
         self.markers.append(new_marker)
