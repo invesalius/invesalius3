@@ -284,13 +284,59 @@ class E_field_brain:
         self.locator_efield.SetDataSet(e_field_mesh)
         self.locator_efield.BuildLocator()
 
-
-
         self.e_field_mesh_normals = vtk.vtkFloatArray()
         self.e_field_mesh_centers = vtk.vtkFloatArray()
 
         self.e_field_mesh_normals = GetNormals(e_field_mesh)
         self.e_field_mesh_centers = GetCenters(e_field_mesh)
+        self.efield_actor = self.GetEfieldActor(e_field_mesh)
+
+    def GetEfieldActor(self, mesh):
+        # Create a mapper and actor
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(mesh)
+        self.efield_actor = vtk.vtkActor()
+        self.efield_actor.SetMapper(mapper)
+        return self.efield_actor
+############## temporarly add efield csv
+    def load_temporarly_e_field_CSV(self):
+        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\E_norm_sorted_pind100_invesalius.csv'
+        with open(filename, 'r') as file:
+            my_reader = csv.reader(file, delimiter=',')
+            rows = []
+            for row in my_reader:
+                rows.append(row)
+        e_field = rows
+        self.e_field_norms = np.array(e_field).astype(float)
+
+        ###Colors###
+        maxz = np.amax(self.e_field_norms)
+        minz = np.amin(self.e_field_norms)
+        print('minz: {:< 6.3}'.format(minz))
+        print('maxz: {:< 6.3}'.format(maxz))
+
+        self.lut = vtkLookupTable()
+        self.lut.SetTableRange(minz, maxz)
+        self.lut.Build()
+        # Generate the colors for each point based on the color map
+        colors = vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName('Colors')
+
+    # def
+    #
+    #     colors = vtk.vtkUnsignedCharArray()
+    #     colors.SetNumberOfComponents(3)
+    #     colors.SetName('Colors')
+    #     for h in range(0, radius_list.GetNumberOfIds()):
+    #         dcolor = 3 * [0.0]
+    #         self.lut.GetColor(self.e_field_norms[radius_list.GetId(h)], dcolor)
+    #         color = 3 * [0.0]
+    #         for j in range(0, 3):
+    #             color[j] = int(255.0 * dcolor[j])
+    #         colors.InsertTuple(radius_list.GetId(h), color)
+    #     pd.GetPointData().SetScalars(colors)
+    #
 
 def GetCenters(mesh):
         # Compute centers of triangles

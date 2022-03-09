@@ -321,6 +321,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
+        Publisher.subscribe(self.Add_E_field_mesh_actor, 'Add efield mesh')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Get_Efield_mesh_Centers, 'Get e-field mesh centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
@@ -1533,10 +1534,6 @@ class Viewer(wx.Panel):
             self.ren.AddActor(self.obj_projection_arrow_actor)
         self.Refresh()
 
-    def Get_Efield_mesh_Centers(self, centers, normals):
-        self.e_field_mesh_normals = centers
-        self.e_field_mesh_centers = normals
-
     def GetPeelCenters(self, centers, normals):
         self.peel_centers = centers
         self.peel_normals = normals
@@ -1547,30 +1544,14 @@ class Viewer(wx.Panel):
         self.locator = locator
         self.Refresh()
 
-############## temporarly add efield csv
-    def load_temporarly_e_field_CSV(self):
-        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\E_norm_sorted_pind100_invesalius.csv'
-        with open(filename, 'r') as file:
-            my_reader = csv.reader(file, delimiter=',')
-            rows = []
-            for row in my_reader:
-                rows.append(row)
-        e_field = rows
-        self.e_field_norms = np.array(e_field).astype(float)
 
-        ###Colors###
-        maxz = np.amax(e_field_norms)
-        minz = np.amin(e_field_norms)
-        print('minz: {:< 6.3}'.format(minz))
-        print('maxz: {:< 6.3}'.format(maxz))
+    def Add_E_field_mesh_actor(self, actor):
+        self.ren.AddActor(actor)
+        self.Refresh()
 
-        lut = vtkLookupTable()
-        lut.SetTableRange(minz, maxz)
-        lut.Build()
-        # Generate the colors for each point based on the color map
-        colors = vtkUnsignedCharArray()
-        colors.SetNumberOfComponents(3)
-        colors.SetName('Colors')
+    def Get_Efield_mesh_Centers(self, centers, normals):
+        self.e_field_mesh_normals = centers
+        self.e_field_mesh_centers = normals
 
     def GetLocaterEfield(self, locator):
         self.locator_efield = locator
@@ -1578,9 +1559,8 @@ class Viewer(wx.Panel):
 
     def FindPointsAroundRadiusEfield(self, point):
         radius = vtk.mutable(0.02)
-        radius_list = vtk.vtkIdList()
-        self.locator_efield.FindPointsWithinRadius(radius, point, radius_list)
-        return radius_list
+        self.radius_list = vtk.vtkIdList()
+        self.locator_efield.FindPointsWithinRadius(radius, point, self.radius_list)
 
 
     def GetCellIntersectionEfield(self, p1, p2, coil_norm, coil_dir):
@@ -1606,15 +1586,12 @@ class Viewer(wx.Panel):
                     if angle < self.angle_arrow_projection_threshold:
                         print('normal')
                         #calculate a circle around the closestPoint
-                        radius_list = self.FindPointsAroundRadiusEfield(closestPoint)
-                        # for h in range(0, radius_list.GetNumberOfIds()):
-                        #     dcolor = 3 * [0.0]
-                        #     lut.GetColor(self.e_field_norms[radius_list.GetId(h)], dcolor)
-                        #     color = 3 * [0.0]
-                        #     for j in range(0, 3):
-                        #         color[j] = int(255.0 * dcolor[j])
-                        #     colors.InsertTuple(radius_list.GetId(h), color)
-                        # pd.GetPointData().SetScalars(colors)
+                        self.FindPointsAroundRadiusEfield(closestPoint)
+        self.Refresh()
+
+    def UpdateEfieldPointLocation(self, m_img, coord, flag):
+        [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
+        self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
     def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
@@ -1739,13 +1716,6 @@ class Viewer(wx.Panel):
         self.x_actor.SetUserMatrix(m_img_vtk)
         self.y_actor.SetUserMatrix(m_img_vtk)
         self.z_actor.SetUserMatrix(m_img_vtk)
-
-        self.Refresh()
-
-    def UpdateEfieldPointLocation(self, m_img, coord, flag):
-
-        [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
-        self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
 
         self.Refresh()
 

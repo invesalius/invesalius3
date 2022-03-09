@@ -2257,6 +2257,7 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers,
                                   normals=self.e_field_brain.e_field_mesh_normals)
             Publisher.sendMessage('Get init efield locator', locator = self.e_field_brain.locator_efield)
+            Publisher.sendMessage('Add efield mesh', actor = self.e_field_brain.efield_actor)
             print('normal',self.e_field_brain.e_field_mesh_normals)
 
         else:
@@ -2276,8 +2277,6 @@ class E_fieldPanel(wx.Panel):
         except (AssertionError):
             wx.MessageBox(_("File incompatible"), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
-        return self.e_field_mesh
-
         self.Update()
 
 
