@@ -1553,8 +1553,9 @@ class Viewer(wx.Panel):
         self.e_field_mesh_normals = centers
         self.e_field_mesh_centers = normals
 
-    def GetLocaterEfield(self, locator):
-        self.locator_efield = locator
+    def GetLocaterEfield(self, locatorpoint, locatorcell):
+        self.locator_efield = locatorpoint
+        self.locator_efield_cell = locatorcell
         self.Refresh()
 
     def FindPointsAroundRadiusEfield(self, point):
@@ -1566,7 +1567,7 @@ class Viewer(wx.Panel):
     def GetCellIntersectionEfield(self, p1, p2, coil_norm, coil_dir):
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtk.vtkIdList()
-        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+        self.locator_efield_cell.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 
         closestDist = 50
 
@@ -1589,7 +1590,7 @@ class Viewer(wx.Panel):
                         self.FindPointsAroundRadiusEfield(closestPoint)
         self.Refresh()
 
-    def UpdateEfieldPointLocation(self, m_img, coord, flag):
+    def UpdateEfieldPointLocation(self, m_img, coord):
         [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
         self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
         self.Refresh()
@@ -1730,6 +1731,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.Refresh()
+
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if flag:

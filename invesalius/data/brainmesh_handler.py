@@ -284,6 +284,10 @@ class E_field_brain:
         self.locator_efield.SetDataSet(e_field_mesh)
         self.locator_efield.BuildLocator()
 
+        self.locator_efield_Cell = vtk.vtkCellLocator()
+        self.locator_efield_Cell.SetDataSet(e_field_mesh)
+        self.locator_efield_Cell.BuildLocator()
+
         self.e_field_mesh_normals = vtk.vtkFloatArray()
         self.e_field_mesh_centers = vtk.vtkFloatArray()
 
