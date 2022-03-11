@@ -1481,28 +1481,32 @@ class MarkersPanel(wx.Panel):
         menu_id = wx.Menu()
         edit_id = menu_id.Append(0, _('Edit label'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerLabel, edit_id)
-        color_id = menu_id.Append(2, _('Edit color'))
+        color_id = menu_id.Append(1, _('Edit color'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
         menu_id.AppendSeparator()
-        target_menu = menu_id.Append(1, _('Set as target'))
+        target_menu = menu_id.Append(2, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
-        send_target_to_robot_compensation = menu_id.Append(3, _('Sets target to robot head move compensation'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompesantion, send_target_to_robot_compensation)
-        send_target_to_robot = menu_id.Append(4, _('Send target to robot'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
-        if all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]]):
+        check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]])
+        # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
+        if self.tracker.tracker_id == const.ROBOT:
+            send_target_to_robot_compensation = menu_id.Append(3, _('Sets target to robot head move compensation'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompesantion, send_target_to_robot_compensation)
+            send_target_to_robot = menu_id.Append(4, _('Send target from InVesalius to robot'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
+            if self.nav_status and check_target_angles:
+                send_target_to_robot_compensation.Enable(True)
+                send_target_to_robot.Enable(True)
+            else:
+                send_target_to_robot_compensation.Enable(False)
+                send_target_to_robot.Enable(False)
+
+        if check_target_angles:
             target_menu.Enable(True)
         else:
             target_menu.Enable(False)
 
-        # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
-        check_target_angles = np.all(self.markers[self.lc.GetFocusedItem()].coord[3:])
-        if self.tracker.tracker_id == const.ROBOT and self.nav_status and check_target_angles:
-            send_target_to_robot_compensation.Enable(True)
-        else:
-            send_target_to_robot_compensation.Enable(False)
         # TODO: Create the remove target option so the user can disable the target without removing the marker
         # target_menu_rem = menu_id.Append(3, _('Remove target'))
         # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
