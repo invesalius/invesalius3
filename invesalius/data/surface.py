@@ -206,7 +206,6 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
-
         Publisher.subscribe(self.UpdateConvert2InvFlag, 'Update convert2inv flag')
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')

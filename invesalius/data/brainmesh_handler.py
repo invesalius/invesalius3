@@ -7,6 +7,7 @@ import numpy as np
 
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
+import invesalius.data.vtk_utils as vtk_utils
 
 
 class Brain:
@@ -279,6 +280,10 @@ class Brain:
 
 class E_field_brain:
     def __init__(self, e_field_mesh):
+        self.efield_actor = self.GetEfieldActor(e_field_mesh)
+
+        self.e_field_mesh_normals = vtk.vtkFloatArray()
+        self.e_field_mesh_centers = vtk.vtkFloatArray()
 
         self.locator_efield = vtk.vtkPointLocator()
         self.locator_efield.SetDataSet(e_field_mesh)
@@ -287,13 +292,10 @@ class E_field_brain:
         self.locator_efield_Cell = vtk.vtkCellLocator()
         self.locator_efield_Cell.SetDataSet(e_field_mesh)
         self.locator_efield_Cell.BuildLocator()
-
-        self.e_field_mesh_normals = vtk.vtkFloatArray()
-        self.e_field_mesh_centers = vtk.vtkFloatArray()
-
         self.e_field_mesh_normals = GetNormals(e_field_mesh)
         self.e_field_mesh_centers = GetCenters(e_field_mesh)
-        self.efield_actor = self.GetEfieldActor(e_field_mesh)
+
+
 
     def GetEfieldActor(self, mesh):
         # Create a mapper and actor
@@ -301,7 +303,17 @@ class E_field_brain:
         mapper.SetInputData(mesh)
         self.efield_actor = vtk.vtkActor()
         self.efield_actor.SetMapper(mapper)
+
+        affine = sl.Slice().affine
+        matrix_shape = sl.Slice().matrix.shape
+        spacing = sl.Slice().spacing
+        img_shift = spacing[1] * (matrix_shape[1] - 1)
+        affine = sl.Slice().affine.copy()
+        affine[1, -1] -= img_shift
+        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+        self.efield_actor.SetUserMatrix(affine_vtk)
         return self.efield_actor
+
 ############## temporarly add efield csv
     def load_temporarly_e_field_CSV(self):
         filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\E_norm_sorted_pind100_invesalius.csv'

@@ -1577,7 +1577,7 @@ class Viewer(wx.Panel):
                 cellId = intersectingCellIds.GetId(i)
                 point = np.array(self.e_field_mesh_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
-
+                print(distance)
                 if distance < closestDist:
                     closestDist = distance
                     closestPoint = point
@@ -1588,6 +1588,8 @@ class Viewer(wx.Panel):
                         print('normal')
                         #calculate a circle around the closestPoint
                         self.FindPointsAroundRadiusEfield(closestPoint)
+                    else:
+                        print('not normal')
         self.Refresh()
 
     def UpdateEfieldPointLocation(self, m_img, coord):

@@ -2269,6 +2269,9 @@ class E_fieldPanel(wx.Panel):
         try:
             if filename:
                 print('success')
+                self.convert2inv = True
+                #Publisher.sendMessage('Update convert2inv flag', convert2inv =  self.convert2inv)
+                #Publisher.sendMessage('Import surface file efield', filename = filename)
                 reader = vtk.vtkSTLReader()
                 reader.SetFileName(filename)
                 reader.Update()
