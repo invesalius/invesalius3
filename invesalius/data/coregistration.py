@@ -102,18 +102,15 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     return m_img
 
 def image_to_tracker(m_change, target, icp):
-    """Compute affine transformation matrix to the reference basis
+    """Compute the transformation matrix to the tracker coordinate system
 
     :param m_change: Corregistration transformation obtained from fiducials
     :type m_change: numpy.ndarray
-    :param m_probe_ref: Object or probe in reference coordinate system
-    :type m_probe_ref: numpy.ndarray
-    :param r_obj_img: Object coordinate system in image space (3d model)
-    :type r_obj_img: numpy.ndarray
-    :param m_obj_raw: Object basis in raw coordinates from tracker
-    :type m_obj_raw: numpy.ndarray
-    :param s0_dyn: Initial alignment of probe fixed in the object in reference (or static) frame
-    :type s0_dyn: numpy.ndarray
+    :param target: Target in invesalius coordinate system
+    :type target: numpy.ndarray
+    :param icp: ICP transformation matrix
+    :type icp: numpy.ndarray
+
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """

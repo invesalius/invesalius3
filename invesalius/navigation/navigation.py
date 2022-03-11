@@ -243,10 +243,10 @@ class Navigation():
         if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
-    def EstimateTransformationMatrix(self, tracker):
+    def EstimateTrackerToInVTransformationMatrix(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
         self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
-        # fiducials matrix
+
         self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
                                                 shear=False, scale=False)
 
