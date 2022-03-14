@@ -281,11 +281,6 @@ class Brain:
 class E_field_brain:
     def __init__(self, e_field_mesh):
         #self.affine_vtk = affine_vtk
-
-
-        self.locator_efield = vtk.vtkPointLocator()
-        self.locator_efield.SetDataSet(e_field_mesh)
-        self.locator_efield.BuildLocator()
         self.efield_actor = self.GetEfieldActor(e_field_mesh)
 
     def GetEfieldActor(self, mesh):
@@ -311,8 +306,14 @@ class E_field_brain:
         self.locator_efield_Cell = vtk.vtkCellLocator()
         self.locator_efield_Cell.SetDataSet(mesh)
         self.locator_efield_Cell.BuildLocator()
+
+        self.locator_efield = vtk.vtkPointLocator()
+        self.locator_efield.SetDataSet(mesh)
+        self.locator_efield.BuildLocator()
+
         self.e_field_mesh_normals = GetNormals(mesh)
         self.e_field_mesh_centers = GetCenters(mesh)
+        self.e_field_mesh = mesh
         return self.efield_actor
 
     def TransformPosition(self, mesh, affine_vtk):
