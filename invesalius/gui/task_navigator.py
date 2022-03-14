@@ -2221,7 +2221,7 @@ class E_fieldPanel(wx.Panel):
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
-
+        self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
         #  Check box to enable e-field visualization
@@ -2257,10 +2257,10 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Add efield mesh', actor = self.e_field_brain.efield_actor, mesh = self.e_field_brain.e_field_mesh)
             Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers, normals=self.e_field_brain.e_field_mesh_normals)
             Publisher.sendMessage('Get init efield locator', locatorpoint = self.e_field_brain.locator_efield, locatorcell = self.e_field_brain.locator_efield_Cell)
-
+            self.e_field_loaded = True
         else:
             print('False')
-
+            self.e_field_loaded = False
     def OnAddEfieldMesh(self, event=None):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load E-field Mesh"),
                                           wildcard=_("Stl file (*.stl)|*.stl"))

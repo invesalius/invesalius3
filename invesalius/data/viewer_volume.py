@@ -1575,8 +1575,8 @@ class Viewer(wx.Panel):
         #self.x_actor_e_field = self.add_line(p1, p2, vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor_e_field) # remove comment for testing
         print('intersection cells',intersectingCellIds.GetNumberOfIds())
-        closestDist = 100
 
+        closestDist = 100
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
@@ -1625,13 +1625,13 @@ class Viewer(wx.Panel):
                     #else:
                     #    print('not normal')
 
-    def UpdateEfieldPointLocation(self, m_img, coord):
-        [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
-        #self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
-        self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
+    def UpdateEfieldPointLocation(self, m_img, coord, flag):
+        if flag:
+            [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
+            self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
         #self.ren.RemoveActor(self.x_actor_e_field)
 
-    def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
+    def GetCellIntersection(self, p1, p2, locator):
 
         vtk_colors = vtk.vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
@@ -1641,8 +1641,12 @@ class Viewer(wx.Panel):
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor) # remove comment for testing
 
-        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+        #self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+        locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+        return intersectingCellIds
 
+    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+        vtk_colors = vtk.vtkNamedColors()
         closestDist = 50
 
         #if find intersection , calculate angle and add actors
@@ -1765,7 +1769,8 @@ class Viewer(wx.Panel):
             #self.ren.RemoveActor(self.y_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
-            self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
+            intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
+            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Refresh()
 
 
