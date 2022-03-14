@@ -1773,7 +1773,6 @@ class Viewer(wx.Panel):
             self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Refresh()
 
-
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if flag:
             self.obj_name = obj_name
