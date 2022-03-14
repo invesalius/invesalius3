@@ -1278,7 +1278,7 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.current_coord = 0, 0, 0, None, None, None
+        self.current_coord = [0, 0, 0, None, None, None]
         self.current_seed = 0, 0, 0
         self.current_robot_target_matrix = [None] * 9
         self.markers = []
