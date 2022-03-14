@@ -1550,8 +1550,11 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def Get_Efield_mesh_Centers(self, centers, normals):
-        self.e_field_mesh_normals = centers
-        self.e_field_mesh_centers = normals
+        self.e_field_mesh_normals = normals
+        self.e_field_mesh_centers = centers
+        print('este', self.e_field_mesh_centers.GetPoint(1))
+
+        self.Refresh()
 
     def GetLocaterEfield(self, locatorpoint, locatorcell):
         self.locator_efield = locatorpoint
@@ -1566,10 +1569,13 @@ class Viewer(wx.Panel):
 
     def GetCellIntersectionEfield(self, p1, p2, coil_norm, coil_dir):
         # This find store the triangles that intersect the coil's normal
+        vtk_colors = vtk.vtkNamedColors()
         intersectingCellIds = vtk.vtkIdList()
         self.locator_efield_cell.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
-
-        closestDist = 50
+        self.x_actor = self.add_line(p1, p2, vtk_colors.GetColor3d('Blue'))
+        self.ren.AddActor(self.x_actor) # remove comment for testing
+        print('intersection cells',intersectingCellIds.GetNumberOfIds())
+        closestDist = 100
 
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
@@ -1594,6 +1600,7 @@ class Viewer(wx.Panel):
 
     def UpdateEfieldPointLocation(self, m_img, coord):
         [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
+        #self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
         self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
         self.Refresh()
 
@@ -1605,7 +1612,7 @@ class Viewer(wx.Panel):
 
         #for debugging
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-        #self.ren.AddActor(self.x_actor) # remove comment for testing
+        self.ren.AddActor(self.x_actor) # remove comment for testing
 
         self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
 

@@ -280,24 +280,17 @@ class Brain:
 
 class E_field_brain:
     def __init__(self, e_field_mesh):
-        self.efield_actor = self.GetEfieldActor(e_field_mesh)
+        #self.affine_vtk = affine_vtk
 
-        self.e_field_mesh_normals = vtk.vtkFloatArray()
-        self.e_field_mesh_centers = vtk.vtkFloatArray()
 
         self.locator_efield = vtk.vtkPointLocator()
         self.locator_efield.SetDataSet(e_field_mesh)
         self.locator_efield.BuildLocator()
-
-        self.locator_efield_Cell = vtk.vtkCellLocator()
-        self.locator_efield_Cell.SetDataSet(e_field_mesh)
-        self.locator_efield_Cell.BuildLocator()
-        self.e_field_mesh_normals = GetNormals(e_field_mesh)
-        self.e_field_mesh_centers = GetCenters(e_field_mesh)
-
-
+        self.efield_actor = self.GetEfieldActor(e_field_mesh)
 
     def GetEfieldActor(self, mesh):
+        self.e_field_mesh_normals = vtk.vtkFloatArray()
+        self.e_field_mesh_centers = vtk.vtkFloatArray()
         # Create a mapper and actor
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(mesh)
@@ -312,7 +305,27 @@ class E_field_brain:
         affine[1, -1] -= img_shift
         affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
         self.efield_actor.SetUserMatrix(affine_vtk)
+
+        mesh = self.TransformPosition(mesh, affine_vtk)
+
+        self.locator_efield_Cell = vtk.vtkCellLocator()
+        self.locator_efield_Cell.SetDataSet(mesh)
+        self.locator_efield_Cell.BuildLocator()
+        self.e_field_mesh_normals = GetNormals(mesh)
+        self.e_field_mesh_centers = GetCenters(mesh)
         return self.efield_actor
+
+    def TransformPosition(self, mesh, affine_vtk):
+        mesh_transform = vtk.vtkTransform()
+        mesh_transform.SetMatrix(affine_vtk)
+
+        refpeelspace = vtk.vtkTransformPolyDataFilter()
+        refpeelspace.SetInputData(mesh)
+        refpeelspace.SetTransform(mesh_transform)
+        refpeelspace.Update()
+        new_mesh = refpeelspace.GetOutput()
+        return new_mesh
+
 
 ############## temporarly add efield csv
     def load_temporarly_e_field_CSV(self):
