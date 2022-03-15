@@ -1567,15 +1567,7 @@ class Viewer(wx.Panel):
         self.radius_list = vtk.vtkIdList()
         self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
-    def GetCellIntersectionEfield(self, p1, p2, coil_norm, coil_dir):
-        # This find store the triangles that intersect the coil's normal
-        vtk_colors = vtk.vtkNamedColors()
-        intersectingCellIds = vtk.vtkIdList()
-        self.locator_efield_cell.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
-        #self.x_actor_e_field = self.add_line(p1, p2, vtk_colors.GetColor3d('Blue'))
-        #self.ren.AddActor(self.x_actor_e_field) # remove comment for testing
-        print('intersection cells',intersectingCellIds.GetNumberOfIds())
-
+    def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
@@ -1628,20 +1620,19 @@ class Viewer(wx.Panel):
     def UpdateEfieldPointLocation(self, m_img, coord, flag):
         if flag:
             [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
-            self.GetCellIntersectionEfield(p1, norm, coil_norm, coil_dir)
+            intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
+            self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         #self.ren.RemoveActor(self.x_actor_e_field)
+        self.Refresh()
 
     def GetCellIntersection(self, p1, p2, locator):
 
         vtk_colors = vtk.vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtk.vtkIdList()
-
         #for debugging
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor) # remove comment for testing
-
-        #self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
         locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
         return intersectingCellIds
 
