@@ -7,17 +7,18 @@ import numpy as np
 
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
-
+import invesalius.data.vtk_utils as vtk_utils
 
 class Brain:
-    def __init__(self, n_peels, window_width, window_level, affine_vtk=None):
+    def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
         # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
         self.window_width = window_width
         self.window_level = window_level
         self.numberOfPeels = n_peels
-        self.affine_vtk = affine_vtk
+        self.affine = affine
+        self.inv_proj = inv_proj
 
     def from_mask(self, mask):
         mask= np.array(mask.matrix[1:, 1:, 1:])
@@ -52,6 +53,7 @@ class Brain:
     def from_mask_file(self, mask_path):
         slic = sl.Slice()
         image = slic.matrix
+        image = np.flip(image, axis=1)
         image = to_vtk(image, spacing=slic.spacing)
 
         # Read the mask
@@ -69,12 +71,9 @@ class Brain:
         self._do_surface_creation(mask, mask_sFormMatrix)
 
 
-    def _do_surface_creation(self, mask, mask_sFormMatrix=None, qFormMatrix=None):
+    def _do_surface_creation(self, mask, mask_sFormMatrix=None):
         if mask_sFormMatrix is None:
             mask_sFormMatrix = vtk.vtkMatrix4x4()
-
-        if qFormMatrix is None:
-            qFormMatrix = vtk.vtkMatrix4x4()
 
         value = np.mean(mask.GetScalarRange())
 
@@ -115,14 +114,13 @@ class Brain:
         tmpPeel = cleanMesh(tmpPeel)
 
         refImageSpace2_xyz_transform = vtk.vtkTransform()
-        refImageSpace2_xyz_transform.SetMatrix(qFormMatrix)
+        refImageSpace2_xyz_transform.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(np.linalg.inv(self.affine)))
 
         self.refImageSpace2_xyz = vtk.vtkTransformPolyDataFilter()
         self.refImageSpace2_xyz.SetTransform(refImageSpace2_xyz_transform)
 
         xyz2_refImageSpace_transform = vtk.vtkTransform()
-        qFormMatrix.Invert()
-        xyz2_refImageSpace_transform.SetMatrix(qFormMatrix)
+        xyz2_refImageSpace_transform.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(self.affine))
 
         self.xyz2_refImageSpace = vtk.vtkTransformPolyDataFilter()
         self.xyz2_refImageSpace.SetTransform(xyz2_refImageSpace_transform)
@@ -138,13 +136,21 @@ class Brain:
         self.peel_centers = vtk.vtkFloatArray()
         self.peel.append(newPeel)
         self.currentPeelActor = vtk.vtkActor()
-        if self.affine_vtk:
-            self.currentPeelActor.SetUserMatrix(self.affine_vtk)
+        if not np.all(np.equal(self.affine, np.eye(4))):
+            affine_vtk = self.CreateTransformedVTKAffine()
+            self.currentPeelActor.SetUserMatrix(affine_vtk)
         self.GetCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
         # locator will later find the triangle on the peel surface where the coil's normal intersect
         self.locator = vtk.vtkCellLocator()
         self.PeelDown(currentPeel)
+
+    def CreateTransformedVTKAffine(self):
+        affine_transformed = self.affine.copy()
+        matrix_shape = tuple(self.inv_proj.matrix_shape)
+        affine_transformed[1, -1] -= matrix_shape[1]
+
+        return vtk_utils.numpy_to_vtkMatrix4x4(affine_transformed)
 
     def get_actor(self, n):
         return self.GetPeelActor(n)
@@ -216,8 +222,9 @@ class Brain:
 
     def TransformPeelPosition(self, p):
         peel_transform = vtk.vtkTransform()
-        if self.affine_vtk:
-            peel_transform.SetMatrix(self.affine_vtk)
+        if not np.all(np.equal(self.affine, np.eye(4))):
+            affine_vtk = self.CreateTransformedVTKAffine()
+            peel_transform.SetMatrix(affine_vtk)
         refpeelspace = vtk.vtkTransformPolyDataFilter()
         refpeelspace.SetInputData(self.peel[p])
         refpeelspace.SetTransform(peel_transform)
