@@ -1595,7 +1595,7 @@ class Viewer(wx.Panel):
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
 
                     self.FindPointsAroundRadiusEfield(cellId)
-                    #self.radius_list.Sort()
+                    self.radius_list.Sort()
                     self.ren.RemoveActor(self.efield_actor)
                     colors = vtkUnsignedCharArray()
                     colors.SetNumberOfComponents(3)
@@ -1605,11 +1605,13 @@ class Viewer(wx.Panel):
                     for j in range(0, 3):
                         color[j] = int(255.0 * 1)
                     for i in range(0, self.efield_mesh.GetNumberOfPoints()):
+                    #for i in range(np.size(self.e_field_norms)):
                         colors.InsertTuple(i, color)
                     self.efield_mesh.GetPointData().SetScalars(colors)
 
                     print('radius', self.radius_list.GetNumberOfIds())
-                    for h in range(0, self.radius_list.GetNumberOfIds()):
+                    for h in range(self.radius_list.GetNumberOfIds()):
+
                         dcolor = 3 * [0.0]
                         lut.GetColor(self.e_field_norms[self.radius_list.GetId(h)], dcolor)
                         color = 3 * [0.0]
