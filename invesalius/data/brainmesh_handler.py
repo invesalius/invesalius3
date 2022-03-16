@@ -8,6 +8,7 @@ import numpy as np
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
+import csv
 
 
 class Brain:
@@ -280,8 +281,8 @@ class Brain:
 
 class E_field_brain:
     def __init__(self, e_field_mesh):
-        #self.affine_vtk = affine_vtk
         self.efield_actor = self.GetEfieldActor(e_field_mesh)
+        [self.min, self.max, self.e_field_norms] = self.load_temporarly_e_field_CSV()
 
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtk.vtkFloatArray()
@@ -337,21 +338,15 @@ class E_field_brain:
             for row in my_reader:
                 rows.append(row)
         e_field = rows
-        self.e_field_norms = np.array(e_field).astype(float)
+        e_field_norms = np.array(e_field).astype(float)
 
         ###Colors###
-        maxz = np.amax(self.e_field_norms)
-        minz = np.amin(self.e_field_norms)
-        print('minz: {:< 6.3}'.format(minz))
-        print('maxz: {:< 6.3}'.format(maxz))
+        max = np.amax(e_field_norms)
+        min = np.amin(e_field_norms)
+        print('minz: {:< 6.3}'.format(min))
+        print('maxz: {:< 6.3}'.format(max))
+        return min, max, e_field_norms
 
-        self.lut = vtkLookupTable()
-        self.lut.SetTableRange(minz, maxz)
-        self.lut.Build()
-        # Generate the colors for each point based on the color map
-        colors = vtkUnsignedCharArray()
-        colors.SetNumberOfComponents(3)
-        colors.SetName('Colors')
 
     # def
     #

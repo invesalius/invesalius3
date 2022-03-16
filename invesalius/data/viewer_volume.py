@@ -326,6 +326,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Get_Efield_mesh_Centers, 'Get e-field mesh centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
         Publisher.subscribe(self.GetLocaterEfield, 'Get init efield locator')
+        Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
 
@@ -1554,6 +1555,17 @@ class Viewer(wx.Panel):
         self.efield_actor.SetMapper(mapper)
         self.ren.AddActor(self.efield_actor)
 
+    def CreateLUTtableforefield(self, min, max):
+        lut = vtk.vtkLookupTable()
+        lut.SetTableRange(min, max)
+        lut.Build()
+        return lut
+
+    def Get_E_field_max_min(self, min, max, e_field_norms):
+        self.min = min
+        self.max = max
+        self.e_field_norms = e_field_norms
+
     def Get_Efield_mesh_Centers(self, centers, normals):
         self.e_field_mesh_normals = normals
         self.e_field_mesh_centers = centers
@@ -1567,7 +1579,7 @@ class Viewer(wx.Panel):
         self.radius_list = vtk.vtkIdList()
         self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
-    def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+    def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir, lut):
         closestDist = 100
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
@@ -1583,7 +1595,7 @@ class Viewer(wx.Panel):
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
 
                     self.FindPointsAroundRadiusEfield(cellId)
-                    self.radius_list.Sort()
+                    #self.radius_list.Sort()
                     self.ren.RemoveActor(self.efield_actor)
                     colors = vtkUnsignedCharArray()
                     colors.SetNumberOfComponents(3)
@@ -1594,19 +1606,18 @@ class Viewer(wx.Panel):
                         color[j] = int(255.0 * 1)
                     for i in range(0, self.efield_mesh.GetNumberOfPoints()):
                         colors.InsertTuple(i, color)
-                    # pd.GetCellData().SetScalars(colors)
                     self.efield_mesh.GetPointData().SetScalars(colors)
 
                     print('radius', self.radius_list.GetNumberOfIds())
                     for h in range(0, self.radius_list.GetNumberOfIds()):
                         dcolor = 3 * [0.0]
-                        #lut.GetColor(self.radius_list[self.radius_list.GetId(h)], dcolor)
+                        lut.GetColor(self.e_field_norms[self.radius_list.GetId(h)], dcolor)
                         color = 3 * [0.0]
                         for j in range(0, 3):
-                            color[j] = int(255.0 * 0.3)
-                        colors.InsertTuple(self.radius_list.GetId(h), [255, 0, 0])
-                    self.efield_mesh.GetPointData().SetScalars(colors)
-
+                            color[j] = int(255.0 * dcolor[j])
+                        colors.InsertTuple(self.radius_list.GetId(h), color)
+                    #self.efield_mesh.GetPointData().SetScalars(colors)
+                    self.efield_mesh.GetCellData().SetScalars(colors)
                     self.Recolor_efield_Actor(self.efield_mesh)
                     print('actor added for e-field')
                     # change color of arrow and disk according to angle
@@ -1621,7 +1632,10 @@ class Viewer(wx.Panel):
         if flag:
             [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
-            self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
+
+            lut = self.CreateLUTtableforefield(self.min, self.max)
+            self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir, lut)
+
         #self.ren.RemoveActor(self.x_actor_e_field)
         self.Refresh()
 
