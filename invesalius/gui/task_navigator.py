@@ -561,6 +561,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
         Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
+        Publisher.subscribe(self.UpdateEfieldVisualization, 'Update e-field visualization')
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -616,6 +617,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdatePeelVisualization(self, data):
         self.navigation.peel_loaded = data
+
+    def UpdateEfieldVisualization(self, data):
+        self.navigation.e_field_loaded = data
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2258,9 +2262,11 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers, normals=self.e_field_brain.e_field_mesh_normals)
             Publisher.sendMessage('Get init efield locator', locatorpoint = self.e_field_brain.locator_efield, locatorcell = self.e_field_brain.locator_efield_Cell)
             self.e_field_loaded = True
+            Publisher.sendMessage('Update e-field visualization', data = self.e_field_loaded)
         else:
             print('False')
             self.e_field_loaded = False
+
     def OnAddEfieldMesh(self, event=None):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load E-field Mesh"),
                                           wildcard=_("Stl file (*.stl)|*.stl"))
