@@ -1553,6 +1553,7 @@ class Viewer(wx.Panel):
         mapper.SetInputData(mesh)
         self.efield_actor = vtk.vtkActor()
         self.efield_actor.SetMapper(mapper)
+
         self.ren.AddActor(self.efield_actor)
 
     def CreateLUTtableforefield(self, min, max):
@@ -1578,7 +1579,14 @@ class Viewer(wx.Panel):
         radius = vtk.mutable(50)
         self.radius_list = vtk.vtkIdList()
         self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
-
+    def GetCellIDsfromPoints(self):
+        cell_ids_array = []
+        pts1 = vtk.vtkIdList()
+        for i in range(self.radius_list.GetNumberOfIds()):
+            self.efield_mesh.GetPointCells(self.radius_list.GetId(i), pts1)
+            for j in range(pts1.GetNumberOfIds()):
+                cell_ids_array.append(pts1.GetId(j))
+        return cell_ids_array
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir, lut):
         closestDist = 100
         # if find intersection , calculate angle and add actors
@@ -1587,7 +1595,6 @@ class Viewer(wx.Panel):
                 cellId = intersectingCellIds.GetId(i)
                 point = np.array(self.e_field_mesh_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
-                print('distance' , distance)
                 if distance < closestDist:
                     closestDist = distance
                     closestPoint = point
@@ -1604,31 +1611,20 @@ class Viewer(wx.Panel):
                     color = 3 * [0.0]
                     for j in range(0, 3):
                         color[j] = int(255.0 * 1)
-                    for i in range(0, self.efield_mesh.GetNumberOfPoints()):
-                    #for i in range(np.size(self.e_field_norms)):
+                    for i in range(np.size(self.e_field_norms)):
                         colors.InsertTuple(i, color)
-                    self.efield_mesh.GetPointData().SetScalars(colors)
-
-                    print('radius', self.radius_list.GetNumberOfIds())
-                    for h in range(self.radius_list.GetNumberOfIds()):
-
+                    cell_ids_array = self.GetCellIDsfromPoints()
+                    for h in range(np.size(cell_ids_array)):
                         dcolor = 3 * [0.0]
-                        lut.GetColor(self.e_field_norms[self.radius_list.GetId(h)], dcolor)
+                        index_id = cell_ids_array[h]
+                        lut.GetColor(self.e_field_norms[index_id], dcolor)
                         color = 3 * [0.0]
                         for j in range(0, 3):
                             color[j] = int(255.0 * dcolor[j])
-                        colors.InsertTuple(self.radius_list.GetId(h), color)
-                    #self.efield_mesh.GetPointData().SetScalars(colors)
+                        colors.InsertTuple(index_id, color)
                     self.efield_mesh.GetCellData().SetScalars(colors)
                     self.Recolor_efield_Actor(self.efield_mesh)
-                    print('actor added for e-field')
-                    # change color of arrow and disk according to angle
-                    #if angle < self.angle_arrow_projection_threshold:
-                    #    print('normal')
-                        #calculate a circle around the closestPoint
 
-                    #else:
-                    #    print('not normal')
 
     def UpdateEfieldPointLocation(self, m_img, coord, flag):
         if flag:
