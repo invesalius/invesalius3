@@ -1579,14 +1579,16 @@ class Viewer(wx.Panel):
         radius = vtk.mutable(50)
         self.radius_list = vtk.vtkIdList()
         self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
-    def GetCellIDsfromPoints(self):
+
+    def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
         pts1 = vtk.vtkIdList()
-        for i in range(self.radius_list.GetNumberOfIds()):
-            self.efield_mesh.GetPointCells(self.radius_list.GetId(i), pts1)
+        for i in range(vlist.GetNumberOfIds()):
+            mesh.GetPointCells(vlist.GetId(i), pts1)
             for j in range(pts1.GetNumberOfIds()):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
+
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir, lut):
         closestDist = 100
         # if find intersection , calculate angle and add actors
@@ -1607,13 +1609,12 @@ class Viewer(wx.Panel):
                     colors = vtkUnsignedCharArray()
                     colors.SetNumberOfComponents(3)
                     colors.SetName('Colors')
-
                     color = 3 * [0.0]
                     for j in range(0, 3):
                         color[j] = int(255.0 * 1)
                     for i in range(np.size(self.e_field_norms)):
                         colors.InsertTuple(i, color)
-                    cell_ids_array = self.GetCellIDsfromPoints()
+                    cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
                     for h in range(np.size(cell_ids_array)):
                         dcolor = 3 * [0.0]
                         index_id = cell_ids_array[h]
