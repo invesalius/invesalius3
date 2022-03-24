@@ -299,9 +299,9 @@ class E_field_brain:
         img_shift = spacing[1] * (matrix_shape[1] - 1)
         affine = sl.Slice().affine.copy()
         affine[1, -1] -= img_shift
+        #affine = np.identity(4)
         affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
         self.efield_actor.SetUserMatrix(affine_vtk)
-
         mesh = self.TransformPosition(mesh, affine_vtk)
 
         self.locator_efield_Cell = vtk.vtkCellLocator()
@@ -331,7 +331,7 @@ class E_field_brain:
 
 ############## temporarly add efield csv
     def load_temporarly_e_field_CSV(self):
-        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\E_norm_sorted_pind100_invesalius.csv'
+        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\Enorm_inCoilpoint200sorted.csv'
         with open(filename, 'r') as file:
             my_reader = csv.reader(file, delimiter=',')
             rows = []
