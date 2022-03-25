@@ -20,10 +20,7 @@
 import dataclasses
 from functools import partial
 import itertools
-import csv
-import queue
 import time
-import threading
 
 import nibabel as nb
 import numpy as np
@@ -41,7 +38,6 @@ except ImportError:
     has_robot = False
 
 import wx
-import vtk
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -51,7 +47,6 @@ except ImportError:
 import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
 from invesalius.pubsub import pub as Publisher
-from time import sleep
 
 import invesalius.constants as const
 
