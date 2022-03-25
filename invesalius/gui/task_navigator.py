@@ -1257,19 +1257,6 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
-    @dataclasses.dataclass
-    class Robot_Marker:
-        """Class for storing robot target."""
-        m_robot_target : list = None
-
-        @property
-        def robot_target_matrix(self):
-            return self.m_robot_target
-
-        @robot_target_matrix.setter
-        def robot_target_matrix(self, new_m_robot_target):
-            self.m_robot_target = new_m_robot_target
-
     def __init__(self, parent, navigation, tracker, icp):
         wx.Panel.__init__(self, parent)
         try:

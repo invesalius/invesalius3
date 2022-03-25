@@ -21,10 +21,10 @@ import wx
 
 import invesalius.data.bases as db
 import invesalius.gui.dialogs as dlg
-from invesalius.pubsub import pub as Publisher
 
+from invesalius.utils import Singleton
 
-class ICP():
+class ICP(metaclass=Singleton):
     def __init__(self):
         self.use_icp = False
         self.m_icp = None

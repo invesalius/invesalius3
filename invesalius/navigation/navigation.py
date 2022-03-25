@@ -34,6 +34,7 @@ import invesalius.data.tractography as dti
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 
 class QueueCustom(queue.Queue):
@@ -139,7 +140,7 @@ class UpdateNavigationScene(threading.Thread):
                     self.coord_queue.task_done()
 
 
-class Navigation():
+class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
