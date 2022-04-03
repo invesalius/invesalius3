@@ -57,8 +57,8 @@ class NeuronavigationApi(metaclass=Singleton):
     def update_coil_mesh(self, polydata):
         wrapped = dataset_adapter.WrapDataObject(polydata)
 
-        points = np.array(wrapped.Points)
-        polygons_raw = np.array(wrapped.Polygons)
+        points = np.asarray(wrapped.Points)
+        polygons_raw = np.asarray(wrapped.Polygons)
 
         # The polygons are returned as 1d-array of the form
         #
@@ -70,7 +70,7 @@ class NeuronavigationApi(metaclass=Singleton):
         #
         # Assert that all polygons have an equal number of vertices, reshape the array, and drop n_i's.
         #
-        assert all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
+        assert np.all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
 
         polygons = polygons_raw.reshape(-1, self.N_VERTICES_IN_POLYGON + 1)[:, 1:]
 
