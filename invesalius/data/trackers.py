@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
+from invesalius.pubsub import pub as Publisher
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
 # TODO: Redesign error messages. No point in having "Could not connect to default tracker" in all trackers
@@ -223,42 +224,23 @@ def OptitrackTracker(tracker_id):
         print('#####')
     return trck_init, lib_mode
 
-def ElfinRobot(robot_IP):
-    trck_init = None
-    try:
-        import invesalius.data.elfin as elfin
-        print("Trying to connect Robot via: ", robot_IP)
-        trck_init = elfin.Elfin_Server(robot_IP, const.ROBOT_ElFIN_PORT)
-        trck_init.Initialize()
-        lib_mode = 'wrapper'
-        print('Connect to elfin robot tracking device.')
-
-    except:
-        lib_mode = 'error'
-        trck_init = None
-        print('Could not connect to elfin robot tracker.')
-
-    # return tracker initialization variable and type of connection
-    return trck_init, lib_mode
-
 def RobotTracker(tracker_id):
     from wx import ID_OK
-    trck_init = None
-    trck_init_robot = None
-    tracker_id = None
+
     dlg_device = dlg.SetTrackerDeviceToRobot()
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
         if tracker_id:
-            trck_connection = TrackerConnection(tracker_id, None, 'connect')
-            if trck_connection[0]:
+            trck_init = TrackerConnection(tracker_id, None, 'connect')
+            if trck_init[0]:
                 dlg_ip = dlg.SetRobotIP()
                 if dlg_ip.ShowModal() == ID_OK:
                     robot_IP = dlg_ip.GetValue()
-                    trck_init = trck_connection
-                    trck_init_robot = ElfinRobot(robot_IP)
+                    Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
 
-    return [(trck_init, trck_init_robot), tracker_id]
+                    return trck_init, tracker_id
+
+    return None, None
 
 def DebugTrackerRandom(tracker_id):
     trck_init = True
@@ -392,8 +374,9 @@ def DisconnectTracker(tracker_id, trck_init):
                 lib_mode = 'serial'
                 print('Tracker disconnected.')
             elif tracker_id == const.ROBOT:
-                trck_init[0][0].Close()
-                trck_init[1][0].Close()
+                Publisher.sendMessage('Reset robot', data=None)
+                if trck_init[1] == const.DEBUGTRACKRANDOM or trck_init[1] == const.DEBUGTRACKAPPROACH:
+                    trck_init[0].Close()
                 trck_init = False
                 lib_mode = 'wrapper'
                 print('Tracker disconnected.')
