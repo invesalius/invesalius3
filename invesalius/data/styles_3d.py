@@ -425,8 +425,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
 
         self.state_code = const.SLICE_STATE_CROSS
-        self.picker = vtk.vtkPropPicker()
-        self.AddObserver("MouseMoveEvent", self.OnMouseMovePixel)
+        self.picker = vtk.vtkPointPicker()
+        self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
 
     def SetUp(self):
         print("SetUP")
@@ -434,12 +434,17 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def CleanUp(self):
         print("CleanUp")
 
-    def OnMouseMovePixel(self, obj, evt):
+    def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.picker.GetPickPosition()
         if self.picker.GetActor():
-            print(x, y, z)
+            self.viewer.set_camera_position=False
+            Publisher.sendMessage('Update slices position', position=[x, -y, z])
+            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Render volume viewer')
+            self.viewer.set_camera_position=True
 
 class Styles:
     styles = {

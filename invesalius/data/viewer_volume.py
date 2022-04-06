@@ -206,6 +206,8 @@ class Viewer(wx.Panel):
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
 
+        self.set_camera_position = True
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -1285,7 +1287,8 @@ class Viewer(wx.Panel):
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
         self.ball_actor.SetPosition(coord_flip)
-        self.SetVolumeCamera(coord_flip)
+        if self.set_camera_position:
+            self.SetVolumeCamera(coord_flip)
 
     def CreateObjectPolyData(self, filename):
         """
