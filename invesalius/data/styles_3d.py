@@ -420,6 +420,27 @@ class SeedInteractorStyle(DefaultInteractorStyle):
             self.left_pressed = True
 
 
+class CrossInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+        self.state_code = const.SLICE_STATE_CROSS
+        self.picker = vtk.vtkPropPicker()
+        self.AddObserver("MouseMoveEvent", self.OnMouseMovePixel)
+
+    def SetUp(self):
+        print("SetUP")
+
+    def CleanUp(self):
+        print("CleanUp")
+
+    def OnMouseMovePixel(self, obj, evt):
+        x, y = self.viewer.get_vtk_mouse_position()
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.picker.GetPickPosition()
+        if self.picker.GetActor():
+            print(x, y, z)
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -431,6 +452,7 @@ class Styles:
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
+        const.SLICE_STATE_CROSS: CrossInteractorStyle,
     }
 
     @classmethod
