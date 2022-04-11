@@ -85,29 +85,30 @@ class NeuronavigationApi(metaclass=Singleton):
             )
 
     def update_coil_mesh(self, polydata):
-        wrapped = dataset_adapter.WrapDataObject(polydata)
+        if self.connection is not None:
+            wrapped = dataset_adapter.WrapDataObject(polydata)
 
-        points = np.asarray(wrapped.Points)
-        polygons_raw = np.asarray(wrapped.Polygons)
+            points = np.asarray(wrapped.Points)
+            polygons_raw = np.asarray(wrapped.Polygons)
 
-        # The polygons are returned as 1d-array of the form
-        #
-        # [n_0, id_0(0), id_0(1), ..., id_0(n_0),
-        #  n_1, id_1(0), id_1(1), ..., id_1(n_1),
-        #  ...]
-        #
-        # where n_i is the number of vertices in polygon i, and id_i's are indices to the vertex list.
-        #
-        # Assert that all polygons have an equal number of vertices, reshape the array, and drop n_i's.
-        #
-        assert np.all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
+            # The polygons are returned as 1d-array of the form
+            #
+            # [n_0, id_0(0), id_0(1), ..., id_0(n_0),
+            #  n_1, id_1(0), id_1(1), ..., id_1(n_1),
+            #  ...]
+            #
+            # where n_i is the number of vertices in polygon i, and id_i's are indices to the vertex list.
+            #
+            # Assert that all polygons have an equal number of vertices, reshape the array, and drop n_i's.
+            #
+            assert np.all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
 
-        polygons = polygons_raw.reshape(-1, self.N_VERTICES_IN_POLYGON + 1)[:, 1:]
+            polygons = polygons_raw.reshape(-1, self.N_VERTICES_IN_POLYGON + 1)[:, 1:]
 
-        self.connection.update_coil_mesh(
-            points=points,
-            polygons=polygons,
-        )
+            self.connection.update_coil_mesh(
+                points=points,
+                polygons=polygons,
+            )
 
     # Functions for InVesalius to receive updates via callbacks.
 
