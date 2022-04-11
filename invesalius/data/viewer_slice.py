@@ -1049,7 +1049,6 @@ class Viewer(wx.Panel):
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
-        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
@@ -1432,15 +1431,6 @@ class Viewer(wx.Panel):
             pos = pos + 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
-
-    def OnSize(self, evt):
-        print("OnSize")
-        w, h = self.GetSize()
-        rwin = self.interactor.GetRenderWindow()
-        rwin.SetSize(w, h)
-        # if self.slice_data:
-        #     self.slice_data.SetSize((w, h))
-        # evt.Skip()
 
     def OnSetMIPSize(self, number_slices):
         self.number_slices = number_slices
