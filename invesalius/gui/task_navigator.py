@@ -1475,8 +1475,12 @@ class MarkersPanel(wx.Panel):
         color_id = menu_id.Append(1, _('Edit color'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
         menu_id.AppendSeparator()
-        target_menu = menu_id.Append(2, _('Set as target'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        if self.__find_target_marker() == self.lc.GetFocusedItem():
+            target_menu = menu_id.Append(1, _('Remove target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
+        else:
+            target_menu = menu_id.Append(1, _('Set as target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
 
         check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]])
@@ -1497,10 +1501,6 @@ class MarkersPanel(wx.Panel):
             target_menu.Enable(True)
         else:
             target_menu.Enable(False)
-
-        # TODO: Create the remove target option so the user can disable the target without removing the marker
-        # target_menu_rem = menu_id.Append(3, _('Remove target'))
-        # menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_rem)
 
         self.PopupMenu(menu_id)
         menu_id.Destroy()
@@ -1526,6 +1526,18 @@ class MarkersPanel(wx.Panel):
             self.__set_marker_as_target(idx)
         else:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+
+    def OnMenuRemoveTarget(self, evt):
+        idx = self.lc.GetFocusedItem()
+        self.markers[idx].is_target = False
+        self.lc.SetItemBackgroundColour(idx, 'white')
+        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        self.lc.SetItem(idx, const.TARGET_COLUMN, "")
+        Publisher.sendMessage('Disable or enable coil tracker', status=False)
+        if self.tracker.tracker_id == const.ROBOT:
+            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                  target_index=None, target=None)
+        wx.MessageBox(_("Target removed."), _("InVesalius 3"))
 
     def OnMenuSetColor(self, evt):
         index = self.lc.GetFocusedItem()
