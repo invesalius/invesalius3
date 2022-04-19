@@ -644,9 +644,10 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTarget(self, coord):
         self.navigation.target = coord
 
-        self.lock_to_target_checkbox.Enable(True)
-        self.lock_to_target_checkbox.SetValue(True)
-        self.navigation.SetLockToTarget(True)
+        if coord is not None:
+            self.lock_to_target_checkbox.Enable(True)
+            self.lock_to_target_checkbox.SetValue(True)
+            self.navigation.SetLockToTarget(True)
 
     def EnableACT(self, data):
         self.navigation.enable_act = data
@@ -1534,6 +1535,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
         self.lc.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
+        Publisher.sendMessage('Update target', coord=None)
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
@@ -1628,6 +1630,7 @@ class MarkersPanel(wx.Panel):
         if index:
             if self.__find_target_marker() in index:
                 Publisher.sendMessage('Disable or enable coil tracker', status=False)
+                Publisher.sendMessage('Update target', coord=None)
                 if self.tracker.tracker_id == const.ROBOT:
                     Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                           target_index=None, target=None)

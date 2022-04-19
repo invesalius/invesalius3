@@ -994,11 +994,12 @@ class Viewer(wx.Panel):
             self.Refresh()
 
     def OnUpdateTargetCoordinates(self, coord):
-        self.target_coord = coord
-        self.target_coord[1] = -self.target_coord[1]
-        self.CreateTargetAim()
-        Publisher.sendMessage('Target selected', status=True)
-        print("Target updated to coordinates {}".format(coord))
+        if coord is not None:
+            self.target_coord = coord
+            self.target_coord[1] = -self.target_coord[1]
+            self.CreateTargetAim()
+            Publisher.sendMessage('Target selected', status=True)
+            print("Target updated to coordinates {}".format(coord))
 
     def RemoveTarget(self):
         self.target_mode = None
