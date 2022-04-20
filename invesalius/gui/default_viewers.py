@@ -457,6 +457,7 @@ class VolumeToolPanel(wx.Panel):
             self.button_target.Enable(1)
         else:
             self.OnButtonTarget(False)
+            self.button_target._SetState(0)
             self.button_target.Enable(0)
 
     def OnButtonTarget(self, evt):
