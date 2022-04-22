@@ -8,7 +8,6 @@ import numpy as np
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
-import csv
 
 
 class Brain:
