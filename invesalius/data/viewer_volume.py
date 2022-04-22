@@ -304,7 +304,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
-        Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -321,12 +320,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
-        Publisher.subscribe(self.Add_E_field_mesh_actor, 'Add efield mesh')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
-        Publisher.subscribe(self.Get_Efield_mesh_Centers, 'Get e-field mesh centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
-        Publisher.subscribe(self.GetLocaterEfield, 'Get init efield locator')
-        Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
 
@@ -1543,42 +1538,7 @@ class Viewer(wx.Panel):
         self.locator = locator
         #self.Refresh()
 
-    def Add_E_field_mesh_actor(self, actor, mesh):
-        self.efield_actor = actor
-        self.ren.AddActor(self.efield_actor)
-        self.efield_mesh = mesh
 
-    def Recolor_efield_Actor(self, mesh):
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(mesh)
-        self.efield_actor = vtk.vtkActor()
-        self.efield_actor.SetMapper(mapper)
-
-        self.ren.AddActor(self.efield_actor)
-
-    def CreateLUTtableforefield(self, min, max):
-        lut = vtk.vtkLookupTable()
-        lut.SetTableRange(min, max)
-        lut.Build()
-        return lut
-
-    def Get_E_field_max_min(self, min, max, e_field_norms):
-        self.min = min
-        self.max = max
-        self.e_field_norms = e_field_norms
-
-    def Get_Efield_mesh_Centers(self, centers, normals):
-        self.e_field_mesh_normals = normals
-        self.e_field_mesh_centers = centers
-
-    def GetLocaterEfield(self, locatorpoint, locatorcell):
-        self.locator_efield = locatorpoint
-        self.locator_efield_cell = locatorcell
-
-    def FindPointsAroundRadiusEfield(self, cellId):
-        radius = vtk.mutable(50)
-        self.radius_list = vtk.vtkIdList()
-        self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
@@ -1589,54 +1549,6 @@ class Viewer(wx.Panel):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
 
-    def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir, lut):
-        closestDist = 100
-        # if find intersection , calculate angle and add actors
-        if intersectingCellIds.GetNumberOfIds() != 0:
-            for i in range(intersectingCellIds.GetNumberOfIds()):
-                cellId = intersectingCellIds.GetId(i)
-                point = np.array(self.e_field_mesh_centers.GetPoint(cellId))
-                distance = np.linalg.norm(point - p1)
-                if distance < closestDist:
-                    closestDist = distance
-                    closestPoint = point
-                    pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
-                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-
-                    self.FindPointsAroundRadiusEfield(cellId)
-                    self.radius_list.Sort()
-                    self.ren.RemoveActor(self.efield_actor)
-                    colors = vtkUnsignedCharArray()
-                    colors.SetNumberOfComponents(3)
-                    colors.SetName('Colors')
-                    color = 3 * [0.0]
-                    for j in range(0, 3):
-                        color[j] = int(255.0 * 1)
-                    for i in range(np.size(self.e_field_norms)):
-                        colors.InsertTuple(i, color)
-                    cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
-                    for h in range(np.size(cell_ids_array)):
-                        dcolor = 3 * [0.0]
-                        index_id = cell_ids_array[h]
-                        lut.GetColor(self.e_field_norms[index_id], dcolor)
-                        color = 3 * [0.0]
-                        for j in range(0, 3):
-                            color[j] = int(255.0 * dcolor[j])
-                        colors.InsertTuple(index_id, color)
-                    self.efield_mesh.GetCellData().SetScalars(colors)
-                    self.Recolor_efield_Actor(self.efield_mesh)
-
-
-    def UpdateEfieldPointLocation(self, m_img, coord, flag):
-        if flag:
-            [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
-            intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
-
-            lut = self.CreateLUTtableforefield(self.min, self.max)
-            self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir, lut)
-
-        #self.ren.RemoveActor(self.x_actor_e_field)
-        self.Refresh()
 
     def GetCellIntersection(self, p1, p2, locator):
 

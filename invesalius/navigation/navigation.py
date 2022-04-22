@@ -82,7 +82,7 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded = vis_components
+        self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
         self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue = vis_queues
         self.sle = sle
         self.event = event
@@ -124,7 +124,6 @@ class UpdateNavigationScene(threading.Thread):
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
-                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img, coord=coord, flag = self.e_field_loaded )
                 self.neuronavigation_api.update_coil_pose(
                     position=coord[:3],
                     orientation=coord[3:],
@@ -172,7 +171,6 @@ class Navigation():
         self.n_threads = None
         self.view_tracts = False
         self.peel_loaded = False
-        self.e_field_loaded = False
         self.enable_act = False
         self.act_data = None
         self.n_tracts = const.N_TRACTS
@@ -255,7 +253,7 @@ class Navigation():
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
         vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -381,5 +379,5 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded, self.e_field_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)

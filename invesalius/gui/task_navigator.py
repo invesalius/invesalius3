@@ -87,9 +87,6 @@ except ImportError:
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
 
-####To enable the e-field panel
-e_field = True
-
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -241,14 +238,6 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, stw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-
-        # Fold 7 - E-field
-        if e_field:
-            item = fold_panel.AddFoldPanel(_("E-field"), collapsed=True)
-            etw = E_fieldPanel(item)
-            fold_panel.ApplyCaptionStyle(item, style)
-            fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
-                                          leftSpacing=0, rightSpacing=0)
 
 
         # Check box for camera update in volume rendering during navigation
@@ -561,7 +550,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
         Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
-        Publisher.subscribe(self.UpdateEfieldVisualization, 'Update e-field visualization')
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -617,9 +605,6 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdatePeelVisualization(self, data):
         self.navigation.peel_loaded = data
-
-    def UpdateEfieldVisualization(self, data):
-        self.navigation.e_field_loaded = data
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2216,78 +2201,6 @@ class TractographyPanel(wx.Panel):
         self.n_tracts = const.N_TRACTS
 
         Publisher.sendMessage('Remove tracts')
-
-class E_fieldPanel(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-        self.SetBackgroundColour(default_colour)
-        self.e_field_loaded = False
-        self.e_field_brain = None
-        self.e_field_mesh = None
-        #  Check box to enable e-field visualization
-        enable_efield = wx.CheckBox(self, -1, _('Enable E-field'))
-        enable_efield.SetValue(False)
-        enable_efield.Enable(1)
-        enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
-        self.enable_efield = enable_efield
-
-        # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load e-field mesh"))
-        btn_mesh = wx.Button(self, -1, _("E-field mesh"), size=wx.Size(80, 80))
-        btn_mesh.SetToolTip(tooltip)
-        btn_mesh.Enable(1)
-        btn_mesh.Bind(wx.EVT_BUTTON, self.OnAddEfieldMesh)
-
-        # Create a horizontal sizer to represent button save
-        line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_mesh, 2, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-
-        # Add line sizers into main sizer
-        border = 1
-        border_last = 5
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_RIGHT)
-        self.SetSizer(main_sizer)
-
-    def OnEnableEfield(self, evt, ctrl):
-        self.efield_enabled = ctrl.GetValue()
-        if self.efield_enabled:
-            print('True')
-            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
-            Publisher.sendMessage('Get min max norms', min =  self.e_field_brain.min,  max =self.e_field_brain.max, e_field_norms = self.e_field_brain.e_field_norms)
-            Publisher.sendMessage('Add efield mesh', actor = self.e_field_brain.efield_actor, mesh = self.e_field_brain.e_field_mesh)
-            Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers, normals=self.e_field_brain.e_field_mesh_normals)
-            Publisher.sendMessage('Get init efield locator', locatorpoint = self.e_field_brain.locator_efield, locatorcell = self.e_field_brain.locator_efield_Cell)
-            self.e_field_loaded = True
-            Publisher.sendMessage('Update e-field visualization', data = self.e_field_loaded)
-
-
-        else:
-            print('False')
-            self.e_field_loaded = False
-
-    def OnAddEfieldMesh(self, event=None):
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load E-field Mesh"),
-                                          wildcard=_("Stl file (*.stl)|*.stl"))
-        try:
-            if filename:
-                print('success')
-                self.convert2inv = True
-                #Publisher.sendMessage('Update convert2inv flag', convert2inv =  self.convert2inv)
-                #Publisher.sendMessage('Import surface file efield', filename = filename)
-                reader = vtk.vtkSTLReader()
-                reader.SetFileName(filename)
-                reader.Update()
-                self.e_field_mesh = reader.GetOutput()
-
-        except (AssertionError):
-            wx.MessageBox(_("File incompatible"), _("InVesalius 3"))
-            Publisher.sendMessage('Update status text in GUI', label="")
-        self.Update()
 
 
 class SessionPanel(wx.Panel):
