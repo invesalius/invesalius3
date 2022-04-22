@@ -42,7 +42,6 @@ class Tracker():
         self.thread_coord = None
 
         self.event_coord = threading.Event()
-        self.event_robot = threading.Event()
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
@@ -78,11 +77,8 @@ class Tracker():
 
                 if self.thread_coord:
                     self.event_coord.set()
-                    self.event_robot.set()
                     self.thread_coord.join()
                     self.event_coord.clear()
-                    self.event_robot.clear()
-
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
@@ -92,13 +88,6 @@ class Tracker():
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
 
-    def ConnectToRobot(self, navigation, tracker, robot):
-        robot.SetRobotQueues([navigation.robot_target_queue, navigation.object_at_target_queue])
-        robot.OnRobotConnection()
-        trk_init_robot = self.trk_init[0][1][0]
-        if trk_init_robot:
-            robot.StartRobotThreadNavigation(tracker, navigation.coord_queue)
-            Publisher.sendMessage('Robot navigation mode', robot_mode=True)
 
     def IsTrackerInitialized(self):
         return self.trk_init and self.tracker_id and self.tracker_connected
@@ -158,7 +147,7 @@ class Tracker():
         m_probe_ref_right = np.linalg.inv(self.m_tracker_fiducials_raw[3]) @ self.m_tracker_fiducials_raw[2]
         m_probe_ref_nasion = np.linalg.inv(self.m_tracker_fiducials_raw[5]) @ self.m_tracker_fiducials_raw[4]
 
-        return [m_probe_ref_left, m_probe_ref_right, m_probe_ref_nasion]
+        return [m_probe_ref_left.tolist(), m_probe_ref_right.tolist(), m_probe_ref_nasion.tolist()]
 
     def GetTrackerInfo(self):
         return self.trk_init, self.tracker_id
