@@ -464,11 +464,12 @@ class VolumeToolPanel(wx.Panel):
         if not self.button_target.IsPressed() and evt is not False:
             self.button_target._pressed = True
             Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Change camera checkbox', status=self.button_target._pressed)
+            Publisher.sendMessage('Change camera checkbox', status=False)
+            Publisher.sendMessage('Set volume camera checkbox', status=False)
         elif self.button_target.IsPressed() or evt is False:
             self.button_target._pressed = False
             Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Change camera checkbox', status=self.button_target._pressed)
+            Publisher.sendMessage('Set volume camera checkbox', status=True)
 
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))

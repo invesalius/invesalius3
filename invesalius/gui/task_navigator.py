@@ -297,6 +297,7 @@ class InnerFoldPanel(wx.Panel):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Change camera checkbox')
+        Publisher.subscribe(self.OnSetVolumeCameraCheckBox, 'Set volume camera checkbox')
         Publisher.subscribe(self.OnShowDbs, "Active dbs folder")
         Publisher.subscribe(self.OnHideDbs, "Deactive dbs folder")
 
@@ -351,6 +352,8 @@ class InnerFoldPanel(wx.Panel):
             self.checkcamera.SetValue(status)
         Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
 
+    def OnSetVolumeCameraCheckBox(self, status=None):
+        self.checkcamera.Enable(status)
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent, navigation, tracker, icp, pedal_connection, neuronavigation_api):
