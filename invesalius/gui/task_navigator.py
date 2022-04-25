@@ -846,7 +846,7 @@ class NeuronavigationPanel(wx.Panel):
                 # which improves FRE.
                 self.CheckFiducialRegistrationError()
 
-            self.navigation.StartNavigation(self.tracker)
+            self.navigation.StartNavigation(self.tracker, self.icp)
 
     def OnNavigate(self, evt, btn_nav):
         select_tracker_elem = self.select_tracker_elem
