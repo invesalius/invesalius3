@@ -276,9 +276,6 @@ class CoordinateCorregistrate(threading.Thread):
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
 
-                if self.icp:
-                    m_img = bases.transform_icp(m_img, self.m_icp)
-
                 self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
