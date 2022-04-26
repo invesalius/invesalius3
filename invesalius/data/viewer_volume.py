@@ -54,7 +54,6 @@ import invesalius.utils as utils
 
 from invesalius import inv_paths
 
-import csv
 
 
 if sys.platform == 'win32':
@@ -1530,9 +1529,6 @@ class Viewer(wx.Panel):
 
     def Initlocator_viewer(self, locator):
         self.locator = locator
-        #self.Refresh()
-
-
 
     def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
@@ -1543,9 +1539,7 @@ class Viewer(wx.Panel):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
 
-
     def GetCellIntersection(self, p1, p2, locator):
-
         vtk_colors = vtk.vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtk.vtkIdList()

@@ -82,6 +82,7 @@ except ImportError:
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
 
+
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -243,7 +244,6 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, stw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
