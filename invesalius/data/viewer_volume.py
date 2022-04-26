@@ -312,7 +312,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
-
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
@@ -1665,7 +1664,6 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def UpdateObjectArrowOrientation(self, m_img, coord, flag):
-
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
 
         if flag:
