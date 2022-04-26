@@ -101,6 +101,32 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     m_img[:3, :3] = r_obj[:3, :3]
     return m_img
 
+def image_to_tracker(m_change, target, icp):
+    """Compute the transformation matrix to the tracker coordinate system
+
+    :param m_change: Corregistration transformation obtained from fiducials
+    :type m_change: numpy.ndarray
+    :param target: Target in invesalius coordinate system
+    :type target: numpy.ndarray
+    :param icp: ICP transformation matrix
+    :type icp: numpy.ndarray
+
+    :return: 4 x 4 numpy double array
+    :rtype: numpy.ndarray
+    """
+    m_target_in_image = dco.coordinates_to_transformation_matrix(
+        position=target[:3],
+        orientation=[0, 0, 0],
+        axes='sxyz',
+    )
+    if icp.use_icp:
+        m_target_in_image = bases.inverse_transform_icp(m_target_in_image, icp.m_icp)
+    m_target_in_tracker = np.linalg.inv(m_change) @ m_target_in_image
+
+    # invert y coordinate
+    m_target_in_tracker[2, -1] = -m_target_in_tracker[2, -1]
+
+    return m_target_in_tracker
 
 def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
@@ -193,7 +219,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.object_at_target_queue = queues[3]
         self.icp = None
         self.m_icp = None
-        self.robot_tracker_flag = None
         self.last_coord = None
         self.tracker_id = tracker_id
         self.target = target
@@ -254,7 +279,7 @@ class CoordinateCorregistrate(threading.Thread):
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
-                self.coord_queue.put_nowait([coord, [coord_raw, markers_flag], m_img, view_obj])
+                self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
 
@@ -307,7 +332,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 if self.icp:
                     m_img = bases.transform_icp(m_img, self.m_icp)
 
-                self.coord_queue.put_nowait([coord, [coord_raw, markers_flag], m_img, view_obj])
+                self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
