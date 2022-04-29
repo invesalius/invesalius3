@@ -55,7 +55,9 @@ from time import sleep
 
 import invesalius.constants as const
 
-if has_trekker:
+####To enable the e-field panel
+e_field = True
+if has_trekker or e_field:
     import invesalius.data.brainmesh_handler as brain
 
 import invesalius.data.imagedata_utils as imagedata_utils
@@ -87,8 +89,6 @@ except ImportError:
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
 
-####To enable the e-field panel
-e_field = True
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
