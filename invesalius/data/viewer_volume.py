@@ -28,13 +28,7 @@ import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
 import vtk
-from vtkmodules.vtkCommonColor import vtkNamedColors
-from vtkmodules.vtkCommonCore import (
-    vtkLookupTable,
-    vtkMinimalStandardRandomSequence,
-    vtkPoints,
-    vtkUnsignedCharArray
-)
+
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from invesalius.pubsub import pub as Publisher
 import random
@@ -1606,7 +1600,7 @@ class Viewer(wx.Panel):
                     self.FindPointsAroundRadiusEfield(cellId)
                     self.radius_list.Sort()
                     self.ren.RemoveActor(self.efield_actor)
-                    colors = vtkUnsignedCharArray()
+                    colors = vtk.vtkUnsignedCharArray()
                     colors.SetNumberOfComponents(3)
                     colors.SetName('Colors')
                     color = 3 * [0.0]
