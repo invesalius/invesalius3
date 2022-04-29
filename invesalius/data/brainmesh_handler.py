@@ -1,9 +1,7 @@
 import vtk
 import pyacvd
-# import os
 import pyvista
 import numpy as np
-# import Trekker
 
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
