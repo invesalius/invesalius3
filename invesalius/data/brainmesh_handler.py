@@ -1,11 +1,18 @@
 import vtk
-import pyacvd
-import pyvista
 import numpy as np
-
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
+
+try:
+    import Trekker
+    has_trekker = True
+except ImportError:
+    has_trekker = False
+if has_trekker:
+    import pyacvd
+    import pyvista
+
 import csv
 
 
