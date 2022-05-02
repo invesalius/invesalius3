@@ -20,23 +20,34 @@
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
+import numpy as np
+from vtk.numpy_interface import dataset_adapter
+
 class NeuronavigationApi(metaclass=Singleton):
     """
     An API used internally in InVesalius to communicate with the
     outside world.
 
-    When something noteworthy happens when running InVesalius, e.g.,
-    the coil is moved during neuronavigation, an object created from
-    this class can be used to update that information.
+    When an event of one of several types happens while running InVesalius, e.g.,
+    the coil is moved during neuronavigation, this class is used to update the
+    information conveyed by the event.
 
     When created for the first time, takes a connection object obtained
     from outside InVesalius (see the main entrypoint in app.py).
 
-    If connection object is not given or it is None, skip doing the updates.
+    The owner of the connection object can update the state of InVesalius by implementing
+    functions to set callbacks, used then to communicate the new state to InVesalius (see,
+    e.g., set_callback__set_markers below).
+
+    If connection object is not given or it is None, do not do the updates.
     """
+    N_VERTICES_IN_POLYGON = 3
+
     def __init__(self, connection=None):
         if connection is not None:
-            assert self._hasmethod(connection, 'update_coil_pose')
+            self.assert_valid(connection)
+
+            self.__set_callbacks(connection)
             self.__bind_events()
 
         self.connection = connection
@@ -44,8 +55,17 @@ class NeuronavigationApi(metaclass=Singleton):
     def _hasmethod(self, obj, name):
         return hasattr(obj, name) and callable(getattr(obj, name))
 
+    def assert_valid(self, connection):
+        assert self._hasmethod(connection, 'update_coil_at_target')
+        assert self._hasmethod(connection, 'update_coil_pose')
+        assert self._hasmethod(connection, 'update_focus')
+        assert self._hasmethod(connection, 'set_callback__set_markers')
+
     def __bind_events(self):
+        Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         Publisher.subscribe(self.update_focus, 'Set cross focal point')
+
+    # Functions for InVesalius to send updates.
 
     # TODO: Not the cleanest API; for an example of a better API, see update_coil_pose
     #   below, for which position and orientation are sent separately. Changing this
@@ -65,3 +85,51 @@ class NeuronavigationApi(metaclass=Singleton):
                 position=position,
                 orientation=orientation,
             )
+
+    def update_coil_mesh(self, polydata):
+        if self.connection is not None:
+            wrapped = dataset_adapter.WrapDataObject(polydata)
+
+            points = np.asarray(wrapped.Points)
+            polygons_raw = np.asarray(wrapped.Polygons)
+
+            # The polygons are returned as 1d-array of the form
+            #
+            # [n_0, id_0(0), id_0(1), ..., id_0(n_0),
+            #  n_1, id_1(0), id_1(1), ..., id_1(n_1),
+            #  ...]
+            #
+            # where n_i is the number of vertices in polygon i, and id_i's are indices to the vertex list.
+            #
+            # Assert that all polygons have an equal number of vertices, reshape the array, and drop n_i's.
+            #
+            assert np.all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
+
+            polygons = polygons_raw.reshape(-1, self.N_VERTICES_IN_POLYGON + 1)[:, 1:]
+
+            self.connection.update_coil_mesh(
+                points=points,
+                polygons=polygons,
+            )
+
+    def update_coil_at_target(self, state):
+        if self.connection is not None:
+            self.connection.update_coil_at_target(
+                state=state
+            )
+
+    def update_efield(self, position, orientation):
+        if self.connection is not None:
+            return self.connection.update_efield(
+                position=position,
+                orientation=orientation,
+            )
+        return None
+
+    # Functions for InVesalius to receive updates via callbacks.
+
+    def __set_callbacks(self, connection):
+        connection.set_callback__set_markers(self.set_markers)
+
+    def set_markers(self, markers):
+        Publisher.sendMessage('Set markers', markers=markers)

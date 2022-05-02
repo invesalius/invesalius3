@@ -129,7 +129,12 @@ class UpdateNavigationScene(threading.Thread):
                     position=coord[:3],
                     orientation=coord[3:],
                 )
-
+                # Returns something, the vector
+                x = self.neuronavigation_api.update_efield(
+                    position=coord[:3],
+                    orientation=coord[3:],
+                )
+                print('vector', len(x))
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
