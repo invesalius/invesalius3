@@ -241,7 +241,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
     elif trck[1] == 'wrapper':
         coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
 
-    return coord, [False, False, False]
+    return coord, [True, True, True]
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):

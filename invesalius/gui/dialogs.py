@@ -3793,9 +3793,19 @@ class ICPCorregistrationDialog(wx.Dialog):
         collect_points.SetValue("0")
         self.collect_points = collect_points
 
+        txt_markers_not_detected = vtku.Text()
+        txt_markers_not_detected.SetSize(const.TEXT_SIZE_LARGE)
+        txt_markers_not_detected.SetPosition((const.X+0.50, const.Y))
+        txt_markers_not_detected.ShadowOff()
+        txt_markers_not_detected.SetColour((1, 0, 0))
+        txt_markers_not_detected.SetValue("Markers not detected")
+        txt_markers_not_detected.actor.VisibilityOff()
+        self.txt_markers_not_detected = txt_markers_not_detected.actor
+
         self.ren.AddActor(obj_actor)
         self.ren.AddActor(poses_recorded.actor)
         self.ren.AddActor(collect_points.actor)
+        self.ren.AddActor(txt_markers_not_detected.actor)
         self.ren.ResetCamera()
         self.interactor.Render()
 
@@ -3813,7 +3823,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def GetCurrentCoord(self):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
-        return coord[:3]
+        return coord[:3], markers_flag
 
     def AddMarker(self, size, colour, coord):
         """
@@ -3947,14 +3957,17 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.timer.Stop()
 
     def OnUpdate(self, evt):
-        current_coord = self.GetCurrentCoord()
-        self.AddMarker(3, (1, 0, 0), current_coord)
-        self.SetCameraVolume(current_coord)
+        self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        current_coord = self.GetCurrentCoord()
-        self.AddMarker(3, (1, 0, 0), current_coord)
-        self.SetCameraVolume(current_coord)
+        current_coord, markers_flag = self.GetCurrentCoord()
+        if markers_flag[:2] >= [1, 1]:
+            self.AddMarker(3, (1, 0, 0), current_coord)
+            self.txt_markers_not_detected.VisibilityOff()
+            self.SetCameraVolume(current_coord)
+        else:
+            self.txt_markers_not_detected.VisibilityOn()
+            self.interactor.Render()
 
     def OnReset(self, evt):
         if self.cont_point:
