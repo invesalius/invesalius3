@@ -1480,10 +1480,10 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
         menu_id.AppendSeparator()
         if self.__find_target_marker() == self.lc.GetFocusedItem():
-            target_menu = menu_id.Append(1, _('Remove target'))
+            target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
         else:
-            target_menu = menu_id.Append(1, _('Set as target'))
+            target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
 
