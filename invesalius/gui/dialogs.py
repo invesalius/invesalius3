@@ -938,6 +938,18 @@ def ReportICPPointError():
     dlg.ShowModal()
     dlg.Destroy()
 
+def ReportICPDistributionError():
+    msg = _("The distribution of the transformed points looks wrong.") + '\n\n' +\
+          _("It is recommended to remove the points and redone the acquisition")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def ShowEnterMarkerID(default):
     msg = _("Edit marker ID")
     if sys.platform == 'darwin':
@@ -3678,7 +3690,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.icp_mode = 0
         self.actors_static_points = []
         self.point_coord = []
-        self.transformed_points = []
+        self.actors_transformed_points = []
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3824,7 +3836,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.RemoveAllViewProps()
         self.actors_static_points = []
         self.point_coord = []
-        self.transformed_points = []
+        self.actors_transformed_points = []
         self.m_icp = None
         self.SetProgress(0)
         self.btn_apply_icp.Enable(False)
@@ -3933,6 +3945,10 @@ class ICPCorregistrationDialog(wx.Dialog):
         cam.SetPosition(cam_pos)
 
         self.interactor.Render()
+
+    def CheckTransformedPointsDistribution(self, points):
+        from scipy.spatial.distance import pdist
+        return np.mean(pdist(points))
 
     def ErrorEstimation(self, surface, points):
         """
@@ -4079,11 +4095,19 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         transformedSource = icpTransformFilter.GetOutput()
 
+        transformed_points = []
+
+        #removes previously transformed points
+        if self.actors_transformed_points:
+            for i in self.actors_transformed_points:
+                self.ren.RemoveActor(i)
+            self.actors_transformed_points = []
 
         for i in range(transformedSource.GetNumberOfPoints()):
             p = [0, 0, 0]
             transformedSource.GetPoint(i, p)
-            self.transformed_points.append(p)
+            transformed_points.append(p)
+
             point = vtk.vtkSphereSource()
             point.SetCenter(p)
             point.SetRadius(3)
@@ -4096,11 +4120,15 @@ class ICPCorregistrationDialog(wx.Dialog):
             actor = vtk.vtkActor()
             actor.SetMapper(mapper)
             actor.GetProperty().SetColor((0,1,0))
+            self.actors_transformed_points.append(actor)
 
             self.ren.AddActor(actor)
 
+        if self.CheckTransformedPointsDistribution(transformed_points) <= 25:
+            ReportICPDistributionError()
+
         self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
-        self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
+        self.final_error = self.ErrorEstimation(self.surface, transformed_points)
 
         self.interactor.Render()
 
@@ -4109,7 +4137,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self):
-        return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
+        return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
 
 class SurfaceProgressWindow(object):
     def __init__(self):
