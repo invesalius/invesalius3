@@ -2258,7 +2258,6 @@ class E_fieldPanel(wx.Panel):
         if self.efield_enabled:
             print('True')
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
-            Publisher.sendMessage('Get min max norms', min =  self.e_field_brain.min,  max =self.e_field_brain.max, e_field_norms = self.e_field_brain.e_field_norms)
             Publisher.sendMessage('Add efield mesh', actor = self.e_field_brain.efield_actor, mesh = self.e_field_brain.e_field_mesh)
             Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers, normals=self.e_field_brain.e_field_mesh_normals)
             Publisher.sendMessage('Get init efield locator', locatorpoint = self.e_field_brain.locator_efield, locatorcell = self.e_field_brain.locator_efield_Cell)
