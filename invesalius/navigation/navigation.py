@@ -124,17 +124,23 @@ class UpdateNavigationScene(threading.Thread):
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
+
+                    self.neuronavigation_api.update_coil_pose(
+                        position=coord[:3],
+                        orientation=coord[3:],
+                    )
+                    # Returns something, the vector
+                    x = self.neuronavigation_api.update_efield(
+                        position=coord[:3],
+                        orientation=coord[3:],
+                    )
+                    print('vector', len(x))
+                    max = np.amax(x)
+                    min = np.amin(x)
+                    Publisher.sendMessage('Get min max norms', min=min, max=max,
+                                          e_field_norms=x)
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img, coord=coord, flag = self.e_field_loaded )
-                self.neuronavigation_api.update_coil_pose(
-                    position=coord[:3],
-                    orientation=coord[3:],
-                )
-                # Returns something, the vector
-                x = self.neuronavigation_api.update_efield(
-                    position=coord[:3],
-                    orientation=coord[3:],
-                )
-                print('vector', len(x))
+
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
