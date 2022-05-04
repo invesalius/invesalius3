@@ -1609,15 +1609,16 @@ class Viewer(wx.Panel):
                     for i in range(np.size(self.e_field_norms)):
                         colors.InsertTuple(i, color)
                     cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
-                    for h in range(np.size(cell_ids_array)):
+                    for h in range(self.radius_list.GetNumberOfIds()):
                         dcolor = 3 * [0.0]
-                        index_id = cell_ids_array[h]
+                        index_id = self.radius_list.GetId(h)
+                        #index_id = cell_ids_array[h]
                         lut.GetColor(self.e_field_norms[index_id], dcolor)
                         color = 3 * [0.0]
                         for j in range(0, 3):
                             color[j] = int(255.0 * dcolor[j])
                         colors.InsertTuple(index_id, color)
-                    self.efield_mesh.GetCellData().SetScalars(colors)
+                    self.efield_mesh.GetPointData().SetScalars(colors)
                     self.Recolor_efield_Actor(self.efield_mesh)
 
 
