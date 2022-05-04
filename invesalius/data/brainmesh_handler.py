@@ -13,9 +13,6 @@ if has_trekker:
     import pyacvd
     import pyvista
 
-import csv
-
-
 class Brain:
     def __init__(self, n_peels, window_width, window_level, affine_vtk=None):
         # Create arrays to access the peel data and peel Actors
@@ -287,7 +284,6 @@ class Brain:
 class E_field_brain:
     def __init__(self, e_field_mesh):
         self.efield_actor = self.GetEfieldActor(e_field_mesh)
-        [self.min, self.max, self.e_field_norms] = self.load_temporarly_e_field_CSV()
 
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtk.vtkFloatArray()
@@ -332,41 +328,6 @@ class E_field_brain:
         refpeelspace.Update()
         new_mesh = refpeelspace.GetOutput()
         return new_mesh
-
-
-############## temporarly add efield csv
-    def load_temporarly_e_field_CSV(self):
-        filename = r'/app/ros2_ws/src/neuronavigation_pkg/invesalius3/samples/Enorm_inCoilpoint200sorted.csv'
-        with open(filename, 'r') as file:
-            my_reader = csv.reader(file, delimiter=',')
-            rows = []
-            for row in my_reader:
-                rows.append(row)
-        e_field = rows
-        e_field_norms = np.array(e_field).astype(float)
-
-        ###Colors###
-        max = np.amax(e_field_norms)
-        min = np.amin(e_field_norms)
-        print('minz: {:< 6.3}'.format(min))
-        print('maxz: {:< 6.3}'.format(max))
-        return min, max, e_field_norms
-
-
-    # def
-    #
-    #     colors = vtk.vtkUnsignedCharArray()
-    #     colors.SetNumberOfComponents(3)
-    #     colors.SetName('Colors')
-    #     for h in range(0, radius_list.GetNumberOfIds()):
-    #         dcolor = 3 * [0.0]
-    #         self.lut.GetColor(self.e_field_norms[radius_list.GetId(h)], dcolor)
-    #         color = 3 * [0.0]
-    #         for j in range(0, 3):
-    #             color[j] = int(255.0 * dcolor[j])
-    #         colors.InsertTuple(radius_list.GetId(h), color)
-    #     pd.GetPointData().SetScalars(colors)
-    #
 
 def GetCenters(mesh):
         # Compute centers of triangles
