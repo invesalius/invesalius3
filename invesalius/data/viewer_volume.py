@@ -613,12 +613,14 @@ class Viewer(wx.Panel):
             position = marker["position"]
             direction = marker["direction"]
             target = marker["target"]
+            arrow_flag = marker["arrow_flag"]
 
             self.AddMarker(
                 marker_id=ball_id,
                 size=size,
                 colour=colour,
                 coord=position,
+                arrow_flag=arrow_flag,
             )
 
             if target:
