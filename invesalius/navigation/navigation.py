@@ -126,14 +126,19 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img, coord=coord, flag = self.e_field_loaded )
 
-
+                    #coil position cp : the center point at the bottom of the coil casing,
+                    #corresponds to the origin of the coil template.
+                    #coil normal cn: outer normal of the coil, i.e. away from the head
+                    #coil tangent 1 ct1: long axis
+                    #coil tangent 2 ct2: short axis ~ direction of primary E under the coil
+                    #% rotation matrix for the coil coordinates
+                    #T = [ct1;ct2;cn];
                     m_img_flip = m_img.copy()
                     m_img_flip[1, -1] = -m_img_flip[1, -1]
-                    p1 = m_img_flip[:-1, -1]  # coil center
-                    coil_dir = m_img_flip[:-1, 0]
-                    coil_face = m_img_flip[:-1, 1]
-                    coil_dir = np.array([coord[3], coord[4], coord[5]])
-                    coil_norm = np.cross(coil_dir, coil_face)
+                    cp = m_img_flip[:-1, -1]  # coil center
+                    ct1 = m_img_flip[:3, 0] #is from posterior to anterior direction of the coil
+                    ct2 = m_img_flip[:3, 1] #is from left to right direction of the coil
+                    cn = np.cross(coil_dir, coil_face)
 
                     self.neuronavigation_api.update_coil_pose(
                         position=coord[:3],
