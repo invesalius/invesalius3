@@ -138,6 +138,8 @@ class UpdateNavigationScene(threading.Thread):
                     cp = m_img_flip[:-1, -1]  # coil center
                     ct1 = m_img_flip[:3, 0] #is from posterior to anterior direction of the coil
                     ct2 = m_img_flip[:3, 1] #is from left to right direction of the coil
+                    coil_dir = m_img_flip[:-1, 0]
+                    coil_face = m_img_flip[:-1, 1]
                     cn = np.cross(coil_dir, coil_face)
 
                     self.neuronavigation_api.update_coil_pose(
