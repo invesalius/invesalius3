@@ -133,23 +133,32 @@ class UpdateNavigationScene(threading.Thread):
                     #coil tangent 2 ct2: short axis ~ direction of primary E under the coil
                     #% rotation matrix for the coil coordinates
                     #T = [ct1;ct2;cn];
+                    T_rot = []
                     m_img_flip = m_img.copy()
                     m_img_flip[1, -1] = -m_img_flip[1, -1]
                     cp = m_img_flip[:-1, -1]  # coil center
                     ct1 = m_img_flip[:3, 0] #is from posterior to anterior direction of the coil
+                    ct1 = ct1.tolist()
                     ct2 = m_img_flip[:3, 1] #is from left to right direction of the coil
+                    ct2 = ct2.tolist()
                     coil_dir = m_img_flip[:-1, 0]
                     coil_face = m_img_flip[:-1, 1]
                     cn = np.cross(coil_dir, coil_face)
-
+                    cn = cn.tolist()
+                    cp = cp.tolist()
+                    for i in range(len(ct1)):
+                        T_rot.append(ct1[i])
+                    for i in range(len(ct2)):
+                        T_rot.append(ct2[i])
+                    for i in range(len(cn)):
+                        T_rot.append(cn[i])
+                    # Returns enorm
+                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
                     self.neuronavigation_api.update_coil_pose(
                         position=coord[:3],
                         orientation=coord[3:],
                     )
-                    # Returns enorm
-                    enorm = self.neuronavigation_api.update_efield(position=coord[:3],orientation=coord[3:],)
                     print('vector', len(enorm))
-                    print('somevalues', enorm[0])
                     max = np.amax(enorm )
                     min = np.amin(enorm)
                     Publisher.sendMessage('Get min max norms', min=min, max=max,e_field_norms=enorm)
