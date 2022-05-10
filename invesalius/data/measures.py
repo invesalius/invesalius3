@@ -7,7 +7,23 @@ import sys
 from invesalius.pubsub import pub as Publisher
 
 import numpy as np
-import vtk
+
+from imageio import imsave
+from vtkmodules.vtkCommonCore import vtkMath
+from vtkmodules.vtkFiltersCore import vtkAppendPolyData
+from vtkmodules.vtkFiltersSources import (
+    vtkArcSource,
+    vtkLineSource,
+    vtkSphereSource,
+    vtkTextSource,
+)
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkActor2D,
+    vtkCoordinate,
+    vtkPolyDataMapper,
+    vtkPolyDataMapper2D,
+)
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -16,7 +32,6 @@ import invesalius.utils as utils
 
 from invesalius import math_utils
 from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon, CanvasHandlerBase
-from imageio import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -495,18 +510,18 @@ class CirclePointRepresentation(object):
         """
         Return a actor that represents the point in the given x, y, z point
         """
-        sphere = vtk.vtkSphereSource()
+        sphere = vtkSphereSource()
         sphere.SetCenter(x, y, z)
         sphere.SetRadius(self.radius)
 
-#        c = vtk.vtkCoordinate()
+#        c = vtkCoordinate()
 #        c.SetCoordinateSystemToWorld()
 
-        m = vtk.vtkPolyDataMapper()
+        m = vtkPolyDataMapper()
         m.SetInputConnection(sphere.GetOutputPort())
 #        m.SetTransformCoordinate(c)
 
-        a = vtk.vtkActor()
+        a = vtkActor()
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
 
@@ -540,40 +555,40 @@ class CrossPointRepresentation(object):
         # The cross, or vectorial product, give a vector perpendicular to vcp
         # and vcf, in this case this vector will be in horizontal, this vector
         # will be stored in the variable "n"
-        vtk.vtkMath.Cross(vcp, vcf, n)
+        vtkMath.Cross(vcp, vcf, n)
         # then normalize n to only indicate the direction of this vector
-        vtk.vtkMath.Normalize(n)
+        vtkMath.Normalize(n)
         # then
         p1 = [i*self.size + j for i,j in zip(n, pp)]
         p2 = [i*-self.size + j for i,j in zip(n, pp)]
 
-        sh = vtk.vtkLineSource()
+        sh = vtkLineSource()
         sh.SetPoint1(p1)
         sh.SetPoint2(p2)
 
         n = [0,0,0]
         vcn = [j-i for i,j in zip(p1, pc)]
-        vtk.vtkMath.Cross(vcp, vcn, n)
-        vtk.vtkMath.Normalize(n)
+        vtkMath.Cross(vcp, vcn, n)
+        vtkMath.Normalize(n)
         p3 = [i*self.size + j for i,j in zip(n, pp)]
         p4 = [i*-self.size +j for i,j in zip(n, pp)]
 
-        sv = vtk.vtkLineSource()
+        sv = vtkLineSource()
         sv.SetPoint1(p3)
         sv.SetPoint2(p4)
 
-        cruz = vtk.vtkAppendPolyData()
+        cruz = vtkAppendPolyData()
         cruz.AddInputData(sv.GetOutput())
         cruz.AddInputData(sh.GetOutput())
 
-        c = vtk.vtkCoordinate()
+        c = vtkCoordinate()
         c.SetCoordinateSystemToWorld()
 
-        m = vtk.vtkPolyDataMapper2D()
+        m = vtkPolyDataMapper2D()
         m.SetInputConnection(cruz.GetOutputPort())
         m.SetTransformCoordinate(c)
 
-        a = vtk.vtkActor2D()
+        a = vtkActor2D()
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         return a
@@ -638,18 +653,18 @@ class LinearMeasure(object):
         self._draw_text()
 
     def _draw_line(self):
-        line = vtk.vtkLineSource()
+        line = vtkLineSource()
         line.SetPoint1(self.points[0])
         line.SetPoint2(self.points[1])
 
-        c = vtk.vtkCoordinate()
+        c = vtkCoordinate()
         c.SetCoordinateSystemToWorld()
 
-        m = vtk.vtkPolyDataMapper2D()
+        m = vtkPolyDataMapper2D()
         m.SetInputConnection(line.GetOutputPort())
         m.SetTransformCoordinate(c)
 
-        a = vtk.vtkActor2D()
+        a = vtkActor2D()
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         self.line_actor = a
@@ -657,17 +672,17 @@ class LinearMeasure(object):
     def _draw_text(self):
         p1, p2 = self.points
         text = ' %.3f mm ' % \
-                math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
+                math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2))
         x,y,z=[(i+j)/2 for i,j in zip(p1, p2)]
-        textsource = vtk.vtkTextSource()
+        textsource = vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250/255.0, 247/255.0, 218/255.0))
         textsource.SetForegroundColor(self.colour)
 
-        m = vtk.vtkPolyDataMapper2D()
+        m = vtkPolyDataMapper2D()
         m.SetInputConnection(textsource.GetOutputPort())
 
-        a = vtk.vtkActor2D()
+        a = vtkActor2D()
         a.SetMapper(m)
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
@@ -684,7 +699,7 @@ class LinearMeasure(object):
             gc: is a wx.GraphicsContext
             canvas: the canvas it's being drawn.
         """
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         points = []
         for p in self.points:
             coord.SetValue(p)
@@ -706,7 +721,7 @@ class LinearMeasure(object):
     def GetValue(self):
         if self.IsComplete():
             p1, p2 = self.points
-            return math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
+            return math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2))
         else:
             return 0.0
 
@@ -847,38 +862,38 @@ class AngularMeasure(object):
         self._draw_text()
 
     def _draw_line(self):
-        line1 = vtk.vtkLineSource()
+        line1 = vtkLineSource()
         line1.SetPoint1(self.points[0])
         line1.SetPoint2(self.points[1])
 
-        line2 = vtk.vtkLineSource()
+        line2 = vtkLineSource()
         line2.SetPoint1(self.points[1])
         line2.SetPoint2(self.points[2])
 
         arc = self.DrawArc()
 
-        line = vtk.vtkAppendPolyData()
+        line = vtkAppendPolyData()
         line.AddInputConnection(line1.GetOutputPort())
         line.AddInputConnection(line2.GetOutputPort())
         line.AddInputConnection(arc.GetOutputPort())
 
-        c = vtk.vtkCoordinate()
+        c = vtkCoordinate()
         c.SetCoordinateSystemToWorld()
 
-        m = vtk.vtkPolyDataMapper2D()
+        m = vtkPolyDataMapper2D()
         m.SetInputConnection(line.GetOutputPort())
         m.SetTransformCoordinate(c)
 
-        a = vtk.vtkActor2D()
+        a = vtkActor2D()
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         self.line_actor = a
 
     def DrawArc(self):
 
-        d1 = math.sqrt(vtk.vtkMath.Distance2BetweenPoints(self.points[0],
+        d1 = math.sqrt(vtkMath.Distance2BetweenPoints(self.points[0],
                                                           self.points[1]))
-        d2 = math.sqrt(vtk.vtkMath.Distance2BetweenPoints(self.points[2],
+        d2 = math.sqrt(vtkMath.Distance2BetweenPoints(self.points[2],
                                                           self.points[1]))
 
         if d1 < d2:
@@ -896,7 +911,7 @@ class AngularMeasure(object):
         z = self.points[1][2] + c*t
         p2 = (x, y, z)
 
-        arc = vtk.vtkArcSource()
+        arc = vtkArcSource()
         arc.SetPoint1(p1)
         arc.SetPoint2(p2)
         arc.SetCenter(self.points[1])
@@ -907,15 +922,15 @@ class AngularMeasure(object):
         text = u' %.3f ' % \
                 self.CalculateAngle()
         x,y,z= self.points[1]
-        textsource = vtk.vtkTextSource()
+        textsource = vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250/255.0, 247/255.0, 218/255.0))
         textsource.SetForegroundColor(self.colour)
 
-        m = vtk.vtkPolyDataMapper2D()
+        m = vtkPolyDataMapper2D()
         m.SetInputConnection(textsource.GetOutputPort())
 
-        a = vtk.vtkActor2D()
+        a = vtkActor2D()
         a.SetMapper(m)
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
@@ -931,7 +946,7 @@ class AngularMeasure(object):
             canvas: the canvas it's being drawn.
         """
 
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         points = []
         for p in self.points:
             coord.SetValue(p)
@@ -997,7 +1012,7 @@ class AngularMeasure(object):
         v1 = [j-i for i,j in zip(self.points[0], self.points[1])]
         v2 = [j-i for i,j in zip(self.points[2], self.points[1])]
         try:
-            cos = vtk.vtkMath.Dot(v1, v2)/(vtk.vtkMath.Norm(v1)*vtk.vtkMath.Norm(v2))
+            cos = vtkMath.Dot(v1, v2)/(vtkMath.Norm(v1)*vtkMath.Norm(v2))
         except ZeroDivisionError:
             return 0.0
 
@@ -1139,7 +1154,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.ellipse.visible = value
 
     def _3d_to_2d(self, renderer, pos):
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         coord.SetValue(pos)
         cx, cy = coord.GetComputedDoubleDisplayValue(renderer)
         return cx, cy
