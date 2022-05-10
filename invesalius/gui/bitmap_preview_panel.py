@@ -1,11 +1,11 @@
 import wx
-import vtk
 import time
 import numpy
 
-from vtk.util import  numpy_support
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-from invesalius.pubsub import pub as Publisher
+from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
+from vtkmodules.vtkRenderingCore import vtkImageActor, vtkRenderer
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vtku
@@ -13,6 +13,7 @@ import invesalius.data.converters as converters
 import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+from invesalius.pubsub import pub as Publisher
 
 NROWS = 3
 NCOLS = 6
@@ -480,18 +481,18 @@ class SingleImagePreview(wx.Panel):
         text_acquisition.SetSymbolicSize(wx.FONTSIZE_SMALL)
         self.text_acquisition = text_acquisition
 
-        self.renderer = vtk.vtkRenderer()
+        self.renderer = vtkRenderer()
         self.renderer.SetLayer(0)
 
         cam = self.renderer.GetActiveCamera()
 
-        self.canvas_renderer = vtk.vtkRenderer()
+        self.canvas_renderer = vtkRenderer()
         self.canvas_renderer.SetLayer(1)
         self.canvas_renderer.SetActiveCamera(cam)
         self.canvas_renderer.SetInteractive(0)
         self.canvas_renderer.PreserveDepthBufferOn()
 
-        style = vtk.vtkInteractorStyleImage()
+        style = vtkInteractorStyleImage()
 
         self.interactor = wxVTKRenderWindowInteractor(self.panel, -1,
                                                       size=wx.Size(340,340))
@@ -611,12 +612,12 @@ class SingleImagePreview(wx.Panel):
         image = converters.to_vtk(n_array, spacing=(1,1,1),\
                 slice_number=1, orientation="AXIAL")
 
-        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer = vtkImageMapToWindowLevelColors()
         colorer.SetInputData(image)
         colorer.Update()
 
         if self.actor is None:
-            self.actor = vtk.vtkImageActor()
+            self.actor = vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
@@ -661,14 +662,14 @@ class SingleImagePreview(wx.Panel):
         window_level = n_array.max()/2
         window_width = n_array.max()
         
-        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer = vtkImageMapToWindowLevelColors()
         colorer.SetInputData(image)
         colorer.SetWindow(float(window_width))
         colorer.SetLevel(float(window_level))
         colorer.Update()
 
         if self.actor is None:
-            self.actor = vtk.vtkImageActor()
+            self.actor = vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
