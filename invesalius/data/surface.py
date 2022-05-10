@@ -36,12 +36,16 @@ except ImportError:
 
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
-
-from vtkmodules.vtkIOGeometry import vtkSTLReader, vtkOBJReader, vtkSTLWriter
+from vtkmodules.vtkFiltersCore import (
+    vtkMassProperties,
+    vtkPolyDataNormals,
+    vtkStripper,
+    vtkTriangleFilter,
+)
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals, vtkTriangleFilter, vtkMassProperties, vtkStripper
-from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from invesalius.pubsub import pub as Publisher
 
