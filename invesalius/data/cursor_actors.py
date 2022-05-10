@@ -17,15 +17,25 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import math 
+import math
 
 import numpy
-import vtk
+
+from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonCore import vtkLookupTable, vtkVersion
+from vtkmodules.vtkCommonDataModel import vtkImageData
+from vtkmodules.vtkImagingCore import vtkImageMapToColors
+from vtkmodules.vtkRenderingCore import (
+    vtkImageActor,
+    vtkImageProperty,
+    vtkImageSlice,
+    vtkImageSliceMapper,
+)
+
 import invesalius.data.imagedata_utils as imagedata_utils
 from invesalius.project import Project as project
 import invesalius.constants as const
 
-from vtk.util import numpy_support
 
 ORIENTATION = {'AXIAL': 2,
                'CORONAL': 1,
@@ -52,7 +62,7 @@ def to_vtk(n_array, spacing, slice_number, orientation):
     elif orientation == 'CORONAL':
         extent = (0, dx - 1, slice_number, slice_number + dy - 1, 0, dz - 1)
 
-    image = vtk.vtkImageData()
+    image = vtkImageData()
     image.SetOrigin(0, 0, 0)
     image.SetSpacing(spacing)
     image.SetDimensions(dx, dy, dz)
@@ -65,7 +75,7 @@ def to_vtk(n_array, spacing, slice_number, orientation):
     image.GetPointData().SetScalars(v_image)
     #  image.Update()
 
-    image_copy = vtk.vtkImageData()
+    image_copy = vtkImageData()
     image_copy.DeepCopy(image)
     #  image_copy.Update()
 
@@ -79,15 +89,15 @@ class CursorBase(object):
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
         self.position = (0, 0, 0)
-        if vtk.vtkVersion().GetVTKVersion() > '5.8.0':
-            self.mapper = vtk.vtkImageSliceMapper()
-            cursor_property = vtk.vtkImageProperty()
+        if vtkVersion().GetVTKVersion() > '5.8.0':
+            self.mapper = vtkImageSliceMapper()
+            cursor_property = vtkImageProperty()
             cursor_property.SetInterpolationTypeToNearest()
-            self.actor = vtk.vtkImageSlice()
+            self.actor = vtkImageSlice()
             self.actor.SetMapper(self.mapper)
             self.actor.SetProperty(cursor_property)
         else:
-            self.actor = vtk.vtkImageActor()
+            self.actor = vtkImageActor()
             self.mapper = None
         self._build_actor()
         self._calculate_area_pixels()
@@ -208,7 +218,7 @@ class CursorBase(object):
         r, g, b = colour[:3]
 
         # map scalar values into colors
-        lut_mask = vtk.vtkLookupTable()
+        lut_mask = vtkLookupTable()
         lut_mask.SetNumberOfColors(256)
         lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
         lut_mask.SetSaturationRange(1, 1)
@@ -221,7 +231,7 @@ class CursorBase(object):
         lut_mask.Build()
 
         # map the input image through a lookup table
-        img_colours_mask = vtk.vtkImageMapToColors()
+        img_colours_mask = vtkImageMapToColors()
         img_colours_mask.SetLookupTable(lut_mask)
         img_colours_mask.SetOutputFormatToRGBA()
         img_colours_mask.SetInputData(imagedata)
@@ -232,7 +242,7 @@ class CursorBase(object):
 
 class CursorCircle(CursorBase):
    # TODO: Think and try to change this class to an actor
-   # CursorCircleActor(vtk.vtkActor)
+   # CursorCircleActor(vtkActor)
     def __init__(self):
         self.radius = 15.0
         super(CursorCircle, self).__init__()
