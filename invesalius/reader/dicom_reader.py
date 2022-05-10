@@ -23,13 +23,15 @@ import threading
 from multiprocessing import cpu_count
 
 import gdcm
-import vtk
 
 # Not showing GDCM warning and debug messages
 gdcm.Trace_DebugOff()
 gdcm.Trace_WarningOff()
+
 import glob
 import plistlib
+
+from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom
@@ -351,9 +353,9 @@ class ProgressDicomReader:
             log_path = utils.encode(
                 str(inv_paths.USER_LOG_DIR.joinpath("vtkoutput.txt")), const.FS_ENCODE
             )
-            fow = vtk.vtkFileOutputWindow()
+            fow = vtkFileOutputWindow()
             fow.SetFileName(log_path)
-            ow = vtk.vtkOutputWindow()
+            ow = vtkOutputWindow()
             ow.SetInstance(fow)
 
         y = yGetDicomGroups(path, recursive)
