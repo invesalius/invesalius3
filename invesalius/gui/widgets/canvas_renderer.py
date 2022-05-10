@@ -31,7 +31,6 @@ except ImportError:
 from vtkmodules.vtkRenderingCore import vtkImageMapper, vtkActor2D, vtkCoordinate
 
 from invesalius.data import converters
-from invesalius.pubsub import pub as Publisher
 
 
 class CanvasEvent:
