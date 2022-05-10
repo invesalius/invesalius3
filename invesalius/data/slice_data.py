@@ -16,7 +16,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import vtk
 import wx
 
 import invesalius.constants as const
