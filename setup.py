@@ -1,15 +1,12 @@
-import distutils.cmd
-import distutils.log
+import setuptools
+import logging
 import os
 import pathlib
 import subprocess
 import sys
-from distutils.core import setup
-from distutils.extension import Extension
 
 import numpy
-from Cython.Build import cythonize
-from Cython.Distutils import build_ext
+from Cython.Build import cythonize, build_ext
 
 if sys.platform == "darwin":
     unix_copt = ["-Xpreprocessor", "-fopenmp", "-lomp"]
@@ -43,7 +40,7 @@ class build_ext_subclass(build_ext):
         build_ext.build_extensions(self)
 
 
-class BuildPluginsCommand(distutils.cmd.Command):
+class BuildPluginsCommand(setuptools.Command):
     """
     A custom command to build all plugins with cython code.
     """
@@ -63,7 +60,7 @@ class BuildPluginsCommand(distutils.cmd.Command):
         plugins_folder = inv_folder.joinpath("plugins")
         for p in compilable_plugins:
             plugin_folder = plugins_folder.joinpath(p)
-            self.announce("Compiling plugin: {}".format(p), level=distutils.log.INFO)
+            self.announce("Compiling plugin: {}".format(p))
             os.chdir(plugin_folder)
             subprocess.check_call(
                 [sys.executable, "setup.py", "build_ext", "--inplace"]
@@ -71,31 +68,31 @@ class BuildPluginsCommand(distutils.cmd.Command):
             os.chdir(inv_folder)
 
 
-setup(
+setuptools.setup(
     cmdclass={
         "build_ext": build_ext_subclass,
         "build_plugins": BuildPluginsCommand,
     },
     ext_modules=cythonize(
         [
-            Extension(
+            setuptools.Extension(
                 "invesalius_cy.mips",
                 ["invesalius_cy/mips.pyx"],
             ),
-            Extension(
+            setuptools.Extension(
                 "invesalius_cy.interpolation",
                 ["invesalius_cy/interpolation.pyx"],
             ),
-            Extension(
+            setuptools.Extension(
                 "invesalius_cy.transforms",
                 ["invesalius_cy/transforms.pyx"],
             ),
-            Extension(
+            setuptools.Extension(
                 "invesalius_cy.floodfill",
                 ["invesalius_cy/floodfill.pyx"],
                 language="c++",
             ),
-            Extension(
+            setuptools.Extension(
                 "invesalius_cy.cy_mesh",
                 ["invesalius_cy/cy_mesh.pyx"],
                 language="c++",
