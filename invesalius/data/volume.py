@@ -19,7 +19,7 @@
 import plistlib
 import os
 import weakref
-from distutils.version import LooseVersion
+from setuptools.extern.packaging.version import Version
 
 import numpy
 import vtk
@@ -734,7 +734,7 @@ class VolumeMask:
                 self._volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
                 self._volume_mapper.UseJitteringOn()
 
-                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                if Version(vtk.vtkVersion().GetVTKVersion()) > Version('8.0'):
                     self._volume_mapper.SetBlendModeToIsoSurface()
 
             #  else:
@@ -776,7 +776,7 @@ class VolumeMask:
             if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
                 self._volume_property.SetScalarOpacityUnitDistance(pix_diag)
             else:
-                if LooseVersion(vtk.vtkVersion().GetVTKVersion()) > LooseVersion('8.0'):
+                if Version(vtk.vtkVersion().GetVTKVersion()) > Version('8.0'):
                     self._volume_property.GetIsoSurfaceValues().SetValue(0, 127)
 
             self._actor = vtk.vtkVolume()

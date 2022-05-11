@@ -25,7 +25,7 @@ import math
 import traceback
 import collections.abc
 
-from distutils.version import LooseVersion
+from setuptools.extern.packaging.version import Version
 from functools import wraps
 
 import numpy as np
@@ -438,8 +438,8 @@ def UpdateCheck():
         url = response.readline().rstrip().decode('utf8')
 
         try:
-            last_ver = LooseVersion(last)
-            actual_ver = LooseVersion(const.INVESALIUS_VERSION)
+            last_ver = Version(last)
+            actual_ver = Version(const.INVESALIUS_VERSION)
         except (ValueError, AttributeError):
             return
 

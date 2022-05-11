@@ -1,5 +1,5 @@
-# distutils: language = c++
-# cython: language_level=3str
+#distutils: language = c++
+#cython: language_level=3
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: initializedcheck=False
