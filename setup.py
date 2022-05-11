@@ -60,7 +60,7 @@ class BuildPluginsCommand(setuptools.Command):
         plugins_folder = inv_folder.joinpath("plugins")
         for p in compilable_plugins:
             plugin_folder = plugins_folder.joinpath(p)
-            self.announce("Compiling plugin: {}".format(p), level=logging.INFO)
+            self.announce("Compiling plugin: {}".format(p))
             os.chdir(plugin_folder)
             subprocess.check_call(
                 [sys.executable, "setup.py", "build_ext", "--inplace"]
