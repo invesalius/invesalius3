@@ -137,13 +137,17 @@ class UpdateNavigationScene(threading.Thread):
                     m_img_flip = m_img.copy()
                     m_img_flip[1, -1] = -m_img_flip[1, -1]
                     cp = m_img_flip[:-1, -1]  # coil center
-                    ct1 = m_img_flip[:3, 0] #is from posterior to anterior direction of the coil
+                    cp = cp*0.001 #convert to meters
+                    ct1 = m_img_flip[:3, 1] #is from posterior to anterior direction of the coil
+                    ct1 = ct1*0.001#convert to meters
                     ct1 = ct1.tolist()
-                    ct2 = m_img_flip[:3, 1] #is from left to right direction of the coil
+                    ct2 = m_img_flip[:3, 0] #is from left to right direction of the coil
+                    ct2 = ct2*0.001#convert to meters
                     ct2 = ct2.tolist()
                     coil_dir = m_img_flip[:-1, 0]
                     coil_face = m_img_flip[:-1, 1]
                     cn = np.cross(coil_dir, coil_face)
+                    cn = cn*0.001#convert to meters
                     cn = cn.tolist()
                     cp = cp.tolist()
                     for i in range(len(ct1)):
