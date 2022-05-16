@@ -361,6 +361,7 @@ class SurfaceManager():
             transformFilter.SetInputData(polydata)
             transformFilter.Update()
             polydata = transformFilter.GetOutput()
+            self.ConvertToInV = False
 
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
