@@ -1555,7 +1555,11 @@ class Viewer(wx.Panel):
     def CreateLUTtableforefield(self, min, max):
         lut = vtk.vtkLookupTable()
         lut.SetTableRange(min, max)
-        lut.Build()
+        colorSeries = vtk.vtkColorSeries()
+        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        colorSeries.SetColorScheme(seriesEnum)
+        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+
         return lut
 
     def Get_E_field_max_min(self, min, max, e_field_norms):
