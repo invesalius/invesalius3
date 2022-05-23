@@ -324,6 +324,8 @@ def parse_command_line():
 
     parser.add_argument("--import-folder", action="store", dest="import_folder")
 
+    parser.add_argument("-o", "--import-other", dest="other_file", help="Import Nifti, Analyze, PAR/REC file")
+
     parser.add_argument("--remote-host",
                       action="store",
                       dest="remote_host")
@@ -369,6 +371,13 @@ def use_cmd_optargs(args):
         return True
     elif args.import_folder:
         Publisher.sendMessage('Import folder', folder=args.import_folder)
+        if args.save:
+            Publisher.sendMessage('Save project', filepath=os.path.abspath(args.save))
+            exit(0)
+        check_for_export(args)
+
+    elif args.other_file:
+        Publisher.sendMessage("Open other files", filepath=args.other_file)
         if args.save:
             Publisher.sendMessage('Save project', filepath=os.path.abspath(args.save))
             exit(0)
