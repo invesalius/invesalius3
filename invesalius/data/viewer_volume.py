@@ -677,6 +677,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
+        actor.PickableOff()
         actor.GetProperty().SetOpacity(1.)
 
         # ren.AddActor(actor)
@@ -1276,6 +1277,7 @@ class Viewer(wx.Panel):
         self.ball_actor = vtk.vtkActor()
         self.ball_actor.SetMapper(mapper)
         self.ball_actor.GetProperty().SetColor(1, 0, 0)
+        self.ball_actor.PickableOff()
 
         self.ren.AddActor(self.ball_actor)
 
@@ -1444,6 +1446,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
+        actor.PickableOff()
 
         return actor
 
@@ -1937,6 +1940,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def LoadActor(self, actor):
+        print(actor)
         self.added_actor = 1
         ren = self.ren
         ren.AddActor(actor)
