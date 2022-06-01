@@ -420,6 +420,35 @@ class SeedInteractorStyle(DefaultInteractorStyle):
             self.left_pressed = True
 
 
+class CrossInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+        self.state_code = const.SLICE_STATE_CROSS
+        self.picker = vtk.vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        # self.picker.SetUseCells(True)
+        self.viewer.interactor.SetPicker(self.picker)
+        self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
+
+    def SetUp(self):
+        print("SetUP")
+
+    def CleanUp(self):
+        print("CleanUp")
+
+    def OnCrossMouseClick(self, obj, evt):
+        x, y = self.viewer.get_vtk_mouse_position()
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.picker.GetPickPosition()
+        if self.picker.GetActor():
+            self.viewer.set_camera_position=False
+            Publisher.sendMessage('Update slices position', position=[x, -y, z])
+            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Render volume viewer')
+            self.viewer.set_camera_position=True
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -431,6 +460,7 @@ class Styles:
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
+        const.SLICE_STATE_CROSS: CrossInteractorStyle,
     }
 
     @classmethod
