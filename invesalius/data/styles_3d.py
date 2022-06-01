@@ -439,13 +439,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
-        print(f"{x=}, {y=}, {self.viewer.GetSize()=}")
         self.picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.picker.GetPickPosition()
-        actor = self.picker.GetActor()
-        point = self.picker.GetPointId()
-        ppos = actor.GetMapper().GetInput().GetPoint(point)
-        print(f"{point=}, {ppos=}, ({x=}, {y=}, {z=})")
         if self.picker.GetActor():
             self.viewer.set_camera_position=False
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
