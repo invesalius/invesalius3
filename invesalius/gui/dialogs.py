@@ -3604,7 +3604,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                 coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-        coord[2] = -coord[2]
+        #coord[2] = -coord[2]
 
         if fiducial_index == 3:
             coord = np.zeros([6,])
@@ -4631,16 +4631,19 @@ class SetNDIconfigs(wx.Dialog):
         """
         import serial.tools.list_ports
 
+        port_list = []
+        desc_list = []
         ports = serial.tools.list_ports.comports()
         if sys.platform.startswith('win'):
-            port_list = []
-            desc_list = []
             for port, desc, hwid in sorted(ports):
                 port_list.append(port)
                 desc_list.append(desc)
             port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
         else:
-            raise EnvironmentError('Unsupported platform')
+            for p in ports:
+                port_list.append(p.device)
+                desc_list.append(p.description)
+            port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
 
         #print("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
 

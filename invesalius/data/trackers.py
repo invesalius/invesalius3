@@ -137,7 +137,7 @@ def PolarisTracker(tracker_id):
     if dlg_port.ShowModal() == ID_OK:
         com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
         try:
-            import pypolaris
+            from pypolaris import pypolaris
             lib_mode = 'wrapper'
             trck_init = pypolaris.pypolaris()
 
