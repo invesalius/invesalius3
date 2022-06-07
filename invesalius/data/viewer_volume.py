@@ -1960,7 +1960,11 @@ class Viewer(wx.Panel):
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
         #self.interactor.Render()
-        self.Refresh()
+        if sys.platform == 'win32':
+             self.Refresh()
+        else:
+            self.interactor.Render()
+        #self.Refresh()
 
     def OnExportSurface(self, filename, filetype):
         if filetype not in (const.FILETYPE_STL,
