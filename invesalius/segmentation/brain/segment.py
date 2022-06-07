@@ -19,16 +19,17 @@ from invesalius import inv_paths
 from . import utils
 
 SIZE = 48
-OVERLAP = SIZE // 2 + 1
 
 
 def gen_patches(image, patch_size, overlap):
+    overlap = int(patch_size * overlap / 100)
+    print(f"{overlap=}")
     sz, sy, sx = image.shape
     i_cuts = list(
         itertools.product(
-            range(0, sz, patch_size - OVERLAP),
-            range(0, sy, patch_size - OVERLAP),
-            range(0, sx, patch_size - OVERLAP),
+            range(0, sz, patch_size - overlap),
+            range(0, sy, patch_size - overlap),
+            range(0, sx, patch_size - overlap),
         )
     )
     sub_image = np.empty(shape=(patch_size, patch_size, patch_size), dtype="float32")
@@ -67,7 +68,7 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size=SIZE):
         ]
 
 
-def brain_segment(image, probability_array, comm_array):
+def brain_segment(image, overlap, probability_array, comm_array):
     import keras
 
     # Loading model
@@ -80,7 +81,7 @@ def brain_segment(image, probability_array, comm_array):
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+    for completion, sub_image, patch in gen_patches(image, SIZE, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch(sub_image, patch, model, SIZE)
@@ -96,7 +97,7 @@ def download_callback(comm_array):
         comm_array[0] = value
     return _download_callback
 
-def brain_segment_torch(image, device_id, probability_array, comm_array):
+def brain_segment_torch(image, overlap, device_id, probability_array, comm_array):
     import torch
     from .model import Unet3D
     device = torch.device(device_id)
@@ -124,7 +125,7 @@ def brain_segment_torch(image, device_id, probability_array, comm_array):
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+    for completion, sub_image, patch in gen_patches(image, SIZE, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch_torch(sub_image, patch, model, device, SIZE)
@@ -136,7 +137,7 @@ def brain_segment_torch(image, device_id, probability_array, comm_array):
 
 ctx = multiprocessing.get_context('spawn')
 class SegmentProcess(ctx.Process):
-    def __init__(self, image, create_new_mask, backend, device_id, use_gpu, apply_wwwl=False, window_width=255, window_level=127):
+    def __init__(self, image, create_new_mask, backend, device_id, use_gpu, overlap=50, apply_wwwl=False, window_width=255, window_level=127):
         multiprocessing.Process.__init__(self)
 
         self._image_filename = image.filename
@@ -157,6 +158,8 @@ class SegmentProcess(ctx.Process):
         self.backend = backend
         self.device_id = device_id
         self.use_gpu = use_gpu
+
+        self.overlap = overlap
 
         self.apply_wwwl = apply_wwwl
         self.window_width = window_width
@@ -197,10 +200,10 @@ class SegmentProcess(ctx.Process):
         )
 
         if self.backend.lower() == "pytorch":
-            brain_segment_torch(image, self.device_id, probability_array, comm_array)
+            brain_segment_torch(image, self.overlap, self.device_id, probability_array, comm_array)
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
-            brain_segment(image, probability_array, comm_array)
+            brain_segment(image, self.overlap, probability_array, comm_array)
 
     @property
     def exception(self):

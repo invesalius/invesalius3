@@ -75,6 +75,9 @@ class BrainSegmenterDialog(wx.Dialog):
         self.segmented = False
         self.mask = None
 
+        self.overlap_options = (0, 25, 50)
+        self.default_overlap = 50
+
         self.cb_backends = wx.ComboBox(
             self,
             wx.ID_ANY,
@@ -110,6 +113,10 @@ class BrainSegmenterDialog(wx.Dialog):
         self.chk_new_mask.SetValue(True)
         self.chk_apply_wwwl = wx.CheckBox(self, wx.ID_ANY, _("Apply WW&WL"))
         self.chk_apply_wwwl.SetValue(False)
+        self.overlap = wx.RadioBox(self, -1, _("Overlap"),
+                                           choices=[f"{i}%" for i in self.overlap_options],
+                                           style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.overlap.SetSelection(self.overlap_options.index(self.default_overlap))
         self.progress = wx.Gauge(self, -1)
         self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
         self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
@@ -139,6 +146,7 @@ class BrainSegmenterDialog(wx.Dialog):
             sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
             sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(self.overlap, 0, wx.ALL | wx.EXPAND, 5)
         label_5 = wx.StaticText(self, wx.ID_ANY, _("Level of certainty"))
         main_sizer.Add(label_5, 0, wx.ALL, 5)
         sizer_3.Add(
@@ -277,8 +285,10 @@ class BrainSegmenterDialog(wx.Dialog):
         window_width = slc.Slice().window_width
         window_level = slc.Slice().window_level
 
+        overlap = self.overlap_options[self.overlap.GetSelection()]
+
         try:
-            self.ps = segment.SegmentProcess(image, create_new_mask, backend, device_id, use_gpu, apply_wwwl, window_width, window_level)
+            self.ps = segment.SegmentProcess(image, create_new_mask, backend, device_id, use_gpu, overlap, apply_wwwl, window_width, window_level)
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
             self.OnStop(None)
