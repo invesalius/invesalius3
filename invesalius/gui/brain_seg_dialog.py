@@ -75,7 +75,7 @@ class BrainSegmenterDialog(wx.Dialog):
         self.segmented = False
         self.mask = None
 
-        self.overlap_options = (0, 25, 50)
+        self.overlap_options = (0, 10, 25, 50)
         self.default_overlap = 50
 
         self.cb_backends = wx.ComboBox(
