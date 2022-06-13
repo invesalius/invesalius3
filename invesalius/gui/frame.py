@@ -1053,7 +1053,7 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewId(), _('Swap axes'), swap_axes_menu)
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
-        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+O'))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         reorient_menu.Enable(False)
