@@ -700,7 +700,7 @@ class NeuronavigationPanel(wx.Panel):
             else:
                 Publisher.sendMessage('Disconnect tracker')
                 wx.MessageBox(_("Not possible to connect to the robot."), _("InVesalius 3"))
-
+            self.dlg_correg_robot.Destroy()
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
@@ -1071,7 +1071,6 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
 
     def OnCreateNewCoil(self, event=None):
-
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection)
             try:
@@ -1099,7 +1098,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
-
+            dialog.Destroy()
         else:
             dlg.ShowNavigationTrackerWarning(0, 'choose')
 

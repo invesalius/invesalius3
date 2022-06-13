@@ -62,10 +62,11 @@ class ICP(metaclass=Singleton):
                 use_icp = True
             else:
                 use_icp = False
-
+            dialog.Destroy()
             return use_icp, m_icp
 
         else:
+            dialog.Destroy()
             return self.use_icp, self.m_icp
 
     def SetICP(self, navigation, use_icp):
