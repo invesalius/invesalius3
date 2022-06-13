@@ -156,7 +156,7 @@ def PolarisTracker(tracker_id):
     else:
         lib_mode = None
         print('Could not connect to polaris tracker.')
-
+    dlg_port.Destroy()
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
 
@@ -185,6 +185,7 @@ def PolarisP4Tracker(tracker_id):
     else:
         lib_mode = None
         print('Could not connect to Polaris P4 tracker.')
+    dlg_port.Destroy()
     # return tracker initialization variable and type of connection
     return trck_init, lib_mode
 
@@ -222,11 +223,13 @@ def OptitrackTracker(tracker_id):
     else:
         lib_mode = None
         print('#####')
+    dlg_port.Destroy()
+
     return trck_init, lib_mode
 
 def RobotTracker(tracker_id):
     from wx import ID_OK
-
+    tracker_info = None, None
     dlg_device = dlg.SetTrackerDeviceToRobot()
     if dlg_device.ShowModal() == ID_OK:
         tracker_id = dlg_device.GetValue()
@@ -237,10 +240,11 @@ def RobotTracker(tracker_id):
                 if dlg_ip.ShowModal() == ID_OK:
                     robot_IP = dlg_ip.GetValue()
                     Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
+                    tracker_info = trck_init, tracker_id
+                dlg_ip.Destroy()
+    dlg_device.Destroy()
 
-                    return trck_init, tracker_id
-
-    return None, None
+    return tracker_info
 
 def DebugTrackerRandom(tracker_id):
     trck_init = True
@@ -317,6 +321,7 @@ def PlhSerialConnection(tracker_id):
     else:
         lib_mode = None
         print('Could not connect to Polhemus tracker.')
+    dlg_port.Destroy()
 
     return trck_init
 
