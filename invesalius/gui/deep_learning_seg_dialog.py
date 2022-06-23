@@ -293,7 +293,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         overlap = self.overlap_options[self.overlap.GetSelection()]
 
         try:
-            self.ps = segment.SegmentProcess(
+            self.ps = segment.BrainSegmentProcess(
                 image,
                 create_new_mask,
                 backend,
