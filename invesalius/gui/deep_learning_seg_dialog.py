@@ -12,11 +12,11 @@ import time
 
 import numpy as np
 import wx
-from invesalius.pubsub import pub as Publisher
 
 import invesalius.data.slice_ as slc
-from invesalius.segmentation.brain import segment, utils
 from invesalius.gui import dialogs
+from invesalius.pubsub import pub as Publisher
+from invesalius.segmentation.deep_learning import segment, utils
 
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
@@ -25,6 +25,7 @@ TORCH_DEVICES = {}
 
 try:
     import torch
+
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
@@ -34,10 +35,9 @@ if HAS_TORCH:
     if torch.cuda.is_available():
         for i in range(torch.cuda.device_count()):
             name = torch.cuda.get_device_name()
-            device_id = f'cuda:{i}'
+            device_id = f"cuda:{i}"
             TORCH_DEVICES[name] = device_id
-    TORCH_DEVICES['CPU'] = 'cpu'
-
+    TORCH_DEVICES["CPU"] = "cpu"
 
 
 if HAS_PLAIDML:
@@ -50,23 +50,31 @@ if HAS_PLAIDML:
             HAS_PLAIDML = False
 
 
-class BrainSegmenterDialog(wx.Dialog):
-    def __init__(self, parent):
+class DeepLearningSegmenterDialog(wx.Dialog):
+    def __init__(
+        self,
+        parent,
+        title,
+        has_torch=True,
+        has_plaidml=True,
+        has_theano=True,
+        segmenter=None
+    ):
         wx.Dialog.__init__(
             self,
             parent,
             -1,
-            _(u"Brain segmentation"),
+            title=title,
             style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
         )
         backends = []
-        if HAS_TORCH:
+        if HAS_TORCH and has_torch:
             backends.append("Pytorch")
-        if HAS_PLAIDML:
+        if HAS_PLAIDML and has_plaidml:
             backends.append("PlaidML")
-        if HAS_THEANO:
+        if HAS_THEANO and has_theano:
             backends.append("Theano")
-        #  self.segmenter = segment.BrainSegmenter()
+        self.segmenter = segmenter
         #  self.pg_dialog = None
         self.torch_devices = TORCH_DEVICES
         self.plaidml_devices = PLAIDML_DEVICES
@@ -113,9 +121,13 @@ class BrainSegmenterDialog(wx.Dialog):
         self.chk_new_mask.SetValue(True)
         self.chk_apply_wwwl = wx.CheckBox(self, wx.ID_ANY, _("Apply WW&WL"))
         self.chk_apply_wwwl.SetValue(False)
-        self.overlap = wx.RadioBox(self, -1, _("Overlap"),
-                                           choices=[f"{i}%" for i in self.overlap_options],
-                                           style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.overlap = wx.RadioBox(
+            self,
+            -1,
+            _("Overlap"),
+            choices=[f"{i}%" for i in self.overlap_options],
+            style=wx.NO_BORDER | wx.HORIZONTAL,
+        )
         self.overlap.SetSelection(self.overlap_options.index(self.default_overlap))
         self.progress = wx.Gauge(self, -1)
         self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
@@ -165,15 +177,9 @@ class BrainSegmenterDialog(wx.Dialog):
         time_sizer.Add(self.lbl_time, 1, wx.EXPAND | wx.LEFT, 5)
         main_sizer.Add(time_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_buttons.Add(
-            self.btn_close, 0, wx.ALIGN_BOTTOM | wx.ALL, 5
-        )
-        sizer_buttons.Add(
-            self.btn_stop, 0, wx.ALIGN_BOTTOM | wx.ALL, 5
-        )
-        sizer_buttons.Add(
-            self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALL, 5
-        )
+        sizer_buttons.Add(self.btn_close, 0, wx.ALIGN_BOTTOM | wx.ALL, 5)
+        sizer_buttons.Add(self.btn_stop, 0, wx.ALIGN_BOTTOM | wx.ALL, 5)
+        sizer_buttons.Add(self.btn_segment, 0, wx.ALIGN_BOTTOM | wx.ALL, 5)
         main_sizer.Add(sizer_buttons, 0, wx.ALIGN_RIGHT | wx.ALL, 0)
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -288,7 +294,17 @@ class BrainSegmenterDialog(wx.Dialog):
         overlap = self.overlap_options[self.overlap.GetSelection()]
 
         try:
-            self.ps = segment.SegmentProcess(image, create_new_mask, backend, device_id, use_gpu, overlap, apply_wwwl, window_width, window_level)
+            self.ps = self.segmenter(
+                image,
+                create_new_mask,
+                backend,
+                device_id,
+                use_gpu,
+                overlap,
+                apply_wwwl,
+                window_width,
+                window_level,
+            )
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
             self.OnStop(None)
@@ -387,15 +403,13 @@ class BrainSegmenterDialog(wx.Dialog):
         self.main_sizer.SetSizeHints(self)
 
 
-class MyApp(wx.App):
-    def OnInit(self):
-        self.dlg_brain_seg = MyDialog(None, wx.ID_ANY, "")
-        self.SetTopWindow(self.dlg_brain_seg)
-        self.dlg_brain_seg.ShowModal()
-        self.dlg_brain_seg.Destroy()
-        return True
-
-
-if __name__ == "__main__":
-    app = MyApp(0)
-    app.MainLoop()
+class BrainSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent):
+        super().__init__(
+            parent=parent,
+            title=_("Brain segmentation"),
+            has_torch=True,
+            has_plaidml=True,
+            has_theano=True,
+            segmenter = segment.BrainSegmentProcess,
+        )

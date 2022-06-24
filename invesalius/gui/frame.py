@@ -789,9 +789,9 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
     def OnBrainSegmentation(self):
-        from invesalius.gui import brain_seg_dialog
-        if brain_seg_dialog.HAS_PLAIDML or brain_seg_dialog.HAS_THEANO or brain_seg_dialog.HAS_TORCH:
-            dlg = brain_seg_dialog.BrainSegmenterDialog(self)
+        from invesalius.gui import deep_learning_seg_dialog
+        if deep_learning_seg_dialog.HAS_PLAIDML or deep_learning_seg_dialog.HAS_THEANO or deep_learning_seg_dialog.HAS_TORCH:
+            dlg = deep_learning_seg_dialog.BrainSegmenterDialog(self)
             dlg.Show()
         else:
             dlg = wx.MessageDialog(self,
