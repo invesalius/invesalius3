@@ -58,6 +58,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         has_torch=True,
         has_plaidml=True,
         has_theano=True,
+        segmenter=None
     ):
         wx.Dialog.__init__(
             self,
@@ -73,7 +74,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             backends.append("PlaidML")
         if HAS_THEANO and has_theano:
             backends.append("Theano")
-        #  self.segmenter = segment.BrainSegmenter()
+        self.segmenter = segmenter
         #  self.pg_dialog = None
         self.torch_devices = TORCH_DEVICES
         self.plaidml_devices = PLAIDML_DEVICES
@@ -293,7 +294,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         overlap = self.overlap_options[self.overlap.GetSelection()]
 
         try:
-            self.ps = segment.BrainSegmentProcess(
+            self.ps = self.segmenter(
                 image,
                 create_new_mask,
                 backend,
@@ -410,4 +411,5 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             has_torch=True,
             has_plaidml=True,
             has_theano=True,
+            segmenter = segment.BrainSegmentProcess,
         )
