@@ -413,3 +413,15 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             has_theano=True,
             segmenter = segment.BrainSegmentProcess,
         )
+
+
+class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent):
+        super().__init__(
+            parent=parent,
+            title=_("Trachea segmentation"),
+            has_torch=True,
+            has_plaidml=False,
+            has_theano=False,
+            segmenter = segment.TracheaSegmentProcess,
+        )
