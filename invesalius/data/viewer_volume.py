@@ -1453,6 +1453,7 @@ class Viewer(wx.Panel):
 
     def CreateActorArrow(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
         arrow = vtk.vtkArrowSource()
+        arrow.SetArrowOriginToCenter()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
         arrow.SetShaftRadius(0.05)
