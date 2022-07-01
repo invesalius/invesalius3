@@ -4047,21 +4047,18 @@ class ICPCorregistrationDialog(wx.Dialog):
         return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
 
 
-class SetTargetOrientationDialog(wx.Dialog):
+class SetCoilOrientationDialog(wx.Dialog):
 
     def __init__(self, marker):
         import invesalius.project as prj
 
-        self.obj_ref_id = 2
-        self.obj_name = None
         self.obj_actor = None
         self.polydata = None
         self.initial_focus = None
 
         self.marker = marker
-        self.angle = None
-        self.spinning = False
 
+        self.spinning = False
         self.rotationX = 0
         self.rotationY = 0
         self.rotationZ = 0
@@ -4069,7 +4066,7 @@ class SetTargetOrientationDialog(wx.Dialog):
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
 
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Refine Corregistration"), size=(380, 440),
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Set target Orientation"), size=(380, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.proj = prj.Project()
@@ -4085,8 +4082,6 @@ class SetTargetOrientationDialog(wx.Dialog):
         self.camera_style = vtk.vtkInteractorStyleTrackballCamera()
 
         self.interactor.SetInteractorStyle(self.actor_style)
-        #interstyle.RemoveAllObservers()
-        #https://python.hotexamples.com/site/file?hash=0x8d2adb5410f09a0424fd5a9e3664a74d5d7dc932fe428fd369be497e92c0dacd&fullName=pypetree-master/python/pypetree/main.py&project=cjauvin/pypetree
         self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.actor_style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
         self.actor_style.AddObserver("MouseMoveEvent", self.OnSpinMove)
@@ -4104,7 +4099,6 @@ class SetTargetOrientationDialog(wx.Dialog):
                                      self.OnZoomMove)
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
-        txt_mode = wx.StaticText(self, -1, _('Registration mode:'))
 
         combo_surface_name = wx.ComboBox(self, -1, size=(210, 23),
                                          style=wx.CB_DROPDOWN | wx.CB_READONLY)
@@ -4117,7 +4111,7 @@ class SetTargetOrientationDialog(wx.Dialog):
 
         self.combo_surface_name = combo_surface_name
 
-        init_surface = 1
+        init_surface = 0
         combo_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.LoadActor()
@@ -4154,7 +4148,7 @@ class SetTargetOrientationDialog(wx.Dialog):
         slider_rotation_z.Bind(wx.EVT_SLIDER, self.OnRotationZ)
         self.slider_rotation_z = slider_rotation_z
 
-        tooltip = wx.ToolTip(_(u"Refine done"))
+        tooltip = wx.ToolTip(_(u"Target orientation done"))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)
         self.btn_ok = btn_ok
@@ -4163,15 +4157,18 @@ class SetTargetOrientationDialog(wx.Dialog):
         btn_cancel.SetHelpText("")
 
         top_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=50, vgap=5)
-        top_sizer.AddMany([txt_surface, txt_mode,
-                           combo_surface_name])
+        top_sizer.AddMany([txt_surface,
+                           (wx.StaticText(self, -1, ''), 0, wx.EXPAND),
+                           combo_surface_name,
+                           change_view,
+                           ])
         btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
-        btn_changes_sizer.AddMany([reset_orientation, change_view])
+        btn_changes_sizer.AddMany([reset_orientation])
         btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
         btn_ok_sizer.AddMany([btn_ok, btn_cancel])
 
-        flag_link = wx.EXPAND|wx.GROW|wx.RIGHT
-        flag_slider = wx.EXPAND | wx.GROW| wx.LEFT|wx.TOP
+        flag_link = wx.EXPAND|wx.GROW|wx.RIGHT|wx.TOP
+        flag_slider = wx.EXPAND|wx.GROW|wx.LEFT
         rotationx_sizer = wx.BoxSizer(wx.HORIZONTAL)
         rotationy_sizer = wx.BoxSizer(wx.HORIZONTAL)
         rotationz_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -4189,14 +4186,14 @@ class SetTargetOrientationDialog(wx.Dialog):
         btn_sizer.AddMany([(btn_ok_sizer, 1, wx.ALIGN_RIGHT)])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.TOP|wx.BOTTOM, 10)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
-        main_sizer.Add(btn_changes_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(btn_changes_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
         main_sizer.Add(rotationx_sizer, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(rotationy_sizer, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(rotationz_sizer, 0, wx.EXPAND | wx.ALL, 5)
         main_sizer.Add(btn_sizer, 0,
-                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.BOTTOM, 10)
+                       wx.ALIGN_RIGHT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -4226,22 +4223,13 @@ class SetTargetOrientationDialog(wx.Dialog):
 
     def OnPressLeftButton(self, evt, obj):
         self.spinning = True
-        return
 
     def OnReleaseLeftButton(self, evt, obj):
         self.spinning = False
-        return
 
     def OnSpinMove(self, evt, obj):
-        self.interactor.SetInteractorStyle(self.actor_style)
         if self.spinning:
-            clickPos = self.interactor.GetEventPosition()
-
-            picker = vtk.vtkPropPicker()
-            picker.Pick(clickPos[0], clickPos[1], 0, self.ren)
-            x, y, z = picker.GetPickPosition()
-
-            #print(picker.GetActor())
+            self.interactor.SetInteractorStyle(self.actor_style)
             evt.Spin()
             evt.OnRightButtonDown()
 
@@ -4251,11 +4239,17 @@ class SetTargetOrientationDialog(wx.Dialog):
             self.camera_style.OnMouseWheelForward()
         else:
             self.camera_style.OnMouseWheelBackward()
-        return
 
     def OnChangeView(self, evt):
         self.ren.GetActiveCamera().Roll(90)
         self.interactor.Render()
+
+    def OnComboName(self, evt):
+        surface_index = evt.GetSelection()
+        self.surface = self.proj.surface_dict[surface_index].polydata
+        if self.obj_actor:
+            self.RemoveActor()
+        self.LoadActor()
 
     def LoadActor(self):
         '''
@@ -4265,7 +4259,6 @@ class SetTargetOrientationDialog(wx.Dialog):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         mapper.ScalarVisibilityOff()
-        #mapper.ImmediateModeRenderingOn()
 
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)
@@ -4275,89 +4268,33 @@ class SetTargetOrientationDialog(wx.Dialog):
         self.ren.AddActor(obj_actor)
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
-        self.AddMarker(coord_flip)
         self.ren.ResetCamera()
         self.SetVolumeCamera(coord_flip[:3])
-        #self.SetCameraVolume(coord_flip[:3])
+        self.AddTarget(coord_flip)
+
         self.interactor.Render()
 
     def RemoveActor(self):
         self.ren.RemoveAllViewProps()
-
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def AddMarker(self, coord_flip):
-        """
-        Markers created by navigation tools and rendered in volume viewer.
-        """
+    def AddTarget(self, coord_flip):
         rx, ry, rz = coord_flip[3:6]
         if rx is None:
-            coord = self.compute_versors(self.CenterOfMass(self.surface), coord_flip[:3])
-            #https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
-            rx, ry, rz = self.get_euler_rotation_angles(coord_flip[:3], coord)
-        print(f"phi_x_rotation={rx}, theta_y_rotation={ry}, psi_z_rotation={rz}")
+            coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
+            rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
+            ry += 90
+        else:
+            rx, ry, rz = coord_flip[3:6]
 
-        marker_actor = self.CreateActorArrow(coord_flip[:3], [rx, ry, rz])
+        m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
+        marker_actor = self.CreateActorArrow(m_img_vtk)
         self.marker_actor = marker_actor
 
         self.ren.AddActor(marker_actor)
 
-    def compute_versors(self, init_point, final_point):
-        init_point = np.array(init_point)
-        final_point = np.array(final_point)
-        norm = (sum((final_point - init_point) ** 2)) ** 0.5
-        versor_factor = (((final_point - init_point) / norm) * 1).tolist()
-
-        return versor_factor
-
-    def findangles(self, position, versor, vec):
-        sign = lambda x: 0 if not x else int(x / abs(x))
-        versor_target = self.compute_versors(self.CenterOfMass(self.surface), position)
-        crossvec = np.cross(versor_target, versor)
-        angle = np.rad2deg(np.arccos(np.dot(versor_target, versor)))
-
-        return angle * sign(crossvec[vec])
-
-    def CreateActorArrow(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
-        linesPolyData = vtk.vtkPolyData()
-
-        # Create three points
-        origin = self.CenterOfMass(self.surface)
-        p0 = direction
-
-        # Create a vtkPoints container and store the points in it
-        pts = vtk.vtkPoints()
-        pts.InsertNextPoint(origin)
-        pts.InsertNextPoint(p0)
-
-        # Add the points to the polydata container
-        linesPolyData.SetPoints(pts)
-
-        # Create the first line (between Origin and P0)
-        line0 = vtk.vtkLine()
-        line0.GetPointIds().SetId(0, 0)  # the second 0 is the index of the Origin in linesPolyData's points
-        line0.GetPointIds().SetId(1, 1)  # the second 1 is the index of P0 in linesPolyData's points
-        # Create a vtkCellArray container and store the lines in it
-        lines = vtk.vtkCellArray()
-        lines.InsertNextCell(line0)
-
-        # Add the lines to the polydata container
-        linesPolyData.SetLines(lines)
-        # Setup the visualization pipeline
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(linesPolyData)
-
-        actor_line = vtk.vtkActor()
-        actor_line.SetMapper(mapper)
-        actor_line.GetProperty().SetLineWidth(4)
-        actor_line.GetProperty().SetColor((1, 0, 0))
-
-        self.actor_line = actor_line
-        self.ren.AddActor(actor_line)
-
-        self.m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
-
+    def CreateActorArrow(self, m_img_vtk, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
         input1 = vtk.vtkPolyData()
         input2 = vtk.vtkPolyData()
         input3 = vtk.vtkPolyData()
@@ -4425,13 +4362,7 @@ class SetTargetOrientationDialog(wx.Dialog):
         actor.SetMapper(mapper)
         actor.SetScale(size)
         actor.GetProperty().SetColor(colour)
-
-        cam = self.ren.GetActiveCamera()
-
-        oldcamVTK = vtk.vtkMatrix4x4()
-        oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
-
-        actor.SetUserMatrix(self.m_img_vtk)
+        actor.SetUserMatrix(m_img_vtk)
 
         return actor
 
@@ -4443,9 +4374,7 @@ class SetTargetOrientationDialog(wx.Dialog):
             axes='sxyz',
         )
         m_img = np.asmatrix(m_img)
-
         m_img_vtk = vtk.vtkMatrix4x4()
-
         for row in range(0, 4):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
@@ -4472,49 +4401,39 @@ class SetTargetOrientationDialog(wx.Dialog):
 
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
-        #cam.SetViewUp(0, 1, 0)
-        #self.ren.GetActiveCamera().Zoom(4)
 
-    def SetCameraVolume(self, position):
+        self.ren.GetActiveCamera().Zoom(3)
+
+    def GetRotationMatrix(self, v1_start, v2_start, v1_target, v2_target):
         """
-        Positioning of the camera based on the acquired point
-        :param position: x, y, z of the last acquired point
-        :return:
+        based on https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
+        calculating M the rotation matrix from base U to base V
+        M @ U = V
+        M = V @ U^-1
         """
-        #print(position)
+        u1_start = self.Normalize(v1_start)
+        u2_start = self.Normalize(v2_start)
+        u3_start = self.Normalize(np.cross(u1_start, u2_start))
 
-        #cam_focus = self.CenterOfMass(self.surface)
-        cam_focus = self.CenterOfMass(self.surface)
-        cam = self.ren.GetActiveCamera()
+        u1_target = self.Normalize(v1_target)
+        u2_target = self.Normalize(v2_target)
+        u3_target = self.Normalize(np.cross(u1_target, u2_target))
 
-        oldcamVTK = vtk.vtkMatrix4x4()
-        oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
+        U = np.hstack([u1_start.reshape(3, 1), u2_start.reshape(3, 1), u3_start.reshape(3, 1)])
+        V = np.hstack([u1_target.reshape(3, 1), u2_target.reshape(3, 1), u3_target.reshape(3, 1)])
 
-        newvtk = vtk.vtkMatrix4x4()
-        newvtk.Multiply4x4(self.m_img_vtk, oldcamVTK, newvtk)
+        if not np.isclose(np.dot(v1_target, v2_target), 0, atol=1e-03):
+            raise ValueError("v1_target and v2_target must be vertical")
 
-        transform = vtk.vtkTransform()
-        transform.SetMatrix(newvtk)
-        transform.Update()
-        cam.ApplyTransform(transform)
+        return np.dot(V, np.linalg.inv(U))
 
-        #cam.Roll(90)
+    def GetEulerAnglesFromVectors(self, init_arrow_vector, target_arrow_vector):
+        import invesalius.data.transformations as tr
+        init_up_vector = self.GetPerpendicularVector(init_arrow_vector)
+        target_up_vector = self.GetPerpendicularVector(target_arrow_vector)
+        rot_mat = self.GetRotationMatrix(init_arrow_vector, init_up_vector, target_arrow_vector, target_up_vector)
 
-        cam_pos0 = np.array(cam.GetPosition())
-        cam_focus0 = np.array(cam.GetFocalPoint())
-        v0 = cam_pos0 - cam_focus0
-        v0n = np.sqrt(inner1d(v0, v0))
-
-        v1 = (cam_focus[0] - cam_focus0[0], cam_focus[1] - cam_focus0[1], cam_focus[2] - cam_focus0[2])
-        v1n = np.sqrt(inner1d(v1, v1))
-        if not v1n:
-            v1n = 1.0
-        cam_pos = (v1 / v1n) * v0n + cam_focus
-        cam.SetFocalPoint(cam_focus)
-        cam.SetPosition(cam_pos)
-        #self.ren.GetActiveCamera().Zoom(5)
-
-        #self.interactor.Render()
+        return np.rad2deg(tr.euler_from_matrix(rot_mat, axes="sxyz"))
 
     def CenterOfMass(self, surface):
         barycenter = [0.0, 0.0, 0.0]
@@ -4530,72 +4449,29 @@ class SetTargetOrientationDialog(wx.Dialog):
 
         return barycenter
 
-    def OnComboName(self, evt):
-        surface_name = evt.GetString()
-        surface_index = evt.GetSelection()
-        self.surface = self.proj.surface_dict[surface_index].polydata
-        if self.obj_actor:
-            self.RemoveActor()
-        self.LoadActor()
-
-    def normalize(self, v):
+    def Normalize(self, v):
         return v / np.linalg.norm(v)
 
-    def find_additional_vertical_vector(self, vector):
+    def Versor(self, init_point, final_point):
+        init_point = np.array(init_point)
+        final_point = np.array(final_point)
+        norm = (sum((final_point - init_point) ** 2)) ** 0.5
+        versor_factor = (((final_point - init_point) / norm) * 1).tolist()
+
+        return versor_factor
+
+    def GetPerpendicularVector(self, vector):
         ez = np.array([0, 0, 1])
-        look_at_vector = self.normalize(vector)
-        up_vector = self.normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)
+        look_at_vector = self.Normalize(vector)
+        up_vector = self.Normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)
         return up_vector
-
-    def calc_rotation_matrix(self, v1_start, v2_start, v1_target, v2_target):
-        """
-        calculating M the rotation matrix from base U to base V
-        M @ U = V
-        M = V @ U^-1
-        """
-        u1_start = self.normalize(v1_start)
-        u2_start = self.normalize(v2_start)
-        u3_start = self.normalize(np.cross(u1_start, u2_start))
-
-        u1_target = self.normalize(v1_target)
-        u2_target = self.normalize(v2_target)
-        u3_target = self.normalize(np.cross(u1_target, u2_target))
-
-        U = np.hstack([u1_start.reshape(3, 1), u2_start.reshape(3, 1), u3_start.reshape(3, 1)])
-        V = np.hstack([u1_target.reshape(3, 1), u2_target.reshape(3, 1), u3_target.reshape(3, 1)])
-
-        if not np.isclose(np.dot(v1_target, v2_target), 0, atol=1e-03):
-            raise ValueError("v1_target and v2_target must be vertical")
-
-        return np.dot(V, np.linalg.inv(U))
-
-    def get_euler_rotation_angles(self, start_look_at_vector, target_look_at_vector, start_up_vector=None,
-                                  target_up_vector=None):
-        import invesalius.data.transformations as tr
-        if start_up_vector is None:
-            start_up_vector = self.find_additional_vertical_vector(start_look_at_vector)
-
-        if target_up_vector is None:
-            target_up_vector = self.find_additional_vertical_vector(target_look_at_vector)
-
-        rot_mat = self.calc_rotation_matrix(start_look_at_vector, start_up_vector, target_look_at_vector, target_up_vector)
-        is_equal = np.allclose(rot_mat @ start_look_at_vector, target_look_at_vector, atol=1e-03)
-        print(f"rot_mat @ start_look_at_vector1 == target_look_at_vector1 is {is_equal}")
-
-        return np.rad2deg(tr.euler_from_matrix(rot_mat, axes="sxyz"))
 
     def GetValue(self):
         import invesalius.data.transformations as tr
         vtkmat = self.marker_actor.GetMatrix()
-        print("mat", vtkmat)
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
-        print("mat", narray)
-
-        print([narray[0][:3], narray[1][:3], narray[2][:3]])
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
-        print(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="rxyz")))
-        print(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz")))
 
         return np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
 
