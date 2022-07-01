@@ -4228,8 +4228,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.spinning = False
 
     def OnSpinMove(self, evt, obj):
+        self.interactor.SetInteractorStyle(self.actor_style)
         if self.spinning:
-            self.interactor.SetInteractorStyle(self.actor_style)
             evt.Spin()
             evt.OnRightButtonDown()
 
