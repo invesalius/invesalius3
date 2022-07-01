@@ -1484,9 +1484,9 @@ class MarkersPanel(wx.Panel):
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
-        menu_id.AppendSeparator()
         orientation_menu = menu_id.Append(3, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
+        menu_id.AppendSeparator()
 
         check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]])
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
