@@ -952,31 +952,35 @@ class Viewer(wx.Panel):
                 thrdist = False
                 self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
 
-            coordx = self.target_coord[3] - coord[3]
-            if coordx > const.ARROW_UPPER_LIMIT:
-                coordx = const.ARROW_UPPER_LIMIT
-            elif coordx < -const.ARROW_UPPER_LIMIT:
-                coordx = -const.ARROW_UPPER_LIMIT
-            coordx = const.ARROW_SCALE * coordx
+            coordx = self.target_coord[0] - coord[0]
+            coordy = -self.target_coord[1] - coord[1]
+            coordz = self.target_coord[2] - coord[2]
+            coordrx = self.target_coord[3] - coord[3]
+            coordry = self.target_coord[4] - coord[4]
+            coordrz = self.target_coord[5] - coord[5]
 
-            coordy = self.target_coord[4] - coord[4]
-            if coordy > const.ARROW_UPPER_LIMIT:
-                coordy = const.ARROW_UPPER_LIMIT
-            elif coordy < -const.ARROW_UPPER_LIMIT:
-                coordy = -const.ARROW_UPPER_LIMIT
-            coordy = const.ARROW_SCALE * coordy
+            if coordrx > const.ARROW_UPPER_LIMIT:
+                coordrx = const.ARROW_UPPER_LIMIT
+            elif coordrx < -const.ARROW_UPPER_LIMIT:
+                coordrx = -const.ARROW_UPPER_LIMIT
+            coordrx_arrow = const.ARROW_SCALE * coordrx
 
-            coordz = self.target_coord[5] - coord[5]
-            if coordz > const.ARROW_UPPER_LIMIT:
-                coordz = const.ARROW_UPPER_LIMIT
-            elif coordz < -const.ARROW_UPPER_LIMIT:
-                coordz = -const.ARROW_UPPER_LIMIT
-            coordz = const.ARROW_SCALE * coordz
+            if coordry > const.ARROW_UPPER_LIMIT:
+                coordry = const.ARROW_UPPER_LIMIT
+            elif coordry < -const.ARROW_UPPER_LIMIT:
+                coordry = -const.ARROW_UPPER_LIMIT
+            coordry_arrow = const.ARROW_SCALE * coordry
+
+            if coordrz > const.ARROW_UPPER_LIMIT:
+                coordrz = const.ARROW_UPPER_LIMIT
+            elif coordrz < -const.ARROW_UPPER_LIMIT:
+                coordrz = -const.ARROW_UPPER_LIMIT
+            coordrz_arrow = const.ARROW_SCALE * coordrz
 
             for ind in self.arrow_actor_list:
                 self.ren2.RemoveActor(ind)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordx > -self.anglethreshold * const.ARROW_SCALE:
+            if self.anglethreshold * const.ARROW_SCALE > coordrx_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 thrcoordx = True
                 # self.obj_actor_list[0].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 self.obj_actor_list[0].GetProperty().SetColor(0, 1, 0)
@@ -987,17 +991,17 @@ class Viewer(wx.Panel):
 
             offset = 5
 
-            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset - coordx])
+            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
             arrow_roll_x1.RotateX(-60)
             arrow_roll_x1.RotateZ(180)
             arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
 
-            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset + coordx])
+            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset + coordrx_arrow])
             arrow_roll_x2.RotateX(-60)
             arrow_roll_x2.RotateZ(180)
             arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordz > -self.anglethreshold * const.ARROW_SCALE:
+            if self.anglethreshold * const.ARROW_SCALE > coordrz_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 thrcoordz = True
                 # self.obj_actor_list[1].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 self.obj_actor_list[1].GetProperty().SetColor(0, 1, 0)
@@ -1008,17 +1012,17 @@ class Viewer(wx.Panel):
 
             offset = -35
 
-            arrow_yaw_z1 = self.CreateArrowActor([-55, offset, 0], [-55, offset - coordz, 0])
+            arrow_yaw_z1 = self.CreateArrowActor([-55, offset, 0], [-55, offset - coordrz_arrow, 0])
             arrow_yaw_z1.SetPosition(0, -150, 0)
             arrow_yaw_z1.RotateZ(180)
             arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
 
-            arrow_yaw_z2 = self.CreateArrowActor([55, offset, 0], [55, offset + coordz, 0])
+            arrow_yaw_z2 = self.CreateArrowActor([55, offset, 0], [55, offset + coordrz_arrow, 0])
             arrow_yaw_z2.SetPosition(0, -150, 0)
             arrow_yaw_z2.RotateZ(180)
             arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordy > -self.anglethreshold * const.ARROW_SCALE:
+            if self.anglethreshold * const.ARROW_SCALE > coordry_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 thrcoordy = True
                 #self.obj_actor_list[2].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 self.obj_actor_list[2].GetProperty().SetColor(0, 1, 0)
@@ -1028,14 +1032,14 @@ class Viewer(wx.Panel):
                 self.obj_actor_list[2].GetProperty().SetColor(1, 1, 1)
 
             offset = 38
-            arrow_pitch_y1 = self.CreateArrowActor([0, 65, offset], [0, 65, offset + coordy])
+            arrow_pitch_y1 = self.CreateArrowActor([0, 65, offset], [0, 65, offset + coordry_arrow])
             arrow_pitch_y1.SetPosition(0, -300, 0)
             arrow_pitch_y1.RotateY(90)
             arrow_pitch_y1.RotateZ(180)
             arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
 
             offset = 5
-            arrow_pitch_y2 = self.CreateArrowActor([0, -55, offset], [0, -55, offset - coordy])
+            arrow_pitch_y2 = self.CreateArrowActor([0, -55, offset], [0, -55, offset - coordry_arrow])
             arrow_pitch_y2.SetPosition(0, -300, 0)
             arrow_pitch_y2.RotateY(90)
             arrow_pitch_y2.RotateZ(180)
@@ -1047,6 +1051,9 @@ class Viewer(wx.Panel):
             else:
                 self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
                 wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=False)
+
+            wx.CallAfter(Publisher.sendMessage, 'Distance to the target',
+                         distance=[coordx, coordy, coordz, coordrx, coordry, coordrz])
 
             self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                     arrow_pitch_y1, arrow_pitch_y2
