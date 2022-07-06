@@ -160,7 +160,7 @@ class SurfaceManager():
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
-        self.ConvertToInV = None
+        self.convert_to_inv = None
         self.__bind_events()
 
         self._default_parameters = {
@@ -207,7 +207,7 @@ class SurfaceManager():
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
-        Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update ConvertToInV flag')
+        Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
 
@@ -337,13 +337,13 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
-    def UpdateConvertToInvFlag(self, ConvertToInV=False):
-        self.ConvertToInV = ConvertToInV
+    def UpdateConvertToInvFlag(self, convert_to_inv=False):
+        self.convert_to_inv = convert_to_inv
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False, index=None,
                                   name=None, colour=None, transparency=None,
                                   volume=None, area=None, scalar=False):
-        if self.ConvertToInV:
+        if self.convert_to_inv:
             # convert between invesalius and world space with shift in the Y coordinate
             matrix_shape = sl.Slice().matrix.shape
             spacing = sl.Slice().spacing
@@ -361,7 +361,7 @@ class SurfaceManager():
             transformFilter.SetInputData(polydata)
             transformFilter.Update()
             polydata = transformFilter.GetOutput()
-            self.ConvertToInV = False
+            self.convert_to_inv = False
 
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
@@ -462,7 +462,7 @@ class SurfaceManager():
         Surface.general_index = -1
 
         self.affine_vtk = None
-        self.ConvertToInV = False
+        self.convert_to_inv = False
 
 
     def OnSelectSurface(self, surface_index):
