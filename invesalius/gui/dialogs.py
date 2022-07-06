@@ -42,16 +42,27 @@ try:
 except ImportError:
     from wx.combo import BitmapComboBox
 
+from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import mutable, vtkPoints
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
     vtkIterativeClosestPointTransform,
     vtkPolyData,
 )
+from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersCore import vtkCleanPolyData, vtkPolyDataNormals, vtkAppendPolyData
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
-from vtkmodules.vtkFiltersSources import vtkSphereSource
+from vtkmodules.vtkFiltersSources import (
+    vtkArrowSource,
+    vtkCylinderSource,
+    vtkParametricFunctionSource,
+    vtkSphereSource,
+)
+from vtkmodules.vtkInteractionStyle import (
+    vtkInteractorStyleTrackballActor,
+    vtkInteractorStyleTrackballCamera,
+)
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
 from vtkmodules.vtkIOPLY import vtkPLYReader
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
@@ -4191,10 +4202,10 @@ class SetCoilOrientationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
-        self.actor_style = vtk.vtkInteractorStyleTrackballActor()
-        self.camera_style = vtk.vtkInteractorStyleTrackballCamera()
+        self.actor_style = vtkInteractorStyleTrackballActor()
+        self.camera_style = vtkInteractorStyleTrackballCamera()
 
         self.interactor.SetInteractorStyle(self.actor_style)
         self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
@@ -4371,11 +4382,11 @@ class SetCoilOrientationDialog(wx.Dialog):
         Load the selected actor from the project (self.surface) into the scene
         :return:
         '''
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         mapper.ScalarVisibilityOff()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
         #obj_actor.GetProperty().SetOpacity(0.1)
         obj_actor.PickableOff()
@@ -4410,17 +4421,17 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.ren.AddActor(marker_actor)
 
     def CreateActorArrow(self, m_img_vtk, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
-        input1 = vtk.vtkPolyData()
-        input2 = vtk.vtkPolyData()
-        input3 = vtk.vtkPolyData()
-        input4 = vtk.vtkPolyData()
+        input1 = vtkPolyData()
+        input2 = vtkPolyData()
+        input3 = vtkPolyData()
+        input4 = vtkPolyData()
 
-        cylinderSourceWing = vtk.vtkCylinderSource()
+        cylinderSourceWing = vtkCylinderSource()
         cylinderSourceWing.SetRadius(0.02)
         cylinderSourceWing.Update()
         input1.ShallowCopy(cylinderSourceWing.GetOutput())
 
-        arrow = vtk.vtkArrowSource()
+        arrow = vtkArrowSource()
         arrow.SetArrowOriginToCenter()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
@@ -4430,7 +4441,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         arrow.Update()
         input2.ShallowCopy(arrow.GetOutput())
 
-        arrowDown = vtk.vtkArrowSource()
+        arrowDown = vtkArrowSource()
         arrowDown.SetArrowOriginToCenter()
         arrowDown.SetTipResolution(4)
         arrowDown.SetShaftResolution(40)
@@ -4439,8 +4450,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         arrowDown.SetTipLength(0.35)
         arrowDown.Update()
 
-        ArrowDownTransformFilter = vtk.vtkTransformPolyDataFilter()
-        RotateTransform = vtk.vtkTransform()
+        ArrowDownTransformFilter = vtkTransformPolyDataFilter()
+        RotateTransform = vtkTransform()
         RotateTransform.RotateZ(45)
         RotateTransform.RotateY(90)
         ArrowDownTransformFilter.SetTransform(RotateTransform)
@@ -4448,16 +4459,16 @@ class SetCoilOrientationDialog(wx.Dialog):
         ArrowDownTransformFilter.Update()
         input3.ShallowCopy(ArrowDownTransformFilter.GetOutput())
 
-        torus = vtk.vtkParametricTorus()
+        torus = vtkParametricTorus()
         torus.SetRingRadius(0.15)
         torus.SetCrossSectionRadius(0.02)
-        torusSource = vtk.vtkParametricFunctionSource()
+        torusSource = vtkParametricFunctionSource()
         torusSource.SetParametricFunction(torus)
         torusSource.Update()
         input4.ShallowCopy(torusSource.GetOutput())
 
         # Append the two meshes
-        appendFilter = vtk.vtkAppendPolyData()
+        appendFilter = vtkAppendPolyData()
         appendFilter.AddInputData(input1)
         appendFilter.AddInputData(input2)
         appendFilter.AddInputData(input3)
@@ -4465,15 +4476,15 @@ class SetCoilOrientationDialog(wx.Dialog):
         appendFilter.Update()
 
         #  Remove any duplicate points.
-        cleanFilter = vtk.vtkCleanPolyData()
+        cleanFilter = vtkCleanPolyData()
         cleanFilter.SetInputConnection(appendFilter.GetOutputPort())
         cleanFilter.Update()
 
         # Create a mapper and actor
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(cleanFilter.GetOutputPort())
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.SetScale(size)
         actor.GetProperty().SetColor(colour)
@@ -4489,7 +4500,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             axes='sxyz',
         )
         m_img = np.asmatrix(m_img)
-        m_img_vtk = vtk.vtkMatrix4x4()
+        m_img_vtk = vtkMatrix4x4()
         for row in range(0, 4):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
