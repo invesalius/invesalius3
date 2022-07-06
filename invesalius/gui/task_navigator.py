@@ -1109,30 +1109,30 @@ class ObjectRegistrationPanel(wx.Panel):
         # coil_path = 'magstim_coil_dell_laptop.obr'
         # filename = os.path.join(data_dir, coil_path)
 
-        # try:
-        if filename:
-            with open(filename, 'r') as text_file:
-                data = [s.split('\t') for s in text_file.readlines()]
+        try:
+            if filename:
+                with open(filename, 'r') as text_file:
+                    data = [s.split('\t') for s in text_file.readlines()]
 
-            registration_coordinates = np.array(data[1:]).astype(np.float32)
-            self.obj_fiducials = registration_coordinates[:, :3]
-            self.obj_orients = registration_coordinates[:, 3:]
+                registration_coordinates = np.array(data[1:]).astype(np.float32)
+                self.obj_fiducials = registration_coordinates[:, :3]
+                self.obj_orients = registration_coordinates[:, 3:]
 
-            self.obj_name = data[0][1]
-            self.obj_ref_mode = int(data[0][-1])
+                self.obj_name = data[0][1]
+                self.obj_ref_mode = int(data[0][-1])
 
-            self.checktrack.Enable(1)
-            self.checktrack.SetValue(True)
-            Publisher.sendMessage('Update object registration',
-                                  data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-            Publisher.sendMessage('Update status text in GUI',
-                                  label=_("Object file successfully loaded"))
-            Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
-            Publisher.sendMessage('Change camera checkbox', status=False)
-            wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
-        # except:
-        #     wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
-        #     Publisher.sendMessage('Update status text in GUI', label="")
+                self.checktrack.Enable(1)
+                self.checktrack.SetValue(True)
+                Publisher.sendMessage('Update object registration',
+                                      data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                Publisher.sendMessage('Update status text in GUI',
+                                      label=_("Object file successfully loaded"))
+                Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                Publisher.sendMessage('Change camera checkbox', status=False)
+                wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
+        except:
+            wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
+            Publisher.sendMessage('Update status text in GUI', label="")
 
     def ShowSaveObjectDialog(self, evt):
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
