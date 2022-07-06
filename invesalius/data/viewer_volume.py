@@ -28,6 +28,13 @@ import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
 import vtk
+from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonCore import (
+    vtkLookupTable,
+    vtkMinimalStandardRandomSequence,
+    vtkPoints,
+    vtkUnsignedCharArray
+)
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from invesalius.pubsub import pub as Publisher
 import random
@@ -46,6 +53,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+
 
 
 if sys.platform == 'win32':
@@ -306,7 +314,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
-
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
@@ -314,7 +321,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
-
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
 
@@ -1526,24 +1532,30 @@ class Viewer(wx.Panel):
         self.peel_centers = centers
         self.peel_normals = normals
 
-        self.Refresh()
-
     def Initlocator_viewer(self, locator):
         self.locator = locator
-        self.Refresh()
 
-    def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
+    def GetCellIDsfromlistPoints(self, vlist, mesh):
+        cell_ids_array = []
+        pts1 = vtk.vtkIdList()
+        for i in range(vlist.GetNumberOfIds()):
+            mesh.GetPointCells(vlist.GetId(i), pts1)
+            for j in range(pts1.GetNumberOfIds()):
+                cell_ids_array.append(pts1.GetId(j))
+        return cell_ids_array
 
+    def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtk.vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtk.vtkIdList()
-
         #for debugging
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor) # remove comment for testing
+        locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+        return intersectingCellIds
 
-        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
-
+    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+        vtk_colors = vtk.vtkNamedColors()
         closestDist = 50
 
         #if find intersection , calculate angle and add actors
@@ -1657,9 +1669,7 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-
     def UpdateObjectArrowOrientation(self, m_img, coord, flag):
-
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
 
         if flag:
@@ -1667,7 +1677,8 @@ class Viewer(wx.Panel):
             #self.ren.RemoveActor(self.y_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
-            self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
+            intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
+            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Refresh()
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):

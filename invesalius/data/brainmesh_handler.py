@@ -255,8 +255,8 @@ class Brain:
 
         self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
-        self.GetCenters(currentPeel)
-        self.GetNormals(currentPeel)
+        self.peel_centers = GetCenters(currentPeel)
+        self.peel_normals = GetNormals(currentPeel)
 
         return self.currentPeelActor
 
@@ -284,26 +284,27 @@ class Brain:
 
         return self.currentPeelActor
 
-    def GetCenters(self, currentPeel):
-        # Compute centers of triangles
-        centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the peel
-        centerComputer.SetInputData(currentPeel)
-        centerComputer.Update()
-        # This stores the centers for easy access
-        peel_centers = centerComputer.GetOutput()
-        self.peel_centers = peel_centers
 
-    def GetNormals(self, currentPeel):
+def GetCenters(mesh):
+        # Compute centers of triangles
+        centerComputer = vtk.vtkCellCenters()  # This computes centers of the triangles on the mesh
+        centerComputer.SetInputData(mesh)
+        centerComputer.Update()
+
+        # This stores the centers for easy access
+        centers = centerComputer.GetOutput()
+        return centers
+
+def GetNormals(mesh):
         # Compute normals of triangles
-        normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the peel
-        normalComputer.SetInputData(currentPeel)
+        normalComputer = vtk.vtkPolyDataNormals()  # This computes normals of the triangles on the mesh
+        normalComputer.SetInputData(mesh)
         normalComputer.ComputePointNormalsOff()
         normalComputer.ComputeCellNormalsOn()
         normalComputer.Update()
         # This converts to the normals to an array for easy access
-        peel_normals = normalComputer.GetOutput().GetCellData().GetNormals()
-        self.peel_normals = peel_normals
-
+        normals = normalComputer.GetOutput().GetCellData().GetNormals()
+        return normals
 
 def cleanMesh(inp):
     cleaned = vtk.vtkCleanPolyData()
