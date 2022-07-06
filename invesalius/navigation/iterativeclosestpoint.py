@@ -24,7 +24,8 @@ import invesalius.gui.dialogs as dlg
 
 from invesalius.utils import Singleton
 
-class ICP(metaclass=Singleton):
+
+class IterativeClosestPoint(metaclass=Singleton):
     def __init__(self):
         self.use_icp = False
         self.m_icp = None
@@ -62,10 +63,11 @@ class ICP(metaclass=Singleton):
                 use_icp = True
             else:
                 use_icp = False
-
+            dialog.Destroy()
             return use_icp, m_icp
 
         else:
+            dialog.Destroy()
             return self.use_icp, self.m_icp
 
     def SetICP(self, navigation, use_icp):

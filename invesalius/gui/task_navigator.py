@@ -66,7 +66,7 @@ import invesalius.session as ses
 
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
-from invesalius.navigation.icp import ICP
+from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.data.converters import to_vtk
@@ -171,7 +171,7 @@ class InnerFoldPanel(wx.Panel):
         #
         tracker = Tracker()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
-        icp = ICP()
+        icp = IterativeClosestPoint()
         neuronavigation_api = NeuronavigationApi()
         navigation = Navigation(
             pedal_connection=pedal_connection,
@@ -700,7 +700,7 @@ class NeuronavigationPanel(wx.Panel):
             else:
                 Publisher.sendMessage('Disconnect tracker')
                 wx.MessageBox(_("Not possible to connect to the robot."), _("InVesalius 3"))
-
+            self.dlg_correg_robot.Destroy()
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
@@ -846,7 +846,7 @@ class NeuronavigationPanel(wx.Panel):
                 # which improves FRE.
                 self.CheckFiducialRegistrationError()
 
-            self.navigation.StartNavigation(self.tracker)
+            self.navigation.StartNavigation(self.tracker, self.icp)
 
     def OnNavigate(self, evt, btn_nav):
         select_tracker_elem = self.select_tracker_elem
@@ -1071,7 +1071,6 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
 
     def OnCreateNewCoil(self, event=None):
-
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection)
             try:
@@ -1099,7 +1098,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
-
+            dialog.Destroy()
         else:
             dlg.ShowNavigationTrackerWarning(0, 'choose')
 
@@ -1480,10 +1479,10 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
         menu_id.AppendSeparator()
         if self.__find_target_marker() == self.lc.GetFocusedItem():
-            target_menu = menu_id.Append(1, _('Remove target'))
+            target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
         else:
-            target_menu = menu_id.Append(1, _('Set as target'))
+            target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         menu_id.AppendSeparator()
 
