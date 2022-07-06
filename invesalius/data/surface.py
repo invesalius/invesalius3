@@ -169,7 +169,7 @@ class SurfaceManager():
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
-        self.convert2inv = None
+        self.convert_to_inv = None
         self.__bind_events()
 
         self._default_parameters = {
@@ -216,7 +216,7 @@ class SurfaceManager():
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
-        Publisher.subscribe(self.UpdateConvert2InvFlag, 'Update convert2inv flag')
+        Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
 
@@ -346,12 +346,31 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
-    def UpdateConvert2InvFlag(self, convert2inv=False):
-        self.convert2inv = convert2inv
+    def UpdateConvertToInvFlag(self, convert_to_inv=False):
+        self.convert_to_inv = convert_to_inv
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False, index=None,
                                   name=None, colour=None, transparency=None,
                                   volume=None, area=None, scalar=False):
+        if self.convert_to_inv:
+            # convert between invesalius and world space with shift in the Y coordinate
+            matrix_shape = sl.Slice().matrix.shape
+            spacing = sl.Slice().spacing
+            img_shift = spacing[1] * (matrix_shape[1] - 1)
+            affine = sl.Slice().affine.copy()
+            affine[1, -1] -= img_shift
+            affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+
+            polydata_transform = vtk.vtkTransform()
+            polydata_transform.PostMultiply()
+            polydata_transform.Concatenate(affine_vtk)
+
+            transformFilter = vtk.vtkTransformPolyDataFilter()
+            transformFilter.SetTransform(polydata_transform)
+            transformFilter.SetInputData(polydata)
+            transformFilter.Update()
+            polydata = transformFilter.GetOutput()
+            self.convert_to_inv = False
 
         normals = vtkPolyDataNormals()
         normals.SetInputData(polydata)
@@ -370,21 +389,6 @@ class SurfaceManager():
         actor = vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetBackfaceCulling(1)
-
-        if self.convert2inv:
-            # convert between invesalius and world space with shift in the Y coordinate
-            affine = sl.Slice().affine
-            # TODO: Check that this is needed with the new way of using affine
-            #  now the affine should be at least the identity(4) and never None
-            if affine is not None:
-                matrix_shape = sl.Slice().matrix.shape
-                spacing = sl.Slice().spacing
-                img_shift = spacing[1] * (matrix_shape[1] - 1)
-                affine = sl.Slice().affine.copy()
-                affine[1, -1] -= img_shift
-                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-
-                actor.SetUserMatrix(affine_vtk)
 
         if overwrite:
             if index is None:
@@ -467,7 +471,7 @@ class SurfaceManager():
         Surface.general_index = -1
 
         self.affine_vtk = None
-        self.convert2inv = False
+        self.convert_to_inv = False
 
 
     def OnSelectSurface(self, surface_index):

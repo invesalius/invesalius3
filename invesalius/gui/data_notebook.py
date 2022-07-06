@@ -28,6 +28,7 @@ except ImportError:
 
 import wx
 import wx.grid
+import numpy as np
 try:
     import wx.lib.agw.flatnotebook as fnb
 except ImportError:
@@ -740,8 +741,9 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
-            convert2inv = dlg.ImportMeshCoordSystem()
-            Publisher.sendMessage('Update convert2inv flag', convert2inv=convert2inv)
+            if not np.allclose(slice_.Slice().affine, np.eye(4)):
+                convert_to_inv = dlg.ImportMeshCoordSystem()
+                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Import surface file', filename=filename)
 
 
