@@ -27,9 +27,10 @@ cimport openmp
 from .cy_my_types cimport vertex_t, normal_t, vertex_id_t
 
 import numpy as np
-import vtk
 
-from vtk.util import numpy_support
+from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData
 
 ctypedef float weight_t
 
@@ -125,14 +126,14 @@ cdef class Mesh:
         faces = np.asarray(self.faces)
         normals = np.asarray(self.normals)
 
-        points = vtk.vtkPoints()
+        points = vtkPoints()
         points.SetData(numpy_support.numpy_to_vtk(vertices))
 
         id_triangles = numpy_support.numpy_to_vtkIdTypeArray(faces)
-        triangles = vtk.vtkCellArray()
+        triangles = vtkCellArray()
         triangles.SetCells(faces.shape[0], id_triangles)
 
-        pd = vtk.vtkPolyData()
+        pd = vtkPolyData()
         pd.SetPoints(points)
         pd.SetPolys(triangles)
 

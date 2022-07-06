@@ -17,8 +17,12 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import vtk
 import wx
+from vtkmodules.vtkInteractionStyle import (
+    vtkInteractorStyleRubberBandZoom,
+    vtkInteractorStyleTrackballCamera,
+)
+from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -29,7 +33,7 @@ from invesalius.pubsub import pub as Publisher
 PROP_MEASURE = 0.8
 
 
-class Base3DInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
+class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
     def __init__(self, viewer):
         self.right_pressed = False
         self.left_pressed = False
@@ -167,7 +171,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Render()
 
 
-class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
+class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
     Interactor style responsible for zoom by selecting a region.
     """
@@ -325,7 +329,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
         self.viewer = viewer
         self.state_code = const.STATE_MEASURE_DISTANCE
-        self.measure_picker = vtk.vtkPropPicker()
+        self.measure_picker = vtkPropPicker()
 
         proj = prj.Project()
         self._radius = min(proj.spacing) * PROP_MEASURE
@@ -366,7 +370,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
         self.viewer = viewer
         self.state_code = const.STATE_MEASURE_DISTANCE
-        self.measure_picker = vtk.vtkPropPicker()
+        self.measure_picker = vtkPropPicker()
 
         proj = prj.Project()
         self._radius = min(proj.spacing) * PROP_MEASURE
@@ -404,7 +408,7 @@ class SeedInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         super().__init__(viewer)
         self.viewer = viewer
-        self.picker = vtk.vtkPointPicker()
+        self.picker = vtkPointPicker()
 
         self.RemoveObservers("LeftButtonPressEvent")
         self.AddObserver("LeftButtonPressEvent", self.OnInsertSeed)
@@ -425,7 +429,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
 
         self.state_code = const.SLICE_STATE_CROSS
-        self.picker = vtk.vtkCellPicker()
+        self.picker = vtkCellPicker()
         self.picker.SetTolerance(1e-3)
         # self.picker.SetUseCells(True)
         self.viewer.interactor.SetPicker(self.picker)

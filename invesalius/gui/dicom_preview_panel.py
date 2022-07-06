@@ -25,12 +25,14 @@ import time
 import tempfile
 
 import wx
-import vtk
+from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
+from vtkmodules.vtkImagingCore import vtkImageFlip
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
+from vtkmodules.vtkIOImage import vtkPNGReader
+from vtkmodules.vtkRenderingCore import vtkImageActor, vtkRenderer
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
-from vtk.util import  numpy_support
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from invesalius.pubsub import pub as Publisher
-
 import invesalius.constants as const
 import invesalius.reader.dicom_reader as dicom_reader
 import invesalius.data.vtk_utils as vtku
@@ -749,18 +751,18 @@ class SingleImagePreview(wx.Panel):
         text_acquisition.SetSymbolicSize(wx.FONTSIZE_SMALL)
         self.text_acquisition = text_acquisition
 
-        self.renderer = vtk.vtkRenderer()
+        self.renderer = vtkRenderer()
         self.renderer.SetLayer(0)
 
         cam = self.renderer.GetActiveCamera()
 
-        self.canvas_renderer = vtk.vtkRenderer()
+        self.canvas_renderer = vtkRenderer()
         self.canvas_renderer.SetLayer(1)
         self.canvas_renderer.SetActiveCamera(cam)
         self.canvas_renderer.SetInteractive(0)
         self.canvas_renderer.PreserveDepthBufferOn()
 
-        style = vtk.vtkInteractorStyleImage()
+        style = vtkInteractorStyleImage()
 
         self.interactor.GetRenderWindow().SetNumberOfLayers(2)
         self.interactor.GetRenderWindow().AddRenderer(self.renderer)
@@ -894,7 +896,7 @@ class SingleImagePreview(wx.Panel):
         self.text_acquisition.SetValue(value)
 
         if isinstance(dicom.image.thumbnail_path, list):
-            reader = vtk.vtkPNGReader()
+            reader = vtkPNGReader()
             if _has_win32api:
                 reader.SetFileName(win32api.GetShortPathName(dicom.image.thumbnail_path[index]).encode(const.FS_ENCODE))
             else:
@@ -913,7 +915,7 @@ class SingleImagePreview(wx.Panel):
             # ADJUST CONTRAST
             window_level = dicom.image.level
             window_width = dicom.image.window
-            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer = vtkImageMapToWindowLevelColors()
             colorer.SetInputData(vtk_image)
             colorer.SetWindow(float(window_width))
             colorer.SetLevel(float(window_level))
@@ -921,7 +923,7 @@ class SingleImagePreview(wx.Panel):
 
             image = colorer.GetOutput()
 
-        flip = vtk.vtkImageFlip()
+        flip = vtkImageFlip()
         flip.SetInputData(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
@@ -929,7 +931,7 @@ class SingleImagePreview(wx.Panel):
         flip.Update()
 
         if self.actor is None:
-            self.actor = vtk.vtkImageActor()
+            self.actor = vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         self.canvas.modified = True

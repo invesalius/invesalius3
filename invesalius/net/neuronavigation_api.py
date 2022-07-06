@@ -21,7 +21,7 @@ from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 import numpy as np
-from vtk.numpy_interface import dataset_adapter
+from vtkmodules.numpy_interface import dataset_adapter
 
 class NeuronavigationApi(metaclass=Singleton):
     """

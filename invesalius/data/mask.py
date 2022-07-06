@@ -31,11 +31,10 @@ import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 from invesalius.data.volume import VolumeMask
 import numpy as np
-import vtk
 from invesalius_cy import floodfill
 from invesalius.pubsub import pub as Publisher
 from scipy import ndimage
-from vtk.util import numpy_support
+from vtkmodules.util import numpy_support
 
 
 class EditionHistoryNode(object):

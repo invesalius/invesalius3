@@ -36,14 +36,35 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
-import vtk
 import wx
 try:
     from wx.adv import BitmapComboBox
 except ImportError:
     from wx.combo import BitmapComboBox
 
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+from vtkmodules.vtkCommonCore import mutable, vtkPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellLocator,
+    vtkIterativeClosestPointTransform,
+    vtkPolyData,
+)
+from vtkmodules.vtkCommonTransforms import vtkTransform
+from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
+from vtkmodules.vtkFiltersSources import vtkSphereSource
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkFollower,
+    vtkPolyDataMapper,
+    vtkProperty,
+    vtkRenderer,
+)
+from vtkmodules.vtkRenderingFreeType import vtkVectorText
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
 from wx.lib import masked
 from wx.lib.agw import floatspin
 import wx.lib.filebrowsebutton as filebrowse
@@ -3357,7 +3378,7 @@ class ObjectCalibrationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         # Initialize list of buttons and txtctrls for wx objects
@@ -3465,19 +3486,19 @@ class ObjectCalibrationDialog(wx.Dialog):
 
             if filename:
                 if filename.lower().endswith('.stl'):
-                    reader = vtk.vtkSTLReader()
+                    reader = vtkSTLReader()
                 elif filename.lower().endswith('.ply'):
-                    reader = vtk.vtkPLYReader()
+                    reader = vtkPLYReader()
                 elif filename.lower().endswith('.obj'):
-                    reader = vtk.vtkOBJReader()
+                    reader = vtkOBJReader()
                 elif filename.lower().endswith('.vtp'):
-                    reader = vtk.vtkXMLPolyDataReader()
+                    reader = vtkXMLPolyDataReader()
                 else:
                     wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
                     return
             else:
                 filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                reader = vtk.vtkSTLReader()
+                reader = vtkSTLReader()
 
                 # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
                 #      use the default object after all. A more logical behavior in that case would be to cancel the
@@ -3486,7 +3507,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                 self.use_default_object = True
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtk.vtkSTLReader()
+            reader = vtkSTLReader()
 
         if _has_win32api:
             self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
@@ -3501,26 +3522,26 @@ class ObjectCalibrationDialog(wx.Dialog):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.RotateZ(90)
 
-        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt = vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(polydata)
         transform_filt.Update()
 
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
 
         self.ball_actors[0], self.text_actors[0] = self.OnCreateObjectText('Left', (0,55,0))
@@ -3533,21 +3554,21 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def OnCreateObjectText(self, name, coord):
-        ball_source = vtk.vtkSphereSource()
+        ball_source = vtkSphereSource()
         ball_source.SetRadius(3)
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_source.GetOutputPort())
-        ball_actor = vtk.vtkActor()
+        ball_actor = vtkActor()
         ball_actor.SetMapper(mapper)
         ball_actor.SetPosition(coord)
         ball_actor.GetProperty().SetColor(1, 0, 0)
 
-        textSource = vtk.vtkVectorText()
+        textSource = vtkVectorText()
         textSource.SetText(name)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(textSource.GetOutputPort())
-        tactor = vtk.vtkFollower()
+        tactor = vtkFollower()
         tactor.SetMapper(mapper)
         tactor.GetProperty().SetColor(1.0, 0.0, 0.0)
         tactor.SetScale(5)
@@ -3705,7 +3726,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         self.timer = wx.Timer(self)
@@ -3794,12 +3815,12 @@ class ICPCorregistrationDialog(wx.Dialog):
         Load the selected actor from the project (self.surface) into the scene
         :return:
         '''
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
         self.obj_actor = obj_actor
 
@@ -3869,18 +3890,18 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         x, y, z = coord[0], -coord[1], coord[2]
 
-        ball_ref = vtk.vtkSphereSource()
+        ball_ref = vtkSphereSource()
         ball_ref.SetRadius(size)
         ball_ref.SetCenter(x, y, z)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
-        prop = vtk.vtkProperty()
+        prop = vtkProperty()
         prop.SetColor(colour[0:3])
 
         #adding a new actor for the present ball
-        sphere_actor = vtk.vtkActor()
+        sphere_actor = vtkActor()
 
         sphere_actor.SetMapper(mapper)
         sphere_actor.SetProperty(prop)
@@ -3908,7 +3929,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         Copies the elements of a vtkMatrix4x4 into a numpy array.
 
         :param matrix: The matrix to be copied into an array.
-        :type matrix: vtk.vtkMatrix4x4
+        :type matrix: vtkMatrix4x4
         :rtype: numpy.ndarray
         """
         m = np.ones((4, 4))
@@ -3954,19 +3975,19 @@ class ICPCorregistrationDialog(wx.Dialog):
         """
         Estimation of the average squared distance between the cloud of points to the closest mesh
         :param surface: Surface polydata of the scene
-        :type surface: vtk.polydata
+        :type surface: polydata
         :param points: Cloud of points
         :type points: np.ndarray
         :return: mean distance
         """
-        cell_locator = vtk.vtkCellLocator()
+        cell_locator = vtkCellLocator()
         cell_locator.SetDataSet(surface)
         cell_locator.BuildLocator()
 
-        cellId = vtk.mutable(0)
+        cellId = mutable(0)
         c = [0.0, 0.0, 0.0]
-        subId = vtk.mutable(0)
-        d = vtk.mutable(0.0)
+        subId = mutable(0)
+        d = mutable(0.0)
         error = []
         for i in range(len(points)):
             cell_locator.FindClosestPoint(points[i], c, cellId, subId, d)
@@ -3978,19 +3999,19 @@ class ICPCorregistrationDialog(wx.Dialog):
         """
         Estimation of the squared distance between the point to the closest mesh
         :param surface: Surface polydata of the scene
-        :type surface: vtk.polydata
+        :type surface: polydata
         :param points: single points
         :type points: np.ndarray
         :return: mean distance
         """
-        cell_locator = vtk.vtkCellLocator()
+        cell_locator = vtkCellLocator()
         cell_locator.SetDataSet(surface)
         cell_locator.BuildLocator()
 
-        cellId = vtk.mutable(0)
+        cellId = mutable(0)
         c = [0.0, 0.0, 0.0]
-        subId = vtk.mutable(0)
-        d = vtk.mutable(0.0)
+        subId = mutable(0)
+        d = mutable(0.0)
         cell_locator.FindClosestPoint(points, c, cellId, subId, d)
 
         return np.sqrt(float(d))
@@ -4054,15 +4075,15 @@ class ICPCorregistrationDialog(wx.Dialog):
         time.sleep(1)
 
         sourcePoints = np.array(self.point_coord)
-        sourcePoints_vtk = vtk.vtkPoints()
+        sourcePoints_vtk = vtkPoints()
 
         for i in range(len(sourcePoints)):
             id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
 
-        source = vtk.vtkPolyData()
+        source = vtkPolyData()
         source.SetPoints(sourcePoints_vtk)
 
-        icp = vtk.vtkIterativeClosestPointTransform()
+        icp = vtkIterativeClosestPointTransform()
         icp.SetSource(source)
         icp.SetTarget(self.surface)
 
@@ -4087,7 +4108,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.m_icp = self.vtkmatrix_to_numpy(icp.GetMatrix())
 
-        icpTransformFilter = vtk.vtkTransformPolyDataFilter()
+        icpTransformFilter = vtkTransformPolyDataFilter()
         icpTransformFilter.SetInputData(source)
 
         icpTransformFilter.SetTransform(icp)
@@ -4108,16 +4129,16 @@ class ICPCorregistrationDialog(wx.Dialog):
             transformedSource.GetPoint(i, p)
             transformed_points.append(p)
 
-            point = vtk.vtkSphereSource()
+            point = vtkSphereSource()
             point.SetCenter(p)
             point.SetRadius(3)
             point.SetPhiResolution(3)
             point.SetThetaResolution(3)
 
-            mapper = vtk.vtkPolyDataMapper()
+            mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(point.GetOutputPort())
 
-            actor = vtk.vtkActor()
+            actor = vtkActor()
             actor.SetMapper(mapper)
             actor.GetProperty().SetColor((0,1,0))
             self.actors_transformed_points.append(actor)

@@ -19,8 +19,9 @@
 
 import os
 
-import vtk
 import nibabel as nib
+
+from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 from invesalius import inv_paths
@@ -40,9 +41,9 @@ def ReadOthers(dir_):
 
     if not const.VTK_WARNING:
         log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
-        fow = vtk.vtkFileOutputWindow()
+        fow = vtkFileOutputWindow()
         fow.SetFileName(log_path.encode(const.FS_ENCODE))
-        ow = vtk.vtkOutputWindow()
+        ow = vtkOutputWindow()
         ow.SetInstance(fow)
 
     try:

@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import tempfile
 import time
+import weakref
 
 try:
     import queue
@@ -9,14 +10,26 @@ except ImportError:
     import Queue as queue
 
 import numpy
-import vtk
+from scipy import ndimage
+from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
+from vtkmodules.vtkFiltersCore import (
+    vtkAppendPolyData,
+    vtkCleanPolyData,
+    vtkContourFilter,
+    vtkMassProperties,
+    vtkPolyDataConnectivityFilter,
+    vtkPolyDataNormals,
+    vtkQuadricDecimation,
+)
+from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
+from vtkmodules.vtkImagingCore import vtkImageFlip, vtkImageResample
+from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.i18n as i18n
 import invesalius.data.converters as converters
 from invesalius_cy import cy_mesh
 
-import weakref
-from scipy import ndimage
 
 # TODO: Code duplicated from file {imagedata_utils.py}.
 def ResampleImage3D(imagedata, value):
@@ -32,7 +45,7 @@ def ResampleImage3D(imagedata, value):
 
     resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
 
-    resample = vtk.vtkImageResample()
+    resample = vtkImageResample()
     resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
@@ -67,9 +80,9 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
 
 
     log_path = tempfile.mktemp('vtkoutput.txt')
-    fow = vtk.vtkFileOutputWindow()
+    fow = vtkFileOutputWindow()
     fow.SetFileName(log_path)
-    ow = vtk.vtkOutputWindow()
+    ow = vtkOutputWindow()
     ow.SetInstance(fow)
 
 
@@ -113,7 +126,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
 
             image =  converters.to_vtk(a_image, spacing, roi.start, "AXIAL", padding=padding)
 
-            gauss = vtk.vtkImageGaussianSmooth()
+            gauss = vtkImageGaussianSmooth()
             gauss.SetInputData(image)
             gauss.SetRadiusFactor(0.3)
             gauss.ReleaseDataFlagOn()
@@ -134,14 +147,14 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     #  if imagedata_resolution:
         #  image = ResampleImage3D(image, imagedata_resolution)
 
-    flip = vtk.vtkImageFlip()
+    flip = vtkImageFlip()
     flip.SetInputData(image)
     flip.SetFilteredAxis(1)
     flip.FlipAboutOriginOn()
     flip.ReleaseDataFlagOn()
     flip.Update()
 
-    #  writer = vtk.vtkXMLImageDataWriter()
+    #  writer = vtkXMLImageDataWriter()
     #  writer.SetFileName('/tmp/camboja.vti')
     #  writer.SetInputData(flip.GetOutput())
     #  writer.Write()
@@ -150,7 +163,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     image = flip.GetOutput()
     del flip
 
-    contour = vtk.vtkContourFilter()
+    contour = vtkContourFilter()
     contour.SetInputData(image)
     if from_binary:
         contour.SetValue(0, 127) # initial threshold
@@ -168,7 +181,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     del contour
 
     filename = tempfile.mktemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
-    writer = vtk.vtkXMLPolyDataWriter()
+    writer = vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
     writer.Write()
@@ -186,15 +199,15 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
             print(e)
 
     log_path = tempfile.mktemp('vtkoutput.txt')
-    fow = vtk.vtkFileOutputWindow()
+    fow = vtkFileOutputWindow()
     fow.SetFileName(log_path)
-    ow = vtk.vtkOutputWindow()
+    ow = vtkOutputWindow()
     ow.SetInstance(fow)
 
     send_message('Joining surfaces ...')
-    polydata_append = vtk.vtkAppendPolyData()
+    polydata_append = vtkAppendPolyData()
     for f in filenames:
-        reader = vtk.vtkXMLPolyDataReader()
+        reader = vtkXMLPolyDataReader()
         reader.SetFileName(f)
         reader.Update()
 
@@ -212,7 +225,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     del polydata_append
 
     send_message('Cleaning surface ...')
-    clean = vtk.vtkCleanPolyData()
+    clean = vtkCleanPolyData()
     #  clean.ReleaseDataFlagOn()
     #  clean.GetOutput().ReleaseDataFlagOn()
     clean_ref = weakref.ref(clean)
@@ -229,7 +242,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
     if algorithm == 'ca_smoothing':
         send_message('Calculating normals ...')
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals_ref = weakref.ref(normals)
         #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
                                   #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
@@ -245,7 +258,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
         #  polydata.SetSource(None)
         del normals
 
-        clean = vtk.vtkCleanPolyData()
+        clean = vtkCleanPolyData()
         #  clean.ReleaseDataFlagOn()
         #  clean.GetOutput().ReleaseDataFlagOn()
         clean_ref = weakref.ref(clean)
@@ -280,9 +293,9 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
         #  polydata.SetSource(None)
         #  polydata.DebugOn()
     #  else:
-        #  #smoother = vtk.vtkWindowedSincPolyDataFilter()
+        #  #smoother = vtkWindowedSincPolyDataFilter()
         #  send_message('Smoothing ...')
-        #  smoother = vtk.vtkSmoothPolyDataFilter()
+        #  smoother = vtkSmoothPolyDataFilter()
         #  smoother_ref = weakref.ref(smoother)
         #  #  smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
                         #  #  UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
@@ -309,7 +322,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     if not decimate_reduction:
         print("Decimating", decimate_reduction)
         send_message('Decimating ...')
-        decimation = vtk.vtkQuadricDecimation()
+        decimation = vtkQuadricDecimation()
         #  decimation.ReleaseDataFlagOn()
         decimation.SetInputData(polydata)
         decimation.SetTargetReduction(decimate_reduction)
@@ -332,7 +345,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
     if keep_largest:
         send_message('Finding the largest ...')
-        conn = vtk.vtkPolyDataConnectivityFilter()
+        conn = vtkPolyDataConnectivityFilter()
         conn.SetInputData(polydata)
         conn.SetExtractionModeToLargestRegion()
         conn_ref = weakref.ref(conn)
@@ -351,7 +364,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #polydata_utils.FillSurfaceHole, we need to review this.
     if fill_holes:
         send_message('Filling holes ...')
-        filled_polydata = vtk.vtkFillHolesFilter()
+        filled_polydata = vtkFillHolesFilter()
         #  filled_polydata.ReleaseDataFlagOn()
         filled_polydata.SetInputData(polydata)
         filled_polydata.SetHoleSize(300)
@@ -369,7 +382,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
     to_measure = polydata
 
-    normals = vtk.vtkPolyDataNormals()
+    normals = vtkPolyDataNormals()
     #  normals.ReleaseDataFlagOn()
     #  normals_ref = weakref.ref(normals)
     #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -390,7 +403,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
 
     #  # Improve performance
-    #  stripper = vtk.vtkStripper()
+    #  stripper = vtkStripper()
     #  #  stripper.ReleaseDataFlagOn()
     #  #  stripper_ref = weakref.ref(stripper)
     #  #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -407,7 +420,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  del stripper
 
     send_message('Calculating area and volume ...')
-    measured_polydata = vtk.vtkMassProperties()
+    measured_polydata = vtkMassProperties()
     measured_polydata.SetInputData(to_measure)
     measured_polydata.Update()
     volume =  float(measured_polydata.GetVolume())
@@ -415,7 +428,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     del measured_polydata
 
     filename = tempfile.mktemp(suffix='_full.vtp')
-    writer = vtk.vtkXMLPolyDataWriter()
+    writer = vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
     writer.Write()

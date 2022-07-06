@@ -17,7 +17,10 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import vtk
+from vtkmodules.vtkFiltersSources import vtkPlaneSource
+from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
+from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
+
 
 AXIAL, SAGITAL, CORONAL =  0, 1, 2
 PLANE_DATA = {AXIAL: ["z",(0,0,1)],
@@ -82,13 +85,13 @@ class Plane():
 
         # Picker for enabling plane motion.
         # Allows selection of a cell by shooting a ray into graphics window
-        picker = vtk.vtkCellPicker()
+        picker = vtkCellPicker()
         picker.SetTolerance(0.005)
         picker.PickFromListOn()
 
         # 3D widget for reslicing image data.
         # This 3D widget defines a plane that can be interactively placed in an image volume.
-        widget = vtk.vtkImagePlaneWidget()
+        widget = vtkImagePlaneWidget()
         widget.SetInput(imagedata)
         widget.SetSliceIndex(self.index)
         widget.SetPicker(picker)
@@ -105,17 +108,17 @@ class Plane():
         prop.SetColor(colour)
 
         # Syncronize coloured outline with texture appropriately
-        source = vtk.vtkPlaneSource()
+        source = vtkPlaneSource()
         source.SetOrigin(widget.GetOrigin())
         source.SetPoint1(widget.GetPoint1())
         source.SetPoint2(widget.GetPoint2())
         source.SetNormal(widget.GetNormal())
         self.source = source
         
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInput(source.GetOutput())
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.SetTexture(widget.GetTexture())
         actor.VisibilityOff()

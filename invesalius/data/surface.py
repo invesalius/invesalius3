@@ -34,9 +34,18 @@ try:
 except ImportError:
     import Queue as queue
 
-import vtk
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
+from vtkmodules.vtkFiltersCore import (
+    vtkMassProperties,
+    vtkPolyDataNormals,
+    vtkStripper,
+    vtkTriangleFilter,
+)
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
+from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from invesalius.pubsub import pub as Publisher
 
@@ -310,14 +319,14 @@ class SurfaceManager():
     def CreateSurfaceFromFile(self, filename):
         scalar = False
         if filename.lower().endswith('.stl'):
-            reader = vtk.vtkSTLReader()
+            reader = vtkSTLReader()
         elif filename.lower().endswith('.ply'):
-            reader = vtk.vtkPLYReader()
+            reader = vtkPLYReader()
             scalar = True
         elif filename.lower().endswith('.obj'):
-            reader = vtk.vtkOBJReader()
+            reader = vtkOBJReader()
         elif filename.lower().endswith('.vtp'):
-            reader = vtk.vtkXMLPolyDataReader()
+            reader = vtkXMLPolyDataReader()
             scalar = True
         else:
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
@@ -344,13 +353,13 @@ class SurfaceManager():
                                   name=None, colour=None, transparency=None,
                                   volume=None, area=None, scalar=False):
 
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals.SetInputData(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         if scalar:
             mapper.ScalarVisibilityOn()
@@ -358,7 +367,7 @@ class SurfaceManager():
             mapper.ScalarVisibilityOff()
         #  mapper.ImmediateModeRenderingOn() # improve performance
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetBackfaceCulling(1)
 
@@ -423,11 +432,11 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         if not volume or not area:
-            triangle_filter = vtk.vtkTriangleFilter()
+            triangle_filter = vtkTriangleFilter()
             triangle_filter.SetInputData(polydata)
             triangle_filter.Update()
 
-            measured_polydata = vtk.vtkMassProperties()
+            measured_polydata = vtkMassProperties()
             measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
             measured_polydata.Update()
             volume =  measured_polydata.GetVolume()
@@ -476,25 +485,25 @@ class SurfaceManager():
             surface = surface_dict[key]
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
-            normals = vtk.vtkPolyDataNormals()
+            normals = vtkPolyDataNormals()
             normals.SetInputData(surface.polydata)
             normals.SetFeatureAngle(80)
             normals.AutoOrientNormalsOn()
             #  normals.GetOutput().ReleaseDataFlagOn()
 
             # Improve performance
-            stripper = vtk.vtkStripper()
+            stripper = vtkStripper()
             stripper.SetInputConnection(normals.GetOutputPort())
             stripper.PassThroughCellIdsOn()
             stripper.PassThroughPointIdsOn()
 
-            mapper = vtk.vtkPolyDataMapper()
+            mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(stripper.GetOutputPort())
             mapper.ScalarVisibilityOff()
             #  mapper.ImmediateModeRenderingOn() # improve performance
 
             # Represent an object (geometry & properties) in the rendered scene
-            actor = vtk.vtkActor()
+            actor = vtkActor()
             actor.GetProperty().SetBackfaceCulling(1)
             actor.SetMapper(mapper)
 
@@ -524,20 +533,20 @@ class SurfaceManager():
 
     def _show_surface(self, surface_filename, surface_measures, overwrite, surface_name, colour, dialog):
         print(surface_filename, surface_measures)
-        reader = vtk.vtkXMLPolyDataReader()
+        reader = vtkXMLPolyDataReader()
         reader.SetFileName(surface_filename)
         reader.Update()
         polydata = reader.GetOutput()
 
         # Map polygonal data (vtkPolyData) to graphics primitives.
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(polydata)
         mapper.ScalarVisibilityOff()
         #  mapper.ReleaseDataFlagOn()
         #  mapper.ImmediateModeRenderingOn() # improve performance
 
         # Represent an object (geometry & properties) in the rendered scene
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.GetProperty().SetBackfaceCulling(1)
         actor.SetMapper(mapper)
         del mapper
@@ -715,7 +724,7 @@ class SurfaceManager():
                 print(traceback.print_exc())
                 return
 
-            reader = vtk.vtkXMLPolyDataReader()
+            reader = vtkXMLPolyDataReader()
             reader.SetFileName(surface_filename)
             reader.Update()
 
@@ -938,17 +947,17 @@ class SurfaceManager():
             # Having a polydata that represents all surfaces
             # selected, we write it, according to filetype
             if filetype == const.FILETYPE_STL:
-                writer = vtk.vtkSTLWriter()
+                writer = vtkSTLWriter()
                 writer.SetFileTypeToBinary()
             elif filetype == const.FILETYPE_STL_ASCII:
-                writer = vtk.vtkSTLWriter()
+                writer = vtkSTLWriter()
                 writer.SetFileTypeToASCII()
             elif filetype == const.FILETYPE_VTP:
-                writer = vtk.vtkXMLPolyDataWriter()
+                writer = vtkXMLPolyDataWriter()
             #elif filetype == const.FILETYPE_IV:
-            #    writer = vtk.vtkIVWriter()
+            #    writer = vtkIVWriter()
             elif filetype == const.FILETYPE_PLY:
-                writer = vtk.vtkPLYWriter()
+                writer = vtkPLYWriter()
                 writer.SetFileTypeToASCII()
                 writer.SetColorModeToOff()
                 #writer.SetDataByteOrderToLittleEndian()
@@ -959,7 +968,7 @@ class SurfaceManager():
                             const.FILETYPE_STL_ASCII,
                             const.FILETYPE_PLY):
                 # Invert normals
-                normals = vtk.vtkPolyDataNormals()
+                normals = vtkPolyDataNormals()
                 normals.SetInputData(polydata)
                 normals.SetFeatureAngle(80)
                 normals.AutoOrientNormalsOn()
