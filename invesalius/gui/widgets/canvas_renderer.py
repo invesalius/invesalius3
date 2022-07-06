@@ -22,15 +22,15 @@ import sys
 
 import numpy as np
 import wx
-import vtk
 
 try:
     from weakref import WeakMethod
 except ImportError:
     from weakrefmethod import WeakMethod
 
+from vtkmodules.vtkRenderingCore import vtkImageMapper, vtkActor2D, vtkCoordinate
+
 from invesalius.data import converters
-from invesalius.pubsub import pub as Publisher
 
 
 class CanvasEvent:
@@ -125,12 +125,12 @@ class CanvasRendererCTX:
 
         self._cv_image = converters.np_rgba_to_vtk(self._array)
 
-        self.mapper = vtk.vtkImageMapper()
+        self.mapper = vtkImageMapper()
         self.mapper.SetInputData(self._cv_image)
         self.mapper.SetColorWindow(255)
         self.mapper.SetColorLevel(128)
 
-        self.actor = vtk.vtkActor2D()
+        self.actor = vtkActor2D()
         self.actor.SetPosition(0, 0)
         self.actor.SetMapper(self.mapper)
         self.actor.GetProperty().SetOpacity(0.99)
@@ -310,7 +310,7 @@ class CanvasRendererCTX:
 
         self._array[:] = 0
 
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
 
         self.image.SetDataBuffer(self.rgb)
         self.image.SetAlphaBuffer(self.alpha)
@@ -770,7 +770,7 @@ class CanvasHandlerBase(object):
             child.visible = value
 
     def _3d_to_2d(self, renderer, pos):
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         coord.SetValue(pos)
         px, py = coord.GetComputedDoubleDisplayValue(renderer)
         return px, py

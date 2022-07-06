@@ -66,7 +66,7 @@ import invesalius.session as ses
 
 from invesalius import utils
 from invesalius.gui import utils as gui_utils
-from invesalius.navigation.icp import ICP
+from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.data.converters import to_vtk
@@ -171,7 +171,7 @@ class InnerFoldPanel(wx.Panel):
         #
         tracker = Tracker()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
-        icp = ICP()
+        icp = IterativeClosestPoint()
         neuronavigation_api = NeuronavigationApi()
         navigation = Navigation(
             pedal_connection=pedal_connection,
@@ -846,7 +846,7 @@ class NeuronavigationPanel(wx.Panel):
                 # which improves FRE.
                 self.CheckFiducialRegistrationError()
 
-            self.navigation.StartNavigation(self.tracker)
+            self.navigation.StartNavigation(self.tracker, self.icp)
 
     def OnNavigate(self, evt, btn_nav):
         select_tracker_elem = self.select_tracker_elem

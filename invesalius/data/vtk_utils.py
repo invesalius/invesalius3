@@ -18,8 +18,16 @@
 #--------------------------------------------------------------------------
 import sys
 
-import vtk
 import wx
+from vtkmodules.vtkCommonMath import vtkMatrix4x4
+from vtkmodules.vtkRenderingCore import (
+    vtkActor2D,
+    vtkCoordinate,
+    vtkTextActor,
+    vtkTextMapper,
+    vtkTextProperty,
+)
+
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 from invesalius.gui.dialogs import ProgressDialog
@@ -97,7 +105,7 @@ class Text(object):
     def __init__(self):
         self.layer = 99
         self.children = []
-        property = vtk.vtkTextProperty()
+        property = vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE)
         property.SetFontFamilyToArial()
         property.BoldOff()
@@ -108,11 +116,11 @@ class Text(object):
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        mapper = vtk.vtkTextMapper()
+        mapper = vtkTextMapper()
         mapper.SetTextProperty(property)
         self.mapper = mapper
 
-        actor = vtk.vtkActor2D()
+        actor = vtkActor2D()
         actor.SetMapper(mapper)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
@@ -202,7 +210,7 @@ class TextZero(object):
     def __init__(self):
         self.layer = 99
         self.children = []
-        property = vtk.vtkTextProperty()
+        property = vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE_LARGE)
         property.SetFontFamilyToArial()
         property.BoldOn()
@@ -213,7 +221,7 @@ class TextZero(object):
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        actor = vtk.vtkTextActor()
+        actor = vtkTextActor()
         actor.GetTextProperty().ShallowCopy(property)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
@@ -284,7 +292,7 @@ class TextZero(object):
         self.actor.VisibilityOff()
 
     def draw_to_canvas(self, gc, canvas):
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         coord.SetCoordinateSystemToNormalizedDisplay()
         coord.SetValue(*self.position)
         x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
@@ -310,7 +318,7 @@ def numpy_to_vtkMatrix4x4(affine):
     # assert isinstance(affine, np.ndarray)
     assert affine.shape == (4, 4)
 
-    affine_vtk = vtk.vtkMatrix4x4()
+    affine_vtk = vtkMatrix4x4()
     for row in range(0, 4):
         for col in range(0, 4):
             affine_vtk.SetElement(row, col, affine[row, col])

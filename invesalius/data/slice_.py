@@ -20,8 +20,20 @@ import os
 import tempfile
 
 import numpy as np
-import vtk
 from scipy import ndimage
+from vtkmodules.vtkCommonCore import vtkLookupTable
+from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
+from vtkmodules.vtkImagingCore import (
+    vtkImageBlend,
+    vtkImageCast,
+    vtkImageFlip,
+    vtkImageMapToColors,
+)
+from vtkmodules.vtkRenderingCore import (
+    vtkColorTransferFunction,
+    vtkWindowLevelLookupTable,
+)
+
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -1316,14 +1328,14 @@ class Slice(metaclass=utils.Singleton):
     def UpdateSlice3D(self, widget, orientation):
         img = self.buffer_slices[orientation].vtk_image
         original_orientation = Project().original_orientation
-        cast = vtk.vtkImageCast()
+        cast = vtkImageCast()
         cast.SetInputData(img)
         cast.SetOutputScalarTypeToDouble()
         cast.ClampOverflowOn()
         cast.Update()
 
         # if (original_orientation == const.AXIAL):
-        flip = vtk.vtkImageFlip()
+        flip = vtkImageFlip()
         flip.SetInputConnection(cast.GetOutputPort())
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
@@ -1406,7 +1418,7 @@ class Slice(metaclass=utils.Singleton):
 
     def do_ww_wl(self, image):
         if self.from_ == PLIST:
-            lut = vtk.vtkWindowLevelLookupTable()
+            lut = vtkWindowLevelLookupTable()
             lut.SetWindow(self.window_width)
             lut.SetLevel(self.window_level)
             lut.Build()
@@ -1416,13 +1428,13 @@ class Slice(metaclass=utils.Singleton):
                 lut.SetTableValue(i, r / 255.0, g / 255.0, b / 255.0, 1.0)
                 i += 1
 
-            colorer = vtk.vtkImageMapToColors()
+            colorer = vtkImageMapToColors()
             colorer.SetInputData(image)
             colorer.SetLookupTable(lut)
             colorer.SetOutputFormatToRGB()
             colorer.Update()
         elif self.from_ == WIDGET:
-            lut = vtk.vtkColorTransferFunction()
+            lut = vtkColorTransferFunction()
 
             for n in self.nodes:
                 r, g, b = n.colour
@@ -1430,13 +1442,13 @@ class Slice(metaclass=utils.Singleton):
 
             lut.Build()
 
-            colorer = vtk.vtkImageMapToColors()
+            colorer = vtkImageMapToColors()
             colorer.SetLookupTable(lut)
             colorer.SetInputData(image)
             colorer.SetOutputFormatToRGB()
             colorer.Update()
         else:
-            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer = vtkImageMapToWindowLevelColors()
             colorer.SetInputData(image)
             colorer.SetWindow(self.window_width)
             colorer.SetLevel(self.window_level)
@@ -1512,7 +1524,7 @@ class Slice(metaclass=utils.Singleton):
             return imagedata
         else:
             # map scalar values into colors
-            lut_bg = vtk.vtkLookupTable()
+            lut_bg = vtkLookupTable()
             lut_bg.SetTableRange(imagedata.GetScalarRange())
             lut_bg.SetSaturationRange(self.saturation_range)
             lut_bg.SetHueRange(self.hue_range)
@@ -1520,7 +1532,7 @@ class Slice(metaclass=utils.Singleton):
             lut_bg.Build()
 
             # map the input image through a lookup table
-            img_colours_bg = vtk.vtkImageMapToColors()
+            img_colours_bg = vtkImageMapToColors()
             img_colours_bg.SetOutputFormatToRGB()
             img_colours_bg.SetLookupTable(lut_bg)
             img_colours_bg.SetInputData(imagedata)
@@ -1533,7 +1545,7 @@ class Slice(metaclass=utils.Singleton):
         r, g, b = self.current_mask.colour[:3]
 
         # map scalar values into colors
-        lut_mask = vtk.vtkLookupTable()
+        lut_mask = vtkLookupTable()
         lut_mask.SetNumberOfColors(256)
         lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
         lut_mask.SetSaturationRange(1, 1)
@@ -1551,7 +1563,7 @@ class Slice(metaclass=utils.Singleton):
         # self.lut_mask = lut_mask
 
         # map the input image through a lookup table
-        img_colours_mask = vtk.vtkImageMapToColors()
+        img_colours_mask = vtkImageMapToColors()
         img_colours_mask.SetLookupTable(lut_mask)
         img_colours_mask.SetOutputFormatToRGBA()
         img_colours_mask.SetInputData(imagedata)
@@ -1566,7 +1578,7 @@ class Slice(metaclass=utils.Singleton):
         maxv = max(map_colours)
         ncolours = maxv - minv + 1
 
-        lut_mask = vtk.vtkLookupTable()
+        lut_mask = vtkLookupTable()
         lut_mask.SetNumberOfColors(ncolours)
         lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
         lut_mask.SetSaturationRange(1, 1)
@@ -1583,7 +1595,7 @@ class Slice(metaclass=utils.Singleton):
         # self.lut_mask = lut_mask
 
         # map the input image through a lookup table
-        img_colours_mask = vtk.vtkImageMapToColors()
+        img_colours_mask = vtkImageMapToColors()
         img_colours_mask.SetLookupTable(lut_mask)
         img_colours_mask.SetOutputFormatToRGBA()
         img_colours_mask.SetInputData(imagedata)
@@ -1596,7 +1608,7 @@ class Slice(metaclass=utils.Singleton):
         """
         blend image with the mask.
         """
-        blend_imagedata = vtk.vtkImageBlend()
+        blend_imagedata = vtkImageBlend()
         blend_imagedata.SetBlendModeToNormal()
         # blend_imagedata.SetOpacity(0, 1.0)
         blend_imagedata.SetOpacity(1, 0.8)

@@ -23,13 +23,20 @@
 # Contributions: Dogu Baran Aydogan
 # Initial date: 8 May 2020
 
+import queue
 import threading
 import time
 
 import numpy as np
-import queue
+from vtkmodules.vtkCommonCore import vtkPoints, vtkUnsignedCharArray
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkMultiBlockDataSet,
+    vtkPolyData,
+)
+from vtkmodules.vtkFiltersCore import vtkTubeFilter
+
 from invesalius.pubsub import pub as Publisher
-import vtk
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as img_utils
@@ -72,10 +79,10 @@ def compute_tubes(trk, direction):
     """
 
     numb_points = trk.shape[0]
-    points = vtk.vtkPoints()
-    lines = vtk.vtkCellArray()
+    points = vtkPoints()
+    lines = vtkCellArray()
 
-    colors = vtk.vtkUnsignedCharArray()
+    colors = vtkUnsignedCharArray()
     colors.SetNumberOfComponents(4)
 
     k = 0
@@ -86,13 +93,13 @@ def compute_tubes(trk, direction):
         lines.InsertCellPoint(k)
         k += 1
 
-    trk_data = vtk.vtkPolyData()
+    trk_data = vtkPolyData()
     trk_data.SetPoints(points)
     trk_data.SetLines(lines)
     trk_data.GetPointData().SetScalars(colors)
 
     # make it a tube
-    trk_tube = vtk.vtkTubeFilter()
+    trk_tube = vtkTubeFilter()
     trk_tube.SetRadius(0.5)
     trk_tube.SetNumberOfSides(4)
     trk_tube.SetInputData(trk_data)
@@ -113,7 +120,7 @@ def create_branch(out_list, n_block):
     """
 
     # create a branch and add the streamlines
-    branch = vtk.vtkMultiBlockDataSet()
+    branch = vtkMultiBlockDataSet()
 
     # create tracts only when at least one was computed
     # print("Len outlist in root: ", len(out_list))
@@ -172,7 +179,7 @@ def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts
     # Baran M1
     # seed = np.array([[27.53, -77.37, 46.42]])
     seed_trk = img_utils.convert_world_to_voxel(position, affine)
-    bundle = vtk.vtkMultiBlockDataSet()
+    bundle = vtkMultiBlockDataSet()
     n_branches, n_tracts, count_loop = 0, 0, 0
     n_threads = 2 * const.N_CPU - 1
 
@@ -295,7 +302,7 @@ class ComputeTractsThread(threading.Thread):
                     # print("dist: {}".format(dist))
                     if dist >= seed_radius:
                         # when moving the coil further than the seed_radius restart the bundle computation
-                        bundle = vtk.vtkMultiBlockDataSet()
+                        bundle = vtkMultiBlockDataSet()
                         n_branches = 0
                         branch = compute_tracts(trk_list, n_tract=0, alpha=255)
                         bundle.SetBlock(n_branches, branch)
@@ -502,7 +509,7 @@ class ComputeTractsACTThread(threading.Thread):
                         n_tracts = branch.GetNumberOfBlocks()
 
                         # create and add branch to the bundle
-                        bundle = vtk.vtkMultiBlockDataSet()
+                        bundle = vtkMultiBlockDataSet()
                         bundle.SetBlock(n_branches, branch)
                         n_branches = 1
 
@@ -511,7 +518,7 @@ class ComputeTractsACTThread(threading.Thread):
                     if not bundle:
                         # same as above, when creating the bundle (vtkMultiBlockDataSet) we only compute half the number
                         # of tracts to reduce the overhead
-                        bundle = vtk.vtkMultiBlockDataSet()
+                        bundle = vtkMultiBlockDataSet()
                         # required input is Nx3 array
                         trekker.seed_coordinates(seed_trk_r_world_sampled[::2, :])
                         n_tracts, n_branches = 0, 0

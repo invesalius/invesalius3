@@ -25,12 +25,22 @@ import threading
 from multiprocessing import cpu_count
 
 import numpy
-import vtk
 import wx
 from imageio import imread
-from invesalius.pubsub import pub as Publisher
-from vtk.util import numpy_support
+from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
+from vtkmodules.vtkCommonDataModel import vtkImageData
+from vtkmodules.vtkImagingColor import vtkImageLuminance
+from vtkmodules.vtkImagingCore import vtkImageCast, vtkImageResample
+from vtkmodules.vtkIOImage import (
+    vtkBMPReader,
+    vtkJPEGReader,
+    vtkPNGReader,
+    vtkPNGWriter,
+    vtkTIFFReader,
+)
 
+from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.utils as utils
@@ -162,7 +172,7 @@ class LoadBitmap:
         x = dim[0]
         y = dim[1]
 
-        img = vtk.vtkImageResample()
+        img = vtkImageResample()
         img.SetInputData(image)
         img.SetAxisMagnificationFactor(0, 0.25)
         img.SetAxisMagnificationFactor(1, 0.25)
@@ -171,25 +181,25 @@ class LoadBitmap:
 
         tp = img.GetOutput().GetScalarTypeAsString()
 
-        image_copy = vtk.vtkImageData()
+        image_copy = vtkImageData()
         image_copy.DeepCopy(img.GetOutput())
 
         thumbnail_path = tempfile.mktemp()
 
-        write_png = vtk.vtkPNGWriter()
+        write_png = vtkPNGWriter()
         write_png.SetInputConnection(img.GetOutputPort())
         write_png.AddObserver("WarningEvent", VtkErrorPNGWriter)
         write_png.SetFileName(thumbnail_path)
         write_png.Write()
 
         if vtk_error:
-            img = vtk.vtkImageCast()
+            img = vtkImageCast()
             img.SetInputData(image_copy)
             img.SetOutputScalarTypeToUnsignedShort()
             # img.SetClampOverflow(1)
             img.Update()
 
-            write_png = vtk.vtkPNGWriter()
+            write_png = vtkPNGWriter()
             write_png.SetInputConnection(img.GetOutputPort())
             write_png.SetFileName(thumbnail_path)
             write_png.Write()
@@ -310,24 +320,24 @@ def ScipyRead(filepath):
 def VtkRead(filepath, t):
     if not const.VTK_WARNING:
         log_path = os.path.join(inv_paths.USER_LOG_DIR, "vtkoutput.txt")
-        fow = vtk.vtkFileOutputWindow()
+        fow = vtkFileOutputWindow()
         fow.SetFileName(log_path.encode(const.FS_ENCODE))
-        ow = vtk.vtkOutputWindow()
+        ow = vtkOutputWindow()
         ow.SetInstance(fow)
 
     global no_error
 
     if t == "bmp":
-        reader = vtk.vtkBMPReader()
+        reader = vtkBMPReader()
 
     elif t == "tiff" or t == "tif":
-        reader = vtk.vtkTIFFReader()
+        reader = vtkTIFFReader()
 
     elif t == "png":
-        reader = vtk.vtkPNGReader()
+        reader = vtkPNGReader()
 
     elif t == "jpeg" or t == "jpg":
-        reader = vtk.vtkJPEGReader()
+        reader = vtkJPEGReader()
 
     else:
         return False
@@ -341,11 +351,11 @@ def VtkRead(filepath, t):
         dim = image.GetDimensions()
 
         if reader.GetNumberOfScalarComponents() > 1:
-            luminanceFilter = vtk.vtkImageLuminance()
+            luminanceFilter = vtkImageLuminance()
             luminanceFilter.SetInputData(image)
             luminanceFilter.Update()
 
-            image = vtk.vtkImageData()
+            image = vtkImageData()
             image.DeepCopy(luminanceFilter.GetOutput())
 
         img_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())

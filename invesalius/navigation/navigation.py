@@ -251,7 +251,7 @@ class Navigation(metaclass=Singleton):
         self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
                                                 shear=False, scale=False)
 
-    def StartNavigation(self, tracker):
+    def StartNavigation(self, tracker, icp):
         # initialize jobs list
         jobs_list = []
 
@@ -289,13 +289,13 @@ class Navigation(metaclass=Singleton):
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
-                                                                self.target))
+                                                                self.target, icp))
         else:
             coreg_data = (self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
             jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
-                                                                    self.event, self.sleep_nav))
+                                                                    self.event, self.sleep_nav, icp))
 
         if not errors:
             #TODO: Test the serial port thread

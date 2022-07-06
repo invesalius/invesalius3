@@ -36,14 +36,35 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
-import vtk
 import wx
 try:
     from wx.adv import BitmapComboBox
 except ImportError:
     from wx.combo import BitmapComboBox
 
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+from vtkmodules.vtkCommonCore import mutable, vtkPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellLocator,
+    vtkIterativeClosestPointTransform,
+    vtkPolyData,
+)
+from vtkmodules.vtkCommonTransforms import vtkTransform
+from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
+from vtkmodules.vtkFiltersSources import vtkSphereSource
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkFollower,
+    vtkPolyDataMapper,
+    vtkProperty,
+    vtkRenderer,
+)
+from vtkmodules.vtkRenderingFreeType import vtkVectorText
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
 from wx.lib import masked
 from wx.lib.agw import floatspin
 import wx.lib.filebrowsebutton as filebrowse
@@ -916,8 +937,31 @@ def ICPcorregistration(fre):
     return flag
 
 def ReportICPerror(prev_error, final_error):
-    msg = _("Error after refine: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
-          _("Previous error: ") + str(round(prev_error, 2)) + ' mm'
+    msg = _("Points to scalp distance: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
+          _("Distance before refine: ") + str(round(prev_error, 2)) + ' mm'
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def ReportICPPointError():
+    msg = _("The last point is more than 20 mm away from the surface") + '\n\n' + _("Please, create a new point.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def ReportICPDistributionError():
+    msg = _("The distribution of the transformed points looks wrong.") + '\n\n' +\
+          _("It is recommended to remove the points and redone the acquisition")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.OK)
@@ -3334,7 +3378,7 @@ class ObjectCalibrationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         # Initialize list of buttons and txtctrls for wx objects
@@ -3442,19 +3486,19 @@ class ObjectCalibrationDialog(wx.Dialog):
 
             if filename:
                 if filename.lower().endswith('.stl'):
-                    reader = vtk.vtkSTLReader()
+                    reader = vtkSTLReader()
                 elif filename.lower().endswith('.ply'):
-                    reader = vtk.vtkPLYReader()
+                    reader = vtkPLYReader()
                 elif filename.lower().endswith('.obj'):
-                    reader = vtk.vtkOBJReader()
+                    reader = vtkOBJReader()
                 elif filename.lower().endswith('.vtp'):
-                    reader = vtk.vtkXMLPolyDataReader()
+                    reader = vtkXMLPolyDataReader()
                 else:
                     wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
                     return
             else:
                 filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                reader = vtk.vtkSTLReader()
+                reader = vtkSTLReader()
 
                 # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
                 #      use the default object after all. A more logical behavior in that case would be to cancel the
@@ -3463,7 +3507,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                 self.use_default_object = True
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtk.vtkSTLReader()
+            reader = vtkSTLReader()
 
         if _has_win32api:
             self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
@@ -3478,26 +3522,26 @@ class ObjectCalibrationDialog(wx.Dialog):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.RotateZ(90)
 
-        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt = vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(polydata)
         transform_filt.Update()
 
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
 
         self.ball_actors[0], self.text_actors[0] = self.OnCreateObjectText('Left', (0,55,0))
@@ -3510,21 +3554,21 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def OnCreateObjectText(self, name, coord):
-        ball_source = vtk.vtkSphereSource()
+        ball_source = vtkSphereSource()
         ball_source.SetRadius(3)
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_source.GetOutputPort())
-        ball_actor = vtk.vtkActor()
+        ball_actor = vtkActor()
         ball_actor.SetMapper(mapper)
         ball_actor.SetPosition(coord)
         ball_actor.GetProperty().SetColor(1, 0, 0)
 
-        textSource = vtk.vtkVectorText()
+        textSource = vtkVectorText()
         textSource.SetText(name)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(textSource.GetOutputPort())
-        tactor = vtk.vtkFollower()
+        tactor = vtkFollower()
         tactor.SetMapper(mapper)
         tactor.GetProperty().SetColor(1.0, 0.0, 0.0)
         tactor.SetScale(5)
@@ -3665,9 +3709,9 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.prev_error = None
         self.final_error = None
         self.icp_mode = 0
-        self.staticballs = []
+        self.actors_static_points = []
         self.point_coord = []
-        self.transformed_points = []
+        self.actors_transformed_points = []
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3682,7 +3726,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         self.timer = wx.Timer(self)
@@ -3771,12 +3815,12 @@ class ICPCorregistrationDialog(wx.Dialog):
         Load the selected actor from the project (self.surface) into the scene
         :return:
         '''
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
         self.obj_actor = obj_actor
 
@@ -3793,16 +3837,27 @@ class ICPCorregistrationDialog(wx.Dialog):
         collect_points.SetValue("0")
         self.collect_points = collect_points
 
+        txt_markers_not_detected = vtku.Text()
+        txt_markers_not_detected.SetSize(const.TEXT_SIZE_LARGE)
+        txt_markers_not_detected.SetPosition((const.X+0.50, const.Y))
+        txt_markers_not_detected.ShadowOff()
+        txt_markers_not_detected.SetColour((1, 0, 0))
+        txt_markers_not_detected.SetValue("Markers not detected")
+        txt_markers_not_detected.actor.VisibilityOff()
+        self.txt_markers_not_detected = txt_markers_not_detected.actor
+
         self.ren.AddActor(obj_actor)
         self.ren.AddActor(poses_recorded.actor)
         self.ren.AddActor(collect_points.actor)
+        self.ren.AddActor(txt_markers_not_detected.actor)
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def RemoveActor(self):
+    def RemoveAllActors(self):
         self.ren.RemoveAllViewProps()
+        self.actors_static_points = []
         self.point_coord = []
-        self.transformed_points = []
+        self.actors_transformed_points = []
         self.m_icp = None
         self.SetProgress(0)
         self.btn_apply_icp.Enable(False)
@@ -3810,10 +3865,17 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
+    def RemoveSinglePointActor(self):
+        self.ren.RemoveActor(self.actors_static_points[-1])
+        self.actors_static_points.pop()
+        self.point_coord.pop()
+        self.collect_points.SetValue(str(int(self.collect_points.GetValue()) - 1))
+        self.interactor.Render()
+
     def GetCurrentCoord(self):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
-        return coord[:3]
+        return coord[:3], markers_flag
 
     def AddMarker(self, size, colour, coord):
         """
@@ -3828,23 +3890,24 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         x, y, z = coord[0], -coord[1], coord[2]
 
-        ball_ref = vtk.vtkSphereSource()
+        ball_ref = vtkSphereSource()
         ball_ref.SetRadius(size)
         ball_ref.SetCenter(x, y, z)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
-        prop = vtk.vtkProperty()
+        prop = vtkProperty()
         prop.SetColor(colour[0:3])
 
         #adding a new actor for the present ball
-        sphere_actor = vtk.vtkActor()
+        sphere_actor = vtkActor()
 
         sphere_actor.SetMapper(mapper)
         sphere_actor.SetProperty(prop)
 
         self.ren.AddActor(sphere_actor)
+        self.actors_static_points.append(sphere_actor)
         self.point_coord.append([x, y, z])
 
         self.collect_points.SetValue(str(int(self.collect_points.GetValue()) + 1))
@@ -3866,7 +3929,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         Copies the elements of a vtkMatrix4x4 into a numpy array.
 
         :param matrix: The matrix to be copied into an array.
-        :type matrix: vtk.vtkMatrix4x4
+        :type matrix: vtkMatrix4x4
         :rtype: numpy.ndarray
         """
         m = np.ones((4, 4))
@@ -3904,23 +3967,27 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.interactor.Render()
 
+    def CheckTransformedPointsDistribution(self, points):
+        from scipy.spatial.distance import pdist
+        return np.mean(pdist(points))
+
     def ErrorEstimation(self, surface, points):
         """
         Estimation of the average squared distance between the cloud of points to the closest mesh
         :param surface: Surface polydata of the scene
-        :type surface: vtk.polydata
+        :type surface: polydata
         :param points: Cloud of points
         :type points: np.ndarray
         :return: mean distance
         """
-        cell_locator = vtk.vtkCellLocator()
+        cell_locator = vtkCellLocator()
         cell_locator.SetDataSet(surface)
         cell_locator.BuildLocator()
 
-        cellId = vtk.mutable(0)
+        cellId = mutable(0)
         c = [0.0, 0.0, 0.0]
-        subId = vtk.mutable(0)
-        d = vtk.mutable(0.0)
+        subId = mutable(0)
+        d = mutable(0.0)
         error = []
         for i in range(len(points)):
             cell_locator.FindClosestPoint(points[i], c, cellId, subId, d)
@@ -3928,12 +3995,33 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.mean(error)
 
+    def DistanceBetweenPointAndSurface(self, surface, points):
+        """
+        Estimation of the squared distance between the point to the closest mesh
+        :param surface: Surface polydata of the scene
+        :type surface: polydata
+        :param points: single points
+        :type points: np.ndarray
+        :return: mean distance
+        """
+        cell_locator = vtkCellLocator()
+        cell_locator.SetDataSet(surface)
+        cell_locator.BuildLocator()
+
+        cellId = mutable(0)
+        c = [0.0, 0.0, 0.0]
+        subId = mutable(0)
+        d = mutable(0.0)
+        cell_locator.FindClosestPoint(points, c, cellId, subId, d)
+
+        return np.sqrt(float(d))
+
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
-            self.RemoveActor()
+            self.RemoveAllActors()
         self.LoadActor()
 
     def OnChoiceICPMethod(self, evt):
@@ -3947,21 +4035,35 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.timer.Stop()
 
     def OnUpdate(self, evt):
-        current_coord = self.GetCurrentCoord()
-        self.AddMarker(3, (1, 0, 0), current_coord)
-        self.SetCameraVolume(current_coord)
+        self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        current_coord = self.GetCurrentCoord()
-        self.AddMarker(3, (1, 0, 0), current_coord)
-        self.SetCameraVolume(current_coord)
+        current_coord, markers_flag = self.GetCurrentCoord()
+        if markers_flag[:2] >= [1, 1]:
+            self.AddMarker(3, (1, 0, 0), current_coord)
+            self.txt_markers_not_detected.VisibilityOff()
+            if self.DistanceBetweenPointAndSurface(self.surface, self.point_coord[-1]) >= 20:
+                self.OnDeleteLastPoint()
+                ReportICPPointError()
+            else:
+                self.SetCameraVolume(current_coord)
+        else:
+            self.txt_markers_not_detected.VisibilityOn()
+            self.interactor.Render()
+
+    def OnDeleteLastPoint(self):
+        if self.cont_point:
+            self.cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+
+        self.RemoveSinglePointActor()
 
     def OnReset(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
 
-        self.RemoveActor()
+        self.RemoveAllActors()
         self.LoadActor()
 
     def OnICP(self, evt):
@@ -3973,15 +4075,15 @@ class ICPCorregistrationDialog(wx.Dialog):
         time.sleep(1)
 
         sourcePoints = np.array(self.point_coord)
-        sourcePoints_vtk = vtk.vtkPoints()
+        sourcePoints_vtk = vtkPoints()
 
         for i in range(len(sourcePoints)):
             id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
 
-        source = vtk.vtkPolyData()
+        source = vtkPolyData()
         source.SetPoints(sourcePoints_vtk)
 
-        icp = vtk.vtkIterativeClosestPointTransform()
+        icp = vtkIterativeClosestPointTransform()
         icp.SetSource(source)
         icp.SetTarget(self.surface)
 
@@ -4006,7 +4108,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.m_icp = self.vtkmatrix_to_numpy(icp.GetMatrix())
 
-        icpTransformFilter = vtk.vtkTransformPolyDataFilter()
+        icpTransformFilter = vtkTransformPolyDataFilter()
         icpTransformFilter.SetInputData(source)
 
         icpTransformFilter.SetTransform(icp)
@@ -4014,28 +4116,40 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         transformedSource = icpTransformFilter.GetOutput()
 
+        transformed_points = []
+
+        #removes previously transformed points
+        if self.actors_transformed_points:
+            for i in self.actors_transformed_points:
+                self.ren.RemoveActor(i)
+            self.actors_transformed_points = []
 
         for i in range(transformedSource.GetNumberOfPoints()):
             p = [0, 0, 0]
             transformedSource.GetPoint(i, p)
-            self.transformed_points.append(p)
-            point = vtk.vtkSphereSource()
+            transformed_points.append(p)
+
+            point = vtkSphereSource()
             point.SetCenter(p)
             point.SetRadius(3)
             point.SetPhiResolution(3)
             point.SetThetaResolution(3)
 
-            mapper = vtk.vtkPolyDataMapper()
+            mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(point.GetOutputPort())
 
-            actor = vtk.vtkActor()
+            actor = vtkActor()
             actor.SetMapper(mapper)
             actor.GetProperty().SetColor((0,1,0))
+            self.actors_transformed_points.append(actor)
 
             self.ren.AddActor(actor)
 
+        if self.CheckTransformedPointsDistribution(transformed_points) <= 25:
+            ReportICPDistributionError()
+
         self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
-        self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
+        self.final_error = self.ErrorEstimation(self.surface, transformed_points)
 
         self.interactor.Render()
 
@@ -4044,7 +4158,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self):
-        return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
+        return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
+
 
 
 class SetCoilOrientationDialog(wx.Dialog):

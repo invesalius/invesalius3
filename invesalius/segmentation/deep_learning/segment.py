@@ -114,7 +114,7 @@ def segment_torch(
 
     device = torch.device(device_id)
     if weights_file.exists():
-        state_dict = torch.load(str(weights_file))
+        state_dict = torch.load(str(weights_file), map_location=torch.device('cpu'))
     else:
         raise FileNotFoundError("Weights file not found")
     model = Unet3D()

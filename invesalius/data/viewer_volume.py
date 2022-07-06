@@ -27,8 +27,66 @@ import time
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
-import vtk
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
+# TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
+from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
+from vtkmodules.vtkCommonCore import (
+    vtkIdList,
+    vtkMath,
+    vtkLookupTable,
+    vtkMinimalStandardRandomSequence,
+    vtkPoints,
+    vtkUnsignedCharArray
+)
+from vtkmodules.vtkCommonMath import vtkMatrix4x4
+from vtkmodules.vtkCommonTransforms import vtkTransform
+from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
+from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
+from vtkmodules.vtkFiltersSources import (
+    vtkArrowSource,
+    vtkDiskSource,
+    vtkLineSource,
+    vtkParametricFunctionSource,
+    vtkSphereSource,
+)
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
+from vtkmodules.vtkInteractionWidgets import (
+    vtkImagePlaneWidget,
+    vtkOrientationMarkerWidget,
+)
+from vtkmodules.vtkIOExport import (
+    vtkIVExporter,
+    vtkOBJExporter,
+    vtkPOVExporter,
+    vtkRIBExporter,
+    vtkVRMLExporter,
+    vtkX3DExporter,
+)
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOImage import (
+    vtkBMPWriter,
+    vtkJPEGWriter,
+    vtkPNGWriter,
+    vtkPostScriptWriter,
+    vtkTIFFWriter,
+)
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkPointPicker,
+    vtkPolyDataMapper,
+    vtkProperty,
+    vtkPropPicker,
+    vtkRenderer,
+    vtkWindowToImageFilter,
+)
+from vtkmodules.vtkRenderingOpenGL2 import vtkCompositePolyDataMapper2
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
 from invesalius.pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
@@ -46,6 +104,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+
 
 
 if sys.platform == 'win32':
@@ -96,10 +155,10 @@ class Viewer(wx.Panel):
         # that doesn't matter.
         interactor.Enable(1)
 
-        ren = vtk.vtkRenderer()
+        ren = vtkRenderer()
         self.ren = ren
 
-        canvas_renderer = vtk.vtkRenderer()
+        canvas_renderer = vtkRenderer()
         canvas_renderer.SetLayer(1)
         canvas_renderer.SetInteractive(0)
         canvas_renderer.PreserveDepthBufferOn()
@@ -126,7 +185,7 @@ class Viewer(wx.Panel):
         #  self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
         #  self.canvas.draw_list.append(self.text)
         #  self.canvas.draw_list.append(self.polygon)
-        # axes = vtk.vtkAxesActor()
+        # axes = vtkAxesActor()
         # axes.SetXAxisLabelText('x')
         # axes.SetYAxisLabelText('y')
         # axes.SetZAxisLabelText('z')
@@ -144,13 +203,13 @@ class Viewer(wx.Panel):
         self.mouse_pressed = 0
         self.on_wl = False
 
-        self.picker = vtk.vtkPointPicker()
+        self.picker = vtkPointPicker()
         interactor.SetPicker(self.picker)
         self.seed_points = []
 
         self.points_reference = []
 
-        self.measure_picker = vtk.vtkPropPicker()
+        self.measure_picker = vtkPropPicker()
         #self.measure_picker.SetTolerance(0.005)
         self.measures = []
 
@@ -306,7 +365,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
-
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
@@ -314,7 +372,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
-
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
 
@@ -485,15 +542,15 @@ class Viewer(wx.Panel):
     def _export_picture(self, id, filename, filetype):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
-                image = vtk.vtkWindowToImageFilter()
+                image = vtkWindowToImageFilter()
                 image.SetInput(renwin)
-                writer = vtk.vtkPOVExporter()
+                writer = vtkPOVExporter()
                 writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.SetRenderWindow(renwin)
                 writer.Write()
             else:
                 #Use tiling to generate a large rendering.
-                image = vtk.vtkRenderLargeImage()
+                image = vtkRenderLargeImage()
                 image.SetInput(self.ren)
                 image.SetMagnification(1)
                 image.Update()
@@ -502,15 +559,15 @@ class Viewer(wx.Panel):
 
                 # write image file
                 if (filetype == const.FILETYPE_BMP):
-                    writer = vtk.vtkBMPWriter()
+                    writer = vtkBMPWriter()
                 elif (filetype == const.FILETYPE_JPG):
-                    writer =  vtk.vtkJPEGWriter()
+                    writer =  vtkJPEGWriter()
                 elif (filetype == const.FILETYPE_PNG):
-                    writer = vtk.vtkPNGWriter()
+                    writer = vtkPNGWriter()
                 elif (filetype == const.FILETYPE_PS):
-                    writer = vtk.vtkPostScriptWriter()
+                    writer = vtkPostScriptWriter()
                 elif (filetype == const.FILETYPE_TIF):
-                    writer = vtk.vtkTIFFWriter()
+                    writer = vtkTIFFWriter()
                     filename = u"%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
@@ -569,17 +626,17 @@ class Viewer(wx.Panel):
         Add a point representation in the given x,y,z position with a optional
         radius and colour.
         """
-        point = vtk.vtkSphereSource()
+        point = vtkSphereSource()
         point.SetCenter(position)
         point.SetRadius(radius)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInput(point.GetOutput())
 
-        p = vtk.vtkProperty()
+        p = vtkProperty()
         p.SetColor(colour)
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(p)
         actor.PickableOff()
@@ -615,12 +672,14 @@ class Viewer(wx.Panel):
             position = marker["position"]
             direction = marker["direction"]
             target = marker["target"]
+            arrow_flag = marker["arrow_flag"]
 
             self.AddMarker(
                 marker_id=ball_id,
                 size=size,
                 colour=colour,
                 coord=position,
+                arrow_flag=arrow_flag,
             )
 
             if target:
@@ -664,17 +723,17 @@ class Viewer(wx.Panel):
         :return: vtkActor
         """
 
-        ball_ref = vtk.vtkSphereSource()
+        ball_ref = vtkSphereSource()
         ball_ref.SetRadius(1.5)
         ball_ref.SetCenter(coord)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
-        prop = vtk.vtkProperty()
+        prop = vtkProperty()
         prop.SetColor(color)
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
         actor.PickableOff()
@@ -752,7 +811,7 @@ class Viewer(wx.Panel):
 
     def ActivateTargetMode(self, evt=None, target_mode=None):
 
-        vtk_colors = vtk.vtkNamedColors()
+        vtk_colors = vtkNamedColors()
         self.target_mode = target_mode
         if self.target_coord and self.target_mode:
             if self.actor_peel:
@@ -762,7 +821,7 @@ class Viewer(wx.Panel):
 
             # Create a line
             self.ren.SetViewport(0, 0, 0.75, 1)
-            self.ren2 = vtk.vtkRenderer()
+            self.ren2 = vtkRenderer()
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren2)
             self.ren2.SetViewport(0.75, 0, 1, 1)
@@ -770,18 +829,18 @@ class Viewer(wx.Panel):
 
             obj_polydata = self.CreateObjectPolyData(self.obj_name)
 
-            normals = vtk.vtkPolyDataNormals()
+            normals = vtkPolyDataNormals()
             normals.SetInputData(obj_polydata)
             normals.SetFeatureAngle(80)
             normals.AutoOrientNormalsOn()
             normals.Update()
 
-            mapper = vtk.vtkPolyDataMapper()
+            mapper = vtkPolyDataMapper()
             mapper.SetInputData(normals.GetOutput())
             mapper.ScalarVisibilityOff()
             #mapper.ImmediateModeRenderingOn()  # improve performance
 
-            obj_roll = vtk.vtkActor()
+            obj_roll = vtkActor()
             obj_roll.SetMapper(mapper)
             obj_roll.GetProperty().SetColor(1, 1, 1)
             # obj_roll.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
@@ -791,7 +850,7 @@ class Viewer(wx.Panel):
             obj_roll.RotateX(-60)
             obj_roll.RotateZ(180)
 
-            obj_yaw = vtk.vtkActor()
+            obj_yaw = vtkActor()
             obj_yaw.SetMapper(mapper)
             obj_yaw.GetProperty().SetColor(1, 1, 1)
             # obj_yaw.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
@@ -800,7 +859,7 @@ class Viewer(wx.Panel):
             obj_yaw.SetPosition(0, -115, 5)
             obj_yaw.RotateZ(180)
 
-            obj_pitch = vtk.vtkActor()
+            obj_pitch = vtkActor()
             obj_pitch.SetMapper(mapper)
             obj_pitch.GetProperty().SetColor(1, 1, 1)
             # obj_pitch.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
@@ -868,7 +927,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
 
-        vtk_colors = vtk.vtkNamedColors()
+        vtk_colors = vtkNamedColors()
 
         if self.target_coord and self.target_mode:
 
@@ -1023,7 +1082,7 @@ class Viewer(wx.Panel):
         )
         m_img = np.asmatrix(m_img)
 
-        m_img_vtk = vtk.vtkMatrix4x4()
+        m_img_vtk = vtkMatrix4x4()
 
         for row in range(0, 4):
             for col in range(0, 4):
@@ -1036,28 +1095,28 @@ class Viewer(wx.Panel):
             self.RemoveTargetAim()
             self.aim_actor = None
 
-        vtk_colors = vtk.vtkNamedColors()
+        vtk_colors = vtkNamedColors()
 
         self.m_img_vtk = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
 
         filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
 
-        reader = vtk.vtkSTLReader()
+        reader = vtkSTLReader()
         reader.SetFileName(filename)
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
 
         # Transform the polydata
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.SetMatrix(self.m_img_vtk)
-        transformPD = vtk.vtkTransformPolyDataFilter()
+        transformPD = vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
         transformPD.Update()
         # mapper transform
         mapper.SetInputConnection(transformPD.GetOutputPort())
 
-        aim_actor = vtk.vtkActor()
+        aim_actor = vtkActor()
         aim_actor.SetMapper(mapper)
         aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
         aim_actor.GetProperty().SetSpecular(.2)
@@ -1071,26 +1130,26 @@ class Viewer(wx.Panel):
         else:
             obj_polydata = self.polydata
 
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.RotateZ(90)
 
-        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt = vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(obj_polydata)
         transform_filt.Update()
 
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        obj_mapper = vtk.vtkPolyDataMapper()
+        obj_mapper = vtkPolyDataMapper()
         obj_mapper.SetInputData(normals.GetOutput())
         obj_mapper.ScalarVisibilityOff()
         #obj_mapper.ImmediateModeRenderingOn()  # improve performance
 
-        self.dummy_coil_actor = vtk.vtkActor()
+        self.dummy_coil_actor = vtkActor()
         self.dummy_coil_actor.SetMapper(obj_mapper)
         self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
         self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
@@ -1136,7 +1195,7 @@ class Viewer(wx.Panel):
         normalizedZ = [0 for i in range(3)]
 
         # The X axis is a vector from start to end
-        math = vtk.vtkMath()
+        math = vtkMath()
         math.Subtract(endPoint, startPoint, normalizedX)
         length = math.Norm(normalizedX)
         math.Normalize(normalizedX)
@@ -1151,7 +1210,7 @@ class Viewer(wx.Panel):
 
         # The Y axis is Z cross X
         math.Cross(normalizedZ, normalizedX, normalizedY)
-        matrix = vtk.vtkMatrix4x4()
+        matrix = vtkMatrix4x4()
 
         # Create the direction cosine matrix
         matrix.Identity()
@@ -1161,24 +1220,24 @@ class Viewer(wx.Panel):
             matrix.SetElement(i, 2, normalizedZ[i])
 
         # Apply the transforms arrow 1
-        transform_1 = vtk.vtkTransform()
+        transform_1 = vtkTransform()
         transform_1.Translate(startPoint)
         transform_1.Concatenate(matrix)
         transform_1.Scale(length, length, length)
         # source
-        arrowSource1 = vtk.vtkArrowSource()
+        arrowSource1 = vtkArrowSource()
         arrowSource1.SetTipResolution(50)
         # Create a mapper and actor
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(arrowSource1.GetOutputPort())
         # Transform the polydata
-        transformPD = vtk.vtkTransformPolyDataFilter()
+        transformPD = vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform_1)
         transformPD.SetInputConnection(arrowSource1.GetOutputPort())
         # mapper transform
         mapper.SetInputConnection(transformPD.GetOutputPort())
         # actor
-        actor_arrow = vtk.vtkActor()
+        actor_arrow = vtkActor()
         actor_arrow.SetMapper(mapper)
 
         return actor_arrow
@@ -1231,13 +1290,13 @@ class Viewer(wx.Panel):
         cam_focus = self.target_coord[0:3]
         cam = self.ren.GetActiveCamera()
 
-        oldcamVTK = vtk.vtkMatrix4x4()
+        oldcamVTK = vtkMatrix4x4()
         oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
 
-        newvtk = vtk.vtkMatrix4x4()
+        newvtk = vtkMatrix4x4()
         newvtk.Multiply4x4(self.m_img_vtk, oldcamVTK, newvtk)
 
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.SetMatrix(newvtk)
         transform.Update()
         cam.ApplyTransform(transform)
@@ -1269,13 +1328,13 @@ class Viewer(wx.Panel):
         s = proj.spacing
         r = (s[0] + s[1] + s[2]) / 3.0 * scale
 
-        ball_source = vtk.vtkSphereSource()
+        ball_source = vtkSphereSource()
         ball_source.SetRadius(r)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_source.GetOutputPort())
 
-        self.ball_actor = vtk.vtkActor()
+        self.ball_actor = vtkActor()
         self.ball_actor.SetMapper(mapper)
         self.ball_actor.GetProperty().SetColor(1, 0, 0)
         self.ball_actor.PickableOff()
@@ -1300,19 +1359,19 @@ class Viewer(wx.Panel):
         filename = utils.decode(filename, const.FS_ENCODE)
         if filename:
             if filename.lower().endswith('.stl'):
-                reader = vtk.vtkSTLReader()
+                reader = vtkSTLReader()
             elif filename.lower().endswith('.ply'):
-                reader = vtk.vtkPLYReader()
+                reader = vtkPLYReader()
             elif filename.lower().endswith('.obj'):
-                reader = vtk.vtkOBJReader()
+                reader = vtkOBJReader()
             elif filename.lower().endswith('.vtp'):
-                reader = vtk.vtkXMLPolyDataReader()
+                reader = vtkXMLPolyDataReader()
             else:
                 wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
                 return
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtk.vtkSTLReader()
+            reader = vtkSTLReader()
 
         if _has_win32api:
             obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
@@ -1333,29 +1392,29 @@ class Viewer(wx.Panel):
         """
         Coil for navigation rendered in volume viewer.
         """
-        vtk_colors = vtk.vtkNamedColors()
+        vtk_colors = vtkNamedColors()
         obj_polydata = self.CreateObjectPolyData(obj_name)
 
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.RotateZ(90)
 
-        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt = vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(obj_polydata)
         transform_filt.Update()
 
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        obj_mapper = vtk.vtkPolyDataMapper()
+        obj_mapper = vtkPolyDataMapper()
         obj_mapper.SetInputData(normals.GetOutput())
         obj_mapper.ScalarVisibilityOff()
         #obj_mapper.ImmediateModeRenderingOn()  # improve performance
 
-        self.obj_actor = vtk.vtkActor()
+        self.obj_actor = vtkActor()
         self.obj_actor.SetMapper(obj_mapper)
         self.obj_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d('GhostWhite'))
         self.obj_actor.GetProperty().SetSpecular(30)
@@ -1394,16 +1453,16 @@ class Viewer(wx.Panel):
 
     def Add_Object_Orientation_Disk(self, position, orientation, color=[0.0, 0.0, 1.0]):
         # Create a disk to show target
-        disk = vtk.vtkDiskSource()
+        disk = vtkDiskSource()
         disk.SetInnerRadius(5)
         disk.SetOuterRadius(15)
         disk.SetRadialResolution(100)
         disk.SetCircumferentialResolution(100)
         disk.Update()
 
-        disk_mapper = vtk.vtkPolyDataMapper()
+        disk_mapper = vtkPolyDataMapper()
         disk_mapper.SetInputData(disk.GetOutput())
-        disk_actor = vtk.vtkActor()
+        disk_actor = vtkActor()
         disk_actor.SetMapper(disk_mapper)
         disk_actor.GetProperty().SetColor(color)
         disk_actor.GetProperty().SetOpacity(1)
@@ -1413,19 +1472,19 @@ class Viewer(wx.Panel):
         return disk_actor
 
     def Add_Torus(self, position, orientation, color=[0.0, 0.0, 1.0]):
-        torus = vtk.vtkParametricTorus()
+        torus = vtkParametricTorus()
         torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
 
-        torusSource = vtk.vtkParametricFunctionSource()
+        torusSource = vtkParametricFunctionSource()
         torusSource.SetParametricFunction(torus)
         torusSource.Update()
 
-        torusMapper = vtk.vtkPolyDataMapper()
+        torusMapper = vtkPolyDataMapper()
         torusMapper.SetInputConnection(torusSource.GetOutputPort())
         torusMapper.SetScalarRange(0, 360)
 
-        torusActor = vtk.vtkActor()
+        torusActor = vtkActor()
         torusActor.SetMapper(torusMapper)
         torusActor.GetProperty().SetDiffuseColor(color)
         torusActor.SetPosition(position)
@@ -1434,17 +1493,17 @@ class Viewer(wx.Panel):
         return torusActor
 
     def CreateActorBall(self, coord_flip, colour=[0.0, 0.0, 1.0], size=2):
-        ball_ref = vtk.vtkSphereSource()
+        ball_ref = vtkSphereSource()
         ball_ref.SetRadius(size)
         ball_ref.SetCenter(coord_flip)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
-        prop = vtk.vtkProperty()
+        prop = vtkProperty()
         prop.SetColor(colour)
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
         actor.PickableOff()
@@ -1452,7 +1511,7 @@ class Viewer(wx.Panel):
         return actor
 
     def CreateActorArrow(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
-        arrow = vtk.vtkArrowSource()
+        arrow = vtkArrowSource()
         arrow.SetArrowOriginToCenter()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
@@ -1460,10 +1519,10 @@ class Viewer(wx.Panel):
         arrow.SetTipRadius(0.15)
         arrow.SetTipLength(0.35)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(arrow.GetOutputPort())
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetLineWidth(5)
@@ -1494,14 +1553,14 @@ class Viewer(wx.Panel):
 
 
     def add_line(self, p1, p2, color=[0.0, 0.0, 1.0]):
-        line = vtk.vtkLineSource()
+        line = vtkLineSource()
         line.SetPoint1(p1)
         line.SetPoint2(p2)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(line.GetOutputPort())
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(color)
 
@@ -1527,24 +1586,30 @@ class Viewer(wx.Panel):
         self.peel_centers = centers
         self.peel_normals = normals
 
-        self.Refresh()
-
     def Initlocator_viewer(self, locator):
         self.locator = locator
-        self.Refresh()
 
-    def GetCellIntersection(self, p1, p2, coil_norm, coil_dir):
+    def GetCellIDsfromlistPoints(self, vlist, mesh):
+        cell_ids_array = []
+        pts1 = vtkIdList()
+        for i in range(vlist.GetNumberOfIds()):
+            mesh.GetPointCells(vlist.GetId(i), pts1)
+            for j in range(pts1.GetNumberOfIds()):
+                cell_ids_array.append(pts1.GetId(j))
+        return cell_ids_array
 
-        vtk_colors = vtk.vtkNamedColors()
+    def GetCellIntersection(self, p1, p2, locator):
+        vtk_colors = vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
-        intersectingCellIds = vtk.vtkIdList()
-
+        intersectingCellIds = vtkIdList()
         #for debugging
         self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor) # remove comment for testing
+        locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
+        return intersectingCellIds
 
-        self.locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
-
+    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+        vtk_colors = vtkNamedColors()
         closestDist = 50
 
         #if find intersection , calculate angle and add actors
@@ -1658,9 +1723,7 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-
     def UpdateObjectArrowOrientation(self, m_img, coord, flag):
-
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
 
         if flag:
@@ -1668,7 +1731,8 @@ class Viewer(wx.Panel):
             #self.ren.RemoveActor(self.y_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
-            self.GetCellIntersection(p1, norm, coil_norm, coil_dir)
+            intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
+            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Refresh()
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
@@ -1710,10 +1774,10 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
-        mapper = vtk.vtkCompositePolyDataMapper2()
+        mapper = vtkCompositePolyDataMapper2()
         mapper.SetInputDataObject(root)
 
-        self.actor_tracts = vtk.vtkActor()
+        self.actor_tracts = vtkActor()
         self.actor_tracts.SetMapper(mapper)
         self.actor_tracts.SetUserMatrix(affine_vtk)
 
@@ -1730,19 +1794,19 @@ class Viewer(wx.Panel):
 
     def ActivateRobotMode(self, robot_mode=None):
         if robot_mode:
-            self.ren_robot = vtk.vtkRenderer()
+            self.ren_robot = vtkRenderer()
             self.ren_robot.SetLayer(1)
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren_robot)
             self.ren_robot.SetViewport(0.02, 0.82, 0.08, 0.92)
             filename = os.path.join(inv_paths.OBJ_DIR, "robot.stl")
 
-            reader = vtk.vtkSTLReader()
+            reader = vtkSTLReader()
             reader.SetFileName(filename)
-            mapper = vtk.vtkPolyDataMapper()
+            mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(reader.GetOutputPort())
 
-            dummy_robot_actor = vtk.vtkActor()
+            dummy_robot_actor = vtkActor()
             dummy_robot_actor.SetMapper(mapper)
             dummy_robot_actor.GetProperty().SetColor(1, 1, 1)
             dummy_robot_actor.GetProperty().SetOpacity(1.)
@@ -1875,29 +1939,29 @@ class Viewer(wx.Panel):
         renwin = self.interactor.GetRenderWindow()
 
         if filetype == const.FILETYPE_RIB:
-            writer = vtk.vtkRIBExporter()
+            writer = vtkRIBExporter()
             writer.SetFilePrefix(fileprefix)
             writer.SetTexturePrefix(fileprefix)
             writer.SetInput(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_VRML:
-            writer = vtk.vtkVRMLExporter()
+            writer = vtkVRMLExporter()
             writer.SetFileName(filename)
             writer.SetInput(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_X3D:
-            writer = vtk.vtkX3DExporter()
+            writer = vtkX3DExporter()
             writer.SetInput(renwin)
             writer.SetFileName(filename)
             writer.Update()
             writer.Write()
         elif filetype == const.FILETYPE_OBJ:
-            writer = vtk.vtkOBJExporter()
+            writer = vtkOBJExporter()
             writer.SetFilePrefix(fileprefix)
             writer.SetInput(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_IV:
-            writer = vtk.vtkIVExporter()
+            writer = vtkIVExporter()
             writer.SetFileName(filename)
             writer.SetInput(renwin)
             writer.Write()
@@ -1909,7 +1973,7 @@ class Viewer(wx.Panel):
         style.AddObserver("LeftButtonReleaseEvent", self.OnRelease)
 
     def OnDisableBrightContrast(self):
-        style = vtk.vtkInteractorStyleTrackballCamera()
+        style = vtkInteractorStyleTrackballCamera()
         self.interactor.SetInteractorStyle(style)
         self.style = style
 
@@ -2043,7 +2107,7 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def ShowOrientationCube(self):
-        cube = vtk.vtkAnnotatedCubeActor()
+        cube = vtkAnnotatedCubeActor()
         cube.GetXMinusFaceProperty().SetColor(1,0,0)
         cube.GetXPlusFaceProperty().SetColor(1,0,0)
         cube.GetYMinusFaceProperty().SetColor(0,1,0)
@@ -2060,7 +2124,7 @@ class Viewer(wx.Panel):
         cube.SetZPlusFaceText ("S")
         cube.SetZMinusFaceText("I")
 
-        axes = vtk.vtkAxesActor()
+        axes = vtkAxesActor()
         axes.SetShaftTypeToCylinder()
         axes.SetTipTypeToCone()
         axes.SetXAxisLabelText("X")
@@ -2068,7 +2132,7 @@ class Viewer(wx.Panel):
         axes.SetZAxisLabelText("Z")
         #axes.SetNormalizedLabelPosition(.5, .5, .5)
 
-        orientation_widget = vtk.vtkOrientationMarkerWidget()
+        orientation_widget = vtkOrientationMarkerWidget()
         orientation_widget.SetOrientationMarker(cube)
         orientation_widget.SetViewport(0.85,0.85,1.0,1.0)
         #orientation_widget.SetOrientationMarker(axes)
@@ -2127,7 +2191,7 @@ class SlicePlane:
         Publisher.subscribe(self.UpdateAllSlice, 'Update all slice')
 
     def Create(self):
-        plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
+        plane_x = self.plane_x = vtkImagePlaneWidget()
         plane_x.InteractionOff()
         #Publisher.sendMessage('Input Image in the widget', 
                                                 #(plane_x, 'SAGITAL'))
@@ -2139,7 +2203,7 @@ class SlicePlane:
         cursor_property = plane_x.GetCursorProperty()
         cursor_property.SetOpacity(0)
 
-        plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
+        plane_y = self.plane_y = vtkImagePlaneWidget()
         plane_y.DisplayTextOff()
         #Publisher.sendMessage('Input Image in the widget', 
                                                 #(plane_y, 'CORONAL'))
@@ -2152,7 +2216,7 @@ class SlicePlane:
         cursor_property = plane_y.GetCursorProperty()
         cursor_property.SetOpacity(0) 
 
-        plane_z = self.plane_z = vtk.vtkImagePlaneWidget()
+        plane_z = self.plane_z = vtkImagePlaneWidget()
         plane_z.InteractionOff()
         #Publisher.sendMessage('Input Image in the widget', 
                                                 #(plane_z, 'AXIAL'))

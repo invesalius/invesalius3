@@ -27,8 +27,9 @@ import tarfile
 import tempfile
 
 import numpy as np
-import vtk
 import wx
+
+from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 from invesalius.pubsub import pub as Publisher
 
@@ -284,9 +285,9 @@ class Project(metaclass=Singleton):
     def OpenPlistProject(self, filename):
         if not const.VTK_WARNING:
             log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
-            fow = vtk.vtkFileOutputWindow()
+            fow = vtkFileOutputWindow()
             fow.SetFileName(log_path.encode(const.FS_ENCODE))
-            ow = vtk.vtkOutputWindow()
+            ow = vtkOutputWindow()
             ow.SetInstance(fow)
 
         filelist = Extract(filename, tempfile.mkdtemp())

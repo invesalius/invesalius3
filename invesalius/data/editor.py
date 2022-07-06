@@ -19,7 +19,12 @@
 
 import math
 from invesalius.pubsub import pub as Publisher
-import vtk
+
+from vtkmodules.vtkCommonCore import vtkLookupTable
+from vtkmodules.vtkImagingCore import vtkImageBlend, vtkImageMapToColors
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
+from vtkmodules.vtkRenderingCore import vtkImageActor, vtkCellPicker, vtkImageMapper
+
 
 AXIAL = 2
 CORONAL = 1
@@ -43,17 +48,17 @@ class Editor:
         self.image_threshold = None
         self.render = None
     
-        self.lut = vtk.vtkLookupTable()
-        self.lut_original = vtk.vtkLookupTable()
-        self.image_color = vtk.vtkImageMapToColors()
-        self.blend = blend = vtk.vtkImageBlend()
-        self.map = map = vtk.vtkImageMapper()
+        self.lut = vtkLookupTable()
+        self.lut_original = vtkLookupTable()
+        self.image_color = vtkImageMapToColors()
+        self.blend = blend = vtkImageBlend()
+        self.map = map = vtkImageMapper()
         
-        self.actor = actor = vtk.vtkImageActor()
-        self.actor2 = actor2 = vtk.vtkImageActor()
-        self.actor3 = actor3 = vtk.vtkImageActor()
+        self.actor = actor = vtkImageActor()
+        self.actor2 = actor2 = vtkImageActor()
+        self.actor3 = actor3 = vtkImageActor()
         
-        self.image_color_o = vtk.vtkImageMapToColors()
+        self.image_color_o = vtkImageMapToColors()
         
         self.operation_type = 0
         self.w = None
@@ -64,7 +69,7 @@ class Editor:
 
         self.w = (200, 1200)
     
-        #self.plane_widget_x = vtk.vtkImagePlaneWidget()
+        #self.plane_widget_x = vtkImagePlaneWidget()
     
         #self.actor.PickableOff()
     
@@ -73,7 +78,7 @@ class Editor:
         self.interactor = interactor
         self.render = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
 
-        istyle = vtk.vtkInteractorStyleImage()
+        istyle = vtkInteractorStyleImage()
         istyle.SetInteractor(interactor)
         istyle.AutoAdjustCameraClippingRangeOn()
         interactor.SetInteractorStyle(istyle)
@@ -82,7 +87,7 @@ class Editor:
         istyle.AddObserver("LeftButtonReleaseEvent", self.Release)
         istyle.AddObserver("MouseMoveEvent",self.Moved)
 
-        pick = self.pick = vtk.vtkCellPicker()
+        pick = self.pick = vtkCellPicker()
 
     def SetActor(self, actor):
         self.actor = actor
@@ -134,7 +139,7 @@ class Editor:
         x, y, z = pPos
         bounds = self.actor.GetBounds()
 
-        #c = vtk.vtkCoordinate()
+        #c = vtkCoordinate()
         #c.SetCoordinateSystemToWorld()
         #c.SetValue(bounds[::2])
         #xi, yi = c.GetComputedViewportValue(self.render)
