@@ -101,6 +101,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     m_img[:3, :3] = r_obj[:3, :3]
     return m_img
 
+
 def image_to_tracker(m_change, target, icp):
     """Compute the transformation matrix to the tracker coordinate system
 
@@ -128,10 +129,10 @@ def image_to_tracker(m_change, target, icp):
 
     return m_target_in_tracker
 
+
 def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
-    use_icp, m_icp = icp
 
     # transform raw marker coordinate to object center
     m_probe = object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw)
@@ -147,8 +148,7 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # corregistrate from tracker to image space
     m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
-    if use_icp:
-        m_img = bases.transform_icp(m_img, m_icp)
+    m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
     angles = tr.euler_from_matrix(m_img, axes='sxyz')
@@ -159,9 +159,6 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     return coord, m_img
 
-def UpdateICP(self, m_icp, flag):
-    self.m_icp = m_icp
-    self.use_icp = flag
 
 def compute_marker_transformation(coord_raw, obj_ref_mode):
     m_probe = dco.coordinates_to_transformation_matrix(
@@ -191,9 +188,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
 
     # corregistrate from tracker to image space
     m_img = m_change @ m_probe_ref
-
-    if icp[0]:
-        m_img = bases.transform_icp(m_img, icp[1])
+    m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
     angles = tr.euler_from_matrix(m_img, axes='sxyz')
@@ -203,6 +198,14 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
     return coord, m_img
+
+
+def apply_icp(m_img, icp):
+    use_icp, m_icp = icp
+    if use_icp:
+        m_img = bases.transform_icp(m_img, m_icp)
+
+    return m_img
 
 
 class CoordinateCorregistrate(threading.Thread):

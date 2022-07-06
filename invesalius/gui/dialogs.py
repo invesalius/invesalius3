@@ -916,8 +916,8 @@ def ICPcorregistration(fre):
     return flag
 
 def ReportICPerror(prev_error, final_error):
-    msg = _("Error after refine: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
-          _("Previous error: ") + str(round(prev_error, 2)) + ' mm'
+    msg = _("Points to scalp distance: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
+          _("Distance before refine: ") + str(round(prev_error, 2)) + ' mm'
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.OK)
