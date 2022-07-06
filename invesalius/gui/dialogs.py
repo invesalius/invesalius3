@@ -3832,7 +3832,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def RemoveAllActor(self):
+    def RemoveAllActors(self):
         self.ren.RemoveAllViewProps()
         self.actors_static_points = []
         self.point_coord = []
@@ -4000,7 +4000,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
-            self.RemoveAllActor()
+            self.RemoveAllActors()
         self.LoadActor()
 
     def OnChoiceICPMethod(self, evt):
@@ -4042,7 +4042,7 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
 
-        self.RemoveAllActor()
+        self.RemoveAllActors()
         self.LoadActor()
 
     def OnICP(self, evt):
@@ -4138,6 +4138,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
+
 
 class SurfaceProgressWindow(object):
     def __init__(self):
