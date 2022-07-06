@@ -36,12 +36,15 @@ except ImportError:
 
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
+
+from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkMassProperties,
     vtkPolyDataNormals,
     vtkStripper,
     vtkTriangleFilter,
 )
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
@@ -361,11 +364,11 @@ class SurfaceManager():
             affine[1, -1] -= img_shift
             affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
 
-            polydata_transform = vtk.vtkTransform()
+            polydata_transform = vtkTransform()
             polydata_transform.PostMultiply()
             polydata_transform.Concatenate(affine_vtk)
 
-            transformFilter = vtk.vtkTransformPolyDataFilter()
+            transformFilter = vtkTransformPolyDataFilter()
             transformFilter.SetTransform(polydata_transform)
             transformFilter.SetInputData(polydata)
             transformFilter.Update()

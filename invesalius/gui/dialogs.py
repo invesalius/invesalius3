@@ -42,16 +42,27 @@ try:
 except ImportError:
     from wx.combo import BitmapComboBox
 
+from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import mutable, vtkPoints
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
     vtkIterativeClosestPointTransform,
     vtkPolyData,
 )
+from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersCore import vtkCleanPolyData, vtkPolyDataNormals, vtkAppendPolyData
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
-from vtkmodules.vtkFiltersSources import vtkSphereSource
+from vtkmodules.vtkFiltersSources import (
+    vtkArrowSource,
+    vtkCylinderSource,
+    vtkParametricFunctionSource,
+    vtkSphereSource,
+)
+from vtkmodules.vtkInteractionStyle import (
+    vtkInteractorStyleTrackballActor,
+    vtkInteractorStyleTrackballCamera,
+)
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
 from vtkmodules.vtkIOPLY import vtkPLYReader
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
@@ -4159,6 +4170,436 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
+
+
+
+class SetCoilOrientationDialog(wx.Dialog):
+
+    def __init__(self, marker):
+        import invesalius.project as prj
+
+        self.obj_actor = None
+        self.polydata = None
+        self.initial_focus = None
+
+        self.marker = marker
+
+        self.spinning = False
+        self.rotationX = 0
+        self.rotationY = 0
+        self.rotationZ = 0
+
+        self.obj_fiducials = np.full([5, 3], np.nan)
+        self.obj_orients = np.full([5, 3], np.nan)
+
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Set target Orientation"), size=(380, 440),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        self.proj = prj.Project()
+
+        self._init_gui()
+
+    def _init_gui(self):
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.Enable(1)
+        self.ren = vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(self.ren)
+        self.actor_style = vtkInteractorStyleTrackballActor()
+        self.camera_style = vtkInteractorStyleTrackballCamera()
+
+        self.interactor.SetInteractorStyle(self.actor_style)
+        self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
+        self.actor_style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+        self.actor_style.AddObserver("MouseMoveEvent", self.OnSpinMove)
+        self.actor_style.AddObserver('MouseWheelForwardEvent',
+                                     self.OnZoomMove)
+        self.actor_style.AddObserver('MouseWheelBackwardEvent',
+                                     self.OnZoomMove)
+
+        self.camera_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
+        self.camera_style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+        self.camera_style.AddObserver("MouseMoveEvent", self.OnSpinMove)
+        self.camera_style.AddObserver('MouseWheelForwardEvent',
+                                     self.OnZoomMove)
+        self.camera_style.AddObserver('MouseWheelBackwardEvent',
+                                     self.OnZoomMove)
+
+        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+
+        combo_surface_name = wx.ComboBox(self, -1, size=(210, 23),
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        for n in range(len(self.proj.surface_dict)):
+            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        self.combo_surface_name = combo_surface_name
+
+        init_surface = 0
+        combo_surface_name.SetSelection(init_surface)
+        self.surface = self.proj.surface_dict[init_surface].polydata
+        self.LoadActor()
+
+        reset_orientation = wx.Button(self, -1, label=_('Reset arrow orientation'))
+        reset_orientation.Bind(wx.EVT_BUTTON, self.OnResetOrientation)
+        change_view = wx.Button(self, -1, label=_('Change view'))
+        change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
+
+        text_rotation_x = wx.StaticText(self, -1, _("Rotation X:"))
+
+        slider_rotation_x = wx.Slider(self, -1, 0, -180,
+                                        180,
+                                        style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
+        slider_rotation_x.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider_rotation_x.Bind(wx.EVT_SLIDER, self.OnRotationX)
+        self.slider_rotation_x = slider_rotation_x
+
+        text_rotation_y = wx.StaticText(self, -1, _("Rotation Y:"))
+
+        slider_rotation_y = wx.Slider(self, -1, 0, -180,
+                                        180,
+                                        style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
+        slider_rotation_y.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider_rotation_y.Bind(wx.EVT_SLIDER, self.OnRotationY)
+        self.slider_rotation_y = slider_rotation_y
+
+        text_rotation_z = wx.StaticText(self, -1, _("Rotation Z:"))
+
+        slider_rotation_z = wx.Slider(self, -1, 0, -180,
+                                        180,
+                                        style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
+        slider_rotation_z.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider_rotation_z.Bind(wx.EVT_SLIDER, self.OnRotationZ)
+        self.slider_rotation_z = slider_rotation_z
+
+        tooltip = wx.ToolTip(_(u"Target orientation done"))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
+        btn_ok.SetToolTip(tooltip)
+        self.btn_ok = btn_ok
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        top_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=50, vgap=5)
+        top_sizer.AddMany([txt_surface,
+                           (wx.StaticText(self, -1, ''), 0, wx.EXPAND),
+                           combo_surface_name,
+                           change_view,
+                           ])
+        btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_changes_sizer.AddMany([reset_orientation])
+        btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_ok_sizer.AddMany([btn_ok, btn_cancel])
+
+        flag_link = wx.EXPAND|wx.GROW|wx.RIGHT|wx.TOP
+        flag_slider = wx.EXPAND|wx.GROW|wx.LEFT
+        rotationx_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rotationy_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rotationz_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rotationx_sizer.AddMany([(text_rotation_x, 0, flag_link, 0),
+                                 (slider_rotation_x, 1, flag_slider,4),
+                                ])
+        rotationy_sizer.AddMany([(text_rotation_y, 0, flag_link, 0),
+                                 (slider_rotation_y, 1, flag_slider, 4)
+                                ])
+        rotationz_sizer.AddMany([(text_rotation_z, 0, flag_link, 0),
+                                 (slider_rotation_z, 1, flag_slider, 4)
+                                ])
+
+        btn_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=20)
+        btn_sizer.AddMany([(btn_ok_sizer, 1, wx.ALIGN_RIGHT)])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
+        main_sizer.Add(self.interactor, 0, wx.EXPAND)
+        main_sizer.Add(btn_changes_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        main_sizer.Add(rotationx_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(rotationy_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(rotationz_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(btn_sizer, 0,
+                       wx.ALIGN_RIGHT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def OnResetOrientation(self, evt):
+        self.rotationX = self.rotationY = self.rotationZ = 0
+        self.slider_rotation_x.SetValue(0)
+        self.slider_rotation_y.SetValue(0)
+        self.slider_rotation_z.SetValue(0)
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnRotationX(self, evt):
+        self.rotationX = evt.GetInt()
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnRotationY(self, evt):
+        self.rotationY = evt.GetInt()
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnRotationZ(self, evt):
+        self.rotationZ = evt.GetInt()
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnPressLeftButton(self, evt, obj):
+        self.spinning = True
+
+    def OnReleaseLeftButton(self, evt, obj):
+        self.spinning = False
+
+    def OnSpinMove(self, evt, obj):
+        self.interactor.SetInteractorStyle(self.actor_style)
+        if self.spinning:
+            evt.Spin()
+            evt.OnRightButtonDown()
+
+    def OnZoomMove(self, evt, obj):
+        self.interactor.SetInteractorStyle(self.camera_style)
+        if obj == 'MouseWheelForwardEvent':
+            self.camera_style.OnMouseWheelForward()
+        else:
+            self.camera_style.OnMouseWheelBackward()
+
+    def OnChangeView(self, evt):
+        self.ren.GetActiveCamera().Roll(90)
+        self.interactor.Render()
+
+    def OnComboName(self, evt):
+        surface_index = evt.GetSelection()
+        self.surface = self.proj.surface_dict[surface_index].polydata
+        if self.obj_actor:
+            self.RemoveActor()
+        self.LoadActor()
+
+    def LoadActor(self):
+        '''
+        Load the selected actor from the project (self.surface) into the scene
+        :return:
+        '''
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(self.surface)
+        mapper.ScalarVisibilityOff()
+
+        obj_actor = vtkActor()
+        obj_actor.SetMapper(mapper)
+        #obj_actor.GetProperty().SetOpacity(0.1)
+        obj_actor.PickableOff()
+        self.obj_actor = obj_actor
+        self.ren.AddActor(obj_actor)
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        self.ren.ResetCamera()
+        self.SetVolumeCamera(coord_flip[:3])
+        self.AddTarget(coord_flip)
+
+        self.interactor.Render()
+
+    def RemoveActor(self):
+        self.ren.RemoveAllViewProps()
+        self.ren.ResetCamera()
+        self.interactor.Render()
+
+    def AddTarget(self, coord_flip):
+        rx, ry, rz = coord_flip[3:6]
+        if rx is None:
+            coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
+            rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
+            ry += 90
+        else:
+            rx, ry, rz = coord_flip[3:6]
+
+        m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
+        marker_actor = self.CreateActorArrow(m_img_vtk)
+        self.marker_actor = marker_actor
+
+        self.ren.AddActor(marker_actor)
+
+    def CreateActorArrow(self, m_img_vtk, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+        input1 = vtkPolyData()
+        input2 = vtkPolyData()
+        input3 = vtkPolyData()
+        input4 = vtkPolyData()
+
+        cylinderSourceWing = vtkCylinderSource()
+        cylinderSourceWing.SetRadius(0.02)
+        cylinderSourceWing.Update()
+        input1.ShallowCopy(cylinderSourceWing.GetOutput())
+
+        arrow = vtkArrowSource()
+        arrow.SetArrowOriginToCenter()
+        arrow.SetTipResolution(40)
+        arrow.SetShaftResolution(40)
+        arrow.SetShaftRadius(0.025)
+        arrow.SetTipRadius(0.10)
+        arrow.SetTipLength(0.30)
+        arrow.Update()
+        input2.ShallowCopy(arrow.GetOutput())
+
+        arrowDown = vtkArrowSource()
+        arrowDown.SetArrowOriginToCenter()
+        arrowDown.SetTipResolution(4)
+        arrowDown.SetShaftResolution(40)
+        arrowDown.SetShaftRadius(0.05)
+        arrowDown.SetTipRadius(0.15)
+        arrowDown.SetTipLength(0.35)
+        arrowDown.Update()
+
+        ArrowDownTransformFilter = vtkTransformPolyDataFilter()
+        RotateTransform = vtkTransform()
+        RotateTransform.RotateZ(45)
+        RotateTransform.RotateY(90)
+        ArrowDownTransformFilter.SetTransform(RotateTransform)
+        ArrowDownTransformFilter.SetInputConnection(arrowDown.GetOutputPort())
+        ArrowDownTransformFilter.Update()
+        input3.ShallowCopy(ArrowDownTransformFilter.GetOutput())
+
+        torus = vtkParametricTorus()
+        torus.SetRingRadius(0.15)
+        torus.SetCrossSectionRadius(0.02)
+        torusSource = vtkParametricFunctionSource()
+        torusSource.SetParametricFunction(torus)
+        torusSource.Update()
+        input4.ShallowCopy(torusSource.GetOutput())
+
+        # Append the two meshes
+        appendFilter = vtkAppendPolyData()
+        appendFilter.AddInputData(input1)
+        appendFilter.AddInputData(input2)
+        appendFilter.AddInputData(input3)
+        appendFilter.AddInputData(input4)
+        appendFilter.Update()
+
+        #  Remove any duplicate points.
+        cleanFilter = vtkCleanPolyData()
+        cleanFilter.SetInputConnection(appendFilter.GetOutputPort())
+        cleanFilter.Update()
+
+        # Create a mapper and actor
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(cleanFilter.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.SetScale(size)
+        actor.GetProperty().SetColor(colour)
+        actor.SetUserMatrix(m_img_vtk)
+
+        return actor
+
+    def CreateVTKObjectMatrix(self, direction, orientation):
+        import invesalius.data.coordinates as dco
+        m_img = dco.coordinates_to_transformation_matrix(
+            position=direction,
+            orientation=orientation,
+            axes='sxyz',
+        )
+        m_img = np.asmatrix(m_img)
+        m_img_vtk = vtkMatrix4x4()
+        for row in range(0, 4):
+            for col in range(0, 4):
+                m_img_vtk.SetElement(row, col, m_img[row, col])
+
+        return m_img_vtk
+
+    def SetVolumeCamera(self, cam_focus):
+        cam = self.ren.GetActiveCamera()
+
+        if self.initial_focus is None:
+            self.initial_focus = np.array(cam.GetFocalPoint())
+
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus - self.initial_focus)
+
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1/v1n)*v0n + cam_focus
+
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
+
+        self.ren.GetActiveCamera().Zoom(3)
+
+    def GetRotationMatrix(self, v1_start, v2_start, v1_target, v2_target):
+        """
+        based on https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
+        calculating M the rotation matrix from base U to base V
+        M @ U = V
+        M = V @ U^-1
+        """
+        u1_start = self.Normalize(v1_start)
+        u2_start = self.Normalize(v2_start)
+        u3_start = self.Normalize(np.cross(u1_start, u2_start))
+
+        u1_target = self.Normalize(v1_target)
+        u2_target = self.Normalize(v2_target)
+        u3_target = self.Normalize(np.cross(u1_target, u2_target))
+
+        U = np.hstack([u1_start.reshape(3, 1), u2_start.reshape(3, 1), u3_start.reshape(3, 1)])
+        V = np.hstack([u1_target.reshape(3, 1), u2_target.reshape(3, 1), u3_target.reshape(3, 1)])
+
+        if not np.isclose(np.dot(v1_target, v2_target), 0, atol=1e-03):
+            raise ValueError("v1_target and v2_target must be vertical")
+
+        return np.dot(V, np.linalg.inv(U))
+
+    def GetEulerAnglesFromVectors(self, init_arrow_vector, target_arrow_vector):
+        import invesalius.data.transformations as tr
+        init_up_vector = self.GetPerpendicularVector(init_arrow_vector)
+        target_up_vector = self.GetPerpendicularVector(target_arrow_vector)
+        rot_mat = self.GetRotationMatrix(init_arrow_vector, init_up_vector, target_arrow_vector, target_up_vector)
+
+        return np.rad2deg(tr.euler_from_matrix(rot_mat, axes="sxyz"))
+
+    def CenterOfMass(self, surface):
+        barycenter = [0.0, 0.0, 0.0]
+        n = surface.GetNumberOfPoints()
+        for i in range(n):
+            point = surface.GetPoint(i)
+            barycenter[0] += point[0]
+            barycenter[1] += point[1]
+            barycenter[2] += point[2]
+        barycenter[0] /= n
+        barycenter[1] /= n
+        barycenter[2] /= n
+
+        return barycenter
+
+    def Normalize(self, v):
+        return v / np.linalg.norm(v)
+
+    def Versor(self, init_point, final_point):
+        init_point = np.array(init_point)
+        final_point = np.array(final_point)
+        norm = (sum((final_point - init_point) ** 2)) ** 0.5
+        versor_factor = (((final_point - init_point) / norm) * 1).tolist()
+
+        return versor_factor
+
+    def GetPerpendicularVector(self, vector):
+        ez = np.array([0, 0, 1])
+        look_at_vector = self.Normalize(vector)
+        up_vector = self.Normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)
+        return up_vector
+
+    def GetValue(self):
+        import invesalius.data.transformations as tr
+        vtkmat = self.marker_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+
+        return np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
 
 
 class SurfaceProgressWindow(object):

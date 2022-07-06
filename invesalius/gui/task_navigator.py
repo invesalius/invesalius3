@@ -1484,14 +1484,16 @@ class MarkersPanel(wx.Panel):
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        orientation_menu = menu_id.Append(3, _('Set coil target orientation'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
         menu_id.AppendSeparator()
 
         check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]])
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
-            send_target_to_robot_compensation = menu_id.Append(3, _('Sets target to robot head move compensation'))
+            send_target_to_robot_compensation = menu_id.Append(4, _('Sets target to robot head move compensation'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
-            send_target_to_robot = menu_id.Append(4, _('Send target from InVesalius to robot'))
+            send_target_to_robot = menu_id.Append(5, _('Send target from InVesalius to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
             if self.nav_status and check_target_angles:
                 send_target_to_robot_compensation.Enable(True)
@@ -1529,6 +1531,16 @@ class MarkersPanel(wx.Panel):
             self.__set_marker_as_target(idx)
         else:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+
+    def OnMenuSetCoilOrientation(self, evt):
+        list_index = self.lc.GetFocusedItem()
+        marker = self.markers[list_index].coord
+        dialog = dlg.SetCoilOrientationDialog(marker=marker)
+
+        if dialog.ShowModal() == wx.ID_OK:
+            marker[3], marker[4], marker[5] = dialog.GetValue()
+            self.CreateMarker(marker)
+        dialog.Destroy()
 
     def OnMenuRemoveTarget(self, evt):
         idx = self.lc.GetFocusedItem()
