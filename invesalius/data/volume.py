@@ -518,9 +518,9 @@ class Volume():
                 self.volume_mapper.SetBlendModeToComposite()
         else:
             if self.config.get('MIP', False):
-                raycasting_function = vtk.vtkVolumeRayCastMIPFunction()
+                raycasting_function = vtkVolumeRayCastMIPFunction()
             else:
-                raycasting_function = vtk.vtkVolumeRayCastCompositeFunction()
+                raycasting_function = vtkVolumeRayCastCompositeFunction()
                 raycasting_function.SetCompositeMethodToInterpolateFirst()
 
             if ses.Session().rendering == '0':
@@ -619,7 +619,7 @@ class Volume():
         # because it's faster and the image is better
         # TODO: To test if it's true.
         if const.TYPE_RAYCASTING_MAPPER:
-            volume_mapper = vtk.vtkVolumeRayCastMapper()
+            volume_mapper = vtkVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
             #volume_mapper.SetInput(image2)
             #volume_mapper.SetVolumeRayCastFunction(composite_function)

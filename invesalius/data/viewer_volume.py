@@ -1480,7 +1480,7 @@ class Viewer(wx.Panel):
         torusSource.SetParametricFunction(torus)
         torusSource.Update()
 
-        torusMapper = tkPolyDataMapper()
+        torusMapper = vtkPolyDataMapper()
         torusMapper.SetInputConnection(torusSource.GetOutputPort())
         torusMapper.SetScalarRange(0, 360)
 
@@ -1598,7 +1598,7 @@ class Viewer(wx.Panel):
         return cell_ids_array
 
     def GetCellIntersection(self, p1, p2, locator):
-        vtk_colors = vtk.vtkNamedColors()
+        vtk_colors = vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtkIdList()
         #for debugging
@@ -1608,7 +1608,7 @@ class Viewer(wx.Panel):
         return intersectingCellIds
 
     def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
-        vtk_colors = vtk.vtkNamedColors()
+        vtk_colors = vtkNamedColors()
         closestDist = 50
 
         #if find intersection , calculate angle and add actors

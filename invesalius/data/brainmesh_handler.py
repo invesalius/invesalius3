@@ -11,7 +11,7 @@ from vtkmodules.vtkCommonDataModel import (
     vtkPolyData,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
-from vtkmodules.vtkCommonTransforms import vtkTransform, vtkTransformPolyDataFilter
+from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkCellCenters,
     vtkCleanPolyData,

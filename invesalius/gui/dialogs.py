@@ -46,6 +46,7 @@ from vtkmodules.vtkCommonCore import mutable, vtkPoints
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
     vtkIterativeClosestPointTransform,
+    vtkPolyData,
 )
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals

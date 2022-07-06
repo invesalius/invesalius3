@@ -22,7 +22,7 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkRenderingCore import vtkPointPicker, vtkPropPicker
+from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -429,7 +429,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
 
         self.state_code = const.SLICE_STATE_CROSS
-        self.picker = vtk.vtkCellPicker()
+        self.picker = vtkCellPicker()
         self.picker.SetTolerance(1e-3)
         # self.picker.SetUseCells(True)
         self.viewer.interactor.SetPicker(self.picker)
