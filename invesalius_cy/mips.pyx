@@ -1,4 +1,4 @@
-#cython: language_level=3str
+#cython: language_level=3
 
 #http://en.wikipedia.org/wiki/Local_maximum_intensity_projection
 import numpy as np
