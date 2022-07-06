@@ -330,9 +330,6 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                if self.use_icp:
-                    m_img = bases.transform_icp(m_img, self.m_icp)
-
                 self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
 
                 if self.view_tracts:
