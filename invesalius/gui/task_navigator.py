@@ -21,6 +21,7 @@ import dataclasses
 from functools import partial
 import itertools
 import time
+import threading
 
 import nibabel as nb
 import numpy as np
@@ -1382,6 +1383,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.CreateMarker, 'Create marker')
+        Publisher.subscribe(self.SetMarkers, 'Set markers')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
@@ -1743,7 +1745,6 @@ class MarkersPanel(wx.Panel):
         self.current_session = new_session_id
 
     def UpdateMarkerOrientation(self, marker_id=None):
-        # self.lc.GetFocusedItem()
         list_index = marker_id if marker_id else 0
         marker = self.markers[list_index].coord
         dialog = dlg.SetCoilOrientationDialog(marker=marker)
@@ -1751,7 +1752,32 @@ class MarkersPanel(wx.Panel):
         if dialog.ShowModal() == wx.ID_OK:
             marker[3], marker[4], marker[5] = dialog.GetValue()
             self.CreateMarker(marker)
+            Publisher.sendMessage('Update target orientation',
+                                  target_id=marker_id, orientation=[marker[3], marker[4], marker[5]])
         dialog.Destroy()
+
+    def SetMarkers(self, markers):
+        """
+        Set all markers, overwriting the previous markers.
+        """
+
+        index = range(len(self.markers))
+        self.__delete_multiple_markers(index)
+        for marker in markers:
+            ball_id = marker["ball_id"]
+            size = marker["size"]
+            colour = marker["colour"]
+            position = marker["position"]
+            direction = marker["direction"]
+            target = marker["target"]
+            arrow_flag = marker["arrow_flag"]
+
+            self.CreateMarker(
+                size=size,
+                colour=colour,
+                coord=position + direction,
+            )
+
 
     def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
         new_marker = self.Marker()
