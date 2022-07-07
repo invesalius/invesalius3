@@ -1385,6 +1385,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
+        Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
 
     def __find_target_marker(self):
         """
@@ -1740,6 +1741,17 @@ class MarkersPanel(wx.Panel):
 
     def OnChangeCurrentSession(self, new_session_id):
         self.current_session = new_session_id
+
+    def UpdateMarkerOrientation(self, marker_id=None):
+        # self.lc.GetFocusedItem()
+        list_index = marker_id if marker_id else 0
+        marker = self.markers[list_index].coord
+        dialog = dlg.SetCoilOrientationDialog(marker=marker)
+
+        if dialog.ShowModal() == wx.ID_OK:
+            marker[3], marker[4], marker[5] = dialog.GetValue()
+            self.CreateMarker(marker)
+        dialog.Destroy()
 
     def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
         new_marker = self.Marker()

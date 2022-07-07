@@ -122,6 +122,10 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def __set_callbacks(self, connection):
         connection.set_callback__set_markers(self.set_markers)
+        connection.set_callback__open_orientation_dialog(self.open_orienation_dialog)
+
+    def open_orienation_dialog(self, target_id):
+        Publisher.sendMessage('Open marker orientation dialog', marker_id=target_id)
 
     def set_markers(self, markers):
         Publisher.sendMessage('Set markers', markers=markers)
