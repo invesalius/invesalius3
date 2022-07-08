@@ -18,7 +18,9 @@
 # --------------------------------------------------------------------------
 
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton
+from invesalius.utils import Singleton, debug
+
+import wx
 
 import numpy as np
 from vtkmodules.numpy_interface import dataset_adapter
@@ -134,7 +136,7 @@ class NeuronavigationApi(metaclass=Singleton):
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
 
     def open_orientation_dialog(self, target_id):
-        Publisher.sendMessage('Open marker orientation dialog', marker_id=target_id)
+        wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
 
     def set_markers(self, markers):
-        Publisher.sendMessage('Set markers', markers=markers)
+        wx.CallAfter(Publisher.sendMessage, 'Set markers', markers=markers)

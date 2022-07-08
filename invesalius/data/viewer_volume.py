@@ -678,7 +678,7 @@ class Viewer(wx.Panel):
                 marker_id=ball_id,
                 size=size,
                 colour=colour,
-                coord=position,
+                coord=position + direction,
                 arrow_flag=arrow_flag,
             )
 

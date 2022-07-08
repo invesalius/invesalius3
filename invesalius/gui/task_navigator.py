@@ -1407,12 +1407,20 @@ class MarkersPanel(wx.Panel):
         selection = []
 
         next = self.lc.GetFirstSelected()
-               
+
         while next != -1:
             selection.append(next)
             next = self.lc.GetNextSelected(next)
 
         return selection
+
+    def __delete_all_markers(self):
+        """
+        Delete all markers
+        """
+        for i in reversed(range(len(self.markers))):
+            del self.markers[i]
+            self.lc.DeleteItem(i)
 
     def __delete_multiple_markers(self, index):
         """
@@ -1751,7 +1759,6 @@ class MarkersPanel(wx.Panel):
 
         if dialog.ShowModal() == wx.ID_OK:
             marker[3], marker[4], marker[5] = dialog.GetValue()
-            self.CreateMarker(marker)
             Publisher.sendMessage('Update target orientation',
                                   target_id=marker_id, orientation=[marker[3], marker[4], marker[5]])
         dialog.Destroy()
@@ -1761,16 +1768,13 @@ class MarkersPanel(wx.Panel):
         Set all markers, overwriting the previous markers.
         """
 
-        index = range(len(self.markers))
-        self.__delete_multiple_markers(index)
+        self.__delete_all_markers()
+
         for marker in markers:
-            ball_id = marker["ball_id"]
             size = marker["size"]
             colour = marker["colour"]
             position = marker["position"]
             direction = marker["direction"]
-            target = marker["target"]
-            arrow_flag = marker["arrow_flag"]
 
             self.CreateMarker(
                 size=size,
