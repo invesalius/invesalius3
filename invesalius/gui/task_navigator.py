@@ -21,7 +21,6 @@ import dataclasses
 from functools import partial
 import itertools
 import time
-import threading
 
 import nibabel as nb
 import numpy as np
