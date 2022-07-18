@@ -670,7 +670,7 @@ class Viewer(wx.Panel):
             size = marker["size"]
             colour = marker["colour"]
             position = marker["position"]
-            direction = marker["direction"]
+            orientation = marker["orientation"]
             target = marker["target"]
             arrow_flag = marker["arrow_flag"]
 
@@ -678,12 +678,12 @@ class Viewer(wx.Panel):
                 marker_id=ball_id,
                 size=size,
                 colour=colour,
-                coord=position + direction,
+                coord=position + orientation,
                 arrow_flag=arrow_flag,
             )
 
             if target:
-                Publisher.sendMessage('Update target', coord=position + direction)
+                Publisher.sendMessage('Update target', coord=position + orientation)
                 target_selected = True
 
         if not target_selected:

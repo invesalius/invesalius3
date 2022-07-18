@@ -1773,12 +1773,12 @@ class MarkersPanel(wx.Panel):
             size = marker["size"]
             colour = marker["colour"]
             position = marker["position"]
-            direction = marker["direction"]
+            orientation = marker["orientation"]
 
             self.CreateMarker(
                 size=size,
                 colour=colour,
-                coord=position + direction,
+                coord=position + orientation,
             )
 
 
