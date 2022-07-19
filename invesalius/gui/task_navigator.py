@@ -563,7 +563,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
         Publisher.subscribe(self.OnDialogRobotDestroy, 'Dialog robot destroy')
 
-    def LoadImageFiducials(self, label, coord):
+    def LoadImageFiducials(self, label, position):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
 
         fiducial_index = fiducial['fiducial_index']
@@ -573,11 +573,11 @@ class NeuronavigationPanel(wx.Panel):
             print("Fiducial {} already set, not resetting".format(label))
             return
 
-        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
         self.btns_set_fiducial[fiducial_index].SetValue(True)
         for m in [0, 1, 2]:
-            self.numctrls_fiducial[fiducial_index][m].SetValue(coord[m])
+            self.numctrls_fiducial[fiducial_index][m].SetValue(position[m])
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -585,11 +585,11 @@ class NeuronavigationPanel(wx.Panel):
         assert len(found) != 0, "No fiducial found for which {} = {}".format(attribute_name, attribute_value)
         return found[0]
 
-    def SetImageFiducial(self, fiducial_name, coord):
+    def SetImageFiducial(self, fiducial_name, position):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', fiducial_name)
         fiducial_index = fiducial['fiducial_index']
 
-        self.navigation.SetImageFiducial(fiducial_index, coord)
+        self.navigation.SetImageFiducial(fiducial_index, position)
 
     def SetTrackerFiducial(self, fiducial_name):
         if not self.tracker.IsTrackerInitialized():
@@ -726,23 +726,24 @@ class NeuronavigationPanel(wx.Panel):
         label = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
 
         if self.btns_set_fiducial[n].GetValue():
-            coord = self.numctrls_fiducial[n][0].GetValue(),\
+            position = self.numctrls_fiducial[n][0].GetValue(),\
                     self.numctrls_fiducial[n][1].GetValue(),\
-                    self.numctrls_fiducial[n][2].GetValue(), None, None, None
+                    self.numctrls_fiducial[n][2].GetValue()
+            orientation = None, None, None
 
-            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=coord[0:3])
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
             colour = (0., 1., 0.)
             size = 2
             seed = 3 * [0.]
 
-            Publisher.sendMessage('Create marker', coord=coord, colour=colour, size=size,
+            Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
                                    label=label, seed=seed)
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
 
-            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, coord=np.nan)
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=np.nan)
             Publisher.sendMessage('Delete fiducial marker', label=label)
 
     def OnTrackerFiducials(self, n, evt, ctrl):
@@ -1189,14 +1190,23 @@ class MarkersPanel(wx.Panel):
         is_target : bool = False
         session_id : int = 1
 
-        # x, y, z, alpha, beta, gamma can be jointly accessed as coord
+        # x, y, z can be jointly accessed as position
         @property
-        def coord(self):
-            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma))
+        def position(self):
+            return list((self.x, self.y, self.z))
 
-        @coord.setter
-        def coord(self, new_coord):
-            self.x, self.y, self.z, self.alpha, self.beta, self.gamma = new_coord
+        @position.setter
+        def position(self, new_position):
+            self.x, self.y, self.z = new_position
+
+        # alpha, beta, gamma can be jointly accessed as orientation
+        @property
+        def orientation(self):
+            return list((self.alpha, self.beta, self.gamma))
+
+        @orientation.setter
+        def orientation(self, new_orientation):
+            self.alpha, self.beta, self.gamma = new_orientation
 
         # r, g, b can be jointly accessed as colour
         @property
@@ -1282,7 +1292,8 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.current_coord = [0, 0, 0, None, None, None]
+        self.current_position = [0, 0, 0]
+        self.current_orientation = [None, None, None]
         self.current_seed = 0, 0, 0
 
         self.markers = []
@@ -1456,7 +1467,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetItemBackgroundColour(idx, 'RED')
         self.lc.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
-        Publisher.sendMessage('Update target', coord=self.markers[idx].coord)
+        Publisher.sendMessage('Update target', coord=self.markers[idx].position+self.markers[idx].orientation)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
         wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 
@@ -1466,14 +1477,15 @@ class MarkersPanel(wx.Panel):
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
     def UpdateCurrentCoord(self, position):
-        self.current_coord = list(position)
+        self.current_position = list(position[:3])
+        self.current_orientation = list(position[3:])
         if not self.navigation.track_obj:
-            self.current_coord[3:] = None, None, None
+            self.current_orientation = None, None, None
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
             self.nav_status = False
-            self.current_coord[3:] = None, None, None
+            self.current_orientation = None, None, None
         else:
             self.nav_status = True
 
@@ -1498,7 +1510,7 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
         menu_id.AppendSeparator()
 
-        check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].coord[3:]])
+        check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].orientation])
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
             send_target_to_robot_compensation = menu_id.Append(4, _('Sets target to robot head move compensation'))
@@ -1544,12 +1556,13 @@ class MarkersPanel(wx.Panel):
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.lc.GetFocusedItem()
-        marker = self.markers[list_index].coord
-        dialog = dlg.SetCoilOrientationDialog(marker=marker)
+        position = self.markers[list_index].position
+        orientation = self.markers[list_index].orientation
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
-            marker[3], marker[4], marker[5] = dialog.GetValue()
-            self.CreateMarker(marker)
+            orientation = dialog.GetValue()
+            self.CreateMarker(list(position), list(orientation))
         dialog.Destroy()
 
     def OnMenuRemoveTarget(self, evt):
@@ -1693,11 +1706,11 @@ class MarkersPanel(wx.Panel):
                 for line in file.readlines():
                     marker = self.Marker()
                     marker.from_string(line)
-                    self.CreateMarker(coord=marker.coord, colour=marker.colour, size=marker.size,
+                    self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour, size=marker.size,
                                       label=marker.label, is_target=False, seed=marker.seed, session_id=marker.session_id)
 
                     if marker.label in self.__list_fiducial_labels():
-                        Publisher.sendMessage('Load image fiducials', label=marker.label, coord=marker.coord)
+                        Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
                     # If the new marker has is_target=True, we first create
                     # a marker with is_target=False, and then call __set_marker_as_target
@@ -1778,13 +1791,15 @@ class MarkersPanel(wx.Panel):
             self.CreateMarker(
                 size=size,
                 colour=colour,
-                coord=position + orientation,
+                position=position,
+                orientation=orientation,
             )
 
 
-    def CreateMarker(self, coord=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
+    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
         new_marker = self.Marker()
-        new_marker.coord = coord or self.current_coord
+        new_marker.position = position or self.current_position
+        new_marker.orientation = orientation or self.current_orientation
         new_marker.colour = colour or self.marker_colour
         new_marker.size = size or self.marker_size
         new_marker.label = label
@@ -1800,7 +1815,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Add marker to robot control', data=current_head_robot_target_status)
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        if all([elem is not None for elem in new_marker.coord[3:]]):
+        if all([elem is not None for elem in new_marker.orientation]):
             arrow_flag = True
         else:
             arrow_flag = False
@@ -1808,7 +1823,8 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Add marker', marker_id=len(self.markers),
                               size=new_marker.size,
                               colour=new_marker.colour,
-                              coord=new_marker.coord,
+                              position=new_marker.position,
+                              orientation=new_marker.orientation,
                               arrow_flag=arrow_flag)
 
 
