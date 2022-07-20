@@ -42,6 +42,7 @@ from vtkmodules.vtkRenderingVolume import (
     vtkFixedPointVolumeRayCastMapper,
     vtkGPUVolumeRayCastMapper,
 )
+from vtkmodules.vtkRenderingVolumeOpenGL2 import  vtkOpenGLGPUVolumeRayCastMapper
 
 
 from invesalius.pubsub import pub as Publisher
@@ -634,7 +635,7 @@ class Volume():
                 self.volume_mapper = volume_mapper
                 volume_mapper.IntermixIntersectingGeometryOn()
             else:
-                volume_mapper = vtkGPUVolumeRayCastMapper()
+                volume_mapper = vtkOpenGLGPUVolumeRayCastMapper()
                 volume_mapper.UseJitteringOn()
                 self.volume_mapper = volume_mapper
 
