@@ -1766,13 +1766,14 @@ class MarkersPanel(wx.Panel):
 
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0
-        marker = self.markers[list_index].coord
-        dialog = dlg.SetCoilOrientationDialog(marker=marker)
+        position = self.markers[list_index].position
+        orientation = self.markers[list_index].orientation
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
-            marker[3], marker[4], marker[5] = dialog.GetValue()
+            orientation = dialog.GetValue()
             Publisher.sendMessage('Update target orientation',
-                                  target_id=marker_id, orientation=[marker[3], marker[4], marker[5]])
+                                  target_id=marker_id, orientation=list(orientation))
         dialog.Destroy()
 
     def SetMarkers(self, markers):
