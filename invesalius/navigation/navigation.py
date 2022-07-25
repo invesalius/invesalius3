@@ -215,10 +215,10 @@ class Navigation(metaclass=Singleton):
     def GetReferenceMode(self):
         return self.ref_mode_id
 
-    def SetImageFiducial(self, fiducial_index, coord):
-        self.image_fiducials[fiducial_index, :] = coord
+    def SetImageFiducial(self, fiducial_index, position):
+        self.image_fiducials[fiducial_index, :] = position
 
-        print("Set image fiducial {} to coordinates {}".format(fiducial_index, coord))
+        print("Set image fiducial {} to coordinates {}".format(fiducial_index, position))
 
     def AreImageFiducialsSet(self):
         return not np.isnan(self.image_fiducials).any()

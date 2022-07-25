@@ -670,7 +670,7 @@ class Viewer(wx.Panel):
             size = marker["size"]
             colour = marker["colour"]
             position = marker["position"]
-            direction = marker["direction"]
+            orientation = marker["orientation"]
             target = marker["target"]
             arrow_flag = marker["arrow_flag"]
 
@@ -678,12 +678,13 @@ class Viewer(wx.Panel):
                 marker_id=ball_id,
                 size=size,
                 colour=colour,
-                coord=position,
+                position=position,
+                orientation=orientation,
                 arrow_flag=arrow_flag,
             )
 
             if target:
-                Publisher.sendMessage('Update target', coord=position + direction)
+                Publisher.sendMessage('Update target', coord=position + orientation)
                 target_selected = True
 
         if not target_selected:
@@ -691,21 +692,21 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def AddMarker(self, marker_id, size, colour, coord, arrow_flag):
+    def AddMarker(self, marker_id, size, colour, position, orientation, arrow_flag):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
         self.marker_id = marker_id
-        coord_flip = list(coord)
-        coord_flip[1] = -coord_flip[1]
+        position_flip = list(position)
+        position_flip[1] = -position_flip[1]
 
         if arrow_flag:
             """
             Markers arrow with orientation created by navigation tools and rendered in volume viewer.
             """
-            marker_actor = self.CreateActorArrow(coord_flip[:3], coord_flip[3:6], colour, const.ARROW_MARKER_SIZE)
+            marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
         else:
-            marker_actor = self.CreateActorBall(coord_flip[:3], colour, size)
+            marker_actor = self.CreateActorBall(position_flip, colour, size)
 
         # adding a new actor for the marker
         self.static_markers.append(marker_actor)
