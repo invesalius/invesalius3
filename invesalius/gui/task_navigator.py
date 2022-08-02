@@ -2258,16 +2258,13 @@ class E_fieldPanel(wx.Panel):
         if self.efield_enabled:
             print('True')
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
-            Publisher.sendMessage('Add efield mesh', actor = self.e_field_brain.efield_actor, mesh = self.e_field_brain.e_field_mesh)
-            Publisher.sendMessage('Get e-field mesh centers and normals', centers=self.e_field_brain.e_field_mesh_centers, normals=self.e_field_brain.e_field_mesh_normals)
-            Publisher.sendMessage('Get init efield locator', locatorpoint = self.e_field_brain.locator_efield, locatorcell = self.e_field_brain.locator_efield_Cell)
+            Publisher.sendMessage('Initialize', e_field_brain = self.e_field_brain)
             self.e_field_loaded = True
-            Publisher.sendMessage('Update e-field visualization', data = self.e_field_loaded)
-
-
         else:
             print('False')
             self.e_field_loaded = False
+
+        Publisher.sendMessage('Update e-field visualization', data = self.e_field_loaded)
 
     def OnAddEfieldMesh(self, event=None):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load E-field Mesh"),

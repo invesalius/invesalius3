@@ -317,11 +317,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
-        Publisher.subscribe(self.Add_E_field_mesh_actor, 'Add efield mesh')
+        Publisher.subscribe(self.Init_efield, 'Initialize')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
-        Publisher.subscribe(self.Get_Efield_mesh_Centers, 'Get e-field mesh centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
-        Publisher.subscribe(self.GetLocaterEfield, 'Get init efield locator')
         Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
@@ -1537,12 +1535,6 @@ class Viewer(wx.Panel):
 
     def Initlocator_viewer(self, locator):
         self.locator = locator
-        #self.Refresh()
-
-    def Add_E_field_mesh_actor(self, actor, mesh):
-        self.efield_actor = actor
-        self.ren.AddActor(self.efield_actor)
-        self.efield_mesh = mesh
 
     def Recolor_efield_Actor(self, mesh):
         mapper = vtk.vtkPolyDataMapper()
@@ -1567,14 +1559,6 @@ class Viewer(wx.Panel):
         self.max = max
         self.e_field_norms = e_field_norms
 
-    def Get_Efield_mesh_Centers(self, centers, normals):
-        self.e_field_mesh_normals = normals
-        self.e_field_mesh_centers = centers
-
-    def GetLocaterEfield(self, locatorpoint, locatorcell):
-        self.locator_efield = locatorpoint
-        self.locator_efield_cell = locatorcell
-
     def FindPointsAroundRadiusEfield(self, cellId):
         radius = vtk.mutable(50)
         #self.radius_list = vtk.vtkIdList()
@@ -1588,6 +1572,14 @@ class Viewer(wx.Panel):
             for j in range(pts1.GetNumberOfIds()):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
+    def Init_efield(self, e_field_brain):
+        #self.e_field_brain = e_field_brain
+        self.e_field_mesh_normals =e_field_brain.e_field_mesh_normals
+        self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
+        self.locator_efield = e_field_brain.locator_efield
+        self.locator_efield_cell = e_field_brain.locator_efield_Cell
+        self.efield_actor = e_field_brain.efield_actor
+        self.efield_mesh = e_field_brain.e_field_mesh
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
