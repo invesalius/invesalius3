@@ -36,6 +36,7 @@ from invesalius import inv_paths
 BTN_IMPORT_LOCAL = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
 BTN_OPEN_PROJECT = wx.NewId()
+BTN_IMPORT_NIFTI = wx.NewId()
 
 
 
@@ -81,6 +82,17 @@ class InnerTaskPanel(wx.Panel):
         link_import_local.UpdateLink()
         link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
 
+        tooltip = wx.ToolTip(_("Select NIFTI files to be reconstructed"))
+        link_import_nifti = hl.HyperLinkCtrl(self, -1, _("Import NIFTI images..."))
+        link_import_nifti.SetUnderlines(False, False, False)
+        link_import_nifti.SetBold(True)
+        link_import_nifti.SetColours("BLACK", "BLACK", "BLACK")
+        link_import_nifti.SetBackgroundColour(backgroud_colour)
+        link_import_nifti.SetToolTip(tooltip)
+        link_import_nifti.AutoBrowse(False)
+        link_import_nifti.UpdateLink()
+        link_import_nifti.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportNifit)
+
         #tooltip = wx.ToolTip("Import DICOM files from PACS server")
         #link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
         #link_import_pacs.SetUnderlines(False, False, False)
@@ -119,6 +131,9 @@ class InnerTaskPanel(wx.Panel):
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
                                                BMP_IMPORT, style=button_style)
         button_import_local.SetBackgroundColour(self.GetBackgroundColour())
+        button_import_nifti = pbtn.PlateButton(self, BTN_IMPORT_NIFTI, "",
+                                               BMP_IMPORT, style=button_style)
+        button_import_nifti.SetBackgroundColour(self.GetBackgroundColour())
         button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
                                             BMP_OPEN_PROJECT, style=button_style)
         button_open_proj.SetBackgroundColour(self.GetBackgroundColour())
@@ -131,13 +146,15 @@ class InnerTaskPanel(wx.Panel):
         flag_button = wx.EXPAND | wx.GROW
 
         #fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ #(link_import_pacs, 1, flag_link, 3),
                               #(button_import_pacs, 0, flag_button),
                               (link_import_local, 1, flag_link, 3),
                               (button_import_local, 0, flag_button),
-                              (link_open_proj, 1, flag_link, 3),
+                              (link_import_nifti, 3, flag_link, 3),
+                              (button_import_nifti, 0, flag_button),
+                              (link_open_proj, 5, flag_link, 3),
                               (button_open_proj, 0, flag_button) ])
 
         # Add line sizers into main sizer
@@ -218,6 +235,10 @@ class InnerTaskPanel(wx.Panel):
         self.ImportDicom()
         event.Skip()
 
+    def OnLinkImportNifit(self, event):
+        self.ImportNifit()
+        event.Skip()
+
     def OnLinkImportPACS(self, event):
         self.ImportPACS()
         event.Skip()
@@ -234,6 +255,9 @@ class InnerTaskPanel(wx.Panel):
 #######
     def ImportDicom(self):
         Publisher.sendMessage('Show import directory dialog')
+
+    def ImportNifit(self):
+        Publisher.sendMessage('Show import other files dialog', id_type=const.ID_NIFTI_IMPORT)
 
     def OpenProject(self, path=None):
         if path:
@@ -256,6 +280,8 @@ class InnerTaskPanel(wx.Panel):
 
         if id == BTN_IMPORT_LOCAL:
             self.ImportDicom()
+        elif id == BTN_IMPORT_NIFTI:
+            self.ImportNifit()
         elif id == BTN_IMPORT_PACS:
             self.ImportPACS()
         else: #elif id == BTN_OPEN_PROJECT:
