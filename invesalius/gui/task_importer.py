@@ -36,6 +36,7 @@ from invesalius import inv_paths
 BTN_IMPORT_LOCAL = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
 BTN_OPEN_PROJECT = wx.NewId()
+BTN_IMPORT_NIFTI = wx.NewId()
 
 
 
@@ -130,7 +131,7 @@ class InnerTaskPanel(wx.Panel):
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
                                                BMP_IMPORT, style=button_style)
         button_import_local.SetBackgroundColour(self.GetBackgroundColour())
-        button_import_nifti = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
+        button_import_nifti = pbtn.PlateButton(self, BTN_IMPORT_NIFTI, "",
                                                BMP_IMPORT, style=button_style)
         button_import_nifti.SetBackgroundColour(self.GetBackgroundColour())
         button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
@@ -279,6 +280,8 @@ class InnerTaskPanel(wx.Panel):
 
         if id == BTN_IMPORT_LOCAL:
             self.ImportDicom()
+        elif id == BTN_IMPORT_NIFTI:
+            self.ImportNifit()
         elif id == BTN_IMPORT_PACS:
             self.ImportPACS()
         else: #elif id == BTN_OPEN_PROJECT:
