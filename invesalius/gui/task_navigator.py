@@ -2235,22 +2235,23 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
-        # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load e-field mesh"))
-        btn_mesh = wx.Button(self, -1, _("E-field mesh"), size=wx.Size(80, 80))
-        btn_mesh.SetToolTip(tooltip)
-        btn_mesh.Enable(1)
-        btn_mesh.Bind(wx.EVT_BUTTON, self.OnAddEfieldMesh)
-
-        # Create a horizontal sizer to represent button save
-        line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_mesh, 2, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-
         # Add line sizers into main sizer
         border = 1
         border_last = 5
+        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(50, 500),
+                                              style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+        # combo_surface_name.SetSelection(0)
+        self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboNameClic)
+        self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        self.combo_surface_name.Enable(True)
+        self.combo_surface_name.Insert('Select',0)
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
+        main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
     def OnEnableEfield(self, evt, ctrl):
@@ -2258,32 +2259,31 @@ class E_fieldPanel(wx.Panel):
         if self.efield_enabled:
             print('True')
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
-            Publisher.sendMessage('Initialize', e_field_brain = self.e_field_brain)
+            Publisher.sendMessage('Initialize', e_field_brain=self.e_field_brain)
             self.e_field_loaded = True
+            self.combo_surface_name.Enable(False)
         else:
             print('False')
+            Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
+            self.combo_surface_name.Enable(True)
 
-        Publisher.sendMessage('Update e-field visualization', data = self.e_field_loaded)
+        Publisher.sendMessage('Update e-field visualization', data=self.e_field_loaded)
 
-    def OnAddEfieldMesh(self, event=None):
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load E-field Mesh"),
-                                          wildcard=_("Stl file (*.stl)|*.stl"))
-        try:
-            if filename:
-                print('success')
-                self.convert2inv = True
-                #Publisher.sendMessage('Update convert2inv flag', convert2inv =  self.convert2inv)
-                #Publisher.sendMessage('Import surface file efield', filename = filename)
-                reader = vtk.vtkSTLReader()
-                reader.SetFileName(filename)
-                reader.Update()
-                self.e_field_mesh = reader.GetOutput()
 
-        except (AssertionError):
-            wx.MessageBox(_("File incompatible"), _("InVesalius 3"))
-            Publisher.sendMessage('Update status text in GUI', label="")
-        self.Update()
+    def OnComboNameClic(self, evt):
+        import invesalius.project as prj
+        self.proj = prj.Project()
+        self.combo_surface_name.Clear()
+        for n in range(len(self.proj.surface_dict)):
+            self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+    def OnComboName(self, evt):
+        surface_name = evt.GetString()
+        self.surface_index = evt.GetSelection()
+        self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
+        Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+
 
 
 class SessionPanel(wx.Panel):

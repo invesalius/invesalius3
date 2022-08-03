@@ -323,6 +323,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
+        Publisher.subscribe(self.Get_efield_actor, 'Send Actor')
+        Publisher.subscribe(self.Default_color_actor, 'Recolor again')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -1539,10 +1541,19 @@ class Viewer(wx.Panel):
     def Recolor_efield_Actor(self, mesh):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(mesh)
-        self.efield_actor = vtk.vtkActor()
         self.efield_actor.SetMapper(mapper)
 
-        self.ren.AddActor(self.efield_actor)
+    def Default_color_actor(self):
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName('Colors')
+        color = 3 * [0.0]
+        for j in range(0, 3):
+            color[j] = int(255.0 * 1)
+        for i in range(self.efield_mesh.GetNumberOfCells()):
+            colors.InsertTuple(i, color)
+        self.efield_mesh.GetCellData().SetScalars(colors)
+        self.Recolor_efield_Actor(self.efield_mesh)
 
     def CreateLUTtableforefield(self, min, max):
         lut = vtk.vtkLookupTable()
@@ -1558,6 +1569,9 @@ class Viewer(wx.Panel):
         self.min = min
         self.max = max
         self.e_field_norms = e_field_norms
+
+    def Get_efield_actor(self, e_field_actor):
+        self.efield_actor  = e_field_actor
 
     def FindPointsAroundRadiusEfield(self, cellId):
         radius = vtk.mutable(50)
@@ -1578,7 +1592,6 @@ class Viewer(wx.Panel):
         self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
         self.locator_efield = e_field_brain.locator_efield
         self.locator_efield_cell = e_field_brain.locator_efield_Cell
-        self.efield_actor = e_field_brain.efield_actor
         self.efield_mesh = e_field_brain.e_field_mesh
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
@@ -1600,7 +1613,6 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         lut = self.CreateLUTtableforefield(self.min, self.max)
-        self.ren.RemoveActor(self.efield_actor)
         colors = vtk.vtkUnsignedCharArray()
         colors.SetNumberOfComponents(3)
         colors.SetName('Colors')
@@ -1621,7 +1633,7 @@ class Viewer(wx.Panel):
             colors.InsertTuple(index_id, color)
         self.efield_mesh.GetPointData().SetScalars(colors)
         self.Recolor_efield_Actor(self.efield_mesh)
-        self.Refresh()
+
 
     def UpdateEfieldPointLocation(self, m_img, coord, flag):
         if flag:

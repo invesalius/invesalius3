@@ -283,27 +283,11 @@ class Brain:
 
 class E_field_brain:
     def __init__(self, e_field_mesh):
-        self.efield_actor = self.GetEfieldActor(e_field_mesh)
+        self.GetEfieldActor(e_field_mesh)
 
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtk.vtkFloatArray()
         self.e_field_mesh_centers = vtk.vtkFloatArray()
-        # Create a mapper and actor
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(mesh)
-        self.efield_actor = vtk.vtkActor()
-        self.efield_actor.SetMapper(mapper)
-
-        affine = sl.Slice().affine
-        matrix_shape = sl.Slice().matrix.shape
-        spacing = sl.Slice().spacing
-        img_shift = spacing[1] * (matrix_shape[1] - 1)
-        affine = sl.Slice().affine.copy()
-        affine[1, -1] -= img_shift
-        #affine = np.identity(4)
-        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-        self.efield_actor.SetUserMatrix(affine_vtk)
-        mesh = self.TransformPosition(mesh, affine_vtk)
 
         self.locator_efield_Cell = vtk.vtkCellLocator()
         self.locator_efield_Cell.SetDataSet(mesh)
@@ -316,7 +300,7 @@ class E_field_brain:
         self.e_field_mesh_normals = GetNormals(mesh)
         self.e_field_mesh_centers = GetCenters(mesh)
         self.e_field_mesh = mesh
-        return self.efield_actor
+
 
     def TransformPosition(self, mesh, affine_vtk):
         mesh_transform = vtk.vtkTransform()
