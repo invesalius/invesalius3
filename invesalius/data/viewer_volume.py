@@ -48,9 +48,6 @@ import invesalius.utils as utils
 
 from invesalius import inv_paths
 
-import csv
-
-
 if sys.platform == 'win32':
     try:
         import win32api
