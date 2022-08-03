@@ -55,7 +55,6 @@ from time import sleep
 
 import invesalius.constants as const
 
-####To enable the e-field panel
 e_field = True
 if has_trekker or e_field:
     import invesalius.data.brainmesh_handler as brain
