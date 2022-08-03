@@ -1586,10 +1586,11 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
 
-        target_coord = self.markers[index].coord[:3]
-        target = dcr.image_to_tracker(self.navigation.m_change, target_coord, self.icp)
+        nav_target = self.markers[index].coord
+        m_target = dcr.image_to_tracker(self.navigation.m_change, nav_target, self.icp, self.navigation.obj_data)
+        print(m_ref @ m_target)
 
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=target.tolist(), nav_target=self.markers[index].coord)
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=m_target.tolist(), nav_target=self.markers[index].coord)
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:

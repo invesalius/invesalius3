@@ -101,7 +101,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     m_img[:3, :3] = r_obj[:3, :3]
     return m_img
 
-def image_to_tracker(m_change, target, icp):
+def image_to_tracker(m_change, target, icp, obj_data):
     """Compute the transformation matrix to the tracker coordinate system
 
     :param m_change: Corregistration transformation obtained from fiducials
@@ -114,6 +114,8 @@ def image_to_tracker(m_change, target, icp):
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """
+    t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = obj_data
+    #position
     m_target_in_image = dco.coordinates_to_transformation_matrix(
         position=target[:3],
         orientation=[0, 0, 0],
@@ -125,6 +127,21 @@ def image_to_tracker(m_change, target, icp):
 
     # invert y coordinate
     m_target_in_tracker[2, -1] = -m_target_in_tracker[2, -1]
+    #rotation
+
+    r_obj = dco.coordinates_to_transformation_matrix(
+        position=target[:3],
+        orientation=target[3:],
+        axes='sxyz',
+    )
+    m_probe_ref = s0_dyn @ m_obj_raw @ np.linalg.inv(r_obj_img) @ r_obj @ np.linalg.inv(m_obj_raw)
+
+    # invert y coordinate
+    m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
+    # transform object center to reference marker if specified as dynamic reference
+    #######m_probe = m_ref @ m_probe_ref
+    m_target_in_tracker[:3, :3] = m_probe_ref[:3, :3]
 
     return m_target_in_tracker
 
