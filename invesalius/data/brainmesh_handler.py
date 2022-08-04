@@ -9,6 +9,7 @@ from vtkmodules.vtkCommonDataModel import (
     vtkDataObject,
     vtkDataSetAttributes,
     vtkPolyData,
+    vtkPointLocator,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
@@ -314,14 +315,14 @@ class E_field_brain:
         self.GetEfieldActor(e_field_mesh)
 
     def GetEfieldActor(self, mesh):
-        self.e_field_mesh_normals = vtk.vtkFloatArray()
-        self.e_field_mesh_centers = vtk.vtkFloatArray()
+        self.e_field_mesh_normals = vtkFloatArray()
+        self.e_field_mesh_centers = vtkFloatArray()
 
-        self.locator_efield_Cell = vtk.vtkCellLocator()
+        self.locator_efield_Cell = vtkCellLocator()
         self.locator_efield_Cell.SetDataSet(mesh)
         self.locator_efield_Cell.BuildLocator()
 
-        self.locator_efield = vtk.vtkPointLocator()
+        self.locator_efield = vtkPointLocator()
         self.locator_efield.SetDataSet(mesh)
         self.locator_efield.BuildLocator()
 
@@ -330,16 +331,6 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
 
-    def TransformPosition(self, mesh, affine_vtk):
-        mesh_transform = vtk.vtkTransform()
-        mesh_transform.SetMatrix(affine_vtk)
-
-        refpeelspace = vtk.vtkTransformPolyDataFilter()
-        refpeelspace.SetInputData(mesh)
-        refpeelspace.SetTransform(mesh_transform)
-        refpeelspace.Update()
-        new_mesh = refpeelspace.GetOutput()
-        return new_mesh
 
 def GetCenters(mesh):
         # Compute centers of triangles

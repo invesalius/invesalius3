@@ -29,7 +29,6 @@ from numpy.core.umath_tests import inner1d
 import wx
 
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
-from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
     vtkIdList,
@@ -38,6 +37,10 @@ from vtkmodules.vtkCommonCore import (
     vtkMinimalStandardRandomSequence,
     vtkPoints,
     vtkUnsignedCharArray
+)
+from vtkmodules.vtkCommonColor import (
+    vtkColorSeries,
+    vtkNamedColors
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
@@ -262,7 +265,7 @@ class Viewer(wx.Panel):
         self.actor_tracts = None
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
-        self.radius_list = vtk.vtkIdList()
+        self.radius_list = vtkIdList()
 
         self.set_camera_position = True
 
@@ -1597,12 +1600,12 @@ class Viewer(wx.Panel):
         self.locator = locator
 
     def Recolor_efield_Actor(self, mesh):
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(mesh)
         self.efield_actor.SetMapper(mapper)
 
     def Default_color_actor(self):
-        colors = vtk.vtkUnsignedCharArray()
+        colors = vtkUnsignedCharArray()
         colors.SetNumberOfComponents(3)
         colors.SetName('Colors')
         color = 3 * [0.0]
@@ -1614,9 +1617,9 @@ class Viewer(wx.Panel):
         self.Recolor_efield_Actor(self.efield_mesh)
 
     def CreateLUTtableforefield(self, min, max):
-        lut = vtk.vtkLookupTable()
+        lut = vtkLookupTable()
         lut.SetTableRange(min, max)
-        colorSeries = vtk.vtkColorSeries()
+        colorSeries = vtkColorSeries()
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
@@ -1632,7 +1635,7 @@ class Viewer(wx.Panel):
         self.efield_actor  = e_field_actor
 
     def FindPointsAroundRadiusEfield(self, cellId):
-        radius = vtk.mutable(50)
+        #radius = vtk.mutable(50)
         #self.radius_list = vtk.vtkIdList()
         self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
@@ -1672,7 +1675,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         lut = self.CreateLUTtableforefield(self.min, self.max)
-        colors = vtk.vtkUnsignedCharArray()
+        colors = vtkUnsignedCharArray()
         colors.SetNumberOfComponents(3)
         colors.SetName('Colors')
         color = 3 * [0.0]
