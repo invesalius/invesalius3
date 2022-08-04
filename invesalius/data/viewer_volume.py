@@ -926,8 +926,25 @@ class Viewer(wx.Panel):
                 if self.obj_projection_arrow_actor:
                     self.obj_projection_arrow_actor.SetVisibility(1)
 
-    def OnUpdateObjectTargetGuide(self, m_img, coord):
+    def ComputeRelativeDistanceToTarget(self, m_img):
+        m_target = dco.coordinates_to_transformation_matrix(
+            position=self.target_coord[:3],
+            orientation=self.target_coord[3:],
+            axes='sxyz',
+        )
+        m_img[1, -1] = -m_img[1, -1]
+        m_relative_target = np.linalg.inv(m_target) @ m_img
 
+        # compute rotation angles
+        angles = tr.euler_from_matrix(m_relative_target, axes='sxyz')
+
+        # create output coordinate list
+        distance = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
+                np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
+
+        return distance
+
+    def OnUpdateObjectTargetGuide(self, m_img, coord):
         vtk_colors = vtkNamedColors()
 
         if self.target_coord and self.target_mode:
@@ -952,30 +969,25 @@ class Viewer(wx.Panel):
                 thrdist = False
                 self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
 
-            coordx = self.target_coord[0] - coord[0]
-            coordy = -self.target_coord[1] - coord[1]
-            coordz = self.target_coord[2] - coord[2]
-            coordrx = self.target_coord[3] - coord[3]
-            coordry = self.target_coord[4] - coord[4]
-            coordrz = self.target_coord[5] - coord[5]
+            distance_to_target = self.ComputeRelativeDistanceToTarget(m_img)
 
-            if coordrx > const.ARROW_UPPER_LIMIT:
-                coordrx = const.ARROW_UPPER_LIMIT
-            elif coordrx < -const.ARROW_UPPER_LIMIT:
-                coordrx = -const.ARROW_UPPER_LIMIT
-            coordrx_arrow = const.ARROW_SCALE * coordrx
+            if distance_to_target[3] > const.ARROW_UPPER_LIMIT:
+                distance_to_target[3] = const.ARROW_UPPER_LIMIT
+            elif distance_to_target[3] < -const.ARROW_UPPER_LIMIT:
+                distance_to_target[3] = -const.ARROW_UPPER_LIMIT
+            coordrx_arrow = const.ARROW_SCALE * distance_to_target[3]
 
-            if coordry > const.ARROW_UPPER_LIMIT:
-                coordry = const.ARROW_UPPER_LIMIT
-            elif coordry < -const.ARROW_UPPER_LIMIT:
-                coordry = -const.ARROW_UPPER_LIMIT
-            coordry_arrow = const.ARROW_SCALE * coordry
+            if distance_to_target[4] > const.ARROW_UPPER_LIMIT:
+                distance_to_target[4] = const.ARROW_UPPER_LIMIT
+            elif distance_to_target[4] < -const.ARROW_UPPER_LIMIT:
+                distance_to_target[4] = -const.ARROW_UPPER_LIMIT
+            coordry_arrow = const.ARROW_SCALE * distance_to_target[4]
 
-            if coordrz > const.ARROW_UPPER_LIMIT:
-                coordrz = const.ARROW_UPPER_LIMIT
-            elif coordrz < -const.ARROW_UPPER_LIMIT:
-                coordrz = -const.ARROW_UPPER_LIMIT
-            coordrz_arrow = const.ARROW_SCALE * coordrz
+            if distance_to_target[5] > const.ARROW_UPPER_LIMIT:
+                distance_to_target[5] = const.ARROW_UPPER_LIMIT
+            elif distance_to_target[5] < -const.ARROW_UPPER_LIMIT:
+                distance_to_target[5] = -const.ARROW_UPPER_LIMIT
+            coordrz_arrow = const.ARROW_SCALE * distance_to_target[5]
 
             for ind in self.arrow_actor_list:
                 self.ren2.RemoveActor(ind)
@@ -1053,7 +1065,7 @@ class Viewer(wx.Panel):
                 wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=False)
 
             wx.CallAfter(Publisher.sendMessage, 'Distance to the target',
-                         distance=[coordx, coordy, coordz, coordrx, coordry, coordrz])
+                         distance=distance_to_target)
 
             self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                     arrow_pitch_y1, arrow_pitch_y2
