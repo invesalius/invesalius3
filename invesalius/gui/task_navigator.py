@@ -54,10 +54,7 @@ from invesalius.pubsub import pub as Publisher
 from time import sleep
 
 import invesalius.constants as const
-
-e_field = True
-if has_trekker or e_field:
-    import invesalius.data.brainmesh_handler as brain
+import invesalius.data.brainmesh_handler as brain
 
 import invesalius.data.imagedata_utils as imagedata_utils
 import invesalius.data.slice_ as sl
@@ -242,12 +239,12 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 7 - E-field
-        if e_field:
-            item = fold_panel.AddFoldPanel(_("E-field"), collapsed=True)
-            etw = E_fieldPanel(item)
-            fold_panel.ApplyCaptionStyle(item, style)
-            fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
-                                          leftSpacing=0, rightSpacing=0)
+
+        item = fold_panel.AddFoldPanel(_("E-field"), collapsed=True)
+        etw = E_fieldPanel(item)
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
+                                        leftSpacing=0, rightSpacing=0)
 
 
         # Check box for camera update in volume rendering during navigation
@@ -2282,7 +2279,7 @@ class E_fieldPanel(wx.Panel):
         self.surface_index = evt.GetSelection()
         self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
-
+        Publisher.sendMessage('Recolor again')
 
 
 class SessionPanel(wx.Panel):
