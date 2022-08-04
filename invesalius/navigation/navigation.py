@@ -83,7 +83,7 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
+        self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded  = vis_components
         self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
@@ -125,19 +125,21 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img, coord=coord, flag = self.e_field_loaded)
-                    cp, T_rot = self.Get_coil_position(m_img)
-                    print('T_rot:', T_rot)
-                    print('cp:', cp)
-                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                    self.neuronavigation_api.update_coil_pose(
-                        position=coord[:3],
-                        orientation=coord[3:],
-                    )
-                    print('vector', len(enorm))
-                    max = np.amax(enorm )
-                    min = np.amin(enorm)
-                    Publisher.sendMessage('Get min max norms', min=min, max=max,e_field_norms=enorm)
-                    Publisher.sendMessage('Update efield vis')
+                    print(self.e_field_loaded)
+                    if self.e_field_loaded:
+                        cp, T_rot = self.Get_coil_position(m_img)
+                        print('T_rot:', T_rot)
+                        print('cp:', cp)
+                        enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                        self.neuronavigation_api.update_coil_pose(
+                            position=coord[:3],
+                            orientation=coord[3:],
+                        )
+                        print('vector', len(enorm))
+                        max = np.amax(enorm )
+                        min = np.amin(enorm)
+                        Publisher.sendMessage('Get min max norms', min=min, max=max,e_field_norms=enorm)
+                        Publisher.sendMessage('Update efield vis')
 
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
@@ -197,6 +199,8 @@ class Navigation(metaclass=Singleton):
 
         # Tracker parameters
         self.ref_mode_id = const.DEFAULT_REF_MODE
+
+        self.e_field_loaded = False
 
         # Tractography parameters
         self.trk_inp = None
@@ -291,7 +295,7 @@ class Navigation(metaclass=Singleton):
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
         vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -409,5 +413,5 @@ class Navigation(metaclass=Singleton):
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded, self.e_field_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)

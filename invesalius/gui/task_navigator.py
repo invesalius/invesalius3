@@ -561,6 +561,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
         Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
+        Publisher.subscribe(self.UpdateEfieldVisualization, 'Update e-field visualization')
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -617,6 +618,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdatePeelVisualization(self, data):
         self.navigation.peel_loaded = data
+
+    def UpdateEfieldVisualization(self, data):
+        self.navigation.e_field_loaded = data
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2364,6 +2368,8 @@ class E_fieldPanel(wx.Panel):
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize', e_field_brain=self.e_field_brain)
             self.e_field_loaded = True
+            print('efield_loaded')
+            print(self.e_field_loaded)
             self.combo_surface_name.Enable(False)
         else:
             print('False')
@@ -2386,7 +2392,7 @@ class E_fieldPanel(wx.Panel):
         self.surface_index = evt.GetSelection()
         self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
-        Publisher.sendMessage('Recolor again')
+        #Publisher.sendMessage('Recolor again')
 
 
 class SessionPanel(wx.Panel):

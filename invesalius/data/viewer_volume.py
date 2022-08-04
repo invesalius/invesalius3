@@ -357,6 +357,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
+        Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -1623,7 +1624,6 @@ class Viewer(wx.Panel):
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
-
         return lut
 
     def Get_E_field_max_min(self, min, max, e_field_norms):
