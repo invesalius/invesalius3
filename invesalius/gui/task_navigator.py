@@ -1625,7 +1625,7 @@ class MarkersPanel(wx.Panel):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, nav_target, self.icp, self.navigation.obj_data)
 
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=target.tolist(), nav_target=self.markers[index].coord)
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=m_target.tolist())
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
