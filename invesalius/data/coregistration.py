@@ -102,7 +102,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     return m_img
 
 
-def image_to_tracker(m_change, target, icp, obj_data):
+def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     """Compute the transformation matrix to the tracker coordinate system
 
     :param m_change: Corregistration transformation obtained from fiducials
@@ -119,30 +119,39 @@ def image_to_tracker(m_change, target, icp, obj_data):
     #position
     m_target_in_image = dco.coordinates_to_transformation_matrix(
         position=target[:3],
-        orientation=[0, 0, 0],
+        orientation=target[3:],
         axes='sxyz',
     )
     if icp.use_icp:
         m_target_in_image = bases.inverse_transform_icp(m_target_in_image, icp.m_icp)
-    m_target_in_tracker = np.linalg.inv(m_change) @ m_target_in_image
+    m_trk = np.linalg.inv(m_change) @ m_target_in_image
 
     # invert y coordinate
-    m_target_in_tracker[2, -1] = -m_target_in_tracker[2, -1]
+    m_trk_flip = m_trk.copy()
+    m_trk_flip[2, -1] = -m_trk_flip[2, -1]
     #rotation
+    m_probe_ref = s0_dyn @ m_obj_raw @ np.linalg.inv(r_obj_img) @ m_target_in_image @ np.linalg.inv(m_obj_raw)
+    m_trk_flip[:3, :3] = m_probe_ref[:3, :3]
 
-    r_obj = dco.coordinates_to_transformation_matrix(
-        position=target[:3],
-        orientation=target[3:],
-        axes='sxyz',
+    m_ref = dco.coordinates_to_transformation_matrix(
+        position=coord_raw[1, :3],
+        orientation=coord_raw[1, 3:],
+        axes='rzyx',
     )
-    m_probe_ref = s0_dyn @ m_obj_raw @ np.linalg.inv(r_obj_img) @ r_obj @ np.linalg.inv(m_obj_raw)
-
-    # invert y coordinate
-    m_probe_ref[2, -1] = -m_probe_ref[2, -1]
-
-    # transform object center to reference marker if specified as dynamic reference
-    #######m_probe = m_ref @ m_probe_ref
-    m_target_in_tracker[:3, :3] = m_probe_ref[:3, :3]
+    # transform from head space to tracker space
+    m_probe = m_ref @ m_trk_flip
+    t_probe = np.identity(4)
+    t_probe[:, -1] = m_probe[:, -1]
+    r_probe = np.identity(4)
+    r_probe[:, :3] = m_probe[:, :3]
+    # transform object center to raw marker coordinate
+    t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
+    t_offset = np.identity(4)
+    t_offset[:, -1] = t_offset_aux[:, -1]
+    t_probe_raw = s0_raw @ np.linalg.inv(t_offset) @ np.linalg.inv(s0_raw) @ t_probe
+    m_target_in_tracker = np.identity(4)
+    m_target_in_tracker[:, -1] = t_probe_raw[:, -1]
+    m_target_in_tracker[:3, :3] = r_probe[:3, :3]
 
     return m_target_in_tracker
 
