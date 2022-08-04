@@ -1621,7 +1621,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
 
-        nav_target = self.markers[index].position
+        nav_target = self.markers[index].position+self.markers[index].orientation
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, nav_target, self.icp, self.navigation.obj_data)
 
