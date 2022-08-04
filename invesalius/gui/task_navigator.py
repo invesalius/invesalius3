@@ -786,7 +786,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation.StopNavigation()
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None, nav_target=None)
+                                  target_index=None, target=None)
 
         # Enable all navigation buttons
         choice_ref.Enable(True)
@@ -1575,7 +1575,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Update target', coord=None)
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None, nav_target=None)
+                                  target_index=None, target=None)
         wx.MessageBox(_("Target removed."), _("InVesalius 3"))
 
     def OnMenuSetColor(self, evt):
@@ -1606,7 +1606,7 @@ class MarkersPanel(wx.Panel):
         matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=None, nav_target=None)
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=None)
 
     def OnMenuSendTargetToRobot(self, evt):
         if isinstance(evt, int):
@@ -1639,7 +1639,7 @@ class MarkersPanel(wx.Panel):
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
             if self.tracker.tracker_id == const.ROBOT:
                 Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                      target_index=None, target=None, nav_target=None)
+                                      target_index=None, target=None)
 
         self.markers = []
         Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
@@ -1671,7 +1671,7 @@ class MarkersPanel(wx.Panel):
                 Publisher.sendMessage('Update target', coord=None)
                 if self.tracker.tracker_id == const.ROBOT:
                     Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                          target_index=None, target=None, nav_target=None)
+                                          target_index=None, target=None)
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
