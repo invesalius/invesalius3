@@ -55,6 +55,10 @@ def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw
     t_offset = np.identity(4)
     t_offset[:, -1] = t_offset_aux[:, -1]
     t_probe = s0_raw @ t_offset @ np.linalg.inv(s0_raw) @ t_probe_raw
+    ## t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
+    ##t_offset = np.identity(4)
+    ##t_offset[:, -1] = t_offset_aux[:, -1]
+    ##t_probe_raw = s0_raw @ np.linalg.inv(t_offset) @ np.linalg.inv(s0_raw) @ t_probe
     m_probe = tr.concatenate_matrices(t_probe, r_probe)
 
     return m_probe
