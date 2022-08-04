@@ -521,6 +521,8 @@ class Frame(wx.Frame):
 
         elif id == const.ID_SEGMENTATION_BRAIN:
             self.OnBrainSegmentation()
+        elif id == const.ID_SEGMENTATION_TRACHEA:
+            self.OnTracheSegmentation()
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
@@ -789,15 +791,29 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
     def OnBrainSegmentation(self):
-        from invesalius.gui import brain_seg_dialog
-        if brain_seg_dialog.HAS_PLAIDML or brain_seg_dialog.HAS_THEANO or brain_seg_dialog.HAS_TORCH:
-            dlg = brain_seg_dialog.BrainSegmenterDialog(self)
+        from invesalius.gui import deep_learning_seg_dialog
+        if deep_learning_seg_dialog.HAS_PLAIDML or deep_learning_seg_dialog.HAS_THEANO or deep_learning_seg_dialog.HAS_TORCH:
+            dlg = deep_learning_seg_dialog.BrainSegmenterDialog(self)
             dlg.Show()
         else:
             dlg = wx.MessageDialog(self,
                                    _("It's not possible to run brain segmenter because your system doesn't have the following modules installed:") \
                                    + " Torch, PlaidML or Theano" ,
                                    "InVesalius 3 - Brain segmenter",
+                                   wx.ICON_INFORMATION | wx.OK)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def OnTracheSegmentation(self):
+        from invesalius.gui import deep_learning_seg_dialog
+        if deep_learning_seg_dialog.HAS_TORCH:
+            dlg = deep_learning_seg_dialog.TracheaSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(self,
+                                   _("It's not possible to run trachea segmenter because your system doesn't have the following modules installed:") \
+                                   + " Torch" ,
+                                   "InVesalius 3 - Trachea segmenter",
                                    wx.ICON_INFORMATION | wx.OK)
             dlg.ShowModal()
             dlg.Destroy()
@@ -870,6 +886,7 @@ class MenuBar(wx.MenuBar):
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
                              const.ID_SEGMENTATION_BRAIN,
+                             const.ID_SEGMENTATION_TRACHEA,
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
@@ -1029,6 +1046,7 @@ class MenuBar(wx.MenuBar):
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
+        segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
@@ -1053,7 +1071,7 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewId(), _('Swap axes'), swap_axes_menu)
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
-        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+O'))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         reorient_menu.Enable(False)

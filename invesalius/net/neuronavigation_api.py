@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,13 +15,16 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton
+from invesalius.utils import Singleton, debug
+
+import wx
 
 import numpy as np
-from vtk.numpy_interface import dataset_adapter
+from vtkmodules.numpy_interface import dataset_adapter
+
 
 class NeuronavigationApi(metaclass=Singleton):
     """
@@ -64,6 +67,16 @@ class NeuronavigationApi(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         Publisher.subscribe(self.update_focus, 'Set cross focal point')
+        Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
+
+    # Functions for InVesalius to send updates.
+
+    def update_target_orientation(self, target_id, orientation):
+        if self.connection is not None:
+            self.connection.update_target_orientation(
+                target_id=target_id,
+                orientation=orientation
+            )
 
     # Functions for InVesalius to send updates.
 
@@ -131,6 +144,10 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def __set_callbacks(self, connection):
         connection.set_callback__set_markers(self.set_markers)
+        connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
+
+    def open_orientation_dialog(self, target_id):
+        wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
 
     def set_markers(self, markers):
-        Publisher.sendMessage('Set markers', markers=markers)
+        wx.CallAfter(Publisher.sendMessage, 'Set markers', markers=markers)

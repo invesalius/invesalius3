@@ -19,13 +19,25 @@
 
 import sys
 
-import vtk
 import wx
-from invesalius.pubsub import pub as Publisher
+
+from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkFiltersCore import (
+    vtkAppendPolyData,
+    vtkCleanPolyData,
+    vtkMassProperties,
+    vtkPolyDataConnectivityFilter,
+    vtkQuadricDecimation,
+    vtkSmoothPolyDataFilter,
+    vtkTriangleFilter,
+)
+from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
 from invesalius.utils import touch
+from invesalius.pubsub import pub as Publisher
 
 if sys.platform == 'win32':
     try:
@@ -46,7 +58,7 @@ def ApplyDecimationFilter(polydata, reduction_factor):
     """
     # Important: vtkQuadricDecimation presented better results than
     # vtkDecimatePro
-    decimation = vtk.vtkQuadricDecimation()
+    decimation = vtkQuadricDecimation()
     decimation.SetInputData(polydata)
     decimation.SetTargetReduction(reduction_factor)
     decimation.GetOutput().ReleaseDataFlagOn()
@@ -58,7 +70,7 @@ def ApplySmoothFilter(polydata, iterations, relaxation_factor):
     """
     Smooth given vtkPolyData surface, based on iteration and relaxation_factor.
     """
-    smoother = vtk.vtkSmoothPolyDataFilter()
+    smoother = vtkSmoothPolyDataFilter()
     smoother.SetInputData(polydata)
     smoother.SetNumberOfIterations(iterations)
     smoother.SetFeatureAngle(80)
@@ -79,7 +91,7 @@ def FillSurfaceHole(polydata):
     """
     # Filter used to detect and fill holes. Only fill
     print("Filling polydata")
-    filled_polydata = vtk.vtkFillHolesFilter()
+    filled_polydata = vtkFillHolesFilter()
     filled_polydata.SetInputData(polydata)
     filled_polydata.SetHoleSize(500)
     return filled_polydata.GetOutput()
@@ -89,7 +101,7 @@ def CalculateSurfaceVolume(polydata):
     Calculate the volume from the given polydata
     """
     # Filter used to calculate volume and area from a polydata
-    measured_polydata = vtk.vtkMassProperties()
+    measured_polydata = vtkMassProperties()
     measured_polydata.SetInputData(polydata)
     return measured_polydata.GetVolume()
 
@@ -98,28 +110,28 @@ def CalculateSurfaceArea(polydata):
     Calculate the volume from the given polydata
     """
     # Filter used to calculate volume and area from a polydata
-    measured_polydata = vtk.vtkMassProperties()
+    measured_polydata = vtkMassProperties()
     measured_polydata.SetInputData(polydata)
     return measured_polydata.GetSurfaceArea()
 
 def Merge(polydata_list):
-    append = vtk.vtkAppendPolyData()
+    append = vtkAppendPolyData()
 
     for polydata in polydata_list:
-        triangle = vtk.vtkTriangleFilter()
+        triangle = vtkTriangleFilter()
         triangle.SetInputData(polydata)
         triangle.Update()
         append.AddInputData(triangle.GetOutput())
 
     append.Update()
-    clean = vtk.vtkCleanPolyData()
+    clean = vtkCleanPolyData()
     clean.SetInputData(append.GetOutput())
     clean.Update()
 
     return append.GetOutput()
 
 def Export(polydata, filename, bin=False):
-    writer = vtk.vtkXMLPolyDataWriter()
+    writer = vtkXMLPolyDataWriter()
     if _has_win32api:
         touch(filename)
         filename = win32api.GetShortPathName(filename)
@@ -132,7 +144,7 @@ def Export(polydata, filename, bin=False):
     writer.Write()
 
 def Import(filename):
-    reader = vtk.vtkXMLPolyDataReader()
+    reader = vtkXMLPolyDataReader()
     try:
         reader.SetFileName(filename.encode(wx.GetDefaultPyEncoding()))
     except AttributeError:
@@ -145,7 +157,7 @@ def JoinSeedsParts(polydata, point_id_list):
     The function require vtkPolyData and point id
     from vtkPolyData.
     """
-    conn = vtk.vtkPolyDataConnectivityFilter()
+    conn = vtkPolyDataConnectivityFilter()
     conn.SetInputData(polydata)
     conn.SetExtractionModeToPointSeededRegions()
     UpdateProgress = vu.ShowProgress(1 + len(point_id_list))
@@ -159,7 +171,7 @@ def JoinSeedsParts(polydata, point_id_list):
                   UpdateProgress(conn, "Getting selected parts"))
     conn.Update()
 
-    result = vtk.vtkPolyData()
+    result = vtkPolyData()
     result.DeepCopy(conn.GetOutput())
     return result
 
@@ -167,21 +179,21 @@ def SelectLargestPart(polydata):
     """
     """
     UpdateProgress = vu.ShowProgress(1)
-    conn = vtk.vtkPolyDataConnectivityFilter()
+    conn = vtkPolyDataConnectivityFilter()
     conn.SetInputData(polydata)
     conn.SetExtractionModeToLargestRegion()
     conn.AddObserver("ProgressEvent", lambda obj, evt:
                   UpdateProgress(conn, "Getting largest part..."))
     conn.Update()
 
-    result = vtk.vtkPolyData()
+    result = vtkPolyData()
     result.DeepCopy(conn.GetOutput())
     return result
 
 def SplitDisconectedParts(polydata):
     """
     """
-    conn = vtk.vtkPolyDataConnectivityFilter()
+    conn = vtkPolyDataConnectivityFilter()
     conn.SetInputData(polydata)
     conn.SetExtractionModeToAllRegions()
     conn.Update()
@@ -203,7 +215,7 @@ def SplitDisconectedParts(polydata):
         conn.AddSpecifiedRegion(region)
         conn.Update()
 
-        p = vtk.vtkPolyData()
+        p = vtkPolyData()
         p.DeepCopy(conn.GetOutput())
 
         polydata_collection.append(p)

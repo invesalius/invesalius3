@@ -28,7 +28,7 @@ from invesalius import utils
 from invesalius import inv_paths
 
 #from invesalius.project import Project
-INVESALIUS_VERSION = "3.1.99997"
+INVESALIUS_VERSION = "3.1.99998"
 
 INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 
@@ -511,6 +511,7 @@ ID_THRESHOLD_SEGMENTATION = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
 ID_SEGMENTATION_BRAIN = wx.NewId()
+ID_SEGMENTATION_TRACHEA = wx.NewId()
 ID_CROP_MASK = wx.NewId()
 ID_DENSITY_MEASURE = wx.NewId()
 ID_MASK_DENSITY_MEASURE = wx.NewId()
@@ -832,7 +833,6 @@ SEED_RADIUS = 1.5
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.2
 SLEEP_COORDINATES = 0.05
-SLEEP_ROBOT = 0.01
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
@@ -864,14 +864,3 @@ PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 #Robot
 ROBOT_ElFIN_IP = ['143.107.220.251', '169.254.153.251', '127.0.0.1']
-ROBOT_ElFIN_PORT = 10003
-ROBOT_MOTIONS = {"normal": 0, "linear out": 1, "arc": 2}
-ROBOT_HEAD_VELOCITY_THRESHOLD = 10 #mm/s
-ROBOT_ARC_THRESHOLD_DISTANCE = 100 #mm
-ROBOT_VERSOR_SCALE_FACTOR = 70
-#Robot Working Space is defined as 800mm in Elfin manual. For safety, the value is reduced by 5%.
-ROBOT_WORKING_SPACE = 760 #mm
-ROBOT_MOVE_STATE = {"free to move": 0,
-                    "in motion": 1009,
-                    "waiting for execution": 1013,
-                    "error": 1025}

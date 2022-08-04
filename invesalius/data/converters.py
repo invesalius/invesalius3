@@ -19,8 +19,9 @@
 
 import gdcm
 import numpy as np
-import vtk
-from vtk.util import numpy_support
+
+from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonDataModel import vtkImageData
 
 
 def to_vtk(
@@ -75,7 +76,7 @@ def to_vtk(
         )
 
     # Generating the vtkImageData
-    image = vtk.vtkImageData()
+    image = vtkImageData()
     image.SetOrigin(origin)
     image.SetSpacing(spacing)
     image.SetDimensions(dx, dy, dz)
@@ -87,7 +88,7 @@ def to_vtk(
     image.SetExtent(extent)
     image.GetPointData().SetScalars(v_image)
 
-    image_copy = vtk.vtkImageData()
+    image_copy = vtkImageData()
     image_copy.DeepCopy(image)
 
     return image_copy
@@ -106,7 +107,7 @@ def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
     extent = (0, dx - 1, 0, dy - 1, 0, dz - 1)
 
     # Generating the vtkImageData
-    image = vtk.vtkImageData()
+    image = vtkImageData()
     image.SetOrigin(ox, oy, oz)
     image.SetSpacing(sx, sy, sz)
     image.SetDimensions(dx - 1, dy - 1, dz - 1)
@@ -118,7 +119,7 @@ def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
     image.SetExtent(extent)
     image.GetPointData().SetScalars(v_image)
 
-    #  image_copy = vtk.vtkImageData()
+    #  image_copy = vtkImageData()
     #  image_copy.DeepCopy(image)
 
     return image
@@ -131,7 +132,7 @@ def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
     extent = (0, dx - 1, 0, dy - 1, 0, 0)
 
     # Generating the vtkImageData
-    image = vtk.vtkImageData()
+    image = vtkImageData()
     image.SetOrigin(0, 0, 0)
     image.SetSpacing(spacing)
     image.SetDimensions(dx, dy, 1)

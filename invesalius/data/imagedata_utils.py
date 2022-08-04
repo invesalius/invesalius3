@@ -26,12 +26,16 @@ import gdcm
 import imageio
 import numpy
 import numpy as np
-import vtk
-from invesalius.pubsub import pub as Publisher
 
 from scipy.ndimage import shift, zoom
-from vtk.util import numpy_support
+from vtkmodules.util import numpy_support
+from vtkmodules.vtkFiltersCore import vtkImageAppend
+from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
+from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
+from vtkmodules.vtkInteractionImage import vtkImageViewer
+from vtkmodules.vtkIOXML import vtkXMLImageDataReader, vtkXMLImageDataWriter
 
+from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
@@ -69,7 +73,7 @@ def ResampleImage3D(imagedata, value):
 
     resolution = (height / (extent[1] - extent[0]) + 1) * spacing[1]
 
-    resample = vtk.vtkImageResample()
+    resample = vtkImageResample()
     resample.SetInput(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
@@ -104,7 +108,7 @@ def ResampleImage2D(
         factor_x = px / float(f + 1)
         factor_y = py / float(f + 1)
 
-    resample = vtk.vtkImageResample()
+    resample = vtkImageResample()
     resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, factor_x)
     resample.SetAxisMagnificationFactor(1, factor_y)
@@ -203,17 +207,17 @@ def BuildEditedImage(imagedata, points):
         elif zf < z:
             zf = z
 
-    clip = vtk.vtkImageClip()
+    clip = vtkImageClip()
     clip.SetInput(imagedata)
     clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
     clip.Update()
 
-    gauss = vtk.vtkImageGaussianSmooth()
+    gauss = vtkImageGaussianSmooth()
     gauss.SetInput(clip.GetOutput())
     gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
-    app = vtk.vtkImageAppend()
+    app = vtkImageAppend()
     app.PreserveExtentsOn()
     app.SetAppendAxis(2)
     app.SetInput(0, imagedata)
@@ -224,7 +228,7 @@ def BuildEditedImage(imagedata, points):
 
 
 def Export(imagedata, filename, bin=False):
-    writer = vtk.vtkXMLImageDataWriter()
+    writer = vtkXMLImageDataWriter()
     writer.SetFileName(filename)
     if bin:
         writer.SetDataModeToBinary()
@@ -235,7 +239,7 @@ def Export(imagedata, filename, bin=False):
 
 
 def Import(filename):
-    reader = vtk.vtkXMLImageDataReader()
+    reader = vtkXMLImageDataReader()
     reader.SetFileName(filename)
     # TODO: Check if the code bellow is necessary
     reader.WholeSlicesOn()
@@ -245,7 +249,7 @@ def Import(filename):
 
 
 def View(imagedata):
-    viewer = vtk.vtkImageViewer()
+    viewer = vtkImageViewer()
     viewer.SetInput(imagedata)
     viewer.SetColorWindow(200)
     viewer.SetColorLevel(100)
@@ -261,7 +265,7 @@ def ExtractVOI(imagedata, xi, xf, yi, yf, zi, zf):
     Cropping the vtkImagedata according
     with values.
     """
-    voi = vtk.vtkExtractVOI()
+    voi = vtkExtractVOI()
     voi.SetVOI(xi, xf, yi, yf, zi, zf)
     voi.SetInputData(imagedata)
     voi.SetSampleRate(1, 1, 1)
@@ -518,8 +522,13 @@ def img2memmap(group):
     temp_file = tempfile.mktemp()
 
     data = group.get_data()
-    # Normalize image pixel values and convert to int16
-    #  data = imgnormalize(data)
+
+    # if scalar range is larger than uint16 maximum number, the image needs
+    # to be rescalaed so that no negative values are created when converting to int16
+    # maximum of 10000 was selected arbitrarily by testing with one MRI example
+    # alternatively could test if "data.dtype == 'float64'" but maybe it is too specific
+    if numpy.ptp(data) > (2**16/2-1):
+        data = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = numpy.swapaxes(data, 0, 2)

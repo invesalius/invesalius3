@@ -36,14 +36,46 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
-import vtk
 import wx
 try:
     from wx.adv import BitmapComboBox
 except ImportError:
     from wx.combo import BitmapComboBox
 
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
+from vtkmodules.vtkCommonCore import mutable, vtkPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellLocator,
+    vtkIterativeClosestPointTransform,
+    vtkPolyData,
+)
+from vtkmodules.vtkCommonMath import vtkMatrix4x4
+from vtkmodules.vtkCommonTransforms import vtkTransform
+from vtkmodules.vtkFiltersCore import vtkCleanPolyData, vtkPolyDataNormals, vtkAppendPolyData
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
+from vtkmodules.vtkFiltersSources import (
+    vtkArrowSource,
+    vtkCylinderSource,
+    vtkParametricFunctionSource,
+    vtkSphereSource,
+)
+from vtkmodules.vtkInteractionStyle import (
+    vtkInteractorStyleTrackballActor,
+    vtkInteractorStyleTrackballCamera,
+)
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkFollower,
+    vtkPolyDataMapper,
+    vtkProperty,
+    vtkRenderer,
+)
+from vtkmodules.vtkRenderingFreeType import vtkVectorText
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
 from wx.lib import masked
 from wx.lib.agw import floatspin
 import wx.lib.filebrowsebutton as filebrowse
@@ -57,8 +89,6 @@ except ImportError:
     from wx import AboutDialogInfo, AboutBox
 
 import invesalius.constants as const
-import invesalius.data.coordinates as dco
-import invesalius.data.transformations as tr
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -223,7 +253,7 @@ class ProgressDialog(object):
     def Update(self, value, message):
         if(int(value) != self.maximum):
             try:
-                return self.dlg.Update(value,message)
+                return self.dlg.Update(int(value),message)
             #TODO:
             #Exception in the Windows XP 64 Bits with wxPython 2.8.10
             except(wx._core.PyAssertionError):
@@ -918,8 +948,31 @@ def ICPcorregistration(fre):
     return flag
 
 def ReportICPerror(prev_error, final_error):
-    msg = _("Error after refine: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
-          _("Previous error: ") + str(round(prev_error, 2)) + ' mm'
+    msg = _("Points to scalp distance: ") + str(round(final_error, 2)) + ' mm' + '\n\n' + \
+          _("Distance before refine: ") + str(round(prev_error, 2)) + ' mm'
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def ReportICPPointError():
+    msg = _("The last point is more than 20 mm away from the surface") + '\n\n' + _("Please, create a new point.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def ReportICPDistributionError():
+    msg = _("The distribution of the transformed points looks wrong.") + '\n\n' +\
+          _("It is recommended to remove the points and redone the acquisition")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.OK)
@@ -3336,7 +3389,7 @@ class ObjectCalibrationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         # Initialize list of buttons and txtctrls for wx objects
@@ -3444,19 +3497,19 @@ class ObjectCalibrationDialog(wx.Dialog):
 
             if filename:
                 if filename.lower().endswith('.stl'):
-                    reader = vtk.vtkSTLReader()
+                    reader = vtkSTLReader()
                 elif filename.lower().endswith('.ply'):
-                    reader = vtk.vtkPLYReader()
+                    reader = vtkPLYReader()
                 elif filename.lower().endswith('.obj'):
-                    reader = vtk.vtkOBJReader()
+                    reader = vtkOBJReader()
                 elif filename.lower().endswith('.vtp'):
-                    reader = vtk.vtkXMLPolyDataReader()
+                    reader = vtkXMLPolyDataReader()
                 else:
                     wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
                     return
             else:
                 filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                reader = vtk.vtkSTLReader()
+                reader = vtkSTLReader()
 
                 # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
                 #      use the default object after all. A more logical behavior in that case would be to cancel the
@@ -3465,7 +3518,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                 self.use_default_object = True
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtk.vtkSTLReader()
+            reader = vtkSTLReader()
 
         if _has_win32api:
             self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
@@ -3480,26 +3533,26 @@ class ObjectCalibrationDialog(wx.Dialog):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
-        transform = vtk.vtkTransform()
+        transform = vtkTransform()
         transform.RotateZ(90)
 
-        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt = vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(polydata)
         transform_filt.Update()
 
-        normals = vtk.vtkPolyDataNormals()
+        normals = vtkPolyDataNormals()
         normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
 
         self.ball_actors[0], self.text_actors[0] = self.OnCreateObjectText('Left', (0,55,0))
@@ -3512,21 +3565,21 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def OnCreateObjectText(self, name, coord):
-        ball_source = vtk.vtkSphereSource()
+        ball_source = vtkSphereSource()
         ball_source.SetRadius(3)
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_source.GetOutputPort())
-        ball_actor = vtk.vtkActor()
+        ball_actor = vtkActor()
         ball_actor.SetMapper(mapper)
         ball_actor.SetPosition(coord)
         ball_actor.GetProperty().SetColor(1, 0, 0)
 
-        textSource = vtk.vtkVectorText()
+        textSource = vtkVectorText()
         textSource.SetText(name)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(textSource.GetOutputPort())
-        tactor = vtk.vtkFollower()
+        tactor = vtkFollower()
         tactor.SetMapper(mapper)
         tactor.GetProperty().SetColor(1.0, 0.0, 0.0)
         tactor.SetScale(5)
@@ -3597,14 +3650,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      and not change the function to the point of potentially breaking it.)
         #
         if self.obj_ref_id and fiducial_index == 4:
-            if self.tracker_id == const.ROBOT:
-                trck_init_robot = self.trk_init[1][0]
-                coord = trck_init_robot.Run()
-            else:
-                coord = coord_raw[self.obj_ref_id, :]
+            coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-        #coord[2] = -coord[2]
 
         if fiducial_index == 3:
             coord = np.zeros([6,])
@@ -3672,9 +3720,9 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.prev_error = None
         self.final_error = None
         self.icp_mode = 0
-        self.staticballs = []
+        self.actors_static_points = []
         self.point_coord = []
-        self.transformed_points = []
+        self.actors_transformed_points = []
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -3689,7 +3737,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
-        self.ren = vtk.vtkRenderer()
+        self.ren = vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         self.timer = wx.Timer(self)
@@ -3778,12 +3826,12 @@ class ICPCorregistrationDialog(wx.Dialog):
         Load the selected actor from the project (self.surface) into the scene
         :return:
         '''
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(self.surface)
         mapper.ScalarVisibilityOff()
         #mapper.ImmediateModeRenderingOn()
 
-        obj_actor = vtk.vtkActor()
+        obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
         self.obj_actor = obj_actor
 
@@ -3800,16 +3848,27 @@ class ICPCorregistrationDialog(wx.Dialog):
         collect_points.SetValue("0")
         self.collect_points = collect_points
 
+        txt_markers_not_detected = vtku.Text()
+        txt_markers_not_detected.SetSize(const.TEXT_SIZE_LARGE)
+        txt_markers_not_detected.SetPosition((const.X+0.50, const.Y))
+        txt_markers_not_detected.ShadowOff()
+        txt_markers_not_detected.SetColour((1, 0, 0))
+        txt_markers_not_detected.SetValue("Markers not detected")
+        txt_markers_not_detected.actor.VisibilityOff()
+        self.txt_markers_not_detected = txt_markers_not_detected.actor
+
         self.ren.AddActor(obj_actor)
         self.ren.AddActor(poses_recorded.actor)
         self.ren.AddActor(collect_points.actor)
+        self.ren.AddActor(txt_markers_not_detected.actor)
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def RemoveActor(self):
+    def RemoveAllActors(self):
         self.ren.RemoveAllViewProps()
+        self.actors_static_points = []
         self.point_coord = []
-        self.transformed_points = []
+        self.actors_transformed_points = []
         self.m_icp = None
         self.SetProgress(0)
         self.btn_apply_icp.Enable(False)
@@ -3817,10 +3876,17 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
+    def RemoveSinglePointActor(self):
+        self.ren.RemoveActor(self.actors_static_points[-1])
+        self.actors_static_points.pop()
+        self.point_coord.pop()
+        self.collect_points.SetValue(str(int(self.collect_points.GetValue()) - 1))
+        self.interactor.Render()
+
     def GetCurrentCoord(self):
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
-        return coord[:3]
+        return coord[:3], markers_flag
 
     def AddMarker(self, size, colour, coord):
         """
@@ -3835,23 +3901,24 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         x, y, z = coord[0], -coord[1], coord[2]
 
-        ball_ref = vtk.vtkSphereSource()
+        ball_ref = vtkSphereSource()
         ball_ref.SetRadius(size)
         ball_ref.SetCenter(x, y, z)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
-        prop = vtk.vtkProperty()
+        prop = vtkProperty()
         prop.SetColor(colour[0:3])
 
         #adding a new actor for the present ball
-        sphere_actor = vtk.vtkActor()
+        sphere_actor = vtkActor()
 
         sphere_actor.SetMapper(mapper)
         sphere_actor.SetProperty(prop)
 
         self.ren.AddActor(sphere_actor)
+        self.actors_static_points.append(sphere_actor)
         self.point_coord.append([x, y, z])
 
         self.collect_points.SetValue(str(int(self.collect_points.GetValue()) + 1))
@@ -3873,7 +3940,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         Copies the elements of a vtkMatrix4x4 into a numpy array.
 
         :param matrix: The matrix to be copied into an array.
-        :type matrix: vtk.vtkMatrix4x4
+        :type matrix: vtkMatrix4x4
         :rtype: numpy.ndarray
         """
         m = np.ones((4, 4))
@@ -3911,23 +3978,27 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.interactor.Render()
 
+    def CheckTransformedPointsDistribution(self, points):
+        from scipy.spatial.distance import pdist
+        return np.mean(pdist(points))
+
     def ErrorEstimation(self, surface, points):
         """
         Estimation of the average squared distance between the cloud of points to the closest mesh
         :param surface: Surface polydata of the scene
-        :type surface: vtk.polydata
+        :type surface: polydata
         :param points: Cloud of points
         :type points: np.ndarray
         :return: mean distance
         """
-        cell_locator = vtk.vtkCellLocator()
+        cell_locator = vtkCellLocator()
         cell_locator.SetDataSet(surface)
         cell_locator.BuildLocator()
 
-        cellId = vtk.mutable(0)
+        cellId = mutable(0)
         c = [0.0, 0.0, 0.0]
-        subId = vtk.mutable(0)
-        d = vtk.mutable(0.0)
+        subId = mutable(0)
+        d = mutable(0.0)
         error = []
         for i in range(len(points)):
             cell_locator.FindClosestPoint(points[i], c, cellId, subId, d)
@@ -3935,12 +4006,33 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.mean(error)
 
+    def DistanceBetweenPointAndSurface(self, surface, points):
+        """
+        Estimation of the squared distance between the point to the closest mesh
+        :param surface: Surface polydata of the scene
+        :type surface: polydata
+        :param points: single points
+        :type points: np.ndarray
+        :return: mean distance
+        """
+        cell_locator = vtkCellLocator()
+        cell_locator.SetDataSet(surface)
+        cell_locator.BuildLocator()
+
+        cellId = mutable(0)
+        c = [0.0, 0.0, 0.0]
+        subId = mutable(0)
+        d = mutable(0.0)
+        cell_locator.FindClosestPoint(points, c, cellId, subId, d)
+
+        return np.sqrt(float(d))
+
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
-            self.RemoveActor()
+            self.RemoveAllActors()
         self.LoadActor()
 
     def OnChoiceICPMethod(self, evt):
@@ -3954,21 +4046,35 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.timer.Stop()
 
     def OnUpdate(self, evt):
-        current_coord = self.GetCurrentCoord()
-        self.AddMarker(3, (1, 0, 0), current_coord)
-        self.SetCameraVolume(current_coord)
+        self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        current_coord = self.GetCurrentCoord()
-        self.AddMarker(3, (1, 0, 0), current_coord)
-        self.SetCameraVolume(current_coord)
+        current_coord, markers_flag = self.GetCurrentCoord()
+        if markers_flag[:2] >= [1, 1]:
+            self.AddMarker(3, (1, 0, 0), current_coord)
+            self.txt_markers_not_detected.VisibilityOff()
+            if self.DistanceBetweenPointAndSurface(self.surface, self.point_coord[-1]) >= 20:
+                self.OnDeleteLastPoint()
+                ReportICPPointError()
+            else:
+                self.SetCameraVolume(current_coord)
+        else:
+            self.txt_markers_not_detected.VisibilityOn()
+            self.interactor.Render()
+
+    def OnDeleteLastPoint(self):
+        if self.cont_point:
+            self.cont_point.SetValue(False)
+            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+
+        self.RemoveSinglePointActor()
 
     def OnReset(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
 
-        self.RemoveActor()
+        self.RemoveAllActors()
         self.LoadActor()
 
     def OnICP(self, evt):
@@ -3980,15 +4086,15 @@ class ICPCorregistrationDialog(wx.Dialog):
         time.sleep(1)
 
         sourcePoints = np.array(self.point_coord)
-        sourcePoints_vtk = vtk.vtkPoints()
+        sourcePoints_vtk = vtkPoints()
 
         for i in range(len(sourcePoints)):
             id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
 
-        source = vtk.vtkPolyData()
+        source = vtkPolyData()
         source.SetPoints(sourcePoints_vtk)
 
-        icp = vtk.vtkIterativeClosestPointTransform()
+        icp = vtkIterativeClosestPointTransform()
         icp.SetSource(source)
         icp.SetTarget(self.surface)
 
@@ -4013,7 +4119,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.m_icp = self.vtkmatrix_to_numpy(icp.GetMatrix())
 
-        icpTransformFilter = vtk.vtkTransformPolyDataFilter()
+        icpTransformFilter = vtkTransformPolyDataFilter()
         icpTransformFilter.SetInputData(source)
 
         icpTransformFilter.SetTransform(icp)
@@ -4021,28 +4127,40 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         transformedSource = icpTransformFilter.GetOutput()
 
+        transformed_points = []
+
+        #removes previously transformed points
+        if self.actors_transformed_points:
+            for i in self.actors_transformed_points:
+                self.ren.RemoveActor(i)
+            self.actors_transformed_points = []
 
         for i in range(transformedSource.GetNumberOfPoints()):
             p = [0, 0, 0]
             transformedSource.GetPoint(i, p)
-            self.transformed_points.append(p)
-            point = vtk.vtkSphereSource()
+            transformed_points.append(p)
+
+            point = vtkSphereSource()
             point.SetCenter(p)
             point.SetRadius(3)
             point.SetPhiResolution(3)
             point.SetThetaResolution(3)
 
-            mapper = vtk.vtkPolyDataMapper()
+            mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(point.GetOutputPort())
 
-            actor = vtk.vtkActor()
+            actor = vtkActor()
             actor.SetMapper(mapper)
             actor.GetProperty().SetColor((0,1,0))
+            self.actors_transformed_points.append(actor)
 
             self.ren.AddActor(actor)
 
+        if self.CheckTransformedPointsDistribution(transformed_points) <= 25:
+            ReportICPDistributionError()
+
         self.prev_error = self.ErrorEstimation(self.surface, sourcePoints)
-        self.final_error = self.ErrorEstimation(self.surface, self.transformed_points)
+        self.final_error = self.ErrorEstimation(self.surface, transformed_points)
 
         self.interactor.Render()
 
@@ -4051,7 +4169,438 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self):
-        return self.m_icp, self.point_coord, self.transformed_points, self.prev_error, self.final_error
+        return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
+
+
+
+class SetCoilOrientationDialog(wx.Dialog):
+
+    def __init__(self, marker):
+        import invesalius.project as prj
+
+        self.obj_actor = None
+        self.polydata = None
+        self.initial_focus = None
+
+        self.marker = marker
+
+        self.spinning = False
+        self.rotationX = 0
+        self.rotationY = 0
+        self.rotationZ = 0
+
+        self.obj_fiducials = np.full([5, 3], np.nan)
+        self.obj_orients = np.full([5, 3], np.nan)
+
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Set target Orientation"), size=(380, 440),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        self.proj = prj.Project()
+
+        self._init_gui()
+
+    def _init_gui(self):
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.Enable(1)
+        self.ren = vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(self.ren)
+        self.actor_style = vtkInteractorStyleTrackballActor()
+        self.camera_style = vtkInteractorStyleTrackballCamera()
+
+        self.interactor.SetInteractorStyle(self.actor_style)
+        self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
+        self.actor_style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+        self.actor_style.AddObserver("MouseMoveEvent", self.OnSpinMove)
+        self.actor_style.AddObserver('MouseWheelForwardEvent',
+                                     self.OnZoomMove)
+        self.actor_style.AddObserver('MouseWheelBackwardEvent',
+                                     self.OnZoomMove)
+
+        self.camera_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
+        self.camera_style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+        self.camera_style.AddObserver("MouseMoveEvent", self.OnSpinMove)
+        self.camera_style.AddObserver('MouseWheelForwardEvent',
+                                     self.OnZoomMove)
+        self.camera_style.AddObserver('MouseWheelBackwardEvent',
+                                     self.OnZoomMove)
+
+        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+
+        combo_surface_name = wx.ComboBox(self, -1, size=(210, 23),
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        for n in range(len(self.proj.surface_dict)):
+            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        self.combo_surface_name = combo_surface_name
+
+        init_surface = 0
+        combo_surface_name.SetSelection(init_surface)
+        self.surface = self.proj.surface_dict[init_surface].polydata
+        self.LoadActor()
+
+        reset_orientation = wx.Button(self, -1, label=_('Reset arrow orientation'))
+        reset_orientation.Bind(wx.EVT_BUTTON, self.OnResetOrientation)
+        change_view = wx.Button(self, -1, label=_('Change view'))
+        change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
+
+        text_rotation_x = wx.StaticText(self, -1, _("Rotation X:"))
+
+        slider_rotation_x = wx.Slider(self, -1, 0, -180,
+                                        180,
+                                        style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
+        slider_rotation_x.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider_rotation_x.Bind(wx.EVT_SLIDER, self.OnRotationX)
+        self.slider_rotation_x = slider_rotation_x
+
+        text_rotation_y = wx.StaticText(self, -1, _("Rotation Y:"))
+
+        slider_rotation_y = wx.Slider(self, -1, 0, -180,
+                                        180,
+                                        style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
+        slider_rotation_y.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider_rotation_y.Bind(wx.EVT_SLIDER, self.OnRotationY)
+        self.slider_rotation_y = slider_rotation_y
+
+        text_rotation_z = wx.StaticText(self, -1, _("Rotation Z:"))
+
+        slider_rotation_z = wx.Slider(self, -1, 0, -180,
+                                        180,
+                                        style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
+        slider_rotation_z.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider_rotation_z.Bind(wx.EVT_SLIDER, self.OnRotationZ)
+        self.slider_rotation_z = slider_rotation_z
+
+        tooltip = wx.ToolTip(_(u"Target orientation done"))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
+        btn_ok.SetToolTip(tooltip)
+        self.btn_ok = btn_ok
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        top_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=50, vgap=5)
+        top_sizer.AddMany([txt_surface,
+                           (wx.StaticText(self, -1, ''), 0, wx.EXPAND),
+                           combo_surface_name,
+                           change_view,
+                           ])
+        btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_changes_sizer.AddMany([reset_orientation])
+        btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_ok_sizer.AddMany([btn_ok, btn_cancel])
+
+        flag_link = wx.EXPAND|wx.GROW|wx.RIGHT|wx.TOP
+        flag_slider = wx.EXPAND|wx.GROW|wx.LEFT
+        rotationx_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rotationy_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rotationz_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rotationx_sizer.AddMany([(text_rotation_x, 0, flag_link, 0),
+                                 (slider_rotation_x, 1, flag_slider,4),
+                                ])
+        rotationy_sizer.AddMany([(text_rotation_y, 0, flag_link, 0),
+                                 (slider_rotation_y, 1, flag_slider, 4)
+                                ])
+        rotationz_sizer.AddMany([(text_rotation_z, 0, flag_link, 0),
+                                 (slider_rotation_z, 1, flag_slider, 4)
+                                ])
+
+        btn_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=20)
+        btn_sizer.AddMany([(btn_ok_sizer, 1, wx.ALIGN_RIGHT)])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
+        main_sizer.Add(self.interactor, 0, wx.EXPAND)
+        main_sizer.Add(btn_changes_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        main_sizer.Add(rotationx_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(rotationy_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(rotationz_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add(btn_sizer, 0,
+                       wx.ALIGN_RIGHT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def OnResetOrientation(self, evt):
+        self.rotationX = self.rotationY = self.rotationZ = 0
+        self.slider_rotation_x.SetValue(0)
+        self.slider_rotation_y.SetValue(0)
+        self.slider_rotation_z.SetValue(0)
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnRotationX(self, evt):
+        self.rotationX = evt.GetInt()
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnRotationY(self, evt):
+        self.rotationY = evt.GetInt()
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnRotationZ(self, evt):
+        self.rotationZ = evt.GetInt()
+        self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnPressLeftButton(self, evt, obj):
+        self.spinning = True
+
+    def OnReleaseLeftButton(self, evt, obj):
+        self.spinning = False
+
+    def OnSpinMove(self, evt, obj):
+        self.interactor.SetInteractorStyle(self.actor_style)
+        if self.spinning:
+            evt.Spin()
+            evt.OnRightButtonDown()
+
+    def OnZoomMove(self, evt, obj):
+        self.interactor.SetInteractorStyle(self.camera_style)
+        if obj == 'MouseWheelForwardEvent':
+            self.camera_style.OnMouseWheelForward()
+        else:
+            self.camera_style.OnMouseWheelBackward()
+
+    def OnChangeView(self, evt):
+        self.ren.GetActiveCamera().Roll(90)
+        self.interactor.Render()
+
+    def OnComboName(self, evt):
+        surface_index = evt.GetSelection()
+        self.surface = self.proj.surface_dict[surface_index].polydata
+        if self.obj_actor:
+            self.RemoveActor()
+        self.LoadActor()
+
+    def LoadActor(self):
+        '''
+        Load the selected actor from the project (self.surface) into the scene
+        :return:
+        '''
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(self.surface)
+        mapper.ScalarVisibilityOff()
+
+        obj_actor = vtkActor()
+        obj_actor.SetMapper(mapper)
+        #obj_actor.GetProperty().SetOpacity(0.1)
+        obj_actor.PickableOff()
+        self.obj_actor = obj_actor
+        self.ren.AddActor(obj_actor)
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        self.ren.ResetCamera()
+        self.SetVolumeCamera(coord_flip[:3])
+        self.AddTarget(coord_flip)
+
+        self.interactor.Render()
+
+    def RemoveActor(self):
+        self.ren.RemoveAllViewProps()
+        self.ren.ResetCamera()
+        self.interactor.Render()
+
+    def AddTarget(self, coord_flip):
+        rx, ry, rz = coord_flip[3:6]
+        if rx is None:
+            coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
+            rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
+            ry += 90
+        else:
+            rx, ry, rz = coord_flip[3:6]
+
+        m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
+        marker_actor = self.CreateActorArrow(m_img_vtk)
+        self.marker_actor = marker_actor
+
+        self.ren.AddActor(marker_actor)
+
+    def CreateActorArrow(self, m_img_vtk, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+        input1 = vtkPolyData()
+        input2 = vtkPolyData()
+        input3 = vtkPolyData()
+        input4 = vtkPolyData()
+
+        cylinderSourceWing = vtkCylinderSource()
+        cylinderSourceWing.SetRadius(0.02)
+        cylinderSourceWing.Update()
+        input1.ShallowCopy(cylinderSourceWing.GetOutput())
+
+        arrow = vtkArrowSource()
+        arrow.SetArrowOriginToCenter()
+        arrow.SetTipResolution(40)
+        arrow.SetShaftResolution(40)
+        arrow.SetShaftRadius(0.025)
+        arrow.SetTipRadius(0.10)
+        arrow.SetTipLength(0.30)
+        arrow.Update()
+        input2.ShallowCopy(arrow.GetOutput())
+
+        arrowDown = vtkArrowSource()
+        arrowDown.SetArrowOriginToCenter()
+        arrowDown.SetTipResolution(4)
+        arrowDown.SetShaftResolution(40)
+        arrowDown.SetShaftRadius(0.05)
+        arrowDown.SetTipRadius(0.15)
+        arrowDown.SetTipLength(0.35)
+        arrowDown.Update()
+
+        ArrowDownTransformFilter = vtkTransformPolyDataFilter()
+        RotateTransform = vtkTransform()
+        RotateTransform.RotateZ(45)
+        RotateTransform.RotateY(90)
+        ArrowDownTransformFilter.SetTransform(RotateTransform)
+        ArrowDownTransformFilter.SetInputConnection(arrowDown.GetOutputPort())
+        ArrowDownTransformFilter.Update()
+        input3.ShallowCopy(ArrowDownTransformFilter.GetOutput())
+
+        torus = vtkParametricTorus()
+        torus.SetRingRadius(0.15)
+        torus.SetCrossSectionRadius(0.02)
+        torusSource = vtkParametricFunctionSource()
+        torusSource.SetParametricFunction(torus)
+        torusSource.Update()
+        input4.ShallowCopy(torusSource.GetOutput())
+
+        # Append the two meshes
+        appendFilter = vtkAppendPolyData()
+        appendFilter.AddInputData(input1)
+        appendFilter.AddInputData(input2)
+        appendFilter.AddInputData(input3)
+        appendFilter.AddInputData(input4)
+        appendFilter.Update()
+
+        #  Remove any duplicate points.
+        cleanFilter = vtkCleanPolyData()
+        cleanFilter.SetInputConnection(appendFilter.GetOutputPort())
+        cleanFilter.Update()
+
+        # Create a mapper and actor
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(cleanFilter.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.SetScale(size)
+        actor.GetProperty().SetColor(colour)
+        actor.SetUserMatrix(m_img_vtk)
+
+        return actor
+
+    def CreateVTKObjectMatrix(self, direction, orientation):
+        import invesalius.data.coordinates as dco
+        m_img = dco.coordinates_to_transformation_matrix(
+            position=direction,
+            orientation=orientation,
+            axes='sxyz',
+        )
+        m_img = np.asmatrix(m_img)
+        m_img_vtk = vtkMatrix4x4()
+        for row in range(0, 4):
+            for col in range(0, 4):
+                m_img_vtk.SetElement(row, col, m_img[row, col])
+
+        return m_img_vtk
+
+    def SetVolumeCamera(self, cam_focus):
+        cam = self.ren.GetActiveCamera()
+
+        if self.initial_focus is None:
+            self.initial_focus = np.array(cam.GetFocalPoint())
+
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus - self.initial_focus)
+
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1/v1n)*v0n + cam_focus
+
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
+
+        self.ren.GetActiveCamera().Zoom(3)
+
+    def GetRotationMatrix(self, v1_start, v2_start, v1_target, v2_target):
+        """
+        based on https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
+        calculating M the rotation matrix from base U to base V
+        M @ U = V
+        M = V @ U^-1
+        """
+        u1_start = self.Normalize(v1_start)
+        u2_start = self.Normalize(v2_start)
+        u3_start = self.Normalize(np.cross(u1_start, u2_start))
+
+        u1_target = self.Normalize(v1_target)
+        u2_target = self.Normalize(v2_target)
+        u3_target = self.Normalize(np.cross(u1_target, u2_target))
+
+        U = np.hstack([u1_start.reshape(3, 1), u2_start.reshape(3, 1), u3_start.reshape(3, 1)])
+        V = np.hstack([u1_target.reshape(3, 1), u2_target.reshape(3, 1), u3_target.reshape(3, 1)])
+
+        if not np.isclose(np.dot(v1_target, v2_target), 0, atol=1e-03):
+            raise ValueError("v1_target and v2_target must be vertical")
+
+        return np.dot(V, np.linalg.inv(U))
+
+    def GetEulerAnglesFromVectors(self, init_arrow_vector, target_arrow_vector):
+        import invesalius.data.transformations as tr
+        init_up_vector = self.GetPerpendicularVector(init_arrow_vector)
+        target_up_vector = self.GetPerpendicularVector(target_arrow_vector)
+        rot_mat = self.GetRotationMatrix(init_arrow_vector, init_up_vector, target_arrow_vector, target_up_vector)
+
+        return np.rad2deg(tr.euler_from_matrix(rot_mat, axes="sxyz"))
+
+    def CenterOfMass(self, surface):
+        barycenter = [0.0, 0.0, 0.0]
+        n = surface.GetNumberOfPoints()
+        for i in range(n):
+            point = surface.GetPoint(i)
+            barycenter[0] += point[0]
+            barycenter[1] += point[1]
+            barycenter[2] += point[2]
+        barycenter[0] /= n
+        barycenter[1] /= n
+        barycenter[2] /= n
+
+        return barycenter
+
+    def Normalize(self, v):
+        return v / np.linalg.norm(v)
+
+    def Versor(self, init_point, final_point):
+        init_point = np.array(init_point)
+        final_point = np.array(final_point)
+        norm = (sum((final_point - init_point) ** 2)) ** 0.5
+        versor_factor = (((final_point - init_point) / norm) * 1).tolist()
+
+        return versor_factor
+
+    def GetPerpendicularVector(self, vector):
+        ez = np.array([0, 0, 1])
+        look_at_vector = self.Normalize(vector)
+        up_vector = self.Normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)
+        return up_vector
+
+    def GetValue(self):
+        import invesalius.data.transformations as tr
+        vtkmat = self.marker_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+
+        return np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+
 
 class SurfaceProgressWindow(object):
     def __init__(self):
@@ -4324,7 +4873,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
-        trackers = const.TRACKERS
+        trackers = const.TRACKERS.copy()
         if not ses.Session().debug:
             del trackers[-3:]
         tracker_options = [_("Select tracker:")] + trackers
@@ -4426,10 +4975,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         M_robot_2_tracker is created by an affine transformation. Robot TCP should be calibrated to the center of the tracker marker
         '''
         #TODO: make aboutbox
-        self.tracker_coord = []
-        self.tracker_angles = []
-        self.robot_coord = []
-        self.robot_angles = []
+        self.matrix_tracker_to_robot = []
+        self.robot_status = False
 
         self.tracker = tracker
 
@@ -4471,6 +5018,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+        btn_load.Enable(False)
+        self.btn_load = btn_load
 
         # Create a horizontal sizers
         border = 1
@@ -4525,16 +5074,17 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         main_sizer.Fit(self)
 
         self.CenterOnParent()
+        self.__bind_events()
 
-    def affine_correg(self, tracker, robot):
-        m_change = tr.affine_matrix_from_points(robot[:].T, tracker[:].T,
-                                                shear=False, scale=False, usesvd=False)
-        return m_change
+    def __bind_events(self):
+        Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
+        Publisher.subscribe(self.OnCoordinatesAdquired, 'Coordinates for the robot transformation matrix collected')
+        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
 
     def OnContinuousAcquisition(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
-            self.timer.Start(500)
+            self.timer.Start(100)
         else:
             self.timer.Stop()
 
@@ -4542,55 +5092,49 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.OnCreatePoint(evt=None)
 
     def OnCreatePoint(self, evt):
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-        #robot thread is not initialized yet
-        coord_raw_robot = self.tracker.trk_init[0][1][0].Run()
-        coord_raw_tracker_obj = coord_raw[3]
+        Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
 
-        if markers_flag[2]:
-            self.tracker_coord.append(coord_raw_tracker_obj[:3])
-            self.tracker_angles.append(coord_raw_tracker_obj[3:])
-            self.robot_coord.append(coord_raw_robot[:3])
-            self.robot_angles.append(coord_raw_robot[3:])
-            self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
-        else:
-            print('Cannot detect the coil markers, pls try again')
+    def OnCoordinatesAdquired(self):
+        self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
 
-        if len(self.tracker_coord) >= 3:
+        if self.robot_status and int(self.txt_number.GetLabel()) >= 3:
             self.btn_apply_reg.Enable(True)
 
+    def OnRobotConnectionStatus(self, data):
+        self.robot_status = data
+        if self.robot_status:
+            self.btn_load.Enable(True)
+            if int(self.txt_number.GetLabel()) >= 3:
+                self.btn_apply_reg.Enable(True)
+
     def OnReset(self, evt):
+        Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
 
-        self.tracker_coord = []
-        self.tracker_angles = []
-        self.robot_coord = []
-        self.robot_angles = []
-        self.M_tracker_2_robot = []
         self.txt_number.SetLabel('0')
 
         self.btn_apply_reg.Enable(False)
         self.btn_save.Enable(False)
         self.btn_ok.Enable(False)
 
+        self.matrix_tracker_to_robot = []
+
     def OnApply(self, evt):
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
             self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
 
-        tracker_coord = np.array(self.tracker_coord)
-        robot_coord = np.array(self.robot_coord)
-
-        M_robot_2_tracker = self.affine_correg(tracker_coord, robot_coord)
-        M_tracker_2_robot = tr.inverse_matrix(M_robot_2_tracker)
-        self.M_tracker_2_robot = M_tracker_2_robot
+        Publisher.sendMessage('Robot transformation matrix estimation', data=None)
 
         self.btn_save.Enable(True)
         self.btn_ok.Enable(True)
 
         #TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
+
+    def OnUpdateTransformationMatrix(self, data):
+        self.matrix_tracker_to_robot = np.array(data)
 
     def OnSaveReg(self, evt):
         filename = ShowLoadSaveDialog(message=_(u"Save robot transformation file as..."),
@@ -4599,10 +5143,10 @@ class CreateTransformationMatrixRobot(wx.Dialog):
                                           default_filename="robottransform.rbtf", save_ext="rbtf")
 
         if filename:
-            if self.M_tracker_2_robot is not None:
+            if self.matrix_tracker_to_robot is not None:
                 with open(filename, 'w', newline='') as file:
                     writer = csv.writer(file, delimiter='\t')
-                    writer.writerows(self.M_tracker_2_robot)
+                    writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
 
     def OnLoadReg(self, evt):
         filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
@@ -4612,12 +5156,12 @@ class CreateTransformationMatrixRobot(wx.Dialog):
                 reader = csv.reader(file, delimiter='\t')
                 content = [row for row in reader]
 
-            self.M_tracker_2_robot = np.vstack(list(np.float_(content)))
-            print("Matrix tracker to robot:", self.M_tracker_2_robot)
-            self.btn_ok.Enable(True)
+            self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+            print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
+            Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+            if self.robot_status:
+                self.btn_ok.Enable(True)
 
-    def GetValue(self):
-        return self.M_tracker_2_robot
 
 class SetNDIconfigs(wx.Dialog):
     def __init__(self, title=_("Setting NDI polaris configs:")):

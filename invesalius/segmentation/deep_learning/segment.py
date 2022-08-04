@@ -12,23 +12,23 @@ from skimage.transform import resize
 import invesalius.data.slice_ as slc
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
-from invesalius.utils import new_name_by_pattern
 from invesalius.net.utils import download_url_to_file
-from invesalius import inv_paths
+from invesalius.utils import new_name_by_pattern
 
 from . import utils
 
 SIZE = 48
-OVERLAP = SIZE // 2 + 1
 
 
 def gen_patches(image, patch_size, overlap):
+    overlap = int(patch_size * overlap / 100)
+    print(f"{overlap=}")
     sz, sy, sx = image.shape
     i_cuts = list(
         itertools.product(
-            range(0, sz, patch_size - OVERLAP),
-            range(0, sy, patch_size - OVERLAP),
-            range(0, sx, patch_size - OVERLAP),
+            range(0, sz, patch_size - overlap),
+            range(0, sy, patch_size - overlap),
+            range(0, sx, patch_size - overlap),
         )
     )
     sub_image = np.empty(shape=(patch_size, patch_size, patch_size), dtype="float32")
@@ -55,32 +55,39 @@ def predict_patch(sub_image, patch, nn_model, patch_size=SIZE):
         0 : ez - iz, 0 : ey - iy, 0 : ex - ix
     ]
 
+
 def predict_patch_torch(sub_image, patch, nn_model, device, patch_size=SIZE):
     import torch
+
     with torch.no_grad():
         (iz, ez), (iy, ey), (ix, ex) = patch
-        sub_mask = nn_model(
-            torch.from_numpy(sub_image.reshape(1, 1, patch_size, patch_size, patch_size)).to(device)
-        ).cpu().numpy()
+        sub_mask = (
+            nn_model(
+                torch.from_numpy(
+                    sub_image.reshape(1, 1, patch_size, patch_size, patch_size)
+                ).to(device)
+            )
+            .cpu()
+            .numpy()
+        )
         return sub_mask.reshape(patch_size, patch_size, patch_size)[
             0 : ez - iz, 0 : ey - iy, 0 : ex - ix
         ]
 
 
-def brain_segment(image, probability_array, comm_array):
+def segment_keras(image, weights_file, overlap, probability_array, comm_array):
     import keras
 
     # Loading model
-    folder = inv_paths.MODELS_DIR.joinpath("brain_mri_t1")
-    with open(folder.joinpath("model.json"), "r") as json_file:
+    with open(weights_file, "r") as json_file:
         model = keras.models.model_from_json(json_file.read())
-    model.load_weights(str(folder.joinpath("model.h5")))
+    model.load_weights(str(weights_file.parent.joinpath("model.h5")))
     model.compile("Adam", "binary_crossentropy")
 
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+    for completion, sub_image, patch in gen_patches(image, SIZE, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch(sub_image, patch, model, SIZE)
@@ -94,28 +101,22 @@ def brain_segment(image, probability_array, comm_array):
 def download_callback(comm_array):
     def _download_callback(value):
         comm_array[0] = value
+
     return _download_callback
 
-def brain_segment_torch(image, device_id, probability_array, comm_array):
+
+def segment_torch(
+    image, weights_file, overlap, device_id, probability_array, comm_array
+):
     import torch
+
     from .model import Unet3D
+
     device = torch.device(device_id)
-    folder = inv_paths.MODELS_DIR.joinpath("brain_mri_t1")
-    system_state_dict_file = folder.joinpath("brain_mri_t1.pt")
-    user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath("brain_mri_t1.pt")
-    if not system_state_dict_file.exists() and not user_state_dict_file.exists():
-        download_url_to_file(
-                "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt",
-                user_state_dict_file,
-                "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22",
-                download_callback(comm_array)
-                )
-    if user_state_dict_file.exists():
-        state_dict = torch.load(str(user_state_dict_file))
-    elif system_state_dict_file.exists():
-        state_dict = torch.load(str(system_state_dict_file))
+    if weights_file.exists():
+        state_dict = torch.load(str(weights_file), map_location=torch.device('cpu'))
     else:
-         raise FileNotFoundError("Weights file not found")
+        raise FileNotFoundError("Weights file not found")
     model = Unet3D()
     model.load_state_dict(state_dict["model_state_dict"])
     model.to(device)
@@ -124,7 +125,7 @@ def brain_segment_torch(image, device_id, probability_array, comm_array):
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, SIZE, OVERLAP):
+    for completion, sub_image, patch in gen_patches(image, SIZE, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch_torch(sub_image, patch, model, device, SIZE)
@@ -134,9 +135,23 @@ def brain_segment_torch(image, device_id, probability_array, comm_array):
     probability_array /= sums
     comm_array[0] = np.Inf
 
-ctx = multiprocessing.get_context('spawn')
+
+ctx = multiprocessing.get_context("spawn")
+
+
 class SegmentProcess(ctx.Process):
-    def __init__(self, image, create_new_mask, backend, device_id, use_gpu, apply_wwwl=False, window_width=255, window_level=127):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=255,
+        window_level=127,
+    ):
         multiprocessing.Process.__init__(self)
 
         self._image_filename = image.filename
@@ -158,12 +173,20 @@ class SegmentProcess(ctx.Process):
         self.device_id = device_id
         self.use_gpu = use_gpu
 
+        self.overlap = overlap
+
         self.apply_wwwl = apply_wwwl
         self.window_width = window_width
         self.window_level = window_level
 
         self._pconn, self._cconn = multiprocessing.Pipe()
         self._exception = None
+
+        self.torch_weights_file_name = ""
+        self.torch_weights_url = ""
+        self.torch_weights_hash = ""
+
+        self.keras_weight_file = ""
 
         self.mask = None
 
@@ -184,7 +207,9 @@ class SegmentProcess(ctx.Process):
         )
 
         if self.apply_wwwl:
-            image = imagedata_utils.get_LUT_value(image, self.window_width, self.window_level)
+            image = imagedata_utils.get_LUT_value(
+                image, self.window_width, self.window_level
+            )
 
         probability_array = np.memmap(
             self._prob_array_filename,
@@ -197,10 +222,44 @@ class SegmentProcess(ctx.Process):
         )
 
         if self.backend.lower() == "pytorch":
-            brain_segment_torch(image, self.device_id, probability_array, comm_array)
+            if not self.torch_weights_file_name:
+                raise FileNotFoundError("Weights file not specified.")
+            folder = inv_paths.MODELS_DIR.joinpath(
+                self.torch_weights_file_name.split(".")[0]
+            )
+            system_state_dict_file = folder.joinpath("brain_mri_t1.pt")
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
+                self.torch_weights_file_name
+            )
+            if system_state_dict_file.exists():
+                weights_file = system_state_dict_file
+            elif user_state_dict_file.exists():
+                weights_file = user_state_dict_file
+            else:
+                download_url_to_file(
+                    self.torch_weights_url,
+                    user_state_dict_file,
+                    self.torch_weights_hash,
+                    download_callback(comm_array),
+                )
+                weights_file = user_state_dict_file
+            segment_torch(
+                image,
+                weights_file,
+                self.overlap,
+                self.device_id,
+                probability_array,
+                comm_array,
+            )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
-            brain_segment(image, probability_array, comm_array)
+            segment_keras(
+                image,
+                self.keras_weight_file,
+                self.overlap,
+                probability_array,
+                comm_array,
+            )
 
     @property
     def exception(self):
@@ -233,3 +292,69 @@ class SegmentProcess(ctx.Process):
 
         del self._probability_array
         os.remove(self._prob_array_filename)
+
+
+class BrainSegmentProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=255,
+        window_level=127,
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=50,
+            apply_wwwl=False,
+            window_width=255,
+            window_level=127,
+        )
+        self.torch_weights_file_name = 'brain_mri_t1.pt"'
+        self.torch_weights_url = "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
+        self.torch_weights_hash = (
+            "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
+        )
+
+        self.keras_weight_file = inv_paths.MODELS_DIR.joinpath(
+            "brain_mri_t1/model.json"
+        )
+
+
+class TracheaSegmentProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=255,
+        window_level=127,
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=50,
+            apply_wwwl=False,
+            window_width=255,
+            window_level=127,
+        )
+        self.torch_weights_file_name = 'trachea_ct.pt"'
+        self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
+        self.torch_weights_hash = (
+            "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
+        )

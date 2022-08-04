@@ -20,8 +20,8 @@
 
 from __future__ import print_function
 
+import argparse
 import multiprocessing
-import optparse as op
 import os
 import sys
 import shutil
@@ -242,8 +242,8 @@ class Inv3SplashScreen(SplashScreen):
         self.control = Controller(self.main)
 
         self.fc = wx.CallLater(200, self.ShowMain)
-        options, args = parse_command_line()
-        wx.CallLater(1, use_cmd_optargs, options, args)
+        args = parse_command_line()
+        wx.CallLater(1, use_cmd_optargs, args)
 
         # Check for updates
         from threading import Thread
@@ -270,7 +270,7 @@ class Inv3SplashScreen(SplashScreen):
             self.Raise()
 
 
-def non_gui_startup(options, args):
+def non_gui_startup(args):
     if LANG:
         lang = LANG
     else:
@@ -288,7 +288,7 @@ def non_gui_startup(options, args):
 
     control = Controller(None)
 
-    use_cmd_optargs(options, args)
+    use_cmd_optargs(args)
 
 # ------------------------------------------------------------------
 
@@ -301,106 +301,115 @@ def parse_command_line():
 
 
     # Parse command line arguments
-    parser = op.OptionParser()
+    parser = argparse.ArgumentParser()
 
     # -d or --debug: print all pubsub messages sent
-    parser.add_option("-d", "--debug",
+    parser.add_argument("-d", "--debug",
                       action="store_true",
                       dest="debug")
+    parser.add_argument("project_file", nargs="?", default="", help="InVesalius 3 project file")
 
-    parser.add_option('--no-gui',
+    parser.add_argument('--no-gui',
                       action='store_true',
                       dest='no_gui')
 
     # -i or --import: import DICOM directory
     # chooses largest series
-    parser.add_option("-i", "--import",
+    parser.add_argument("-i", "--import",
                       action="store",
                       dest="dicom_dir")
 
-    parser.add_option("--import-all",
+    parser.add_argument("--import-all",
                       action="store")
 
-    parser.add_option("--import-folder", action="store", dest="import_folder")
+    parser.add_argument("--import-folder", action="store", dest="import_folder")
 
-    parser.add_option("--remote-host",
+    parser.add_argument("-o", "--import-other", dest="other_file", help="Import Nifti, Analyze, PAR/REC file")
+
+    parser.add_argument("--remote-host",
                       action="store",
                       dest="remote_host")
 
-    parser.add_option("-s", "--save",
+    parser.add_argument("-s", "--save",
                       help="Save the project after an import.")
 
-    parser.add_option("-t", "--threshold",
+    parser.add_argument("-t", "--threshold",
                       help="Define the threshold for the export (e.g. 100-780).")
 
-    parser.add_option("-e", "--export",
+    parser.add_argument("-e", "--export",
                       help="Export to STL.")
 
-    parser.add_option("-a", "--export-to-all",
+    parser.add_argument("-a", "--export-to-all",
                       help="Export to STL for all mask presets.")
 
-    parser.add_option("--export-project",
+    parser.add_argument("--export-project",
                       help="Export slices and mask to HDF5 or Nifti file.")
 
-    parser.add_option("--no-masks", action="store_false",
+    parser.add_argument("--no-masks", action="store_false",
                       dest="save_masks", default=True,
                       help="Make InVesalius not export mask when exporting project.")
 
-    parser.add_option("--use-pedal", action="store_true", dest="use_pedal",
+    parser.add_argument("--use-pedal", action="store_true", dest="use_pedal",
                       help="Use an external trigger pedal")
 
-    options, args = parser.parse_args()
-    return options, args
+    args = parser.parse_args()
+    return args
 
 
-def use_cmd_optargs(options, args):
+def use_cmd_optargs(args):
     # If import DICOM argument...
-    if options.dicom_dir:
-        import_dir = options.dicom_dir
-        Publisher.sendMessage('Import directory', directory=import_dir, use_gui=not options.no_gui)
+    if args.dicom_dir:
+        import_dir = args.dicom_dir
+        Publisher.sendMessage('Import directory', directory=import_dir, use_gui=not args.no_gui)
 
-        if options.save:
-            Publisher.sendMessage('Save project', filepath=os.path.abspath(options.save))
+        if args.save:
+            Publisher.sendMessage('Save project', filepath=os.path.abspath(args.save))
             exit(0)
 
-        check_for_export(options)
+        check_for_export(args)
 
         return True
-    elif options.import_folder:
-        Publisher.sendMessage('Import folder', folder=options.import_folder)
-        if options.save:
-            Publisher.sendMessage('Save project', filepath=os.path.abspath(options.save))
+    elif args.import_folder:
+        Publisher.sendMessage('Import folder', folder=args.import_folder)
+        if args.save:
+            Publisher.sendMessage('Save project', filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(options)
+        check_for_export(args)
 
-    elif options.import_all:
+    elif args.other_file:
+        Publisher.sendMessage("Open other files", filepath=args.other_file)
+        if args.save:
+            Publisher.sendMessage('Save project', filepath=os.path.abspath(args.save))
+            exit(0)
+        check_for_export(args)
+
+    elif args.import_all:
         import invesalius.reader.dicom_reader as dcm
-        for patient in dcm.GetDicomGroups(options.import_all):
+        for patient in dcm.GetDicomGroups(args.import_all):
             for group in patient.GetGroups():
                 Publisher.sendMessage('Import group',
                                       group=group,
-                                      use_gui=not options.no_gui)
-                check_for_export(options, suffix=group.title, remove_surfaces=False)
+                                      use_gui=not args.no_gui)
+                check_for_export(args, suffix=group.title, remove_surfaces=False)
                 Publisher.sendMessage('Remove masks', mask_indexes=(0,))
         return True
 
     # Check if there is a file path somewhere in what the user wrote
     # In case there is, try opening as it was a inv3
     else:
-        for arg in reversed(args):
-
-            file = utils.decode(arg, FS_ENCODE)
+        if args.project_file:
+            file = utils.decode(args.project_file, FS_ENCODE)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', filepath=path)
-                check_for_export(options)
+                check_for_export(args)
                 return True
 
-            file = utils.decode(arg, sys.stdin.encoding)
+            file = utils.decode(args.project_file, sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', filepath=path)
-                check_for_export(options)
+                check_for_export(args)
                 return True
 
     return False
@@ -411,47 +420,47 @@ def sanitize(text):
     return re.sub(r'(?u)[^-\w.]', '', text)
 
 
-def check_for_export(options, suffix='', remove_surfaces=False):
+def check_for_export(args, suffix='', remove_surfaces=False):
     suffix = sanitize(suffix)
 
-    if options.export:
-        if not options.threshold:
+    if args.export:
+        if not args.threshold:
             print("Need option --threshold when using --export.")
             exit(1)
-        threshold_range = tuple([int(n) for n in options.threshold.split(',')])
+        threshold_range = tuple([int(n) for n in args.threshold.split(',')])
 
         if suffix:
-            if options.export.endswith('.stl'):
-                path_ = '{}-{}.stl'.format(options.export[:-4], suffix)
+            if args.export.endswith('.stl'):
+                path_ = '{}-{}.stl'.format(args.export[:-4], suffix)
             else:
-                path_ = '{}-{}.stl'.format(options.export, suffix)
+                path_ = '{}-{}.stl'.format(args.export, suffix)
         else:
-            path_ = options.export
+            path_ = args.export
 
         export(path_, threshold_range, remove_surface=remove_surfaces)
-    elif options.export_to_all:
+    elif args.export_to_all:
         # noinspection PyBroadException
         try:
             from invesalius.project import Project
 
             for threshold_name, threshold_range in Project().presets.thresh_ct.items():
                 if isinstance(threshold_range[0], int):
-                    path_ = u'{}-{}-{}.stl'.format(options.export_to_all, suffix, threshold_name)
+                    path_ = u'{}-{}-{}.stl'.format(args.export_to_all, suffix, threshold_name)
                     export(path_, threshold_range, remove_surface=True)
         except:
             traceback.print_exc()
         finally:
             exit(0)
 
-    if options.export_project:
+    if args.export_project:
         from invesalius.project import Project
         prj = Project()
-        export_filename = options.export_project
+        export_filename = args.export_project
         if suffix:
             export_filename, ext = os.path.splitext(export_filename)
             export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
 
-        prj.export_project(export_filename, save_masks=options.save_masks)
+        prj.export_project(export_filename, save_masks=args.save_masks)
         print("Saved {}".format(export_filename))
 
 
@@ -539,21 +548,21 @@ def main(connection=None):
     """
     init()
 
-    options, args = parse_command_line()
+    args = parse_command_line()
 
     session = ses.Session()
-    session.debug = options.debug
+    session.debug = args.debug
 
-    if options.debug:
+    if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
 
-    if options.remote_host is not None:
+    if args.remote_host is not None:
         from invesalius.net.remote_control import RemoteControl
 
-        remote_control = RemoteControl(options.remote_host)
+        remote_control = RemoteControl(args.remote_host)
         remote_control.connect()
 
-    if options.use_pedal:
+    if args.use_pedal:
         from invesalius.net.pedal_connection import PedalConnection
 
         PedalConnection().start()
@@ -562,8 +571,8 @@ def main(connection=None):
 
     NeuronavigationApi(connection)
 
-    if options.no_gui:
-        non_gui_startup(options, args)
+    if args.no_gui:
+        non_gui_startup(args)
     else:
         application = InVesalius(0)
         application.MainLoop()

@@ -25,7 +25,6 @@ import time
 from concurrent import futures
 
 import numpy as np
-import vtk
 import wx
 from scipy import ndimage
 from imageio import imsave
@@ -35,6 +34,20 @@ try:
     from skimage.segmentation import watershed
 except ImportError:
     from skimage.morphology import watershed
+
+from vtkmodules.vtkFiltersSources import vtkLineSource
+from vtkmodules.vtkInteractionStyle import (
+    vtkInteractorStyleImage,
+    vtkInteractorStyleRubberBandZoom,
+)
+from vtkmodules.vtkRenderingCore import (
+    vtkActor2D,
+    vtkCellPicker,
+    vtkCoordinate,
+    vtkPolyDataMapper2D,
+    vtkWorldPointPicker,
+)
+
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -75,7 +88,7 @@ WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
                         _("Background"): BRUSH_BACKGROUND,}
 
 
-class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
+class BaseImageInteractorStyle(vtkInteractorStyleImage):
     def __init__(self, viewer):
         self.viewer = viewer
 
@@ -209,7 +222,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         self.viewer = viewer
         self.orientation = self.viewer.orientation
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
         self.matrix = None
 
         self.cursor = None
@@ -476,7 +489,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
 
         self.AddObserver("MouseMoveEvent", self.OnCrossMove)
         self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
@@ -541,7 +554,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
         # self.slice_actor = viewer.slice_data.actor
         # self.slice_data = viewer.slice_data
 
-        # self.picker = vtk.vtkWorldPointPicker()
+        # self.picker = vtkWorldPointPicker()
 
         self.AddObserver("MouseMoveEvent", self.OnTractsMove)
         self.AddObserver("LeftButtonPressEvent", self.OnTractsMouseClick)
@@ -707,7 +720,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.radius = min(spacing[1], spacing[2]) * 0.8
             self._ori = const.SAGITAL
 
-        self.picker = vtk.vtkCellPicker()
+        self.picker = vtkCellPicker()
         self.picker.PickFromListOn()
 
         self._bind_events()
@@ -847,7 +860,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def _verify_clicked_display(self, x, y, max_dist=5.0):
         slice_number = self.slice_data.number
         max_dist = max_dist**2
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         if slice_number in self.measures.measures[self._ori]:
             for m, mr in self.measures.measures[self._ori][slice_number]:
                 if mr.IsComplete():
@@ -884,7 +897,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
 
-        self.picker = vtk.vtkCellPicker()
+        self.picker = vtkCellPicker()
         self.picker.PickFromListOn()
 
         self.measures = MeasureData()
@@ -1130,7 +1143,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Render()
 
 
-class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
+class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
     Interactor style responsible for zoom by selecting a region.
     """
@@ -1224,7 +1237,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         self.config = EditorConfig()
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
 
         self.AddObserver("EnterEvent", self.OnEnterInteractor)
         self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
@@ -1527,7 +1540,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         self.config = WatershedConfig()
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
 
         self.AddObserver("EnterEvent", self.OnEnterInteractor)
         self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
@@ -2013,7 +2026,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.dragging = False
         self.to_rot = False
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
 
         self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
@@ -2080,7 +2093,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
             # Getting center value
             center = self.viewer.slice_.center
-            coord = vtk.vtkCoordinate()
+            coord = vtkCoordinate()
             coord.SetValue(center)
             cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
 
@@ -2098,7 +2111,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         w, h = self.viewer.slice_data.renderer.GetSize()
 
         center = self.viewer.slice_.center
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         coord.SetValue(center)
         x, y = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
 
@@ -2206,19 +2219,19 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Reload actual slice')
 
     def _create_line(self, x0, y0, x1, y1, color):
-        line = vtk.vtkLineSource()
+        line = vtkLineSource()
         line.SetPoint1(x0, y0, 0)
         line.SetPoint2(x1, y1, 0)
 
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         coord.SetCoordinateSystemToDisplay()
 
-        mapper = vtk.vtkPolyDataMapper2D()
+        mapper = vtkPolyDataMapper2D()
         mapper.SetTransformCoordinate(coord)
         mapper.SetInputConnection(line.GetOutputPort())
         mapper.Update()
 
-        actor = vtk.vtkActor2D()
+        actor = vtkActor2D()
         actor.SetMapper(mapper)
         actor.GetProperty().SetLineWidth(2.0)
         actor.GetProperty().SetColor(color)
@@ -2267,7 +2280,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.viewer = viewer
         self.orientation = self.viewer.orientation
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
 
@@ -2399,7 +2412,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
         self.draw_retangle = None
@@ -2503,7 +2516,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.viewer = viewer
         self.orientation = self.viewer.orientation
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
 
@@ -2625,7 +2638,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.viewer = viewer
         self.orientation = self.viewer.orientation
 
-        self.picker = vtk.vtkWorldPointPicker()
+        self.picker = vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
 

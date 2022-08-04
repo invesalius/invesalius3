@@ -79,5 +79,7 @@ class RemoteControl:
                     })
             except TypeError:
                 pass
+            except socketio.exceptions.BadNamespaceError:
+                pass
 
         Publisher.add_sendMessage_hook(_emit)

@@ -21,7 +21,8 @@
 import math
 
 import numpy as np
-import vtk
+from vtkmodules.vtkRenderingCore import vtkCoordinate
+
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -577,7 +578,7 @@ class DrawCrop2DRetangle:
 
     def Coord3DtoDisplay(self, x, y, z, canvas):
 
-        coord = vtk.vtkCoordinate()
+        coord = vtkCoordinate()
         coord.SetValue(x, y, z)
         cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
 

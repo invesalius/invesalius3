@@ -34,6 +34,7 @@ import invesalius.data.tractography as dti
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 
 class QueueCustom(queue.Queue):
@@ -82,8 +83,8 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded = vis_components
-        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue = vis_queues
+        self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue = vis_queues
         self.sle = sle
         self.event = event
         self.neuronavigation_api = neuronavigation_api
@@ -93,7 +94,7 @@ class UpdateNavigationScene(threading.Thread):
         while not self.event.is_set():
             got_coords = False
             try:
-                coord, [coordinates_raw, markers_flag], m_img, view_obj = self.coord_queue.get_nowait()
+                coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
@@ -117,7 +118,6 @@ class UpdateNavigationScene(threading.Thread):
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update raw coordinates', coordinates_raw=coordinates_raw, markers_flag=markers_flag)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
@@ -138,6 +138,7 @@ class UpdateNavigationScene(threading.Thread):
                     min = np.amin(enorm)
                     Publisher.sendMessage('Get min max norms', min=min, max=max,e_field_norms=enorm)
                     Publisher.sendMessage('Update efield vis')
+
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
@@ -172,7 +173,7 @@ class UpdateNavigationScene(threading.Thread):
         return cp, T_rot
 
 
-class Navigation():
+class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
@@ -189,7 +190,6 @@ class Navigation():
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
-        self.robot_target_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -204,7 +204,6 @@ class Navigation():
         self.n_threads = None
         self.view_tracts = False
         self.peel_loaded = False
-        self.e_field_loaded = False
         self.enable_act = False
         self.act_data = None
         self.n_tracts = const.N_TRACTS
@@ -249,10 +248,10 @@ class Navigation():
     def GetReferenceMode(self):
         return self.ref_mode_id
 
-    def SetImageFiducial(self, fiducial_index, coord):
-        self.image_fiducials[fiducial_index, :] = coord
+    def SetImageFiducial(self, fiducial_index, position):
+        self.image_fiducials[fiducial_index, :] = position
 
-        print("Set image fiducial {} to coordinates {}".format(fiducial_index, coord))
+        print("Set image fiducial {} to coordinates {}".format(fiducial_index, position))
 
     def AreImageFiducialsSet(self):
         return not np.isnan(self.image_fiducials).any()
@@ -278,27 +277,24 @@ class Navigation():
         if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
-    def StartNavigation(self, tracker):
+    def EstimateTrackerToInVTransformationMatrix(self, tracker):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
+        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
 
+        self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
+                                                shear=False, scale=False)
+
+    def StartNavigation(self, tracker, icp):
         # initialize jobs list
         jobs_list = []
 
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.robot_target_queue]
+        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-
-        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
-
-        # fiducials matrix
-        m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
-                                                shear=False, scale=False)
-        self.m_change = m_change
-
         errors = False
 
         if self.track_obj:
@@ -312,27 +308,27 @@ class Navigation():
                 # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                 obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
 
-                coreg_data = [m_change, obj_ref_mode]
+                coreg_data = [self.m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
                     coord_raw, markers_flag = tracker.TrackerCoordinates.GetCoordinates()
                 else:
                     coord_raw = np.array([None])
 
-                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
+                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
                 coreg_data.extend(obj_data)
 
                 queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue]
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
-                                                                self.target))
+                                                                self.target, icp))
         else:
-            coreg_data = (m_change, 0)
+            coreg_data = (self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
             jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
-                                                                    self.event, self.sleep_nav))
+                                                                    self.event, self.sleep_nav, icp))
 
         if not errors:
             #TODO: Test the serial port thread
@@ -413,5 +409,5 @@ class Navigation():
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded, self.e_field_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)

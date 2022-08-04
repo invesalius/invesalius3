@@ -25,8 +25,29 @@ import tempfile
 
 import numpy as np
 
-import vtk
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+from vtkmodules.vtkFiltersGeneral import vtkCursor3D
+from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
+from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
+from vtkmodules.vtkIOExport import vtkPOVExporter
+from vtkmodules.vtkIOImage import (
+    vtkBMPWriter,
+    vtkJPEGWriter,
+    vtkPNGWriter,
+    vtkPostScriptWriter,
+    vtkTIFFWriter,
+)
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkCoordinate,
+    vtkImageActor,
+    vtkPolyDataMapper,
+    vtkProperty,
+    vtkRenderer,
+    vtkWindowToImageFilter,
+    vtkWorldPointPicker,
+)
+
+from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import invesalius.data.styles as styles
 import wx
@@ -214,7 +235,7 @@ class Viewer(wx.Panel):
         self.on_text = False
         # VTK pipeline and actors
         self.__config_interactor()
-        self.cross_actor = vtk.vtkActor()
+        self.cross_actor = vtkActor()
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -245,7 +266,7 @@ class Viewer(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-        self.pick = vtk.vtkWorldPointPicker()
+        self.pick = vtkWorldPointPicker()
         self.interactor.SetPicker(self.pick)
 
     def OnContextMenu(self, evt):
@@ -292,7 +313,7 @@ class Viewer(wx.Panel):
         self.SetLayout(layout)
 
     def __config_interactor(self):
-        style = vtk.vtkInteractorStyleImage()
+        style = vtkInteractorStyleImage()
 
         interactor = self.interactor
         interactor.SetInteractorStyle(style)
@@ -964,16 +985,16 @@ class Viewer(wx.Panel):
         if id == dict[self.orientation]:
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
-                image = vtk.vtkWindowToImageFilter()
+                image = vtkWindowToImageFilter()
                 image.SetInput(renwin)
-                writer = vtk.vtkPOVExporter()
+                writer = vtkPOVExporter()
                 writer.SetFilePrefix(filename.split(".")[0])
                 writer.SetRenderWindow(renwin)
                 writer.Write()
             else:
                 ren = self.slice_data.renderer
                 #Use tiling to generate a large rendering.
-                image = vtk.vtkRenderLargeImage()
+                image = vtkRenderLargeImage()
                 image.SetInput(ren)
                 image.SetMagnification(1)
                 image.Update()
@@ -983,15 +1004,15 @@ class Viewer(wx.Panel):
 
                 # write image file
                 if (filetype == const.FILETYPE_BMP):
-                    writer = vtk.vtkBMPWriter()
+                    writer = vtkBMPWriter()
                 elif (filetype == const.FILETYPE_JPG):
-                    writer =  vtk.vtkJPEGWriter()
+                    writer =  vtkJPEGWriter()
                 elif (filetype == const.FILETYPE_PNG):
-                    writer = vtk.vtkPNGWriter()
+                    writer = vtkPNGWriter()
                 elif (filetype == const.FILETYPE_PS):
-                    writer = vtk.vtkPostScriptWriter()
+                    writer = vtkPostScriptWriter()
                 elif (filetype == const.FILETYPE_TIF):
-                    writer = vtk.vtkTIFFWriter()
+                    writer = vtkTIFFWriter()
                     filename = "%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
@@ -1035,7 +1056,7 @@ class Viewer(wx.Panel):
         self.slice_number = 0
         self.cursor = None
         self.wl_text = None
-        self.pick = vtk.vtkWorldPointPicker()
+        self.pick = vtkWorldPointPicker()
 
     def OnSetInteractorStyle(self, style):
         self.SetInteractorStyle(style)
@@ -1049,7 +1070,6 @@ class Viewer(wx.Panel):
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
-        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
@@ -1148,22 +1168,22 @@ class Viewer(wx.Panel):
     def __build_cross_lines(self):
         renderer = self.slice_data.overlay_renderer
 
-        cross = vtk.vtkCursor3D()
+        cross = vtkCursor3D()
         cross.AllOff()
         cross.AxesOn()
         self.cross = cross
 
-        c = vtk.vtkCoordinate()
+        c = vtkCoordinate()
         c.SetCoordinateSystemToWorld()
 
-        cross_mapper = vtk.vtkPolyDataMapper()
+        cross_mapper = vtkPolyDataMapper()
         cross_mapper.SetInputConnection(cross.GetOutputPort())
         #cross_mapper.SetTransformCoordinate(c)
 
-        p = vtk.vtkProperty()
+        p = vtkProperty()
         p.SetColor(1, 0, 0)
 
-        cross_actor = vtk.vtkActor()
+        cross_actor = vtkActor()
         cross_actor.SetMapper(cross_mapper)
         cross_actor.SetProperty(p)
         cross_actor.VisibilityOff()
@@ -1190,17 +1210,17 @@ class Viewer(wx.Panel):
             self.__update_camera(slice_data)
 
     def create_slice_window(self):
-        renderer = vtk.vtkRenderer()
+        renderer = vtkRenderer()
         renderer.SetLayer(0)
         cam = renderer.GetActiveCamera()
 
-        canvas_renderer = vtk.vtkRenderer()
+        canvas_renderer = vtkRenderer()
         canvas_renderer.SetLayer(1)
         canvas_renderer.SetActiveCamera(cam)
         canvas_renderer.SetInteractive(0)
         canvas_renderer.PreserveDepthBufferOn()
 
-        overlay_renderer = vtk.vtkRenderer()
+        overlay_renderer = vtkRenderer()
         overlay_renderer.SetLayer(2)
         overlay_renderer.SetActiveCamera(cam)
         overlay_renderer.SetInteractive(0)
@@ -1210,7 +1230,7 @@ class Viewer(wx.Panel):
         self.interactor.GetRenderWindow().AddRenderer(canvas_renderer)
         self.interactor.GetRenderWindow().AddRenderer(renderer)
 
-        actor = vtk.vtkImageActor()
+        actor = vtkImageActor()
         self.slice_actor = actor
         # TODO: Create a option to let the user set if he wants to interpolate
         # the slice images.
@@ -1432,15 +1452,6 @@ class Viewer(wx.Panel):
             pos = pos + 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
-
-    def OnSize(self, evt):
-        print("OnSize")
-        w, h = self.GetSize()
-        rwin = self.interactor.GetRenderWindow()
-        rwin.SetSize(w, h)
-        # if self.slice_data:
-        #     self.slice_data.SetSize((w, h))
-        # evt.Skip()
 
     def OnSetMIPSize(self, number_slices):
         self.number_slices = number_slices

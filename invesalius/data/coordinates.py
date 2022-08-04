@@ -22,7 +22,6 @@ import numpy as np
 import threading
 import wx
 
-import invesalius.data.bases as db
 import invesalius.data.transformations as tr
 import invesalius.constants as const
 
@@ -47,14 +46,20 @@ class TrackerCoordinates():
     def SetCoordinates(self, coord, markers_flag):
         self.coord = coord
         self.markers_flag = markers_flag
-        if self.previous_markers_flag != self.markers_flag and not self.nav_status:
-            wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
-            self.previous_markers_flag = self.markers_flag
+        if not self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker coordinates',
+                         coord=self.coord.tolist(), markers_flag=self.markers_flag)
+            if self.previous_markers_flag != self.markers_flag:
+                wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+                self.previous_markers_flag = self.markers_flag
 
     def GetCoordinates(self):
-        if self.previous_markers_flag != self.markers_flag and self.nav_status:
-            wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
-            self.previous_markers_flag = self.markers_flag
+        if self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker coordinates',
+                         coord=self.coord.tolist(), markers_flag=self.markers_flag)
+            if self.previous_markers_flag != self.markers_flag:
+                wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+                self.previous_markers_flag = self.markers_flag
 
         return self.coord, self.markers_flag
 
@@ -195,16 +200,6 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.objID]
 
-def ElfinCoord(trck_init):
-    if len(trck_init) > 2:
-        robotcoordinates = trck_init[-1]
-        coord = robotcoordinates.GetRobotCoordinates()
-        if coord is None:
-            coord = np.array([0, 0, 0, 0, 0, 0])
-    else:
-        coord = np.array([0, 0, 0, 0, 0, 0])
-
-    return coord
 
 def CameraCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
@@ -246,7 +241,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
     elif trck[1] == 'wrapper':
         coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
 
-    return coord, [False, False, False]
+    return coord, [True, True, True]
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
@@ -346,6 +341,13 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
 
     return coord
 
+def RobotCoord(trk_init, trck_id, ref_mode):
+    #trck_id is the tracker related to the robot ID. To get the tracker ID, combined with the robot,
+    # it is required to get trk_init[1]
+    tracker_id = trk_init[1]
+    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], tracker_id, ref_mode)
+
+    return np.vstack([coord_tracker[0], coord_tracker[1], coord_tracker[2]]), markers_flag
 
 def DebugCoordRandom(trk_init, trck_id, ref_mode):
     """
@@ -495,22 +497,6 @@ def dynamic_reference_m(probe, reference):
     coord_rot.extend(probe[3:])
 
     return coord_rot
-
-
-def RobotCoord(trk_init, trck_id, ref_mode):
-    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0][0], trk_init[1], ref_mode)
-    coord_robot = ElfinCoord([trk_init[0][1]]+trk_init[1:])
-
-    probe_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[0])
-    ref_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[1])
-    obj_tracker_in_robot = db.transform_tracker_to_robot().transformation_tracker_to_robot(coord_tracker[2])
-
-    if probe_tracker_in_robot is None:
-        probe_tracker_in_robot = coord_tracker[0]
-        ref_tracker_in_robot = coord_tracker[1]
-        obj_tracker_in_robot = coord_tracker[2]
-
-    return np.vstack([probe_tracker_in_robot, ref_tracker_in_robot, coord_robot, obj_tracker_in_robot]), markers_flag
 
 
 def dynamic_reference_m2(probe, reference):
