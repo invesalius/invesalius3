@@ -2346,13 +2346,12 @@ class E_fieldPanel(wx.Panel):
         border = 1
         border_last = 5
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
-        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(50, 500),
+        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
         # combo_surface_name.SetSelection(0)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboNameClic)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.combo_surface_name.Enable(True)
         self.combo_surface_name.Insert('Select',0)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
