@@ -1609,13 +1609,12 @@ class Viewer(wx.Panel):
         colors = vtkUnsignedCharArray()
         colors.SetNumberOfComponents(3)
         colors.SetName('Colors')
-        color = 3 * [0.0]
-        for j in range(0, 3):
-            color[j] = int(255.0 * 1)
+        color = 3 * [255.0]
         for i in range(self.efield_mesh.GetNumberOfCells()):
             colors.InsertTuple(i, color)
-        self.efield_mesh.GetCellData().SetScalars(colors)
+        self.efield_mesh.GetPointData().SetScalars(colors)
         self.Recolor_efield_Actor(self.efield_mesh)
+        print('recolor default color')
 
     def CreateLUTtableforefield(self, min, max):
         lut = vtkLookupTable()
@@ -1673,14 +1672,12 @@ class Viewer(wx.Panel):
         return self.radius_list
 
     def OnUpdateEfieldvis(self):
-        if self.radius_list.GetNumberOfIds() >0:
+        if self.radius_list.GetNumberOfIds() != 0:
             lut = self.CreateLUTtableforefield(self.min, self.max)
             colors = vtkUnsignedCharArray()
             colors.SetNumberOfComponents(3)
             colors.SetName('Colors')
-            color = 3 * [0.0]
-            for j in range(0, 3):
-                color[j] = int(255.0 * 1)
+            color = 3 * [255.0]
             for i in range(np.size(self.e_field_norms)):
                 colors.InsertTuple(i, color)
                 #cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
