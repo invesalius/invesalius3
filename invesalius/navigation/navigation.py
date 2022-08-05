@@ -84,11 +84,11 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded  = vis_components
-        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue = vis_queues
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.efield_queue = vis_queues
         self.sle = sle
         self.event = event
         self.neuronavigation_api = neuronavigation_api
-
+        self.e_field_flag = False
     def run(self):
         # count = 0
         while not self.event.is_set():
@@ -98,6 +98,10 @@ class UpdateNavigationScene(threading.Thread):
                 got_coords = True
 
                 # print('UpdateScene: get {}'.format(count))
+
+                if not self.efield_queue.empty():
+                    self.e_field_flag = self.efield_queue.get_nowait()
+                    self.efield_queue.task_done()
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -120,26 +124,33 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
+                if self.e_field_flag:
+                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
+                                 coord=coord, flag=self.e_field_loaded)
+                    if self.e_field_loaded:
+                        cp, T_rot = self.Get_coil_position(m_img)
+                        enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                        print('vector', len(enorm))
+                        max = np.amax(enorm)
+                        min = np.amin(enorm)
+                        Publisher.sendMessage('Get min max norms', min=min, max=max, e_field_norms=enorm)
+                        Publisher.sendMessage('Update efield vis')
+
+                        # print('T_rot:', T_rot)
+                        # print('cp:', cp)
+                        if self.neuronavigation_api.connection:
+                            print('Conection')
+
+
+                        # self.neuronavigation_api.update_coil_pose(
+                        #     position=coord[:3],
+                        #     orientation=coord[3:],
+                        # )
+
 
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
-                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img, coord=coord, flag = self.e_field_loaded)
-                    print(self.e_field_loaded)
-                    if self.e_field_loaded:
-                        cp, T_rot = self.Get_coil_position(m_img)
-                        print('T_rot:', T_rot)
-                        print('cp:', cp)
-                        enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                        self.neuronavigation_api.update_coil_pose(
-                            position=coord[:3],
-                            orientation=coord[3:],
-                        )
-                        print('vector', len(enorm))
-                        max = np.amax(enorm )
-                        min = np.amin(enorm)
-                        Publisher.sendMessage('Get min max norms', min=min, max=max,e_field_norms=enorm)
-                        Publisher.sendMessage('Update efield vis')
 
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
@@ -149,7 +160,6 @@ class UpdateNavigationScene(threading.Thread):
             except queue.Empty:
                 if got_coords:
                     self.coord_queue.task_done()
-
     def Get_coil_position(self, m_img):
         # coil position cp : the center point at the bottom of the coil casing,
         # corresponds to the origin of the coil template.
@@ -169,11 +179,10 @@ class UpdateNavigationScene(threading.Thread):
         coil_dir = m_img_flip[:-1, 0]
         coil_face = m_img_flip[:-1, 1]
         cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1,ct2, axis = 0)
-        T_rot = np.append(T_rot,cn, axis = 0)* 0.001  # append and convert to meters
+        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
         T_rot = T_rot.tolist()  # to list
         return cp, T_rot
-
 
 class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
@@ -192,6 +201,7 @@ class Navigation(metaclass=Singleton):
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
+        self.efield_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -201,6 +211,7 @@ class Navigation(metaclass=Singleton):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.e_field_loaded = False
+
 
         # Tractography parameters
         self.trk_inp = None
@@ -296,7 +307,7 @@ class Navigation(metaclass=Singleton):
             self.event.clear()
 
         vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.efield_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
         errors = False

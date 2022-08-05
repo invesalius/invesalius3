@@ -246,7 +246,7 @@ class InnerFoldPanel(wx.Panel):
         # Fold 7 - E-field
 
         item = fold_panel.AddFoldPanel(_("E-field"), collapsed=True)
-        etw = E_fieldPanel(item)
+        etw = E_fieldPanel(item, navigation)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
                                         leftSpacing=0, rightSpacing=0)
@@ -2325,7 +2325,7 @@ class TractographyPanel(wx.Panel):
         Publisher.sendMessage('Remove tracts')
 
 class E_fieldPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -2335,6 +2335,7 @@ class E_fieldPanel(wx.Panel):
         self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
+        self.navigation = navigation
         #  Check box to enable e-field visualization
         enable_efield = wx.CheckBox(self, -1, _('Enable E-field'))
         enable_efield.SetValue(False)
@@ -2373,9 +2374,11 @@ class E_fieldPanel(wx.Panel):
         else:
             print('False')
             Publisher.sendMessage('Recolor again')
+            print('recolor task_navigator')
             self.e_field_loaded = False
             self.combo_surface_name.Enable(True)
 
+        self.navigation.efield_queue.put_nowait([self.efield_enabled])
         Publisher.sendMessage('Update e-field visualization', data=self.e_field_loaded)
 
 
