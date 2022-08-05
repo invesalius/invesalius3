@@ -942,6 +942,8 @@ class Viewer(wx.Panel):
         distance = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
                 np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
 
+        wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance)
+
         return distance
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
@@ -1063,9 +1065,6 @@ class Viewer(wx.Panel):
             else:
                 self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
                 wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=False)
-
-            wx.CallAfter(Publisher.sendMessage, 'Distance to the target',
-                         distance=distance_to_target)
 
             self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                     arrow_pitch_y1, arrow_pitch_y2
