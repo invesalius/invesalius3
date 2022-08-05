@@ -1298,6 +1298,7 @@ class MarkersPanel(wx.Panel):
 
         self.markers = []
         self.nav_status = False
+        self.target_mode = False
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1398,6 +1399,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
+        Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
 
     def __find_target_marker(self):
         """
@@ -1517,12 +1519,12 @@ class MarkersPanel(wx.Panel):
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
             send_target_to_robot = menu_id.Append(5, _('Send target from InVesalius to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
+            send_target_to_robot_compensation.Enable(False)
+            send_target_to_robot.Enable(False)
             if self.nav_status and check_target_angles:
                 send_target_to_robot_compensation.Enable(True)
-                send_target_to_robot.Enable(True)
-            else:
-                send_target_to_robot_compensation.Enable(False)
-                send_target_to_robot.Enable(False)
+                if self.target_mode:
+                    send_target_to_robot.Enable(True)
 
         if check_target_angles:
             target_menu.Enable(True)
@@ -1776,6 +1778,9 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Update target orientation',
                                   target_id=marker_id, orientation=list(orientation))
         dialog.Destroy()
+
+    def OnActivateTargetMode(self, target_mode=None):
+        self.target_mode = target_mode
 
     def SetMarkers(self, markers):
         """
