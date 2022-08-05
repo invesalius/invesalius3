@@ -1649,7 +1649,6 @@ class Viewer(wx.Panel):
         return cell_ids_array
 
     def Init_efield(self, e_field_brain):
-        #self.e_field_brain = e_field_brain
         self.e_field_mesh_normals =e_field_brain.e_field_mesh_normals
         self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
         self.locator_efield = e_field_brain.locator_efield
