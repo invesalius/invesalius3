@@ -1517,14 +1517,13 @@ class MarkersPanel(wx.Panel):
         if self.tracker.tracker_id == const.ROBOT:
             send_target_to_robot_compensation = menu_id.Append(4, _('Sets target to robot head move compensation'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
-            send_target_to_robot = menu_id.Append(5, _('Send target from InVesalius to robot'))
+            send_target_to_robot = menu_id.Append(5, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
             send_target_to_robot_compensation.Enable(False)
             send_target_to_robot.Enable(False)
-            if self.nav_status and check_target_angles:
+            if self.nav_status and self.target_mode and (self.lc.GetFocusedItem() == self.__find_target_marker()):
                 send_target_to_robot_compensation.Enable(True)
-                if self.target_mode:
-                    send_target_to_robot.Enable(True)
+                send_target_to_robot.Enable(True)
 
         if check_target_angles:
             target_menu.Enable(True)
