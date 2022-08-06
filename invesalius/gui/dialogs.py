@@ -36,6 +36,7 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
+from scipy.spatial import distance
 import wx
 try:
     from wx.adv import BitmapComboBox
@@ -4364,10 +4365,11 @@ class SetCoilOrientationDialog(wx.Dialog):
             x, y, z = self.picker.GetPickPosition()
             coord_flip = list(self.marker)
             coord_flip[1] = -coord_flip[1]
-            if self.picker.GetActor():
-                coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
-                brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
-                self.brain_target_actor_list.append(brain_target_actor)
+            if distance.euclidean((x, y), coord_flip[:2]) < const.MTMS_RADIUS:
+                if self.picker.GetActor():
+                    coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
+                    brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
+                    self.brain_target_actor_list.append(brain_target_actor)
             self.obj_actor.PickableOff()
             self.interactor.Render()
 
@@ -4422,6 +4424,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
             self.RemoveActor()
+        self.brain_target_actor_list = []
         self.LoadActor()
 
     def LoadActor(self):
@@ -4452,7 +4455,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             # Comment this line to generate a disk instead of a circle.
             polygonSource.GeneratePolygonOff()
             polygonSource.SetNumberOfSides(50)
-            polygonSource.SetRadius(30.0)
+            polygonSource.SetRadius(const.MTMS_RADIUS)
             polygonSource.SetCenter(0,0,0)
             #  Visualize
             mapper = vtkPolyDataMapper()
