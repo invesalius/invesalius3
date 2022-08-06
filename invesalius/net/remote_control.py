@@ -45,7 +45,7 @@ class RemoteControl:
         if data is None:
             data = {}
 
-        print("Received an event into topic '{}' with data {}".format(topic, str(data)))
+        #print("Received an event into topic '{}' with data {}".format(topic, str(data)))
         Publisher.sendMessage_no_hook(
             topicName=topic,
             **data
@@ -70,7 +70,7 @@ class RemoteControl:
             time.sleep(1.0)
 
         def _emit(topic, data):
-            print("Emitting data {} to topic {}".format(data, topic))
+            #print("Emitting data {} to topic {}".format(data, topic))
             try:
                 if isinstance(topic, str):
                     self._sio.emit("from_neuronavigation", {

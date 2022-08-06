@@ -95,6 +95,7 @@ from imageio import imsave
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
+import invesalius.data.coregistration as dcr
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
@@ -926,26 +927,6 @@ class Viewer(wx.Panel):
                 if self.obj_projection_arrow_actor:
                     self.obj_projection_arrow_actor.SetVisibility(1)
 
-    def ComputeRelativeDistanceToTarget(self, m_img):
-        m_target = dco.coordinates_to_transformation_matrix(
-            position=self.target_coord[:3],
-            orientation=self.target_coord[3:],
-            axes='sxyz',
-        )
-        m_img[1, -1] = -m_img[1, -1]
-        m_relative_target = np.linalg.inv(m_target) @ m_img
-
-        # compute rotation angles
-        angles = tr.euler_from_matrix(m_relative_target, axes='sxyz')
-
-        # create output coordinate list
-        distance = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
-                np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
-
-        wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance)
-
-        return distance
-
     def OnUpdateObjectTargetGuide(self, m_img, coord):
         vtk_colors = vtkNamedColors()
 
@@ -971,7 +952,8 @@ class Viewer(wx.Panel):
                 thrdist = False
                 self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
 
-            distance_to_target = self.ComputeRelativeDistanceToTarget(m_img)
+            distance_to_target = dcr.ComputeRelativeDistanceToTarget(self.target_coord, m_img)
+            wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance_to_target)
 
             if distance_to_target[3] > const.ARROW_UPPER_LIMIT:
                 distance_to_target[3] = const.ARROW_UPPER_LIMIT
