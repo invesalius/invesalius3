@@ -1505,6 +1505,8 @@ class MarkersPanel(wx.Panel):
         if self.__find_target_marker() == self.lc.GetFocusedItem():
             target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
+            target_menu = menu_id.Append(6, _('Set brain target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
@@ -1627,6 +1629,24 @@ class MarkersPanel(wx.Panel):
         m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, nav_target, self.icp, self.navigation.obj_data)
 
         Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=m_target.tolist())
+
+    def OnSetBrainTarget(self, evt):
+        if isinstance(evt, int):
+           self.lc.Focus(evt)
+        index = self.lc.GetFocusedItem()
+        if index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        position = self.markers[index].position
+        orientation = self.markers[index].orientation
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_target=True)
+
+        if dialog.ShowModal() == wx.ID_OK:
+            orientation = dialog.GetValue()
+            self.CreateMarker(list(position), list(orientation))
+        dialog.Destroy()
+
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
