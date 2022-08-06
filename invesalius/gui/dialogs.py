@@ -42,6 +42,7 @@ try:
 except ImportError:
     from wx.combo import BitmapComboBox
 
+from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import mutable, vtkPoints
 from vtkmodules.vtkCommonDataModel import (
@@ -57,6 +58,7 @@ from vtkmodules.vtkFiltersSources import (
     vtkArrowSource,
     vtkCylinderSource,
     vtkParametricFunctionSource,
+    vtkRegularPolygonSource,
     vtkSphereSource,
 )
 from vtkmodules.vtkInteractionStyle import (
@@ -68,6 +70,7 @@ from vtkmodules.vtkIOPLY import vtkPLYReader
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkCellPicker,
     vtkFollower,
     vtkPolyDataMapper,
     vtkProperty,
@@ -4175,7 +4178,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
 class SetCoilOrientationDialog(wx.Dialog):
 
-    def __init__(self, marker):
+    def __init__(self, marker, brain_target=False):
         import invesalius.project as prj
 
         self.obj_actor = None
@@ -4183,6 +4186,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.initial_focus = None
 
         self.marker = marker
+        self.brain_target = brain_target
 
         self.spinning = False
         self.rotationX = 0
@@ -4206,6 +4210,12 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
         self.actor_style = vtkInteractorStyleTrackballActor()
         self.camera_style = vtkInteractorStyleTrackballCamera()
+
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        # self.picker.SetUseCells(True)
+        self.interactor.SetPicker(self.picker)
+        self.actor_style.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
 
         self.interactor.SetInteractorStyle(self.actor_style)
         self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
@@ -4324,6 +4334,40 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
+    def get_vtk_mouse_position(self):
+        """
+        Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
+        tuple with X and Y position.
+        Please use this instead of using iren.GetEventPosition because it's
+        not returning the correct values on Mac with HighDPI display, maybe
+        the same is happing with Windows and Linux, we need to test.
+        """
+        mposx, mposy = wx.GetMousePosition()
+        cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
+        mx, my = cposx, self.interactor.GetSize()[1] - cposy
+        if sys.platform == 'darwin':
+            # It's needed to mutiple by scale factor in HighDPI because of
+            # https://docs.wxpython.org/wx.glcanvas.GLCanvas.html
+            # For now we are doing this only on Mac but it may be needed on
+            # Windows and Linux too.
+            scale = self.interactor.GetContentScaleFactor()
+            mx *= scale
+            my *= scale
+        return int(mx), int(my)
+
+    def OnCrossMouseClick(self, obj, evt):
+        self.obj_actor.PickableOn()
+        x, y = self.get_vtk_mouse_position()
+        self.picker.Pick(x, y, 0, self.ren)
+        x, y, z = self.picker.GetPickPosition()
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        if self.picker.GetActor():
+            coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
+            self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
+        self.obj_actor.PickableOff()
+        self.interactor.Render()
+
     def OnResetOrientation(self, evt):
         self.rotationX = self.rotationY = self.rotationZ = 0
         self.slider_rotation_x.SetValue(0)
@@ -4398,6 +4442,25 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.SetVolumeCamera(coord_flip[:3])
         self.AddTarget(coord_flip)
 
+        if self.brain_target:
+            colors = vtkNamedColors()
+            # Create a circle
+            polygonSource = vtkRegularPolygonSource()
+            # Comment this line to generate a disk instead of a circle.
+            polygonSource.GeneratePolygonOff()
+            polygonSource.SetNumberOfSides(50)
+            polygonSource.SetRadius(30.0)
+            polygonSource.SetCenter(0,0,0)
+            #  Visualize
+            mapper = vtkPolyDataMapper()
+            mapper.SetInputConnection(polygonSource.GetOutputPort())
+            circle_actor = vtkActor()
+            circle_actor.SetMapper(mapper)
+            circle_actor.PickableOff()
+            circle_actor.GetProperty().SetColor(colors.GetColor3d('Red'))
+            circle_actor.SetUserMatrix(self.m_img_vtk)
+            self.ren.AddActor(circle_actor)
+
         self.interactor.Render()
 
     def RemoveActor(self):
@@ -4405,7 +4468,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def AddTarget(self, coord_flip):
+    def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0]):
         rx, ry, rz = coord_flip[3:6]
         if rx is None:
             coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
@@ -4414,13 +4477,13 @@ class SetCoilOrientationDialog(wx.Dialog):
         else:
             rx, ry, rz = coord_flip[3:6]
 
-        m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
-        marker_actor = self.CreateActorArrow(m_img_vtk)
+        self.m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
+        marker_actor = self.CreateActorArrow(self.m_img_vtk, colour=colour)
         self.marker_actor = marker_actor
 
         self.ren.AddActor(marker_actor)
 
-    def CreateActorArrow(self, m_img_vtk, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+    def CreateActorArrow(self, m_img_vtk, colour, size=const.ARROW_MARKER_SIZE):
         input1 = vtkPolyData()
         input2 = vtkPolyData()
         input3 = vtkPolyData()
