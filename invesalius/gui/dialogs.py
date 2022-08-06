@@ -4187,6 +4187,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         self.marker = marker
         self.brain_target = brain_target
+        self.brain_target_actor_list = []
 
         self.spinning = False
         self.rotationX = 0
@@ -4356,17 +4357,19 @@ class SetCoilOrientationDialog(wx.Dialog):
         return int(mx), int(my)
 
     def OnCrossMouseClick(self, obj, evt):
-        self.obj_actor.PickableOn()
-        x, y = self.get_vtk_mouse_position()
-        self.picker.Pick(x, y, 0, self.ren)
-        x, y, z = self.picker.GetPickPosition()
-        coord_flip = list(self.marker)
-        coord_flip[1] = -coord_flip[1]
-        if self.picker.GetActor():
-            coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
-            self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
-        self.obj_actor.PickableOff()
-        self.interactor.Render()
+        if self.brain_target:
+            self.obj_actor.PickableOn()
+            x, y = self.get_vtk_mouse_position()
+            self.picker.Pick(x, y, 0, self.ren)
+            x, y, z = self.picker.GetPickPosition()
+            coord_flip = list(self.marker)
+            coord_flip[1] = -coord_flip[1]
+            if self.picker.GetActor():
+                coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
+                brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
+                self.brain_target_actor_list.append(brain_target_actor)
+            self.obj_actor.PickableOff()
+            self.interactor.Render()
 
     def OnResetOrientation(self, evt):
         self.rotationX = self.rotationY = self.rotationZ = 0
@@ -4482,6 +4485,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.marker_actor = marker_actor
 
         self.ren.AddActor(marker_actor)
+
+        return marker_actor
 
     def CreateActorArrow(self, m_img_vtk, colour, size=const.ARROW_MARKER_SIZE):
         input1 = vtkPolyData()
@@ -4663,6 +4668,21 @@ class SetCoilOrientationDialog(wx.Dialog):
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
 
         return np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+
+    def GetValueBrainTarget(self):
+        import invesalius.data.transformations as tr
+        brain_target_position = []
+        brain_target_orientation = []
+        for brain_target_actor in self.brain_target_actor_list:
+            vtkmat = brain_target_actor.GetMatrix()
+            narray = np.eye(4)
+            vtkmat.DeepCopy(narray.ravel(), vtkmat)
+            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            brain_target_position.append(position)
+            brain_target_orientation.append(orientation)
+        return brain_target_position, brain_target_orientation
 
 
 class SurfaceProgressWindow(object):
