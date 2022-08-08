@@ -4370,10 +4370,11 @@ class SetCoilOrientationDialog(wx.Dialog):
                     coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
                     brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
                     self.brain_target_actor_list.append(brain_target_actor)
+                    self.OnResetOrientation()
             self.obj_actor.PickableOff()
             self.interactor.Render()
 
-    def OnResetOrientation(self, evt):
+    def OnResetOrientation(self, evt=None):
         self.rotationX = self.rotationY = self.rotationZ = 0
         self.slider_rotation_x.SetValue(0)
         self.slider_rotation_y.SetValue(0)

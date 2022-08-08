@@ -1,0 +1,72 @@
+import win32com.client
+
+import numpy as np
+
+import invesalius.data.coordinates as dco
+import invesalius.data.coregistration as dcr
+
+class mTMS():
+    def __init__(self):
+        mtms_path = 'D:\\mTMS 3.1'
+        vipath = mtms_path + '\\mTMS ActiveX Server\\mTMS ActiveX Server.exe\\mTMS ActiveX Server.vi'
+        # Connect to the ActiveX server
+        mtms_app = win32com.client.Dispatch('MTMSActiveXServer.Application')
+        self.vi = mtms_app.getvireference(vipath)
+        # Log name
+        self.vi.SetControlValue('New Log name', 'Experiment 1a')
+        name = self.vi.GetControlValue('New Log name')
+        print(name)
+
+    def UpdateTarget(self, coil_pose, brain_target):
+        self.coil_pose = coil_pose
+        self.brain_target = brain_target
+        self.icp_fre = None
+        m_brain_target = dco.coordinates_to_transformation_matrix(
+            position=brain_target[:3],
+            orientation=brain_target[3:],
+            axes='sxyz',
+        )
+        m_brain_target[1, -1] = -m_brain_target[1, -1]
+        distance = dcr.ComputeRelativeDistanceToTarget(coil_pose, m_brain_target)
+        offset = self.GetOffset(distance)
+        print(offset)
+        mTMS_index_target = self.FindmTMSParameters([int(x) for x in offset])
+        print(mTMS_index_target)
+        if mTMS_index_target is not None:
+            self.SendToMTMS(mTMS_index_target)
+
+    def GetOffset(self, distance):
+        print(distance)
+        offset_xy = [int(np.round(x / 3) * 3) for x in distance[:2]]
+        offset_rz = int(np.round(distance[5] / 15) * 15)
+
+        return [offset_xy[0], offset_xy[1], offset_rz]
+
+    def FindmTMSParameters(self, offset):
+        fname = 'C:\\repository\\efield_analysis\\PP31 5-coil grid.txt'
+
+        with open(fname, 'r') as the_file:
+            all_data = [line.strip() for line in the_file.readlines()]
+            data = all_data[18:]
+        data = np.array([line.split('\t') for line in data])
+
+        offset = offset
+        separator = '_'
+        target = separator.join(['{}'.format(x) for x in offset])
+        return np.where(data[:, 0] == target)
+
+    def SendToMTMS(self, target):
+        # Manipulate intensity
+        intensity = self.vi.GetControlValue('Get Intensity')
+        print("Initial intensity: ", str(intensity))
+        #self.vi.SetControlValue('New Intensity', 40)
+        #self.vi.SetControlValue('Set Intensity', True)
+
+        # Update the Pulse - parameters row and wait until the change has been processed
+        self.vi.SetControlValue('New Pulse-parameters row', target);
+        self.vi.SetControlValue('Set Pulse-parameters row', True);
+        while self.vi.GetControlValue('Set Pulse-parameters row'):
+            print("Updating brain target...")
+
+        # Stimulate
+        self.vi.SetControlValue('Stimulate', True)
