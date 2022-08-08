@@ -4235,6 +4235,7 @@ class SetCoilOrientationDialog(wx.Dialog):
                                      self.OnZoomMove)
         self.camera_style.AddObserver('MouseWheelBackwardEvent',
                                      self.OnZoomMove)
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnDepth)
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
 
@@ -4261,8 +4262,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         text_rotation_x = wx.StaticText(self, -1, _("Rotation X:"))
 
-        slider_rotation_x = wx.Slider(self, -1, 0, -180,
-                                        180,
+        slider_rotation_x = wx.Slider(self, -1, 0, -180, 180,
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_rotation_x.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_rotation_x.Bind(wx.EVT_SLIDER, self.OnRotationX)
@@ -4270,8 +4270,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         text_rotation_y = wx.StaticText(self, -1, _("Rotation Y:"))
 
-        slider_rotation_y = wx.Slider(self, -1, 0, -180,
-                                        180,
+        slider_rotation_y = wx.Slider(self, -1, 0, -180, 180,
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_rotation_y.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_rotation_y.Bind(wx.EVT_SLIDER, self.OnRotationY)
@@ -4279,8 +4278,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         text_rotation_z = wx.StaticText(self, -1, _("Rotation Z:"))
 
-        slider_rotation_z = wx.Slider(self, -1, 0, -180,
-                                        180,
+        slider_rotation_z = wx.Slider(self, -1, 0, -180, 180,
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_rotation_z.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_rotation_z.Bind(wx.EVT_SLIDER, self.OnRotationZ)
@@ -4395,6 +4393,16 @@ class SetCoilOrientationDialog(wx.Dialog):
     def OnRotationZ(self, evt):
         self.rotationZ = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnDepth(self, evt):
+        if evt.GetKeyCode() == wx.WXK_UP:
+            depth = 1
+        elif evt.GetKeyCode() == wx.WXK_DOWN:
+            depth = -1
+        else:
+            depth = 0
+        self.marker_actor.AddPosition(0, 0, depth)
         self.interactor.Render()
 
     def OnPressLeftButton(self, evt, obj):
@@ -4669,9 +4677,10 @@ class SetCoilOrientationDialog(wx.Dialog):
         vtkmat = self.marker_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
 
-        return np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+        return position, np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
 
     def GetValueBrainTarget(self):
         import invesalius.data.transformations as tr

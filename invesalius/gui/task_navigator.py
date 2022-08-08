@@ -1596,7 +1596,7 @@ class MarkersPanel(wx.Panel):
         is_brain_target = self.markers[list_index].is_brain_target
 
         if dialog.ShowModal() == wx.ID_OK:
-            orientation = dialog.GetValue()
+            position, orientation = dialog.GetValue()
             self.CreateMarker(list(position), list(orientation), is_brain_target=is_brain_target)
         dialog.Destroy()
 
