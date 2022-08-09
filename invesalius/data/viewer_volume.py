@@ -1614,6 +1614,8 @@ class Viewer(wx.Panel):
             colors.InsertTuple(i, color)
         self.efield_mesh.GetPointData().SetScalars(colors)
         self.Recolor_efield_Actor(self.efield_mesh)
+        Publisher.sendMessage('Render volume viewer')
+
 
     def CreateLUTtableforefield(self, min, max):
         lut = vtkLookupTable()
