@@ -2331,6 +2331,8 @@ class E_fieldPanel(wx.Panel):
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.__bind_events()
+
         self.SetBackgroundColour(default_colour)
         self.e_field_loaded = False
         self.e_field_brain = None
@@ -2361,25 +2363,27 @@ class E_fieldPanel(wx.Panel):
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+
+
     def OnEnableEfield(self, evt, ctrl):
-        self.efield_enabled = ctrl.GetValue()
-        if self.efield_enabled:
-            print('True')
+        efield_enabled = ctrl.GetValue()
+        if efield_enabled:
+            if not self.navigation.neuronavigation_api.connection:
+                dlg.ShowNavigationTrackerWarning(0, 'choose')
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize', e_field_brain=self.e_field_brain)
             self.e_field_loaded = True
-            print('efield_loaded')
-            print(self.e_field_loaded)
             self.combo_surface_name.Enable(False)
         else:
-            print('False')
+            #self.navigation.efield_queue.task_done()
             Publisher.sendMessage('Recolor again')
-            print('recolor task_navigator')
             self.e_field_loaded = False
             self.combo_surface_name.Enable(True)
-
-        self.navigation.efield_queue.put_nowait([self.efield_enabled])
-        Publisher.sendMessage('Update e-field visualization', data=self.e_field_loaded)
+        self.navigation.e_field_loaded = self.e_field_loaded
+        #self.navigation.efield_queue.put_nowait([efield_enabled])
+        #Publisher.sendMessage('Update e-field visualization', data=self.efield_enabled)
 
 
     def OnComboNameClic(self, evt):
@@ -2394,7 +2398,12 @@ class E_fieldPanel(wx.Panel):
         self.surface_index = evt.GetSelection()
         self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
-        #Publisher.sendMessage('Recolor again')
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        if nav_status:
+            self.enable_efield.Enable(False)
+        else:
+            self.enable_efield.Enable(True)
 
 
 class SessionPanel(wx.Panel):
