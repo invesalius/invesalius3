@@ -929,6 +929,17 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
     dlg.ShowModal()
     dlg.Destroy()
 
+def Efield_connection_warning():
+    msg = _('No connection to E-field library')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def ICPcorregistration(fre):
     msg = _("The fiducial registration error is: ") + str(round(fre, 2)) + '\n\n' + \
           _("Would you like to improve accuracy?")

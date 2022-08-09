@@ -2371,7 +2371,11 @@ class E_fieldPanel(wx.Panel):
         efield_enabled = ctrl.GetValue()
         if efield_enabled:
             if not self.navigation.neuronavigation_api.connection:
-                dlg.ShowNavigationTrackerWarning(0, 'choose')
+                dlg.Efield_connection_warning()
+                self.combo_surface_name.Enable(False)
+                self.enable_efield.Enable(False)
+                self.e_field_loaded = False
+                return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize', e_field_brain=self.e_field_brain)
             self.e_field_loaded = True
@@ -2383,7 +2387,6 @@ class E_fieldPanel(wx.Panel):
             self.combo_surface_name.Enable(True)
         self.navigation.e_field_loaded = self.e_field_loaded
         #self.navigation.efield_queue.put_nowait([efield_enabled])
-        #Publisher.sendMessage('Update e-field visualization', data=self.efield_enabled)
 
 
     def OnComboNameClic(self, evt):
