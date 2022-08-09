@@ -1728,9 +1728,6 @@ class Viewer(wx.Panel):
         T_rot = T_rot.tolist()  # to list
         enorm = neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
         self.Get_E_field_max_min(enorm)
-        #Publisher.sendMessage('Get min max norms', e_field_norms=enorm)
-        #Publisher.sendMessage('Get coil center and rotation matrix', cp=cp, T_rot=T_rot, coord = coord)
-
 
 
     def GetCellIntersection(self, p1, p2, locator):
