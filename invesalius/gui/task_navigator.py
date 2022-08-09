@@ -2348,7 +2348,7 @@ class E_fieldPanel(wx.Panel):
         # Add line sizers into main sizer
         border = 1
         border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
+        txt_surface = wx.StaticText(self, -1, _('Select:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
