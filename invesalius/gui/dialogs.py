@@ -4363,10 +4363,13 @@ class SetCoilOrientationDialog(wx.Dialog):
             x, y, z = self.picker.GetPickPosition()
             coord_flip = list(self.marker)
             coord_flip[1] = -coord_flip[1]
-            if distance.euclidean((x, y), coord_flip[:2]) < const.MTMS_RADIUS:
+            coord = [x, -y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
+
+            distance_to_target = dcr.ComputeRelativeDistanceToTarget(target_coord=list(self.marker), img_coord=coord)
+            if np.sqrt(distance_to_target[0]**2 + distance_to_target[1]**2) < const.MTMS_RADIUS:
                 if self.picker.GetActor():
                     coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
-                    brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0])
+                    brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=5)
                     self.brain_target_actor_list.append(brain_target_actor)
                     self.OnResetOrientation()
             self.obj_actor.PickableOff()
@@ -4455,9 +4458,10 @@ class SetCoilOrientationDialog(wx.Dialog):
         coord_flip[1] = -coord_flip[1]
         self.ren.ResetCamera()
         self.SetVolumeCamera(coord_flip[:3])
-        self.AddTarget(coord_flip)
 
         if self.brain_target:
+            self.AddTarget(coord_flip, scale=5)
+            self.ren.GetActiveCamera().Zoom(2)
             colors = vtkNamedColors()
             # Create a circle
             polygonSource = vtkRegularPolygonSource()
@@ -4465,7 +4469,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             polygonSource.GeneratePolygonOff()
             polygonSource.SetNumberOfSides(50)
             polygonSource.SetRadius(const.MTMS_RADIUS)
-            polygonSource.SetCenter(0,0,0)
+            polygonSource.SetCenter(0, 0, 0)
             #  Visualize
             mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(polygonSource.GetOutputPort())
@@ -4475,6 +4479,9 @@ class SetCoilOrientationDialog(wx.Dialog):
             circle_actor.GetProperty().SetColor(colors.GetColor3d('Red'))
             circle_actor.SetUserMatrix(self.m_img_vtk)
             self.ren.AddActor(circle_actor)
+            self.marker_actor.PickableOff()
+        else:
+            self.AddTarget(coord_flip, scale=10)
 
         self.interactor.Render()
 
@@ -4483,7 +4490,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0]):
+    def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0], scale=10):
         rx, ry, rz = coord_flip[3:6]
         if rx is None:
             coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
@@ -4494,6 +4501,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         self.m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
         marker_actor = self.CreateActorArrow(self.m_img_vtk, colour=colour)
+        marker_actor.SetScale(scale)
         self.marker_actor = marker_actor
 
         self.ren.AddActor(marker_actor)

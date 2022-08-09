@@ -952,7 +952,9 @@ class Viewer(wx.Panel):
                 thrdist = False
                 self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
 
-            distance_to_target = dcr.ComputeRelativeDistanceToTarget(self.target_coord, m_img)
+            m_img_flip = m_img.copy()
+            m_img_flip[1, -1] = -m_img_flip[1, -1]
+            distance_to_target = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img_flip)
             wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance_to_target)
 
             if distance_to_target[3] > const.ARROW_UPPER_LIMIT:

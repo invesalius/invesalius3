@@ -22,13 +22,7 @@ class mTMS():
         self.coil_pose = coil_pose
         self.brain_target = brain_target
         self.icp_fre = None
-        m_brain_target = dco.coordinates_to_transformation_matrix(
-            position=brain_target[:3],
-            orientation=brain_target[3:],
-            axes='sxyz',
-        )
-        m_brain_target[1, -1] = -m_brain_target[1, -1]
-        distance = dcr.ComputeRelativeDistanceToTarget(coil_pose, m_brain_target)
+        distance = dcr.ComputeRelativeDistanceToTarget(target_coord=coil_pose, img_coord=brain_target)
         offset = self.GetOffset(distance)
         print(offset)
         mTMS_index_target = self.FindmTMSParameters([int(x) for x in offset])

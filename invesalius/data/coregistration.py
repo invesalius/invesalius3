@@ -245,13 +245,19 @@ def apply_icp(m_img, icp):
 
     return m_img
 
-def ComputeRelativeDistanceToTarget(target_coord, m_img):
-    m_target = dco.coordinates_to_transformation_matrix(
-        position=target_coord[:3],
-        orientation=target_coord[3:],
-        axes='sxyz',
-    )
-    m_img[1, -1] = -m_img[1, -1]
+def ComputeRelativeDistanceToTarget(target_coord=None, img_coord=None, m_target=None, m_img=None):
+    if m_target is None:
+        m_target = dco.coordinates_to_transformation_matrix(
+            position=target_coord[:3],
+            orientation=target_coord[3:],
+            axes='sxyz',
+        )
+    if m_img is None:
+        m_img = dco.coordinates_to_transformation_matrix(
+            position=img_coord[:3],
+            orientation=img_coord[3:],
+            axes='sxyz',
+        )
     m_relative_target = np.linalg.inv(m_target) @ m_img
 
     # compute rotation angles
