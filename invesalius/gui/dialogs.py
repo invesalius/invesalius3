@@ -4990,7 +4990,8 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.ren.AddActor(circle_actor)
             self.marker_actor.PickableOff()
         else:
-            self.AddTarget(coord_flip, scale=10)
+            _, coordinates = self.AddTarget(coord_flip, scale=10)
+            self.marker[3], self.marker[4], self.marker[5] = coordinates[3], coordinates[4], coordinates[5]
         self.interactor.Render()
 
     def LoadActor(self, surface):
@@ -5026,18 +5027,18 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.interactor.Render()
 
     def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0], scale=10):
-        rx, ry, rz = coord_flip[3:6]
+        rx, ry, rz = coord_flip[3:]
         if rx is None:
             coord = self.Versor(self.CenterOfMass(self.brain_surface), coord_flip[:3])
             rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
             ry += 90
             self.marker[3], self.marker[4], self.marker[5] = rx, ry, rz
+            self.m_img_vtk = m_img_vtk
         else:
-            rx, ry, rz = coord_flip[3:6]
+            m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=False)
 
         coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
-        self.m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
-        marker_actor = self.CreateActorArrow(self.m_img_vtk, colour=colour)
+        marker_actor = self.CreateActorArrow(m_img_vtk, colour=colour)
         marker_actor.SetScale(scale)
         self.marker_actor = marker_actor
 
@@ -5312,8 +5313,11 @@ class SetCoilOrientationDialog(wx.Dialog):
     def OnCreateTargetGrid(self, evt):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
+        self.coil_pose_actor = self.marker_actor
+        self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
+        self.coil_pose_actor.PickableOff()
 
-        grid_resolution = 5
+        grid_resolution = 4
         X, Y = self.CreateGrid(grid_resolution, 30, 20)
         self.coil_target_actor_list = []
         for i in range(grid_resolution):
@@ -5325,7 +5329,7 @@ class SetCoilOrientationDialog(wx.Dialog):
                 )
                 m_origin_coil = dco.coordinates_to_transformation_matrix(
                     position=coord_flip[:3],
-                    orientation=[0,0,0],
+                    orientation=[0, 0, 0],
                     axes='sxyz',
                 )
                 m_target = m_origin_coil @ m_offset_target
@@ -5358,9 +5362,6 @@ class SetCoilOrientationDialog(wx.Dialog):
                     axes='sxyz',
                 )
                 m_brain = m_coil @ m_offset_brain
-                position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
-                m_rotation = [m_brain[0][:3], m_brain[1][:3], m_brain[2][:3]]
-                #orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
                 coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], orientation[0], orientation[1], orientation[2]
 
                 brain_target_actor, _ = self.AddTarget(coord)
@@ -5552,8 +5553,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             print('Adding brain markers')
         self.interactor.Render()
 
-    def CreateVTKObjectMatrix(self, direction, orientation):
-        import invesalius.data.coordinates as dco
+    def CreateVTKObjectMatrix(self, direction, orientation, new_target):
         m_img = dco.coordinates_to_transformation_matrix(
             position=direction,
             orientation=orientation,
@@ -5565,7 +5565,14 @@ class SetCoilOrientationDialog(wx.Dialog):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
-        return m_img_vtk
+        RotateTransform = vtkTransform()
+        RotateTransform.SetMatrix(m_img_vtk)
+        if new_target:
+            RotateTransform.RotateZ(-135)
+        m_img_vtk_rotate = RotateTransform.GetMatrix()
+        rx, ry, rz = RotateTransform.GetOrientation()
+
+        return m_img_vtk_rotate, rx, ry, rz
 
     def SetVolumeCamera(self, cam_focus):
         cam = self.ren.GetActiveCamera()
@@ -5653,14 +5660,14 @@ class SetCoilOrientationDialog(wx.Dialog):
         return up_vector
 
     def GetValue(self):
-        vtkmat = self.marker_actor.GetMatrix()
+        vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
         position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
-
         coil_target_position = [position]
         coil_target_orientation = [np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))]
+
         brain_target_position = []
         brain_target_orientation = []
         for coil_target_actor in self.coil_target_actor_list:
