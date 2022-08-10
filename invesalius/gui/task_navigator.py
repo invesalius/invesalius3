@@ -1596,8 +1596,13 @@ class MarkersPanel(wx.Panel):
         is_brain_target = self.markers[list_index].is_brain_target
 
         if dialog.ShowModal() == wx.ID_OK:
-            position, orientation = dialog.GetValue()
-            self.CreateMarker(list(position), list(orientation), is_brain_target=is_brain_target)
+            #position, orientation = dialog.GetValue()
+            coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
+            for (position, orientation) in zip(coil_position_list, coil_orientation_list):
+                self.CreateMarker(list(position), list(orientation), is_brain_target=False)
+            for (position, orientation) in zip(brain_position_list, brain_orientation_list):
+                self.CreateMarker(list(position), list(orientation), is_brain_target=True)
+            #self.CreateMarker(list(position), list(orientation), is_brain_target=is_brain_target)
         dialog.Destroy()
 
     def OnMenuRemoveTarget(self, evt):

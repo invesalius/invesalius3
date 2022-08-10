@@ -97,7 +97,9 @@ import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
 import invesalius.data.vtk_utils as vtku
+import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.transformations as tr
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
@@ -4189,6 +4191,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.marker = marker
         self.brain_target = brain_target
         self.brain_target_actor_list = []
+        self.coil_target_actor_list = []
+        self.marker_actor = None
 
         self.spinning = False
         self.rotationX = 0
@@ -4218,6 +4222,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         # self.picker.SetUseCells(True)
         self.interactor.SetPicker(self.picker)
         self.actor_style.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
+        self.actor_style.AddObserver("MiddleButtonPressEvent", self.OnWheelMouseClick)
 
         self.interactor.SetInteractorStyle(self.actor_style)
         self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
@@ -4244,21 +4249,47 @@ class SetCoilOrientationDialog(wx.Dialog):
         # combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameScalpSurface)
         for n in range(len(self.proj.surface_dict)):
             combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
-        self.combo_surface_name = combo_surface_name
+        txt_brain_surface = wx.StaticText(self, -1, _('Select the brain surface:'))
+
+        combo_brain_surface_name = wx.ComboBox(self, -1, size=(210, 23),
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
         init_surface = 0
         combo_surface_name.SetSelection(init_surface)
+        combo_brain_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
-        self.LoadActor()
+        self.brain_surface = self.proj.surface_dict[init_surface].polydata
+        self.obj_actor = self.LoadActor(self.surface)
+        self.brain_actor = self.LoadActor(self.brain_surface)
+        self.LoadTarget()
+
+        self.chk_show_surface = wx.CheckBox(self, wx.ID_ANY, _("Show scalp surface"))
+        self.chk_show_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxScalp)
+        self.chk_show_surface.SetValue(True)
+        self.chk_show_brain_surface = wx.CheckBox(self, wx.ID_ANY, _("Show brain surface"))
+        self.chk_show_brain_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxBrain)
+        self.chk_show_brain_surface.SetValue(True)
 
         reset_orientation = wx.Button(self, -1, label=_('Reset arrow orientation'))
         reset_orientation.Bind(wx.EVT_BUTTON, self.OnResetOrientation)
         change_view = wx.Button(self, -1, label=_('Change view'))
         change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
+
+        create_target_grid = wx.Button(self, -1, label=_('Create coil target grid'))
+        create_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateTargetGrid)
+
+        create_brain_grid = wx.Button(self, -1, label=_('Create brain target grid'))
+        create_brain_grid.Bind(wx.EVT_BUTTON, self.OnCreateBrainGrid)
 
         text_rotation_x = wx.StaticText(self, -1, _("Rotation X:"))
 
@@ -4292,13 +4323,20 @@ class SetCoilOrientationDialog(wx.Dialog):
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
 
-        top_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=50, vgap=5)
+        top_sizer = wx.FlexGridSizer(rows=3, cols=3, hgap=50, vgap=5)
         top_sizer.AddMany([txt_surface,
+                           txt_brain_surface,
                            (wx.StaticText(self, -1, ''), 0, wx.EXPAND),
                            combo_surface_name,
+                           combo_brain_surface_name,
                            change_view,
+                           self.chk_show_surface,
+                           self.chk_show_brain_surface,
+                          (wx.StaticText(self, -1, ''), 0, wx.EXPAND)
                            ])
         btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_changes_sizer.AddMany([create_target_grid])
+        btn_changes_sizer.AddMany([create_brain_grid])
         btn_changes_sizer.AddMany([reset_orientation])
         btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
         btn_ok_sizer.AddMany([btn_ok, btn_cancel])
@@ -4355,6 +4393,17 @@ class SetCoilOrientationDialog(wx.Dialog):
             my *= scale
         return int(mx), int(my)
 
+    def OnWheelMouseClick(self, obj, evt):
+        x, y = self.get_vtk_mouse_position()
+        self.picker.Pick(x, y, 0, self.ren)
+        if self.picker.GetActor():
+            self.marker_actor = self.picker.GetActor()
+            self.rotationX = self.rotationY = self.rotationZ = 0
+            self.slider_rotation_x.SetValue(0)
+            self.slider_rotation_y.SetValue(0)
+            self.slider_rotation_z.SetValue(0)
+            self.interactor.Render()
+
     def OnCrossMouseClick(self, obj, evt):
         if self.brain_target:
             self.obj_actor.PickableOn()
@@ -4369,11 +4418,21 @@ class SetCoilOrientationDialog(wx.Dialog):
             if np.sqrt(distance_to_target[0]**2 + distance_to_target[1]**2) < const.MTMS_RADIUS:
                 if self.picker.GetActor():
                     coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
-                    brain_target_actor = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=5)
+                    brain_target_actor, _ = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=5)
                     self.brain_target_actor_list.append(brain_target_actor)
                     self.OnResetOrientation()
             self.obj_actor.PickableOff()
             self.interactor.Render()
+
+    def OnCheckBoxScalp(self, evt=None):
+        status = self.chk_show_surface.GetValue()
+        self.obj_actor.SetVisibility(status)
+        self.interactor.Render()
+
+    def OnCheckBoxBrain(self, evt=None):
+        status = self.chk_show_brain_surface.GetValue()
+        self.brain_actor.SetVisibility(status)
+        self.interactor.Render()
 
     def OnResetOrientation(self, evt=None):
         self.rotationX = self.rotationY = self.rotationZ = 0
@@ -4431,34 +4490,27 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.ren.GetActiveCamera().Roll(90)
         self.interactor.Render()
 
-    def OnComboName(self, evt):
+    def OnComboNameBrainSurface(self, evt):
+        surface_index = evt.GetSelection()
+        self.brain_surface = self.proj.surface_dict[surface_index].polydata
+        if self.brain_actor:
+            self.RemoveActor(self.brain_actor)
+        self.brain_actor = self.LoadActor(self.brain_surface)
+
+    def OnComboNameScalpSurface(self, evt):
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
-            self.RemoveActor()
+            self.RemoveAllActor()
         self.brain_target_actor_list = []
-        self.LoadActor()
+        self.coil_target_actor_list = []
+        self.obj_actor = self.LoadActor(self.surface)
+        self.brain_actor = self.LoadActor(self.brain_surface)
+        self.LoadTarget()
 
-    def LoadActor(self):
-        '''
-        Load the selected actor from the project (self.surface) into the scene
-        :return:
-        '''
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(self.surface)
-        mapper.ScalarVisibilityOff()
-
-        obj_actor = vtkActor()
-        obj_actor.SetMapper(mapper)
-        #obj_actor.GetProperty().SetOpacity(0.1)
-        obj_actor.PickableOff()
-        self.obj_actor = obj_actor
-        self.ren.AddActor(obj_actor)
+    def LoadTarget(self):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
-        self.ren.ResetCamera()
-        self.SetVolumeCamera(coord_flip[:3])
-
         if self.brain_target:
             self.AddTarget(coord_flip, scale=5)
             self.ren.GetActiveCamera().Zoom(2)
@@ -4482,10 +4534,36 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.marker_actor.PickableOff()
         else:
             self.AddTarget(coord_flip, scale=10)
-
         self.interactor.Render()
 
-    def RemoveActor(self):
+    def LoadActor(self, surface):
+        '''
+        Load the selected actor from the project (self.surface) into the scene
+        :return:
+        '''
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(surface)
+        mapper.ScalarVisibilityOff()
+
+        obj_actor = vtkActor()
+        obj_actor.SetMapper(mapper)
+        #obj_actor.GetProperty().SetOpacity(0.1)
+        obj_actor.PickableOff()
+
+        self.ren.AddActor(obj_actor)
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        self.ren.ResetCamera()
+        self.SetVolumeCamera(coord_flip[:3])
+        self.interactor.Render()
+
+        return obj_actor
+
+    def RemoveActor(self, actor):
+        self.ren.RemoveActor(actor)
+        self.interactor.Render()
+
+    def RemoveAllActor(self):
         self.ren.RemoveAllViewProps()
         self.ren.ResetCamera()
         self.interactor.Render()
@@ -4493,12 +4571,14 @@ class SetCoilOrientationDialog(wx.Dialog):
     def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0], scale=10):
         rx, ry, rz = coord_flip[3:6]
         if rx is None:
-            coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
+            coord = self.Versor(self.CenterOfMass(self.brain_surface), coord_flip[:3])
             rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
             ry += 90
+            self.marker[3], self.marker[4], self.marker[5] = rx, ry, rz
         else:
             rx, ry, rz = coord_flip[3:6]
 
+        coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
         self.m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
         marker_actor = self.CreateActorArrow(self.m_img_vtk, colour=colour)
         marker_actor.SetScale(scale)
@@ -4506,7 +4586,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         self.ren.AddActor(marker_actor)
 
-        return marker_actor
+        return marker_actor, coordinate
 
     def CreateActorArrow(self, m_img_vtk, colour, size=const.ARROW_MARKER_SIZE):
         input1 = vtkPolyData()
@@ -4579,6 +4659,441 @@ class SetCoilOrientationDialog(wx.Dialog):
         actor.SetUserMatrix(m_img_vtk)
 
         return actor
+
+    def vtkmatrix2numpy(self, matrix):
+        """
+        Copies the elements of a vtkMatrix4x4 into a numpy array.
+        param matrix: The matrix to be copied into an array.
+        Args:
+            matrix: vtk type matrix
+        """
+        m = np.ones((4, 4))
+        for i in range(4):
+            for j in range(4):
+                m[i, j] = matrix.GetElement(i, j)
+        return m
+
+    def ellipse_path(self,
+            x_hotspot: float,
+            y_hotspot: float,
+            z_hotspot=139.056,
+            e=0.75,
+            size=30,
+            distance=30,
+            delta=1.25,
+            phi=0):
+        if 0 <= e <= 1:
+            x_values = np.array([x_hotspot])
+            y_values = np.array([y_hotspot])
+            x_marker_values = np.array([x_hotspot])
+            y_marker_values = np.array([y_hotspot])
+
+            b = np.sqrt(1 - e ** 2)
+            delta_angle = (np.pi / 100)
+            delta_param = delta * delta_angle
+            param = 0
+            angle = 0
+
+            counter = 1
+            while True:
+                if counter == 1:
+                    x2 = x_hotspot
+                    y2 = y_hotspot
+                else:
+                    x2 = x_marker_values[-1]
+                    y2 = y_marker_values[-1]
+
+                x = param * np.cos(angle + phi) + x_hotspot
+                x_values = np.append(x_values, x)
+
+                y = b * param * np.sin(angle + phi) + y_hotspot
+                y_values = np.append(y_values, y)
+
+                radius = np.sqrt((x - x_hotspot) ** 2 + (y - y_hotspot) ** 2)
+
+                if angle < np.deg2rad(850):
+                    if (distance / 3) < np.sqrt((y2 - y) ** 2 + (x2 - x) ** 2):
+                        x_marker_values = np.append(x_marker_values, x)
+                        y_marker_values = np.append(y_marker_values, y)
+                        counter += 1
+                else:
+                    if distance < np.sqrt((y2 - y) ** 2 + (x2 - x) ** 2):
+                        x_marker_values = np.append(x_marker_values, x)
+                        y_marker_values = np.append(y_marker_values, y)
+                        counter += 1
+
+                if radius >= size:
+                    break
+
+                param += delta_param
+                angle += delta_angle
+
+            data_array = [radius, distance, delta, counter]
+
+            return x_marker_values, y_marker_values, x_values, y_values, data_array
+
+        else:
+            print(f'Insert an ellipse eccentricity between 0 and 1.')
+
+    def ICP(self, coord, center, surface):
+        """
+        Apply ICP transforms to fit the spiral points to the surface
+        Args:
+            coord: raw coordinates to apply ICP
+        """
+        sourcePoints = np.array(coord[:3])
+        sourcePoints_vtk = vtkPoints()
+        for i in range(len(sourcePoints)):
+            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints)
+        source = vtkPolyData()
+        source.SetPoints(sourcePoints_vtk)
+
+        if float(center[0]) > 100.0:
+            transform = vtkTransform()
+            transform.Translate(
+                float(center[0]),
+                -float(center[1]),
+                float(center[2]))
+            transform.RotateY(35)
+            transform.Translate(
+                -float(center[0]),
+                float(center[1]),
+                -float(center[2]))
+
+        if float(center[0]) <= 100.00:
+            transform = vtkTransform()
+            transform.Translate(
+                float(center[0]),
+                -float(center[1]),
+                float(center[2]))
+            transform.RotateY(-35)
+            transform.Translate(
+                -float(center[0]),
+                float(center[1]),
+                -float(center[2]))
+
+        transform_filt = vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(source)
+        transform_filt.Update()
+
+        source_points = transform_filt.GetOutput()
+
+        icp = vtkIterativeClosestPointTransform()
+        icp.SetSource(source_points)
+        icp.SetTarget(surface)
+
+        icp.GetLandmarkTransform().SetModeToRigidBody()
+        # icp.GetLandmarkTransform().SetModeToAffine()
+        icp.DebugOn()
+        icp.SetMaximumNumberOfIterations(100)
+        icp.Modified()
+        icp.Update()
+
+        self.m_icp = self.vtkmatrix2numpy(icp.GetMatrix())
+
+        icpTransformFilter = vtkTransformPolyDataFilter()
+        icpTransformFilter.SetInputData(source_points)
+        icpTransformFilter.SetTransform(icp)
+        icpTransformFilter.Update()
+
+        transformedSource = icpTransformFilter.GetOutput()
+        p = [0, 0, 0]
+        transformedSource.GetPoint(0, p)
+        # source_points.GetPoint(0, p)
+        point = vtkSphereSource()
+        point.SetCenter(p)
+        point.SetRadius(1.5)
+        point.SetPhiResolution(10)
+        point.SetThetaResolution(10)
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(point.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor((0, 0, 1))
+
+        #self.ren.AddActor(actor)
+        #self.ActorCollection.AddItem(actor)
+        #self.interactor.Render()
+        #coord = p[0], p[1], p[2], center[3], center[4], center[5]
+        coord = p[0], p[1], p[2], None,  None,  None
+
+        return coord
+
+        #p[1] = -p[1]
+        #self.icp_points.append(p)
+
+    def CreateSphere(self, center, radius):
+        point = vtkSphereSource()
+        point.SetCenter(center)
+        point.SetRadius(radius)
+        point.SetPhiResolution(100)
+        point.SetThetaResolution(100)
+        point.Update()
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(point.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor((0, 1, 0))
+
+        self.ren.AddActor(actor)
+
+        return point.GetOutput()
+
+    def CreateGrid(self, resolution, space_x, space_y):
+        minX, maxX, minY, maxY = -space_x, space_x, -space_y, space_y
+        # create one-dimensional arrays for x and y
+        x = np.linspace(minX, maxX, resolution)
+        y = np.linspace(minY, maxY, resolution)
+
+        return np.meshgrid(x, y)
+
+    def OnCreateTargetGrid(self, evt):
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+
+        grid_resolution = 5
+        X, Y = self.CreateGrid(grid_resolution, 30, 20)
+        self.coil_target_actor_list = []
+        for i in range(grid_resolution):
+            for j in range(grid_resolution):
+                m_offset_target = dco.coordinates_to_transformation_matrix(
+                    position=[X[i][j], Y[i][j], 10],
+                    orientation=coord_flip[3:],
+                    axes='sxyz',
+                )
+                m_origin_coil = dco.coordinates_to_transformation_matrix(
+                    position=coord_flip[:3],
+                    orientation=[0,0,0],
+                    axes='sxyz',
+                )
+                m_target = m_origin_coil @ m_offset_target
+                position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
+                coord_scalp = self.ICP(position, coord_flip, self.surface)
+                coil_target_actor, coordinate = self.AddTarget(coord_scalp)
+                self.marker_actor.AddPosition(0, 0, 5)
+                self.coil_target_actor_list.append(coil_target_actor)
+
+        self.interactor.Render()
+
+    def OnCreateBrainGrid(self, evt):
+        if self.coil_target_actor_list:
+            for coil_target_actor in self.coil_target_actor_list:
+                vtkmat = coil_target_actor.GetMatrix()
+                narray = np.eye(4)
+                vtkmat.DeepCopy(narray.ravel(), vtkmat)
+                position = [narray[0][-1], narray[1][-1], narray[2][-1]]
+                m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+                orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+
+                m_coil = dco.coordinates_to_transformation_matrix(
+                    position=position,
+                    orientation=orientation,
+                    axes='sxyz',
+                )
+                m_offset_brain = dco.coordinates_to_transformation_matrix(
+                    position=[0, 0, -20],
+                    orientation=orientation,
+                    axes='sxyz',
+                )
+                m_brain = m_coil @ m_offset_brain
+                position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
+                m_rotation = [m_brain[0][:3], m_brain[1][:3], m_brain[2][:3]]
+                #orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+                coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], orientation[0], orientation[1], orientation[2]
+
+                brain_target_actor, _ = self.AddTarget(coord)
+                self.brain_target_actor_list.append(brain_target_actor)
+                print('Adding brain markers')
+
+    def OnCreateGridSpheres(self, evt):
+        import invesalius.data.coordinates as dco
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        m_coil = dco.coordinates_to_transformation_matrix(
+            position=coord_flip[:3],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        m_offset_brain = dco.coordinates_to_transformation_matrix(
+            position=[0, 0, -85],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        m_brain = m_coil @ m_offset_brain
+        position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
+        polydata_inner_sphere = self.CreateSphere(position, 70)
+        polydata_outter_sphere = self.CreateSphere(position, 85)
+
+        X, Y = self.CreateGrid()
+
+        m_coil = dco.coordinates_to_transformation_matrix(
+            position=coord_flip[:3],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        icp_target_points = []
+        for i in range(5):
+            for j in range(5):
+                m_offset_target = dco.coordinates_to_transformation_matrix(
+                    position=[X[i][j], Y[i][j], 10],
+                    orientation=coord_flip[3:],
+                    axes='sxyz',
+                )
+                m_target = m_coil @ m_offset_target
+                position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
+                coord = self.ICP(position, coord_flip, polydata_outter_sphere)
+                coord_scalp = self.ICP(coord, coord_flip, self.surface)
+                icp_target_points.append(coord_scalp)
+                coil_target_actor = self.AddTarget(coord_scalp)
+                self.coil_target_actor_list.append(coil_target_actor)
+
+        icp_brain_points = []
+        for i in range(5):
+            for j in range(5):
+                m_offset_brain = dco.coordinates_to_transformation_matrix(
+                    position=[X[i][j], Y[i][j], 0],
+                    orientation=coord_flip[3:],
+                    axes='sxyz',
+                )
+
+                m_brain = m_coil @ m_offset_brain
+                position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
+                coord = self.ICP(position, list(self.marker), polydata_inner_sphere)
+                icp_brain_points.append(coord)
+                brain_target_actor = self.AddTarget(coord)
+                self.brain_target_actor_list.append(brain_target_actor)
+
+        self.interactor.Render()
+
+    def OnCsareateGrid(self, evt):
+        import invesalius.data.coordinates as dco
+        self.rotationX = self.rotationY = self.rotationZ = 0
+        self.slider_rotation_x.SetValue(0)
+        self.slider_rotation_y.SetValue(0)
+        self.slider_rotation_z.SetValue(0)
+        center = list(self.marker)
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        x_marker, y_marker, _, _, data = self.ellipse_path(
+            x_hotspot=float(center[0]),
+            y_hotspot=float(center[1]),
+            z_hotspot=float(center[2]))
+        icp_points = []
+
+        minX, maxX, minY, maxY = -50., 50., -30., 30.
+        # create one-dimensional arrays for x and y
+        x = np.linspace(minX, maxX, 5)
+        y = np.linspace(minY, maxY, 5)
+        X, Y = np.meshgrid(x, y)
+        m_coil = dco.coordinates_to_transformation_matrix(
+            position=coord_flip[:3],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        for i in range(5):
+            for j in range(5):
+                m_offset_target = dco.coordinates_to_transformation_matrix(
+                    position=[X[i][j], Y[i][j], 0],
+                    orientation=coord_flip[3:],
+                    axes='sxyz',
+                )
+                m_target = m_coil @ m_offset_target
+                position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
+                coord = self.ICP(position, coord_flip, self.surface)
+                icp_points.append(coord)
+                coil_target_actor = self.AddTarget(coord)
+                self.coil_target_actor_list.append(coil_target_actor)
+
+        m_offset_brain = dco.coordinates_to_transformation_matrix(
+            position=[0, 0, -85],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        m_brain = m_coil @ m_offset_brain
+        position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
+        m_rotation = [m_brain[0][:3], m_brain[1][:3], m_brain[2][:3]]
+        orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+        coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], orientation[0], orientation[1], orientation[2]
+
+        brain_target_actor = self.AddTarget(coord)
+        #self.brain_target_actor_list.append(brain_target_actor)
+        ##############
+        point = vtkSphereSource()
+        point.SetCenter(position)
+        point.SetRadius(70)
+        point.SetPhiResolution(100)
+        point.SetThetaResolution(100)
+        point.Update()
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(point.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor((0, 1, 0))
+
+        self.ren.AddActor(actor)
+
+        minX, maxX, minY, maxY = -50., 50., -30., 30.
+        # create one-dimensional arrays for x and y
+        x = np.linspace(minX, maxX, 5)
+        y = np.linspace(minY, maxY, 5)
+        X, Y = np.meshgrid(x, y)
+        point_mesh = []
+        m_coil = dco.coordinates_to_transformation_matrix(
+            position=coord_flip[:3],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        for i in range(5):
+            for j in range(5):
+                m_offset_brain = dco.coordinates_to_transformation_matrix(
+                    position=[X[i][j], Y[i][j], 0],
+                    orientation=coord_flip[3:],
+                    axes='sxyz',
+                )
+
+                m_brain = m_coil @ m_offset_brain
+                position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
+                point_mesh.append(position)
+        icp_points = []
+        for index in range(len(point_mesh)):
+            current_coord = [float(point_mesh[index][0]),
+                             float(point_mesh[index][1]),
+                             float(coord_flip[2])]
+            coord = self.ICP(current_coord, center, point.GetOutput())
+            icp_points.append(coord)
+            brain_target_actor = self.AddTarget(coord)
+            self.brain_target_actor_list.append(brain_target_actor)
+        #############
+
+
+        for index in icp_points:
+            m_coil = dco.coordinates_to_transformation_matrix(
+                position=index[:3],
+                orientation=coord_flip[3:],
+                axes='sxyz',
+            )
+            m_offset_brain = dco.coordinates_to_transformation_matrix(
+                position=[0,0,-15],
+                orientation=coord_flip[3:],
+                axes='sxyz',
+            )
+            m_brain = m_coil @ m_offset_brain
+            position = [m_brain[0][-1], m_brain[1][-1], m_brain[2][-1]]
+            m_rotation = [m_brain[0][:3], m_brain[1][:3], m_brain[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], orientation[0], orientation[1], orientation[2]
+
+            #brain_target_actor = self.AddTarget(coord)
+            #self.brain_target_actor_list.append(brain_target_actor)
+            print('Adding brain markers')
+        self.interactor.Render()
 
     def CreateVTKObjectMatrix(self, direction, orientation):
         import invesalius.data.coordinates as dco
@@ -4681,14 +5196,37 @@ class SetCoilOrientationDialog(wx.Dialog):
         return up_vector
 
     def GetValue(self):
-        import invesalius.data.transformations as tr
         vtkmat = self.marker_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
         position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
 
-        return position, np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+        coil_target_position = [position]
+        coil_target_orientation = [np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))]
+        brain_target_position = []
+        brain_target_orientation = []
+        for coil_target_actor in self.coil_target_actor_list:
+            vtkmat = coil_target_actor.GetMatrix()
+            narray = np.eye(4)
+            vtkmat.DeepCopy(narray.ravel(), vtkmat)
+            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            coil_target_position.append(position)
+            coil_target_orientation.append(orientation)
+
+        for brain_target_actor in self.brain_target_actor_list:
+            vtkmat = brain_target_actor.GetMatrix()
+            narray = np.eye(4)
+            vtkmat.DeepCopy(narray.ravel(), vtkmat)
+            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            brain_target_position.append(position)
+            brain_target_orientation.append(orientation)
+
+        return coil_target_position, coil_target_orientation, brain_target_position, brain_target_orientation
 
     def GetValueBrainTarget(self):
         import invesalius.data.transformations as tr
