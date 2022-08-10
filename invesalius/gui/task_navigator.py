@@ -1216,6 +1216,11 @@ class MarkersPanel(wx.Panel):
         def orientation(self, new_orientation):
             self.alpha, self.beta, self.gamma = new_orientation
 
+        # alpha, beta, gamma can be jointly accessed as orientation
+        @property
+        def coordinate(self):
+            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma))
+
         # r, g, b can be jointly accessed as colour
         @property
         def colour(self):
@@ -1422,6 +1427,20 @@ class MarkersPanel(wx.Panel):
                 
         return None
 
+    def __get_brain_target_markers(self):
+        """
+        Return the index of the marker currently selected as target (there
+        should be at most one). If there is no such marker, return None.
+        """
+        brain_target_list = []
+        for i in range(len(self.markers)):
+            if self.markers[i].is_brain_target:
+                brain_target_list.append(self.markers[i].coordinate)
+        if brain_target_list:
+            return brain_target_list
+
+        return None
+
     def __get_selected_items(self):
         """    
         Returns a (possibly empty) list of the selected items in the list control.
@@ -1537,20 +1556,23 @@ class MarkersPanel(wx.Panel):
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
-        orientation_menu = menu_id.Append(4, _('Set coil target orientation'))
+            if has_mTMS:
+                brain_mTMS_target_menu = menu_id.Append(4, _('Set brain target for mTMS'))
+                menu_id.Bind(wx.EVT_MENU, self.OnSetMTMSBrainTarget, brain_mTMS_target_menu)
+        orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
         is_brain_target = self.markers[self.lc.GetFocusedItem()].is_brain_target
         if is_brain_target and has_mTMS:
-            send_brain_target_menu = menu_id.Append(5, _('Send brain target to mTMS'))
+            send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
         menu_id.AppendSeparator()
 
         check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].orientation])
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
-            send_target_to_robot_compensation = menu_id.Append(6, _('Sets target to robot head move compensation'))
+            send_target_to_robot_compensation = menu_id.Append(7, _('Sets target to robot head move compensation'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
-            send_target_to_robot = menu_id.Append(7, _('Send InVesalius target to robot'))
+            send_target_to_robot = menu_id.Append(8, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
             send_target_to_robot_compensation.Enable(False)
             send_target_to_robot.Enable(False)
@@ -1587,6 +1609,16 @@ class MarkersPanel(wx.Panel):
             self.__set_marker_as_target(idx)
         else:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+
+    def OnSetMTMSBrainTarget(self, evt):
+        list_index = self.lc.GetFocusedItem()
+        position = self.markers[list_index].position
+        orientation = self.markers[list_index].orientation
+        markers = self.__get_brain_target_markers()
+        if markers:
+            dialog = dlg.SetmTMSTargetDialog(mTMS=self.mTMS, coil_pose=position+orientation, markers=markers)
+            if dialog.ShowModal() == wx.ID_OK:
+                dialog.Destroy()
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.lc.GetFocusedItem()
