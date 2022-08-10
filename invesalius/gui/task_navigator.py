@@ -1612,11 +1612,10 @@ class MarkersPanel(wx.Panel):
 
     def OnSetMTMSBrainTarget(self, evt):
         list_index = self.lc.GetFocusedItem()
-        position = self.markers[list_index].position
-        orientation = self.markers[list_index].orientation
         markers = self.__get_brain_target_markers()
+        target_pose_index = list_index - 2
         if markers:
-            dialog = dlg.SetmTMSTargetDialog(mTMS=self.mTMS, coil_pose=position+orientation, markers=markers)
+            dialog = dlg.SetmTMSTargetDialog(mTMS=self.mTMS, target_pose_index=target_pose_index, markers=markers)
             if dialog.ShowModal() == wx.ID_OK:
                 dialog.Destroy()
 

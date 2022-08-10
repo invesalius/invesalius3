@@ -4181,7 +4181,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
 class SetmTMSTargetDialog(wx.Dialog):
 
-    def __init__(self, mTMS, coil_pose, markers, brain_target=False):
+    def __init__(self, mTMS, target_pose_index, markers, brain_target=False):
         import invesalius.project as prj
 
         self.obj_actor = None
@@ -4189,7 +4189,7 @@ class SetmTMSTargetDialog(wx.Dialog):
         self.initial_focus = None
 
         self.mTMS = mTMS
-        self.coil_pose = coil_pose
+        self.target_pose_index = target_pose_index
         self.markers = markers
         self.brain_target = brain_target
         self.brain_target_actor_list = []
@@ -4395,7 +4395,7 @@ class SetmTMSTargetDialog(wx.Dialog):
         position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
         orientation = list(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz")))
-        self.mTMS.UpdateTarget(coil_pose=self.coil_pose, brain_target=position+orientation)
+        self.mTMS.UpdateTarget(coil_pose=self.markers[self.target_pose_index], brain_target=position+orientation)
         #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=self.coil_pose, brain_target=position+orientation)
 
     def OnResetOrientation(self, evt=None):
@@ -4493,11 +4493,12 @@ class SetmTMSTargetDialog(wx.Dialog):
         obj_actor.PickableOff()
 
         self.ren.AddActor(obj_actor)
-        coord_flip = list(self.coil_pose)
+        coord_flip = list(self.markers[self.target_pose_index])
         coord_flip[1] = -coord_flip[1]
         self.ren.ResetCamera()
         self.SetVolumeCamera(coord_flip[:3])
-        self.AddTarget(coord_flip, colour=[1,0,0], scale=5)
+        _, _, self.m_img_vtk = self.AddTarget(coord_flip, colour=[1,0,0], scale=5)
+        self.marker_actor.PickableOff()
         self.interactor.Render()
 
         return obj_actor
@@ -4514,15 +4515,13 @@ class SetmTMSTargetDialog(wx.Dialog):
     def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0], scale=10):
         rx, ry, rz = coord_flip[3:6]
         coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
-        self.m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
-        marker_actor = self.CreateActorArrow(self.m_img_vtk, colour=colour)
+        m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
+        marker_actor = self.CreateActorArrow(m_img_vtk, colour=colour)
         marker_actor.SetScale(scale)
-        marker_actor.PickableOff()
         self.marker_actor = marker_actor
-
         self.ren.AddActor(marker_actor)
 
-        return marker_actor, coordinate
+        return marker_actor, coordinate, m_img_vtk
 
     def CreateActorArrow(self, m_img_vtk, colour, size=const.ARROW_MARKER_SIZE):
         input1 = vtkPolyData()
