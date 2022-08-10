@@ -5032,7 +5032,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             coord = self.Versor(self.CenterOfMass(self.brain_surface), coord_flip[:3])
             rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
             ry += 90
-            self.marker[3], self.marker[4], self.marker[5] = rx, ry, rz
+            m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=True)
             self.m_img_vtk = m_img_vtk
         else:
             m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=False)
