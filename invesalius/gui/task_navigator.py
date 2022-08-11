@@ -1516,7 +1516,7 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update target', coord=self.markers[idx].position+self.markers[idx].orientation)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
-        self.__delete_all_brain_targets()
+        #self.__delete_all_brain_targets()
         wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 
     @staticmethod
@@ -1553,12 +1553,12 @@ class MarkersPanel(wx.Panel):
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
             brain_target_menu = menu_id.Append(3, _('Set brain target'))
             menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
-        else:
-            target_menu = menu_id.Append(2, _('Set as target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
             if has_mTMS:
                 brain_mTMS_target_menu = menu_id.Append(4, _('Set brain target for mTMS'))
                 menu_id.Bind(wx.EVT_MENU, self.OnSetMTMSBrainTarget, brain_mTMS_target_menu)
+        else:
+            target_menu = menu_id.Append(2, _('Set as target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
         orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
         is_brain_target = self.markers[self.lc.GetFocusedItem()].is_brain_target
@@ -1647,7 +1647,7 @@ class MarkersPanel(wx.Panel):
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
-        self.__delete_all_brain_targets()
+        #self.__delete_all_brain_targets()
         wx.MessageBox(_("Target removed."), _("InVesalius 3"))
 
     def OnMenuSetColor(self, evt):
@@ -1778,7 +1778,7 @@ class MarkersPanel(wx.Panel):
                 if self.tracker.tracker_id == const.ROBOT:
                     Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                           target_index=None, target=None)
-                self.__delete_all_brain_targets()
+                #self.__delete_all_brain_targets()
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
