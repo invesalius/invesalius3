@@ -4649,6 +4649,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.brain_target_actor_list = []
         self.coil_target_actor_list = []
         self.marker_actor = None
+        self.dummy_coil_actor = None
+        self.m_img_vtk = None
 
         self.spinning = False
         self.rotationX = 0
@@ -4849,15 +4851,55 @@ class SetCoilOrientationDialog(wx.Dialog):
             my *= scale
         return int(mx), int(my)
 
+    def OnCreateDummyCoil(self):
+        if self.dummy_coil_actor:
+            self.RemoveActor(self.dummy_coil_actor)
+
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
+        filename = utils.decode(filename, const.FS_ENCODE)
+        reader = vtkSTLReader()
+        if _has_win32api:
+            obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+        else:
+            obj_name = filename.encode(const.FS_ENCODE)
+
+        reader.SetFileName(obj_name)
+        reader.Update()
+        obj_polydata = reader.GetOutput()
+
+        transform = vtkTransform()
+        transform.RotateZ(90)
+        transform_filt = vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(obj_polydata)
+        transform_filt.Update()
+        obj_mapper = vtkPolyDataMapper()
+        obj_mapper.SetInputData(transform_filt.GetOutput())
+        self.dummy_coil_actor = vtkActor()
+        self.dummy_coil_actor.SetMapper(obj_mapper)
+        vtk_colors = vtkNamedColors()
+        self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('cornsilk4'))
+        self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
+        self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
+        self.dummy_coil_actor.GetProperty().SetOpacity(.3)
+        self.dummy_coil_actor.SetVisibility(1)
+        self.dummy_coil_actor.SetUserMatrix(self.marker_actor.GetMatrix())
+        self.dummy_coil_actor.SetScale(0.1)
+        self.dummy_coil_actor.PickableOff()
+        self.ren.AddActor(self.dummy_coil_actor)
+
     def OnWheelMouseClick(self, obj, evt):
         x, y = self.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.ren)
         if self.picker.GetActor():
+            self.marker_actor.GetProperty().SetColor([0, 0, 1])
             self.marker_actor = self.picker.GetActor()
+            self.marker_actor.GetProperty().SetColor([0, 1, 0])
             self.rotationX = self.rotationY = self.rotationZ = 0
             self.slider_rotation_x.SetValue(0)
             self.slider_rotation_y.SetValue(0)
             self.slider_rotation_z.SetValue(0)
+            self.OnCreateDummyCoil()
             self.interactor.Render()
 
     def OnCrossMouseClick(self, obj, evt):
@@ -5035,6 +5077,8 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.m_img_vtk = m_img_vtk
         else:
             m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=False)
+            if not self.m_img_vtk:
+                self.m_img_vtk = m_img_vtk
 
         coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
         marker_actor = self.CreateActorArrow(m_img_vtk, colour=colour)
@@ -5364,6 +5408,8 @@ class SetCoilOrientationDialog(wx.Dialog):
                 coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], orientation[0], orientation[1], orientation[2]
 
                 brain_target_actor, _ = self.AddTarget(coord)
+                brain_target_actor.PickableOff()
+                brain_target_actor.GetProperty().SetColor([1,1,0])
                 self.brain_target_actor_list.append(brain_target_actor)
                 print('Adding brain markers')
 
