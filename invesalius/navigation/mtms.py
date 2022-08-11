@@ -3,7 +3,6 @@ import win32com.client
 import numpy as np
 import time
 
-import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 
 class mTMS():
@@ -22,7 +21,7 @@ class mTMS():
         self.coil_pose = coil_pose
         self.brain_target = brain_target
         self.icp_fre = None
-        distance = dcr.ComputeRelativeDistanceToTarget(target_coord=coil_pose, img_coord=brain_target)
+        distance = dcr.ComputeRelativeDistanceToTarget(target_coord=brain_target, img_coord=coil_pose)
         offset = self.GetOffset(distance)
         print(offset)
         mTMS_index_target = self.FindmTMSParameters([int(x) for x in offset])
@@ -37,7 +36,7 @@ class mTMS():
         offset_xy = [int(np.round(x / 3) * 3) for x in distance[:2]]
         offset_rz = int(np.round(distance[5] / 15) * 15)
 
-        return [offset_xy[0], offset_xy[1], offset_rz]
+        return [offset_xy[1], offset_xy[0], offset_rz]
 
     def FindmTMSParameters(self, offset):
         fname = 'C:\\mTMS\\mTMS parameters\\PP\\PP31 5-coil grid.txt'
