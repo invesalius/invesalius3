@@ -4447,8 +4447,7 @@ class SetmTMSTargetDialog(wx.Dialog):
     def OnComboNameBrainSurface(self, evt):
         surface_index = evt.GetSelection()
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
-        if self.brain_actor:
-            self.RemoveActor(self.brain_actor)
+        self.RemoveAllActor()
         self.brain_actor = self.LoadActor(self.brain_surface)
         self.LoadTargets()
 
@@ -4728,8 +4727,11 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.brain_surface = self.proj.surface_dict[init_surface].polydata
         self.obj_actor = self.LoadActor(self.surface)
-        self.brain_actor = self.LoadActor(self.brain_surface)
-        self.LoadTarget()
+        if self.brain_target:
+            self.brain_surface = self.surface
+        else:
+            self.brain_actor = self.LoadActor(self.brain_surface)
+        self.coil_pose_actor = self.LoadTarget()
 
         self.chk_show_surface = wx.CheckBox(self, wx.ID_ANY, _("Show scalp surface"))
         self.chk_show_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxScalp)
@@ -4780,6 +4782,13 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
+
+        if self.brain_target:
+            self.chk_show_brain_surface.Hide()
+            txt_brain_surface.Hide()
+            combo_brain_surface_name.Hide()
+            create_target_grid.Hide()
+            create_brain_grid.Hide()
 
         top_sizer = wx.FlexGridSizer(rows=3, cols=3, hgap=50, vgap=5)
         top_sizer.AddMany([txt_surface,
@@ -4892,14 +4901,18 @@ class SetCoilOrientationDialog(wx.Dialog):
         x, y = self.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.ren)
         if self.picker.GetActor():
-            self.marker_actor.GetProperty().SetColor([0, 0, 1])
+            if self.brain_target:
+                colour = [1, 0, 0]
+            else:
+                colour = [0, 0, 1]
+                self.OnCreateDummyCoil()
+            self.marker_actor.GetProperty().SetColor(colour)
             self.marker_actor = self.picker.GetActor()
             self.marker_actor.GetProperty().SetColor([0, 1, 0])
             self.rotationX = self.rotationY = self.rotationZ = 0
             self.slider_rotation_x.SetValue(0)
             self.slider_rotation_y.SetValue(0)
             self.slider_rotation_z.SetValue(0)
-            self.OnCreateDummyCoil()
             self.interactor.Render()
 
     def OnCrossMouseClick(self, obj, evt):
@@ -4910,15 +4923,11 @@ class SetCoilOrientationDialog(wx.Dialog):
             x, y, z = self.picker.GetPickPosition()
             coord_flip = list(self.marker)
             coord_flip[1] = -coord_flip[1]
-            coord = [x, -y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
-
-            distance_to_target = dcr.ComputeRelativeDistanceToTarget(target_coord=list(self.marker), img_coord=coord)
-            if np.sqrt(distance_to_target[0]**2 + distance_to_target[1]**2) < const.MTMS_RADIUS:
-                if self.picker.GetActor():
-                    coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
-                    brain_target_actor, _ = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=5)
-                    self.brain_target_actor_list.append(brain_target_actor)
-                    self.OnResetOrientation()
+            if self.picker.GetActor():
+                coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
+                brain_target_actor, _ = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=5)
+                self.brain_target_actor_list.append(brain_target_actor)
+                self.OnResetOrientation()
             self.obj_actor.PickableOff()
             self.interactor.Render()
 
@@ -5003,14 +5012,15 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.brain_target_actor_list = []
         self.coil_target_actor_list = []
         self.obj_actor = self.LoadActor(self.surface)
-        self.brain_actor = self.LoadActor(self.brain_surface)
+        if not self.brain_target:
+            self.brain_actor = self.LoadActor(self.brain_surface)
         self.LoadTarget()
 
     def LoadTarget(self):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
         if self.brain_target:
-            self.AddTarget(coord_flip, scale=5)
+            marker_actor, _ = self.AddTarget(coord_flip, scale=5)
             self.ren.GetActiveCamera().Zoom(2)
             colors = vtkNamedColors()
             # Create a circle
@@ -5031,9 +5041,11 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.ren.AddActor(circle_actor)
             self.marker_actor.PickableOff()
         else:
-            _, coordinates = self.AddTarget(coord_flip, scale=10)
+            marker_actor, coordinates = self.AddTarget(coord_flip, scale=10)
             self.marker[3], self.marker[4], self.marker[5] = coordinates[3], coordinates[4], coordinates[5]
         self.interactor.Render()
+
+        return marker_actor
 
     def LoadActor(self, surface):
         '''
@@ -5356,8 +5368,8 @@ class SetCoilOrientationDialog(wx.Dialog):
     def OnCreateTargetGrid(self, evt):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
-        self.coil_pose_actor = self.marker_actor
         self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
+        self.coil_pose_actor.GetProperty().SetOpacity(0)
         self.coil_pose_actor.PickableOff()
 
         grid_resolution = 3
