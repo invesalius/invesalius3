@@ -5360,8 +5360,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
         self.coil_pose_actor.PickableOff()
 
-        grid_resolution = 4
-        X, Y = self.CreateGrid(grid_resolution, 30, 20)
+        grid_resolution = 3
+        X, Y = self.CreateGrid(grid_resolution, 15, 10)
         self.coil_target_actor_list = []
         for i in range(grid_resolution):
             for j in range(grid_resolution):
