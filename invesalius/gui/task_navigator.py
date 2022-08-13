@@ -1623,7 +1623,7 @@ class MarkersPanel(wx.Panel):
         list_index = self.lc.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
+        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation)
         is_brain_target = self.markers[list_index].is_brain_target
 
         if dialog.ShowModal() == wx.ID_OK:
@@ -1709,7 +1709,7 @@ class MarkersPanel(wx.Panel):
 
         position = self.markers[index].position
         orientation = self.markers[index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_target=True)
+        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True)
 
         if dialog.ShowModal() == wx.ID_OK:
             position_list, orientation_list = dialog.GetValueBrainTarget()
@@ -1876,7 +1876,7 @@ class MarkersPanel(wx.Panel):
         list_index = marker_id if marker_id else 0
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
+        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
             orientation = dialog.GetValue()
