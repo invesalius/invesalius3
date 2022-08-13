@@ -954,9 +954,9 @@ class Viewer(wx.Panel):
 
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
-            distance_to_target = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img_flip)
-            wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance_to_target)
-
+            distance_to_target_robot = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img_flip)
+            wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance_to_target_robot)
+            distance_to_target = distance_to_target_robot.copy()
             if distance_to_target[3] > const.ARROW_UPPER_LIMIT:
                 distance_to_target[3] = const.ARROW_UPPER_LIMIT
             elif distance_to_target[3] < -const.ARROW_UPPER_LIMIT:
