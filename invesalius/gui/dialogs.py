@@ -4860,7 +4860,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             my *= scale
         return int(mx), int(my)
 
-    def OnCreateDummyCoil(self):
+    def OnCreateDummyCoil(self, target_actor):
         if self.dummy_coil_actor:
             self.RemoveActor(self.dummy_coil_actor)
 
@@ -4892,7 +4892,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
         self.dummy_coil_actor.SetVisibility(1)
-        self.dummy_coil_actor.SetUserMatrix(self.marker_actor.GetMatrix())
+        self.dummy_coil_actor.SetUserMatrix(target_actor.GetMatrix())
         self.dummy_coil_actor.SetScale(0.1)
         self.dummy_coil_actor.PickableOff()
         self.ren.AddActor(self.dummy_coil_actor)
@@ -4905,7 +4905,6 @@ class SetCoilOrientationDialog(wx.Dialog):
                 colour = [1, 0, 0]
             else:
                 colour = [0, 0, 1]
-                self.OnCreateDummyCoil()
             self.marker_actor.GetProperty().SetColor(colour)
             self.marker_actor = self.picker.GetActor()
             self.marker_actor.GetProperty().SetColor([0, 1, 0])
@@ -4913,6 +4912,8 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.slider_rotation_x.SetValue(0)
             self.slider_rotation_y.SetValue(0)
             self.slider_rotation_z.SetValue(0)
+            if not self.brain_target:
+                self.OnCreateDummyCoil(self.marker_actor)
             self.interactor.Render()
 
     def OnCrossMouseClick(self, obj, evt):
@@ -5014,7 +5015,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.obj_actor = self.LoadActor(self.surface)
         if not self.brain_target:
             self.brain_actor = self.LoadActor(self.brain_surface)
-        self.LoadTarget()
+        self.coil_pose_actor = self.LoadTarget()
 
     def LoadTarget(self):
         coord_flip = list(self.marker)
@@ -5371,6 +5372,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
         self.coil_pose_actor.GetProperty().SetOpacity(0)
         self.coil_pose_actor.PickableOff()
+        if self.dummy_coil_actor:
+            self.RemoveActor(self.dummy_coil_actor)
 
         grid_resolution = 3
         X, Y = self.CreateGrid(grid_resolution, 15, 10)
