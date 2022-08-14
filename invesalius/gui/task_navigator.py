@@ -1302,6 +1302,8 @@ class MarkersPanel(wx.Panel):
         self.icp = icp
         if has_mTMS:
             self.mTMS = mTMS()
+        else:
+            self.mTMS = None
 
         self.__bind_events()
 
@@ -1623,7 +1625,7 @@ class MarkersPanel(wx.Panel):
         list_index = self.lc.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation)
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
         is_brain_target = self.markers[list_index].is_brain_target
 
         if dialog.ShowModal() == wx.ID_OK:

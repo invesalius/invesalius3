@@ -4636,7 +4636,7 @@ class SetmTMSTargetDialog(wx.Dialog):
 
 class SetCoilOrientationDialog(wx.Dialog):
 
-    def __init__(self, mTMS, marker, brain_target=False):
+    def __init__(self, marker, mTMS=None, brain_target=False):
         import invesalius.project as prj
 
         self.obj_actor = None
@@ -4933,8 +4933,11 @@ class SetCoilOrientationDialog(wx.Dialog):
             coord_flip = list(self.marker)
             coord_flip[1] = -coord_flip[1]
             if self.picker.GetActor():
+                if self.marker_actor != self.coil_pose_actor:
+                    self.marker_actor.GetProperty().SetColor([1, 0, 0])
                 coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
                 brain_target_actor, _ = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=5)
+                self.marker_actor.GetProperty().SetColor([0, 1, 0])
                 self.brain_target_actor_list.append(brain_target_actor)
                 self.OnResetOrientation()
             self.obj_actor.PickableOff()
@@ -5443,7 +5446,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
         orientation = list(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz")))
-        self.mTMS.UpdateTarget(coil_pose=self.marker, brain_target=position+orientation)
+        if self.mTMS:
+            self.mTMS.UpdateTarget(coil_pose=self.marker, brain_target=position+orientation)
 
     def OnCreateGridSpheres(self, evt):
         import invesalius.data.coordinates as dco
