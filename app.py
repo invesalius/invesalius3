@@ -255,6 +255,7 @@ class Inv3SplashScreen(SplashScreen):
         # destroyed
         evt.Skip()
         self.Hide()
+        evt.GetEventObject().Destroy()
 
         # If the timer is still running then go ahead and show the
         # main frame now
