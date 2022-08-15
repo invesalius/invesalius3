@@ -4266,8 +4266,11 @@ class SetmTMSTargetDialog(wx.Dialog):
         reset_orientation = wx.Button(self, -1, label=_('Reset arrow orientation'))
         reset_orientation.Bind(wx.EVT_BUTTON, self.OnResetOrientation)
 
-        send_to_mtms = wx.Button(self, -1, label=_('Send to mTMS'))
+        send_to_mtms = wx.Button(self, -1, label=_('Send single target to mTMS'))
         send_to_mtms.Bind(wx.EVT_BUTTON, self.OnSendMtms)
+
+        send_sequence_to_mtms = wx.Button(self, -1, label=_('Send all targets to mTMS'))
+        send_sequence_to_mtms.Bind(wx.EVT_BUTTON, self.OnSendSequenceMtms)
 
         change_view = wx.Button(self, -1, label=_('Change view'))
         change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
@@ -4313,6 +4316,7 @@ class SetmTMSTargetDialog(wx.Dialog):
                           (wx.StaticText(self, -1, ''), 0, wx.EXPAND)
                            ])
         btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_changes_sizer.AddMany([send_sequence_to_mtms])
         btn_changes_sizer.AddMany([send_to_mtms])
         btn_changes_sizer.AddMany([reset_orientation])
         btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
@@ -4397,6 +4401,9 @@ class SetmTMSTargetDialog(wx.Dialog):
         orientation = list(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz")))
         self.mTMS.UpdateTarget(coil_pose=self.markers[self.target_pose_index], brain_target=position+orientation)
         #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=self.coil_pose, brain_target=position+orientation)
+
+    def OnSendSequenceMtms(self, evt=None):
+        self.mTMS.UpdateTargetSequence(coil_pose=self.markers[self.target_pose_index], brain_target_list=self.markers)
 
     def OnResetOrientation(self, evt=None):
         self.rotationX = self.rotationY = self.rotationZ = 0

@@ -1,6 +1,8 @@
 import win32com.client
 
 import numpy as np
+import pandas as pd
+import random
 import time
 
 import invesalius.data.coregistration as dcr
@@ -13,21 +15,48 @@ class mTMS():
         mtms_app = win32com.client.Dispatch('MTMSActiveXServer.Application')
         self.vi = mtms_app.getvireference(vipath)
         # Log name
-        self.vi.SetControlValue('New Log name', 'Experiment 1a')
-        name = self.vi.GetControlValue('New Log name')
+        self.log_name = 'mtms_subject_00_run_0'
+        self.vi.SetControlValue(self.log_name, 'Experiment 1a')
+        name = self.vi.GetControlValue(self.log_name)
         print(name)
+        self.intensity = self.vi.GetControlValue('Get Intensity')
+        self.intensity = 20
+
+        self.df = pd.DataFrame([], columns=["mTMS_target", "brain_target(nav)", "coil_pose(nav)", "intensity"])
+
+    def CheckTargets(self, coil_pose, brain_target_list):
+        for brain_target in brain_target_list:
+            distance = dcr.ComputeRelativeDistanceToTarget(target_coord=brain_target, img_coord=coil_pose)
+            offset = self.GetOffset(distance)
+            mTMS_target, mTMS_index_target = self.FindmTMSParameters(offset)
+            if not len(mTMS_index_target[0]):
+                print("Not possible to stimulate the target: ", offset)
+                return False
+        return True
+
+    def UpdateTargetSequence(self, coil_pose, brain_target_list):
+        if brain_target_list:
+            #Do I really need to check this? Or I can apply only the possible stimuli?
+            if self.CheckTargets(coil_pose, brain_target_list):
+                number_of_stim = 3
+                randomized_brain_target_list = brain_target_list.copy()
+                random.shuffle(randomized_brain_target_list)
+                for brain_target in randomized_brain_target_list:
+                    for x in range(number_of_stim):
+                        self.UpdateTarget(coil_pose, brain_target)
+                        time.sleep(random.randrange(300, 500, 1)/100)
+                self.SaveSequence()
 
     def UpdateTarget(self, coil_pose, brain_target):
-        self.coil_pose = coil_pose
-        self.brain_target = brain_target
-        self.icp_fre = None
         distance = dcr.ComputeRelativeDistanceToTarget(target_coord=brain_target, img_coord=coil_pose)
         offset = self.GetOffset(distance)
         print(offset)
-        mTMS_index_target = self.FindmTMSParameters([int(x) for x in offset])
+        mTMS_target, mTMS_index_target = self.FindmTMSParameters(offset)
         print(mTMS_index_target)
         if len(mTMS_index_target[0]):
             self.SendToMTMS(mTMS_index_target[0])
+            new_row = {'mTMS_target': mTMS_target, 'brain_target(nav)': brain_target, 'coil_pose(nav)': coil_pose, 'intensity': self.intensity}
+            self.df = self.df.append((pd.DataFrame([new_row], columns=self.df.columns)))
         else:
             print("Target is not valid")
 
@@ -36,25 +65,26 @@ class mTMS():
         offset_xy = [int(np.round(x / 3) * 3) for x in distance[:2]]
         offset_rz = int(np.round(distance[5] / 15) * 15)
 
-        return [offset_xy[1], offset_xy[0], offset_rz]
+        return [int(offset_xy[1]), int(offset_xy[0]), int(offset_rz)]
 
     def FindmTMSParameters(self, offset):
-        fname = 'C:\\mTMS\\mTMS parameters\\PP\\PP31 5-coil grid.txt'
+        fname = 'C:\\Users\\renan\\My Drive\\Lab\\Doutorado\\projetos\\mTMS\\pulse parameter files\\PP31 5-coil grid.txt'
 
         with open(fname, 'r') as the_file:
             all_data = [line.strip() for line in the_file.readlines()]
             data = all_data[18:]
         data = np.array([line.split('\t') for line in data])
 
-        offset = offset
         separator = '_'
         target = separator.join(['{}'.format(x) for x in offset])
-        return np.where(data[:, 0] == target)
+        target_index = np.where(data[:, 0] == target)
+
+        return target, target_index
 
     def SendToMTMS(self, target):
         # Manipulate intensity
-        intensity = self.vi.GetControlValue('Get Intensity')
-        print("Intensity: ", str(intensity))
+        self.intensity = self.vi.GetControlValue('Get Intensity')
+        print("Intensity: ", str(self.intensity))
         #self.vi.SetControlValue('New Intensity', 40)
         #self.vi.SetControlValue('Set Intensity', True)
 
@@ -71,3 +101,12 @@ class mTMS():
         # Stimulate
         print("Stimulating")
         self.vi.SetControlValue('Stimulate', True)
+
+    def SaveSequence(self):
+        timestamp = time.localtime(time.time())
+        stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+        stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+        sep = '_'
+        parts = [stamp_date, stamp_time, self.log_name, 'sequence']
+        default_filename = sep.join(parts) + '.csv'
+        self.df.to_csv(default_filename, sep='\t', encoding='utf-8', index=False)
