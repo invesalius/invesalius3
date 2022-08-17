@@ -4740,6 +4740,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         else:
             self.brain_actor = self.LoadActor(self.brain_surface)
         self.coil_pose_actor = self.LoadTarget()
+        self.center_brain_target_actor = self.LoadCenterBrainTarget()
 
         self.chk_show_surface = wx.CheckBox(self, wx.ID_ANY, _("Show scalp surface"))
         self.chk_show_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxScalp)
@@ -5034,6 +5035,29 @@ class SetCoilOrientationDialog(wx.Dialog):
         if not self.brain_target:
             self.brain_actor = self.LoadActor(self.brain_surface)
         self.coil_pose_actor = self.LoadTarget()
+
+    def LoadCenterBrainTarget(self):
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        m_coil = dco.coordinates_to_transformation_matrix(
+            position=coord_flip[:3],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        m_offset_brain = dco.coordinates_to_transformation_matrix(
+            position=[0, 0, -20],
+            orientation=coord_flip[3:],
+            axes='sxyz',
+        )
+        m_brain = m_coil @ m_offset_brain
+        coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], coord_flip[3], coord_flip[4], coord_flip[5]
+
+        brain_target_actor, _ = self.AddTarget(coord)
+        brain_target_actor.PickableOff()
+        brain_target_actor.GetProperty().SetColor([1, 1, 0])
+        self.brain_target_actor_list.append(brain_target_actor)
+
+        print('Adding brain markers')
 
     def LoadTarget(self):
         coord_flip = list(self.marker)
