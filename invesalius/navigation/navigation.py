@@ -156,6 +156,7 @@ class Navigation(metaclass=Singleton):
         self.obj_reg = None
         self.track_obj = False
         self.m_change = None
+        self.obj_data = None
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
@@ -290,8 +291,8 @@ class Navigation(metaclass=Singleton):
                 else:
                     coord_raw = np.array([None])
 
-                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
-                coreg_data.extend(obj_data)
+                self.obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
+                coreg_data.extend(self.obj_data)
 
                 queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue]
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,

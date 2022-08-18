@@ -1308,6 +1308,7 @@ class MarkersPanel(wx.Panel):
 
         self.markers = []
         self.nav_status = False
+        self.target_mode = False
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -1408,6 +1409,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
+        Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
 
     def __find_target_marker(self):
         """
@@ -1525,14 +1527,13 @@ class MarkersPanel(wx.Panel):
         if self.tracker.tracker_id == const.ROBOT:
             send_target_to_robot_compensation = menu_id.Append(4, _('Sets target to robot head move compensation'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
-            send_target_to_robot = menu_id.Append(5, _('Send target from InVesalius to robot'))
+            send_target_to_robot = menu_id.Append(5, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
-            if self.nav_status and check_target_angles:
+            send_target_to_robot_compensation.Enable(False)
+            send_target_to_robot.Enable(False)
+            if self.nav_status and self.target_mode and (self.lc.GetFocusedItem() == self.__find_target_marker()):
                 send_target_to_robot_compensation.Enable(True)
                 send_target_to_robot.Enable(True)
-            else:
-                send_target_to_robot_compensation.Enable(False)
-                send_target_to_robot.Enable(False)
 
         if check_target_angles:
             target_menu.Enable(True)
@@ -1631,10 +1632,11 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
 
-        target_coord = self.markers[index].position
-        target = dcr.image_to_tracker(self.navigation.m_change, target_coord, self.icp)
+        nav_target = self.markers[index].position+self.markers[index].orientation
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, nav_target, self.icp, self.navigation.obj_data)
 
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=target.tolist())
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=m_target.tolist())
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
@@ -1785,6 +1787,9 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Update target orientation',
                                   target_id=marker_id, orientation=list(orientation))
         dialog.Destroy()
+
+    def OnActivateTargetMode(self, target_mode=None):
+        self.target_mode = target_mode
 
     def SetMarkers(self, markers):
         """
