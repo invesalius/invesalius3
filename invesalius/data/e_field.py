@@ -54,7 +54,7 @@ class Visualize_E_field_Thread(threading.Thread):
         while not self.event.is_set():
             try:
                 coord = [] # Rembmer to remove coord
-                m_img_flip = self.self.efield_queue.get_nowait()
+                m_img_flip = self.efield_queue.get_nowait()
                 [T_rot,cp] = Get_coil_position(m_img_flip)
                 enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
                 self.e_field_norms.put_nowait((enorm))
