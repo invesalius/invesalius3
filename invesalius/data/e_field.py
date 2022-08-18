@@ -67,5 +67,5 @@ class Visualize_E_field_Thread(threading.Thread):
             # if queue is full mark as done (may not be needed in this new "nowait" method)
             except queue.Full:
                 # self.coord_queue.task_done()
-                self.self.efield_queue.task_done()
+                self.efield_queue.task_done()
 
