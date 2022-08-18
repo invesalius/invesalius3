@@ -265,7 +265,7 @@ def ComputeRelativeDistanceToTarget(target_coord, m_img):
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, tracker_id, target, icp):
+    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, tracker_id, target, icp,e_field_loaded):
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
@@ -273,6 +273,8 @@ class CoordinateCorregistrate(threading.Thread):
         self.coord_queue = queues[0]
         self.view_tracts = view_tracts
         self.coord_tracts_queue = queues[1]
+        self.efield_queue = queues[4]
+        self.e_field_loaded = e_field_loaded
         self.event = event
         self.sle = sle
         self.icp_queue = queues[2]
@@ -342,7 +344,8 @@ class CoordinateCorregistrate(threading.Thread):
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
-
+                if self.e_field_loaded:
+                    self.efield_queue.put_nowait(m_img_flip)
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
                 # The sleep has to be in both threads
@@ -352,7 +355,7 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp):
+    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp, e_field_loaded):
         threading.Thread.__init__(self, name='CoordCoregNoObject')
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
@@ -365,6 +368,8 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         self.icp_queue = queues[2]
         self.use_icp = icp.use_icp
         self.m_icp = icp.m_icp
+        self.efield_queue = queues[3]
+        self.e_field_loaded = e_field_loaded
 
     def run(self):
         coreg_data = self.coreg_data
@@ -390,7 +395,8 @@ class CoordinateCorregistrateNoObject(threading.Thread):
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
-
+                if self.e_field_loaded:
+                    self.efield_queue.put_nowait(m_img_flip)
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
                 # The sleep has to be in both threads

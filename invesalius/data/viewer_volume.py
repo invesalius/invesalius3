@@ -358,7 +358,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
-        Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
+        Publisher.subscribe(self.Get_enorm, 'Update point location for e-field calculation')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -1704,6 +1704,8 @@ class Viewer(wx.Panel):
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
         self.radius_list =self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Get_coil_position(m_img,coord[3:],neuronavigation_api)
+    def Get_enorm(self, enorm):
+        self.Get_E_field_max_min(enorm)
 
     def Get_coil_position(self, m_img,coord,neuronavigation_api):
         # coil position cp : the center point at the bottom of the coil casing,

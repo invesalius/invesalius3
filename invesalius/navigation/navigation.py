@@ -31,6 +31,7 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
+import invesalius.data.e_field as e_field
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.pubsub import pub as Publisher
@@ -84,7 +85,7 @@ class UpdateNavigationScene(threading.Thread):
 
         threading.Thread.__init__(self, name='UpdateScene')
         self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded = vis_components
-        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue= vis_queues
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms = vis_queues
         self.sle = sle
         self.event = event
         self.neuronavigation_api = neuronavigation_api
@@ -127,9 +128,9 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
                 if self.e_field_loaded:
-                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
-                                 coord=coord, neuronavigation_api=self.neuronavigation_api)
-
+                    enorm= self.e_field_norms.get_nowait()
+                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', enorm=enorm)
+                    self.e_field_norms.task_done()
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
@@ -162,7 +163,8 @@ class Navigation(metaclass=Singleton):
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
-        #self.efield_queue = QueueCustom(maxsize=1)
+        self.efield_queue = QueueCustom(maxsize=1)
+        self.e_field_norms = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -268,7 +270,7 @@ class Navigation(metaclass=Singleton):
             self.event.clear()
 
         vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue,self.e_field_norms]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
         errors = False
@@ -294,17 +296,17 @@ class Navigation(metaclass=Singleton):
                 self.obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
                 coreg_data.extend(self.obj_data)
 
-                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue]
+                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue, self.efield_queue]
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
-                                                                self.target, icp))
+                                                                self.target, icp,self.e_field_loaded))
         else:
             coreg_data = (self.m_change, 0)
-            queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+            queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
             jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
-                                                                    self.event, self.sleep_nav, icp))
+                                                                    self.event, self.sleep_nav, icp, self.e_field_loaded))
 
         if not errors:
             #TODO: Test the serial port thread
@@ -343,6 +345,10 @@ class Navigation(metaclass=Singleton):
                     jobs_list.append(dti.ComputeTractsACTThread(self.trk_inp, queues, self.event, self.sleep_nav))
                 else:
                     jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
+            if self.e_field_loaded:
+                queues = [self.efield_queue, self.e_field_norms ]
+                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,self.neuronavigation_api))
+
 
             jobs_list.append(
                 UpdateNavigationScene(
