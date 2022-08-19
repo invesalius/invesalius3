@@ -4655,6 +4655,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.brain_target = brain_target
         self.brain_target_actor_list = []
         self.coil_target_actor_list = []
+        self.center_brain_target_actor = None
         self.marker_actor = None
         self.dummy_coil_actor = None
         self.m_img_vtk = None
@@ -4740,7 +4741,6 @@ class SetCoilOrientationDialog(wx.Dialog):
         else:
             self.brain_actor = self.LoadActor(self.brain_surface)
         self.coil_pose_actor = self.LoadTarget()
-        self.center_brain_target_actor = self.LoadCenterBrainTarget()
 
         self.chk_show_surface = wx.CheckBox(self, wx.ID_ANY, _("Show scalp surface"))
         self.chk_show_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxScalp)
@@ -4754,6 +4754,9 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         change_view = wx.Button(self, -1, label=_('Change view'))
         change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
+
+        create_random_target_grid = wx.Button(self, -1, label=_('Create random coil target grid'))
+        create_random_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateRandomTargetGrid)
 
         create_target_grid = wx.Button(self, -1, label=_('Create coil target grid'))
         create_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateTargetGrid)
@@ -4801,6 +4804,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.chk_show_brain_surface.Hide()
             txt_brain_surface.Hide()
             combo_brain_surface_name.Hide()
+            create_random_target_grid.Hide()
             create_target_grid.Hide()
             create_brain_grid.Hide()
             send_to_mtms.Show()
@@ -4816,7 +4820,8 @@ class SetCoilOrientationDialog(wx.Dialog):
                            self.chk_show_brain_surface,
                           (wx.StaticText(self, -1, ''), 0, wx.EXPAND)
                            ])
-        btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=4, hgap=20, vgap=20)
+        btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=20, vgap=20)
+        btn_changes_sizer.AddMany([create_random_target_grid])
         btn_changes_sizer.AddMany([create_target_grid])
         btn_changes_sizer.AddMany([create_brain_grid])
         btn_changes_sizer.AddMany([send_to_mtms])
@@ -5031,26 +5036,25 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.RemoveAllActor()
         self.brain_target_actor_list = []
         self.coil_target_actor_list = []
+        self.center_brain_target_actor = None
         self.obj_actor = self.LoadActor(self.surface)
         if not self.brain_target:
             self.brain_actor = self.LoadActor(self.brain_surface)
         self.coil_pose_actor = self.LoadTarget()
 
-    def LoadCenterBrainTarget(self):
-        coord_flip = list(self.marker)
-        coord_flip[1] = -coord_flip[1]
+    def LoadCenterBrainTarget(self, coil_target_position, coil_target_orientation):
         m_coil = dco.coordinates_to_transformation_matrix(
-            position=coord_flip[:3],
-            orientation=coord_flip[3:],
+            position=coil_target_position,
+            orientation=coil_target_orientation,
             axes='sxyz',
         )
         m_offset_brain = dco.coordinates_to_transformation_matrix(
             position=[0, 0, -20],
-            orientation=coord_flip[3:],
+            orientation=coil_target_orientation,
             axes='sxyz',
         )
         m_brain = m_coil @ m_offset_brain
-        coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], coord_flip[3], coord_flip[4], coord_flip[5]
+        coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], coil_target_orientation[0], coil_target_orientation[1], coil_target_orientation[2]
 
         brain_target_actor, _ = self.AddTarget(coord)
         brain_target_actor.PickableOff()
@@ -5407,6 +5411,53 @@ class SetCoilOrientationDialog(wx.Dialog):
         y = np.linspace(minY, maxY, resolution)
 
         return np.meshgrid(x, y)
+
+    def OnCreateRandomTargetGrid(self, evt):
+        vtkmat = self.coil_pose_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], narray[1][-1], narray[2][-1]]
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+        coil_target_position = position
+        coil_target_orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+        if self.center_brain_target_actor is None:
+            self.center_brain_target_actor = self.LoadCenterBrainTarget(coil_target_position, coil_target_orientation)
+
+        self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
+        self.coil_pose_actor.GetProperty().SetOpacity(1)
+        self.coil_pose_actor.PickableOff()
+        if self.dummy_coil_actor:
+            self.RemoveActor(self.dummy_coil_actor)
+
+        number_of_targets = 10
+        # radius of the circle
+        circle_r = 15
+
+        for i in range(number_of_targets):
+            alpha = 2 * np.pi * random.random()
+            r = circle_r * np.sqrt(random.random())
+            X = r * np.cos(alpha)
+            Y = r * np.sin(alpha)
+            rZ = random.randrange(-30, 30, 1)
+
+            m_offset_target = dco.coordinates_to_transformation_matrix(
+                position=[X, Y, 0],
+                orientation=[0, 0, rZ],
+                axes='sxyz',
+            )
+            m_origin_coil = dco.coordinates_to_transformation_matrix(
+                position=coil_target_position,
+                orientation=coil_target_orientation,
+                axes='sxyz',
+            )
+            m_target = m_origin_coil @ m_offset_target
+            position, orientation = dco.transformation_matrix_to_coordinates(m_target, axes='sxyz')
+            coord = [position[0], position[1], position[2],
+                     orientation[0], orientation[1], orientation[2]]
+            coil_target_actor, coordinate = self.AddTarget(coord)
+            self.coil_target_actor_list.append(coil_target_actor)
+
+        self.interactor.Render()
 
     def OnCreateTargetGrid(self, evt):
         coord_flip = list(self.marker)

@@ -1555,9 +1555,9 @@ class MarkersPanel(wx.Panel):
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
             brain_target_menu = menu_id.Append(3, _('Set brain target'))
             menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
-            if has_mTMS:
-                brain_mTMS_target_menu = menu_id.Append(4, _('Set brain target for mTMS'))
-                menu_id.Bind(wx.EVT_MENU, self.OnSetMTMSBrainTarget, brain_mTMS_target_menu)
+            #if has_mTMS:
+                #brain_mTMS_target_menu = menu_id.Append(4, _('Set brain target for mTMS'))
+                #menu_id.Bind(wx.EVT_MENU, self.OnSetMTMSBrainTarget, brain_mTMS_target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
@@ -1633,8 +1633,9 @@ class MarkersPanel(wx.Panel):
             coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
             for (position, orientation) in zip(coil_position_list, coil_orientation_list):
                 self.CreateMarker(list(position), list(orientation), is_brain_target=False)
-            for (position, orientation) in zip(brain_position_list, brain_orientation_list):
-                self.CreateMarker(list(position), list(orientation), is_brain_target=True)
+            self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=True)
+            #for (position, orientation) in zip(brain_position_list, brain_orientation_list):
+            #    self.CreateMarker(list(position), list(orientation), is_brain_target=True)
             #self.CreateMarker(list(position), list(orientation), is_brain_target=is_brain_target)
         dialog.Destroy()
 
@@ -1726,8 +1727,8 @@ class MarkersPanel(wx.Panel):
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        coil_pose = self.markers[index].position + self.markers[index].orientation
-        brain_target = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
+        brain_target = self.markers[index].position + self.markers[index].orientation
+        coil_pose = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
         if self.navigation.coil_at_target:
             self.mTMS.UpdateTarget(coil_pose, brain_target)
             #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
@@ -1837,6 +1838,7 @@ class MarkersPanel(wx.Panel):
         else:
             Publisher.sendMessage('Show all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Hide')
+        self.mTMS.SaveSequence()
 
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()

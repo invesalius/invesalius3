@@ -15,7 +15,7 @@ class mTMS():
         # mtms_app = win32com.client.Dispatch('MTMSActiveXServer.Application')
         # self.vi = mtms_app.getvireference(vipath)
         # # Log name
-        # self.log_name = 'mtms_subject_00_run_0'
+        self.log_name = 'mtms_subject_00_run_0'
         # self.vi.SetControlValue(self.log_name, 'Experiment 1a')
         # name = self.vi.GetControlValue(self.log_name)
         # print(name)
@@ -48,27 +48,31 @@ class mTMS():
                 self.SaveSequence()
 
     def UpdateTarget(self, coil_pose, brain_target):
-        distance = dcr.ComputeRelativeDistanceToTarget(target_coord=brain_target, img_coord=coil_pose)
+        coil_pose_flip = coil_pose.copy()
+        brain_target_flip = brain_target.copy()
+        coil_pose_flip[1] = -coil_pose_flip[1]
+        brain_target_flip[1] = -brain_target_flip[1]
+        distance = dcr.ComputeRelativeDistanceToTarget(target_coord=coil_pose_flip, img_coord=brain_target_flip)
         offset = self.GetOffset(distance)
         print(offset)
         mTMS_target, mTMS_index_target = self.FindmTMSParameters(offset)
         print(mTMS_index_target)
         if len(mTMS_index_target[0]):
             #self.SendToMTMS(mTMS_index_target[0])
-            new_row = {'mTMS_target': mTMS_target, 'brain_target(nav)': brain_target, 'coil_pose(nav)': coil_pose, 'intensity': self.intensity}
+            new_row = {'mTMS_target': mTMS_target, 'brain_target(nav)': brain_target_flip, 'coil_pose(nav)': coil_pose_flip, 'intensity': self.intensity}
             self.df = self.df.append((pd.DataFrame([new_row], columns=self.df.columns)))
         else:
             print("Target is not valid")
 
     def GetOffset(self, distance):
         print(distance)
-        offset_xy = [int(np.round(x / 3) * 3) for x in distance[:2]]
-        offset_rz = int(np.round(distance[5] / 15) * 15)
-
-        return [int(offset_xy[1]), int(offset_xy[0]), int(offset_rz)]
+        offset_xy = [int(np.round(x)) for x in distance[:2]]
+        offset_rz = int(np.round(distance[-1] / 15) * 15)
+        offset = [-int(offset_xy[1]), int(offset_xy[0]), -int(offset_rz)]
+        return offset
 
     def FindmTMSParameters(self, offset):
-        fname = "G:\\Meu Drive\\Lab\\Doutorado\\projetos\\mTMS\\pulse parameter files\\PP31 5-coil grid.txt"
+        fname = "G:\\Meu Drive\\Lab\\Doutorado\\projetos\\mTMS\\pulse parameter files\\mikko grid\\PP 1mm 15deg 5-coil grid.txt"
         with open(fname, 'r') as the_file:
             all_data = [line.strip() for line in the_file.readlines()]
             data = all_data[18:]
