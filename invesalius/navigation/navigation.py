@@ -128,7 +128,7 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
                 if self.e_field_loaded:
-                    Publisher.sendMessage('Update point location for e-field calculation', img=m_img, coord=coord)
+                    wx.CallAfter(Publisher.sendMessage,'Update point location for e-field calculation',  m_img=m_img, coord=coord)
                     enorm= self.e_field_norms.get_nowait()
                     wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm=enorm)
                     self.e_field_norms.task_done()

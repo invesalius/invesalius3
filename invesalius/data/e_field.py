@@ -100,7 +100,7 @@ class Visualize_E_field_Thread(threading.Thread):
 
                 [m_img, coord] = self.efield_queue.get_nowait()
                 [T_rot, cp] = Get_coil_position(m_img)
-                enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
+                enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
                 self.e_field_norms.put_nowait((enorm))
                 self.efield_queue.task_done()
                 time.sleep(self.sle)
