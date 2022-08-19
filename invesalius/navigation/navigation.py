@@ -129,7 +129,7 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
                 if self.e_field_loaded:
                     enorm= self.e_field_norms.get_nowait()
-                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', enorm=enorm)
+                    wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm=enorm)
                     self.e_field_norms.task_done()
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)

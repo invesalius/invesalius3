@@ -345,7 +345,7 @@ class CoordinateCorregistrate(threading.Thread):
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if self.e_field_loaded:
-                    self.efield_queue.put_nowait(m_img_flip)
+                    self.efield_queue.put_nowait([m_img, coord])
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
                 # The sleep has to be in both threads
@@ -396,7 +396,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if self.e_field_loaded:
-                    self.efield_queue.put_nowait(m_img_flip)
+                    self.efield_queue.put_nowait([m_img, coord])
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
                 # The sleep has to be in both threads
