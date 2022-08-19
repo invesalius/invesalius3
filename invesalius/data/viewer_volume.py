@@ -1675,6 +1675,9 @@ class Viewer(wx.Panel):
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     self.FindPointsAroundRadiusEfield(cellId)
                     self.radius_list.Sort()
+        else:
+            self.radius_list.Reset()
+            #send flag or radious_list as zero to only ask for enorms when is not zero
         return self.radius_list
 
     def OnUpdateEfieldvis(self):
