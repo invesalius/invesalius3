@@ -1701,6 +1701,8 @@ class Viewer(wx.Panel):
                 colors.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(colors)
             self.Recolor_efield_Actor(self.efield_mesh)
+        else:
+            Publisher.sendMessage('Recolor again')
 
 
     def UpdateEfieldPointLocation(self, m_img, coord):
