@@ -100,7 +100,7 @@ class Visualize_E_field_Thread(threading.Thread):
         while not self.event.is_set():
             try:
                 self.ID_list = self.e_field_IDs.get_nowait()
-                if self.radius_list.GetNumberOfIds() != 0:
+                if self.ID_list.GetNumberOfIds() != 0:
                     [m_img, coord] = self.efield_queue.get_nowait()
                     [T_rot, cp] = Get_coil_position(m_img)
                     enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
