@@ -3,7 +3,8 @@ import threading
 import time
 
 import numpy as np
-
+from vtkmodules.vtkCommonCore import (
+    vtkIdList)
 from invesalius.pubsub import pub as Publisher
 
 # def ObjectArrowLocation(self, m_img, coord):
@@ -86,23 +87,28 @@ class Visualize_E_field_Thread(threading.Thread):
         # self.coord_queue = coord_queue
         self.efield_queue = queues[0]
         self.e_field_norms = queues[1]
+        self.e_field_IDs = queues[2]
         #self.tracts_queue = queues[1]
         # self.visualization_queue = visualization_queue
         self.event = event
         self.sle = sle
         self.neuronavigation_api = neuronavigation_api
-
+        self.ID_list = vtkIdList()
     def run(self):
 
 
         while not self.event.is_set():
             try:
+                self.ID_list = self.e_field_IDs.get_nowait()
+                if self.radius_list.GetNumberOfIds() != 0:
+                    [m_img, coord] = self.efield_queue.get_nowait()
+                    [T_rot, cp] = Get_coil_position(m_img)
+                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                    self.e_field_norms.put_nowait((enorm))
 
-                [m_img, coord] = self.efield_queue.get_nowait()
-                [T_rot, cp] = Get_coil_position(m_img)
-                enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                self.e_field_norms.put_nowait((enorm))
                 self.efield_queue.task_done()
+                self.e_field_IDs.task_done()
+
                 time.sleep(self.sle)
             # if no coordinates pass
             except queue.Empty:

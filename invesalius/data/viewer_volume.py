@@ -27,6 +27,7 @@ import time
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
+import queue
 
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
@@ -1705,10 +1706,12 @@ class Viewer(wx.Panel):
             Publisher.sendMessage('Recolor again')
 
 
-    def UpdateEfieldPointLocation(self, m_img, coord):
+    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
         [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
         self.radius_list =self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
+        self.e_field_IDs = queue_IDs
+        self.e_field_IDs.put_nowait((self.radius_list))
         #self.Get_coil_position(m_img,coord[3:],neuronavigation_api)
 
     def Get_enorm(self, enorm):
