@@ -49,7 +49,7 @@ from invesalius.pubsub import pub as Publisher
 #                 self.radius_list.Sort()
 #     return self.radius_list
 
-def Get_coil_position( m_img_flip):
+def Get_coil_position( m_img):
     # coil position cp : the center point at the bottom of the coil casing,
     # corresponds to the origin of the coil template.
     # coil normal cn: outer normal of the coil, i.e. away from the head
@@ -99,7 +99,6 @@ class Visualize_E_field_Thread(threading.Thread):
             try:
 
                 [m_img, coord] = self.efield_queue.get_nowait()
-                Publisher.sendMessage('Update point location for e-field calculation', img = m_img, coord = coord)
                 [T_rot, cp] = Get_coil_position(m_img)
                 enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
                 self.e_field_norms.put_nowait((enorm))
