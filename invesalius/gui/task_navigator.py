@@ -30,12 +30,12 @@ try:
 except ImportError:
     has_trekker = False
 
-try:
-    from invesalius.navigation.mtms import mTMS
-    mTMS()
-    has_mTMS = True
-except:
-    has_mTMS = False
+# try:
+from invesalius.navigation.mtms import mTMS
+mTMS()
+has_mTMS = True
+# except:
+#     has_mTMS = False
 
 try:
     import invesalius.data.elfin as elfin
