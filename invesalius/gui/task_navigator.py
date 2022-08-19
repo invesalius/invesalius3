@@ -75,6 +75,7 @@ from invesalius.net.neuronavigation_api import NeuronavigationApi
 
 HAS_PEDAL_CONNECTION = True
 try:
+    from invesalius.net.pedal_connection_serial import PedalConnectionSerial
     from invesalius.net.pedal_connection import PedalConnection
 except ImportError:
     HAS_PEDAL_CONNECTION = False
@@ -170,7 +171,13 @@ class InnerFoldPanel(wx.Panel):
         # Initialize Navigation, Tracker and PedalConnection objects here so that they are available to several panels.
         #
         tracker = Tracker()
-        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
+
+        session = ses.Session()
+        if session.pedal_serial:
+            pedal_connection = PedalConnectionSerial()
+        else:
+            pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
+
         icp = IterativeClosestPoint()
         neuronavigation_api = NeuronavigationApi()
         navigation = Navigation(

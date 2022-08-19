@@ -73,6 +73,7 @@ class Session(metaclass=Singleton):
             'mode': ('session', 'mode'),
             'project_status': ('session', 'status'),
             'debug': ('session', 'debug'),
+            'pedal_serial': ('session', 'pedal_serial'),
             'language': ('session', 'language'),
             'random_id': ('session', 'random_id'),
             'surface_interpolation': ('session', 'surface_interpolation'),

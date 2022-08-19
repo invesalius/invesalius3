@@ -353,6 +353,9 @@ def parse_command_line():
     parser.add_argument("--use-pedal", action="store_true", dest="use_pedal",
                       help="Use an external trigger pedal")
 
+    parser.add_argument("--use-pedal-serial", action="store_true", dest="use_pedal_serial",
+                        help="Use an external trigger pedal")
+
     args = parser.parse_args()
     return args
 
@@ -553,6 +556,7 @@ def main(connection=None):
 
     session = ses.Session()
     session.debug = args.debug
+    session.pedal_serial = None
 
     if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
@@ -567,6 +571,14 @@ def main(connection=None):
         from invesalius.net.pedal_connection import PedalConnection
 
         PedalConnection().start()
+
+
+    if args.use_pedal_serial:
+        from invesalius.net.pedal_connection_serial import PedalConnectionSerial
+
+        PedalConnectionSerial().start()
+
+        session.pedal_serial = True
 
     from invesalius.net.neuronavigation_api import NeuronavigationApi
 
