@@ -353,7 +353,7 @@ class TracheaSegmentProcess(SegmentProcess):
             window_width=255,
             window_level=127,
         )
-        self.torch_weights_file_name = 'trachea_ct.pt"'
+        self.torch_weights_file_name = 'trachea_ct.pt'
         self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
         self.torch_weights_hash = (
             "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
