@@ -318,7 +318,7 @@ class BrainSegmentProcess(SegmentProcess):
             window_width=255,
             window_level=127,
         )
-        self.torch_weights_file_name = 'brain_mri_t1.pt"'
+        self.torch_weights_file_name = 'brain_mri_t1.pt'
         self.torch_weights_url = "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
         self.torch_weights_hash = (
             "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
