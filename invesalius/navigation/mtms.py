@@ -1,4 +1,4 @@
-#import win32com.client
+import win32com.client
 
 import numpy as np
 import pandas as pd
@@ -9,18 +9,16 @@ import invesalius.data.coregistration as dcr
 
 class mTMS():
     def __init__(self):
-        # mtms_path = 'C:\\mTMS\\Labview\\Builds\\mTMS 3.1'
-        # vipath = mtms_path + '\\mTMS ActiveX Server\\mTMS ActiveX Server.exe\\mTMS ActiveX Server.vi'
-        # # Connect to the ActiveX server
-        # mtms_app = win32com.client.Dispatch('MTMSActiveXServer.Application')
-        # self.vi = mtms_app.getvireference(vipath)
-        # # Log name
-        self.log_name = 'mtms_subject_00_run_0'
-        # self.vi.SetControlValue(self.log_name, 'Experiment 1a')
-        # name = self.vi.GetControlValue(self.log_name)
-        # print(name)
-        # self.intensity = self.vi.GetControlValue('Get Intensity')
-        self.intensity = 20
+        mtms_path = 'C:\\mTMS\\Labview\\Builds\\mTMS 3.1 hack'
+        vipath = mtms_path + '\\mTMS ActiveX Server\\mTMS ActiveX Server.exe\\mTMS ActiveX Server.vi'
+        # Connect to the ActiveX server
+        mtms_app = win32com.client.Dispatch('MTMSActiveXServer.Application')
+        self.vi = mtms_app.getvireference(vipath)
+        # Log name
+        #self.log_name = 'mtms_subject_00_run_0'
+        #self.vi.SetControlValue(self.log_name, 'Experiment 1a')
+        self.intensity = self.vi.GetControlValue('Get Intensity')
+        #self.intensity = 20
 
         self.df = pd.DataFrame([], columns=["mTMS_target", "brain_target(nav)", "coil_pose(nav)", "intensity"])
 
@@ -68,11 +66,12 @@ class mTMS():
         print(distance)
         offset_xy = [int(np.round(x)) for x in distance[:2]]
         offset_rz = int(np.round(distance[-1] / 15) * 15)
-        offset = [-int(offset_xy[1]), int(offset_xy[0]), -int(offset_rz)]
+        offset = [-int(offset_xy[1]), int(offset_xy[0]), int(offset_rz)]
         return offset
 
     def FindmTMSParameters(self, offset):
-        fname = "G:\\Meu Drive\\Lab\\Doutorado\\projetos\\mTMS\\pulse parameter files\\mikko grid\\PP 1mm 15deg 5-coil grid.txt"
+        #fname = "C:\\mTMS\\mTMS parameters\\PP\\PP31 mikael 1mm 15deg 5-coil grid.txt"
+        fname = self.vi.GetControlValue("Get Pulse-parameters file")
         with open(fname, 'r') as the_file:
             all_data = [line.strip() for line in the_file.readlines()]
             data = all_data[18:]
@@ -97,7 +96,7 @@ class mTMS():
         print("Updating brain target...")
         while self.vi.GetControlValue('Set Pulse-parameters row'):
             pass
-        time.sleep(0.1)
+        time.sleep(0.3)
         print("Charging capacitors...")
         while not self.vi.GetControlValue('Get Ready to stimulate'):
             pass

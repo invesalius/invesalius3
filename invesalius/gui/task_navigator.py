@@ -30,12 +30,12 @@ try:
 except ImportError:
     has_trekker = False
 
-# try:
-from invesalius.navigation.mtms import mTMS
-mTMS()
-has_mTMS = True
-# except:
-#     has_mTMS = False
+try:
+    from invesalius.navigation.mtms import mTMS
+    mTMS()
+    has_mTMS = True
+except:
+    has_mTMS = False
 
 try:
     import invesalius.data.elfin as elfin
@@ -1322,6 +1322,7 @@ class MarkersPanel(wx.Panel):
         self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
+        self.brain_actor = None
         # Change marker size
         spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
         spin_size.SetRange(1, 99)
@@ -1417,6 +1418,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
+        Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
 
     def __find_target_marker(self):
         """
@@ -1625,7 +1627,7 @@ class MarkersPanel(wx.Panel):
         list_index = self.lc.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_actor=self.brain_actor)
         is_brain_target = self.markers[list_index].is_brain_target
 
         if dialog.ShowModal() == wx.ID_OK:
@@ -1712,12 +1714,12 @@ class MarkersPanel(wx.Panel):
 
         position = self.markers[index].position
         orientation = self.markers[index].orientation
-        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True)
+        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
 
         if dialog.ShowModal() == wx.ID_OK:
             position_list, orientation_list = dialog.GetValueBrainTarget()
             for (position, orientation) in zip(position_list, orientation_list):
-                self.CreateMarker(list(position), list(orientation), is_brain_target=True)
+                self.CreateMarker(list(position), list(orientation), size=0.05, is_brain_target=True)
         dialog.Destroy()
 
     def OnSendBrainTarget(self, evt):
@@ -1890,6 +1892,9 @@ class MarkersPanel(wx.Panel):
 
     def OnActivateTargetMode(self, target_mode=None):
         self.target_mode = target_mode
+
+    def AddPeeledSurface(self, flag, actor):
+        self.brain_actor = actor
 
     def SetMarkers(self, markers):
         """
