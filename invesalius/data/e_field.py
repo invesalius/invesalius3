@@ -94,6 +94,7 @@ class Visualize_E_field_Thread(threading.Thread):
         self.sle = sle
         self.neuronavigation_api = neuronavigation_api
         self.ID_list = vtkIdList()
+        self.coord_old = []
     def run(self):
 
 
@@ -102,12 +103,13 @@ class Visualize_E_field_Thread(threading.Thread):
                 self.ID_list = self.e_field_IDs.get_nowait()
                 if self.ID_list.GetNumberOfIds() != 0:
                     [m_img, coord] = self.efield_queue.get_nowait()
-                    [T_rot, cp] = Get_coil_position(m_img)
-                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                    self.e_field_norms.put_nowait((enorm))
-
-                self.efield_queue.task_done()
-                self.e_field_IDs.task_done()
+                    if np.all(self.coord_old != coord):
+                        [T_rot, cp] = Get_coil_position(m_img)
+                        enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                        self.e_field_norms.put_nowait((enorm))
+                        self.efield_queue.task_done()
+                        self.e_field_IDs.task_done()
+                        self.coord_old = coord
 
                 time.sleep(self.sle)
             # if no coordinates pass
@@ -118,4 +120,5 @@ class Visualize_E_field_Thread(threading.Thread):
             except queue.Full:
                 # self.coord_queue.task_done()
                 self.efield_queue.task_done()
-
+                self.e_field_IDs.task_done()
+                #pass

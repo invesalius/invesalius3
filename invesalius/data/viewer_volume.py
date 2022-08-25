@@ -1616,7 +1616,7 @@ class Viewer(wx.Panel):
             colors.InsertTuple(i, color)
         self.efield_mesh.GetPointData().SetScalars(colors)
         self.Recolor_efield_Actor(self.efield_mesh)
-        Publisher.sendMessage('Render volume viewer')
+        wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
 
     def CreateLUTtableforefield(self, min, max):
@@ -1634,7 +1634,7 @@ class Viewer(wx.Panel):
         min = np.amin(self.e_field_norms)
         self.min = min
         self.max = max
-        Publisher.sendMessage('Update efield vis')
+        wx.CallAfter(Publisher.sendMessage,'Update efield vis')
 
 
     def Get_efield_actor(self, e_field_actor):
@@ -1702,8 +1702,10 @@ class Viewer(wx.Panel):
                 colors.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(colors)
             self.Recolor_efield_Actor(self.efield_mesh)
+            wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
+
         else:
-            Publisher.sendMessage('Recolor again')
+            wx.CallAfter(Publisher.sendMessage,'Recolor again')
 
 
     def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
@@ -1711,7 +1713,10 @@ class Viewer(wx.Panel):
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
         self.radius_list =self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.e_field_IDs = queue_IDs
-        self.e_field_IDs.put_nowait((self.radius_list))
+        try:
+            self.e_field_IDs.put_nowait((self.radius_list))
+        except queue.Full:
+            pass
         #self.Get_coil_position(m_img,coord[3:],neuronavigation_api)
 
     def Get_enorm(self, enorm):

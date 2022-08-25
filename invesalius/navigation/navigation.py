@@ -98,13 +98,7 @@ class UpdateNavigationScene(threading.Thread):
                 coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
-                # print('UpdateScene: get {}'.format(count))
 
-                # if not self.efield_queue.empty():
-                #     efield_flag = self.efield_queue.get_nowait()
-                #     self.efield_queue.task_done()
-                # else:
-                #     efield_flag = False
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -127,14 +121,17 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
-                if self.e_field_loaded:
-                    wx.CallAfter(Publisher.sendMessage,'Update point location for e-field calculation',  m_img=m_img, coord =coord, queue_IDs = self.e_field_IDs)
-                    enorm= self.e_field_norms.get_nowait()
-                    wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm=enorm)
-                    self.e_field_norms.task_done()
+
                 if view_obj:
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
+
+                if self.e_field_loaded:
+                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
+                                 coord=coord, queue_IDs=self.e_field_IDs)
+                    enorm = self.e_field_norms.get_nowait()
+                    wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm=enorm)
+                    self.e_field_norms.task_done()
 
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
