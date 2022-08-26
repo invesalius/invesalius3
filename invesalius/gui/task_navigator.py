@@ -1730,13 +1730,16 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
         brain_target = self.markers[index].position + self.markers[index].orientation
-        coil_pose = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
-        if self.navigation.coil_at_target:
-            self.mTMS.UpdateTarget(coil_pose, brain_target)
-            #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
-            print("Send brain target to mTMS API")
+        if self.__find_target_marker():
+            coil_pose = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
+            if self.navigation.coil_at_target:
+                self.mTMS.UpdateTarget(coil_pose, brain_target)
+                #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
+                print("Send brain target to mTMS API")
+            else:
+                print("The coil is not at the target")
         else:
-            print("The coil is not at the target")
+            print("Target not set")
 
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
