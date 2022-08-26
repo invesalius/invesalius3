@@ -56,7 +56,7 @@ class mTMS():
         mTMS_target, mTMS_index_target = self.FindmTMSParameters(offset)
         print(mTMS_index_target)
         if len(mTMS_index_target[0]):
-            #self.SendToMTMS(mTMS_index_target[0])
+            self.SendToMTMS(mTMS_index_target[0]+1)
             new_row = {'mTMS_target': mTMS_target, 'brain_target(nav)': brain_target_flip, 'coil_pose(nav)': coil_pose_flip, 'intensity': self.intensity}
             self.df = self.df.append((pd.DataFrame([new_row], columns=self.df.columns)))
         else:
