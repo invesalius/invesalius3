@@ -15,7 +15,7 @@ class mTMS():
         mtms_app = win32com.client.Dispatch('MTMSActiveXServer.Application')
         self.vi = mtms_app.getvireference(vipath)
         # Log name
-        #self.log_name = 'mtms_subject_00_run_0'
+        self.log_name = 'mtms_subject_00_run_0'
         #self.vi.SetControlValue(self.log_name, 'Experiment 1a')
         self.intensity = self.vi.GetControlValue('Get Intensity')
         #self.intensity = 20
