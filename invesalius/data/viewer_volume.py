@@ -1715,7 +1715,7 @@ class Viewer(wx.Panel):
         if self.radius_list.GetNumberOfIds() != 0:
             try:
                 self.e_field_IDs_queue.put_nowait((self.radius_list))
-            except:
+            except queue.Full:
                 print('e_field ID queue Full')
                 pass
         else:
