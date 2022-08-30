@@ -125,6 +125,11 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
 
+                self.neuronavigation_api.update_coil_pose(
+                    position=coord[:3],
+                    orientation=coord[3:],
+                )
+
                 if self.e_field_loaded:
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
                                  coord=coord, queue_IDs=self.e_field_IDs_queue)
