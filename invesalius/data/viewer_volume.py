@@ -22,7 +22,6 @@
 # from math import cos, sin
 import os
 import sys
-import time
 
 import numpy as np
 from numpy.core.umath_tests import inner1d
@@ -1679,7 +1678,7 @@ class Viewer(wx.Panel):
         else:
             self.radius_list.Reset()
             #send flag or radious_list as zero to only ask for enorms when is not zero
-        return self.radius_list
+        #return self.radius_list
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
@@ -1711,12 +1710,17 @@ class Viewer(wx.Panel):
     def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
         [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
-        self.radius_list =self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
-        self.e_field_IDs = queue_IDs
-        try:
-            self.e_field_IDs.put_nowait((self.radius_list))
-        except queue.Full:
-            pass
+        self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
+        self.e_field_IDs_queue = queue_IDs
+        if self.radius_list.GetNumberOfIds() != 0:
+            try:
+                self.e_field_IDs_queue.put_nowait((self.radius_list))
+            except:
+                print('e_field ID queue Full')
+                pass
+        else:
+            self.e_field_IDs_queue.clear()
+            self.e_field_IDs_queue.join()
         #self.Get_coil_position(m_img,coord[3:],neuronavigation_api)
 
     def Get_enorm(self, enorm):

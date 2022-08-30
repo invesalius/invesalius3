@@ -5,6 +5,7 @@ import time
 import numpy as np
 from vtkmodules.vtkCommonCore import (
     vtkIdList)
+import csv
 from invesalius.pubsub import pub as Publisher
 
 # def ObjectArrowLocation(self, m_img, coord):
@@ -77,7 +78,6 @@ def Get_coil_position( m_img):
     return [T_rot,cp]
 
 class Visualize_E_field_Thread(threading.Thread):
-    # TODO: Remove this class and create a case where no ACT is provided in the class ComputeTractsACTThread
 
     def __init__(self, queues, event, sle, neuronavigation_api):
 
@@ -86,8 +86,8 @@ class Visualize_E_field_Thread(threading.Thread):
         #self.inp = inp #list of inputs
         # self.coord_queue = coord_queue
         self.efield_queue = queues[0]
-        self.e_field_norms = queues[1]
-        self.e_field_IDs = queues[2]
+        self.e_field_norms_queue = queues[1]
+        self.e_field_IDs_queue = queues[2]
         #self.tracts_queue = queues[1]
         # self.visualization_queue = visualization_queue
         self.event = event
@@ -95,22 +95,33 @@ class Visualize_E_field_Thread(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.ID_list = vtkIdList()
         self.coord_old = []
+        #self.enorm_debug = self.load_temporarly_e_field_CSV()
+        #self.debug = True
     def run(self):
 
 
         while not self.event.is_set():
             try:
-                self.ID_list = self.e_field_IDs.get_nowait()
-                if self.ID_list.GetNumberOfIds() != 0:
-                    [m_img, coord] = self.efield_queue.get_nowait()
-                    if np.all(self.coord_old != coord):
-                        [T_rot, cp] = Get_coil_position(m_img)
-                        enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                        self.e_field_norms.put_nowait((enorm))
-                        self.efield_queue.task_done()
-                        self.e_field_IDs.task_done()
-                        self.coord_old = coord
+                if not self.e_field_IDs_queue.empty():
+                    try:
+                        self.ID_list = self.e_field_IDs_queue.get_nowait()
+                    finally:
+                        self.e_field_IDs_queue.task_done()
 
+                    [m_img, coord] = self.efield_queue.get_nowait()
+                    self.efield_queue.task_done()
+                    if self.ID_list.GetNumberOfIds() != 0:
+                        if np.all(self.coord_old != coord):
+                            [T_rot, cp] = Get_coil_position(m_img)
+                            #if self.debug:
+                            #    enorm = self.enorm_debug
+                            #else:
+                            enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                            try:
+                                self.e_field_norms_queue.put_nowait((enorm))
+                            except:
+                                 print('Error: Enorm queue full.')
+                        self.coord_old = coord
                 time.sleep(self.sle)
             # if no coordinates pass
             except queue.Empty:
@@ -120,5 +131,22 @@ class Visualize_E_field_Thread(threading.Thread):
             except queue.Full:
                 # self.coord_queue.task_done()
                 self.efield_queue.task_done()
-                self.e_field_IDs.task_done()
+                self.e_field_IDs_queue.task_done()
                 #pass
+
+    def load_temporarly_e_field_CSV(self):
+        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\Enorm_inCoilpoint200sorted.csv'
+        with open(filename, 'r') as file:
+            my_reader = csv.reader(file, delimiter=',')
+            rows = []
+            for row in my_reader:
+                rows.append(row)
+        e_field = rows
+        e_field_norms = np.array(e_field).astype(float)
+
+        # ###Colors###
+        # max = np.amax(e_field_norms)
+        # min = np.amin(e_field_norms)
+        # print('minz: {:< 6.3}'.format(min))
+        # print('maxz: {:< 6.3}'.format(max))
+        return e_field_norms
