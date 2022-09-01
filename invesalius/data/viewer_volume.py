@@ -1712,17 +1712,20 @@ class Viewer(wx.Panel):
         [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
-        self.e_field_IDs_queue = queue_IDs
-        if self.radius_list.GetNumberOfIds() != 0:
-            if np.all(self.old_coord != coord):
-                self.e_field_IDs_queue.put_nowait((self.radius_list))
+        try:
+            self.e_field_IDs_queue = queue_IDs
+            if self.radius_list.GetNumberOfIds() != 0:
+                if np.all(self.old_coord != coord):
+                    self.e_field_IDs_queue.put_nowait((self.radius_list))
+                else:
+                    self.e_field_IDs_queue.clear()
+                    self.e_field_IDs_queue.join()
+                self.old_coord = np.array([coord])
             else:
                 self.e_field_IDs_queue.clear()
                 self.e_field_IDs_queue.join()
-            self.old_coord = np.array([coord])
-        else:
-            self.e_field_IDs_queue.clear()
-            self.e_field_IDs_queue.join()
+        except queue.Full:
+            pass
 
     def Get_enorm(self, enorm):
         self.Get_E_field_max_min(enorm)
