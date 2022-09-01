@@ -95,7 +95,7 @@ class Visualize_E_field_Thread(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.ID_list = vtkIdList()
         self.coord_old = []
-        self.enorm_debug = self.load_temporarly_e_field_CSV()
+        #self.enorm_debug = self.load_temporarly_e_field_CSV()
         self.debug = True
     def run(self):
 
