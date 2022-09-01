@@ -269,6 +269,7 @@ class Viewer(wx.Panel):
         self.radius_list = vtkIdList()
 
         self.set_camera_position = True
+        self.old_coord = np.zeros((6,),dtype=float)
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -1713,15 +1714,15 @@ class Viewer(wx.Panel):
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.e_field_IDs_queue = queue_IDs
         if self.radius_list.GetNumberOfIds() != 0:
-            try:
+            if np.all(self.old_coord != coord):
                 self.e_field_IDs_queue.put_nowait((self.radius_list))
-            except queue.Full:
-                print('e_field ID queue Full')
-                pass
+            else:
+                self.e_field_IDs_queue.clear()
+                self.e_field_IDs_queue.join()
+            self.old_coord = np.array([coord])
         else:
             self.e_field_IDs_queue.clear()
             self.e_field_IDs_queue.join()
-        #self.Get_coil_position(m_img,coord[3:],neuronavigation_api)
 
     def Get_enorm(self, enorm):
         self.Get_E_field_max_min(enorm)

@@ -95,8 +95,8 @@ class Visualize_E_field_Thread(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.ID_list = vtkIdList()
         self.coord_old = []
-        #self.enorm_debug = self.load_temporarly_e_field_CSV()
-        #self.debug = True
+        self.enorm_debug = self.load_temporarly_e_field_CSV()
+        self.debug = True
     def run(self):
 
 
@@ -109,6 +109,7 @@ class Visualize_E_field_Thread(threading.Thread):
                         self.e_field_IDs_queue.task_done()
 
                     [m_img, coord] = self.efield_queue.get_nowait()
+
                     self.efield_queue.task_done()
                     if self.ID_list.GetNumberOfIds() != 0:
                         if np.all(self.coord_old != coord):
@@ -117,10 +118,8 @@ class Visualize_E_field_Thread(threading.Thread):
                             #    enorm = self.enorm_debug
                             #else:
                             enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                            try:
-                                self.e_field_norms_queue.put_nowait((enorm))
-                            except queue.Full:
-                                 print('Error: Enorm queue full.')
+                            self.e_field_norms_queue.put_nowait((enorm))
+
                         self.coord_old = coord
                 time.sleep(self.sle)
             # if no coordinates pass
