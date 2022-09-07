@@ -122,6 +122,7 @@ class Visualize_E_field_Thread(threading.Thread):
             time.sleep(self.sle)
 
     def load_temporarly_e_field_CSV(self):
+        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\Enorm_inCoilpoint200sorted.csv'
         with open(filename, 'r') as file:
             my_reader = csv.reader(file, delimiter=',')
             rows = []
