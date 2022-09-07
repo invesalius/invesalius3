@@ -1709,6 +1709,10 @@ class Viewer(wx.Panel):
 
 
     def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
+        #TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
+        # this might work because a python instance from the 3D mesh can be edited in the thread. Check how to extract
+        # the instance from the desired mesh for visualization and if it works. Optimally, there should be no
+        # processing or threading related commands inside viewer_volume.
         [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
