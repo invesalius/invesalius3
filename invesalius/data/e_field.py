@@ -78,13 +78,9 @@ def Get_coil_position( m_img):
     return [T_rot,cp]
 
 class Visualize_E_field_Thread(threading.Thread):
-
     def __init__(self, queues, event, sle, neuronavigation_api):
-
-
         threading.Thread.__init__(self, name='Visualize_E_field_Thread')
         #self.inp = inp #list of inputs
-        # self.coord_queue = coord_queue
         self.efield_queue = queues[0]
         self.e_field_norms_queue = queues[1]
         self.e_field_IDs_queue = queues[2]
@@ -96,45 +92,36 @@ class Visualize_E_field_Thread(threading.Thread):
         self.ID_list = vtkIdList()
         self.coord_old = []
         #self.enorm_debug = self.load_temporarly_e_field_CSV()
-        self.debug = True
+        self.debug = False
+
     def run(self):
-
-
         while not self.event.is_set():
             try:
                 if not self.e_field_IDs_queue.empty():
-                    try:
-                        self.ID_list = self.e_field_IDs_queue.get_nowait()
-                    finally:
-                        self.e_field_IDs_queue.task_done()
+                    self.ID_list = self.e_field_IDs_queue.get_nowait()
+                    self.e_field_IDs_queue.task_done()
+                    if not self.efield_queue.empty():
+                        [m_img, coord] = self.efield_queue.get_nowait()
+                        self.efield_queue.task_done()
+                        if self.ID_list.GetNumberOfIds() != 0:
+                            if np.all(self.coord_old != coord):
+                                [T_rot, cp] = Get_coil_position(m_img)
+                                if self.debug:
+                                    enorm = self.enorm_debug
+                                else:
+                                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                                self.e_field_norms_queue.put_nowait((enorm))
 
-                    [m_img, coord] = self.efield_queue.get_nowait()
+                            self.coord_old = coord
 
-                    self.efield_queue.task_done()
-                    if self.ID_list.GetNumberOfIds() != 0:
-                        if np.all(self.coord_old != coord):
-                            [T_rot, cp] = Get_coil_position(m_img)
-                            #if self.debug:
-                            #    enorm = self.enorm_debug
-                            #else:
-                            enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                            self.e_field_norms_queue.put_nowait((enorm))
-
-                        self.coord_old = coord
-                time.sleep(self.sle)
-            # if no coordinates pass
-            except queue.Empty:
-                # print("Empty queue in tractography")
-                pass
             # if queue is full mark as done (may not be needed in this new "nowait" method)
             except queue.Full:
-                # self.coord_queue.task_done()
                 self.efield_queue.task_done()
                 self.e_field_IDs_queue.task_done()
-                #pass
+
+            time.sleep(self.sle)
 
     def load_temporarly_e_field_CSV(self):
-        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\Enorm_inCoilpoint200sorted.csv'
         with open(filename, 'r') as file:
             my_reader = csv.reader(file, delimiter=',')
             rows = []

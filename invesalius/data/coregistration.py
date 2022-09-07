@@ -348,10 +348,10 @@ class CoordinateCorregistrate(threading.Thread):
                     self.efield_queue.put_nowait([m_img, coord])
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
-                # The sleep has to be in both threads
-                sleep(self.sle)
             except queue.Full:
                 pass
+            # The sleep has to be in both threads
+            sleep(self.sle)
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):

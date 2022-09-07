@@ -1717,13 +1717,7 @@ class Viewer(wx.Panel):
             if self.radius_list.GetNumberOfIds() != 0:
                 if np.all(self.old_coord != coord):
                     self.e_field_IDs_queue.put_nowait((self.radius_list))
-                else:
-                    self.e_field_IDs_queue.clear()
-                    self.e_field_IDs_queue.join()
                 self.old_coord = np.array([coord])
-            else:
-                self.e_field_IDs_queue.clear()
-                self.e_field_IDs_queue.join()
         except queue.Full:
             pass
 

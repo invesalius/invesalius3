@@ -865,7 +865,7 @@ class NeuronavigationPanel(wx.Panel):
 
         nav_id = btn_nav.GetValue()
         if not nav_id:
-            Publisher.sendMessage("Stop navigation")
+            wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
 
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)

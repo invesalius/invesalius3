@@ -144,11 +144,11 @@ class UpdateNavigationScene(threading.Thread):
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
-
-                sleep(self.sle)
             except queue.Empty:
                 if got_coords:
                     self.coord_queue.task_done()
+
+            sleep(self.sle)
 
 
 
