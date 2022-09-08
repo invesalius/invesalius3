@@ -100,6 +100,7 @@ class mTMS():
         print("Charging capacitors...")
         while not self.vi.GetControlValue('Get Ready to stimulate'):
             pass
+        #TODO: remove stimulation from here. The user should use the mtms interface to perform the stimuli
         # Stimulate
         print("Stimulating")
         self.vi.SetControlValue('Stimulate', True)
