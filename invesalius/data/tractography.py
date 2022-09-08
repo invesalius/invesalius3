@@ -333,8 +333,6 @@ class ComputeTractsThread(threading.Thread):
                 # self.coord_queue.task_done()
                 # print('ComputeTractsThread: done {}'.format(count))
 
-                # sleep required to prevent user interface from being unresponsive
-                time.sleep(self.sle)
             # if no coordinates pass
             except queue.Empty:
                 # print("Empty queue in tractography")
@@ -343,6 +341,9 @@ class ComputeTractsThread(threading.Thread):
             except queue.Full:
                 # self.coord_queue.task_done()
                 self.coord_tracts_queue.task_done()
+
+            # sleep required to prevent user interface from being unresponsive
+            time.sleep(self.sle)
 
 
 class ComputeTractsACTThread(threading.Thread):
@@ -549,8 +550,6 @@ class ComputeTractsACTThread(threading.Thread):
                 self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset, coord_offset_w))
                 self.coord_tracts_queue.task_done()
 
-                # sleep required to prevent user interface from being unresponsive
-                time.sleep(self.sleep_thread)
             # if no coordinates pass
             except queue.Empty:
                 pass
@@ -558,6 +557,8 @@ class ComputeTractsACTThread(threading.Thread):
             except queue.Full:
                 self.coord_tracts_queue.task_done()
 
+            # sleep required to prevent user interface from being unresponsive
+            time.sleep(self.sleep_thread)
 
 def set_trekker_parameters(trekker, params):
     """Set all user-defined parameters for tractography computation using the Trekker library
