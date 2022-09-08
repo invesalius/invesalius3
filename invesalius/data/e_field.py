@@ -96,28 +96,34 @@ class Visualize_E_field_Thread(threading.Thread):
 
     def run(self):
         while not self.event.is_set():
-            try:
-                if not self.e_field_IDs_queue.empty():
+
+            if not self.e_field_IDs_queue.empty():
+                try:
                     self.ID_list = self.e_field_IDs_queue.get_nowait()
                     self.e_field_IDs_queue.task_done()
-                    if not self.efield_queue.empty():
+                except queue.Full:
+                    self.e_field_IDs_queue.task_done()
+
+                if not self.efield_queue.empty():
+                    try:
                         [m_img, coord] = self.efield_queue.get_nowait()
                         self.efield_queue.task_done()
-                        if self.ID_list.GetNumberOfIds() != 0:
-                            if np.all(self.coord_old != coord):
-                                [T_rot, cp] = Get_coil_position(m_img)
-                                if self.debug:
-                                    enorm = self.enorm_debug
-                                else:
-                                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                    except queue.Full:
+                        self.efield_queue.task_done()
+
+                    if self.ID_list.GetNumberOfIds() != 0:
+                        if np.all(self.coord_old != coord):
+                            [T_rot, cp] = Get_coil_position(m_img)
+                            if self.debug:
+                                enorm = self.enorm_debug
+                            else:
+                                enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                            try:
                                 self.e_field_norms_queue.put_nowait((enorm))
+                            except queue.Full:
+                                pass
 
-                            self.coord_old = coord
-
-            # if queue is full mark as done (may not be needed in this new "nowait" method)
-            except queue.Full:
-                self.efield_queue.task_done()
-                self.e_field_IDs_queue.task_done()
+                        self.coord_old = coord
 
             time.sleep(self.sle)
 
