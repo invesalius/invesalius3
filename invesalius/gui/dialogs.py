@@ -5042,6 +5042,9 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
             self.RemoveAllActor()
+            if self.peel_brain_actor:
+                self.peel_brain_actor.PickableOff()
+                self.ren.AddActor(self.peel_brain_actor)
         self.brain_target_actor_list = []
         self.coil_target_actor_list = []
         self.center_brain_target_actor = None
@@ -5406,8 +5409,16 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.interactor.Render()
 
     def OnCreateTargetGrid(self, evt):
-        coord_flip = list(self.marker)
-        coord_flip[1] = -coord_flip[1]
+        vtkmat = self.coil_pose_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], narray[1][-1], narray[2][-1]]
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+        coil_target_position = position
+        coil_target_orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+
+        # coord_flip = list(self.marker)
+        # coord_flip[1] = -coord_flip[1]
         self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
         self.coil_pose_actor.GetProperty().SetOpacity(0)
         self.coil_pose_actor.PickableOff()
@@ -5415,25 +5426,27 @@ class SetCoilOrientationDialog(wx.Dialog):
             self.RemoveActor(self.dummy_coil_actor)
 
         grid_resolution = 3
-        X, Y = self.CreateGrid(grid_resolution, 15, 10)
+        X, Y = self.CreateGrid(grid_resolution, 5, 5)
         self.coil_target_actor_list = []
         for i in range(grid_resolution):
             for j in range(grid_resolution):
                 m_offset_target = dco.coordinates_to_transformation_matrix(
-                    position=[X[i][j], Y[i][j], 5],
-                    orientation=coord_flip[3:],
+                    position=[X[i][j], Y[i][j], 0],
+                    orientation=coil_target_orientation[:3],
                     axes='sxyz',
                 )
                 m_origin_coil = dco.coordinates_to_transformation_matrix(
-                    position=coord_flip[:3],
+                    position=[coil_target_position[0], coil_target_position[1], coil_target_position[2]],
                     orientation=[0, 0, 0],
                     axes='sxyz',
                 )
                 m_target = m_origin_coil @ m_offset_target
                 position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
-                coord_scalp = self.ICP(position, coord_flip, self.surface)
-                coil_target_actor, coordinate = self.AddTarget(coord_scalp)
-                self.marker_actor.AddPosition(0, 0, 5)
+                coord_scalp = self.ICP(position, coil_target_position, self.surface)
+                coord = coord_scalp[0], coord_scalp[1], coord_scalp[2], coil_target_orientation[0], \
+                        coil_target_orientation[1], coil_target_orientation[2]
+                coil_target_actor, coordinate = self.AddTarget(coord)
+                # self.marker_actor.AddPosition(0, 0, 5)
                 self.coil_target_actor_list.append(coil_target_actor)
 
         self.interactor.Render()
@@ -5584,6 +5597,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         return up_vector
 
     def GetValue(self):
+        self.ren.RemoveActor(self.peel_brain_actor)
         vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
