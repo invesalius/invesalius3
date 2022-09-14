@@ -1189,7 +1189,7 @@ class MarkersPanel(wx.Panel):
         r : float = 0
         g : float = 1
         b : float = 0
-        size : int = 2
+        size : float = 2
         label : str = '*'
         x_seed : float = 0
         y_seed : float = 0
@@ -1280,8 +1280,8 @@ class MarkersPanel(wx.Panel):
                     setattr(self, field.name, float(str_val))
                 if field.type is float and str_val == 'None':
                     setattr(self, field.name, None)
-                if field.type is int:
-                    setattr(self, field.name, int(str_val))
+                if field.type is float and str_val != 'None':
+                    setattr(self, field.name, float(str_val))
                 if field.type is str:
                     setattr(self, field.name, str_val[1:-1]) # remove the quotation marks
                 if field.type is bool:
@@ -1631,11 +1631,11 @@ class MarkersPanel(wx.Panel):
         if dialog.ShowModal() == wx.ID_OK:
             #position, orientation = dialog.GetValue()
             coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
-            for (position, orientation) in zip(coil_position_list, coil_orientation_list):
-                self.CreateMarker(list(position), list(orientation), is_brain_target=False)
-            self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=True)
-            #for (position, orientation) in zip(brain_position_list, brain_orientation_list):
-            #    self.CreateMarker(list(position), list(orientation), is_brain_target=True)
+            #for (position, orientation) in zip(coil_position_list, coil_orientation_list):
+            #    self.CreateMarker(list(position), list(orientation), is_brain_target=False)
+            self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=False)
+            for (position, orientation) in zip(brain_position_list, brain_orientation_list):
+                self.CreateMarker(list(position), list(orientation), is_brain_target=True)
             #self.CreateMarker(list(position), list(orientation), is_brain_target=is_brain_target)
         dialog.Destroy()
 
