@@ -832,7 +832,7 @@ SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.2
-SLEEP_COORDINATES = 0.05
+SLEEP_COORDINATES = 0.1
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
