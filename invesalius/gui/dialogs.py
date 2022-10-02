@@ -929,6 +929,17 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
     dlg.ShowModal()
     dlg.Destroy()
 
+def Efield_connection_warning():
+    msg = _('No connection to E-field library')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def ICPcorregistration(fre):
     msg = _("The fiducial registration error is: ") + str(round(fre, 2)) + '\n\n' + \
           _("Would you like to improve accuracy?")
@@ -5175,16 +5186,19 @@ class SetNDIconfigs(wx.Dialog):
         """
         import serial.tools.list_ports
 
+        port_list = []
+        desc_list = []
         ports = serial.tools.list_ports.comports()
         if sys.platform.startswith('win'):
-            port_list = []
-            desc_list = []
             for port, desc, hwid in sorted(ports):
                 port_list.append(port)
                 desc_list.append(desc)
             port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
         else:
-            raise EnvironmentError('Unsupported platform')
+            for p in ports:
+                port_list.append(p.device)
+                desc_list.append(p.description)
+            port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
 
         #print("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
 

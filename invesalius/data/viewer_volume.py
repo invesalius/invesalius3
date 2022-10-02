@@ -22,14 +22,13 @@
 # from math import cos, sin
 import os
 import sys
-import time
 
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
+import queue
 
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
-from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
     vtkIdList,
@@ -38,6 +37,10 @@ from vtkmodules.vtkCommonCore import (
     vtkMinimalStandardRandomSequence,
     vtkPoints,
     vtkUnsignedCharArray
+)
+from vtkmodules.vtkCommonColor import (
+    vtkColorSeries,
+    vtkNamedColors
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
@@ -105,8 +108,6 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
-
-
 
 if sys.platform == 'win32':
     try:
@@ -265,8 +266,10 @@ class Viewer(wx.Panel):
         self.actor_tracts = None
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
+        self.radius_list = vtkIdList()
 
         self.set_camera_position = True
+        self.old_coord = np.zeros((6,),dtype=float)
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -356,6 +359,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
+        Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
+        Publisher.subscribe(self.Get_enorm, 'Get enorm')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -367,14 +372,21 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
+        Publisher.subscribe(self.OnUpdateEfieldvis, 'Update efield vis')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
+        Publisher.subscribe(self.Init_efield, 'Initialize')
+        Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
+        Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
+        Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
+        Publisher.subscribe(self.Get_efield_actor, 'Send Actor')
+        Publisher.subscribe(self.Default_color_actor, 'Recolor again')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -1590,6 +1602,49 @@ class Viewer(wx.Panel):
     def Initlocator_viewer(self, locator):
         self.locator = locator
 
+    def Recolor_efield_Actor(self, mesh):
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(mesh)
+        self.efield_actor.SetMapper(mapper)
+
+    def Default_color_actor(self):
+        colors = vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName('Colors')
+        color = 3 * [255.0]
+        for i in range(self.efield_mesh.GetNumberOfCells()):
+            colors.InsertTuple(i, color)
+        self.efield_mesh.GetPointData().SetScalars(colors)
+        self.Recolor_efield_Actor(self.efield_mesh)
+        wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
+
+
+    def CreateLUTtableforefield(self, min, max):
+        lut = vtkLookupTable()
+        lut.SetTableRange(min, max)
+        colorSeries = vtkColorSeries()
+        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        colorSeries.SetColorScheme(seriesEnum)
+        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        return lut
+
+    def Get_E_field_max_min(self, e_field_norms):
+        self.e_field_norms = e_field_norms
+        max = np.amax(self.e_field_norms)
+        min = np.amin(self.e_field_norms)
+        self.min = min
+        self.max = max
+        wx.CallAfter(Publisher.sendMessage,'Update efield vis')
+
+
+    def Get_efield_actor(self, e_field_actor):
+        self.efield_actor  = e_field_actor
+
+    def FindPointsAroundRadiusEfield(self, cellId):
+        #radius = vtk.mutable(50)
+        #self.radius_list = vtk.vtkIdList()
+        self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
+
     def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
         pts1 = vtkIdList()
@@ -1598,6 +1653,106 @@ class Viewer(wx.Panel):
             for j in range(pts1.GetNumberOfIds()):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
+
+    def Init_efield(self, e_field_brain):
+        self.e_field_mesh_normals =e_field_brain.e_field_mesh_normals
+        self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
+        self.locator_efield = e_field_brain.locator_efield
+        self.locator_efield_cell = e_field_brain.locator_efield_Cell
+        self.efield_mesh = e_field_brain.e_field_mesh
+
+    def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+        closestDist = 100
+        # if find intersection , calculate angle and add actors
+        if intersectingCellIds.GetNumberOfIds() != 0:
+            for i in range(intersectingCellIds.GetNumberOfIds()):
+                cellId = intersectingCellIds.GetId(i)
+                point = np.array(self.e_field_mesh_centers.GetPoint(cellId))
+                distance = np.linalg.norm(point - p1)
+                if distance < closestDist:
+                    closestDist = distance
+                    closestPoint = point
+                    pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
+                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    self.FindPointsAroundRadiusEfield(cellId)
+                    self.radius_list.Sort()
+        else:
+            self.radius_list.Reset()
+            #send flag or radious_list as zero to only ask for enorms when is not zero
+        #return self.radius_list
+
+    def OnUpdateEfieldvis(self):
+        if self.radius_list.GetNumberOfIds() != 0:
+            lut = self.CreateLUTtableforefield(self.min, self.max)
+            colors = vtkUnsignedCharArray()
+            colors.SetNumberOfComponents(3)
+            colors.SetName('Colors')
+            color = 3 * [255.0]
+            for i in range(np.size(self.e_field_norms)):
+                colors.InsertTuple(i, color)
+                #cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
+            for h in range(self.radius_list.GetNumberOfIds()):
+                dcolor = 3 * [0.0]
+                index_id = self.radius_list.GetId(h)
+                #index_id = cell_ids_array[h]
+                lut.GetColor(self.e_field_norms[index_id], dcolor)
+                color = 3 * [0.0]
+                for j in range(0, 3):
+                    color[j] = int(255.0 * dcolor[j])
+                colors.InsertTuple(index_id, color)
+            self.efield_mesh.GetPointData().SetScalars(colors)
+            self.Recolor_efield_Actor(self.efield_mesh)
+            wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
+
+        else:
+            wx.CallAfter(Publisher.sendMessage,'Recolor again')
+
+
+    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
+        #TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
+        # this might work because a python instance from the 3D mesh can be edited in the thread. Check how to extract
+        # the instance from the desired mesh for visualization and if it works. Optimally, there should be no
+        # processing or threading related commands inside viewer_volume.
+        [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
+        intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
+        self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
+        try:
+            self.e_field_IDs_queue = queue_IDs
+            if self.radius_list.GetNumberOfIds() != 0:
+                if np.all(self.old_coord != coord):
+                    self.e_field_IDs_queue.put_nowait((self.radius_list))
+                self.old_coord = np.array([coord])
+        except queue.Full:
+            pass
+
+    def Get_enorm(self, enorm):
+        self.Get_E_field_max_min(enorm)
+
+    def Get_coil_position(self, m_img,coord,neuronavigation_api):
+        # coil position cp : the center point at the bottom of the coil casing,
+        # corresponds to the origin of the coil template.
+        # coil normal cn: outer normal of the coil, i.e. away from the head
+        # coil tangent 1 ct1: long axis
+        # coil tangent 2 ct2: short axis ~ direction of primary E under the coil
+        # % rotation matrix for the coil coordinates
+        # T = [ct1;ct2;cn];
+        m_img_flip = m_img.copy()
+        m_img_flip[1, -1] = -m_img_flip[1, -1]
+        cp = m_img_flip[:-1, -1]  # coil center
+        cp = cp * 0.001  # convert to meters
+        cp = cp.tolist()
+
+        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
+        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
+        coil_dir = m_img_flip[:-1, 0]
+        coil_face = m_img_flip[:-1, 1]
+        cn = np.cross(coil_dir, coil_face)
+        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+        T_rot = T_rot.tolist()  # to list
+        enorm = neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
+        self.Get_E_field_max_min(enorm)
+
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()

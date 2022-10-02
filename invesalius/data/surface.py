@@ -196,6 +196,7 @@ class SurfaceManager():
 
     def __bind_events(self):
         Publisher.subscribe(self.AddNewActor, 'Create surface')
+        Publisher.subscribe(self.GetActor, 'Get Actor')
         Publisher.subscribe(self.SetActorTransparency,
                                  'Set surface transparency')
         Publisher.subscribe(self.SetActorColour,
@@ -826,6 +827,9 @@ class SurfaceManager():
         del msg_queue
         import gc
         gc.collect()
+
+    def GetActor(self, surface_index):
+        Publisher.sendMessage('Send Actor', e_field_actor=self.actors_dict[surface_index])
 
     def UpdateSurfaceInterpolation(self):
         interpolation = int(ses.Session().surface_interpolation)

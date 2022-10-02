@@ -78,6 +78,8 @@ class NeuronavigationApi(metaclass=Singleton):
                 orientation=orientation
             )
 
+    # Functions for InVesalius to send updates.
+
     # TODO: Not the cleanest API; for an example of a better API, see update_coil_pose
     #   below, for which position and orientation are sent separately. Changing this
     #   would require changing 'Set cross focal point' publishers and subscribers
@@ -128,6 +130,15 @@ class NeuronavigationApi(metaclass=Singleton):
             self.connection.update_coil_at_target(
                 state=state
             )
+
+    def update_efield(self, position, orientation, T_rot):
+        if self.connection is not None:
+            return self.connection.update_efield(
+                position=position,
+                orientation=orientation,
+                T_rot = T_rot,
+            )
+        return None
 
     # Functions for InVesalius to receive updates via callbacks.
 
