@@ -466,7 +466,7 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp = checkbox_icp
 
         # "Pedal pressed" text and an indicator (checkbox) for pedal press
-        if pedal_connection is not None and pedal_connection.in_use:
+        if (pedal_connection is not None and pedal_connection.in_use) or neuronavigation_api is not None:
             txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
             tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
             checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
@@ -474,7 +474,11 @@ class NeuronavigationPanel(wx.Panel):
             checkbox_pedal_pressed.Enable(False)
             checkbox_pedal_pressed.SetToolTip(tooltip)
 
-            pedal_connection.add_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
+            if pedal_connection is not None:
+                pedal_connection.add_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
+
+            if neuronavigation_api is not None:
+                neuronavigation_api.add_pedal_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
 
             self.checkbox_pedal_pressed = checkbox_pedal_pressed
         else:
@@ -523,7 +527,7 @@ class NeuronavigationPanel(wx.Panel):
         checkboxes_sizer.AddMany([(lock_to_target_text, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                                   (lock_to_target_checkbox, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
-        if pedal_connection is not None and pedal_connection.in_use:
+        if (pedal_connection is not None and pedal_connection.in_use) or neuronavigation_api is not None:
             checkboxes_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                                       (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
@@ -783,11 +787,21 @@ class NeuronavigationPanel(wx.Panel):
                     callback=set_fiducial_callback,
                     remove_when_released=True,
                 )
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
 
             if self.pedal_connection is not None:
                 self.pedal_connection.remove_callback(name='fiducial')
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
 
     def OnStopNavigation(self):
         select_tracker_elem = self.select_tracker_elem
@@ -1083,7 +1097,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
-            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection)
+            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()

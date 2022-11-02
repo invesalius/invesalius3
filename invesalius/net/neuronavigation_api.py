@@ -146,6 +146,18 @@ class NeuronavigationApi(metaclass=Singleton):
         connection.set_callback__set_markers(self.set_markers)
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
 
+    def add_pedal_callback(self, name, callback, remove_when_released=False):
+        if self.connection is not None:
+            self.connection.add_pedal_callback(
+                name=name,
+                callback=callback,
+                remove_when_released=remove_when_released,
+            )
+
+    def remove_pedal_callback(self, name):
+        if self.connection is not None:
+            self.connection.remove_pedal_callback(name=name)
+
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
 
