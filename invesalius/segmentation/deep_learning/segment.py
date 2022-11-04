@@ -46,7 +46,7 @@ def gen_patches(image, patch_size, overlap):
         yield (idx + 1.0) / len(i_cuts), sub_image, ((iz, ez), (iy, ey), (ix, ex))
 
 
-def predict_patch(sub_image, patch, nn_model, patch_size=SIZE):
+def predict_patch(sub_image, patch, nn_model, patch_size):
     (iz, ez), (iy, ey), (ix, ex) = patch
     sub_mask = nn_model.predict(
         sub_image.reshape(1, patch_size, patch_size, patch_size, 1)
@@ -56,7 +56,7 @@ def predict_patch(sub_image, patch, nn_model, patch_size=SIZE):
     ]
 
 
-def predict_patch_torch(sub_image, patch, nn_model, device, patch_size=SIZE):
+def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
     import torch
 
     with torch.no_grad():
@@ -75,7 +75,7 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size=SIZE):
         ]
 
 
-def segment_keras(image, weights_file, overlap, probability_array, comm_array):
+def segment_keras(image, weights_file, overlap, probability_array, comm_array, patch_size):
     import keras
 
     # Loading model
@@ -87,10 +87,10 @@ def segment_keras(image, weights_file, overlap, probability_array, comm_array):
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, SIZE, overlap):
+    for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
-        sub_mask = predict_patch(sub_image, patch, model, SIZE)
+        sub_mask = predict_patch(sub_image, patch, model, patch_size)
         probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
         sums[iz:ez, iy:ey, ix:ex] += 1
 
@@ -106,7 +106,7 @@ def download_callback(comm_array):
 
 
 def segment_torch(
-    image, weights_file, overlap, device_id, probability_array, comm_array
+    image, weights_file, overlap, device_id, probability_array, comm_array, patch_size
 ):
     import torch
 
@@ -125,10 +125,11 @@ def segment_torch(
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, SIZE, overlap):
+    for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
-        sub_mask = predict_patch_torch(sub_image, patch, model, device, SIZE)
+        sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
+        print(sub_mask.shape)
         probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
         sums[iz:ez, iy:ey, ix:ex] += 1
 
@@ -151,6 +152,7 @@ class SegmentProcess(ctx.Process):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
+        patch_size=SIZE
     ):
         multiprocessing.Process.__init__(self)
 
@@ -174,6 +176,8 @@ class SegmentProcess(ctx.Process):
         self.use_gpu = use_gpu
 
         self.overlap = overlap
+
+        self.patch_size = patch_size
 
         self.apply_wwwl = apply_wwwl
         self.window_width = window_width
@@ -250,6 +254,7 @@ class SegmentProcess(ctx.Process):
                 self.device_id,
                 probability_array,
                 comm_array,
+                self.patch_size
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
@@ -259,6 +264,7 @@ class SegmentProcess(ctx.Process):
                 self.overlap,
                 probability_array,
                 comm_array,
+                self.patch_size
             )
 
     @property
@@ -306,6 +312,7 @@ class BrainSegmentProcess(SegmentProcess):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
+        patch_size=SIZE
     ):
         super().__init__(
             image,
@@ -313,10 +320,11 @@ class BrainSegmentProcess(SegmentProcess):
             backend,
             device_id,
             use_gpu,
-            overlap=50,
-            apply_wwwl=False,
-            window_width=255,
-            window_level=127,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size
         )
         self.torch_weights_file_name = 'brain_mri_t1.pt'
         self.torch_weights_url = "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
@@ -341,6 +349,7 @@ class TracheaSegmentProcess(SegmentProcess):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
+        patch_size=48,
     ):
         super().__init__(
             image,
@@ -348,10 +357,11 @@ class TracheaSegmentProcess(SegmentProcess):
             backend,
             device_id,
             use_gpu,
-            overlap=50,
-            apply_wwwl=False,
-            window_width=255,
-            window_level=127,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size
         )
         self.torch_weights_file_name = 'trachea_ct.pt'
         self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
