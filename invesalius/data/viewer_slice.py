@@ -1526,7 +1526,7 @@ class Viewer(wx.Panel):
 
     def ChangeSliceNumber(self, index):
         #self.set_slice_number(index)
-        self.scroll.SetThumbPosition(index)
+        self.scroll.SetThumbPosition(int(index))
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
