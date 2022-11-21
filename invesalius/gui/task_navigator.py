@@ -1788,7 +1788,7 @@ class MarkersPanel(wx.Panel):
                                   target_id=marker_id, orientation=list(orientation))
         dialog.Destroy()
 
-    def OnActivateTargetMode(self, target_mode=None):
+    def OnActivateTargetMode(self, evt=None, target_mode=None):
         self.target_mode = target_mode
 
     def SetMarkers(self, markers):
