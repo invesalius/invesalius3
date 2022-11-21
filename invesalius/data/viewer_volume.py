@@ -1891,29 +1891,34 @@ class Viewer(wx.Panel):
             self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Refresh()
 
+    def RemoveObjectActor(self):
+        self.ren.RemoveActor(self.obj_actor)
+        self.ren.RemoveActor(self.x_actor)
+        self.ren.RemoveActor(self.y_actor)
+        self.ren.RemoveActor(self.z_actor)
+        self.ren.RemoveActor(self.mark_actor)
+        self.ren.RemoveActor(self.obj_projection_arrow_actor)
+        self.ren.RemoveActor(self.object_orientation_torus_actor)
+        self.obj_actor = None
+        self.x_actor = None
+        self.y_actor = None
+        self.z_actor = None
+        self.mark_actor = None
+        self.obj_projection_arrow_actor = None
+        self.object_orientation_torus_actor = None
+
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if flag:
             self.obj_name = obj_name
             self.polydata = polydata
             self.use_default_object = use_default_object
-            if not self.obj_actor:
+            if self.obj_name:
+                if self.obj_actor:
+                    self.RemoveObjectActor()
                 self.AddObjectActor(self.obj_name)
         else:
             if self.obj_actor:
-                self.ren.RemoveActor(self.obj_actor)
-                self.ren.RemoveActor(self.x_actor)
-                self.ren.RemoveActor(self.y_actor)
-                self.ren.RemoveActor(self.z_actor)
-                self.ren.RemoveActor(self.mark_actor)
-                self.ren.RemoveActor(self.obj_projection_arrow_actor)
-                self.ren.RemoveActor(self.object_orientation_torus_actor)
-                self.obj_actor = None
-                self.x_actor = None
-                self.y_actor = None
-                self.z_actor = None
-                self.mark_actor = None
-                self.obj_projection_arrow_actor = None
-                self.object_orientation_torus_actor=None
+                self.RemoveObjectActor()
         self.Refresh()
 
     def UpdateShowObjectState(self, state):
