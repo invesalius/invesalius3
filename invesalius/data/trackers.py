@@ -140,7 +140,7 @@ def PolarisTracker(tracker_id):
         try:
             import pypolaris
             lib_mode = 'wrapper'
-            trck_init = pypolaris.pypolaris()
+            trck_init = pypolaris()
 
             if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
                 trck_init = None
