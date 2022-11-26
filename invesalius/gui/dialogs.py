@@ -3372,9 +3372,10 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, tracker, pedal_connection):
+    def __init__(self, tracker, pedal_connection, neuronavigation_api):
         self.tracker = tracker
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
 
         self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
         self.obj_ref_id = 2
@@ -3636,11 +3637,21 @@ class ObjectCalibrationDialog(wx.Dialog):
                     callback=set_fiducial_callback,
                     remove_when_released=True,
                 )
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
 
             if self.pedal_connection is not None:
                 self.pedal_connection.remove_callback(name='fiducial')
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
 
     def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(

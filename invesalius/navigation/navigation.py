@@ -376,11 +376,17 @@ class Navigation(metaclass=Singleton):
             if self.pedal_connection is not None:
                 self.pedal_connection.add_callback(name='navigation', callback=self.PedalStateChanged)
 
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(name='navigation', callback=self.PedalStateChanged)
+
     def StopNavigation(self):
         self.event.set()
 
         if self.pedal_connection is not None:
             self.pedal_connection.remove_callback(name='navigation')
+
+        if self.neuronavigation_api is not None:
+            self.neuronavigation_api.remove_pedal_callback(name='navigation')
 
         self.coord_queue.clear()
         self.coord_queue.join()
