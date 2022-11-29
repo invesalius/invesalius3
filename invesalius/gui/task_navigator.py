@@ -1172,12 +1172,14 @@ class ObjectRegistrationPanel(wx.Panel):
                     reader.Update()
                     polydata = reader.GetOutput()
                     self.neuronavigation_api.update_coil_mesh(polydata)
-                    use_default_object = False
                 else:
                     self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
                     polydata = None
-                    use_default_object = True
 
+                if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
+                    use_default_object = True
+                else:
+                    use_default_object = False
                 self.checktrack.Enable(1)
                 self.checktrack.SetValue(True)
                 Publisher.sendMessage('Update object registration',
