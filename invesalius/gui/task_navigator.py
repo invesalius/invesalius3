@@ -16,9 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-
 import os
-import sys
 
 import dataclasses
 from functools import partial
@@ -74,10 +72,6 @@ from invesalius.data.converters import to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
-
 HAS_PEDAL_CONNECTION = True
 try:
     from invesalius.net.pedal_connection import PedalConnection
@@ -85,15 +79,6 @@ except ImportError:
     HAS_PEDAL_CONNECTION = False
 
 from invesalius import inv_paths
-
-if sys.platform == 'win32':
-    try:
-        import win32api
-        _has_win32api = True
-    except ImportError:
-        _has_win32api = False
-else:
-    _has_win32api = False
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -1152,25 +1137,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 self.obj_ref_mode = int(data[0][-1])
 
                 if os.path.exists(self.obj_name):
-                    if _has_win32api:
-                        filename = win32api.GetShortPathName(self.obj_name).encode(const.FS_ENCODE)
-                    else:
-                        filename = self.obj_name.encode(const.FS_ENCODE)
-                    if filename.lower().endswith(b'.stl'):
-                        reader = vtkSTLReader()
-                    elif filename.lower().endswith(b'.ply'):
-                        reader = vtkPLYReader()
-                    elif filename.lower().endswith(b'.obj'):
-                        reader = vtkOBJReader()
-                    elif filename.lower().endswith(b'.vtp'):
-                        reader = vtkXMLPolyDataReader()
-                    else:
-                        wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
-                        return
-
-                    reader.SetFileName(filename)
-                    reader.Update()
-                    polydata = reader.GetOutput()
+                    polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
                     self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")

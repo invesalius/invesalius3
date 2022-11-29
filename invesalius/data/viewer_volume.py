@@ -841,7 +841,7 @@ class Viewer(wx.Panel):
             self.ren2.SetViewport(0.75, 0, 1, 1)
             self.CreateTextDistance()
 
-            obj_polydata = self.CreateObjectPolyData(self.obj_name)
+            obj_polydata = vtku.CreateObjectPolyData(self.obj_name)
 
             normals = vtkPolyDataNormals()
             normals.SetInputData(obj_polydata)
@@ -1139,7 +1139,7 @@ class Viewer(wx.Panel):
         self.ren.AddActor(aim_actor)
 
         if self.use_default_object:
-            obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+            obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
         else:
             obj_polydata = self.polydata
 
@@ -1365,48 +1365,12 @@ class Viewer(wx.Panel):
         if self.set_camera_position:
             self.SetVolumeCamera(coord_flip)
 
-    def CreateObjectPolyData(self, filename):
-        """
-        Coil for navigation rendered in volume viewer.
-        """
-        filename = utils.decode(filename, const.FS_ENCODE)
-        if filename:
-            if filename.lower().endswith('.stl'):
-                reader = vtkSTLReader()
-            elif filename.lower().endswith('.ply'):
-                reader = vtkPLYReader()
-            elif filename.lower().endswith('.obj'):
-                reader = vtkOBJReader()
-            elif filename.lower().endswith('.vtp'):
-                reader = vtkXMLPolyDataReader()
-            else:
-                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
-                return
-        else:
-            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtkSTLReader()
-
-        if _has_win32api:
-            obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
-        else:
-            obj_name = filename.encode(const.FS_ENCODE)
-
-        reader.SetFileName(obj_name)
-        reader.Update()
-        obj_polydata = reader.GetOutput()
-
-        if obj_polydata.GetNumberOfPoints() == 0:
-            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
-            obj_polydata = None
-
-        return obj_polydata
-
     def AddObjectActor(self, obj_name):
         """
         Coil for navigation rendered in volume viewer.
         """
         vtk_colors = vtkNamedColors()
-        obj_polydata = self.CreateObjectPolyData(obj_name)
+        obj_polydata = vtku.CreateObjectPolyData(obj_name)
 
         transform = vtkTransform()
         transform.RotateZ(90)
