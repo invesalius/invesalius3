@@ -307,7 +307,7 @@ class Navigation(metaclass=Singleton):
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
-                                                                self.target, icp,self.e_field_loaded))
+                                                                self.target, icp, self.e_field_loaded))
         else:
             coreg_data = (self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
