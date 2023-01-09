@@ -823,7 +823,7 @@ class Viewer(wx.Panel):
     def OnUpdateDistThreshold(self, dist_threshold):
         self.distthreshold = dist_threshold
 
-    def ActivateTargetMode(self, target_mode=None):
+    def ActivateTargetMode(self, evt=None, target_mode=None):
 
         vtk_colors = vtkNamedColors()
         self.target_mode = target_mode
