@@ -1557,9 +1557,6 @@ class MarkersPanel(wx.Panel):
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
             brain_target_menu = menu_id.Append(3, _('Set brain target'))
             menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
-            #if has_mTMS:
-                #brain_mTMS_target_menu = menu_id.Append(4, _('Set brain target for mTMS'))
-                #menu_id.Bind(wx.EVT_MENU, self.OnSetMTMSBrainTarget, brain_mTMS_target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
@@ -1613,15 +1610,6 @@ class MarkersPanel(wx.Panel):
             self.__set_marker_as_target(idx)
         else:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
-
-    def OnSetMTMSBrainTarget(self, evt):
-        list_index = self.lc.GetFocusedItem()
-        markers = self.__get_brain_target_markers()
-        target_pose_index = list_index - 2
-        if markers:
-            dialog = dlg.SetmTMSTargetDialog(mTMS=self.mTMS, target_pose_index=target_pose_index, markers=markers)
-            if dialog.ShowModal() == wx.ID_OK:
-                dialog.Destroy()
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.lc.GetFocusedItem()
