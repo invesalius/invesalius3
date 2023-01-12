@@ -267,6 +267,7 @@ class Viewer(wx.Panel):
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
+        self.colors_init = vtkUnsignedCharArray()
 
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
@@ -1608,13 +1609,13 @@ class Viewer(wx.Panel):
         self.efield_actor.SetMapper(mapper)
 
     def Default_color_actor(self):
-        colors = vtkUnsignedCharArray()
-        colors.SetNumberOfComponents(3)
-        colors.SetName('Colors')
+
+        self.colors_init.SetNumberOfComponents(3)
+        self.colors_init.SetName('Colors')
         color = 3 * [255.0]
         for i in range(self.efield_mesh.GetNumberOfCells()):
-            colors.InsertTuple(i, color)
-        self.efield_mesh.GetPointData().SetScalars(colors)
+            self.colors_init.InsertTuple(i, color)
+        self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         self.Recolor_efield_Actor(self.efield_mesh)
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
@@ -1684,13 +1685,15 @@ class Viewer(wx.Panel):
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
             lut = self.CreateLUTtableforefield(self.min, self.max)
-            colors = vtkUnsignedCharArray()
-            colors.SetNumberOfComponents(3)
-            colors.SetName('Colors')
-            color = 3 * [255.0]
-            for i in range(np.size(self.e_field_norms)):
-                colors.InsertTuple(i, color)
-                #cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
+            # colors = vtkUnsignedCharArray()
+            # colors.SetNumberOfComponents(3)
+            # colors.SetName('Colors')
+            # color = 3 * [255.0]
+            self.colors_init.SetNumberOfComponents(3)
+            self.colors_init.Fill(255)
+            # for i in range(np.size(self.e_field_norms)):
+            #     colors.InsertTuple(i, color)
+            #     #cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
             for h in range(self.radius_list.GetNumberOfIds()):
                 dcolor = 3 * [0.0]
                 index_id = self.radius_list.GetId(h)
@@ -1699,8 +1702,8 @@ class Viewer(wx.Panel):
                 color = 3 * [0.0]
                 for j in range(0, 3):
                     color[j] = int(255.0 * dcolor[j])
-                colors.InsertTuple(index_id, color)
-            self.efield_mesh.GetPointData().SetScalars(colors)
+                self.colors_init.InsertTuple(index_id, color)
+            self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             self.Recolor_efield_Actor(self.efield_mesh)
             wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
 
