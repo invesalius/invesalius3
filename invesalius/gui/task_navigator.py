@@ -2401,9 +2401,10 @@ class E_fieldPanel(wx.Panel):
             self.combo_surface_name.Enable(False)
         else:
             #self.navigation.efield_queue.task_done()
-            Publisher.sendMessage('Recolor again')
+
             self.e_field_loaded = False
             self.combo_surface_name.Enable(True)
+        Publisher.sendMessage('Recolor again')
         self.navigation.e_field_loaded = self.e_field_loaded
         #self.navigation.efield_queue.put_nowait([efield_enabled])
 
