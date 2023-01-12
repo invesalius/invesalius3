@@ -1682,25 +1682,17 @@ class Viewer(wx.Panel):
                     self.radius_list.Sort()
         else:
             self.radius_list.Reset()
-            #send flag or radious_list as zero to only ask for enorms when is not zero
-        #return self.radius_list
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
             lut = self.CreateLUTtableforefield(self.min, self.max)
-            # colors = vtkUnsignedCharArray()
-            # colors.SetNumberOfComponents(3)
-            # colors.SetName('Colors')
-            # color = 3 * [255.0]
+
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
-            # for i in range(np.size(self.e_field_norms)):
-            #     colors.InsertTuple(i, color)
-            #     #cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
+
             for h in range(self.radius_list.GetNumberOfIds()):
                 dcolor = 3 * [0.0]
                 index_id = self.radius_list.GetId(h)
-                #index_id = cell_ids_array[h]
                 lut.GetColor(self.e_field_norms[index_id], dcolor)
                 color = 3 * [0.0]
                 for j in range(0, 3):
