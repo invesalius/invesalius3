@@ -374,6 +374,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnUpdateEfieldvis, 'Update efield vis')
+        Publisher.subscribe(self.Initialize_color_array, 'Initialize color array')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
@@ -1608,14 +1609,16 @@ class Viewer(wx.Panel):
         mapper.SetInputData(mesh)
         self.efield_actor.SetMapper(mapper)
 
-    def Default_color_actor(self):
-
+    def Initialize_color_array(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
         color = 3 * [255.0]
         for i in range(self.efield_mesh.GetNumberOfCells()):
             self.colors_init.InsertTuple(i, color)
+
+    def Default_color_actor(self):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+        wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
         self.Recolor_efield_Actor(self.efield_mesh)
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
