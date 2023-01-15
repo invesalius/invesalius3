@@ -75,11 +75,11 @@ class GradientSlider(wx.Panel):
         self.max_range = maxRange
         self.minimun = minValue
         self.maximun = maxValue
-        self.colour = colour
         self.selected = 0
 
         self._gradient_colours = None
 
+        self.SetColour(colour)
         self.CalculateControlPositions()
 
     def _bind_events_wx(self):
