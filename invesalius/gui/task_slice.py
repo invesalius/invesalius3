@@ -54,6 +54,10 @@ MENU_BRUSH_ADD = wx.NewId()
 MENU_BRUSH_DEL = wx.NewId()
 MENU_BRUSH_THRESH = wx.NewId()
 
+MENU_UNIT_MM = wx.NewId()
+MENU_UNIT_UM = wx.NewId()
+MENU_UNIT_PX = wx.NewId()
+
 MASK_LIST = []
 
 class TaskPanel(wx.Panel):
@@ -716,10 +720,11 @@ class EditionTools(wx.Panel):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False)
+        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False, unit="mm")
         # To calculate best width to spinctrl
-        spin_brush_size.CalcSizeFromTextSize("MMMM")
+        spin_brush_size.CalcSizeFromTextSize("MMMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -767,7 +772,7 @@ class EditionTools(wx.Panel):
 
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_MENU, self.OnMenu)
+        self.btn_brush_format.Bind(wx.EVT_MENU, self.OnMenu)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged,
                   self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
@@ -830,6 +835,25 @@ class EditionTools(wx.Panel):
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size', size=self.spin.GetValue())
 
+    def OnContextMenu(self, evt):
+        print("Context")
+        menu = wx.Menu()
+        mm_item = menu.AppendRadioItem(MENU_UNIT_MM, "mm")
+        um_item = menu.AppendRadioItem(MENU_UNIT_UM, "µm")
+        px_item = menu.AppendRadioItem(MENU_UNIT_PX, "px")
+
+        if self.spin.GetUnit() == "mm":
+            mm_item.Check()
+        elif self.spin.GetUnit() == "µm":
+            um_item.Check()
+        else:
+            px_item.Check()
+
+
+        menu.Bind(wx.EVT_MENU, self.OnSetUnit)
+        self.spin.PopupMenu(menu)
+        menu.Destroy()
+
     def _set_threshold_range_gui(self, threshold_range):
         self.SetThresholdValues(threshold_range)
 
@@ -843,6 +867,14 @@ class EditionTools(wx.Panel):
             self.gradient_thresh.Enable()
         else:
             self.gradient_thresh.Disable()
+
+    def OnSetUnit(self, evt):
+        if evt.GetId() == MENU_UNIT_MM:
+            self.spin.SetUnit("mm")
+        elif evt.GetId() == MENU_UNIT_UM:
+            self.spin.SetUnit("µm")
+        else:
+            self.spin.SetUnit("px")
 
 
 class WatershedTool(EditionTools):
