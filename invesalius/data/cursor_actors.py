@@ -86,6 +86,7 @@ class CursorBase(object):
         self.colour = (0.0, 0.0, 1.0)
         self.opacity = 1
         self.size = 15.0
+        self.unit = 'mm'
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
         self.position = (0, 0, 0)
@@ -106,7 +107,12 @@ class CursorBase(object):
         self.radius = diameter/2.0
         self._build_actor()
         self._calculate_area_pixels()
-        
+
+    def SetUnit(self, unit):
+        self.unit = unit
+        self._build_actor()
+        self._calculate_area_pixels()
+
     def SetColour(self, colour):
         self.colour = colour
         self._build_actor()
@@ -252,7 +258,12 @@ class CursorCircle(CursorBase):
         Function to plot the circle
         """
         r = self.radius
-        sx, sy, sz = self.spacing
+        if self.unit == "µm":
+            r /= 1000.0
+        if self.unit == "px":
+            sx, sy, sz = 1.0, 1.0, 1.0
+        else:
+            sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
             xi = math.floor(-r/sx)
             xf = math.ceil(r/sx) + 1
@@ -298,15 +309,20 @@ class CursorCircle(CursorBase):
         Return the cursor's pixels.
         """
         r = self.radius
-        if self.orientation == 'AXIAL':
-            sx = self.spacing[0]
-            sy = self.spacing[1]
-        elif self.orientation == 'CORONAL':
-            sx = self.spacing[0]
-            sy = self.spacing[2]
-        elif self.orientation == 'SAGITAL':
-            sx = self.spacing[1]
-            sy = self.spacing[2]
+        if self.unit == "µm":
+            r /= 1000.0
+        if self.unit == "px":
+            sx, sy, sz = 1.0, 1.0, 1.0
+        else:
+            if self.orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+            elif self.orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+            elif self.orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
 
         xi = math.floor(-r/sx)
         xf = math.ceil(r/sx) + 1
@@ -331,7 +347,12 @@ class CursorRectangle(CursorBase):
         """
         print("Building rectangle cursor", self.orientation)
         r = self.radius
-        sx, sy, sz = self.spacing
+        if self.unit == "µm":
+            r /= 1000.0
+        if self.unit == "px":
+            sx, sy, sz = 1.0, 1.0, 1.0
+        else:
+            sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
             x = int(math.floor(2*r/sx))
             y = int(math.floor(2*r/sy))
@@ -361,7 +382,12 @@ class CursorRectangle(CursorBase):
 
     def _calculate_area_pixels(self):
         r = self.radius
-        sx, sy, sz = self.spacing
+        if self.unit == "µm":
+            r /= 1000.0
+        if self.unit == "px":
+            sx, sy, sz = 1.0, 1.0, 1.0
+        else:
+            sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
             x = int(math.floor(2*r/sx))
             y = int(math.floor(2*r/sy))

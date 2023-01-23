@@ -694,6 +694,8 @@ class EditionTools(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        self.unit = 'mm'
+
         ## LINE 1
         text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
 
@@ -720,12 +722,15 @@ class EditionTools(wx.Panel):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False, unit="mm")
+        spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False)
         # To calculate best width to spinctrl
-        spin_brush_size.CalcSizeFromTextSize("MMMMM")
+        spin_brush_size.CalcSizeFromTextSize("MMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
-        spin_brush_size.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         self.spin = spin_brush_size
+
+        self.txt_unit = wx.StaticText(self, -1, "mm")
+        self.txt_unit.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+        self.txt_unit.SetBackgroundColour(self.spin.GetBackgroundColour())
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
                                      choices = const.BRUSH_OP_NAME,
@@ -738,7 +743,8 @@ class EditionTools(wx.Panel):
         # Sizer which represents the second line
         line2 = wx.BoxSizer(wx.HORIZONTAL)
         line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.RIGHT, 5)
-        line2.Add(spin_brush_size, 0, wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
+        line2.Add(spin_brush_size, 0, wx.ALIGN_CENTER_VERTICAL)
+        line2.Add(self.txt_unit, 0, wx.ALIGN_CENTER_VERTICAL)
         line2.Add(combo_brush_op, 1, wx.RIGHT|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         ## LINE 3
@@ -842,16 +848,16 @@ class EditionTools(wx.Panel):
         um_item = menu.AppendRadioItem(MENU_UNIT_UM, "µm")
         px_item = menu.AppendRadioItem(MENU_UNIT_PX, "px")
 
-        if self.spin.GetUnit() == "mm":
+        if self.unit == "mm":
             mm_item.Check()
-        elif self.spin.GetUnit() == "µm":
+        elif self.unit == "µm":
             um_item.Check()
         else:
             px_item.Check()
 
 
         menu.Bind(wx.EVT_MENU, self.OnSetUnit)
-        self.spin.PopupMenu(menu)
+        self.txt_unit.PopupMenu(menu)
         menu.Destroy()
 
     def _set_threshold_range_gui(self, threshold_range):
@@ -870,11 +876,13 @@ class EditionTools(wx.Panel):
 
     def OnSetUnit(self, evt):
         if evt.GetId() == MENU_UNIT_MM:
-            self.spin.SetUnit("mm")
+            self.txt_unit.SetLabel("mm")
         elif evt.GetId() == MENU_UNIT_UM:
-            self.spin.SetUnit("µm")
+            self.txt_unit.SetLabel("µm")
         else:
-            self.spin.SetUnit("px")
+            self.txt_unit.SetLabel("px")
+        self.unit = self.txt_unit.GetLabel()
+        Publisher.sendMessage('Set edition brush unit', unit=self.unit)
 
 
 class WatershedTool(EditionTools):
