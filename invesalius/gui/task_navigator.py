@@ -2408,7 +2408,7 @@ class E_fieldPanel(wx.Panel):
                     self.e_field_loaded = False
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
-            Publisher.sendMessage('Initialize', e_field_brain=self.e_field_brain)
+            Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(False)

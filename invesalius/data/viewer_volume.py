@@ -379,7 +379,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
-        Publisher.subscribe(self.Init_efield, 'Initialize')
+        Publisher.subscribe(self.Init_efield, 'Initialize E-field brain')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
