@@ -73,6 +73,7 @@ class Session(metaclass=Singleton):
             'mode': ('session', 'mode'),
             'project_status': ('session', 'status'),
             'debug': ('session', 'debug'),
+            'debug_efield': ('session', 'debug_efield'),
             'language': ('session', 'language'),
             'random_id': ('session', 'random_id'),
             'surface_interpolation': ('session', 'surface_interpolation'),
@@ -93,6 +94,7 @@ class Session(metaclass=Singleton):
                 'mode': const.MODE_RP,
                 'status': const.PROJ_CLOSE,
                 'debug': False,
+                'debug_efield': False,
                 'language': "",
                 'random_id': randint(0, pow(10,16)),
                 'surface_interpolation': 1,
@@ -289,6 +291,7 @@ class Session(metaclass=Singleton):
         # isn't a recover sessession tool in InVesalius
         #self.project_status = int(config.get('session', 'status'))
         self.debug = config.getboolean('session','debug')
+        self.debug_efield = config.getboolean('session','debug_efield')
         self.language = config.get('session','language')
         recent_projects = eval(config.get('project','recent_projects'))
         self.recent_projects = [list(rp) for rp in recent_projects]

@@ -6,7 +6,8 @@ import numpy as np
 from vtkmodules.vtkCommonCore import (
     vtkIdList)
 import csv
-from invesalius.pubsub import pub as Publisher
+
+import invesalius.gui.dialogs as dlg
 
 # def ObjectArrowLocation(self, m_img, coord):
 #     # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -51,7 +52,7 @@ from invesalius.pubsub import pub as Publisher
 #                 self.radius_list.Sort()
 #     return self.radius_list
 
-def Get_coil_position( m_img):
+def Get_coil_position(m_img):
     # coil position cp : the center point at the bottom of the coil casing,
     # corresponds to the origin of the coil template.
     # coil normal cn: outer normal of the coil, i.e. away from the head
@@ -78,7 +79,7 @@ def Get_coil_position( m_img):
     return [T_rot,cp]
 
 class Visualize_E_field_Thread(threading.Thread):
-    def __init__(self, queues, event, sle, neuronavigation_api):
+    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm):
         threading.Thread.__init__(self, name='Visualize_E_field_Thread')
         #self.inp = inp #list of inputs
         self.efield_queue = queues[0]
@@ -91,8 +92,11 @@ class Visualize_E_field_Thread(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.ID_list = vtkIdList()
         self.coord_old = []
-        #self.enorm_debug = self.load_temporarly_e_field_CSV()
-        self.debug = False
+        if isinstance(debug_efield_enorm, np.ndarray):
+            self.enorm_debug = debug_efield_enorm
+            self.debug = True
+        else:
+            self.debug = False
 
     def run(self):
         while not self.event.is_set():
@@ -126,20 +130,3 @@ class Visualize_E_field_Thread(threading.Thread):
                         self.coord_old = coord
 
             time.sleep(self.sle)
-
-    def load_temporarly_e_field_CSV(self):
-        filename = r'C:\Users\anaso\Documents\Data\e-field_simulation\Enorm_inCoilpoint200sorted.csv'
-        with open(filename, 'r') as file:
-            my_reader = csv.reader(file, delimiter=',')
-            rows = []
-            for row in my_reader:
-                rows.append(row)
-        e_field = rows
-        e_field_norms = np.array(e_field).astype(float)
-
-        # ###Colors###
-        # max = np.amax(e_field_norms)
-        # min = np.amin(e_field_norms)
-        # print('minz: {:< 6.3}'.format(min))
-        # print('maxz: {:< 6.3}'.format(max))
-        return e_field_norms

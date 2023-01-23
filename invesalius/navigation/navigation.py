@@ -181,6 +181,7 @@ class Navigation(metaclass=Singleton):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.e_field_loaded = False
+        self.debug_efield_enorm = None
 
 
         # Tractography parameters
@@ -355,7 +356,8 @@ class Navigation(metaclass=Singleton):
 
             if self.e_field_loaded:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
-                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,self.neuronavigation_api))
+                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,
+                                                                  self.neuronavigation_api, self.debug_efield_enorm))
 
 
             jobs_list.append(

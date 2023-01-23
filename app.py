@@ -353,6 +353,9 @@ def parse_command_line():
     parser.add_argument("--use-pedal", action="store_true", dest="use_pedal",
                       help="Use an external trigger pedal")
 
+    parser.add_argument("--debug-efield", action="store_true", dest="debug_efield",
+                      help="Debug navigated TMS E-field computation")
+
     args = parser.parse_args()
     return args
 
@@ -553,6 +556,7 @@ def main(connection=None):
 
     session = ses.Session()
     session.debug = args.debug
+    session.debug_efield = args.debug_efield
 
     if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)

@@ -2357,6 +2357,7 @@ class E_fieldPanel(wx.Panel):
         self.e_field_brain = None
         self.e_field_mesh = None
         self.navigation = navigation
+        self.session = ses.Session()
         #  Check box to enable e-field visualization
         enable_efield = wx.CheckBox(self, -1, _('Enable E-field'))
         enable_efield.SetValue(False)
@@ -2389,25 +2390,33 @@ class E_fieldPanel(wx.Panel):
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
         if efield_enabled:
-            if not self.navigation.neuronavigation_api.connection:
-                dlg.Efield_connection_warning()
-                self.combo_surface_name.Enable(False)
-                self.enable_efield.Enable(False)
-                self.e_field_loaded = False
-                return
+            if self.session.debug_efield:
+                debug_efield_enorm = dlg.ShowLoadCSVDebugEfield()
+                if isinstance(debug_efield_enorm, np.ndarray):
+                    self.navigation.debug_efield_enorm = debug_efield_enorm
+                else:
+                    dlg.Efield_debug_Enorm_warning()
+                    self.enable_efield.SetValue(False)
+                    self.e_field_loaded = False
+                    self.navigation.e_field_loaded = self.e_field_loaded
+                    return
+            else:
+                if not self.navigation.neuronavigation_api.connection:
+                    dlg.Efield_connection_warning()
+                    self.combo_surface_name.Enable(False)
+                    self.enable_efield.Enable(False)
+                    self.e_field_loaded = False
+                    return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize', e_field_brain=self.e_field_brain)
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(False)
         else:
-            #self.navigation.efield_queue.task_done()
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
             self.combo_surface_name.Enable(True)
         self.navigation.e_field_loaded = self.e_field_loaded
-        #self.navigation.efield_queue.put_nowait([efield_enabled])
-
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
