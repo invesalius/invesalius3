@@ -54,6 +54,10 @@ MENU_BRUSH_ADD = wx.NewId()
 MENU_BRUSH_DEL = wx.NewId()
 MENU_BRUSH_THRESH = wx.NewId()
 
+MENU_UNIT_MM = wx.NewId()
+MENU_UNIT_UM = wx.NewId()
+MENU_UNIT_PX = wx.NewId()
+
 MASK_LIST = []
 
 class TaskPanel(wx.Panel):
@@ -690,6 +694,8 @@ class EditionTools(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        self.unit = 'mm'
+
         ## LINE 1
         text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
 
@@ -722,6 +728,9 @@ class EditionTools(wx.Panel):
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
+        self.txt_unit = wx.StaticText(self, -1, "mm")
+        self.txt_unit.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
                                      choices = const.BRUSH_OP_NAME,
                                      style = wx.CB_DROPDOWN|wx.CB_READONLY)
@@ -733,7 +742,8 @@ class EditionTools(wx.Panel):
         # Sizer which represents the second line
         line2 = wx.BoxSizer(wx.HORIZONTAL)
         line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.RIGHT, 5)
-        line2.Add(spin_brush_size, 0, wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
+        line2.Add(spin_brush_size, 0, wx.ALIGN_CENTER_VERTICAL)
+        line2.Add(self.txt_unit, 0, wx.ALIGN_CENTER_VERTICAL)
         line2.Add(combo_brush_op, 1, wx.RIGHT|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         ## LINE 3
@@ -767,7 +777,7 @@ class EditionTools(wx.Panel):
 
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_MENU, self.OnMenu)
+        self.btn_brush_format.Bind(wx.EVT_MENU, self.OnMenu)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged,
                   self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
@@ -830,6 +840,25 @@ class EditionTools(wx.Panel):
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size', size=self.spin.GetValue())
 
+    def OnContextMenu(self, evt):
+        print("Context")
+        menu = wx.Menu()
+        mm_item = menu.AppendRadioItem(MENU_UNIT_MM, "mm")
+        um_item = menu.AppendRadioItem(MENU_UNIT_UM, "µm")
+        px_item = menu.AppendRadioItem(MENU_UNIT_PX, "px")
+
+        if self.unit == "mm":
+            mm_item.Check()
+        elif self.unit == "µm":
+            um_item.Check()
+        else:
+            px_item.Check()
+
+
+        menu.Bind(wx.EVT_MENU, self.OnSetUnit)
+        self.txt_unit.PopupMenu(menu)
+        menu.Destroy()
+
     def _set_threshold_range_gui(self, threshold_range):
         self.SetThresholdValues(threshold_range)
 
@@ -843,6 +872,16 @@ class EditionTools(wx.Panel):
             self.gradient_thresh.Enable()
         else:
             self.gradient_thresh.Disable()
+
+    def OnSetUnit(self, evt):
+        if evt.GetId() == MENU_UNIT_MM:
+            self.txt_unit.SetLabel("mm")
+        elif evt.GetId() == MENU_UNIT_UM:
+            self.txt_unit.SetLabel("µm")
+        else:
+            self.txt_unit.SetLabel("px")
+        self.unit = self.txt_unit.GetLabel()
+        Publisher.sendMessage('Set edition brush unit', unit=self.unit)
 
 
 class WatershedTool(EditionTools):

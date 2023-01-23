@@ -1224,6 +1224,7 @@ class EditorConfig(metaclass=utils.Singleton):
         self.operation = const.BRUSH_THRESH
         self.cursor_type = const.BRUSH_CIRCLE
         self.cursor_size = const.BRUSH_SIZE
+        self.cursor_unit = 'mm'
 
 
 class EditorInteractorStyle(DefaultInteractorStyle):
@@ -1252,6 +1253,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
 
         Publisher.subscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.subscribe(self.set_bunit, 'Set edition brush unit')
         Publisher.subscribe(self.set_bformat, 'Set brush format')
         Publisher.subscribe(self.set_boperation, 'Set edition operation')
 
@@ -1272,6 +1274,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.unsubscribe(self.set_bunit, 'Set edition brush unit')
         Publisher.unsubscribe(self.set_bformat, 'Set brush format')
         Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
 
@@ -1282,6 +1285,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
     def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
+
+    def set_bunit(self, unit):
+        self.config.cursor_unit = unit
+        self.viewer.slice_data.cursor.SetUnit(unit)
 
     def set_bformat(self, cursor_format):
         self.config.cursor_type = cursor_format
@@ -1306,6 +1313,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         cursor.SetSpacing(spacing)
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
+        cursor.SetUnit(self.config.cursor_unit)
         self.viewer.slice_data.SetCursor(cursor)
 
     def OnEnterInteractor(self, obj, evt):
