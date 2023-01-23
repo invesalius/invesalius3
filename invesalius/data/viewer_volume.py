@@ -382,7 +382,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Init_efield, 'Initialize')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
-        Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
@@ -1622,7 +1621,6 @@ class Viewer(wx.Panel):
         self.Recolor_efield_Actor(self.efield_mesh)
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
-
     def CreateLUTtableforefield(self, min, max):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
@@ -1638,7 +1636,7 @@ class Viewer(wx.Panel):
         min = np.amin(self.e_field_norms)
         self.min = min
         self.max = max
-        wx.CallAfter(Publisher.sendMessage,'Update efield vis')
+        wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
     def Get_efield_actor(self, e_field_actor):
@@ -1725,32 +1723,6 @@ class Viewer(wx.Panel):
 
     def Get_enorm(self, enorm):
         self.Get_E_field_max_min(enorm)
-
-    def Get_coil_position(self, m_img,coord,neuronavigation_api):
-        # coil position cp : the center point at the bottom of the coil casing,
-        # corresponds to the origin of the coil template.
-        # coil normal cn: outer normal of the coil, i.e. away from the head
-        # coil tangent 1 ct1: long axis
-        # coil tangent 2 ct2: short axis ~ direction of primary E under the coil
-        # % rotation matrix for the coil coordinates
-        # T = [ct1;ct2;cn];
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-        cp = m_img_flip[:-1, -1]  # coil center
-        cp = cp * 0.001  # convert to meters
-        cp = cp.tolist()
-
-        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
-        cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
-        T_rot = T_rot.tolist()  # to list
-        enorm = neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
-        self.Get_E_field_max_min(enorm)
-
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
