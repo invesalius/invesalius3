@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import sys
+
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 from invesalius.pubsub import pub as Publisher
@@ -138,9 +140,14 @@ def PolarisTracker(tracker_id):
     if dlg_port.ShowModal() == ID_OK:
         com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dlg_port.GetValue()
         try:
-            import pypolaris
+            if sys.platform == 'win32':
+                import pypolaris
+                trck_init = pypolaris()
+            else:
+                from pypolaris import pypolaris
+                trck_init = pypolaris.pypolaris()
+
             lib_mode = 'wrapper'
-            trck_init = pypolaris.pypolaris()
 
             if trck_init.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
                 trck_init = None
