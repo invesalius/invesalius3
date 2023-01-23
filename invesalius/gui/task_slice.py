@@ -730,7 +730,6 @@ class EditionTools(wx.Panel):
 
         self.txt_unit = wx.StaticText(self, -1, "mm")
         self.txt_unit.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
-        self.txt_unit.SetBackgroundColour(self.spin.GetBackgroundColour())
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
                                      choices = const.BRUSH_OP_NAME,
