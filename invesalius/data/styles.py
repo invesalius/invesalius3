@@ -1504,6 +1504,7 @@ class WatershedConfig(metaclass=utils.Singleton):
         self.operation = BRUSH_FOREGROUND
         self.cursor_type = const.BRUSH_CIRCLE
         self.cursor_size = const.BRUSH_SIZE
+        self.cursor_unit = 'mm'
 
         Publisher.subscribe(self.set_operation, 'Set watershed operation')
         Publisher.subscribe(self.set_use_ww_wl, 'Set use ww wl')
@@ -1564,13 +1565,13 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         Publisher.subscribe(self.expand_watershed, 'Expand watershed to 3D ' + self.orientation)
         Publisher.subscribe(self.set_bsize, 'Set watershed brush size')
+        Publisher.subscribe(self.set_bunit, 'Set watershed brush unit')
         Publisher.subscribe(self.set_bformat, 'Set watershed brush format')
 
         self._set_cursor()
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
-
         mask = self.viewer.slice_.current_mask.matrix
         self._create_mask()
         self.viewer.slice_.to_show_aux = 'watershed'
@@ -1630,11 +1631,16 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         cursor.SetSpacing(spacing)
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
+        cursor.SetUnit(self.config.cursor_unit)
         self.viewer.slice_data.SetCursor(cursor)
 
     def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
+
+    def set_bunit(self, unit):
+        self.config.cursor_unit = unit
+        self.viewer.slice_data.cursor.SetUnit(unit)
 
     def set_bformat(self, brush_format):
         self.config.cursor_type = brush_format
