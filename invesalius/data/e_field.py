@@ -5,52 +5,6 @@ import time
 import numpy as np
 from vtkmodules.vtkCommonCore import (
     vtkIdList)
-import csv
-
-import invesalius.gui.dialogs as dlg
-
-# def ObjectArrowLocation(self, m_img, coord):
-#     # m_img[:3, 0] is from posterior to anterior direction of the coil
-#     # m_img[:3, 1] is from left to right direction of the coil
-#     # m_img[:3, 2] is from bottom to up direction of the coil
-#     vec_length = 70
-#     m_img_flip = m_img.copy()
-#     m_img_flip[1, -1] = -m_img_flip[1, -1]
-#     p1 = m_img_flip[:-1, -1]  # coil center
-#     coil_dir = m_img_flip[:-1, 0]
-#     coil_face = m_img_flip[:-1, 1]
-#
-#     coil_norm = np.cross(coil_dir, coil_face)
-#     p2_norm = p1 - vec_length * coil_norm  # point normal to the coil away from the center by vec_length
-#     coil_dir = np.array([coord[3], coord[4], coord[5]])
-#
-#     return coil_dir, p2_norm, coil_norm, p1
-#
-# def GetCellIntersection(self, p1, p2, locator):
-#     vtk_colors = vtkNamedColors()
-#     # This find store the triangles that intersect the coil's normal
-#     intersectingCellIds = vtkIdList()
-#     #for debugging
-#     self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-#     #self.ren.AddActor(self.x_actor) # remove comment for testing
-#     locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
-#     return intersectingCellIds
-#
-# def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
-#     closestDist = 100
-#     # if find intersection , calculate angle and add actors
-#     if intersectingCellIds.GetNumberOfIds() != 0:
-#         for i in range(intersectingCellIds.GetNumberOfIds()):
-#             cellId = intersectingCellIds.GetId(i)
-#             point = np.array(self.e_field_mesh_centers.GetPoint(cellId))
-#             distance = np.linalg.norm(point - p1)
-#             if distance < closestDist:
-#                 closestDist = distance
-#                 pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
-#                 angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-#                 self.FindPointsAroundRadiusEfield(cellId)
-#                 self.radius_list.Sort()
-#     return self.radius_list
 
 def Get_coil_position(m_img):
     # coil position cp : the center point at the bottom of the coil casing,
