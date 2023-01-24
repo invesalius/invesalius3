@@ -1136,12 +1136,14 @@ class ObjectRegistrationPanel(wx.Panel):
                 self.obj_name = data[0][1]
                 self.obj_ref_mode = int(data[0][-1])
 
-                if os.path.exists(self.obj_name):
-                    polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                if not os.path.exists(self.obj_name):
+                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                if polydata:
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
                     self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                    polydata = None
 
                 if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
                     use_default_object = True
@@ -1160,7 +1162,11 @@ class ObjectRegistrationPanel(wx.Panel):
                                       use_default_object=use_default_object)
                 Publisher.sendMessage('Change camera checkbox', status=False)
                 Publisher.sendMessage('Deactive target mode')
-                wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
+                if use_default_object:
+                    msg = _("Default object file successfully loaded")
+                else:
+                    msg = _("Object file successfully loaded")
+                wx.MessageBox(msg, _("InVesalius 3"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
