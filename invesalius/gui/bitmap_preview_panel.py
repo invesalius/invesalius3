@@ -373,7 +373,7 @@ class BitmapPreviewSeries(wx.Panel):
     def RemovePanel(self, data):
         for p, f in zip(self.previews, self.files):
             if p.bitmap_info != None:
-                if data.encode('utf-8') in p.bitmap_info.data:
+                if data.decode(const.FS_ENCODE) in p.bitmap_info.data:
                     self.files.remove(f)
                     p.Hide()
                     self._display_previews()
