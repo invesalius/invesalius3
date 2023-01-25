@@ -142,7 +142,7 @@ def PolarisTracker(tracker_id):
         try:
             if sys.platform == 'win32':
                 import pypolaris
-                trck_init = pypolaris()
+                trck_init = pypolaris.pypolaris()
             else:
                 from pypolaris import pypolaris
                 trck_init = pypolaris.pypolaris()
