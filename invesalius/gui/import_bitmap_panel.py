@@ -149,8 +149,7 @@ class InnerPanel(wx.Panel):
         pass
 
     def OnDblClickTextPanel(self, evt):
-        group = evt.GetItemData()
-        self.LoadDicom(group)
+        pass
 
     def OnClickOk(self, evt):
         parm = dlg.ImportBitmapParameters()
