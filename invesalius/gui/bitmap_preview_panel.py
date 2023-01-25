@@ -373,11 +373,12 @@ class BitmapPreviewSeries(wx.Panel):
     def RemovePanel(self, data):
         for p, f in zip(self.previews, self.files):
             if p.bitmap_info != None:
-                if data.decode(const.FS_ENCODE) in p.bitmap_info.data:
+                if data in p.bitmap_info.data[0]:
                     self.files.remove(f)
                     p.Hide()
                     self._display_previews()
-                    Publisher.sendMessage('Update max of slidebar in single preview image', max_value=len(self.files))
+                    Publisher.sendMessage('Update max of slidebar in single preview image',\
+                                          max_value=len(self.files))
 
                     self.Update()
                     self.Layout()
