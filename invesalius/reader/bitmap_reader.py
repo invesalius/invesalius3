@@ -116,7 +116,6 @@ class BitmapData:
 
     def GetIndexByPath(self, path):
         for i, v in enumerate(self.data):
-            print(path, i, v)
             if path in v:
                 return i
 
@@ -284,14 +283,11 @@ class ProgressBitmapReader:
     def GetBitmaps(self, path, recursive):
         y = yGetBitmaps(path, recursive)
         for value_progress in y:
-            print(">>> YYYYYY", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
-                print("UPDATE PROGRESS")
                 self.UpdateLoadFileProgress(value_progress)
             else:
-                print("END PROGRESS")
                 self.EndLoadFile(value_progress)
 
         self.UpdateLoadFileProgress(None)
@@ -401,10 +397,22 @@ def ReadBitmap(filepath):
 
 def GetPixelSpacingFromInfoFile(filepath):
     filepath = utils.decode(filepath, const.FS_ENCODE)
+    
     if filepath.endswith(".DS_Store"):
         return False
-    fi = open(filepath, "r")
-    lines = fi.readlines()
+
+    try: 
+        fi = open(filepath, "r")  
+        lines = fi.readlines()
+    except(UnicodeDecodeError):
+
+        #fix uCTI from CTI file 
+        try:
+            fi = open(filepath,"r",encoding="iso8859-1")
+            lines = fi.readlines()
+        except(UnicodeDecodeError):
+            return False
+
     measure_scale = "mm"
     values = []
 
