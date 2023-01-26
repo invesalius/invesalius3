@@ -559,6 +559,45 @@ def ShowSaveAsProjectDialog(default_filename=None):
     return filename, wildcard == INV_COMPRESSED
 
 
+def ShowLoadCSVDebugEfield(message=_(u"Load debug CSV Enorm file"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+                           wildcard=_("(*.csv)|*.csv"), default_filename=""):
+
+    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
+                        wildcard=wildcard, style=style)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                filepath = dlg.GetPath()
+            else:
+                filepath = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    if filepath:
+        with open(filepath, 'r') as file:
+            my_reader = csv.reader(file, delimiter=',')
+            rows = []
+            for row in my_reader:
+                rows.append(row)
+        e_field = rows
+        e_field_norms = np.array(e_field).astype(float)
+
+        return e_field_norms
+    else:
+        return None
+
 def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
                        wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
 
@@ -931,6 +970,17 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
 
 def Efield_connection_warning():
     msg = _('No connection to E-field library')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def Efield_debug_Enorm_warning():
+    msg = _('The CSV Enorm file is not loaded.')
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_INFORMATION | wx.OK)

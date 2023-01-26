@@ -181,6 +181,7 @@ class Navigation(metaclass=Singleton):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.e_field_loaded = False
+        self.debug_efield_enorm = None
 
 
         # Tractography parameters
@@ -277,7 +278,7 @@ class Navigation(metaclass=Singleton):
             self.event.clear()
 
         vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue,self.e_field_norms_queue, self.e_field_IDs_queue]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
         errors = False
@@ -307,7 +308,7 @@ class Navigation(metaclass=Singleton):
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
-                                                                self.target, icp,self.e_field_loaded))
+                                                                self.target, icp, self.e_field_loaded))
         else:
             coreg_data = (self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
@@ -355,7 +356,8 @@ class Navigation(metaclass=Singleton):
 
             if self.e_field_loaded:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
-                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,self.neuronavigation_api))
+                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,
+                                                                  self.neuronavigation_api, self.debug_efield_enorm))
 
 
             jobs_list.append(

@@ -267,6 +267,7 @@ class Viewer(wx.Panel):
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
+        self.colors_init = vtkUnsignedCharArray()
 
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
@@ -373,14 +374,14 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnUpdateEfieldvis, 'Update efield vis')
+        Publisher.subscribe(self.Initialize_color_array, 'Initialize color array')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
-        Publisher.subscribe(self.Init_efield, 'Initialize')
+        Publisher.subscribe(self.Init_efield, 'Initialize E-field brain')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
-        Publisher.subscribe(self.Get_E_field_max_min, 'Get min max norms')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
         Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
@@ -1607,17 +1608,18 @@ class Viewer(wx.Panel):
         mapper.SetInputData(mesh)
         self.efield_actor.SetMapper(mapper)
 
-    def Default_color_actor(self):
-        colors = vtkUnsignedCharArray()
-        colors.SetNumberOfComponents(3)
-        colors.SetName('Colors')
+    def Initialize_color_array(self):
+        self.colors_init.SetNumberOfComponents(3)
+        self.colors_init.SetName('Colors')
         color = 3 * [255.0]
         for i in range(self.efield_mesh.GetNumberOfCells()):
-            colors.InsertTuple(i, color)
-        self.efield_mesh.GetPointData().SetScalars(colors)
+            self.colors_init.InsertTuple(i, color)
+
+    def Default_color_actor(self):
+        self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+        wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
         self.Recolor_efield_Actor(self.efield_mesh)
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
-
 
     def CreateLUTtableforefield(self, min, max):
         lut = vtkLookupTable()
@@ -1634,7 +1636,7 @@ class Viewer(wx.Panel):
         min = np.amin(self.e_field_norms)
         self.min = min
         self.max = max
-        wx.CallAfter(Publisher.sendMessage,'Update efield vis')
+        wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
     def Get_efield_actor(self, e_field_actor):
@@ -1678,29 +1680,23 @@ class Viewer(wx.Panel):
                     self.radius_list.Sort()
         else:
             self.radius_list.Reset()
-            #send flag or radious_list as zero to only ask for enorms when is not zero
-        #return self.radius_list
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
             lut = self.CreateLUTtableforefield(self.min, self.max)
-            colors = vtkUnsignedCharArray()
-            colors.SetNumberOfComponents(3)
-            colors.SetName('Colors')
-            color = 3 * [255.0]
-            for i in range(np.size(self.e_field_norms)):
-                colors.InsertTuple(i, color)
-                #cell_ids_array = self.GetCellIDsfromlistPoints(self.radius_list, self.efield_mesh)
+
+            self.colors_init.SetNumberOfComponents(3)
+            self.colors_init.Fill(255)
+
             for h in range(self.radius_list.GetNumberOfIds()):
                 dcolor = 3 * [0.0]
                 index_id = self.radius_list.GetId(h)
-                #index_id = cell_ids_array[h]
                 lut.GetColor(self.e_field_norms[index_id], dcolor)
                 color = 3 * [0.0]
                 for j in range(0, 3):
                     color[j] = int(255.0 * dcolor[j])
-                colors.InsertTuple(index_id, color)
-            self.efield_mesh.GetPointData().SetScalars(colors)
+                self.colors_init.InsertTuple(index_id, color)
+            self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             self.Recolor_efield_Actor(self.efield_mesh)
             wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
 
@@ -1727,32 +1723,6 @@ class Viewer(wx.Panel):
 
     def Get_enorm(self, enorm):
         self.Get_E_field_max_min(enorm)
-
-    def Get_coil_position(self, m_img,coord,neuronavigation_api):
-        # coil position cp : the center point at the bottom of the coil casing,
-        # corresponds to the origin of the coil template.
-        # coil normal cn: outer normal of the coil, i.e. away from the head
-        # coil tangent 1 ct1: long axis
-        # coil tangent 2 ct2: short axis ~ direction of primary E under the coil
-        # % rotation matrix for the coil coordinates
-        # T = [ct1;ct2;cn];
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-        cp = m_img_flip[:-1, -1]  # coil center
-        cp = cp * 0.001  # convert to meters
-        cp = cp.tolist()
-
-        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
-        cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
-        T_rot = T_rot.tolist()  # to list
-        enorm = neuronavigation_api.update_efield(position=cp, orientation=coord, T_rot=T_rot)
-        self.Get_E_field_max_min(enorm)
-
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
