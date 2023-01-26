@@ -192,9 +192,9 @@ class TextPanel(wx.Panel):
                                    | wx.TR_ROW_LINES
                                    #  | wx.TR_COLUMN_LINES
                                    | wx.TR_FULL_ROW_HIGHLIGHT
-                                   | wx.TR_MULTIPLE
+                                   #| wx.TR_MULTIPLE
                                    | wx.TR_HIDE_ROOT
-                                   )
+                                   , agwStyle=gizmos.TR_MULTIPLE)
 
 
         tree.AddColumn(_("Path"))
