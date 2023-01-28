@@ -412,7 +412,8 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
         Publisher.subscribe(self.ActiveTarget, 'Active target button')
         Publisher.subscribe(self.DeactiveTarget, 'Deactive target button')
-        
+        Publisher.subscribe(self.DeactiveTargetMode, 'Deactive target mode')
+
     def DisablePreset(self):
         self.off_item.Check(1)
 
@@ -452,12 +453,15 @@ class VolumeToolPanel(wx.Panel):
     def DeactiveTarget(self):
         self.button_target.Hide()
 
+    def DeactiveTargetMode(self):
+        self.OnButtonTarget(False)
+        self.button_target._SetState(0)
+
     def StatusNavigation(self):
         if self.status_target_selected and self.status_obj_tracker:
             self.button_target.Enable(1)
         else:
-            self.OnButtonTarget(False)
-            self.button_target._SetState(0)
+            self.DeactiveTargetMode()
             self.button_target.Enable(0)
 
     def OnButtonTarget(self, evt):

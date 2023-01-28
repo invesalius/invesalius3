@@ -3434,8 +3434,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.use_default_object = False
         self.object_fiducial_being_set = None
 
-        self.obj_fiducials = np.full([5, 3], np.nan)
-        self.obj_orients = np.full([5, 3], np.nan)
+        self.obj_fiducials = np.full([4, 3], np.nan)
+        self.obj_orients = np.full([4, 3], np.nan)
 
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
@@ -3455,10 +3455,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         # Initialize list of buttons and txtctrls for wx objects
-        self.btns_coord = [None] * 5
-        self.text_actors = [None] * 5
-        self.ball_actors = [None] * 5
-        self.txt_coord = [list(), list(), list(), list(), list()]
+        self.btns_coord = [None] * 4
+        self.text_actors = [None] * 4
+        self.ball_actors = [None] * 4
+        self.txt_coord = [list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
@@ -3510,14 +3510,14 @@ class ObjectCalibrationDialog(wx.Dialog):
 
             self.btns_coord[index] = ctrl
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             for n in range(0, 3):
                 self.txt_coord[m].append(wx.StaticText(self, -1, label='-',
                                                        style=wx.ALIGN_RIGHT, size=wx.Size(40, 23)))
 
         coord_sizer = wx.GridBagSizer(hgap=20, vgap=5)
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
             for n in range(0, 3):
                 coord_sizer.Add(self.txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
@@ -3721,13 +3721,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
         #      and not change the function to the point of potentially breaking it.)
         #
-        if self.obj_ref_id and fiducial_index == 4:
+        if self.obj_ref_id and fiducial_index == 3:
             coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-
-        if fiducial_index == 3:
-            coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
@@ -3758,7 +3755,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
             self.choice_sensor.Show(self.obj_ref_id)
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):

@@ -180,10 +180,7 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     :return:
     """
 
-    coords_aux = np.hstack((fiducials, orients))
-    mask = np.ones(len(coords_aux), dtype=bool)
-    mask[[3]] = False
-    coords = coords_aux[mask]
+    coords = np.hstack((fiducials, orients))
 
     fids_dyn = np.zeros([4, 6])
     fids_img = np.zeros([4, 6])

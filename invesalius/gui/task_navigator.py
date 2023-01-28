@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
 
 import dataclasses
 from functools import partial
@@ -76,6 +77,8 @@ try:
     from invesalius.net.pedal_connection import PedalConnection
 except ImportError:
     HAS_PEDAL_CONNECTION = False
+
+from invesalius import inv_paths
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -1120,6 +1123,7 @@ class ObjectRegistrationPanel(wx.Panel):
                             use_default_object=use_default_object,
                         )
                         Publisher.sendMessage('Change camera checkbox', status=False)
+                        Publisher.sendMessage('Deactive target mode')
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -1146,15 +1150,37 @@ class ObjectRegistrationPanel(wx.Panel):
                 self.obj_name = data[0][1]
                 self.obj_ref_mode = int(data[0][-1])
 
+                if not os.path.exists(self.obj_name):
+                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                if polydata:
+                    self.neuronavigation_api.update_coil_mesh(polydata)
+                else:
+                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
+                    use_default_object = True
+                else:
+                    use_default_object = False
                 self.checktrack.Enable(1)
                 self.checktrack.SetValue(True)
                 Publisher.sendMessage('Update object registration',
                                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Object file successfully loaded"))
-                Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                Publisher.sendMessage('Update track object state',
+                                      flag=True,
+                                      obj_name=self.obj_name,
+                                      polydata=polydata,
+                                      use_default_object=use_default_object)
                 Publisher.sendMessage('Change camera checkbox', status=False)
-                wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
+                Publisher.sendMessage('Deactive target mode')
+                if use_default_object:
+                    msg = _("Default object file successfully loaded")
+                else:
+                    msg = _("Object file successfully loaded")
+                wx.MessageBox(msg, _("InVesalius 3"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
