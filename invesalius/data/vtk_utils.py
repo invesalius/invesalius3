@@ -341,6 +341,8 @@ def numpy_to_vtkMatrix4x4(affine):
 
     return affine_vtk
 
+
+# TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
 def CreateObjectPolyData(filename):
     """
     Coil for navigation rendered in volume viewer.
