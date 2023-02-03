@@ -1568,9 +1568,18 @@ class Viewer(wx.Panel):
         self.locator = locator
 
     def Recolor_efield_Actor(self, mesh):
+        normals = vtkPolyDataNormals()
+        normals.SetInputData(mesh)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
         mapper = vtkPolyDataMapper()
-        mapper.SetInputData(mesh)
+        mapper.SetInputData(normals.GetOutput())
+        mapper.ScalarVisibilityOn()
+
         self.efield_actor.SetMapper(mapper)
+        self.efield_actor.GetProperty().SetBackfaceCulling(1)
+
 
     def Initialize_color_array(self):
         self.colors_init.SetNumberOfComponents(3)
