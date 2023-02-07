@@ -1573,13 +1573,11 @@ class Viewer(wx.Panel):
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        mapper.ScalarVisibilityOn()
 
-        self.efield_actor.SetMapper(mapper)
+        self.efield_mapper.SetInputData(normals.GetOutput())
+        self.efield_mapper.ScalarVisibilityOn()
+        self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
-
 
     def Initialize_color_array(self):
         self.colors_init.SetNumberOfComponents(3)
@@ -1635,6 +1633,7 @@ class Viewer(wx.Panel):
         self.locator_efield = e_field_brain.locator_efield
         self.locator_efield_cell = e_field_brain.locator_efield_Cell
         self.efield_mesh = e_field_brain.e_field_mesh
+        self.efield_mapper = e_field_brain.efield_mapper
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
