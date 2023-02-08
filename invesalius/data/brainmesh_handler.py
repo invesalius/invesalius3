@@ -330,6 +330,7 @@ class E_field_brain:
         self.e_field_mesh_centers = GetCenters(mesh)
         self.e_field_mesh = mesh
 
+        self.efield_mapper = vtkPolyDataMapper()
 
 
 def GetCenters(mesh):

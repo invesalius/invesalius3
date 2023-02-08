@@ -361,7 +361,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
         Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
-        Publisher.subscribe(self.Get_enorm, 'Get enorm')
+        Publisher.subscribe(self.GetEnorm, 'Get enorm')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -374,20 +374,20 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnUpdateEfieldvis, 'Update efield vis')
-        Publisher.subscribe(self.Initialize_color_array, 'Initialize color array')
+        Publisher.subscribe(self.InitializeColorArray, 'Initialize color array')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
-        Publisher.subscribe(self.Init_efield, 'Initialize E-field brain')
+        Publisher.subscribe(self.InitEfield, 'Initialize E-field brain')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
-        Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
+        Publisher.subscribe(self.InitLocatorViewer, 'Get init locator')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
-        Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
+        Publisher.subscribe(self.InitLocatorViewer, 'Get init locator')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
-        Publisher.subscribe(self.Get_efield_actor, 'Send Actor')
-        Publisher.subscribe(self.Default_color_actor, 'Recolor again')
+        Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
+        Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -1406,8 +1406,8 @@ class Viewer(wx.Panel):
 
         self.obj_projection_arrow_actor = self.CreateActorArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
                                                                 8)
-        self.object_orientation_torus_actor = self.Add_Torus([0., 0., 0.], [0., 0., 0.],
-                                                             vtk_colors.GetColor3d('Red'))
+        self.object_orientation_torus_actor = self.AddTorus([0., 0., 0.], [0., 0., 0.],
+                                                            vtk_colors.GetColor3d('Red'))
 
         #self.obj_projection_arrow_actor.SetVisibility(False)
         #self.object_orientation_torus_actor.SetVisibility(False)
@@ -1429,7 +1429,7 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
-    def Add_Object_Orientation_Disk(self, position, orientation, color=[0.0, 0.0, 1.0]):
+    def AddObjectOrientationDisk(self, position, orientation, color=[0.0, 0.0, 1.0]):
         # Create a disk to show target
         disk = vtkDiskSource()
         disk.SetInnerRadius(5)
@@ -1449,7 +1449,7 @@ class Viewer(wx.Panel):
 
         return disk_actor
 
-    def Add_Torus(self, position, orientation, color=[0.0, 0.0, 1.0]):
+    def AddTorus(self, position, orientation, color=[0.0, 0.0, 1.0]):
         torus = vtkParametricTorus()
         torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
@@ -1564,25 +1564,32 @@ class Viewer(wx.Panel):
         self.peel_centers = centers
         self.peel_normals = normals
 
-    def Initlocator_viewer(self, locator):
+    def InitLocatorViewer(self, locator):
         self.locator = locator
 
-    def Recolor_efield_Actor(self, mesh):
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(mesh)
-        self.efield_actor.SetMapper(mapper)
+    def RecolorEfieldActor(self, mesh):
+        normals = vtkPolyDataNormals()
+        normals.SetInputData(mesh)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
 
-    def Initialize_color_array(self):
+        self.efield_mapper.SetInputData(normals.GetOutput())
+        self.efield_mapper.ScalarVisibilityOn()
+        self.efield_actor.SetMapper(self.efield_mapper)
+        self.efield_actor.GetProperty().SetBackfaceCulling(1)
+
+    def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
         color = 3 * [255.0]
         for i in range(self.efield_mesh.GetNumberOfCells()):
             self.colors_init.InsertTuple(i, color)
 
-    def Default_color_actor(self):
+    def ReturnToDefaultColorActor(self):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
-        self.Recolor_efield_Actor(self.efield_mesh)
+        self.RecolorEfieldActor(self.efield_mesh)
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
     def CreateLUTtableforefield(self, min, max):
@@ -1594,7 +1601,7 @@ class Viewer(wx.Panel):
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         return lut
 
-    def Get_E_field_max_min(self, e_field_norms):
+    def GetEfieldMaxMin(self, e_field_norms):
         self.e_field_norms = e_field_norms
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
@@ -1603,7 +1610,7 @@ class Viewer(wx.Panel):
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
-    def Get_efield_actor(self, e_field_actor):
+    def GetEfieldActor(self, e_field_actor):
         self.efield_actor  = e_field_actor
 
     def FindPointsAroundRadiusEfield(self, cellId):
@@ -1620,12 +1627,13 @@ class Viewer(wx.Panel):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
 
-    def Init_efield(self, e_field_brain):
+    def InitEfield(self, e_field_brain):
         self.e_field_mesh_normals =e_field_brain.e_field_mesh_normals
         self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
         self.locator_efield = e_field_brain.locator_efield
         self.locator_efield_cell = e_field_brain.locator_efield_Cell
         self.efield_mesh = e_field_brain.e_field_mesh
+        self.efield_mapper = e_field_brain.efield_mapper
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
@@ -1661,7 +1669,7 @@ class Viewer(wx.Panel):
                     color[j] = int(255.0 * dcolor[j])
                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-            self.Recolor_efield_Actor(self.efield_mesh)
+            self.RecolorEfieldActor(self.efield_mesh)
             wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
 
         else:
@@ -1685,8 +1693,8 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def Get_enorm(self, enorm):
-        self.Get_E_field_max_min(enorm)
+    def GetEnorm(self, enorm):
+        self.GetEfieldMaxMin(enorm)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
