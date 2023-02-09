@@ -150,13 +150,6 @@ class Session(metaclass=Singleton):
         import invesalius.constants as const
         return self.project_status != const.PROJECT_STATUS_CLOSED
 
-    def SaveConfigFileBackup(self):
-        path = os.path.join(self.homedir ,
-                            u'.invesalius', u'config.cfg')
-        path_dst = os.path.join(self.homedir ,
-                            u'.invesalius', u'config.backup')
-        shutil.copy(path, path_dst)
-
     def RecoveryConfigFile(self):
         homedir = self.homedir = os.path.expanduser('~')
         try:

@@ -186,8 +186,6 @@ class Inv3SplashScreen(SplashScreen):
             session.SetLanguage(lang)
             session.WriteSessionFile()
 
-        #  session.SaveConfigFileBackup()
-
 
         # Only after language was defined, splash screen will be shown.
         if lang:
