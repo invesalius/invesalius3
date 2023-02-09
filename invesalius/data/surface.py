@@ -575,7 +575,8 @@ class SurfaceManager():
 
         prop = actor.GetProperty()
 
-        interpolation = int(ses.Session().surface_interpolation)
+        session = ses.Session()
+        interpolation = int(session.surface_interpolation)
 
         prop.SetInterpolation(interpolation)
 
@@ -587,7 +588,6 @@ class SurfaceManager():
             surface.index = index
             self.last_surface_index = index
 
-        session = ses.Session()
         session.ChangeProject()
 
         Publisher.sendMessage('Load surface actor into viewer', actor=actor)
@@ -663,7 +663,8 @@ class SurfaceManager():
         if keep_largest:
             pipeline_size += 1
 
-        language = ses.Session().language
+        session = ses.Session()
+        language = session.language
 
         if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
@@ -832,9 +833,10 @@ class SurfaceManager():
         Publisher.sendMessage('Send Actor', e_field_actor=self.actors_dict[surface_index])
 
     def UpdateSurfaceInterpolation(self):
-        interpolation = int(ses.Session().surface_interpolation)
-        key_actors = self.actors_dict.keys()
+        session = ses.Session()
+        interpolation = int(session.surface_interpolation)
 
+        key_actors = self.actors_dict.keys()
         for key in self.actors_dict:
             self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
         Publisher.sendMessage('Render volume viewer')

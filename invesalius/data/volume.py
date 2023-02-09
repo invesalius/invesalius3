@@ -524,7 +524,8 @@ class Volume():
                 raycasting_function = vtkVolumeRayCastCompositeFunction()
                 raycasting_function.SetCompositeMethodToInterpolateFirst()
 
-            if ses.Session().rendering == '0':
+            session = ses.Session()
+            if session.rendering == '0':
                 self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
 
     def ApplyConvolution(self, imagedata, update_progress = None):
@@ -628,8 +629,8 @@ class Volume():
             volume_mapper.IntermixIntersectingGeometryOn()
             self.volume_mapper = volume_mapper
         else:
-
-            if int(ses.Session().rendering) == 0:
+            session = ses.Session()
+            if int(session.rendering) == 0:
                 volume_mapper = vtkFixedPointVolumeRayCastMapper()
                 #volume_mapper.AutoAdjustSampleDistancesOff()
                 self.volume_mapper = volume_mapper
@@ -744,7 +745,8 @@ class VolumeMask:
 
     def create_volume(self):
         if self._actor is None:
-            if int(ses.Session().rendering) == 0:
+            session = ses.Session()
+            if int(session.rendering) == 0:
                 self._volume_mapper = vtkFixedPointVolumeRayCastMapper()
                 #volume_mapper.AutoAdjustSampleDistancesOff()
                 self._volume_mapper.IntermixIntersectingGeometryOn()

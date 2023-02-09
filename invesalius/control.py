@@ -772,13 +772,13 @@ class Controller():
             self.start_new_inv_instance(matrix, name, spacing, modality, name_to_const[orientation], window_width, window_level)
         else:
             # Verifying if there is a project open
-            s = ses.Session()
-            if s.IsOpen():
+            session = ses.Session()
+            if session.IsOpen():
                 Publisher.sendMessage('Close Project')
                 Publisher.sendMessage('Disconnect tracker')
 
             # Check if user really closed the project, if not, stop project creation
-            if s.IsOpen():
+            if session.IsOpen():
                 return
 
             mmap_matrix = image_utils.array2memmap(matrix)
@@ -811,10 +811,7 @@ class Controller():
             Publisher.sendMessage('Update threshold limits list',
                                   threshold_range=proj.threshold_range)
 
-            ######
-            session = ses.Session()
             filename = proj.name + ".inv3"
-
             filename = filename.replace("/", "")
 
             dirpath = session.CreateProject(filename)
