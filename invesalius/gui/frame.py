@@ -553,7 +553,7 @@ class Frame(wx.Frame):
 
         elif id == const.ID_MASK_3D_AUTO_RELOAD:
             session = ses.Session()
-            session.auto_reload_preview = self.tools_menu.IsChecked(const.ID_MASK_3D_AUTO_RELOAD)
+            session.SetConfig('auto_reload_preview', self.tools_menu.IsChecked(const.ID_MASK_3D_AUTO_RELOAD))
 
         elif id == const.ID_MASK_3D_RELOAD:
             self.OnUpdateMaskPreview()
@@ -622,11 +622,15 @@ class Frame(wx.Frame):
 
             session = ses.Session()
 
-            session.rendering = values[const.RENDERING]
-            session.surface_interpolation = values[const.SURFACE_INTERPOLATION]
-            session.language = values[const.LANGUAGE]
-            session.slice_interpolation = values[const.SLICE_INTERPOLATION]
-            session.WriteSessionFile()
+            rendering = values[const.RENDERING]
+            surface_interpolation = values[const.SURFACE_INTERPOLATION]
+            language = values[const.LANGUAGE]
+            slice_interpolation = values[const.SLICE_INTERPOLATION]
+
+            session.SetConfig('rendering', rendering)
+            session.SetConfig('surface_interpolation', surface_interpolation)
+            session.SetConfig('language', language)
+            session.SetConfig('slice_interpolation', slice_interpolation)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
@@ -652,7 +656,7 @@ class Frame(wx.Frame):
         Show getting started window.
         """
         session = ses.Session()
-        if session.language == 'pt_BR':
+        if session.GetConfig('language') == 'pt_BR':
             user_guide = "user_guide_pt_BR.pdf"
         else:
             user_guide = "user_guide_en.pdf"
@@ -696,7 +700,7 @@ class Frame(wx.Frame):
         p = prj.Project()
 
         session = ses.Session()
-        last_directory = session.get('paths', 'last_directory_export_prj', '')
+        last_directory = session.GetConfig('last_directory_export_prj', '')
 
         fdlg = wx.FileDialog(None,
                             "Export slice ...",
@@ -725,7 +729,7 @@ class Frame(wx.Frame):
                 d.ShowModal()
                 d.Destroy()
             else:
-                session['paths']['last_directory_export_prj'] = dirpath
+                session.SetConfig('last_directory_export_prj', dirpath)
 
     def ShowProjectProperties(self):
         window = project_properties.ProjectProperties(self)
@@ -1043,8 +1047,9 @@ class MenuBar(wx.MenuBar):
         self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+D", "", wx.ITEM_CHECK)
 
         session = ses.Session()
-        self.mask_auto_reload.Check(session.auto_reload_preview)
+        auto_reload_preview = session.GetConfig('auto_reload_preview')
 
+        self.mask_auto_reload.Check(auto_reload_preview)
         self.mask_auto_reload.Enable(False)
 
         self.mask_preview_reload = mask_preview_menu.Append(const.ID_MASK_3D_RELOAD, _("Reload") + "\tCtrl+Shift+R")
@@ -1192,25 +1197,16 @@ class MenuBar(wx.MenuBar):
         evt.Skip()
 
     def SliceInterpolationStatus(self):
-        
         session = ses.Session()
-        status = int(session.slice_interpolation)
+        slice_interpolation = session.GetConfig('slice_interpolation')
 
-        if status == 0:
-            v = True
-        else:
-            v = False
-
-        return v
+        return slice_interpolation != 0
 
     def NavigationModeStatus(self):
         session = ses.Session()
-        status = int(session.mode)
+        mode = session.GetConfig('mode')
 
-        if status == 1:
-            return True
-        else:
-            return False
+        return mode == 1
 
     def OnUpdateSliceInterpolation(self):
         v = self.SliceInterpolationStatus()

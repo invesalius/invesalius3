@@ -64,15 +64,14 @@ class Controller():
         self.progress_dialog = None
         self.cancel_import = False
 
-        #type of imported image
-        #None, others and opened Project = 0
-        #DICOM = 1
-        #TIFF uCT = 2
+        # Type of imported image:
+        #
+        # None, others and opened Project = 0
+        # DICOM = 1
+        # TIFF uCT = 2
         self.img_type = 0
         self.affine = np.identity(4)
 
-        #Init session
-        session = ses.Session()
         self.measure_manager = measures.MeasurementManager()
 
         Publisher.sendMessage('Load Preferences')
@@ -168,7 +167,7 @@ class Controller():
     def ShowDialogImportBitmapFile(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        project_status = session.project_status
+        project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
@@ -192,7 +191,7 @@ class Controller():
     def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        project_status = session.project_status
+        project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
@@ -213,7 +212,7 @@ class Controller():
     def ShowDialogImportOtherFiles(self, id_type):
         # Offer to save current project if necessary
         session = ses.Session()
-        project_status = session.project_status
+        project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
@@ -235,7 +234,7 @@ class Controller():
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        project_status = session.project_status
+        project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
@@ -267,7 +266,7 @@ class Controller():
 
     def ShowDialogCloseProject(self):
         session = ses.Session()
-        project_status = session.project_status
+        project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_CLOSED:
             return -1
         try:
@@ -311,7 +310,7 @@ class Controller():
     def OnOpenRecentProject(self, filepath):
         if os.path.exists(filepath):
             session = ses.Session()
-            project_status = session.project_status
+            project_status = session.GetConfig('project_status')
             if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
                 filename = session.project_path[1]
                 answer = dialog.SaveChangesDialog2(filename)

@@ -302,7 +302,7 @@ def ShowOpenProjectDialog():
     # Default system path
     current_dir = os.path.abspath(".")
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_inv3', '')
+    last_directory = session.GetConfig('last_directory_inv3', '')
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
                         defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_OPEN,
@@ -322,8 +322,8 @@ def ShowOpenProjectDialog():
         filepath = dlg.GetPath()
 
     if filepath:
-        session['paths']['last_directory_inv3'] = os.path.split(filepath)[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(filepath)[0]
+        session.SetConfig('last_directory_inv3', last_directory)
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -337,11 +337,7 @@ def ShowImportDirDialog(self):
 
     if sys.platform == 'win32' or sys.platform.startswith('linux'):
         session = ses.Session()
-
-        if (session.GetLastDicomFolder()):
-            folder = session.GetLastDicomFolder()
-        else:
-            folder = ''
+        folder = session.GetConfig('last_dicom_folder', '')
     else:
         folder = ''
 
@@ -360,13 +356,14 @@ def ShowImportDirDialog(self):
             else:
                 path = dlg.GetPath().encode('utf-8')
 
-    except(wx._core.PyAssertionError): #TODO: error win64
-         if (dlg.GetPath()):
+    except wx._core.PyAssertionError:  # TODO: error win64
+         if dlg.GetPath():
              path = dlg.GetPath()
 
-    if (sys.platform != 'darwin'):
-        if (path):
-            session.SetLastDicomFolder(path)
+    if sys.platform != 'darwin':
+        if path:
+            path_decoded = utils.decode(path, const.FS_ENCODE)
+            session.SetConfig('last_dicom_folder', path_decoded)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -376,17 +373,8 @@ def ShowImportDirDialog(self):
 def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
-    #  if sys.platform == 'win32' or sys.platform.startswith('linux'):
-        #  session = ses.Session()
-
-        #  if (session.GetLastDicomFolder()):
-            #  folder = session.GetLastDicomFolder()
-        #  else:
-            #  folder = ''
-    #  else:
-        #  folder = ''
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_bitmap', '')
+    last_directory = session.GetConfig('last_directory_bitmap', '')
 
     dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), last_directory,
                         style=wx.DD_DEFAULT_STYLE
@@ -400,17 +388,12 @@ def ShowImportBitmapDirDialog(self):
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
             path = dlg.GetPath()
 
-    except(wx._core.PyAssertionError): #TODO: error win64
-         if (dlg.GetPath()):
+    except wx._core.PyAssertionError:  # TODO: error win64
+         if dlg.GetPath():
              path = dlg.GetPath()
 
-    #  if (sys.platform != 'darwin'):
-        #  if (path):
-            #  session.SetLastDicomFolder(path)
-
     if path:
-        session['paths']['last_directory_bitmap'] = path
-        session.WriteSessionFile()
+        session.SetConfig('last_directory_bitmap', path)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -421,7 +404,7 @@ def ShowImportBitmapDirDialog(self):
 def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     # Default system path
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_%d' % id_type, '')
+    last_directory = session.GetConfig('last_directory_%d' % id_type, '')
     dlg = wx.FileDialog(None, message=msg, defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_NIFTI,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
@@ -468,8 +451,9 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
             filename = dlg.GetPath()
 
     if filename:
-        session['paths']['last_directory_%d' % id_type] = os.path.split(dlg.GetPath())[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(dlg.GetPath())[0]
+        session.SetConfig('last_directory_%d' % id_type, last_directory)
+
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
@@ -479,8 +463,10 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
 def ShowImportMeshFilesDialog():
     # Default system path
     current_dir = os.path.abspath(".")
+
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_surface_import', '')
+    last_directory = session.GetConfig('last_directory_surface_import', '')
+
     dlg = wx.FileDialog(None, message=_("Import surface file"),
                         defaultDir=last_directory,
                         wildcard=WILDCARD_MESH_FILES,
@@ -501,8 +487,7 @@ def ShowImportMeshFilesDialog():
             filename = dlg.GetPath()
 
     if filename:
-        session['paths']['last_directory_surface_import'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+        session.SetConfig('last_directory_surface_import', os.path.split(filename)[0])
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -529,8 +514,10 @@ def ImportMeshCoordSystem():
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
+
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_inv3', '')
+    last_directory = session.GetConfig('last_directory_inv3', '')
+
     dlg = wx.FileDialog(None,
                         _("Save project as..."), # title
                         last_directory, # last used directory
@@ -557,8 +544,8 @@ def ShowSaveAsProjectDialog(default_filename=None):
                 filename = filename + "." + extension
 
     if filename:
-        session['paths']['last_directory_inv3'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(filename)[0]
+        session.SetConfig('last_directory_inv3', last_directory)
 
     wildcard = dlg.GetFilterIndex()
     os.chdir(current_dir)
@@ -1524,7 +1511,7 @@ def ExportPicture(type_=""):
     project = proj.Project()
 
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_screenshot', '')
+    last_directory = session.GetConfig('last_directory_screenshot', '')
 
     project_name = "%s_%s" % (project.name, type_)
     if not sys.platform in ('win32', 'linux2', 'linux'):
@@ -1543,8 +1530,10 @@ def ExportPicture(type_=""):
         filetype = INDEX_TO_TYPE[filetype_index]
         extension = INDEX_TO_EXTENSION[filetype_index]
         filename = dlg.GetPath()
-        session['paths']['last_directory_screenshot'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+
+        last_directory = os.path.split(filename)[0]
+        session.SetConfig('last_directory_screenshot', last_directory)
+
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "."+ extension
@@ -5451,8 +5440,8 @@ class SetOptitrackconfigs(wx.Dialog):
 
     def _init_gui(self):
         session = ses.Session()
-        last_optitrack_cal_dir = session.get('paths', 'last_optitrack_cal_dir', '')
-        last_optitrack_User_Profile_dir = session.get('paths', 'last_optitrack_User_Profile_dir', '')
+        last_optitrack_cal_dir = session.GetConfig('last_optitrack_cal_dir', '')
+        last_optitrack_User_Profile_dir = session.GetConfig('last_optitrack_User_Profile_dir', '')
 
         if not last_optitrack_cal_dir:
             last_optitrack_cal_dir = inv_paths.OPTITRACK_CAL_DIR
@@ -5505,9 +5494,8 @@ class SetOptitrackconfigs(wx.Dialog):
 
         if fn_cal and fn_userprofile:
             session = ses.Session()
-            session['paths']['last_optitrack_cal_dir'] = self.dir_cal.GetPath()
-            session['paths']['last_optitrack_User_Profile_dir'] = self.dir_UserProfile.GetPath()
-            session.WriteSessionFile()
+            session.SetConfig('last_optitrack_cal_dir', self.dir_cal.GetPath())
+            session.SetConfig('last_optitrack_User_Profile_dir', self.dir_UserProfile.GetPath())
 
         return fn_cal, fn_userprofile
 
@@ -5528,7 +5516,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         trackers = const.TRACKERS.copy()
 
         session = ses.Session()
-        if not session.debug:
+        if not session.GetConfig('debug'):
             del trackers[-3:]
 
         tracker_options = [_("Select tracker:")] + trackers
@@ -5864,9 +5852,9 @@ class SetNDIconfigs(wx.Dialog):
         self.com_ports = com_ports
 
         session = ses.Session()
-        last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
-        last_ndi_ref_marker = session.get('paths', 'last_ndi_ref_marker', '')
-        last_ndi_obj_marker = session.get('paths', 'last_ndi_obj_marker', '')
+        last_ndi_probe_marker = session.GetConfig('last_ndi_probe_marker', '')
+        last_ndi_ref_marker = session.GetConfig('last_ndi_ref_marker', '')
+        last_ndi_obj_marker = session.GetConfig('last_ndi_obj_marker', '')
 
         if not last_ndi_probe_marker:
             last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
@@ -5938,10 +5926,9 @@ class SetNDIconfigs(wx.Dialog):
 
         if fn_probe and fn_ref and fn_obj:
             session = ses.Session()
-            session['paths']['last_ndi_probe_marker'] = self.dir_probe.GetPath()
-            session['paths']['last_ndi_ref_marker'] = self.dir_ref.GetPath()
-            session['paths']['last_ndi_obj_marker'] = self.dir_obj.GetPath()
-            session.WriteSessionFile()
+            session.SetConfig('last_ndi_probe_marker', self.dir_probe.GetPath())
+            session.SetConfig('last_ndi_ref_marker', self.dir_ref.GetPath())
+            session.SetConfig('last_ndi_obj_marker', self.dir_obj.GetPath())
 
         return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
 
@@ -6260,7 +6247,7 @@ class PeelsCreationDlg(wx.Dialog):
 
     def _from_files_gui(self):
         session = ses.Session()
-        last_directory = session.get('paths', 'last_directory_%d' % const.ID_NIFTI_IMPORT, '')
+        last_directory = session.GetConfig('last_directory_%d' % const.ID_NIFTI_IMPORT, '')
 
         files_box = wx.StaticBox(self, -1, _("From files"))
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
