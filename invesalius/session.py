@@ -81,7 +81,6 @@ class Session(metaclass=Singleton):
             'slice_interpolation': ('session', 'slice_interpolation'),
             'auto_reload_preview': ('session', 'auto_reload_preview'),
             'recent_projects': ('project', 'recent_projects'),
-            'tempdir': ('paths', 'tempdir'),
             'last_dicom_folder': ('paths', 'last_dicom_folder'),
         }
 
@@ -107,7 +106,6 @@ class Session(metaclass=Singleton):
             },
 
             'paths': {
-                'tempdir': str(inv_paths.TEMP_DIR),
                 'last_dicom_folder': '',
             },
         })
@@ -177,12 +175,17 @@ class Session(metaclass=Singleton):
         import invesalius.constants as const
         debug("Session.CreateProject")
         Publisher.sendMessage('Begin busy cursor')
+
         # Set session info
-        self.project_path = (self.tempdir, filename)
+
+        tempdir = str(inv_paths.TEMP_DIR)
+        self.project_path = (tempdir, filename)
+
         self.project_status = const.PROJECT_STATUS_NEW
         self.temp_item = True
         self.WriteSessionFile()
-        return self.tempdir
+
+        return tempdir
 
     def OpenProject(self, filepath):
         import invesalius.constants as const
@@ -268,7 +271,6 @@ class Session(metaclass=Singleton):
         self.language = config.get('session','language')
         recent_projects = eval(config.get('project','recent_projects'))
         self.recent_projects = [list(rp) for rp in recent_projects]
-        self.tempdir = config.get('paths','tempdir')
         self.last_dicom_folder = config.get('paths','last_dicom_folder') 
 
         #  if not(sys.platform == 'win32'):
