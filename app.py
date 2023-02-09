@@ -373,6 +373,7 @@ def use_cmd_optargs(args):
         check_for_export(args)
 
         return True
+
     elif args.import_folder:
         Publisher.sendMessage('Import folder', folder=args.import_folder)
         if args.save:

@@ -168,8 +168,8 @@ class Controller():
     def ShowDialogImportBitmapFile(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+        project_status = session.project_status
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
@@ -192,8 +192,8 @@ class Controller():
     def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+        project_status = session.project_status
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
@@ -213,8 +213,8 @@ class Controller():
     def ShowDialogImportOtherFiles(self, id_type):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+        project_status = session.project_status
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
@@ -235,8 +235,8 @@ class Controller():
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+        project_status = session.project_status
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
@@ -267,17 +267,17 @@ class Controller():
 
     def ShowDialogCloseProject(self):
         session = ses.Session()
-        st = session.project_status
-        if st == const.PROJ_CLOSE:
+        project_status = session.project_status
+        if project_status == const.PROJECT_STATUS_CLOSED:
             return -1
         try:
             filename = session.project_path[1]
-        except(AttributeError):
+        except AttributeError:
             utils.debug("Project doesn't exist")
             filename = None
 
-        if (filename):
-            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+        if filename:
+            if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
                 answer = dialog.SaveChangesDialog(filename, self.frame)
                 if not answer:
                     utils.debug("Close without changes")
@@ -311,8 +311,8 @@ class Controller():
     def OnOpenRecentProject(self, filepath):
         if os.path.exists(filepath):
             session = ses.Session()
-            st = session.project_status
-            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            project_status = session.project_status
+            if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
                 filename = session.project_path[1]
                 answer = dialog.SaveChangesDialog2(filename)
                 if answer:

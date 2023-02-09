@@ -166,14 +166,14 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_IDLE, self.OnIdle)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
-        #self.Bind(wx.EVT_MOVE, self.OnMove)
+
+        # Close InVesalius main window, hence exit the software.
+        self.Bind(wx.EVT_CLOSE, self.OnExit)
 
     def __init_aui(self):
         """
         Build AUI manager and all panels inside InVesalius frame.
         """
-
         # Tell aui_manager to manage this frame
         aui_manager = self.aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
@@ -403,14 +403,15 @@ class Frame(wx.Frame):
     def CloseProject(self):
         Publisher.sendMessage('Close Project')
 
-    def OnClose(self, evt):
+    def OnExit(self, evt):
         """
-        Close all project data.
+        Exit InVesalius: close all project data, disconnect tracker, and send 'Exit' message.
         """
         Publisher.sendMessage('Close Project')
         Publisher.sendMessage('Disconnect tracker')
-        s = ses.Session()
-        if not s.IsOpen() or not s.project_path:
+
+        session = ses.Session()
+        if not session.IsOpen() or not session.project_path:
             Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):
@@ -447,7 +448,7 @@ class Frame(wx.Frame):
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
-            self.OnClose(None)
+            self.OnExit(None)
         elif id == const.ID_ABOUT:
             self.ShowAbout()
         elif id == const.ID_START:
