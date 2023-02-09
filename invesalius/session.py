@@ -185,8 +185,6 @@ class Session(metaclass=Singleton):
         self.temp_item = True
         self.WriteSessionFile()
 
-        return tempdir
-
     def OpenProject(self, filepath):
         import invesalius.constants as const
         debug("Session.OpenProject")
