@@ -19,25 +19,25 @@
 
 try:
     import configparser as ConfigParser
-except(ImportError):
+except ImportError:
     import ConfigParser
 
 import os
 import shutil
 import sys
-from threading import Thread
 import time
 import codecs
 import collections
 import json
+from random import randint
+from threading import Thread
 
-from invesalius.pubsub import pub as Publisher
 import wx
 
-from invesalius.utils import Singleton, debug, decode, deep_merge_dict
-from random import randint
-
 from invesalius import inv_paths
+from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton, debug, decode, deep_merge_dict
+
 
 FS_ENCODE = sys.getfilesystemencoding()
 
@@ -92,7 +92,7 @@ class Session(metaclass=Singleton):
         self._values = collections.defaultdict(dict, {
             'session': {
                 'mode': const.MODE_RP,
-                'status': const.PROJ_CLOSE,
+                'status': const.PROJECT_STATUS_CLOSED,
                 'debug': False,
                 'debug_efield': False,
                 'language': "",
@@ -148,7 +148,7 @@ class Session(metaclass=Singleton):
 
     def IsOpen(self):
         import invesalius.constants as const
-        return self.project_status != const.PROJ_CLOSE
+        return self.project_status != const.PROJECT_STATUS_CLOSED
 
     def SaveConfigFileBackup(self):
         path = os.path.join(self.homedir ,
@@ -173,7 +173,7 @@ class Session(metaclass=Singleton):
         import invesalius.constants as const
         debug("Session.CloseProject")
         self.project_path = ()
-        self.project_status = const.PROJ_CLOSE
+        self.project_status = const.PROJECT_STATUS_CLOSED
         #self.mode = const.MODE_RP
         self.temp_item = False
         self.WriteSessionFile()
@@ -181,7 +181,7 @@ class Session(metaclass=Singleton):
     def SaveProject(self, path=()):
         import invesalius.constants as const
         debug("Session.SaveProject")
-        self.project_status = const.PROJ_OPEN
+        self.project_status = const.PROJECT_STATUS_OPENED
         if path:
             self.project_path = path
             self.__add_to_list(path)
@@ -192,7 +192,7 @@ class Session(metaclass=Singleton):
     def ChangeProject(self):
         import invesalius.constants as const
         debug("Session.ChangeProject")
-        self.project_status = const.PROJ_CHANGE
+        self.project_status = const.PROJECT_STATUS_CHANGED
 
     def CreateProject(self, filename):
         import invesalius.constants as const
@@ -200,7 +200,7 @@ class Session(metaclass=Singleton):
         Publisher.sendMessage('Begin busy cursor')
         # Set session info
         self.project_path = (self.tempdir, filename)
-        self.project_status = const.PROJ_NEW
+        self.project_status = const.PROJECT_STATUS_NEW
         self.temp_item = True
         self.WriteSessionFile()
         return self.tempdir
@@ -214,7 +214,7 @@ class Session(metaclass=Singleton):
 
         # Set session info
         self.project_path = item
-        self.project_status = const.PROJ_OPEN
+        self.project_status = const.PROJECT_STATUS_OPENED
         self.WriteSessionFile()
 
     def WriteSessionFile(self):
@@ -226,6 +226,7 @@ class Session(metaclass=Singleton):
 
     def __add_to_list(self, item):
         import invesalius.constants as const
+
         # Last projects list
         l = self.recent_projects
         item = list(item)
@@ -236,7 +237,7 @@ class Session(metaclass=Singleton):
 
         # Add new item
         l.insert(0, item)
-        self.recent_projects = l[:const.PROJ_MAX]
+        self.recent_projects = l[:const.RECENT_PROJECTS_MAXIMUM]
 
     def GetLanguage(self):
         return self.language

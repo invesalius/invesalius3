@@ -91,7 +91,7 @@ class InnerTaskPanel(wx.Panel):
         link_import_nifti.SetToolTip(tooltip)
         link_import_nifti.AutoBrowse(False)
         link_import_nifti.UpdateLink()
-        link_import_nifti.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportNifit)
+        link_import_nifti.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportNifti)
 
         #tooltip = wx.ToolTip("Import DICOM files from PACS server")
         #link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
@@ -235,8 +235,8 @@ class InnerTaskPanel(wx.Panel):
         self.ImportDicom()
         event.Skip()
 
-    def OnLinkImportNifit(self, event):
-        self.ImportNifit()
+    def OnLinkImportNifti(self, event):
+        self.ImportNifti()
         event.Skip()
 
     def OnLinkImportPACS(self, event):
@@ -256,7 +256,7 @@ class InnerTaskPanel(wx.Panel):
     def ImportDicom(self):
         Publisher.sendMessage('Show import directory dialog')
 
-    def ImportNifit(self):
+    def ImportNifti(self):
         Publisher.sendMessage('Show import other files dialog', id_type=const.ID_NIFTI_IMPORT)
 
     def OpenProject(self, path=None):
