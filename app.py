@@ -172,9 +172,10 @@ class Inv3SplashScreen(SplashScreen):
                     session.SetLanguage(lang)
                     _ = i18n.InstallLanguage(lang)
                 else:
-                    homedir = self.homedir = os.path.expanduser('~')
-                    invdir = os.path.join(homedir, ".invesalius")
-                    shutil.rmtree(invdir)
+                    homedir = os.path.expanduser('~')
+                    config_dir = os.path.join(homedir, ".invesalius")
+                    shutil.rmtree(config_dir)
+
                     sys.exit()
 
             dialog.Destroy()
