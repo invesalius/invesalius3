@@ -217,13 +217,6 @@ class Session(metaclass=Singleton):
         self.project_status = const.PROJ_OPEN
         self.WriteSessionFile()
 
-    def RemoveTemp(self):
-        if self.temp_item:
-            (dirpath, file) = self.project_path
-            path = os.path.join(dirpath, file)
-            os.remove(path)
-            self.temp_item = False
-
     def WriteSessionFile(self):
         self._write_to_json(self._values, USER_INV_CFG_PATH)
 
