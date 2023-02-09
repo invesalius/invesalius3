@@ -150,18 +150,6 @@ class Session(metaclass=Singleton):
         import invesalius.constants as const
         return self.project_status != const.PROJECT_STATUS_CLOSED
 
-    def RecoveryConfigFile(self):
-        homedir = self.homedir = os.path.expanduser('~')
-        try:
-            path = os.path.join(self.homedir ,
-                            u'.invesalius', u'config.backup')
-            path_dst = os.path.join(self.homedir ,
-                        u'.invesalius', u'config.cfg')
-            shutil.copy(path, path_dst)
-            return True
-        except(IOError):
-           return False
-
     def CloseProject(self):
         import invesalius.constants as const
         debug("Session.CloseProject")
