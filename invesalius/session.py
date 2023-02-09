@@ -108,7 +108,7 @@ class Session(metaclass=Singleton):
             },
 
             'paths': {
-                'homedir': str(inv_paths.USER_DIR),
+                'homedir': str(inv_paths.HOME_DIR),
                 'tempdir': str(inv_paths.TEMP_DIR),
                 'last_dicom_folder': '',
             },
