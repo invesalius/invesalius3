@@ -81,8 +81,7 @@ class Session(metaclass=Singleton):
             'slice_interpolation': ('session', 'slice_interpolation'),
             'auto_reload_preview': ('session', 'auto_reload_preview'),
             'recent_projects': ('project', 'recent_projects'),
-            'homedir': ('paths', 'homedir'),
-            'tempdir': ('paths', 'homedir'),
+            'tempdir': ('paths', 'tempdir'),
             'last_dicom_folder': ('paths', 'last_dicom_folder'),
         }
 
@@ -108,7 +107,6 @@ class Session(metaclass=Singleton):
             },
 
             'paths': {
-                'homedir': str(inv_paths.HOME_DIR),
                 'tempdir': str(inv_paths.TEMP_DIR),
                 'last_dicom_folder': '',
             },
@@ -270,7 +268,6 @@ class Session(metaclass=Singleton):
         self.language = config.get('session','language')
         recent_projects = eval(config.get('project','recent_projects'))
         self.recent_projects = [list(rp) for rp in recent_projects]
-        self.homedir = config.get('paths','homedir')
         self.tempdir = config.get('paths','tempdir')
         self.last_dicom_folder = config.get('paths','last_dicom_folder') 
 
