@@ -188,11 +188,11 @@ class SurfaceManager():
     def _load_user_parameters(self):
         session = ses.Session()
 
-        if 'surface' in session:
-            self._default_parameters.update(session['surface'])
+        surface = session.GetConfig('surface')
+        if surface is not None:
+            self._default_parameters.update(surface)
         else:
-            session['surface'] = self._default_parameters
-            session.WriteSessionFile()
+            session.SetConfig('surface', self._default_parameters)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddNewActor, 'Create surface')
@@ -576,7 +576,7 @@ class SurfaceManager():
         prop = actor.GetProperty()
 
         session = ses.Session()
-        interpolation = int(session.surface_interpolation)
+        interpolation = session.GetConfig('surface_interpolation')
 
         prop.SetInterpolation(interpolation)
 
@@ -664,7 +664,7 @@ class SurfaceManager():
             pipeline_size += 1
 
         session = ses.Session()
-        language = session.language
+        language = session.GetConfig('language')
 
         if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
@@ -834,11 +834,10 @@ class SurfaceManager():
 
     def UpdateSurfaceInterpolation(self):
         session = ses.Session()
-        interpolation = int(session.surface_interpolation)
+        surface_interpolation = session.GetConfig('surface_interpolation')
 
-        key_actors = self.actors_dict.keys()
         for key in self.actors_dict:
-            self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
+            self.actors_dict[key].GetProperty().SetInterpolation(surface_interpolation)
         Publisher.sendMessage('Render volume viewer')
 
     def RemoveActor(self, index):

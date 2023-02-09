@@ -68,7 +68,8 @@ def ReadDicomGroup(dir_):
         imagedata = CreateImageData(filelist, zspacing, size, bits)
 
         session = ses.Session()
-        session.project_status = const.NEW_PROJECT
+        session.SetConfig('project_status', const.PROJECT_STATUS_NEW)
+
         return imagedata, dicom
     else:
         return False

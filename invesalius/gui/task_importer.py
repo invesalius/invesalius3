@@ -185,11 +185,9 @@ class InnerTaskPanel(wx.Panel):
         import invesalius.session as ses
 
         session = ses.Session()
-        projects = session.recent_projects
+        recent_projects = session.GetConfig('recent_projects')
 
-        for tuple in projects:
-            filename = tuple[1]
-            path = tuple[0]
+        for path, filename in recent_projects:
             self.LoadProject(filename, path)
 
 

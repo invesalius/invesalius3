@@ -389,7 +389,7 @@ class Mask():
             self.matrix[:, :, 0] = 1
 
         session = ses.Session()
-        if session.auto_reload_preview:
+        if session.GetConfig('auto_reload_preview'):
             self._update_imagedata()
 
         self.modified_time = time.monotonic()

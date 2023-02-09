@@ -1236,7 +1236,7 @@ class Viewer(wx.Panel):
         # the slice images.
        
         session = ses.Session()
-        if int(session.slice_interpolation) == 1:
+        if session.GetConfig('slice_interpolation'):
             actor.InterpolateOff()
         else:
             actor.InterpolateOn()
@@ -1257,7 +1257,7 @@ class Viewer(wx.Panel):
     def UpdateInterpolatedSlice(self):
         if self.slice_actor != None:
             session = ses.Session()
-            if session.slice_interpolation:
+            if session.GetConfig('slice_interpolation'):
                 self.slice_actor.InterpolateOff()
             else:
                 self.slice_actor.InterpolateOn()

@@ -59,11 +59,16 @@ class Preferences(wx.Dialog):
     def LoadPreferences(self):
         session = ses.Session()
 
+        rendering = session.GetConfig('rendering')
+        surface_interpolation = session.GetConfig('surface_interpolation')
+        language = session.GetConfig('language')
+        slice_interpolation = session.GetConfig('slice_interpolation')
+
         values = {
-            const.RENDERING: session.rendering,
-            const.SURFACE_INTERPOLATION: session.surface_interpolation,
-            const.LANGUAGE: session.language,
-            const.SLICE_INTERPOLATION: session.slice_interpolation,
+            const.RENDERING: rendering,
+            const.SURFACE_INTERPOLATION: surface_interpolation,
+            const.LANGUAGE: language,
+            const.SLICE_INTERPOLATION: slice_interpolation,
         }
 
         self.pnl_viewer2d.LoadSelection(values)

@@ -92,7 +92,7 @@ if sys.platform in ('linux2', 'linux', 'win32'):
 
 session = ses.Session()
 if session.ReadSession():
-    lang = session.GetLanguage()
+    lang = session.GetConfig('language')
     if lang:
         try:
             _ = i18n.InstallLanguage(lang)
@@ -169,7 +169,7 @@ class Inv3SplashScreen(SplashScreen):
             finally:
                 if ok:
                     lang = dialog.GetSelectedLanguage()
-                    session.SetLanguage(lang)
+                    session.SetConfig('language', lang)
                     _ = i18n.InstallLanguage(lang)
                 else:
                     homedir = os.path.expanduser('~')
@@ -182,9 +182,8 @@ class Inv3SplashScreen(SplashScreen):
 
         # Session file should be created... So we set the recently chosen language.
         if create_session:
-            session.CreateItens()
-            session.SetLanguage(lang)
-            session.WriteSessionFile()
+            session.CreateItems()
+            session.SetConfig('language', lang)
 
 
         # Only after language was defined, splash screen will be shown.
@@ -282,9 +281,8 @@ def non_gui_startup(args):
 
     session = ses.Session()
     if not session.ReadSession():
-        session.CreateItens()
-        session.SetLanguage(lang)
-        session.WriteSessionFile()
+        session.CreateItems()
+        session.SetConfig('language', lang)
 
     control = Controller(None)
 
@@ -297,9 +295,6 @@ def parse_command_line():
     """
     Handle command line arguments.
     """
-    session = ses.Session()
-
-
     # Parse command line arguments
     parser = argparse.ArgumentParser()
 
@@ -555,8 +550,8 @@ def main(connection=None):
     args = parse_command_line()
 
     session = ses.Session()
-    session.debug = args.debug
-    session.debug_efield = args.debug_efield
+    session.SetConfig('debug', args.debug)
+    session.SetConfig('debug_efield', args.debug_efield)
 
     if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)

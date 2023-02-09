@@ -1414,7 +1414,7 @@ class MarkersPanel(wx.Panel):
         self.lc.InsertColumn(const.TARGET_COLUMN, 'Target')
         self.lc.SetColumnWidth(const.TARGET_COLUMN, 45)
 
-        if self.session.debug:
+        if self.session.GetConfig('debug'):
             self.lc.InsertColumn(const.X_COLUMN, 'X')
             self.lc.SetColumnWidth(const.X_COLUMN, 45)
 
@@ -1892,7 +1892,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetItem(num_items, const.SESSION_COLUMN, str(new_marker.session_id))
         self.lc.SetItem(num_items, const.LABEL_COLUMN, new_marker.label)
 
-        if self.session.debug:
+        if self.session.GetConfig('debug'):
             self.lc.SetItem(num_items, const.X_COLUMN, str(round(new_marker.x, 1)))
             self.lc.SetItem(num_items, const.Y_COLUMN, str(round(new_marker.y, 1)))
             self.lc.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
@@ -2416,7 +2416,7 @@ class E_fieldPanel(wx.Panel):
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
         if efield_enabled:
-            if self.session.debug_efield:
+            if self.session.GetConfig('debug_efield'):
                 debug_efield_enorm = dlg.ShowLoadCSVDebugEfield()
                 if isinstance(debug_efield_enorm, np.ndarray):
                     self.navigation.debug_efield_enorm = debug_efield_enorm
