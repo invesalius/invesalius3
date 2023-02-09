@@ -124,7 +124,8 @@ class Panel(wx.Panel):
 
         self.aui_manager.Update()
 
-        if int(ses.Session().mode) != const.MODE_NAVIGATOR:
+        session = ses.Session()
+        if int(session.mode) != const.MODE_NAVIGATOR:
             Publisher.sendMessage('Deactive target button')
 
     def __bind_events_wx(self):

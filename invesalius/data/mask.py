@@ -247,7 +247,9 @@ class Mask():
 
     def on_show(self):
         self.history._config_undo_redo(self.is_shown)
-        if ses.Session().mask_3d_preview:
+
+        session = ses.Session()
+        if session.mask_3d_preview:
             Publisher.sendMessage('Show mask preview', index=self.index, flag=bool(self.is_shown))
             Publisher.sendMessage("Render volume viewer")
 
@@ -385,8 +387,11 @@ class Mask():
             self.matrix[0] = 1
             self.matrix[:, 0, :] = 1
             self.matrix[:, :, 0] = 1
-        if ses.Session().auto_reload_preview:
+
+        session = ses.Session()
+        if session.auto_reload_preview:
             self._update_imagedata()
+
         self.modified_time = time.monotonic()
         callbacks = []
         print(self._modified_callbacks)

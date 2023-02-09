@@ -39,7 +39,7 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom
 import invesalius.reader.dicom_grouper as dicom_grouper
-import invesalius.session as session
+import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
@@ -66,7 +66,9 @@ def ReadDicomGroup(dir_):
         bits = dicom.image.bits_allocad
 
         imagedata = CreateImageData(filelist, zspacing, size, bits)
-        session.Session().project_status = const.NEW_PROJECT
+
+        session = ses.Session()
+        session.project_status = const.NEW_PROJECT
         return imagedata, dicom
     else:
         return False
