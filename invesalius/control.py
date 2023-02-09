@@ -543,13 +543,15 @@ class Controller():
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
 
-        session = ses.Session()
-        filename = proj.name+".inv3"
+        filename = proj.name + ".inv3"
         filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
-        dirpath = session.CreateProject(filename)
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", state=True)
+        
+        session = ses.Session()
+        session.CreateProject(filename)
 
+        self.LoadProject()
+        
+        Publisher.sendMessage("Enable state project", state=True)
         Publisher.sendMessage('End busy cursor')
 
     #-------------------------------------------------------------------------------------
@@ -655,14 +657,11 @@ class Controller():
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
 
-        ######
-        session = ses.Session()
-        filename = proj.name+".inv3"
-
+        filename = proj.name + ".inv3"
         filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
 
-        dirpath = session.CreateProject(filename)
-        #proj.SavePlistProject(dirpath, filename)
+        session = ses.Session()
+        session.CreateProject(filename)
 
 
     def CreateBitmapProject(self, bmp_data, rec_data, matrix, matrix_filename):
@@ -700,13 +699,11 @@ class Controller():
 
         proj.spacing = self.Slice.spacing
 
-        ######
+        filename = proj.name + ".inv3"
+        filename = filename.replace("/", "") # Fix problem case other/Skull_DICOM
+
         session = ses.Session()
-        filename = proj.name+".inv3"
-
-        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
-
-        dirpath = session.CreateProject(filename)
+        session.CreateProject(filename)
 
     def CreateOtherProject(self, name, matrix, matrix_filename):
         name_to_const = {"AXIAL": const.AXIAL,
@@ -738,13 +735,11 @@ class Controller():
         if self.Slice.affine is not None:
             proj.affine = self.Slice.affine.tolist()
 
-        ######
-        session = ses.Session()
         filename = proj.name + ".inv3"
-
         filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
 
-        dirpath = session.CreateProject(filename)
+        session = ses.Session()
+        session.CreateProject(filename)
 
 
     def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False):
@@ -814,7 +809,7 @@ class Controller():
             filename = proj.name + ".inv3"
             filename = filename.replace("/", "")
 
-            dirpath = session.CreateProject(filename)
+            session.CreateProject(filename)
 
             self.LoadProject()
             Publisher.sendMessage("Enable state project", state=True)
