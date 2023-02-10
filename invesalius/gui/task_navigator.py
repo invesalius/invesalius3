@@ -409,7 +409,7 @@ class NeuronavigationPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Choose the tracking device"))
         select_tracker_elem.SetToolTip(tooltip)
 
-        select_tracker_elem.SetSelection(const.DEFAULT_TRACKER)
+        select_tracker_elem.SetSelection(self.tracker.tracker_id)
         select_tracker_elem.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem))
         self.select_tracker_elem = select_tracker_elem
 
@@ -510,8 +510,13 @@ class NeuronavigationPanel(wx.Panel):
         # Image and tracker coordinates number controls
         for m in range(len(self.btns_set_fiducial)):
             for n in range(3):
+                if m <= 2:
+                    value = 0.0  # TODO
+                else:
+                    value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
+
                 self.numctrls_fiducial[m].append(
-                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
+                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1, value=value))
 
         # Sizers to group all GUI objects
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
@@ -717,7 +722,9 @@ class NeuronavigationPanel(wx.Panel):
         else:
             choice = None
 
+        self.tracker.DisconnectTracker()
         self.tracker.SetTracker(choice)
+
         if self.tracker.tracker_id == const.ROBOT:
             self.dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
             if self.dlg_correg_robot.ShowModal() == wx.ID_OK:
