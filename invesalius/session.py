@@ -39,8 +39,10 @@ from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, decode, deep_merge_dict
 
 
-USER_INV_CFG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.json')
-OLD_USER_INV_CFG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.cfg')
+CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.json')
+OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.cfg')
+
+STATE_PATH = os.path.join(inv_paths.USER_INV_DIR, 'state.json')
 
 SESSION_ENCODING = 'utf8'
 
@@ -59,8 +61,16 @@ class Session(metaclass=Singleton):
             'language': '',
             'auto_reload_preview': False,
         }
+        self._state = None
+        self.__bind_events()
 
-    def CreateItems(self):
+    def __bind_events(self):
+        Publisher.subscribe(self._Exit, 'Exit')
+
+    def _Exit(self):
+        self.DeleteStateFile()
+
+    def CreateConfig(self):
         import invesalius.constants as const
         self._config = {
             'mode': const.MODE_RP,
@@ -76,15 +86,39 @@ class Session(metaclass=Singleton):
             'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             'last_dicom_folder': '',
         }
+        self.WriteConfigFile()
+
+    def CreateState(self):
+        self._state = {}
+        self.WriteStateFile()
+
+    def DeleteStateFile(self):
+        if os.path.exists(STATE_PATH):
+            os.remove(STATE_PATH)
+            print("Successfully deleted state file.")
+        else:
+            print("State file does not exist.")
+
+    def StateExists(self):
+        return self._state is not None
 
     def SetConfig(self, key, value):
         self._config[key] = value
-
-        self.WriteSessionFile()
+        self.WriteConfigFile()
 
     def GetConfig(self, key, default_value=None):
         if key in self._config:
             return self._config[key]
+        else:
+            return default_value
+
+    def SetState(self, key, value):
+        self._state[key] = value
+        self.WriteStateFile()
+
+    def GetState(self, key, default_value=None):
+        if key in self._state:
+            return self._state[key]
         else:
             return default_value
 
@@ -123,6 +157,7 @@ class Session(metaclass=Singleton):
 
         # Set session info
         tempdir = str(inv_paths.TEMP_DIR)
+
         self.project_path = (tempdir, filename)
         self.temp_item = True
 
@@ -140,12 +175,15 @@ class Session(metaclass=Singleton):
         self.project_path = item
         self.SetConfig('project_status', const.PROJECT_STATUS_OPENED)
 
-    def WriteSessionFile(self):
-        self._write_to_json(self._config, USER_INV_CFG_PATH)
+    def WriteConfigFile(self):
+        self._write_to_json(self._config, CONFIG_PATH)
 
-    def _write_to_json(self, cfg_dict, cfg_filename):
-        with open(cfg_filename, 'w') as cfg_file:
-            json.dump(cfg_dict, cfg_file, sort_keys=True, indent=4)
+    def WriteStateFile(self):
+        self._write_to_json(self._state, STATE_PATH)
+
+    def _write_to_json(self, config_dict, config_filename):
+        with open(config_filename, 'w') as config_file:
+            json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _add_to_recent_projects(self, item):
         import invesalius.constants as const
@@ -162,17 +200,25 @@ class Session(metaclass=Singleton):
         recent_projects.insert(0, item)
         self.SetConfig('recent_projects', recent_projects[:const.RECENT_PROJECTS_MAXIMUM])
 
-    def _read_cfg_from_json(self, json_filename):
-        with open(json_filename, 'r') as cfg_file:
-            cfg_dict = json.load(cfg_file)
-            self._config = deep_merge_dict(self._config.copy(), cfg_dict)
+    def _read_config_from_json(self, json_filename):
+        with open(json_filename, 'r') as config_file:
+            config_dict = json.load(config_file)
+            self._config = deep_merge_dict(self._config.copy(), config_dict)
 
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
         self.project_status = 3
 
-    def _read_cfg_from_ini(self, cfg_filename):
-        file = codecs.open(cfg_filename, 'rb', SESSION_ENCODING)
+    def _read_state_from_json(self, json_filename):
+        with open(json_filename, 'r') as state_file:
+            state_dict = json.load(state_file)
+            if self._state is None:
+                self._state = state_dict
+            else:
+                self._state = deep_merge_dict(self._state.copy(), state_dict)
+
+    def _read_config_from_ini(self, config_filename):
+        file = codecs.open(config_filename, 'rb', SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
         config.readfp(file)
         file.close()
@@ -209,15 +255,25 @@ class Session(metaclass=Singleton):
         #  if not(sys.platform == 'win32'):
           #  self.SetConfig('last_dicom_folder', last_dicom_folder.decode('utf-8'))
 
-    def ReadSession(self):
+    def ReadConfig(self):
         try:
-            self._read_cfg_from_json(USER_INV_CFG_PATH)
+            self._read_config_from_json(CONFIG_PATH)
         except Exception as e1:
             debug(e1)
             try:
-                self._read_cfg_from_ini(OLD_USER_INV_CFG_PATH)
+                self._read_config_from_ini(OLD_CONFIG_PATH)
             except Exception as e2:
                 debug(e2)
                 return False
-        self.WriteSessionFile()
+        self.WriteConfigFile()
+        return True
+
+    def ReadState(self):
+        try:
+            self._read_state_from_json(STATE_PATH)
+        except Exception as e:
+            debug(e)
+            return False
+
+        self.WriteConfigFile()
         return True

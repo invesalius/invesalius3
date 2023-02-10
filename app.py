@@ -91,7 +91,7 @@ if sys.platform in ('linux2', 'linux', 'win32'):
 
 
 session = ses.Session()
-if session.ReadSession():
+if session.ReadConfig():
     lang = session.GetConfig('language')
     if lang:
         try:
@@ -99,6 +99,8 @@ if session.ReadSession():
             LANG = lang
         except FileNotFoundError:
             pass
+
+session.ReadState()
 
 
 class InVesalius(wx.App):
@@ -109,7 +111,6 @@ class InVesalius(wx.App):
         """
         Initialize splash screen and main frame.
         """
-
         from multiprocessing import freeze_support
         freeze_support()
 
@@ -182,9 +183,8 @@ class Inv3SplashScreen(SplashScreen):
 
         # Session file should be created... So we set the recently chosen language.
         if create_session:
-            session.CreateItems()
+            session.CreateConfig()
             session.SetConfig('language', lang)
-
 
         # Only after language was defined, splash screen will be shown.
         if lang:
@@ -248,6 +248,12 @@ class Inv3SplashScreen(SplashScreen):
         p = Thread(target=utils.UpdateCheck, args=())
         p.start()
 
+        # Check if InVesalius did not exit successfully the last time it was run
+        if session.StateExists():
+            print("InVesalius did not exit successfully.")
+        else:
+            session.CreateState()
+
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
         # destroyed
@@ -280,9 +286,12 @@ def non_gui_startup(args):
     from invesalius.project import Project
 
     session = ses.Session()
-    if not session.ReadSession():
-        session.CreateItems()
+    if not session.ReadConfig():
+        session.CreateConfig()
         session.SetConfig('language', lang)
+
+    if not session.ReadState():
+        session.CreateState()
 
     control = Controller(None)
 
