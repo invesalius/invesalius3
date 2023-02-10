@@ -169,7 +169,9 @@ class Controller():
         session = ses.Session()
         project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
-            filename = session.project_path[1]
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -193,7 +195,9 @@ class Controller():
         session = ses.Session()
         project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
-            filename = session.project_path[1]
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -214,7 +218,9 @@ class Controller():
         session = ses.Session()
         project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
-            filename = session.project_path[1]
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -236,7 +242,9 @@ class Controller():
         session = ses.Session()
         project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
-            filename = session.project_path[1]
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -258,7 +266,7 @@ class Controller():
         else:
             proj = prj.Project()
             compress = proj.compress
-            dirpath, filename = session.project_path
+            dirpath, filename = session.GetState('project_path')
             filepath = os.path.join(dirpath, filename)
 
         self.SaveProject(filepath, compress)
@@ -270,7 +278,8 @@ class Controller():
         if project_status == const.PROJECT_STATUS_CLOSED:
             return -1
         try:
-            filename = session.project_path[1]
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
         except AttributeError:
             utils.debug("Project doesn't exist")
             filename = None
@@ -312,7 +321,9 @@ class Controller():
             session = ses.Session()
             project_status = session.GetConfig('project_status')
             if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
-                filename = session.project_path[1]
+                project_path = session.GetState('project_path')
+                filename = project_path[1]
+
                 answer = dialog.SaveChangesDialog2(filename)
                 if answer:
                     self.ShowDialogSaveProject()
@@ -359,7 +370,7 @@ class Controller():
         if path:
             dirpath, filename = os.path.split(path)
         else:
-            dirpath, filename = session.project_path
+            dirpath, filename = session.GetState('project_path')
 
         if isinstance(filename, str):
             filename = utils.decode(filename, const.FS_ENCODE)

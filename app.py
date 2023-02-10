@@ -251,6 +251,11 @@ class Inv3SplashScreen(SplashScreen):
         # Check if InVesalius did not exit successfully the last time it was run
         if session.StateExists():
             print("InVesalius did not exit successfully.")
+            # Reopen project
+            project_path = session.GetState('project_path')
+            if project_path is not None:
+                filepath = os.path.join(project_path[0], project_path[1])
+                Publisher.sendMessage('Open project', filepath=filepath)
         else:
             session.CreateState()
 
