@@ -22,9 +22,10 @@ import threading
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
+import invesalius.data.coregistration as dcr
 import invesalius.data.trackers as dt
 import invesalius.gui.dialogs as dlg
-import invesalius.data.coregistration as dcr
+import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 
 
@@ -45,22 +46,53 @@ class Tracker():
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-    def SetTracker(self, new_tracker):
-        if new_tracker:
-            self.DisconnectTracker()
+        self.LoadState()
 
-            self.trk_init = dt.TrackerConnection(new_tracker, None, 'connect')
+    def SaveState(self):
+        state = {
+            'tracker_id': self.tracker_id,
+            'tracker_fiducials': self.tracker_fiducials.tolist(),
+            'tracker_fiducials_raw': self.tracker_fiducials_raw.tolist(),
+            'marker_tracker_fiducials_raw': self.m_tracker_fiducials_raw.tolist(),
+        }
+        session = ses.Session()
+        session.SetState('tracker', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('tracker')
+
+        if state is None:
+            return
+
+        tracker_id = state['tracker_id']
+        tracker_fiducials = np.array(state['tracker_fiducials'])
+        tracker_fiducials_raw = np.array(state['tracker_fiducials_raw'])
+        m_tracker_fiducials_raw = np.array(state['marker_tracker_fiducials_raw'])
+
+        self.tracker_id = tracker_id
+        self.tracker_fiducials = tracker_fiducials
+        self.tracker_fiducials_raw = tracker_fiducials_raw
+        self.m_tracker_fiducials_raw = m_tracker_fiducials_raw
+
+        self.SetTracker(self.tracker_id)
+
+    def SetTracker(self, tracker_id):
+        if tracker_id:
+            self.trk_init = dt.TrackerConnection(tracker_id, None, 'connect')
             if not all(list(self.trk_init)):
                 dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
 
                 self.tracker_id = 0
                 self.tracker_connected = False
             else:
-                self.tracker_id = new_tracker
+                self.tracker_id = tracker_id
                 self.tracker_connected = True
                 self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
                                        self.event_coord)
                 self.thread_coord.start()
+            
+            self.SaveState()
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -135,12 +167,23 @@ class Tracker():
 
         print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
 
+        self.SaveState()
+
     def ResetTrackerFiducials(self):
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
 
+        self.SaveState()
+
     def GetTrackerFiducials(self):
         return self.tracker_fiducials, self.tracker_fiducials_raw
+
+    def GetTrackerFiducialForUI(self, index, coordinate_index):
+        value = self.tracker_fiducials[index, coordinate_index]
+        if np.isnan(value):
+            value = 0
+
+        return value
 
     def GetMatrixTrackerFiducials(self):
         m_probe_ref_left = np.linalg.inv(self.m_tracker_fiducials_raw[1]) @ self.m_tracker_fiducials_raw[0]
