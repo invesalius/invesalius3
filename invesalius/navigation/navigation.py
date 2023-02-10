@@ -34,6 +34,7 @@ import invesalius.data.tractography as dti
 import invesalius.data.e_field as e_field
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
+import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -183,7 +184,6 @@ class Navigation(metaclass=Singleton):
         self.e_field_loaded = False
         self.debug_efield_enorm = None
 
-
         # Tractography parameters
         self.trk_inp = None
         self.trekker = None
@@ -207,11 +207,31 @@ class Navigation(metaclass=Singleton):
         self.lock_to_target = False
         self.coil_at_target = False
 
+        self.LoadState()
+
         self.__bind_events()
 
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
+
+    def SaveState(self):
+        state = {
+            'image_fiducials': self.image_fiducials.tolist(),
+        }
+        session = ses.Session()
+        session.SetState('navigation', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('navigation')
+
+        if state is None:
+            return
+
+        image_fiducials = np.array(state['image_fiducials'])
+
+        self.image_fiducials = image_fiducials
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -236,8 +256,16 @@ class Navigation(metaclass=Singleton):
 
     def SetImageFiducial(self, fiducial_index, position):
         self.image_fiducials[fiducial_index, :] = position
+        print("Image fiducial {} set to coordinates {}".format(fiducial_index, position))
 
-        print("Set image fiducial {} to coordinates {}".format(fiducial_index, position))
+        self.SaveState()
+
+    def GetImageFiducialForUI(self, fiducial_index, coordinate):
+        value = self.image_fiducials[fiducial_index, coordinate]
+        if np.isnan(value):
+            value = 0
+
+        return value
 
     def AreImageFiducialsSet(self):
         return not np.isnan(self.image_fiducials).any()
