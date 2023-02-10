@@ -411,7 +411,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Disconnect tracker')
 
         session = ses.Session()
-        if not session.IsOpen() or not session.project_path:
+        if not session.IsOpen() or session.GetState('project_path') is None:
             Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):

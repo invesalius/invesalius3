@@ -52,7 +52,6 @@ SESSION_ENCODING = 'utf8'
 class Session(metaclass=Singleton):
 
     def __init__(self):
-        self.project_path = ()
         self.temp_item = False
         self.mask_3d_preview = False
 
@@ -129,7 +128,7 @@ class Session(metaclass=Singleton):
     def CloseProject(self):
         import invesalius.constants as const
         debug("Session.CloseProject")
-        self.project_path = ()
+        self.SetState('project_path', None)
         self.SetConfig('project_status', const.PROJECT_STATUS_CLOSED)
         #self.mode = const.MODE_RP
         self.temp_item = False
@@ -138,7 +137,7 @@ class Session(metaclass=Singleton):
         import invesalius.constants as const
         debug("Session.SaveProject")
         if path:
-            self.project_path = path
+            self.SetState('project_path', path)
             self._add_to_recent_projects(path)
         if self.temp_item:
             self.temp_item = False
@@ -158,7 +157,9 @@ class Session(metaclass=Singleton):
         # Set session info
         tempdir = str(inv_paths.TEMP_DIR)
 
-        self.project_path = (tempdir, filename)
+        project_path = (tempdir, filename)
+        self.SetState('project_path', project_path)
+
         self.temp_item = True
 
         self.SetConfig('project_status', const.PROJECT_STATUS_NEW)
@@ -168,11 +169,11 @@ class Session(metaclass=Singleton):
         debug("Session.OpenProject")
 
         # Add item to recent projects list
-        item = (path, file) = os.path.split(filepath)
-        self._add_to_recent_projects(item)
+        project_path = os.path.split(filepath)
+        self._add_to_recent_projects(project_path)
 
         # Set session info
-        self.project_path = item
+        self.SetState('project_path', project_path)
         self.SetConfig('project_status', const.PROJECT_STATUS_OPENED)
 
     def WriteConfigFile(self):
