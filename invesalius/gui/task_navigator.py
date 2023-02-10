@@ -571,7 +571,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
-        Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.UpdateTrekkerObject, 'Update Trekker object')
         Publisher.subscribe(self.UpdateNumTracts, 'Update number of tracts')
@@ -693,9 +692,6 @@ class NeuronavigationPanel(wx.Panel):
             if not self.btns_set_fiducial[m].GetValue():
                 for n in [0, 1, 2]:
                     self.numctrls_fiducial[m][n].SetValue(float(position[n]))
-
-    def UpdateObjectRegistration(self, data=None):
-        self.navigation.obj_reg = data
 
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         self.navigation.track_obj = flag

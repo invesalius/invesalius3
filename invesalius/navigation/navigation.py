@@ -161,7 +161,7 @@ class Navigation(metaclass=Singleton):
         self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
         self.target = None
-        self.obj_reg = None
+        self.object_registration = None
         self.track_obj = False
         self.m_change = None
         self.obj_data = None
@@ -214,10 +214,17 @@ class Navigation(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
+        Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
 
     def SaveState(self):
+        object_fiducials, object_orientations, object_reference_mode, object_name = self.object_registration
+
         state = {
             'image_fiducials': self.image_fiducials.tolist(),
+            'object_fiducials': object_fiducials.tolist(),
+            'object_orientations': object_orientations,
+            'object_reference_mode': object_reference_mode,
+            'object_name': object_name,
         }
         session = ses.Session()
         session.SetState('navigation', state)
@@ -231,7 +238,13 @@ class Navigation(metaclass=Singleton):
 
         image_fiducials = np.array(state['image_fiducials'])
 
+        object_fiducials = np.array(state['object_fiducials'])
+        object_orientations = state['object_orientations']
+        object_reference_mode = state['object_reference_mode']
+        object_name = state['object_name']
+
         self.image_fiducials = image_fiducials
+        self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -244,6 +257,11 @@ class Navigation(metaclass=Singleton):
         self.serial_port_in_use = serial_port_in_use
         self.com_port = com_port
         self.baud_rate = baud_rate
+
+    def UpdateObjectRegistration(self, data=None):
+        self.object_registration = data
+
+        self.SaveState()
 
     def SetLockToTarget(self, value):
         self.lock_to_target = value
@@ -313,14 +331,14 @@ class Navigation(metaclass=Singleton):
 
         if self.track_obj:
             # if object tracking is selected
-            if self.obj_reg is None:
+            if self.object_registration is None:
                 # check if object registration was performed
                 wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
                 errors = True
             else:
                 # if object registration was correctly performed continue with navigation
-                # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
-                obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
+                # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
+                obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
 
                 coreg_data = [self.m_change, obj_ref_mode]
 
