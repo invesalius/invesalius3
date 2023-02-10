@@ -511,7 +511,7 @@ class NeuronavigationPanel(wx.Panel):
         for m in range(len(self.btns_set_fiducial)):
             for n in range(3):
                 if m <= 2:
-                    value = 0.0  # TODO
+                    value = self.navigation.GetImageFiducialForUI(m, n)
                 else:
                     value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
 
