@@ -1428,39 +1428,41 @@ class MarkersPanel(wx.Panel):
                               (btn_delete_all, 0, wx.LEFT)])
 
         # List of markers
-        self.marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
-        self.marker_list_ctrl.InsertColumn(const.ID_COLUMN, '#')
-        self.marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 28)
+        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
+        marker_list_ctrl.InsertColumn(const.ID_COLUMN, '#')
+        marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 28)
 
-        self.marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, 'Session')
-        self.marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 52)
+        marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, 'Session')
+        marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 52)
 
-        self.marker_list_ctrl.InsertColumn(const.LABEL_COLUMN, 'Label')
-        self.marker_list_ctrl.SetColumnWidth(const.LABEL_COLUMN, 118)
+        marker_list_ctrl.InsertColumn(const.LABEL_COLUMN, 'Label')
+        marker_list_ctrl.SetColumnWidth(const.LABEL_COLUMN, 118)
 
-        self.marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
-        self.marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
+        marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
+        marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
 
         if self.session.GetConfig('debug'):
-            self.marker_list_ctrl.InsertColumn(const.X_COLUMN, 'X')
-            self.marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
+            marker_list_ctrl.InsertColumn(const.X_COLUMN, 'X')
+            marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
 
-            self.marker_list_ctrl.InsertColumn(const.Y_COLUMN, 'Y')
-            self.marker_list_ctrl.SetColumnWidth(const.Y_COLUMN, 45)
+            marker_list_ctrl.InsertColumn(const.Y_COLUMN, 'Y')
+            marker_list_ctrl.SetColumnWidth(const.Y_COLUMN, 45)
 
-            self.marker_list_ctrl.InsertColumn(const.Z_COLUMN, 'Z')
-            self.marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
+            marker_list_ctrl.InsertColumn(const.Z_COLUMN, 'Z')
+            marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
 
-        self.marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
-        self.marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
-        self.marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
+
+        self.marker_list_ctrl = marker_list_ctrl
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(self.marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
         self.SetSizer(group_sizer)
