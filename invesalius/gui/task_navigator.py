@@ -75,6 +75,7 @@ from invesalius import utils
 from invesalius.gui import utils as gui_utils
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
+from invesalius.navigation.image import Image
 from invesalius.navigation.tracker import Tracker
 from invesalius.data.converters import to_vtk
 
@@ -176,9 +177,10 @@ class InnerFoldPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
-        # Initialize Navigation, Tracker and PedalConnection objects here so that they are available to several panels.
+        # Initialize Navigation, Tracker, Image, and PedalConnection objects here so that they are available to several panels.
         #
         tracker = Tracker()
+        image = Image()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         icp = IterativeClosestPoint()
         neuronavigation_api = NeuronavigationApi()
@@ -199,6 +201,7 @@ class InnerFoldPanel(wx.Panel):
             navigation=navigation,
             tracker=tracker,
             icp=icp,
+            image=image,
             pedal_connection=pedal_connection,
             neuronavigation_api=neuronavigation_api,
         )
@@ -373,7 +376,7 @@ class InnerFoldPanel(wx.Panel):
         self.checkcamera.Enable(status)
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, icp, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, icp, image, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -392,6 +395,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation = navigation
         self.icp = icp
         self.tracker = tracker
+        self.image = image
 
         self.nav_status = False
         self.tracker_fiducial_being_set = None
@@ -511,7 +515,7 @@ class NeuronavigationPanel(wx.Panel):
         for m in range(len(self.btns_set_fiducial)):
             for n in range(3):
                 if m <= 2:
-                    value = self.navigation.GetImageFiducialForUI(m, n)
+                    value = self.image.GetImageFiducialForUI(m, n)
                 else:
                     value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
 
@@ -615,7 +619,7 @@ class NeuronavigationPanel(wx.Panel):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', fiducial_name)
         fiducial_index = fiducial['fiducial_index']
 
-        self.navigation.SetImageFiducial(fiducial_index, position)
+        self.image.SetImageFiducial(fiducial_index, position)
 
     def SetTrackerFiducial(self, fiducial_name):
         if not self.tracker.IsTrackerInitialized():
@@ -838,7 +842,7 @@ class NeuronavigationPanel(wx.Panel):
             self.dlg_correg_robot.Destroy()
 
     def CheckFiducialRegistrationError(self):
-        self.navigation.UpdateFiducialRegistrationError(self.tracker)
+        self.navigation.UpdateFiducialRegistrationError(self.tracker, self.image)
         fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
 
         self.txtctrl_fre.SetValue(str(round(fre, 2)))
@@ -853,7 +857,7 @@ class NeuronavigationPanel(wx.Panel):
         select_tracker_elem = self.select_tracker_elem
         choice_ref = self.choice_ref
 
-        if not self.tracker.AreTrackerFiducialsSet() or not self.navigation.AreImageFiducialsSet():
+        if not self.tracker.AreTrackerFiducialsSet() or not self.image.AreImageFiducialsSet():
             wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
 
         elif not self.tracker.IsTrackerInitialized():
@@ -871,7 +875,7 @@ class NeuronavigationPanel(wx.Panel):
             for btn_c in self.btns_set_fiducial:
                 btn_c.Enable(False)
 
-            self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker)
+            self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
 
             if not self.CheckFiducialRegistrationError():
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
