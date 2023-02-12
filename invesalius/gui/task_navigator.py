@@ -450,7 +450,17 @@ class NeuronavigationPanel(wx.Panel):
         # Fiducial registration error text and checkbox
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         tooltip = wx.ToolTip(_("Fiducial registration error"))
-        txtctrl_fre = wx.TextCtrl(self, value="", size=wx.Size(60, -1), style=wx.TE_CENTRE)
+
+        # XXX: Currently always shows ICP corrected FRE (fiducial registration error) initially
+        #   in the FRE textbox. This is a compromise, done due to corrected and non-corrected FRE values
+        #   being split between Navigation and IterativeClosestPoint classes, and hence it being
+        #   difficult to access both at this stage. This could be improved, e.g., by creating
+        #   a separate class, which would hold both FRE values and would also know whether ICP
+        #   corrected or non-corrected value is being used.
+        #
+        value = self.icp.GetFreForUI()
+
+        txtctrl_fre = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
         txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         txtctrl_fre.SetBackgroundColour('WHITE')
         txtctrl_fre.SetEditable(0)
@@ -467,7 +477,7 @@ class NeuronavigationPanel(wx.Panel):
         txt_icp = wx.StaticText(self, -1, _('Refine:'))
         tooltip = wx.ToolTip(_(u"Refine the coregistration"))
         checkbox_icp = wx.CheckBox(self, -1, _(' '))
-        checkbox_icp.SetValue(False)
+        checkbox_icp.SetValue(self.icp.use_icp)
         checkbox_icp.Enable(False)
         checkbox_icp.Bind(wx.EVT_CHECKBOX, partial(self.OnCheckboxICP, ctrl=checkbox_icp))
         checkbox_icp.SetToolTip(tooltip)

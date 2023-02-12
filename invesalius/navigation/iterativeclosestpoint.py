@@ -17,11 +17,12 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import numpy as np
 import wx
 
 import invesalius.data.bases as db
 import invesalius.gui.dialogs as dlg
-
+import invesalius.session as ses
 from invesalius.utils import Singleton
 
 
@@ -30,6 +31,30 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.use_icp = False
         self.m_icp = None
         self.icp_fre = None
+
+        self.LoadState()
+
+    def SaveState(self):
+        m_icp = self.m_icp.tolist() if self.m_icp else None
+        state = {
+            'use_icp': self.use_icp,
+            'm_icp': m_icp,
+            'icp_fre': self.icp_fre,
+        }
+
+        session = ses.Session()
+        session.SetState('icp', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('icp')
+
+        if state is None:
+            return
+
+        self.use_icp = state['use_icp']
+        self.m_icp = np.array(state['m_icp'])
+        self.icp_fre = state['icp_fre']
 
     def RegisterICP(self, navigation, tracker):
 
@@ -79,7 +104,14 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.use_icp = use_icp
         navigation.icp_queue.put_nowait([self.use_icp, self.m_icp])
 
+        self.SaveState()
+
     def ResetICP(self):
         self.use_icp = False
         self.m_icp = None
         self.icp_fre = None
+
+        self.SaveState()
+
+    def GetFreForUI(self):
+        return "{:.2f}".format(self.icp_fre) if self.icp_fre else ""
