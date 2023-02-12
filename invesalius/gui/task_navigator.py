@@ -436,6 +436,7 @@ class NeuronavigationPanel(wx.Panel):
             ctrl.SetMinSize((gui_utils.calc_width_needed(ctrl, 3), -1))
             ctrl.SetToolTip(wx.ToolTip(tip))
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
+            ctrl.SetValue(self.image.IsImageFiducialSet(n))
 
             self.btns_set_fiducial[n] = ctrl
 
