@@ -1677,8 +1677,6 @@ class MarkersPanel(wx.Panel):
 
         menu_id.AppendSeparator()
 
-        check_target_angles = all([elem is not None for elem in self.markers[self.marker_list_ctrl.GetFocusedItem()].orientation])
-
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
             send_target_to_robot_compensation = menu_id.Append(7, _('Sets target to robot head move compensation'))
@@ -1695,7 +1693,9 @@ class MarkersPanel(wx.Panel):
                 send_target_to_robot_compensation.Enable(True)
                 send_target_to_robot.Enable(True)
 
-        if check_target_angles and not is_brain_target:
+        is_target_orientation_set = all([elem is not None for elem in self.markers[self.marker_list_ctrl.GetFocusedItem()].orientation])
+
+        if is_target_orientation_set and not is_brain_target:
             target_menu.Enable(True)
         else:
             target_menu.Enable(False)
