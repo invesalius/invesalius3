@@ -1878,13 +1878,16 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Add marker to robot control', data=current_head_robot_target_status)
 
-        # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         if all([elem is not None for elem in new_marker.orientation]):
             arrow_flag = True
         else:
             arrow_flag = False
 
-        Publisher.sendMessage('Add marker', marker_id=len(self.markers),
+        # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
+        marker_id = len(self.markers)
+
+        Publisher.sendMessage('Add marker',
+                              marker_id=marker_id,
                               size=new_marker.size,
                               colour=new_marker.colour,
                               position=new_marker.position,
