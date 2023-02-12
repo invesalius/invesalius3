@@ -3764,11 +3764,11 @@ class ObjectCalibrationDialog(wx.Dialog):
 
 class ICPCorregistrationDialog(wx.Dialog):
 
-    def __init__(self, nav_prop):
+    def __init__(self, navigation, tracker):
         import invesalius.project as prj
 
-        self.m_change = nav_prop[0]
-        self.tracker = nav_prop[1]
+        self.tracker = tracker
+        self.m_change = navigation.m_change
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
