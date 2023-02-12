@@ -64,3 +64,6 @@ class Image():
 
     def AreImageFiducialsSet(self):
         return not np.isnan(self.image_fiducials).any()
+
+    def IsImageFiducialSet(self, fiducial_index):
+        return not np.isnan(self.image_fiducials)[fiducial_index].any()
