@@ -178,18 +178,28 @@ class Frame(wx.Frame):
         aui_manager = self.aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
 
+        # XXX: Create viewers panel before task panel: the latter depends on the
+        # former already existing - this is because when a state is restored after a
+        # crash, we add markers to task panel, which then communicates to the viewers
+        # panel by publishing an 'Add marker' message.
+        #
+        viewers_panel = viewers.Panel(self)
+        task_panel = tasks.Panel(self)
+        import_panel = imp.Panel(self)
+        import_bitmap_panel = imp_bmp.Panel(self)
+
         # Add panels to manager
 
         # First, the task panel, to be on the left fo the frame
         # This will be specific according to InVesalius application
-        aui_manager.AddPane(tasks.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(task_panel, wx.aui.AuiPaneInfo().
                           Name("Tasks").CaptionVisible(False))
 
         # Then, add the viewers panel, which will contain slices and
         # volume panels. In future this might also be specific
         # according to InVesalius application (e.g. panoramic
         # visualization, in odontology)
-        aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(viewers_panel, wx.aui.AuiPaneInfo().
                           Caption(_("Data panel")).CaptionVisible(False).
                           Centre().CloseButton(False).Floatable(False).
                           Hide().Layer(1).MaximizeButton(True).
@@ -197,13 +207,13 @@ class Frame(wx.Frame):
 
         # This is the DICOM import panel. When the two panels above as dicom        # are shown, this should be hiden
         caption = _("Preview medical data to be reconstructed")
-        aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(import_panel, wx.aui.AuiPaneInfo().
                           Name("Import").CloseButton(False).Centre().Hide().
                           MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
 
         caption = _("Preview bitmap to be reconstructed")
-        aui_manager.AddPane(imp_bmp.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(import_bitmap_panel, wx.aui.AuiPaneInfo().
                           Name("ImportBMP").CloseButton(False).Centre().Hide().
                           MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
