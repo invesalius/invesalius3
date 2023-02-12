@@ -215,6 +215,11 @@ class Navigation(metaclass=Singleton):
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
 
     def SaveState(self):
+        # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
+        #   None parameter when the project is closed, crashing without this checks.
+        if self.object_registration is None:
+            return
+
         object_fiducials, object_orientations, object_reference_mode, object_name = self.object_registration
 
         state = {
