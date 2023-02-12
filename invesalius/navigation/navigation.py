@@ -219,10 +219,11 @@ class Navigation(metaclass=Singleton):
 
         state = {
             'object_fiducials': object_fiducials.tolist(),
-            'object_orientations': object_orientations,
+            'object_orientations': object_orientations.tolist(),
             'object_reference_mode': object_reference_mode,
-            'object_name': object_name,
+            'object_name': object_name.decode(const.FS_ENCODE),
         }
+
         session = ses.Session()
         session.SetState('navigation', state)
 
@@ -234,9 +235,9 @@ class Navigation(metaclass=Singleton):
             return
 
         object_fiducials = np.array(state['object_fiducials'])
-        object_orientations = state['object_orientations']
+        object_orientations = np.array(state['object_orientations'])
         object_reference_mode = state['object_reference_mode']
-        object_name = state['object_name']
+        object_name = state['object_name'].encode(const.FS_ENCODE)
 
         self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
