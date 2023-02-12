@@ -882,7 +882,7 @@ class NeuronavigationPanel(wx.Panel):
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
                 print("WARNING: Fiducial registration error too large.")
 
-            self.icp.StartICP(self.navigation, self.tracker)
+            self.icp.RegisterICP(self.navigation, self.tracker)
             if self.icp.use_icp:
                 self.checkbox_icp.Enable(True)
                 self.checkbox_icp.SetValue(True)
