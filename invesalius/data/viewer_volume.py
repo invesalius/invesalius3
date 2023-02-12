@@ -777,8 +777,8 @@ class Viewer(wx.Panel):
         self.static_markers = []
         self.UpdateRender()
 
-    def RemoveMultipleMarkers(self, index):
-        for i in reversed(index):
+    def RemoveMultipleMarkers(self, indexes):
+        for i in reversed(indexes):
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
             self.marker_id = self.marker_id - 1

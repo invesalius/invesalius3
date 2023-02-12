@@ -1332,6 +1332,19 @@ class MarkersPanel(wx.Panel):
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
 
+        def to_dict(self):
+            return {
+                'position': self.position,
+                'orientation': self.orientation,
+                'colour': self.colour,
+                'size': self.size,
+                'label': self.label,
+                'is_target': self.is_target,
+                'seed': self.seed,
+                'session_id': self.session_id,
+            }
+
+
     def __init__(self, parent, navigation, tracker, icp):
         wx.Panel.__init__(self, parent)
         try:
@@ -1449,6 +1462,8 @@ class MarkersPanel(wx.Panel):
         self.SetSizer(group_sizer)
         self.Update()
 
+        self.LoadState()
+
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
@@ -1460,6 +1475,31 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
+
+    def SaveState(self):
+        state = [marker.to_dict() for marker in self.markers]
+
+        session = ses.Session()
+        session.SetState('markers', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('markers')
+
+        if state is None:
+            return
+
+        for d in state:
+            self.CreateMarker(
+                position=d['position'],
+                orientation=d['orientation'],
+                colour=d['colour'],
+                size=d['size'],
+                label=d['label'],
+                is_target=d['is_target'],
+                seed=d['seed'],
+                session_id=d['session_id']
+            )
 
     def __find_target_marker(self):
         """
@@ -1494,17 +1534,18 @@ class MarkersPanel(wx.Panel):
             del self.markers[i]
             self.marker_list_ctrl.DeleteItem(i)
 
-    def __delete_multiple_markers(self, index):
+    def __delete_multiple_markers(self, indexes):
         """
-        Delete multiple markers indexed by index. index must be sorted in
+        Delete multiple markers indexed by 'indexes'. Indexes must be sorted in
         the ascending order.
         """
-        for i in reversed(index):
+        for i in reversed(indexes):
             del self.markers[i]
             self.marker_list_ctrl.DeleteItem(i)
             for n in range(0, self.marker_list_ctrl.GetItemCount()):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
-        Publisher.sendMessage('Remove multiple markers', index=index)
+
+        Publisher.sendMessage('Remove multiple markers', indexes=indexes)
 
     def __set_marker_as_target(self, idx):
         """
@@ -1557,30 +1598,40 @@ class MarkersPanel(wx.Panel):
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
         menu_id = wx.Menu()
+
         edit_id = menu_id.Append(0, _('Edit label'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerLabel, edit_id)
+
         color_id = menu_id.Append(1, _('Edit color'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
+
         menu_id.AppendSeparator()
+
         if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
             target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+
         orientation_menu = menu_id.Append(3, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
+
         menu_id.AppendSeparator()
 
         check_target_angles = all([elem is not None for elem in self.markers[self.marker_list_ctrl.GetFocusedItem()].orientation])
+
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
             send_target_to_robot_compensation = menu_id.Append(4, _('Sets target to robot head move compensation'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
+
             send_target_to_robot = menu_id.Append(5, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
+
             send_target_to_robot_compensation.Enable(False)
             send_target_to_robot.Enable(False)
+
             if self.nav_status and self.target_mode and (self.marker_list_ctrl.GetFocusedItem() == self.__find_target_marker()):
                 send_target_to_robot_compensation.Enable(True)
                 send_target_to_robot.Enable(True)
@@ -1601,19 +1652,25 @@ class MarkersPanel(wx.Panel):
 
     def OnMenuEditMarkerLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
-        if list_index != -1:
-            new_label = dlg.ShowEnterMarkerID(self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN))
-            self.markers[list_index].label = str(new_label)
-            self.marker_list_ctrl.SetItem(list_index, const.LABEL_COLUMN, new_label)
-        else:
+        if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        new_label = dlg.ShowEnterMarkerID(self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN))
+        self.markers[list_index].label = str(new_label)
+        self.marker_list_ctrl.SetItem(list_index, const.LABEL_COLUMN, new_label)
+
+        self.SaveState()
 
     def OnMenuSetTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        if idx != -1:
-            self.__set_marker_as_target(idx)
-        else:
+        if idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        self.__set_marker_as_target(idx)
+
+        self.SaveState()
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -1639,6 +1696,8 @@ class MarkersPanel(wx.Panel):
                                   target_index=None, target=None)
         wx.MessageBox(_("Target removed."), _("InVesalius 3"))
 
+        self.SaveState()
+
     def OnMenuSetColor(self, evt):
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
@@ -1649,15 +1708,19 @@ class MarkersPanel(wx.Panel):
 
         color_new = dlg.ShowColorDialog(color_current=color_current)
 
-        if color_new:
-            assert len(color_new) == 3
+        if not color_new:
+            return
 
-            # XXX: Seems like a slightly too early point for rounding; better to round only when the value
-            #      is printed to the screen or file.
-            #
-            self.markers[index].colour = [round(s / 255.0, 3) for s in color_new]
+        assert len(color_new) == 3
 
-            Publisher.sendMessage('Set new color', index=index, color=color_new)
+        # XXX: Seems like a slightly too early point for rounding; better to round only when the value
+        #      is printed to the screen or file.
+        #
+        self.markers[index].colour = [round(s / 255.0, 3) for s in color_new]
+
+        Publisher.sendMessage('Set new color', index=index, color=color_new)
+
+        self.SaveState()
 
     def OnMenuSetRobotCompensation(self, evt):
         if isinstance(evt, int):
@@ -1672,6 +1735,7 @@ class MarkersPanel(wx.Panel):
     def OnMenuSendTargetToRobot(self, evt):
         if isinstance(evt, int):
            self.marker_list_ctrl.Focus(evt)
+
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -1682,7 +1746,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Update tracker fiducials matrix',
                               matrix_tracker_fiducials=matrix_tracker_fiducials)
 
-        nav_target = self.markers[index].position+self.markers[index].orientation
+        nav_target = self.markers[index].position + self.markers[index].orientation
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
         m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, nav_target, self.icp, self.navigation.obj_data)
 
@@ -1707,38 +1771,43 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.DeleteAllItems()
         Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
 
+        self.SaveState()
+
     def OnDeleteMultipleMarkers(self, evt=None, label=None):
         # OnDeleteMultipleMarkers is used for both pubsub and button click events
         # Pubsub is used for fiducial handle and button click for all others
 
-        # called through pubsub
         if not evt:
-            index = []
-            
+            # Called through pubsub.
+
+            indexes = []
             if label and (label in self.__list_fiducial_labels()):
                 for id_n in range(self.marker_list_ctrl.GetItemCount()):
                     item = self.marker_list_ctrl.GetItem(id_n, const.LABEL_COLUMN)
                     if item.GetText() == label:
                         self.marker_list_ctrl.Focus(item.GetId())
-                        index = [self.marker_list_ctrl.GetFocusedItem()]
-
-        # called from button click
+                        indexes = [self.marker_list_ctrl.GetFocusedItem()]
         else:
-            index = self.__get_selected_items()
+            # Called using a button click.
+            indexes = self.__get_selected_items()
 
-        if index:
-            if self.__find_target_marker() in index:
-                Publisher.sendMessage('Disable or enable coil tracker', status=False)
-                Publisher.sendMessage('Update target', coord=None)
-                if self.tracker.tracker_id == const.ROBOT:
-                    Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                          target_index=None, target=None)
-                wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
-
-            self.__delete_multiple_markers(index)
-        else:
-            if evt: # Don't show the warning if called through pubsub
+        if not indexes:
+            # Don't show the warning if called through pubsub
+            if evt:
                 wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        # If current target is removed, handle it as a special case.
+        if self.__find_target_marker() in indexes:
+            Publisher.sendMessage('Disable or enable coil tracker', status=False)
+            Publisher.sendMessage('Update target', coord=None)
+            if self.tracker.tracker_id == const.ROBOT:
+                Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                        target_index=None, target=None)
+            wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
+
+        self.__delete_multiple_markers(indexes)
+        self.SaveState()
 
     def OnCreateMarker(self, evt):
         self.CreateMarker()
@@ -1781,6 +1850,8 @@ class MarkersPanel(wx.Panel):
 
         except Exception as e:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
+
+        self.SaveState()
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():
@@ -1911,6 +1982,9 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
+
+        self.SaveState()
+
 
 class DbsPanel(wx.Panel):
     def __init__(self, parent):
