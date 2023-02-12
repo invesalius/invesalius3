@@ -152,13 +152,11 @@ class UpdateNavigationScene(threading.Thread):
             sleep(self.sle)
 
 
-
 class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
         self.target = None
         self.object_registration = None
@@ -220,7 +218,6 @@ class Navigation(metaclass=Singleton):
         object_fiducials, object_orientations, object_reference_mode, object_name = self.object_registration
 
         state = {
-            'image_fiducials': self.image_fiducials.tolist(),
             'object_fiducials': object_fiducials.tolist(),
             'object_orientations': object_orientations,
             'object_reference_mode': object_reference_mode,
@@ -236,14 +233,11 @@ class Navigation(metaclass=Singleton):
         if state is None:
             return
 
-        image_fiducials = np.array(state['image_fiducials'])
-
         object_fiducials = np.array(state['object_fiducials'])
         object_orientations = state['object_orientations']
         object_reference_mode = state['object_reference_mode']
         object_name = state['object_name']
 
-        self.image_fiducials = image_fiducials
         self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
     def CoilAtTarget(self, state):
@@ -272,26 +266,11 @@ class Navigation(metaclass=Singleton):
     def GetReferenceMode(self):
         return self.ref_mode_id
 
-    def SetImageFiducial(self, fiducial_index, position):
-        self.image_fiducials[fiducial_index, :] = position
-        print("Image fiducial {} set to coordinates {}".format(fiducial_index, position))
-
-        self.SaveState()
-
-    def GetImageFiducialForUI(self, fiducial_index, coordinate):
-        value = self.image_fiducials[fiducial_index, coordinate]
-        if np.isnan(value):
-            value = 0
-
-        return value
-
-    def AreImageFiducialsSet(self):
-        return not np.isnan(self.image_fiducials).any()
-
-    def UpdateFiducialRegistrationError(self, tracker):
+    def UpdateFiducialRegistrationError(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
+        image_fiducials = image.GetImageFiducials()
 
-        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 
         self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, self.ref_mode_id, self.m_change)
 
@@ -309,9 +288,11 @@ class Navigation(metaclass=Singleton):
         if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
-    def EstimateTrackerToInVTransformationMatrix(self, tracker):
+    def EstimateTrackerToInVTransformationMatrix(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
-        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        image_fiducials = image.GetImageFiducials()
+
+        self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 
         self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
                                                 shear=False, scale=False)
