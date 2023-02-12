@@ -60,7 +60,8 @@ class Session(metaclass=Singleton):
             'language': '',
             'auto_reload_preview': False,
         }
-        self._state = None
+        self._exited_successfully_last_time = self._ReadState()
+
         self.__bind_events()
 
     def __bind_events(self):
@@ -98,8 +99,8 @@ class Session(metaclass=Singleton):
         else:
             print("State file does not exist.")
 
-    def StateExists(self):
-        return self._state is not None
+    def ExitedSuccessfullyLastTime(self):
+        return self._exited_successfully_last_time
 
     def SetConfig(self, key, value):
         self._config[key] = value
@@ -210,14 +211,6 @@ class Session(metaclass=Singleton):
         # isn't a recover session tool in InVesalius yet.
         self.project_status = 3
 
-    def _read_state_from_json(self, json_filename):
-        with open(json_filename, 'r') as state_file:
-            state_dict = json.load(state_file)
-            if self._state is None:
-                self._state = state_dict
-            else:
-                self._state = deep_merge_dict(self._state.copy(), state_dict)
-
     def _read_config_from_ini(self, config_filename):
         file = codecs.open(config_filename, 'rb', SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
@@ -256,6 +249,8 @@ class Session(metaclass=Singleton):
         #  if not(sys.platform == 'win32'):
           #  self.SetConfig('last_dicom_folder', last_dicom_folder.decode('utf-8'))
 
+    # TODO: Make also this function private so that it is run when the class constructor is run.
+    #   (Compare to _ReadState below.)
     def ReadConfig(self):
         try:
             self._read_config_from_json(CONFIG_PATH)
@@ -269,12 +264,13 @@ class Session(metaclass=Singleton):
         self.WriteConfigFile()
         return True
 
-    def ReadState(self):
-        try:
-            self._read_state_from_json(STATE_PATH)
-        except Exception as e:
-            debug(e)
-            return False
+    def _ReadState(self):
+        if os.path.exists(STATE_PATH):
+            print("InVesalius did not exit successfully.")
 
-        self.WriteConfigFile()
-        return True
+            state_file = open(STATE_PATH, 'r')
+            self._state = json.load(state_file)
+            return False
+        else:
+            self._state = {}
+            return True

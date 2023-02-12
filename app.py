@@ -100,8 +100,6 @@ if session.ReadConfig():
         except FileNotFoundError:
             pass
 
-session.ReadState()
-
 
 class InVesalius(wx.App):
     """
@@ -248,9 +246,7 @@ class Inv3SplashScreen(SplashScreen):
         p = Thread(target=utils.UpdateCheck, args=())
         p.start()
 
-        # Check if InVesalius did not exit successfully the last time it was run
-        if session.StateExists():
-            print("InVesalius did not exit successfully.")
+        if not session.ExitedSuccessfullyLastTime():
             # Reopen project
             project_path = session.GetState('project_path')
             if project_path is not None:
@@ -294,9 +290,6 @@ def non_gui_startup(args):
     if not session.ReadConfig():
         session.CreateConfig()
         session.SetConfig('language', lang)
-
-    if not session.ReadState():
-        session.CreateState()
 
     control = Controller(None)
 
