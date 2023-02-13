@@ -102,7 +102,6 @@ class OptitrackTrackerConnection(TrackerConnection):
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
 
-        connection = None
         try:
             import optitrack
             connection = optitrack.optr()
@@ -113,15 +112,15 @@ class OptitrackTrackerConnection(TrackerConnection):
             if connection.Initialize(calibration, user_profile) == 0:
                 connection.Run()  # Runs 'Run' function once to update cameras.
                 lib_mode = 'wrapper'
+
+                self.connection = connection
             else:
-                connection = None
                 lib_mode = 'error'
 
         except ImportError:
             lib_mode = 'error'
             print('Error')
 
-        self.connection = connection
         self.lib_mode = lib_mode
 
     def Disconnect(self):
@@ -136,7 +135,6 @@ class ClaronTrackerConnection(TrackerConnection):
         pass
 
     def Connect(self):
-        connection = None
         try:
             import pyclaron
 
@@ -156,14 +154,13 @@ class ClaronTrackerConnection(TrackerConnection):
             if connection.GetIdentifyingCamera():
                 connection.Run()
                 print("MicronTracker camera identified.")
-            else:
-                connection = None
+
+                self.connection = connection
 
         except ImportError:
             lib_mode = 'error'
             print('The ClaronTracker library is not installed.')
 
-        self.connection = connection
         self.lib_mode = lib_mode
 
     def Disconnect(self):
@@ -362,21 +359,20 @@ class CameraTrackerConnection(TrackerConnection):
         pass
 
     def Connect(self):
-        connection = None
         try:
             import invesalius.data.camera_tracker as cam
 
             connection = cam.camera()
             connection.Initialize()
-            print('Connect to camera tracking device.')
+            print('Connected to camera tracking device.')
 
             lib_mode = 'wrapper'
 
+            self.connection = connection
         except:
             print('Could not connect to camera tracker.')
             lib_mode = 'error'
 
-        self.connection = connection
         self.lib_mode = lib_mode
 
     def Disconnect(self):
@@ -412,7 +408,6 @@ class PolarisTrackerConnection():
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
 
-        connection = None
         try:
             if sys.platform == 'win32':
                 import pypolaris
@@ -429,18 +424,17 @@ class PolarisTrackerConnection():
             obj_dir = self.configuration['obj_dir']
 
             if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
-                connection = None
                 lib_mode = None
                 print('Could not connect to polaris tracker.')
             else:
-                print('Connect to polaris tracking device.')
+                print('Connected to polaris tracking device.')
+                self.connection = connection
 
         except:
             lib_mode = 'error'
             connection = None
             print('Could not connect to polaris tracker.')
 
-        self.connection = connection
         self.lib_mode = lib_mode
 
     def Disconnect(self):
