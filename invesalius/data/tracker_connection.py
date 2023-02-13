@@ -584,7 +584,7 @@ class RobotTrackerConnection(TrackerConnection):
         return self.connection.GetLibMode()
 
     def IsConnected(self):
-        return self.connection.IsConnected()
+        return self.connection and self.connection.IsConnected()
 
     def SetConfiguration(self, configuration):
         self.configuration = configuration
