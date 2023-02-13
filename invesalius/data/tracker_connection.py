@@ -532,13 +532,11 @@ class RobotTrackerConnection(TrackerConnection):
                         'robot_ip': robot_ip,
                         'tracker_configuration': connection.GetConfiguration(),
                     }
+                    self.connection = connection
 
                 select_ip_dialog.Destroy()
 
         select_tracker_dialog.Destroy()
-
-        self.connection = connection
-        self.tracker_id = tracker_id
 
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
@@ -572,7 +570,8 @@ class RobotTrackerConnection(TrackerConnection):
             print('The tracker could not be disconnected.')
 
     def GetTrackerId(self):
-        return self.tracker_id
+        tracker_id = self.configuration['tracker_id']
+        return tracker_id
 
     def GetConnection(self):
         # XXX: This is a bit convoluted logic, so here's a short explanation: in other cases, self.connection
