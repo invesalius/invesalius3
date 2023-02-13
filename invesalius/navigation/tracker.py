@@ -80,6 +80,7 @@ class Tracker():
     def SetTracker(self, tracker_id):
         if tracker_id:
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+            self.tracker_connection.Configure()
             self.tracker_connection.Connect()
 
             if not self.tracker_connection.IsConnected():

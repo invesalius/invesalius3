@@ -32,6 +32,10 @@ from invesalius.pubsub import pub as Publisher
 class TrackerConnection():
     def __init__(self):
         self.connection = None
+        self.configuration = None
+
+    def Configure(self):
+        assert False, "Not implemented"
 
     def Connect(self):
         assert False, "Not implemented"
@@ -70,32 +74,45 @@ class OptitrackTrackerConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
-    def Connect(self):
-        connection = None
-
+    def Configure(self):
         dialog = dlg.SetOptitrackconfigs()
+
         status = dialog.ShowModal()
+        success = status == ID_OK
 
-        if status == ID_OK:
-            calibration_optitrack, user_profile_optitrack = dialog.GetValue()
-            try:
-                import optitrack
-                connection = optitrack.optr()
-
-                if connection.Initialize(calibration_optitrack, user_profile_optitrack) == 0:
-                    connection.Run()  # Runs 'Run' function once to update cameras.
-                    lib_mode = 'wrapper'
-                else:
-                    connection = None
-                    lib_mode = 'error'
-            except ImportError:
-                lib_mode = 'error'
-                print('Error')
+        if success:
+            calibration, user_profile = dialog.GetValue()
+            self.configuration = {
+                'calibration': calibration,
+                'user_profile': user_profile,
+            }
         else:
-            lib_mode = None
-            print('#####')
+            self.lib_mode = None
 
         dialog.Destroy()
+        return success
+
+    def Connect(self):
+        assert self.configuration is not None, "No configuration defined"
+
+        connection = None
+        try:
+            import optitrack
+            connection = optitrack.optr()
+
+            calibration = self.configuration['calibration']
+            user_profile = self.configuration['user_profile']
+
+            if connection.Initialize(calibration, user_profile) == 0:
+                connection.Run()  # Runs 'Run' function once to update cameras.
+                lib_mode = 'wrapper'
+            else:
+                connection = None
+                lib_mode = 'error'
+
+        except ImportError:
+            lib_mode = 'error'
+            print('Error')
 
         self.connection = connection
         self.lib_mode = lib_mode
@@ -108,6 +125,9 @@ class ClaronTrackerConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
+    def Configure(self):
+        pass
+
     def Connect(self):
         connection = None
         try:
@@ -115,6 +135,7 @@ class ClaronTrackerConnection(TrackerConnection):
 
             lib_mode = 'wrapper'
             connection = pyclaron.pyclaron()
+
             connection.CalibrationDir = inv_paths.MTC_CAL_DIR.encode(const.FS_ENCODE)
             connection.MarkerDir = inv_paths.MTC_MAR_DIR.encode(const.FS_ENCODE)
             connection.NumberFramesProcessed = 1
@@ -122,6 +143,7 @@ class ClaronTrackerConnection(TrackerConnection):
             connection.PROBE_NAME = const.MTC_PROBE_NAME.encode(const.FS_ENCODE)
             connection.REF_NAME = const.MTC_REF_NAME.encode(const.FS_ENCODE)
             connection.OBJ_NAME = const.MTC_OBJ_NAME.encode(const.FS_ENCODE)
+
             connection.Initialize()
 
             if connection.GetIdentifyingCamera():
@@ -145,7 +167,36 @@ class PolhemusTrackerConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
-    def Connect(self, model):
+    def Configure(self):
+        pass
+
+    def ConfigureCOMPort(self):
+        dialog = dlg.SetCOMPort(select_baud_rate=False)
+        status = dialog.ShowModal()
+
+        success = status == ID_OK
+
+        if success:
+            com_port = dialog.GetCOMPort()
+            baud_rate = 115200
+
+            self.configuration = {
+                'com_port': com_port,
+                'baud_rate': baud_rate,
+            }
+        else:
+            print('Could not connect to Polhemus tracker.')
+
+        dialog.Destroy()
+
+        return success
+
+    # XXX: The workflow in connecting to Polhemus is that, first, a wrapper connection
+    #   and a USB connection are attempted. If both fail, the user is asked to configure
+    #   the COM port, and a serial connection is attempted. Unfortunately, that requires
+    #   some additional logic in Connect function to support connecting with preset configuration
+    #   (namely, by setting 'reconfigure' to False.)
+    def Connect(self, model, reconfigure):
         assert model in ['fastrak', 'isotrak', 'patriot'], "Unsupported model for Polhemus tracker: {}".format(type)
 
         connection = None
@@ -159,6 +210,9 @@ class PolhemusTrackerConnection(TrackerConnection):
                 lib_mode = 'usb'
                 if not connection:
                     print('Could not connect with Polhemus USB, trying serial connection...')
+
+                    if reconfigure:
+                        self.ConfigureCOMPort()
                     connection = self.PolhemusSerialConnection(model)
                     lib_mode = 'serial'
         except:
@@ -196,45 +250,43 @@ class PolhemusTrackerConnection(TrackerConnection):
         return connection
 
     def PolhemusSerialConnection(self, model):
+        assert self.configuration is not None, "No configuration defined"
+
         import serial
 
         connection = None
 
-        dialog = dlg.SetCOMPort(select_baud_rate=False)
-        status = dialog.ShowModal()
+        try:
+            com_port = self.configuration['com_port']
+            baud_rate = self.configuration['baud_rate']
 
-        if status == ID_OK:
-            com_port = dialog.GetCOMPort()
-            baud_rate = 115200
+            connection = serial.Serial(
+                com_port,
+                baudrate=baud_rate,
+                timeout=0.03
+            )
 
-            try:
-                connection = serial.Serial(com_port, baudrate=baud_rate, timeout=0.03)
+            if model == 'fastrak':
+                # Polhemus FASTRAK needs configurations first
+                connection.write(0x02, str.encode("u"))
+                connection.write(0x02, str.encode("F"))
 
-                if model == 'fastrak':
-                    # Polhemus FASTRAK needs configurations first
-                    connection.write(0x02, str.encode("u"))
-                    connection.write(0x02, str.encode("F"))
+            elif model == 'isotrak':
+                # Polhemus ISOTRAK needs to set tracking point from
+                # center to tip.
+                connection.write(str.encode("u"))
+                connection.write(str.encode("F"))
+                connection.write(str.encode("Y"))
 
-                elif model == 'isotrak':
-                    # Polhemus ISOTRAK needs to set tracking point from
-                    # center to tip.
-                    connection.write(str.encode("u"))
-                    connection.write(str.encode("F"))
-                    connection.write(str.encode("Y"))
-
-                connection.write(str.encode("P"))
-                data = connection.readlines()
-                if not data:
-                    connection = None
-                    print('Could not connect to Polhemus serial without error.')
-
-            except:
+            connection.write(str.encode("P"))
+            data = connection.readlines()
+            if not data:
                 connection = None
-                print('Could not connect to Polhemus tracker.')
-        else:
-            print('Could not connect to Polhemus tracker.')
+                print('Could not connect to Polhemus serial without error.')
 
-        dialog.Destroy()
+        except:
+            connection = None
+            print('Could not connect to Polhemus tracker.')
 
         return connection
 
@@ -300,6 +352,9 @@ class CameraTrackerConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
+    def Configure(self):
+        pass
+
     def Connect(self):
         connection = None
         try:
@@ -326,40 +381,58 @@ class PolarisTrackerConnection():
     def __init__(self):
         super().__init__()
 
-    def Connect(self):
-        connection = None
-
+    def Configure(self):
         dialog = dlg.SetNDIconfigs()
         status = dialog.ShowModal()
 
-        if status == ID_OK:
-            com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dialog.GetValue()
-            try:
-                if sys.platform == 'win32':
-                    import pypolaris
-                    connection = pypolaris.pypolaris()
-                else:
-                    from pypolaris import pypolaris
-                    connection = pypolaris.pypolaris()
+        success = status == ID_OK
+        if success:
+            com_port, probe_dir, ref_dir, obj_dir = dialog.GetValue()
 
-                lib_mode = 'wrapper'
-
-                if connection.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
-                    connection = None
-                    lib_mode = None
-                    print('Could not connect to polaris tracker.')
-                else:
-                    print('Connect to polaris tracking device.')
-
-            except:
-                lib_mode = 'error'
-                connection = None
-                print('Could not connect to polaris tracker.')
+            self.configuration = {
+                'com_port': com_port,
+                'probe_dir': probe_dir,
+                'ref_dir': ref_dir,
+                'obj_dir': obj_dir,
+            }
         else:
-            lib_mode = None
+            self.lib_mode = None
             print('Could not connect to polaris tracker.')
 
         dialog.Destroy()
+
+        return success
+
+    def Connect(self):
+        assert self.configuration is not None, "No configuration defined"
+
+        connection = None
+        try:
+            if sys.platform == 'win32':
+                import pypolaris
+                connection = pypolaris.pypolaris()
+            else:
+                from pypolaris import pypolaris
+                connection = pypolaris.pypolaris()
+
+            lib_mode = 'wrapper'
+
+            com_port = self.configuration['com_port']
+            probe_dir = self.configuration['probe_dir']
+            ref_dir = self.configuration['ref_dir']
+            obj_dir = self.configuration['obj_dir']
+
+            if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
+                connection = None
+                lib_mode = None
+                print('Could not connect to polaris tracker.')
+            else:
+                print('Connect to polaris tracking device.')
+
+        except:
+            lib_mode = 'error'
+            connection = None
+            print('Could not connect to polaris tracker.')
 
         self.connection = connection
         self.lib_mode = lib_mode
@@ -372,35 +445,54 @@ class PolarisP4TrackerConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
-    def Connect(self):
-        connection = None
-
+    def Configure(self):
         dialog = dlg.SetNDIconfigs()
         status = dialog.ShowModal()
 
-        if status == ID_OK:
-            com_port, PROBE_DIR, REF_DIR, OBJ_DIR = dialog.GetValue()
-            try:
-                import pypolarisP4
-                lib_mode = 'wrapper'
-                connection = pypolarisP4.pypolarisP4()
+        success = status == ID_OK
+        if success:
+            com_port, probe_dir, ref_dir, obj_dir = dialog.GetValue()
 
-                if connection.Initialize(com_port, PROBE_DIR, REF_DIR, OBJ_DIR) != 0:
-                    connection = None
-                    lib_mode = None
-                    print('Could not connect to Polaris P4 tracker.')
-                else:
-                    print('Connect to Polaris P4 tracking device.')
-
-            except:
-                lib_mode = 'error'
-                connection = None
-                print('Could not connect to Polaris P4 tracker.')
+            self.configuration = {
+                'com_port': com_port,
+                'probe_dir': probe_dir,
+                'ref_dir': ref_dir,
+                'obj_dir': obj_dir,
+            }
         else:
-            lib_mode = None
+            self.lib_mode = None
             print('Could not connect to Polaris P4 tracker.')
 
         dialog.Destroy()
+
+        return success
+
+    def Connect(self):
+        assert self.configuration is not None, "No configuration defined"
+
+        connection = None
+        try:
+            import pypolarisP4
+
+            lib_mode = 'wrapper'
+            connection = pypolarisP4.pypolarisP4()
+
+            com_port = self.configuration['com_port']
+            probe_dir = self.configuration['probe_dir']
+            ref_dir = self.configuration['ref_dir']
+            obj_dir = self.configuration['obj_dir']
+
+            if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
+                connection = None
+                lib_mode = None
+                print('Could not connect to Polaris P4 tracker.')
+            else:
+                print('Connect to Polaris P4 tracking device.')
+
+        except:
+            lib_mode = 'error'
+            connection = None
+            print('Could not connect to Polaris P4 tracker.')
 
         self.connection = connection
         self.lib_mode = lib_mode
@@ -413,10 +505,7 @@ class RobotTrackerConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
-    def Connect(self):
-        connection = None
-        tracker_id = None
-
+    def Configure(self):
         select_tracker_dialog = dlg.SetTrackerDeviceToRobot()
         status = select_tracker_dialog.ShowModal()
 
@@ -424,22 +513,28 @@ class RobotTrackerConnection(TrackerConnection):
             tracker_id = select_tracker_dialog.GetValue()
             if tracker_id:
                 connection = CreateTrackerConnection(tracker_id)
-                connection.Connect()
+                connection.Configure()
 
-                if connection.IsConnected():
-                    select_ip_dialog = dlg.SetRobotIP()
-                    status = select_ip_dialog.ShowModal()
+                select_ip_dialog = dlg.SetRobotIP()
+                status = select_ip_dialog.ShowModal()
 
-                    if status == ID_OK:
-                        robot_IP = select_ip_dialog.GetValue()
-                        Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
+                if status == ID_OK:
+                    robot_IP = select_ip_dialog.GetValue()
+                    Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
 
-                    select_ip_dialog.Destroy()
+                select_ip_dialog.Destroy()
 
         select_tracker_dialog.Destroy()
 
         self.connection = connection
         self.tracker_id = tracker_id
+
+    def Connect(self):
+        assert self.connection is not None, "No configuration defined"
+
+        self.connection.Connect()
+        if not self.connection.IsConnected():
+            print("Failed to connect to tracker.")
 
     def Disconnect(self):
         try:
@@ -475,6 +570,9 @@ class DebugTrackerRandomConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
 
+    def Configure(self):
+        pass
+
     def Connect(self):
         self.connection = True
         self.lib_mode = 'debug'
@@ -489,6 +587,9 @@ class DebugTrackerRandomConnection(TrackerConnection):
 class DebugTrackerApproachConnection(TrackerConnection):
     def __init__(self):
         super().__init__()
+
+    def Configure(self):
+        pass
 
     def Connect(self):
         self.connection = True
