@@ -3416,7 +3416,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
+        self.tracker_id = tracker.GetTrackerId()
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
