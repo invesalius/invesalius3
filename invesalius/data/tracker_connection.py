@@ -30,9 +30,10 @@ from invesalius.pubsub import pub as Publisher
 
 
 class TrackerConnection():
-    def __init__(self):
+    def __init__(self, model=None):
         self.connection = None
         self.configuration = None
+        self.model = model
 
     def Configure(self):
         assert False, "Not implemented"
@@ -65,14 +66,20 @@ class TrackerConnection():
     def GetLibMode(self):
         return self.lib_mode
 
+    def GetConfiguration(self):
+        return self.configuration
+
+    def SetConfiguration(self, configuration):
+        self.configuration = configuration
+
 
 class OptitrackTrackerConnection(TrackerConnection):
     """
     Connects to optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration,
     loads User Profile (Rigid bodies information).
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         dialog = dlg.SetOptitrackconfigs()
@@ -122,8 +129,8 @@ class OptitrackTrackerConnection(TrackerConnection):
 
 
 class ClaronTrackerConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         pass
@@ -164,8 +171,10 @@ class ClaronTrackerConnection(TrackerConnection):
 
 
 class PolhemusTrackerConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        assert model in ['fastrak', 'isotrak', 'patriot'], "Unsupported model for Polhemus tracker: {}".format(model)
+
+        super().__init__(model)
 
     def Configure(self):
         pass
@@ -196,24 +205,22 @@ class PolhemusTrackerConnection(TrackerConnection):
     #   the COM port, and a serial connection is attempted. Unfortunately, that requires
     #   some additional logic in Connect function to support connecting with preset configuration
     #   (namely, by setting 'reconfigure' to False.)
-    def Connect(self, model, reconfigure):
-        assert model in ['fastrak', 'isotrak', 'patriot'], "Unsupported model for Polhemus tracker: {}".format(type)
-
+    def Connect(self, reconfigure):
         connection = None
         try:
-            connection = self.PolhemusWrapperConnection(model)
+            connection = self.PolhemusWrapperConnection()
             lib_mode = 'wrapper'
             if not connection:
                 print('Could not connect with Polhemus wrapper, trying USB connection...')
 
-                connection = self.PolhemusUSBConnection(model)
+                connection = self.PolhemusUSBConnection()
                 lib_mode = 'usb'
                 if not connection:
                     print('Could not connect with Polhemus USB, trying serial connection...')
 
                     if reconfigure:
                         self.ConfigureCOMPort()
-                    connection = self.PolhemusSerialConnection(model)
+                    connection = self.PolhemusSerialConnection()
                     lib_mode = 'serial'
         except:
             lib_mode = 'error'
@@ -221,12 +228,11 @@ class PolhemusTrackerConnection(TrackerConnection):
 
         self.connection = connection
         self.lib_mode = lib_mode
-        self.model = model
 
-    def PolhemusWrapperConnection(self, model):
+    def PolhemusWrapperConnection(self):
         try:
             from time import sleep
-            if model == 'fastrak':
+            if self.model == 'fastrak':
                 import polhemusFT
                 connection = polhemusFT.polhemusFT()
             else:
@@ -249,7 +255,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
         return connection
 
-    def PolhemusSerialConnection(self, model):
+    def PolhemusSerialConnection(self):
         assert self.configuration is not None, "No configuration defined"
 
         import serial
@@ -266,12 +272,12 @@ class PolhemusTrackerConnection(TrackerConnection):
                 timeout=0.03
             )
 
-            if model == 'fastrak':
+            if self.model == 'fastrak':
                 # Polhemus FASTRAK needs configurations first
                 connection.write(0x02, str.encode("u"))
                 connection.write(0x02, str.encode("F"))
 
-            elif model == 'isotrak':
+            elif self.model == 'isotrak':
                 # Polhemus ISOTRAK needs to set tracking point from
                 # center to tip.
                 connection.write(str.encode("u"))
@@ -290,7 +296,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
         return connection
 
-    def PolhemusUSBConnection(self, model):
+    def PolhemusUSBConnection(self):
         connection = None
         try:
             import usb.core as uc
@@ -311,7 +317,7 @@ class PolhemusTrackerConnection(TrackerConnection):
             connection.set_configuration()
             endpoint = connection[0][(0, 0)][0]
 
-            if model == 'fastrak':
+            if self.model == 'fastrak':
                 # Polhemus FASTRAK needs configurations first
 
                 # TODO: Check configurations to standardize initialization for all Polhemus devices
@@ -349,8 +355,8 @@ class PolhemusTrackerConnection(TrackerConnection):
 
 
 class CameraTrackerConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         pass
@@ -378,8 +384,8 @@ class CameraTrackerConnection(TrackerConnection):
 
 
 class PolarisTrackerConnection():
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         dialog = dlg.SetNDIconfigs()
@@ -442,8 +448,8 @@ class PolarisTrackerConnection():
 
 
 class PolarisP4TrackerConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         dialog = dlg.SetNDIconfigs()
@@ -502,8 +508,8 @@ class PolarisP4TrackerConnection(TrackerConnection):
 
 
 class RobotTrackerConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         select_tracker_dialog = dlg.SetTrackerDeviceToRobot()
@@ -565,10 +571,13 @@ class RobotTrackerConnection(TrackerConnection):
     def IsConnected(self):
         return self.connection.IsConnected()
 
+    def GetConfiguration(self):
+        return self.connection.GetConfiguration()
+
 
 class DebugTrackerRandomConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         pass
@@ -585,8 +594,8 @@ class DebugTrackerRandomConnection(TrackerConnection):
 
 
 class DebugTrackerApproachConnection(TrackerConnection):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model=None):
+        super().__init__(model)
 
     def Configure(self):
         pass
@@ -625,6 +634,21 @@ def CreateTrackerConnection(tracker_id):
     :return spatial tracker connection instance or None if could not open device.
     """
     tracker_connection_class = TRACKER_CONNECTION_CLASSES[tracker_id]
-    tracker_connection = tracker_connection_class()
 
+    # XXX: A better solution than to pass a 'model' parameter to the constructor of tracker
+    #   connection would be to have separate class for each model, possibly inheriting
+    #   the same base class, e.g., in this case, PolhemusTrackerConnection base class, which
+    #   would be inherited by FastrakTrackerConnection class, etc.
+    if tracker_id == const.FASTRAK:
+        model = 'fastrak'
+    elif tracker_id == const.ISOTRAKII:
+        model = 'isotrak'
+    elif tracker_id == const.PATRIOT:
+        model = 'patriot'
+    else:
+        model = None
+
+    tracker_connection = tracker_connection_class(
+        model=model
+    )
     return tracker_connection
