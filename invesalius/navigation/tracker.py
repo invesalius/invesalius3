@@ -49,11 +49,18 @@ class Tracker():
         self.LoadState()
 
     def SaveState(self):
+        tracker_id = self.tracker_id
+        tracker_fiducials = self.tracker_fiducials.tolist()
+        tracker_fiducials_raw = self.tracker_fiducials_raw.tolist()
+        marker_tracker_fiducials_raw = self.m_tracker_fiducials_raw.tolist()
+        configuration = self.tracker_connection.GetConfiguration() if self.tracker_connection else None
+
         state = {
-            'tracker_id': self.tracker_id,
-            'tracker_fiducials': self.tracker_fiducials.tolist(),
-            'tracker_fiducials_raw': self.tracker_fiducials_raw.tolist(),
-            'marker_tracker_fiducials_raw': self.m_tracker_fiducials_raw.tolist(),
+            'tracker_id': tracker_id,
+            'tracker_fiducials': tracker_fiducials,
+            'tracker_fiducials_raw': tracker_fiducials_raw,
+            'marker_tracker_fiducials_raw': marker_tracker_fiducials_raw,
+            'configuration': configuration,
         }
         session = ses.Session()
         session.SetState('tracker', state)
@@ -69,19 +76,34 @@ class Tracker():
         tracker_fiducials = np.array(state['tracker_fiducials'])
         tracker_fiducials_raw = np.array(state['tracker_fiducials_raw'])
         m_tracker_fiducials_raw = np.array(state['marker_tracker_fiducials_raw'])
+        configuration = state['configuration']
 
         self.tracker_id = tracker_id
         self.tracker_fiducials = tracker_fiducials
         self.tracker_fiducials_raw = tracker_fiducials_raw
         self.m_tracker_fiducials_raw = m_tracker_fiducials_raw
 
-        self.SetTracker(self.tracker_id)
+        self.SetTracker(
+            tracker_id=self.tracker_id,
+            configuration=configuration
+        )
 
-    def SetTracker(self, tracker_id):
+    def SetTracker(self, tracker_id, configuration=None):
         if tracker_id:
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
-            self.tracker_connection.Configure()
-            self.tracker_connection.Connect()
+            if configuration is not None:
+                self.tracker_connection.SetConfiguration(configuration)
+            else:
+                self.tracker_connection.Configure()
+
+            # XXX: Unfortunately, PolhemusTracker forms a special case here, as configuring
+            #   it happens with a different workflow than the other trackers. (See
+            #   PolhemusTrackerConnection class for a more detailed explanation.)
+            if isinstance(self.tracker_connection, tc.PolhemusTrackerConnection):
+                reconfigure = configuration is None
+                self.tracker_connection.Connect(reconfigure)
+            else:
+                self.tracker_connection.Connect()
 
             if not self.tracker_connection.IsConnected():
                 dlg.ShowNavigationTrackerWarning(tracker_id, self.tracker_connection.GetLibMode())
