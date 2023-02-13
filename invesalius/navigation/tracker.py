@@ -128,15 +128,17 @@ class Tracker():
             Publisher.sendMessage('Remove object data')
             Publisher.sendMessage('Robot navigation mode', robot_mode=False)
 
+            # Stop thread for reading tracker coordinates. Do it before disconnecting
+            # the tracker to avoid reading coordinates from already disconnected tracker.
+            if self.thread_coord:
+                self.event_coord.set()
+                self.thread_coord.join()
+                self.event_coord.clear()
+
             self.tracker_connection.Disconnect()
             if not self.tracker_connection.IsConnected():
                 self.tracker_connected = False
                 self.tracker_id = 0
-
-                if self.thread_coord:
-                    self.event_coord.set()
-                    self.thread_coord.join()
-                    self.event_coord.clear()
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
