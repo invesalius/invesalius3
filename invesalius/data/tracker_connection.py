@@ -525,8 +525,13 @@ class RobotTrackerConnection(TrackerConnection):
                 status = select_ip_dialog.ShowModal()
 
                 if status == ID_OK:
-                    robot_IP = select_ip_dialog.GetValue()
-                    Publisher.sendMessage('Connect to robot', robot_IP=robot_IP)
+                    robot_ip = select_ip_dialog.GetValue()
+
+                    self.configuration = {
+                        'tracker_id': tracker_id,
+                        'robot_ip': robot_ip,
+                        'tracker_configuration': connection.GetConfiguration(),
+                    }
 
                 select_ip_dialog.Destroy()
 
@@ -536,7 +541,17 @@ class RobotTrackerConnection(TrackerConnection):
         self.tracker_id = tracker_id
 
     def Connect(self):
-        assert self.connection is not None, "No configuration defined"
+        assert self.configuration is not None, "No configuration defined"
+
+        tracker_id = self.configuration['tracker_id']
+        robot_ip = self.configuration['robot_ip']
+        tracker_configuration = self.configuration['tracker_configuration']
+
+        if self.connection is None:
+            self.connection = CreateTrackerConnection(tracker_id)
+            self.connection.SetConfiguration(tracker_configuration)
+
+        Publisher.sendMessage('Connect to robot', robot_IP=robot_ip)
 
         self.connection.Connect()
         if not self.connection.IsConnected():
@@ -571,8 +586,8 @@ class RobotTrackerConnection(TrackerConnection):
     def IsConnected(self):
         return self.connection.IsConnected()
 
-    def GetConfiguration(self):
-        return self.connection.GetConfiguration()
+    def SetConfiguration(self, configuration):
+        self.configuration = configuration
 
 
 class DebugTrackerRandomConnection(TrackerConnection):
