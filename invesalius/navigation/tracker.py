@@ -23,7 +23,7 @@ import threading
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
-import invesalius.data.trackers as dt
+import invesalius.data.tracker_connection as tc
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
@@ -31,7 +31,7 @@ from invesalius.pubsub import pub as Publisher
 
 class Tracker():
     def __init__(self):
-        self.trk_init = None
+        self.tracker_connection = None
         self.tracker_id = const.DEFAULT_TRACKER
 
         self.tracker_fiducials = np.full([3, 3], np.nan)
@@ -79,19 +79,21 @@ class Tracker():
 
     def SetTracker(self, tracker_id):
         if tracker_id:
-            self.trk_init = dt.TrackerConnection(tracker_id, None, 'connect')
-            if not all(list(self.trk_init)):
-                dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+            self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+            self.tracker_connection.Connect()
+
+            if not self.tracker_connection.IsConnected():
+                dlg.ShowNavigationTrackerWarning(tracker_id, self.tracker_connection.GetLibMode())
 
                 self.tracker_id = 0
                 self.tracker_connected = False
             else:
                 self.tracker_id = tracker_id
                 self.tracker_connected = True
-                self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
+                self.thread_coord = dco.ReceiveCoordinates(self.tracker_connection, self.tracker_id, self.TrackerCoordinates,
                                        self.event_coord)
                 self.thread_coord.start()
-            
+
             self.SaveState()
 
     def DisconnectTracker(self):
@@ -102,8 +104,9 @@ class Tracker():
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
             Publisher.sendMessage('Robot navigation mode', robot_mode=False)
-            self.trk_init = dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
-            if not self.trk_init[0]:
+
+            self.tracker_connection.Disconnect()
+            if not self.tracker_connection.IsConnected():
                 self.tracker_connected = False
                 self.tracker_id = 0
 
@@ -120,9 +123,8 @@ class Tracker():
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
 
-
     def IsTrackerInitialized(self):
-        return self.trk_init and self.tracker_id and self.tracker_connected
+        return self.tracker_connection and self.tracker_id and self.tracker_connected
 
     def AreTrackerFiducialsSet(self):
         return not np.isnan(self.tracker_fiducials).any()
@@ -192,8 +194,8 @@ class Tracker():
 
         return [m_probe_ref_left.tolist(), m_probe_ref_right.tolist(), m_probe_ref_nasion.tolist()]
 
-    def GetTrackerInfo(self):
-        return self.trk_init, self.tracker_id
+    def GetTrackerId(self):
+        return self.tracker_id
 
     def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
         if self.tracker_connected:
