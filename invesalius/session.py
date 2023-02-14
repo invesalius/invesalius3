@@ -31,6 +31,7 @@ import collections
 import json
 from random import randint
 from threading import Thread
+from json.decoder import JSONDecodeError
 
 import wx
 
@@ -60,7 +61,7 @@ class Session(metaclass=Singleton):
             'language': '',
             'auto_reload_preview': False,
         }
-        self._exited_successfully_last_time = self._ReadState()
+        self._exited_successfully_last_time = not self._ReadState()
 
         self.__bind_events()
 
@@ -269,8 +270,15 @@ class Session(metaclass=Singleton):
             print("InVesalius did not exit successfully.")
 
             state_file = open(STATE_PATH, 'r')
-            self._state = json.load(state_file)
-            return False
-        else:
-            self._state = {}
-            return True
+            try:
+                self._state = json.load(state_file)
+                return True
+
+            except JSONDecodeError as e:
+                print("State file is corrupted, deleting.")
+                state_file.close()
+
+                self.DeleteStateFile()
+
+        self._state = {}
+        return False
