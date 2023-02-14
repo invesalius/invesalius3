@@ -71,6 +71,7 @@ class TrackerConnection():
 
     def SetConfiguration(self, configuration):
         self.configuration = configuration
+        return True
 
 
 class OptitrackTrackerConnection(TrackerConnection):
@@ -132,7 +133,7 @@ class ClaronTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        pass
+        return True
 
     def Connect(self):
         try:
@@ -174,7 +175,7 @@ class PolhemusTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        pass
+        return True
 
     def ConfigureCOMPort(self):
         dialog = dlg.SetCOMPort(select_baud_rate=False)
@@ -356,7 +357,7 @@ class CameraTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        pass
+        return True
 
     def Connect(self):
         try:
@@ -509,6 +510,8 @@ class RobotTrackerConnection(TrackerConnection):
         select_tracker_dialog = dlg.SetTrackerDeviceToRobot()
         status = select_tracker_dialog.ShowModal()
 
+        success = False
+
         if status == ID_OK:
             tracker_id = select_tracker_dialog.GetValue()
             if tracker_id:
@@ -528,9 +531,13 @@ class RobotTrackerConnection(TrackerConnection):
                     }
                     self.connection = connection
 
+                    success = True
+
                 select_ip_dialog.Destroy()
 
         select_tracker_dialog.Destroy()
+
+        return success
 
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
@@ -581,6 +588,7 @@ class RobotTrackerConnection(TrackerConnection):
 
     def SetConfiguration(self, configuration):
         self.configuration = configuration
+        return True
 
 
 class DebugTrackerRandomConnection(TrackerConnection):
@@ -588,7 +596,7 @@ class DebugTrackerRandomConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        pass
+        return True
 
     def Connect(self):
         self.connection = True
@@ -606,7 +614,7 @@ class DebugTrackerApproachConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        pass
+        return True
 
     def Connect(self):
         self.connection = True
