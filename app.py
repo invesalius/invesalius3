@@ -26,7 +26,6 @@ import os
 import sys
 import shutil
 import traceback
-import locale
 import re
 
 if sys.platform  == "darwin":
@@ -580,7 +579,6 @@ def main(connection=None):
         non_gui_startup(args)
     else:
         application = InVesalius(0)
-        locale.setlocale(locale.LC_ALL, '')
         application.MainLoop()
 
 

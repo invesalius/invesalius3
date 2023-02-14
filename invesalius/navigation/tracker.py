@@ -123,12 +123,6 @@ class Tracker():
         )
 
         # Update tracker fiducial with tracker coordinates
-        #if fiducial_index==0:
-        #   self.tracker_fiducials[fiducial_index, :] = [240.70069182, -71.58236031, -51.30631678]
-        #elif fiducial_index==1:
-        #    self.tracker_fiducials[fiducial_index, :] = [147.52288872, -13.58105395 ,-88.2501469 ]
-        #elif fiducial_index==2:
-        #    self.tracker_fiducials[fiducial_index, :] = [  54.28751318, -204.74536447,    3.39157023]
         self.tracker_fiducials[fiducial_index, :] = coord[0:3]
 
         assert 0 <= fiducial_index <= 2, "Fiducial index out of range (0-2): {}".format(fiducial_index)
