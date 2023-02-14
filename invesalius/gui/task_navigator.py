@@ -1754,6 +1754,8 @@ class MarkersPanel(wx.Panel):
                 self.CreateMarker(list(position), list(orientation), is_brain_target=True)
         dialog.Destroy()
 
+        self.SaveState()
+
     def OnMenuRemoveTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
         self.markers[idx].is_target = False
@@ -1842,6 +1844,8 @@ class MarkersPanel(wx.Panel):
                 self.CreateMarker(list(position), list(orientation), size=0.05, is_brain_target=True)
         dialog.Destroy()
 
+        self.SaveState()
+
     def OnSendBrainTarget(self, evt):
         if isinstance(evt, int):
            self.marker_list_ctrl.Focus(evt)
@@ -1920,6 +1924,8 @@ class MarkersPanel(wx.Panel):
 
     def OnCreateMarker(self, evt):
         self.CreateMarker()
+
+        self.SaveState()
 
     def OnLoadMarkers(self, evt):
         """Loads markers from file and appends them to the current marker list.
@@ -2045,6 +2051,8 @@ class MarkersPanel(wx.Panel):
                 orientation=orientation,
             )
 
+        self.SaveState()
+
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None, is_brain_target=False):
         new_marker = self.Marker()
@@ -2100,8 +2108,6 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
-
-        self.SaveState()
 
 
 class DbsPanel(wx.Panel):
