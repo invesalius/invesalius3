@@ -823,7 +823,7 @@ SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.2
-SLEEP_COORDINATES = 0.05
+SLEEP_COORDINATES = 0.1
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
@@ -854,4 +854,6 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 #Robot
-ROBOT_ElFIN_IP = ['143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+
+MTMS_RADIUS = 15

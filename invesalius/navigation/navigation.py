@@ -151,7 +151,6 @@ class UpdateNavigationScene(threading.Thread):
 
             sleep(self.sle)
 
-
 class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
         self.pedal_connection = pedal_connection
