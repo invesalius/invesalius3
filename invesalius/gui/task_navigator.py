@@ -1599,11 +1599,11 @@ class MarkersPanel(wx.Panel):
             if self.markers[index].is_brain_target:
                 brain_target_index.append(index)
         for index in reversed(brain_target_index):
-            self.lc.SetItemBackgroundColour(index, 'white')
+            self.marker_list_ctrl.SetItemBackgroundColour(index, 'white')
             del self.markers[index]
-            self.lc.DeleteItem(index)
-            for n in range(0, self.lc.GetItemCount()):
-                self.lc.SetItem(n, 0, str(n + 1))
+            self.marker_list_ctrl.DeleteItem(index)
+            for n in range(0, self.marker_list_ctrl.GetItemCount()):
+                self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', index=brain_target_index)
 
     def __set_marker_as_target(self, idx):
@@ -1681,7 +1681,7 @@ class MarkersPanel(wx.Panel):
 
         orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
-        is_brain_target = self.markers[self.lc.GetFocusedItem()].is_brain_target
+        is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].is_brain_target
         if is_brain_target and has_mTMS:
             send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
@@ -1742,7 +1742,7 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def OnSetMTMSBrainTarget(self, evt):
-        list_index = self.lc.GetFocusedItem()
+        list_index = self.marker_list_ctrl.GetFocusedItem()
         markers = self.__get_brain_target_markers()
         target_pose_index = list_index - 2
         if markers:
@@ -1840,8 +1840,8 @@ class MarkersPanel(wx.Panel):
 
     def OnSetBrainTarget(self, evt):
         if isinstance(evt, int):
-           self.lc.Focus(evt)
-        index = self.lc.GetFocusedItem()
+           self.marker_list_ctrl.Focus(evt)
+        index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
@@ -1858,8 +1858,8 @@ class MarkersPanel(wx.Panel):
 
     def OnSendBrainTarget(self, evt):
         if isinstance(evt, int):
-           self.lc.Focus(evt)
-        index = self.lc.GetFocusedItem()
+           self.marker_list_ctrl.Focus(evt)
+        index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
