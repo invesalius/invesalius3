@@ -188,6 +188,37 @@ class InnerFoldPanel(wx.Panel):
             pedal_connection=pedal_connection,
             neuronavigation_api=neuronavigation_api,
         )
+
+        # Check box for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Update camera in volume"))
+        checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
+        checkcamera.SetToolTip(tooltip)
+        checkcamera.SetValue(const.CAM_MODE)
+        checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
+        self.checkcamera = checkcamera
+
+        # Check box to use serial port to trigger pulse signal and create markers
+        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
+        checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
+        checkbox_serial_port.SetToolTip(tooltip)
+        checkbox_serial_port.SetValue(False)
+        checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port))
+        self.checkbox_serial_port = checkbox_serial_port
+
+        # Check box for object position and orientation update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Show and track TMS coil"))
+        checkobj = wx.CheckBox(self, -1, _('Show coil'))
+        checkobj.SetToolTip(tooltip)
+        checkobj.SetValue(False)
+        checkobj.Disable()
+        checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowObject)
+        self.checkobj = checkobj
+
+        #  if sys.platform != 'win32':
+        self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        checkbox_serial_port.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -265,36 +296,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
                                         leftSpacing=0, rightSpacing=0)
 
-        # Check box for camera update in volume rendering during navigation
-        tooltip = wx.ToolTip(_("Update camera in volume"))
-        checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
-        checkcamera.SetToolTip(tooltip)
-        checkcamera.SetValue(const.CAM_MODE)
-        checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
-        self.checkcamera = checkcamera
-
-        # Check box to use serial port to trigger pulse signal and create markers
-        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
-        checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
-        checkbox_serial_port.SetToolTip(tooltip)
-        checkbox_serial_port.SetValue(False)
-        checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port))
-        self.checkbox_serial_port = checkbox_serial_port
-
-        # Check box for object position and orientation update in volume rendering during navigation
-        tooltip = wx.ToolTip(_("Show and track TMS coil"))
-        checkobj = wx.CheckBox(self, -1, _('Show coil'))
-        checkobj.SetToolTip(tooltip)
-        checkobj.SetValue(False)
-        checkobj.Disable()
-        checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowObject)
-        self.checkobj = checkobj
-
-        #  if sys.platform != 'win32':
-        self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        checkbox_serial_port.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-
+        # Panel sizer for checkboxes
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Add(checkbox_serial_port, 0, wx.ALIGN_CENTER)
@@ -1526,10 +1528,16 @@ class MarkersPanel(wx.Panel):
                 colour=d['colour'],
                 size=d['size'],
                 label=d['label'],
-                is_target=d['is_target'],
+                # XXX: See comment below. Should be improved so that is_target wouldn't need to be set as False here.
+                is_target=False,
                 seed=d['seed'],
                 session_id=d['session_id']
             )
+            # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
+            # then set as target if needed. This could be refactored so that a CreateMarker call would
+            # suffice to set it as target.
+            if d['is_target']:
+                self.__set_marker_as_target(len(self.markers) - 1, display_messagebox=False)
 
     def __find_target_marker(self):
         """
@@ -1607,7 +1615,7 @@ class MarkersPanel(wx.Panel):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', index=brain_target_index)
 
-    def __set_marker_as_target(self, idx):
+    def __set_marker_as_target(self, idx, display_messagebox=True):
         """
         Set marker indexed by idx as the new target. idx must be a valid index.
         """
@@ -1633,7 +1641,8 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Update target', coord=self.markers[idx].position+self.markers[idx].orientation)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
         #self.__delete_all_brain_targets()
-        wx.MessageBox(_("New target selected."), _("InVesalius 3"))
+        if display_messagebox:
+            wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 
     @staticmethod
     def __list_fiducial_labels():
