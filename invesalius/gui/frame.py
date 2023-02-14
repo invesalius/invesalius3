@@ -287,6 +287,8 @@ class Frame(wx.Frame):
         Exit InVesalius.
         """
         self.aui_manager.UnInit()
+        for child in wx.GetTopLevelWindows():
+            child.Destroy()
         self.Destroy()
         if hasattr(sys,"frozen") and sys.platform == 'darwin':
             sys.exit(0)

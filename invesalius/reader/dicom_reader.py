@@ -25,8 +25,11 @@ from multiprocessing import cpu_count
 import gdcm
 
 # Not showing GDCM warning and debug messages
-gdcm.Trace_DebugOff()
-gdcm.Trace_WarningOff()
+try:
+    gdcm.Trace_DebugOff()
+    gdcm.Trace_WarningOff()
+except AttributeError:
+    pass
 
 import glob
 import plistlib

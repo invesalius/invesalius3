@@ -31,6 +31,7 @@ class InvSpinCtrl(wx.Panel):
         max_value=100,
         increment=1,
         spin_button=True,
+        unit='',
         size=wx.DefaultSize,
         style=wx.TE_RIGHT,
     ):
@@ -47,6 +48,8 @@ class InvSpinCtrl(wx.Panel):
         self._min_value = 0
         self._max_value = 100
         self._increment = 1
+
+        self.unit = unit
 
         self.SetMin(min_value)
         self.SetMax(max_value)
@@ -103,8 +106,16 @@ class InvSpinCtrl(wx.Panel):
             value = self._max_value
 
         self._value = value
-        self._textctrl.SetValue("{}".format(self._value))
+        self._textctrl.SetValue("{} {}".format(self._value, self.unit))
         self._last_value = self._value
+
+
+    def GetUnit(self):
+        return self.unit
+
+    def SetUnit(self, unit):
+        self.unit = unit
+        self.SetValue(self.GetValue())
 
     def CalcSizeFromTextSize(self, text=None):
         # To calculate best width to spinctrl

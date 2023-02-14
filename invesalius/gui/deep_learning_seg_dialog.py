@@ -341,7 +341,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.apply_segment_threshold()
 
     def SetProgress(self, progress):
-        self.progress.SetValue(progress * 100)
+        self.progress.SetValue(int(progress * 100))
         wx.GetApp().Yield()
 
     def OnTickTimer(self, evt):

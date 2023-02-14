@@ -22,14 +22,13 @@
 # from math import cos, sin
 import os
 import sys
-import time
 
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
+import queue
 
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
-from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
     vtkIdList,
@@ -38,6 +37,10 @@ from vtkmodules.vtkCommonCore import (
     vtkMinimalStandardRandomSequence,
     vtkPoints,
     vtkUnsignedCharArray
+)
+from vtkmodules.vtkCommonColor import (
+    vtkColorSeries,
+    vtkNamedColors
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
@@ -105,8 +108,6 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
-
-
 
 if sys.platform == 'win32':
     try:
@@ -265,8 +266,11 @@ class Viewer(wx.Panel):
         self.actor_tracts = None
         self.actor_peel = None
         self.seed_offset = const.SEED_OFFSET
+        self.radius_list = vtkIdList()
+        self.colors_init = vtkUnsignedCharArray()
 
         self.set_camera_position = True
+        self.old_coord = np.zeros((6,),dtype=float)
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -356,6 +360,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
+        Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
+        Publisher.subscribe(self.GetEnorm, 'Get enorm')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
@@ -367,14 +373,21 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
+        Publisher.subscribe(self.OnUpdateEfieldvis, 'Update efield vis')
+        Publisher.subscribe(self.InitializeColorArray, 'Initialize color array')
         Publisher.subscribe(self.OnRemoveTracts, 'Remove tracts')
         Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
         Publisher.subscribe(self.UpdateMarkerOffsetState, 'Update marker offset state')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
+        Publisher.subscribe(self.InitEfield, 'Initialize E-field brain')
         Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
-        Publisher.subscribe(self.Initlocator_viewer, 'Get init locator')
+        Publisher.subscribe(self.InitLocatorViewer, 'Get init locator')
+        Publisher.subscribe(self.GetPeelCenters, 'Get peel centers and normals')
+        Publisher.subscribe(self.InitLocatorViewer, 'Get init locator')
         Publisher.subscribe(self.load_mask_preview, 'Load mask preview')
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
+        Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
+        Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -829,7 +842,7 @@ class Viewer(wx.Panel):
             self.ren2.SetViewport(0.75, 0, 1, 1)
             self.CreateTextDistance()
 
-            obj_polydata = self.CreateObjectPolyData(self.obj_name)
+            obj_polydata = vtku.CreateObjectPolyData(self.obj_name)
 
             normals = vtkPolyDataNormals()
             normals.SetInputData(obj_polydata)
@@ -1129,7 +1142,7 @@ class Viewer(wx.Panel):
         self.ren.AddActor(aim_actor)
 
         if self.use_default_object:
-            obj_polydata = self.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+            obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
         else:
             obj_polydata = self.polydata
 
@@ -1355,48 +1368,12 @@ class Viewer(wx.Panel):
         if self.set_camera_position:
             self.SetVolumeCamera(coord_flip)
 
-    def CreateObjectPolyData(self, filename):
-        """
-        Coil for navigation rendered in volume viewer.
-        """
-        filename = utils.decode(filename, const.FS_ENCODE)
-        if filename:
-            if filename.lower().endswith('.stl'):
-                reader = vtkSTLReader()
-            elif filename.lower().endswith('.ply'):
-                reader = vtkPLYReader()
-            elif filename.lower().endswith('.obj'):
-                reader = vtkOBJReader()
-            elif filename.lower().endswith('.vtp'):
-                reader = vtkXMLPolyDataReader()
-            else:
-                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
-                return
-        else:
-            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtkSTLReader()
-
-        if _has_win32api:
-            obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
-        else:
-            obj_name = filename.encode(const.FS_ENCODE)
-
-        reader.SetFileName(obj_name)
-        reader.Update()
-        obj_polydata = reader.GetOutput()
-
-        if obj_polydata.GetNumberOfPoints() == 0:
-            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
-            obj_polydata = None
-
-        return obj_polydata
-
     def AddObjectActor(self, obj_name):
         """
         Coil for navigation rendered in volume viewer.
         """
         vtk_colors = vtkNamedColors()
-        obj_polydata = self.CreateObjectPolyData(obj_name)
+        obj_polydata = vtku.CreateObjectPolyData(obj_name)
 
         transform = vtkTransform()
         transform.RotateZ(90)
@@ -1431,8 +1408,8 @@ class Viewer(wx.Panel):
 
         self.obj_projection_arrow_actor = self.CreateActorArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
                                                                 8)
-        self.object_orientation_torus_actor = self.Add_Torus([0., 0., 0.], [0., 0., 0.],
-                                                             vtk_colors.GetColor3d('Red'))
+        self.object_orientation_torus_actor = self.AddTorus([0., 0., 0.], [0., 0., 0.],
+                                                            vtk_colors.GetColor3d('Red'))
 
         #self.obj_projection_arrow_actor.SetVisibility(False)
         #self.object_orientation_torus_actor.SetVisibility(False)
@@ -1454,7 +1431,7 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
-    def Add_Object_Orientation_Disk(self, position, orientation, color=[0.0, 0.0, 1.0]):
+    def AddObjectOrientationDisk(self, position, orientation, color=[0.0, 0.0, 1.0]):
         # Create a disk to show target
         disk = vtkDiskSource()
         disk.SetInnerRadius(5)
@@ -1474,7 +1451,7 @@ class Viewer(wx.Panel):
 
         return disk_actor
 
-    def Add_Torus(self, position, orientation, color=[0.0, 0.0, 1.0]):
+    def AddTorus(self, position, orientation, color=[0.0, 0.0, 1.0]):
         torus = vtkParametricTorus()
         torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
@@ -1589,8 +1566,59 @@ class Viewer(wx.Panel):
         self.peel_centers = centers
         self.peel_normals = normals
 
-    def Initlocator_viewer(self, locator):
+    def InitLocatorViewer(self, locator):
         self.locator = locator
+
+    def RecolorEfieldActor(self, mesh):
+        normals = vtkPolyDataNormals()
+        normals.SetInputData(mesh)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
+
+        self.efield_mapper.SetInputData(normals.GetOutput())
+        self.efield_mapper.ScalarVisibilityOn()
+        self.efield_actor.SetMapper(self.efield_mapper)
+        self.efield_actor.GetProperty().SetBackfaceCulling(1)
+
+    def InitializeColorArray(self):
+        self.colors_init.SetNumberOfComponents(3)
+        self.colors_init.SetName('Colors')
+        color = 3 * [255.0]
+        for i in range(self.efield_mesh.GetNumberOfCells()):
+            self.colors_init.InsertTuple(i, color)
+
+    def ReturnToDefaultColorActor(self):
+        self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+        wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
+        self.RecolorEfieldActor(self.efield_mesh)
+        wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
+
+    def CreateLUTtableforefield(self, min, max):
+        lut = vtkLookupTable()
+        lut.SetTableRange(min, max)
+        colorSeries = vtkColorSeries()
+        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        colorSeries.SetColorScheme(seriesEnum)
+        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        return lut
+
+    def GetEfieldMaxMin(self, e_field_norms):
+        self.e_field_norms = e_field_norms
+        max = np.amax(self.e_field_norms)
+        min = np.amin(self.e_field_norms)
+        self.min = min
+        self.max = max
+        wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
+
+
+    def GetEfieldActor(self, e_field_actor):
+        self.efield_actor  = e_field_actor
+
+    def FindPointsAroundRadiusEfield(self, cellId):
+        #radius = vtk.mutable(50)
+        #self.radius_list = vtk.vtkIdList()
+        self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
@@ -1600,6 +1628,75 @@ class Viewer(wx.Panel):
             for j in range(pts1.GetNumberOfIds()):
                 cell_ids_array.append(pts1.GetId(j))
         return cell_ids_array
+
+    def InitEfield(self, e_field_brain):
+        self.e_field_mesh_normals =e_field_brain.e_field_mesh_normals
+        self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
+        self.locator_efield = e_field_brain.locator_efield
+        self.locator_efield_cell = e_field_brain.locator_efield_Cell
+        self.efield_mesh = e_field_brain.e_field_mesh
+        self.efield_mapper = e_field_brain.efield_mapper
+
+    def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+        closestDist = 100
+        # if find intersection , calculate angle and add actors
+        if intersectingCellIds.GetNumberOfIds() != 0:
+            for i in range(intersectingCellIds.GetNumberOfIds()):
+                cellId = intersectingCellIds.GetId(i)
+                point = np.array(self.e_field_mesh_centers.GetPoint(cellId))
+                distance = np.linalg.norm(point - p1)
+                if distance < closestDist:
+                    closestDist = distance
+                    closestPoint = point
+                    pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
+                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    self.FindPointsAroundRadiusEfield(cellId)
+                    self.radius_list.Sort()
+        else:
+            self.radius_list.Reset()
+
+    def OnUpdateEfieldvis(self):
+        if self.radius_list.GetNumberOfIds() != 0:
+            lut = self.CreateLUTtableforefield(self.min, self.max)
+
+            self.colors_init.SetNumberOfComponents(3)
+            self.colors_init.Fill(255)
+
+            for h in range(self.radius_list.GetNumberOfIds()):
+                dcolor = 3 * [0.0]
+                index_id = self.radius_list.GetId(h)
+                lut.GetColor(self.e_field_norms[index_id], dcolor)
+                color = 3 * [0.0]
+                for j in range(0, 3):
+                    color[j] = int(255.0 * dcolor[j])
+                self.colors_init.InsertTuple(index_id, color)
+            self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+            self.RecolorEfieldActor(self.efield_mesh)
+            wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
+
+        else:
+            wx.CallAfter(Publisher.sendMessage,'Recolor again')
+
+
+    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
+        #TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
+        # this might work because a python instance from the 3D mesh can be edited in the thread. Check how to extract
+        # the instance from the desired mesh for visualization and if it works. Optimally, there should be no
+        # processing or threading related commands inside viewer_volume.
+        [coil_dir, norm, coil_norm, p1]= self.ObjectArrowLocation(m_img, coord)
+        intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
+        self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
+        try:
+            self.e_field_IDs_queue = queue_IDs
+            if self.radius_list.GetNumberOfIds() != 0:
+                if np.all(self.old_coord != coord):
+                    self.e_field_IDs_queue.put_nowait((self.radius_list))
+                self.old_coord = np.array([coord])
+        except queue.Full:
+            pass
+
+    def GetEnorm(self, enorm):
+        self.GetEfieldMaxMin(enorm)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
@@ -1738,29 +1835,34 @@ class Viewer(wx.Panel):
             self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
         self.Refresh()
 
+    def RemoveObjectActor(self):
+        self.ren.RemoveActor(self.obj_actor)
+        self.ren.RemoveActor(self.x_actor)
+        self.ren.RemoveActor(self.y_actor)
+        self.ren.RemoveActor(self.z_actor)
+        self.ren.RemoveActor(self.mark_actor)
+        self.ren.RemoveActor(self.obj_projection_arrow_actor)
+        self.ren.RemoveActor(self.object_orientation_torus_actor)
+        self.obj_actor = None
+        self.x_actor = None
+        self.y_actor = None
+        self.z_actor = None
+        self.mark_actor = None
+        self.obj_projection_arrow_actor = None
+        self.object_orientation_torus_actor = None
+
     def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
         if flag:
             self.obj_name = obj_name
             self.polydata = polydata
             self.use_default_object = use_default_object
-            if not self.obj_actor:
+            if self.obj_name:
+                if self.obj_actor:
+                    self.RemoveObjectActor()
                 self.AddObjectActor(self.obj_name)
         else:
             if self.obj_actor:
-                self.ren.RemoveActor(self.obj_actor)
-                self.ren.RemoveActor(self.x_actor)
-                self.ren.RemoveActor(self.y_actor)
-                self.ren.RemoveActor(self.z_actor)
-                self.ren.RemoveActor(self.mark_actor)
-                self.ren.RemoveActor(self.obj_projection_arrow_actor)
-                self.ren.RemoveActor(self.object_orientation_torus_actor)
-                self.obj_actor = None
-                self.x_actor = None
-                self.y_actor = None
-                self.z_actor = None
-                self.mark_actor = None
-                self.obj_projection_arrow_actor = None
-                self.object_orientation_torus_actor=None
+                self.RemoveObjectActor()
         self.Refresh()
 
     def UpdateShowObjectState(self, state):

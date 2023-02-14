@@ -78,8 +78,7 @@ def InstallLanguage(language):
         abs_file_path = os.path.abspath(os.path.join(file_path, '..', '..',  '..', '..'))
         language_dir = os.path.join(abs_file_path, 'locale')
 
-    lang = gettext.translation('invesalius', language_dir,
-                               languages=[language], codeset='utf8')
+    lang = gettext.translation('invesalius', language_dir, languages=[language])
 
     # Using unicode
     try:

@@ -31,11 +31,11 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
+import invesalius.data.e_field as e_field
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
-
 
 class QueueCustom(queue.Queue):
     """
@@ -83,8 +83,8 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.serial_port_enabled, self.view_tracts, self.peel_loaded = vis_components
-        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue = vis_queues
+        self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded = vis_components
+        self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue = vis_queues
         self.sle = sle
         self.event = event
         self.neuronavigation_api = neuronavigation_api
@@ -97,7 +97,7 @@ class UpdateNavigationScene(threading.Thread):
                 coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
 
-                # print('UpdateScene: get {}'.format(count))
+
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -130,6 +130,17 @@ class UpdateNavigationScene(threading.Thread):
                     orientation=coord[3:],
                 )
 
+                if self.e_field_loaded:
+                    wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
+                                 coord=coord, queue_IDs=self.e_field_IDs_queue)
+                    if not self.e_field_norms_queue.empty():
+                        try:
+                            enorm = self.e_field_norms_queue.get_nowait()
+                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm=enorm)
+                        finally:
+                            self.e_field_norms_queue.task_done()
+
+
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
@@ -138,6 +149,8 @@ class UpdateNavigationScene(threading.Thread):
                     self.coord_queue.task_done()
 
             sleep(self.sle)
+
+
 
 class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
@@ -152,11 +165,13 @@ class Navigation(metaclass=Singleton):
         self.m_change = None
         self.obj_data = None
         self.all_fiducials = np.zeros((6, 6))
-
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
+        self.efield_queue = QueueCustom(maxsize=1)
+        self.e_field_norms_queue = QueueCustom(maxsize=1)
+        self.e_field_IDs_queue = QueueCustom(maxsize=1)
         # self.visualization_queue = QueueCustom(maxsize=1)
         self.serial_port_queue = QueueCustom(maxsize=1)
         self.coord_tracts_queue = QueueCustom(maxsize=1)
@@ -164,6 +179,10 @@ class Navigation(metaclass=Singleton):
 
         # Tracker parameters
         self.ref_mode_id = const.DEFAULT_REF_MODE
+
+        self.e_field_loaded = False
+        self.debug_efield_enorm = None
+
 
         # Tractography parameters
         self.trk_inp = None
@@ -258,8 +277,8 @@ class Navigation(metaclass=Singleton):
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue]
+        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
+        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
         errors = False
@@ -285,17 +304,17 @@ class Navigation(metaclass=Singleton):
                 self.obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
                 coreg_data.extend(self.obj_data)
 
-                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue]
+                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue, self.efield_queue]
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
-                                                                self.target, icp))
+                                                                self.target, icp, self.e_field_loaded))
         else:
             coreg_data = (self.m_change, 0)
-            queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue]
+            queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
             jobs_list.append(dcr.CoordinateCorregistrateNoObject(self.ref_mode_id, tracker, coreg_data,
                                                                     self.view_tracts, queues,
-                                                                    self.event, self.sleep_nav, icp))
+                                                                    self.event, self.sleep_nav, icp, self.e_field_loaded))
 
         if not errors:
             #TODO: Test the serial port thread
@@ -335,6 +354,12 @@ class Navigation(metaclass=Singleton):
                 else:
                     jobs_list.append(dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav))
 
+            if self.e_field_loaded:
+                queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
+                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,
+                                                                  self.neuronavigation_api, self.debug_efield_enorm))
+
+
             jobs_list.append(
                 UpdateNavigationScene(
                     vis_queues=vis_queues,
@@ -353,11 +378,17 @@ class Navigation(metaclass=Singleton):
             if self.pedal_connection is not None:
                 self.pedal_connection.add_callback(name='navigation', callback=self.PedalStateChanged)
 
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(name='navigation', callback=self.PedalStateChanged)
+
     def StopNavigation(self):
         self.event.set()
 
         if self.pedal_connection is not None:
             self.pedal_connection.remove_callback(name='navigation')
+
+        if self.neuronavigation_api is not None:
+            self.neuronavigation_api.remove_pedal_callback(name='navigation')
 
         self.coord_queue.clear()
         self.coord_queue.join()
@@ -376,5 +407,16 @@ class Navigation(metaclass=Singleton):
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded]
+        if self.e_field_loaded:
+            self.efield_queue.clear()
+            self.efield_queue.join()
+
+            self.e_field_norms_queue.clear()
+            self.e_field_norms_queue.join()
+
+            self.e_field_IDs_queue.clear()
+            self.e_field_IDs_queue.join()
+
+
+        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded, self.e_field_loaded]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)

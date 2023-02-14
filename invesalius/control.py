@@ -1111,8 +1111,8 @@ class Controller():
     def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
-        preset_dir = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
-                                  preset_name + '.plist')
+        preset_dir = inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.joinpath(f'{preset_name}.plist')
+        inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.mkdir(parents=True, exist_ok=True)
         with open(preset_dir, 'w+b') as f:
             plistlib.dump(preset, f)
 

@@ -772,7 +772,6 @@ BTNS_IMG_MARKERS = {IR1: {0: 'LEI'},
 OBJL = wx.NewId()
 OBJR = wx.NewId()
 OBJA = wx.NewId()
-OBJC = wx.NewId()
 OBJF = wx.NewId()
 
 OBJECT_FIDUCIALS = [
@@ -796,12 +795,6 @@ OBJECT_FIDUCIALS = [
     },
     {
         'fiducial_index': 3,
-        'button_id': OBJC,
-        'label': _('Center'),
-        'tip': _("Select object center"),
-    },
-    {
-        'fiducial_index': 4,
         'button_id': OBJF,
         'label': _('Fixed'),
         'tip': _("Attach sensor to object"),

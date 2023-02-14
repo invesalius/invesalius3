@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
 import sys
 
 import wx
@@ -27,10 +28,25 @@ from vtkmodules.vtkRenderingCore import (
     vtkTextMapper,
     vtkTextProperty,
 )
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 from invesalius.gui.dialogs import ProgressDialog
+import invesalius.utils as utils
+
+from invesalius import inv_paths
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 # If you are frightened by the code bellow, or think it must have been result of
 # an identation error, lookup at:
@@ -324,3 +340,41 @@ def numpy_to_vtkMatrix4x4(affine):
             affine_vtk.SetElement(row, col, affine[row, col])
 
     return affine_vtk
+
+
+# TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
+def CreateObjectPolyData(filename):
+    """
+    Coil for navigation rendered in volume viewer.
+    """
+    filename = utils.decode(filename, const.FS_ENCODE)
+    if filename:
+        if filename.lower().endswith('.stl'):
+            reader = vtkSTLReader()
+        elif filename.lower().endswith('.ply'):
+            reader = vtkPLYReader()
+        elif filename.lower().endswith('.obj'):
+            reader = vtkOBJReader()
+        elif filename.lower().endswith('.vtp'):
+            reader = vtkXMLPolyDataReader()
+        else:
+            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+            return
+    else:
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+        reader = vtkSTLReader()
+
+    if _has_win32api:
+        obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+    else:
+        obj_name = filename.encode(const.FS_ENCODE)
+
+    reader.SetFileName(obj_name)
+    reader.Update()
+    obj_polydata = reader.GetOutput()
+
+    if obj_polydata.GetNumberOfPoints() == 0:
+        wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        obj_polydata = None
+
+    return obj_polydata

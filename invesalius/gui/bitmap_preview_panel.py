@@ -363,7 +363,7 @@ class BitmapPreviewSeries(wx.Panel):
             self.files.append(info)
             pos += 1
 
-        scroll_range = len(self.files)/NCOLS
+        scroll_range = len(self.files)//NCOLS
         if scroll_range * NCOLS < len(self.files):
             scroll_range +=1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
@@ -373,11 +373,12 @@ class BitmapPreviewSeries(wx.Panel):
     def RemovePanel(self, data):
         for p, f in zip(self.previews, self.files):
             if p.bitmap_info != None:
-                if data.encode('utf-8') in p.bitmap_info.data:
+                if data in p.bitmap_info.data[0]:
                     self.files.remove(f)
                     p.Hide()
                     self._display_previews()
-                    Publisher.sendMessage('Update max of slidebar in single preview image', max_value=len(self.files))
+                    Publisher.sendMessage('Update max of slidebar in single preview image',\
+                                          max_value=len(self.files))
 
                     self.Update()
                     self.Layout()
@@ -429,7 +430,7 @@ class BitmapPreviewSeries(wx.Panel):
         self._display_previews()
 
     def OnWheel(self, evt):
-        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        d = evt.GetWheelDelta() // evt.GetWheelRotation()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
 

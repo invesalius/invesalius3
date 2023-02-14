@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
 
 import dataclasses
 from functools import partial
@@ -56,9 +57,7 @@ import wx.lib.masked.numctrl
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
-
-if has_trekker:
-    import invesalius.data.brainmesh_handler as brain
+import invesalius.data.brainmesh_handler as brain
 
 import invesalius.data.imagedata_utils as imagedata_utils
 import invesalius.data.slice_ as sl
@@ -85,6 +84,8 @@ try:
     from invesalius.net.pedal_connection import PedalConnection
 except ImportError:
     HAS_PEDAL_CONNECTION = False
+
+from invesalius import inv_paths
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -251,6 +252,14 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, stw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
+
+        # Fold 7 - E-field
+
+        item = fold_panel.AddFoldPanel(_("E-field"), collapsed=True)
+        etw = E_fieldPanel(item, navigation)
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
+                                        leftSpacing=0, rightSpacing=0)
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
@@ -467,7 +476,7 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp = checkbox_icp
 
         # "Pedal pressed" text and an indicator (checkbox) for pedal press
-        if pedal_connection is not None and pedal_connection.in_use:
+        if (pedal_connection is not None and pedal_connection.in_use) or neuronavigation_api is not None:
             txt_pedal_pressed = wx.StaticText(self, -1, _('Pedal pressed:'))
             tooltip = wx.ToolTip(_(u"Is the pedal pressed"))
             checkbox_pedal_pressed = wx.CheckBox(self, -1, _(' '))
@@ -475,7 +484,11 @@ class NeuronavigationPanel(wx.Panel):
             checkbox_pedal_pressed.Enable(False)
             checkbox_pedal_pressed.SetToolTip(tooltip)
 
-            pedal_connection.add_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
+            if pedal_connection is not None:
+                pedal_connection.add_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
+
+            if neuronavigation_api is not None:
+                neuronavigation_api.add_pedal_callback(name='gui', callback=checkbox_pedal_pressed.SetValue)
 
             self.checkbox_pedal_pressed = checkbox_pedal_pressed
         else:
@@ -524,7 +537,7 @@ class NeuronavigationPanel(wx.Panel):
         checkboxes_sizer.AddMany([(lock_to_target_text, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                                   (lock_to_target_checkbox, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
-        if pedal_connection is not None and pedal_connection.in_use:
+        if (pedal_connection is not None and pedal_connection.in_use) or neuronavigation_api is not None:
             checkboxes_sizer.AddMany([(txt_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
                                       (checkbox_pedal_pressed, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
@@ -562,6 +575,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
         Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
+        Publisher.subscribe(self.UpdateEfieldVisualization, 'Update e-field visualization')
         Publisher.subscribe(self.EnableACT, 'Enable ACT')
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -618,6 +632,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdatePeelVisualization(self, data):
         self.navigation.peel_loaded = data
+
+    def UpdateEfieldVisualization(self, data):
+        self.navigation.e_field_loaded = data
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -780,11 +797,21 @@ class NeuronavigationPanel(wx.Panel):
                     callback=set_fiducial_callback,
                     remove_when_released=True,
                 )
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
 
             if self.pedal_connection is not None:
                 self.pedal_connection.remove_callback(name='fiducial')
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
 
     def OnStopNavigation(self):
         select_tracker_elem = self.select_tracker_elem
@@ -862,7 +889,7 @@ class NeuronavigationPanel(wx.Panel):
 
         nav_id = btn_nav.GetValue()
         if not nav_id:
-            Publisher.sendMessage("Stop navigation")
+            wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
 
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
@@ -1080,7 +1107,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
-            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection)
+            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
@@ -1103,6 +1130,7 @@ class ObjectRegistrationPanel(wx.Panel):
                             use_default_object=use_default_object,
                         )
                         Publisher.sendMessage('Change camera checkbox', status=False)
+                        Publisher.sendMessage('Deactive target mode')
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -1129,15 +1157,37 @@ class ObjectRegistrationPanel(wx.Panel):
                 self.obj_name = data[0][1]
                 self.obj_ref_mode = int(data[0][-1])
 
+                if not os.path.exists(self.obj_name):
+                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                if polydata:
+                    self.neuronavigation_api.update_coil_mesh(polydata)
+                else:
+                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
+                    use_default_object = True
+                else:
+                    use_default_object = False
                 self.checktrack.Enable(1)
                 self.checktrack.SetValue(True)
                 Publisher.sendMessage('Update object registration',
                                       data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Object file successfully loaded"))
-                Publisher.sendMessage('Update track object state', flag=True, obj_name=self.obj_name)
+                Publisher.sendMessage('Update track object state',
+                                      flag=True,
+                                      obj_name=self.obj_name,
+                                      polydata=polydata,
+                                      use_default_object=use_default_object)
                 Publisher.sendMessage('Change camera checkbox', status=False)
-                wx.MessageBox(_("Object file successfully loaded"), _("InVesalius 3"))
+                Publisher.sendMessage('Deactive target mode')
+                if use_default_object:
+                    msg = _("Default object file successfully loaded")
+                else:
+                    msg = _("Object file successfully loaded")
+                wx.MessageBox(msg, _("InVesalius 3"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
@@ -1881,7 +1931,7 @@ class MarkersPanel(wx.Panel):
                                   target_id=marker_id, orientation=list(orientation))
         dialog.Destroy()
 
-    def OnActivateTargetMode(self, target_mode=None):
+    def OnActivateTargetMode(self, evt=None, target_mode=None):
         self.target_mode = target_mode
 
     def AddPeeledSurface(self, flag, actor):
@@ -2430,6 +2480,100 @@ class TractographyPanel(wx.Panel):
         self.n_tracts = const.N_TRACTS
 
         Publisher.sendMessage('Remove tracts')
+
+class E_fieldPanel(wx.Panel):
+    def __init__(self, parent, navigation):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.__bind_events()
+
+        self.SetBackgroundColour(default_colour)
+        self.e_field_loaded = False
+        self.e_field_brain = None
+        self.e_field_mesh = None
+        self.navigation = navigation
+        self.session = ses.Session()
+        #  Check box to enable e-field visualization
+        enable_efield = wx.CheckBox(self, -1, _('Enable E-field'))
+        enable_efield.SetValue(False)
+        enable_efield.Enable(1)
+        enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
+        self.enable_efield = enable_efield
+
+        # Add line sizers into main sizer
+        border = 1
+        border_last = 5
+        txt_surface = wx.StaticText(self, -1, _('Select:'))
+        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
+                                              style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+        # combo_surface_name.SetSelection(0)
+        self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboNameClic)
+        self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        self.combo_surface_name.Insert('Select',0)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
+        main_sizer.SetSizeHints(self)
+        self.SetSizer(main_sizer)
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+
+
+    def OnEnableEfield(self, evt, ctrl):
+        efield_enabled = ctrl.GetValue()
+        if efield_enabled:
+            if self.session.debug_efield:
+                debug_efield_enorm = dlg.ShowLoadCSVDebugEfield()
+                if isinstance(debug_efield_enorm, np.ndarray):
+                    self.navigation.debug_efield_enorm = debug_efield_enorm
+                else:
+                    dlg.Efield_debug_Enorm_warning()
+                    self.enable_efield.SetValue(False)
+                    self.e_field_loaded = False
+                    self.navigation.e_field_loaded = self.e_field_loaded
+                    return
+            else:
+                if not self.navigation.neuronavigation_api.connection:
+                    dlg.Efield_connection_warning()
+                    self.combo_surface_name.Enable(False)
+                    self.enable_efield.Enable(False)
+                    self.e_field_loaded = False
+                    return
+            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
+            Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
+            Publisher.sendMessage('Initialize color array')
+            self.e_field_loaded = True
+            self.combo_surface_name.Enable(False)
+        else:
+            Publisher.sendMessage('Recolor again')
+            self.e_field_loaded = False
+            self.combo_surface_name.Enable(True)
+        self.navigation.e_field_loaded = self.e_field_loaded
+
+    def OnComboNameClic(self, evt):
+        import invesalius.project as prj
+        self.proj = prj.Project()
+        self.combo_surface_name.Clear()
+        for n in range(len(self.proj.surface_dict)):
+            self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+    def OnComboName(self, evt):
+        surface_name = evt.GetString()
+        self.surface_index = evt.GetSelection()
+        self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
+        Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        if nav_status:
+            self.enable_efield.Enable(False)
+        else:
+            self.enable_efield.Enable(True)
 
 
 class SessionPanel(wx.Panel):

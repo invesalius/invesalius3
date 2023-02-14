@@ -565,6 +565,45 @@ def ShowSaveAsProjectDialog(default_filename=None):
     return filename, wildcard == INV_COMPRESSED
 
 
+def ShowLoadCSVDebugEfield(message=_(u"Load debug CSV Enorm file"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+                           wildcard=_("(*.csv)|*.csv"), default_filename=""):
+
+    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
+                        wildcard=wildcard, style=style)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                filepath = dlg.GetPath()
+            else:
+                filepath = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    if filepath:
+        with open(filepath, 'r') as file:
+            my_reader = csv.reader(file, delimiter=',')
+            rows = []
+            for row in my_reader:
+                rows.append(row)
+        e_field = rows
+        e_field_norms = np.array(e_field).astype(float)
+
+        return e_field_norms
+    else:
+        return None
+
 def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
                        wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
 
@@ -932,6 +971,28 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
         dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
                                wx.ICON_INFORMATION | wx.OK)
 
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def Efield_connection_warning():
+    msg = _('No connection to E-field library')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def Efield_debug_Enorm_warning():
+    msg = _('The CSV Enorm file is not loaded.')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
 
@@ -1847,7 +1908,7 @@ class SurfaceMethodPanel(wx.Panel):
 
 class ClutImagedataDialog(wx.Dialog):
     def __init__(self, histogram, init, end, nodes=None):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.histogram = histogram
         self.init = init
@@ -1945,7 +2006,7 @@ class WatershedOptionsPanel(wx.Panel):
 
 
 class WatershedOptionsDialog(wx.Dialog):
-    def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
@@ -1983,7 +2044,7 @@ class WatershedOptionsDialog(wx.Dialog):
         evt.Skip()
 
 class MaskBooleanDialog(wx.Dialog):
-    def __init__(self, masks, ID=-1, title=_(u"Boolean operations"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, masks, ID=-1, title=_(u"Boolean operations"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self._init_gui(masks)
@@ -2062,7 +2123,7 @@ class MaskBooleanDialog(wx.Dialog):
 
 
 class ReorientImageDialog(wx.Dialog):
-    def __init__(self, ID=-1, title=_(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, ID=-1, title=_(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self._closed = False
@@ -2186,7 +2247,7 @@ class ImportBitmapParameters(wx.Dialog):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1,
                            _(u"Create project from bitmap"),
                            size=size,
-                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+                           style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.interval = 0
 
@@ -2660,7 +2721,7 @@ class PanelFFillProgress(wx.Panel):
 
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.config = config
 
@@ -2768,7 +2829,7 @@ class FFillOptionsDialog(wx.Dialog):
 
 class SelectPartsOptionsDialog(wx.Dialog):
     def __init__(self, config):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.config = config
 
@@ -3056,7 +3117,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 class CropOptionsDialog(wx.Dialog):
 
-    def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+    def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         self.config = config
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
         self._init_gui()
@@ -3169,7 +3230,7 @@ class CropOptionsDialog(wx.Dialog):
 
 class FillHolesAutoDialog(wx.Dialog):
     def __init__(self, title):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self._init_gui()
 
     def _init_gui(self):
@@ -3367,9 +3428,10 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, tracker, pedal_connection):
+    def __init__(self, tracker, pedal_connection, neuronavigation_api):
         self.tracker = tracker
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
 
         self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
         self.obj_ref_id = 2
@@ -3378,8 +3440,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.use_default_object = False
         self.object_fiducial_being_set = None
 
-        self.obj_fiducials = np.full([5, 3], np.nan)
-        self.obj_orients = np.full([5, 3], np.nan)
+        self.obj_fiducials = np.full([4, 3], np.nan)
+        self.obj_orients = np.full([4, 3], np.nan)
 
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
@@ -3399,10 +3461,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         # Initialize list of buttons and txtctrls for wx objects
-        self.btns_coord = [None] * 5
-        self.text_actors = [None] * 5
-        self.ball_actors = [None] * 5
-        self.txt_coord = [list(), list(), list(), list(), list()]
+        self.btns_coord = [None] * 4
+        self.text_actors = [None] * 4
+        self.ball_actors = [None] * 4
+        self.txt_coord = [list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
@@ -3454,14 +3516,14 @@ class ObjectCalibrationDialog(wx.Dialog):
 
             self.btns_coord[index] = ctrl
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             for n in range(0, 3):
                 self.txt_coord[m].append(wx.StaticText(self, -1, label='-',
                                                        style=wx.ALIGN_RIGHT, size=wx.Size(40, 23)))
 
         coord_sizer = wx.GridBagSizer(hgap=20, vgap=5)
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
             for n in range(0, 3):
                 coord_sizer.Add(self.txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
@@ -3631,11 +3693,21 @@ class ObjectCalibrationDialog(wx.Dialog):
                     callback=set_fiducial_callback,
                     remove_when_released=True,
                 )
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
 
             if self.pedal_connection is not None:
                 self.pedal_connection.remove_callback(name='fiducial')
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
 
     def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(
@@ -3655,13 +3727,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
         #      and not change the function to the point of potentially breaking it.)
         #
-        if self.obj_ref_id and fiducial_index == 4:
+        if self.obj_ref_id and fiducial_index == 3:
             coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-
-        if fiducial_index == 3:
-            coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
@@ -3692,7 +3761,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
             self.choice_sensor.Show(self.obj_ref_id)
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):
@@ -5212,7 +5281,7 @@ class SurfaceProgressWindow(object):
 
 class GoToDialog(wx.Dialog):
     def __init__(self, title=_("Go to slice ..."), init_orientation=const.AXIAL_STR):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self._init_gui(init_orientation)
 
     def _init_gui(self, init_orientation):
@@ -5756,16 +5825,19 @@ class SetNDIconfigs(wx.Dialog):
         """
         import serial.tools.list_ports
 
+        port_list = []
+        desc_list = []
         ports = serial.tools.list_ports.comports()
         if sys.platform.startswith('win'):
-            port_list = []
-            desc_list = []
             for port, desc, hwid in sorted(ports):
                 port_list.append(port)
                 desc_list.append(desc)
             port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
         else:
-            raise EnvironmentError('Unsupported platform')
+            for p in ports:
+                port_list.append(p.device)
+                desc_list.append(p.description)
+            port_selec = [i for i, e in enumerate(desc_list) if 'NDI' in e]
 
         #print("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
 
@@ -6030,7 +6102,7 @@ class SetSpacingDialog(wx.Dialog):
         sy,
         sz,
         title=_("Set spacing"),
-        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
+        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
     ):
         wx.Dialog.__init__(self, parent, -1, title=title, style=style)
         self.spacing_original_x = sx

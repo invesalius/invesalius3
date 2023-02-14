@@ -1,5 +1,5 @@
 Cython==0.29.28
-Pillow==9.1.1
+Pillow==9.3.0
 Pypubsub==4.0.3
 configparser==5.0.1
 h5py==3.6.0
@@ -13,5 +13,5 @@ scikit-image==0.19.1
 scipy==1.7.3
 vtk==9.1.0
 wxPython==4.1.1
-torch==1.11.0
+torch==1.13.1
 pyacvd==0.2.7
