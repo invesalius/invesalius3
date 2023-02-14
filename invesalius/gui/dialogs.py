@@ -4642,6 +4642,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         if self.brain_actor:
             self.RemoveActor(self.brain_actor)
         self.brain_actor = self.LoadActor(self.brain_surface)
+        self.chk_show_brain_surface.SetValue(True)
 
     def OnComboNameScalpSurface(self, evt):
         surface_index = evt.GetSelection()
@@ -4658,6 +4659,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         if not self.brain_target:
             self.brain_actor = self.LoadActor(self.brain_surface)
         self.coil_pose_actor = self.LoadTarget()
+        self.chk_show_surface.SetValue(True)
 
     def LoadCenterBrainTarget(self, coil_target_position, coil_target_orientation):
         m_coil = dco.coordinates_to_transformation_matrix(

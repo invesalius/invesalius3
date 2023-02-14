@@ -1605,8 +1605,9 @@ class MarkersPanel(wx.Panel):
         if self.__find_target_marker() == self.lc.GetFocusedItem():
             target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
-            brain_target_menu = menu_id.Append(3, _('Set brain target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
+            if has_mTMS:
+                brain_target_menu = menu_id.Append(3, _('Set brain target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
