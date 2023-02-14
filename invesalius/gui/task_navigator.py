@@ -1173,7 +1173,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 self.obj_fiducials = registration_coordinates[:, :3]
                 self.obj_orients = registration_coordinates[:, 3:]
 
-                self.obj_name = data[0][1]
+                self.obj_name = data[0][1].encode(const.FS_ENCODE)
                 self.obj_ref_mode = int(data[0][-1])
 
                 if not os.path.exists(self.obj_name):
