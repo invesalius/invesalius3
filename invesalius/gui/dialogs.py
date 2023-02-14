@@ -4366,7 +4366,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
 
         create_random_target_grid = wx.Button(self, -1, label=_('Create random coil target grid'))
-        create_random_target_grid.Bind(wx.EVT_BUTTON, self.print(scipy.__version__))
+        create_random_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateRandomTargetGrid)
 
         create_target_grid = wx.Button(self, -1, label=_('Create coil target grid'))
         create_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateTargetGrid)
