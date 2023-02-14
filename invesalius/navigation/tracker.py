@@ -91,10 +91,18 @@ class Tracker():
     def SetTracker(self, tracker_id, configuration=None):
         if tracker_id:
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+
+            # Configure tracker.
             if configuration is not None:
-                self.tracker_connection.SetConfiguration(configuration)
+                success = self.tracker_connection.SetConfiguration(configuration)
             else:
-                self.tracker_connection.Configure()
+                success = self.tracker_connection.Configure()
+
+            if not success:
+                self.tracker_connection = None
+                return
+
+            # Connect to tracker.
 
             # XXX: Unfortunately, PolhemusTracker forms a special case here, as configuring
             #   it happens with a different workflow than the other trackers. (See
@@ -105,6 +113,7 @@ class Tracker():
             else:
                 self.tracker_connection.Connect()
 
+            # Check that the connection was successful.
             if not self.tracker_connection.IsConnected():
                 dlg.ShowNavigationTrackerWarning(tracker_id, self.tracker_connection.GetLibMode())
 
