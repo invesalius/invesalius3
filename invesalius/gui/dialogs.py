@@ -100,6 +100,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.transformations as tr
+import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
@@ -3436,7 +3437,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self._init_gui()
-        self.LoadObject()
+        self.InitializeObject()
 
         self.__bind_events()
 
@@ -3546,47 +3547,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:  # answer == wx.ID_NO:
             return 0
 
-    def LoadObject(self):
-        self.use_default_object = self.ObjectImportDialog()
-
-        if not self.use_default_object:
-            filename = ShowImportMeshFilesDialog()
-
-            if filename:
-                if filename.lower().endswith('.stl'):
-                    reader = vtkSTLReader()
-                elif filename.lower().endswith('.ply'):
-                    reader = vtkPLYReader()
-                elif filename.lower().endswith('.obj'):
-                    reader = vtkOBJReader()
-                elif filename.lower().endswith('.vtp'):
-                    reader = vtkXMLPolyDataReader()
-                else:
-                    wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
-                    return
-            else:
-                filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                reader = vtkSTLReader()
-
-                # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
-                #      use the default object after all. A more logical behavior in that case would be to cancel the
-                #      whole object calibration, but implementing that would need larger refactoring.
-                #
-                self.use_default_object = True
-        else:
-            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtkSTLReader()
-
-        if _has_win32api:
-            self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
-        else:
-            self.obj_name = filename.encode(const.FS_ENCODE)
-
-        reader.SetFileName(self.obj_name)
-        reader.Update()
-        polydata = reader.GetOutput()
-        self.polydata = polydata
-
+    def ShowObject(self, polydata):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
@@ -3620,6 +3581,69 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ren.ResetCamera()
 
         self.interactor.Render()
+
+    def ConfigureObject(self):
+        use_default_object = self.ObjectImportDialog()
+
+        if use_default_object:
+            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+        else:
+            filename = ShowImportMeshFilesDialog()
+
+            # Return if the open file dialog was canceled.
+            if filename is None:
+                return False
+
+            # Validate the file extension.
+            valid_extensions = ('.stl', 'ply', '.obj', '.vtp')
+            if not filename.lower().endswith(valid_extensions):
+                wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
+                return False
+
+        if _has_win32api:
+            filename = win32api.GetShortPathName(filename)
+
+        self.obj_name = filename.encode(const.FS_ENCODE)
+        self.use_default_object = use_default_object
+
+        return True
+
+    def ReadPolydata(filename):
+        if filename.lower().endswith('.stl'):
+            reader = vtkSTLReader()
+
+        elif filename.lower().endswith('.ply'):
+            reader = vtkPLYReader()
+
+        elif filename.lower().endswith('.obj'):
+            reader = vtkOBJReader()
+
+        elif filename.lower().endswith('.vtp'):
+            reader = vtkXMLPolyDataReader()
+
+        else:
+            assert False, "Not a valid extension."
+
+        reader.SetFileName(filename)
+        reader.Update()
+        polydata = reader.GetOutput()
+
+        return polydata
+
+    def InitializeObject(self):
+        success = self.ConfigureObject()
+        if success:
+            # XXX: Is this back and forth encoding and decoding needed? Maybe filename could be encoded
+            #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
+            #
+            filename = self.obj_name.decode(const.FS_ENCODE)
+            self.polydata = self.ReadPolydata(
+                filename=filename
+            )
+            self.ShowObject(
+                polydata=self.polydata
+            )
 
     def OnCreateObjectText(self, name, coord):
         ball_source = vtkSphereSource()
