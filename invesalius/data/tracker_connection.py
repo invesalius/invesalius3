@@ -379,7 +379,7 @@ class CameraTrackerConnection(TrackerConnection):
         super().Disconnect()
 
 
-class PolarisTrackerConnection():
+class PolarisTrackerConnection(TrackerConnection):
     def __init__(self, model=None):
         super().__init__(model)
 
