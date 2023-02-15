@@ -177,7 +177,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
-        # Initialize Navigation, Tracker, Image, and PedalConnection objects here so that they are available to several panels.
+        # Initialize Navigation, Tracker, Image, and PedalConnection objects here to make them available to several panels.
         #
         tracker = Tracker()
         image = Image()
@@ -189,15 +189,19 @@ class InnerFoldPanel(wx.Panel):
             neuronavigation_api=neuronavigation_api,
         )
 
-        # Check box for camera update in volume rendering during navigation
+        # TODO: Initialize checkboxes before panels: they are updated by ObjectRegistrationPanel when loading its state.
+        #   A better solution would be to have these checkboxes save their own state, independent of the panels, but that's
+        #   not implemented yet.
+
+        # Checkbox for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
         checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
         checkcamera.SetToolTip(tooltip)
         checkcamera.SetValue(const.CAM_MODE)
-        checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
+        checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCameraCheckbox)
         self.checkcamera = checkcamera
 
-        # Check box to use serial port to trigger pulse signal and create markers
+        # Checkbox to use serial port to trigger pulse signal and create markers
         tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
         checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
         checkbox_serial_port.SetToolTip(tooltip)
@@ -205,13 +209,13 @@ class InnerFoldPanel(wx.Panel):
         checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port))
         self.checkbox_serial_port = checkbox_serial_port
 
-        # Check box for object position and orientation update in volume rendering during navigation
+        # Checkbox for object position and orientation update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Show and track TMS coil"))
         checkobj = wx.CheckBox(self, -1, _('Show coil'))
         checkobj.SetToolTip(tooltip)
         checkobj.SetValue(False)
         checkobj.Disable()
-        checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowObject)
+        checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowCoil)
         self.checkobj = checkobj
 
         #  if sys.platform != 'win32':
@@ -297,7 +301,6 @@ class InnerFoldPanel(wx.Panel):
                                         leftSpacing=0, rightSpacing=0)
 
         # Panel sizer for checkboxes
-
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Add(checkbox_serial_port, 0, wx.ALIGN_CENTER)
@@ -1081,13 +1084,40 @@ class ObjectRegistrationPanel(wx.Panel):
         self.SetSizer(main_sizer)
         self.Update()
 
+        self.LoadState()
+
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.OnRemoveObject, 'Remove object data')
 
-        # Externally check/uncheck checkboxes.
+        # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckTrackObjectCheckbox, 'Check track-object checkbox')
+        Publisher.subscribe(self.EnableTrackObjectCheckbox, 'Enable track-object checkbox')
+
+    def SaveState(self):
+        track_object = self.checkbox_track_object
+        state = {
+            'track_object': {
+                'checked': track_object.IsChecked(),
+                'enabled': track_object.IsEnabled(),
+            }
+        }
+
+        session = ses.Session()
+        session.SetState('object_registration_panel', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('object_registration_panel')
+
+        if state is None:
+            return
+
+        track_object = state['track_object']
+
+        self.EnableTrackObjectCheckbox(track_object['enabled'])
+        self.CheckTrackObjectCheckbox(track_object['checked'])
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
@@ -1126,13 +1156,17 @@ class ObjectRegistrationPanel(wx.Panel):
         elif not ctrl.GetValue() and not evt:
             None
 
+    # 'Track object' checkbox
+
+    def EnableTrackObjectCheckbox(self, enabled):
+        self.checkbox_track_object.Enable(enabled)
+
     def CheckTrackObjectCheckbox(self, checked):
-        self.checkbox_track_object.Enable(checked)
         self.checkbox_track_object.SetValue(checked)
         self.OnTrackObjectCheckbox()
 
     def OnTrackObjectCheckbox(self, evt=None, ctrl=None):
-        checked = self.checkbox_track_object.GetValue()
+        checked = self.checkbox_track_object.IsChecked()
         Publisher.sendMessage('Track object', enabled=checked)
 
         # Disable or enable 'Show coil' checkbox, based on if 'Track object' checkbox is checked.
@@ -1140,6 +1174,8 @@ class ObjectRegistrationPanel(wx.Panel):
 
         # Also, automatically check or uncheck 'Show coil' checkbox.
         Publisher.sendMessage('Check show-coil checkbox', checked=checked)
+
+        self.SaveState()
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
@@ -1167,9 +1203,9 @@ class ObjectRegistrationPanel(wx.Panel):
                             use_default_object=use_default_object,
                         )
 
-                        # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
+                        # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
+                        Publisher.sendMessage('Enable track-object checkbox', enabled=True)
                         Publisher.sendMessage('Check track-object checkbox', checked=True)
-                        Publisher.sendMessage('Check show-coil checkbox', checked=True)
                         Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
                         Publisher.sendMessage('Disable target mode')
@@ -1224,9 +1260,9 @@ class ObjectRegistrationPanel(wx.Panel):
                     use_default_object=use_default_object
                 )
 
-                # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
+                # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
+                Publisher.sendMessage('Enable track-object checkbox', enabled=True)
                 Publisher.sendMessage('Check track-object checkbox', checked=True)
-                Publisher.sendMessage('Check show-coil checkbox', checked=True)
                 Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
                 Publisher.sendMessage('Disable target mode')
