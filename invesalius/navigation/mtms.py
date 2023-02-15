@@ -9,6 +9,7 @@ import invesalius.data.coregistration as dcr
 
 class mTMS():
     def __init__(self):
+        #TODO: create dialog to input mtms_path and vi
         mtms_path = 'C:\\mTMS\\Labview\\Builds\\mTMS 3.1 hack'
         vipath = mtms_path + '\\mTMS ActiveX Server\\mTMS ActiveX Server.exe\\mTMS ActiveX Server.vi'
         # Connect to the ActiveX server
@@ -52,18 +53,15 @@ class mTMS():
         brain_target_flip[1] = -brain_target_flip[1]
         distance = dcr.ComputeRelativeDistanceToTarget(target_coord=coil_pose_flip, img_coord=brain_target_flip)
         offset = self.GetOffset(distance)
-        print(offset)
         mTMS_target, mTMS_index_target = self.FindmTMSParameters(offset)
-        print(mTMS_index_target)
         if len(mTMS_index_target[0]):
             self.SendToMTMS(mTMS_index_target[0]+1)
             new_row = {'mTMS_target': mTMS_target, 'brain_target(nav)': brain_target_flip, 'coil_pose(nav)': coil_pose_flip, 'intensity': self.intensity}
             self.df = self.df.append((pd.DataFrame([new_row], columns=self.df.columns)))
         else:
-            print("Target is not valid")
+            print("Target is not valid. The offset is: ", offset)
 
     def GetOffset(self, distance):
-        print(distance)
         offset_xy = [int(np.round(x)) for x in distance[:2]]
         offset_rz = int(np.round(distance[-1] / 15) * 15)
         offset = [-int(offset_xy[1]), int(offset_xy[0]), int(offset_rz)]
@@ -93,7 +91,7 @@ class mTMS():
         # Update the Pulse - parameters row and wait until the change has been processed
         self.vi.SetControlValue('New Pulse-parameters row', int(target));
         self.vi.SetControlValue('Set Pulse-parameters row', True);
-        print("Updating brain target...")
+        print("Updating brain target: ", int(target))
         while self.vi.GetControlValue('Set Pulse-parameters row'):
             pass
         time.sleep(0.3)

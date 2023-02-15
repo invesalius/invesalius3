@@ -32,6 +32,7 @@ except ImportError:
     has_trekker = False
 
 try:
+    #TODO: the try-except could be done inside the mTMS() method call
     from invesalius.navigation.mtms import mTMS
     mTMS()
     has_mTMS = True
@@ -1666,18 +1667,13 @@ class MarkersPanel(wx.Panel):
         list_index = self.lc.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_actor=self.brain_actor)
-        is_brain_target = self.markers[list_index].is_brain_target
 
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_actor=self.brain_actor)
         if dialog.ShowModal() == wx.ID_OK:
-            #position, orientation = dialog.GetValue()
             coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
-            # for (position, orientation) in zip(coil_position_list, coil_orientation_list):
-            #    self.CreateMarker(list(position), list(orientation), is_brain_target=False)
             self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=False)
             for (position, orientation) in zip(brain_position_list, brain_orientation_list):
                 self.CreateMarker(list(position), list(orientation), is_brain_target=True)
-            # self.CreateMarker(list(position), list(orientation), is_brain_target=is_brain_target)
         dialog.Destroy()
 
     def OnMenuRemoveTarget(self, evt):
