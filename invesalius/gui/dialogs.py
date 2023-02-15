@@ -659,9 +659,8 @@ class UpdateMessageDialog(wx.Dialog):
         btn_yes.Bind(wx.EVT_BUTTON, self._OnYes)
         btn_no.Bind(wx.EVT_BUTTON, self._OnNo)
 
-        # Subscribing to the pubsub event which happens when InVesalius is
-        # closed.
-        Publisher.subscribe(self._OnCloseInV, 'Exit')
+        # Subscribing to the pubsub event which happens when InVesalius is closed.
+        Publisher.subscribe(self._Exit, 'Exit')
 
     def _OnYes(self, evt):
         # Launches the default browser with the url to download the new
@@ -675,7 +674,7 @@ class UpdateMessageDialog(wx.Dialog):
         self.Close()
         self.Destroy()
 
-    def _OnCloseInV(self):
+    def _Exit(self):
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()

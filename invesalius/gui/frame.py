@@ -415,14 +415,10 @@ class Frame(wx.Frame):
 
     def OnExit(self, evt):
         """
-        Exit InVesalius: close all project data, disconnect tracker, and send 'Exit' message.
+        Exit InVesalius: disconnect tracker and send 'Exit' message.
         """
-        Publisher.sendMessage('Close Project')
         Publisher.sendMessage('Disconnect tracker')
-
-        session = ses.Session()
-        if not session.IsOpen() or session.GetState('project_path') is None:
-            Publisher.sendMessage('Exit')
+        Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):
         """
