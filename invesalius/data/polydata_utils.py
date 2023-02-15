@@ -32,6 +32,8 @@ from vtkmodules.vtkFiltersCore import (
     vtkTriangleFilter,
 )
 from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.constants as const
@@ -151,6 +153,28 @@ def Import(filename):
         reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
+
+def ReadPolydata(filename):
+    if filename.lower().endswith('.stl'):
+        reader = vtkSTLReader()
+
+    elif filename.lower().endswith('.ply'):
+        reader = vtkPLYReader()
+
+    elif filename.lower().endswith('.obj'):
+        reader = vtkOBJReader()
+
+    elif filename.lower().endswith('.vtp'):
+        reader = vtkXMLPolyDataReader()
+
+    else:
+        assert False, "Not a valid extension."
+
+    reader.SetFileName(filename)
+    reader.Update()
+    polydata = reader.GetOutput()
+
+    return polydata
 
 def JoinSeedsParts(polydata, point_id_list):
     """

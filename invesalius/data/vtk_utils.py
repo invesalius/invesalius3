@@ -34,10 +34,47 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
-from invesalius.gui.dialogs import ProgressDialog
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+
+
+class ProgressDialog(object):
+    def __init__(self, parent, maximum, abort=False):
+        self.title = "InVesalius 3"
+        self.msg = _("Loading DICOM files")
+        self.maximum = maximum
+        self.current = 0
+        self.style = wx.PD_APP_MODAL
+        if abort:
+            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     maximum = self.maximum,
+                                     parent = parent,
+                                     style  = self.style)
+
+        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.dlg.SetSize(wx.Size(250,150))
+
+    def Cancel(self, evt):
+        Publisher.sendMessage("Cancel DICOM load")
+
+    def Update(self, value, message):
+        if(int(value) != self.maximum):
+            try:
+                return self.dlg.Update(int(value),message)
+            #TODO:
+            #Exception in the Windows XP 64 Bits with wxPython 2.8.10
+            except(wx._core.PyAssertionError):
+                return True
+        else:
+            return False
+
+    def Close(self):
+        self.dlg.Destroy()
+
 
 if sys.platform == 'win32':
     try:

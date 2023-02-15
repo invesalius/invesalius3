@@ -34,6 +34,7 @@ import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
 import invesalius.data.transformations as tr
 import invesalius.data.volume as volume
+import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
 import invesalius.reader.dicom_grouper as dg
@@ -433,7 +434,7 @@ class Controller():
         if (data):
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
-                self.progress_dialog = dialog.ProgressDialog(
+                self.progress_dialog = vtk_utils.ProgressDialog(
                                     parent=self.frame, maximum = data[1], abort=1)
             else:
                 if not(self.progress_dialog.Update(data[0],message)):

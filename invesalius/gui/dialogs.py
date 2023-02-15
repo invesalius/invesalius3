@@ -66,9 +66,6 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleTrackballActor,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkCellPicker,
@@ -233,43 +230,6 @@ def ShowNumberDialog(message, value=0):
     dlg.Destroy()
 
     return 0
-
-
-class ProgressDialog(object):
-    def __init__(self, parent, maximum, abort=False):
-        self.title = "InVesalius 3"
-        self.msg = _("Loading DICOM files")
-        self.maximum = maximum
-        self.current = 0
-        self.style = wx.PD_APP_MODAL
-        if abort:
-            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
-
-        self.dlg = wx.ProgressDialog(self.title,
-                                     self.msg,
-                                     maximum = self.maximum,
-                                     parent = parent,
-                                     style  = self.style)
-
-        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
-        self.dlg.SetSize(wx.Size(250,150))
-
-    def Cancel(self, evt):
-        Publisher.sendMessage("Cancel DICOM load")
-
-    def Update(self, value, message):
-        if(int(value) != self.maximum):
-            try:
-                return self.dlg.Update(int(value),message)
-            #TODO:
-            #Exception in the Windows XP 64 Bits with wxPython 2.8.10
-            except(wx._core.PyAssertionError):
-                return True
-        else:
-            return False
-
-    def Close(self):
-        self.dlg.Destroy()
 
 
 # ---------
@@ -3609,28 +3569,6 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         return True
 
-    def ReadPolydata(filename):
-        if filename.lower().endswith('.stl'):
-            reader = vtkSTLReader()
-
-        elif filename.lower().endswith('.ply'):
-            reader = vtkPLYReader()
-
-        elif filename.lower().endswith('.obj'):
-            reader = vtkOBJReader()
-
-        elif filename.lower().endswith('.vtp'):
-            reader = vtkXMLPolyDataReader()
-
-        else:
-            assert False, "Not a valid extension."
-
-        reader.SetFileName(filename)
-        reader.Update()
-        polydata = reader.GetOutput()
-
-        return polydata
-
     def InitializeObject(self):
         success = self.ConfigureObject()
         if success:
@@ -3638,7 +3576,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
             #
             filename = self.obj_name.decode(const.FS_ENCODE)
-            self.polydata = self.ReadPolydata(
+            self.polydata = pu.ReadPolydata(
                 filename=filename
             )
             self.ShowObject(
