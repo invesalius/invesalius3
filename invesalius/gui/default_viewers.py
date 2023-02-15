@@ -442,11 +442,11 @@ class VolumeToolPanel(wx.Panel):
 
     def StatusObjTracker(self, status):
         self.status_obj_tracker = status
-        self.StatusNavigation()
+        self.UpdateTargetButton()
 
     def StatusTargetSelected(self, status):
         self.status_target_selected = status
-        self.StatusNavigation()
+        self.UpdateTargetButton()
 
     def ShowTargetButton(self):
         self.button_target.Show()
@@ -458,7 +458,7 @@ class VolumeToolPanel(wx.Panel):
         self.OnButtonTarget(False)
         self.button_target._SetState(0)
 
-    def StatusNavigation(self):
+    def UpdateTargetButton(self):
         if self.status_target_selected and self.status_obj_tracker:
             self.button_target.Enable(1)
         else:
