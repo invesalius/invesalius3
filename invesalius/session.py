@@ -68,9 +68,6 @@ class Session(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self._Exit, 'Exit')
 
-    def _Exit(self):
-        self.DeleteStateFile()
-
     def CreateConfig(self):
         import invesalius.constants as const
         self._config = {
@@ -268,7 +265,7 @@ class Session(metaclass=Singleton):
     def _ReadState(self):
         success = False
         if os.path.exists(STATE_PATH):
-            print("InVesalius did not exit successfully, recovering...")
+            print("Restoring a previous state...")
 
             state_file = open(STATE_PATH, 'r')
             try:
@@ -285,3 +282,23 @@ class Session(metaclass=Singleton):
             self._state = {}
 
         return success
+
+    # Exit-related functions
+
+    def StoreSessionDialog(self):
+        msg = _("Would you like to store the session?")
+        if sys.platform == 'darwin':
+            dialog = wx.MessageDialog(None, "", msg,
+                                      wx.ICON_QUESTION | wx.YES_NO)
+        else:
+            dialog = wx.MessageDialog(None, msg, "InVesalius 3",
+                                      wx.ICON_QUESTION | wx.YES_NO)
+
+        answer = dialog.ShowModal()
+        dialog.Destroy()
+
+        return answer == wx.ID_YES
+
+    def _Exit(self):
+        if not self.StoreSessionDialog():
+            self.DeleteStateFile()
