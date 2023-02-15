@@ -1305,13 +1305,6 @@ class ObjectRegistrationPanel(wx.Panel):
         self.obj_name = None
         self.timestamp = const.TIMESTAMP
 
-        Publisher.sendMessage(
-            'Configure object',
-            obj_name=None,
-            polydata=None,
-            use_default_object=None,
-        )
-
 
 class MarkersPanel(wx.Panel):
     @dataclasses.dataclass
