@@ -1151,7 +1151,7 @@ class ObjectRegistrationPanel(wx.Panel):
                             use_default_object=use_default_object,
                         )
                         Publisher.sendMessage('Change camera checkbox', status=False)
-                        Publisher.sendMessage('Deactive target mode')
+                        Publisher.sendMessage('Disable target mode')
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -1203,7 +1203,7 @@ class ObjectRegistrationPanel(wx.Panel):
                                       polydata=polydata,
                                       use_default_object=use_default_object)
                 Publisher.sendMessage('Change camera checkbox', status=False)
-                Publisher.sendMessage('Deactive target mode')
+                Publisher.sendMessage('Disable target mode')
                 if use_default_object:
                     msg = _("Default object file successfully loaded")
                 else:
