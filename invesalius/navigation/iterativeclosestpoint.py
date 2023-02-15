@@ -35,7 +35,7 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.LoadState()
 
     def SaveState(self):
-        m_icp = self.m_icp.tolist() if self.m_icp else None
+        m_icp = self.m_icp.tolist() if self.m_icp is not None else None
         state = {
             'use_icp': self.use_icp,
             'm_icp': m_icp,
