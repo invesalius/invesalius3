@@ -986,20 +986,20 @@ class ObjectRegistrationPanel(wx.Panel):
         btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
         self.btn_new = btn_new
 
-        # Button for import config coil file
+        # Button for loading coil config file
         tooltip = wx.ToolTip(_("Load coil configuration file"))
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoil)
         self.btn_load = btn_load
 
-        # Save button for object registration
-        tooltip = wx.ToolTip(_(u"Save object registration file"))
+        # Save button for saving coil config file
+        tooltip = wx.ToolTip(_(u"Save coil configuration file"))
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
-        btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
+        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveCoil)
         self.btn_save = btn_save
 
         # Create a horizontal sizer to represent button save
@@ -1159,7 +1159,7 @@ class ObjectRegistrationPanel(wx.Panel):
         else:
             dlg.ShowNavigationTrackerWarning(0, 'choose')
 
-    def OnLinkLoad(self, event=None):
+    def OnLoadCoil(self, event=None):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load object registration"),
                                           wildcard=_("Registration files (*.obr)|*.obr"))
         # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
@@ -1213,7 +1213,7 @@ class ObjectRegistrationPanel(wx.Panel):
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
 
-    def ShowSaveObjectDialog(self, evt):
+    def OnSaveCoil(self, evt):
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
