@@ -266,19 +266,22 @@ class Session(metaclass=Singleton):
         return True
 
     def _ReadState(self):
+        success = False
         if os.path.exists(STATE_PATH):
-            print("InVesalius did not exit successfully.")
+            print("InVesalius did not exit successfully, recovering...")
 
             state_file = open(STATE_PATH, 'r')
             try:
                 self._state = json.load(state_file)
-                return True
+                success = True
 
             except JSONDecodeError as e:
-                print("State file is corrupted, deleting.")
-                state_file.close()
+                print("State file is corrupted. Deleting...")
 
+                state_file.close()
                 self.DeleteStateFile()
 
-        self._state = {}
-        return False
+        if not success:
+            self._state = {}
+
+        return success
