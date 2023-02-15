@@ -1087,7 +1087,7 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.subscribe(self.OnRemoveObject, 'Remove object data')
 
         # Externally check/uncheck checkboxes.
-        Publisher.subscribe(self.CheckTrackObjectCheckbox, 'Check track object checkbox')
+        Publisher.subscribe(self.CheckTrackObjectCheckbox, 'Check track-object checkbox')
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
@@ -1168,7 +1168,7 @@ class ObjectRegistrationPanel(wx.Panel):
                         )
 
                         # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
-                        Publisher.sendMessage('Check track object checkbox', checked=True)
+                        Publisher.sendMessage('Check track-object checkbox', checked=True)
                         Publisher.sendMessage('Check show-coil checkbox', checked=True)
                         Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
@@ -1225,7 +1225,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 )
 
                 # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
-                Publisher.sendMessage('Check track object checkbox', checked=True)
+                Publisher.sendMessage('Check track-object checkbox', checked=True)
                 Publisher.sendMessage('Check show-coil checkbox', checked=True)
                 Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
