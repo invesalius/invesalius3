@@ -424,7 +424,7 @@ class Viewer(wx.Panel):
         self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
         self.use_default_object = use_default_object
 
-        self.polydata = pu.LoadPolydata(path=object_path)
+        self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
 
     def get_vtk_mouse_position(self):
         """
