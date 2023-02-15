@@ -228,7 +228,7 @@ class Viewer(wx.Panel):
         self.obj_actor = None
         self.obj_axes = None
         self.obj_name = False
-        self.obj_state = None
+        self.show_object = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
         #self.pTarget = [0., 0., 0.]
@@ -282,7 +282,8 @@ class Viewer(wx.Panel):
                                  'Render volume viewer')
         Publisher.subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
-        # Raycating - related
+
+        # Related to raycasting
         Publisher.subscribe(self.LoadVolume,
                                  'Load volume into viewer')
         Publisher.subscribe(self.UnloadVolume,
@@ -356,14 +357,17 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SetNewColor, 'Set new color')
         Publisher.subscribe(self.SetMarkers, 'Set markers')
 
+        # Related to UI state
+        Publisher.subscribe(self.ShowObject, 'Show coil checked')
+
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateObjectArrowOrientation, 'Update object arrow matrix')
         Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
         Publisher.subscribe(self.GetEnorm, 'Get enorm')
-        Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
-        Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
+        Publisher.subscribe(self.ConfigureObject, 'Configure object')
+        Publisher.subscribe(self.TrackObject, 'Track object')
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
@@ -1771,12 +1775,12 @@ class Viewer(wx.Panel):
         if self.nav_status:
             self.pTarget = self.CenterOfMass()
             if self.obj_actor:
-                self.obj_actor.SetVisibility(self.obj_state)
-                #self.x_actor.SetVisibility(self.obj_state)
-                #self.y_actor.SetVisibility(self.obj_state)
-                #self.z_actor.SetVisibility(self.obj_state)
-                #self.object_orientation_torus_actor.SetVisibility(self.obj_state)
-                #self.obj_projection_arrow_actor.SetVisibility(self.obj_state)
+                self.obj_actor.SetVisibility(self.show_object)
+                #self.x_actor.SetVisibility(self.show_object)
+                #self.y_actor.SetVisibility(self.show_object)
+                #self.z_actor.SetVisibility(self.show_object)
+                #self.object_orientation_torus_actor.SetVisibility(self.show_object)
+                #self.obj_projection_arrow_actor.SetVisibility(self.show_object)
         self.Refresh()
 
     def UpdateSeedOffset(self, data):
@@ -1851,11 +1855,13 @@ class Viewer(wx.Panel):
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
 
-    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None, polydata=None, use_default_object=True):
-        if flag:
-            self.obj_name = obj_name
-            self.polydata = polydata
-            self.use_default_object = use_default_object
+    def ConfigureObject(self, obj_name=None, polydata=None, use_default_object=True):
+        self.obj_name = obj_name
+        self.polydata = polydata
+        self.use_default_object = use_default_object
+
+    def TrackObject(self, enabled):
+        if enabled:
             if self.obj_name:
                 if self.obj_actor:
                     self.RemoveObjectActor()
@@ -1865,13 +1871,14 @@ class Viewer(wx.Panel):
                 self.RemoveObjectActor()
         self.Refresh()
 
-    def UpdateShowObjectState(self, state):
-        self.obj_state = state
-        if self.obj_actor and not self.obj_state:
-            self.obj_actor.SetVisibility(self.obj_state)
-            self.x_actor.SetVisibility(self.obj_state)
-            self.y_actor.SetVisibility(self.obj_state)
-            self.z_actor.SetVisibility(self.obj_state)
+    def ShowObject(self, checked):
+        self.show_object = checked
+
+        if self.obj_actor and not self.show_object:
+            self.obj_actor.SetVisibility(self.show_object)
+            self.x_actor.SetVisibility(self.show_object)
+            self.y_actor.SetVisibility(self.show_object)
+            self.z_actor.SetVisibility(self.show_object)
             #if self.actor_peel:
             #    self.ball_actor.SetVisibility(0)
             #else:
@@ -2005,7 +2012,7 @@ class Viewer(wx.Panel):
             v0 = cam_pos0 - cam_focus0
             v0n = np.sqrt(inner1d(v0, v0))
 
-            if self.obj_state:
+            if self.show_object:
                 v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
             else:
                 v1 = (cam_focus - self.initial_focus)
