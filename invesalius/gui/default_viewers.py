@@ -415,7 +415,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
 
         # Conditions for enabling target button:
-        Publisher.subscribe(self.ShowCoilChecked, 'Show coil checked')
+        Publisher.subscribe(self.ShowCoilChecked, 'Show-coil checked')
         Publisher.subscribe(self.TargetSelected, 'Target selected')
 
     def DisablePreset(self):

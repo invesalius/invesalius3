@@ -360,7 +360,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SetMarkers, 'Set markers')
 
         # Related to UI state
-        Publisher.subscribe(self.ShowObject, 'Show coil checked')
+        Publisher.subscribe(self.ShowObject, 'Show-coil checked')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')

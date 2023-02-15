@@ -322,10 +322,10 @@ class InnerFoldPanel(wx.Panel):
         Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
 
         # Externally check/uncheck and enable/disable checkboxes.
-        Publisher.subscribe(self.CheckShowCoil, 'Check show coil checkbox')
+        Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
         Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
 
-        Publisher.subscribe(self.EnableShowCoil, 'Enable show coil checkbox')
+        Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
         Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
 
     def OnShowDbs(self):
@@ -372,7 +372,7 @@ class InnerFoldPanel(wx.Panel):
 
     def OnShowCoil(self, evt=None):
         checked = self.checkobj.GetValue()
-        Publisher.sendMessage('Show coil checked', checked=checked)
+        Publisher.sendMessage('Show-coil checked', checked=checked)
 
     # 'Volume camera' checkbox
 
@@ -1136,10 +1136,10 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.sendMessage('Track object', enabled=checked)
 
         # Disable or enable 'Show coil' checkbox, based on if 'Track object' checkbox is checked.
-        Publisher.sendMessage('Enable show coil checkbox', enabled=checked)
+        Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
 
         # Also, automatically check or uncheck 'Show coil' checkbox.
-        Publisher.sendMessage('Check show coil checkbox', checked=checked)
+        Publisher.sendMessage('Check show-coil checkbox', checked=checked)
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
@@ -1169,7 +1169,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
                         # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
                         Publisher.sendMessage('Check track object checkbox', checked=True)
-                        Publisher.sendMessage('Check show coil checkbox', checked=True)
+                        Publisher.sendMessage('Check show-coil checkbox', checked=True)
                         Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
                         Publisher.sendMessage('Disable target mode')
@@ -1226,7 +1226,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
                 # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
                 Publisher.sendMessage('Check track object checkbox', checked=True)
-                Publisher.sendMessage('Check show coil checkbox', checked=True)
+                Publisher.sendMessage('Check show-coil checkbox', checked=True)
                 Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
                 Publisher.sendMessage('Disable target mode')
