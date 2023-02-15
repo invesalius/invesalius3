@@ -213,6 +213,7 @@ class Navigation(metaclass=Singleton):
         Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
+        Publisher.subscribe(self.TrackObject, 'Track object')
 
     def SaveState(self):
         # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
@@ -262,6 +263,9 @@ class Navigation(metaclass=Singleton):
         self.object_registration = data
 
         self.SaveState()
+
+    def TrackObject(self, enabled=False):
+        self.track_obj = enabled
 
     def SetLockToTarget(self, value):
         self.lock_to_target = value

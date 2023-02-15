@@ -594,7 +594,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
         Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
-        Publisher.subscribe(self.TrackObject, 'Track object')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -718,9 +717,6 @@ class NeuronavigationPanel(wx.Panel):
             if not self.btns_set_fiducial[m].GetValue():
                 for n in [0, 1, 2]:
                     self.numctrls_fiducial[m][n].SetValue(float(position[n]))
-
-    def TrackObject(self, enabled=False):
-        self.navigation.track_obj = enabled
 
     def ResetICP(self):
         self.icp.ResetICP()
@@ -1170,7 +1166,8 @@ class ObjectRegistrationPanel(wx.Panel):
                             polydata=polydata,
                             use_default_object=use_default_object,
                         )
-                        # Automatically check 'Track object', 'Show coil' checkbox, and uncheck 'Disable Volume Camera' checkbox.
+
+                        # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
                         Publisher.sendMessage('Check track object checkbox', checked=True)
                         Publisher.sendMessage('Check show coil checkbox', checked=True)
                         Publisher.sendMessage('Check volume camera checkbox', checked=False)
@@ -1227,7 +1224,7 @@ class ObjectRegistrationPanel(wx.Panel):
                     use_default_object=use_default_object
                 )
 
-                # Automatically check 'Track object', 'Show coil' checkbox, and uncheck 'Disable Volume Camera' checkbox.
+                # Automatically check 'Track object', 'Show coil' checkboxes and uncheck 'Disable Volume Camera' checkbox.
                 Publisher.sendMessage('Check track object checkbox', checked=True)
                 Publisher.sendMessage('Check show coil checkbox', checked=True)
                 Publisher.sendMessage('Check volume camera checkbox', checked=False)
