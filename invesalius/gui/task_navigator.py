@@ -324,6 +324,8 @@ class InnerFoldPanel(wx.Panel):
         # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckShowCoil, 'Check show coil checkbox')
         Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
+
+        Publisher.subscribe(self.EnableShowCoil, 'Enable show coil checkbox')
         Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
 
     def OnShowDbs(self):
@@ -360,16 +362,13 @@ class InnerFoldPanel(wx.Panel):
     # 'Show coil' checkbox
 
     def CheckShowCoil(self, checked=False):
-        if checked:
-            self.checkobj.Enable(True)
-            self.checkobj.SetValue(True)
-            self.track_obj = True
-        else:
-            self.checkobj.Enable(False)
-            self.checkobj.SetValue(False)
-            self.track_obj = False
+        self.checkobj.SetValue(checked)
+        self.track_obj = checked
 
         self.OnShowCoil()
+
+    def EnableShowCoil(self, enabled=False):
+        self.checkobj.Enable(enabled)
 
     def OnShowCoil(self, evt=None):
         checked = self.checkobj.GetValue()
@@ -1134,10 +1133,17 @@ class ObjectRegistrationPanel(wx.Panel):
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.Enable(checked)
         self.checkbox_track_object.SetValue(checked)
+        self.OnTrackObjectCheckbox()
+
+    def OnTrackObjectCheckbox(self, evt=None, ctrl=None):
+        checked = self.checkbox_track_object.GetValue()
         Publisher.sendMessage('Track object', enabled=checked)
 
-    def OnTrackObjectCheckbox(self, evt, ctrl):
-        Publisher.sendMessage('Track object', enabled=evt.GetSelection())
+        # Disable or enable 'Show coil' checkbox, based on if 'Track object' checkbox is checked.
+        Publisher.sendMessage('Enable show coil checkbox', enabled=checked)
+
+        # Also, automatically check or uncheck 'Show coil' checkbox.
+        Publisher.sendMessage('Check show coil checkbox', checked=checked)
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
