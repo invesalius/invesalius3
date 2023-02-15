@@ -90,6 +90,10 @@ class Tracker():
 
     def SetTracker(self, tracker_id, configuration=None):
         if tracker_id:
+            # If there is no previous configuration to be used, reset tracker fiducials.
+            if configuration is None:
+                self.ResetTrackerFiducials()
+
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
 
             # Configure tracker.
@@ -130,7 +134,6 @@ class Tracker():
 
     def DisconnectTracker(self):
         if self.tracker_connected:
-            self.ResetTrackerFiducials()
             Publisher.sendMessage('Update status text in GUI',
                                     label=_("Disconnecting tracker ..."))
             Publisher.sendMessage('Remove sensors ID')
