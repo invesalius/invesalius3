@@ -356,7 +356,7 @@ class UpperTaskPanel(wx.Panel):
 
             session.SetConfig('mode', const.MODE_NAVIGATOR)
         else:
-            Publisher.sendMessage('Deactive target button')
+            Publisher.sendMessage('Hide target button')
             self.fold_panel.GetFoldPanel(4).Hide()
 
             # Setting mode to MODE_RP (default)

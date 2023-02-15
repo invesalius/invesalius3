@@ -546,8 +546,8 @@ class Frame(wx.Frame):
 
 
         elif id == const.ID_MODE_NAVIGATION:
-            Publisher.sendMessage('Deactive dbs folder')
-            Publisher.sendMessage('Active target button')
+            Publisher.sendMessage('Hide dbs folder')
+            Publisher.sendMessage('Show target button')
             self.actived_dbs_mode.Check(0)
             st = self.actived_navigation_mode.IsChecked(const.ID_MODE_NAVIGATION)
             self.OnNavigationMode(st)
@@ -579,13 +579,13 @@ class Frame(wx.Frame):
 
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
-        Publisher.sendMessage('Deactive target button')
+        Publisher.sendMessage('Hide target button')
         if st:
             self.OnNavigationMode(st)
-            Publisher.sendMessage('Active dbs folder')
+            Publisher.sendMessage('Show dbs folder')
         else:
             self.OnNavigationMode(st)
-            Publisher.sendMessage('Deactive dbs folder')
+            Publisher.sendMessage('Hide dbs folder')
         self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION,0)
 
     def OnInterpolatedSlices(self, status):

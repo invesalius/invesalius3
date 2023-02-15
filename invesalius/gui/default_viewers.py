@@ -126,7 +126,7 @@ class Panel(wx.Panel):
 
         session = ses.Session()
         if session.GetConfig('mode') != const.MODE_NAVIGATOR:
-            Publisher.sendMessage('Deactive target button')
+            Publisher.sendMessage('Hide target button')
 
     def __bind_events_wx(self):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_MAXIMIZE, self.OnMaximize)
@@ -411,8 +411,8 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
         Publisher.subscribe(self.StatusTargetSelected, 'Target selected')
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
-        Publisher.subscribe(self.ActiveTarget, 'Active target button')
-        Publisher.subscribe(self.DeactiveTarget, 'Deactive target button')
+        Publisher.subscribe(self.ShowTargetButton, 'Show target button')
+        Publisher.subscribe(self.HideTargetButton, 'Hide target button')
         Publisher.subscribe(self.DeactiveTargetMode, 'Deactive target mode')
 
     def DisablePreset(self):
@@ -448,10 +448,10 @@ class VolumeToolPanel(wx.Panel):
         self.status_target_selected = status
         self.StatusNavigation()
 
-    def ActiveTarget(self):
+    def ShowTargetButton(self):
         self.button_target.Show()
 
-    def DeactiveTarget(self):
+    def HideTargetButton(self):
         self.button_target.Hide()
 
     def DeactiveTargetMode(self):

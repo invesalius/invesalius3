@@ -320,8 +320,8 @@ class InnerFoldPanel(wx.Panel):
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Change camera checkbox')
         Publisher.subscribe(self.OnSetVolumeCameraCheckBox, 'Set volume camera checkbox')
-        Publisher.subscribe(self.OnShowDbs, "Active dbs folder")
-        Publisher.subscribe(self.OnHideDbs, "Deactive dbs folder")
+        Publisher.subscribe(self.OnShowDbs, "Show dbs folder")
+        Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
 
     def OnShowDbs(self):
         self.dbs_item.Show()
