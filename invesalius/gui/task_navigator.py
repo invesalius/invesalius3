@@ -32,6 +32,14 @@ except ImportError:
     has_trekker = False
 
 try:
+    #TODO: the try-except could be done inside the mTMS() method call
+    from invesalius.navigation.mtms import mTMS
+    mTMS()
+    has_mTMS = True
+except:
+    has_mTMS = False
+
+try:
     import invesalius.data.elfin as elfin
     import invesalius.data.elfin_processing as elfin_process
     has_robot = True
@@ -1232,13 +1240,14 @@ class MarkersPanel(wx.Panel):
         r : float = 0
         g : float = 1
         b : float = 0
-        size : int = 2
+        size : float = 2
         label : str = '*'
         x_seed : float = 0
         y_seed : float = 0
         z_seed : float = 0
         is_target : bool = False
         session_id : int = 1
+        is_brain_target : bool = False
 
         # x, y, z can be jointly accessed as position
         @property
@@ -1257,6 +1266,11 @@ class MarkersPanel(wx.Panel):
         @orientation.setter
         def orientation(self, new_orientation):
             self.alpha, self.beta, self.gamma = new_orientation
+
+        # alpha, beta, gamma can be jointly accessed as orientation
+        @property
+        def coordinate(self):
+            return list((self.x, self.y, self.z, self.alpha, self.beta, self.gamma))
 
         # r, g, b can be jointly accessed as colour
         @property
@@ -1317,8 +1331,8 @@ class MarkersPanel(wx.Panel):
                     setattr(self, field.name, float(str_val))
                 if field.type is float and str_val == 'None':
                     setattr(self, field.name, None)
-                if field.type is int:
-                    setattr(self, field.name, int(str_val))
+                if field.type is float and str_val != 'None':
+                    setattr(self, field.name, float(str_val))
                 if field.type is str:
                     setattr(self, field.name, str_val[1:-1]) # remove the quotation marks
                 if field.type is bool:
@@ -1337,6 +1351,10 @@ class MarkersPanel(wx.Panel):
         self.navigation = navigation
         self.tracker = tracker
         self.icp = icp
+        if has_mTMS:
+            self.mTMS = mTMS()
+        else:
+            self.mTMS = None
 
         self.__bind_events()
 
@@ -1355,6 +1373,7 @@ class MarkersPanel(wx.Panel):
         self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
+        self.brain_actor = None
         # Change marker size
         spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
         spin_size.SetRange(1, 99)
@@ -1450,6 +1469,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
+        Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
 
     def __find_target_marker(self):
         """
@@ -1460,6 +1480,20 @@ class MarkersPanel(wx.Panel):
             if self.markers[i].is_target:
                 return i
                 
+        return None
+
+    def __get_brain_target_markers(self):
+        """
+        Return the index of the marker currently selected as target (there
+        should be at most one). If there is no such marker, return None.
+        """
+        brain_target_list = []
+        for i in range(len(self.markers)):
+            if self.markers[i].is_brain_target:
+                brain_target_list.append(self.markers[i].coordinate)
+        if brain_target_list:
+            return brain_target_list
+
         return None
 
     def __get_selected_items(self):
@@ -1496,6 +1530,22 @@ class MarkersPanel(wx.Panel):
                 self.lc.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', index=index)
 
+    def __delete_all_brain_targets(self):
+        """
+        Delete all brain targets markers
+        """
+        brain_target_index = []
+        for index in range(len(self.markers)):
+            if self.markers[index].is_brain_target:
+                brain_target_index.append(index)
+        for index in reversed(brain_target_index):
+            self.lc.SetItemBackgroundColour(index, 'white')
+            del self.markers[index]
+            self.lc.DeleteItem(index)
+            for n in range(0, self.lc.GetItemCount()):
+                self.lc.SetItem(n, 0, str(n + 1))
+        Publisher.sendMessage('Remove multiple markers', index=brain_target_index)
+
     def __set_marker_as_target(self, idx):
         """
         Set marker indexed by idx as the new target. idx must be a valid index.
@@ -1521,6 +1571,7 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update target', coord=self.markers[idx].position+self.markers[idx].orientation)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
+        #self.__delete_all_brain_targets()
         wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 
     @staticmethod
@@ -1555,19 +1606,26 @@ class MarkersPanel(wx.Panel):
         if self.__find_target_marker() == self.lc.GetFocusedItem():
             target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
+            if has_mTMS:
+                brain_target_menu = menu_id.Append(3, _('Set brain target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
-        orientation_menu = menu_id.Append(3, _('Set coil target orientation'))
+        orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
+        is_brain_target = self.markers[self.lc.GetFocusedItem()].is_brain_target
+        if is_brain_target and has_mTMS:
+            send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
+            menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
         menu_id.AppendSeparator()
 
         check_target_angles = all([elem is not None for elem in self.markers[self.lc.GetFocusedItem()].orientation])
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
-            send_target_to_robot_compensation = menu_id.Append(4, _('Sets target to robot head move compensation'))
+            send_target_to_robot_compensation = menu_id.Append(7, _('Sets target to robot head move compensation'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
-            send_target_to_robot = menu_id.Append(5, _('Send InVesalius target to robot'))
+            send_target_to_robot = menu_id.Append(8, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
             send_target_to_robot_compensation.Enable(False)
             send_target_to_robot.Enable(False)
@@ -1575,7 +1633,7 @@ class MarkersPanel(wx.Panel):
                 send_target_to_robot_compensation.Enable(True)
                 send_target_to_robot.Enable(True)
 
-        if check_target_angles:
+        if check_target_angles and not is_brain_target:
             target_menu.Enable(True)
         else:
             target_menu.Enable(False)
@@ -1609,11 +1667,13 @@ class MarkersPanel(wx.Panel):
         list_index = self.lc.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
 
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_actor=self.brain_actor)
         if dialog.ShowModal() == wx.ID_OK:
-            orientation = dialog.GetValue()
-            self.CreateMarker(list(position), list(orientation))
+            coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
+            self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=False)
+            for (position, orientation) in zip(brain_position_list, brain_orientation_list):
+                self.CreateMarker(list(position), list(orientation), is_brain_target=True)
         dialog.Destroy()
 
     def OnMenuRemoveTarget(self, evt):
@@ -1627,6 +1687,7 @@ class MarkersPanel(wx.Panel):
         if self.tracker.tracker_id == const.ROBOT:
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
+        #self.__delete_all_brain_targets()
         wx.MessageBox(_("Target removed."), _("InVesalius 3"))
 
     def OnMenuSetColor(self, evt):
@@ -1678,6 +1739,43 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.lc.GetFocusedItem(), target=m_target.tolist())
 
+    def OnSetBrainTarget(self, evt):
+        if isinstance(evt, int):
+           self.lc.Focus(evt)
+        index = self.lc.GetFocusedItem()
+        if index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        position = self.markers[index].position
+        orientation = self.markers[index].orientation
+        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
+
+        if dialog.ShowModal() == wx.ID_OK:
+            position_list, orientation_list = dialog.GetValueBrainTarget()
+            for (position, orientation) in zip(position_list, orientation_list):
+                self.CreateMarker(list(position), list(orientation), size=0.05, is_brain_target=True)
+        dialog.Destroy()
+
+    def OnSendBrainTarget(self, evt):
+        if isinstance(evt, int):
+           self.lc.Focus(evt)
+        index = self.lc.GetFocusedItem()
+        if index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        brain_target = self.markers[index].position + self.markers[index].orientation
+        if self.__find_target_marker():
+            coil_pose = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
+            if self.navigation.coil_at_target:
+                self.mTMS.UpdateTarget(coil_pose, brain_target)
+                #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
+                print("Send brain target to mTMS API")
+            else:
+                print("The coil is not at the target")
+        else:
+            print("Target not set")
+
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
             result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
@@ -1723,6 +1821,7 @@ class MarkersPanel(wx.Panel):
                 if self.tracker.tracker_id == const.ROBOT:
                     Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                           target_index=None, target=None)
+                #self.__delete_all_brain_targets()
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
             self.__delete_multiple_markers(index)
@@ -1759,7 +1858,7 @@ class MarkersPanel(wx.Panel):
                     marker = self.Marker()
                     marker.from_string(line)
                     self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour, size=marker.size,
-                                      label=marker.label, is_target=False, seed=marker.seed, session_id=marker.session_id)
+                                      label=marker.label, is_target=False, seed=marker.seed, session_id=marker.session_id, is_brain_target=marker.is_brain_target)
 
                     if marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -1779,6 +1878,7 @@ class MarkersPanel(wx.Panel):
         else:
             Publisher.sendMessage('Show all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Hide')
+        self.mTMS.SaveSequence()
 
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
@@ -1820,7 +1920,7 @@ class MarkersPanel(wx.Panel):
         list_index = marker_id if marker_id else 0
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
+        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
             orientation = dialog.GetValue()
@@ -1830,6 +1930,9 @@ class MarkersPanel(wx.Panel):
 
     def OnActivateTargetMode(self, evt=None, target_mode=None):
         self.target_mode = target_mode
+
+    def AddPeeledSurface(self, flag, actor):
+        self.brain_actor = actor
 
     def SetMarkers(self, markers):
         """
@@ -1852,7 +1955,7 @@ class MarkersPanel(wx.Panel):
             )
 
 
-    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None):
+    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None, is_brain_target=False):
         new_marker = self.Marker()
         new_marker.position = position or self.current_position
         new_marker.orientation = orientation or self.current_orientation
@@ -1862,6 +1965,7 @@ class MarkersPanel(wx.Panel):
         new_marker.is_target = is_target
         new_marker.seed = seed or self.current_seed
         new_marker.session_id = session_id or self.current_session
+        new_marker.is_brain_target = is_brain_target
 
         if self.tracker.tracker_id == const.ROBOT and self.nav_status:
             current_head_robot_target_status = True
@@ -1876,6 +1980,9 @@ class MarkersPanel(wx.Panel):
         else:
             arrow_flag = False
 
+        if is_brain_target:
+            new_marker.colour = [0, 0, 1]
+
         Publisher.sendMessage('Add marker', marker_id=len(self.markers),
                               size=new_marker.size,
                               colour=new_marker.colour,
@@ -1889,6 +1996,8 @@ class MarkersPanel(wx.Panel):
         # Add item to list control in panel
         num_items = self.lc.GetItemCount()
         self.lc.InsertItem(num_items, str(num_items + 1))
+        if is_brain_target:
+            self.lc.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
         self.lc.SetItem(num_items, const.SESSION_COLUMN, str(new_marker.session_id))
         self.lc.SetItem(num_items, const.LABEL_COLUMN, new_marker.label)
 
