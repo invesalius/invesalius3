@@ -154,23 +154,23 @@ def Import(filename):
     reader.Update()
     return reader.GetOutput()
 
-def ReadPolydata(filename):
-    if filename.lower().endswith('.stl'):
+def LoadPolydata(path):
+    if path.lower().endswith('.stl'):
         reader = vtkSTLReader()
 
-    elif filename.lower().endswith('.ply'):
+    elif path.lower().endswith('.ply'):
         reader = vtkPLYReader()
 
-    elif filename.lower().endswith('.obj'):
+    elif path.lower().endswith('.obj'):
         reader = vtkOBJReader()
 
-    elif filename.lower().endswith('.vtp'):
+    elif path.lower().endswith('.vtp'):
         reader = vtkXMLPolyDataReader()
 
     else:
         assert False, "Not a valid extension."
 
-    reader.SetFileName(filename)
+    reader.SetFileName(path)
     reader.Update()
     polydata = reader.GetOutput()
 

@@ -67,7 +67,7 @@ from vtkmodules.vtkIOExport import (
     vtkVRMLExporter,
     vtkX3DExporter,
 )
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkIOImage import (
     vtkBMPWriter,
     vtkJPEGWriter,
@@ -75,8 +75,6 @@ from vtkmodules.vtkIOImage import (
     vtkPostScriptWriter,
     vtkTIFFWriter,
 )
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -99,11 +97,13 @@ from imageio import imsave
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
+import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
 
@@ -272,6 +272,8 @@ class Viewer(wx.Panel):
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
 
+        self.LoadState()
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -396,6 +398,33 @@ class Viewer(wx.Panel):
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
+
+    def SaveState(self):
+        object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
+        use_default_object = self.use_default_object
+
+        state = {
+            'object_path': object_path,
+            'use_default_object': use_default_object,
+        }
+
+        session = ses.Session()
+        session.SetState('viewer', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('viewer')
+
+        if state is None:
+            return
+
+        object_path = state['object_path']
+        use_default_object = state['use_default_object']
+
+        self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
+        self.use_default_object = use_default_object
+
+        self.polydata = pu.LoadPolydata(path=object_path)
 
     def get_vtk_mouse_position(self):
         """
@@ -1859,6 +1888,8 @@ class Viewer(wx.Panel):
         self.obj_name = obj_name
         self.polydata = polydata
         self.use_default_object = use_default_object
+
+        self.SaveState()
 
     def TrackObject(self, enabled):
         if enabled:

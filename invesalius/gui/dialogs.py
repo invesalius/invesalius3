@@ -3546,25 +3546,25 @@ class ObjectCalibrationDialog(wx.Dialog):
         use_default_object = self.ObjectImportDialog()
 
         if use_default_object:
-            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+            path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
         else:
-            filename = ShowImportMeshFilesDialog()
+            path = ShowImportMeshFilesDialog()
 
             # Return if the open file dialog was canceled.
-            if filename is None:
+            if path is None:
                 return False
 
             # Validate the file extension.
             valid_extensions = ('.stl', 'ply', '.obj', '.vtp')
-            if not filename.lower().endswith(valid_extensions):
+            if not path.lower().endswith(valid_extensions):
                 wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
                 return False
 
         if _has_win32api:
-            filename = win32api.GetShortPathName(filename)
+            path = win32api.GetShortPathName(path)
 
-        self.obj_name = filename.encode(const.FS_ENCODE)
+        self.obj_name = path.encode(const.FS_ENCODE)
         self.use_default_object = use_default_object
 
         return True
@@ -3572,12 +3572,12 @@ class ObjectCalibrationDialog(wx.Dialog):
     def InitializeObject(self):
         success = self.ConfigureObject()
         if success:
-            # XXX: Is this back and forth encoding and decoding needed? Maybe filename could be encoded
+            # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
             #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
             #
-            filename = self.obj_name.decode(const.FS_ENCODE)
-            self.polydata = pu.ReadPolydata(
-                filename=filename
+            object_path = self.obj_name.decode(const.FS_ENCODE)
+            self.polydata = pu.LoadPolydata(
+                path=object_path
             )
             self.ShowObject(
                 polydata=self.polydata
