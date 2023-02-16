@@ -121,15 +121,6 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
-                if view_obj:
-                    wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
-                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
-
-                self.neuronavigation_api.update_coil_pose(
-                    position=coord[:3],
-                    orientation=coord[3:],
-                )
-
                 if self.e_field_loaded:
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
                                  coord=coord, queue_IDs=self.e_field_IDs_queue)
@@ -140,6 +131,9 @@ class UpdateNavigationScene(threading.Thread):
                         finally:
                             self.e_field_norms_queue.task_done()
 
+                if view_obj:
+                    wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+                    wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
 
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
