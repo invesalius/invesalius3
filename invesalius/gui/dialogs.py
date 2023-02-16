@@ -5881,9 +5881,9 @@ class SetNDIconfigs(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self):
-        fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)
-        fn_ref = self.dir_ref.GetPath().encode(const.FS_ENCODE)
-        fn_obj = self.dir_obj.GetPath().encode(const.FS_ENCODE)
+        fn_probe = self.dir_probe.GetPath()
+        fn_ref = self.dir_ref.GetPath()
+        fn_obj = self.dir_obj.GetPath()
 
         if fn_probe and fn_ref and fn_obj:
             session = ses.Session()
@@ -5891,7 +5891,9 @@ class SetNDIconfigs(wx.Dialog):
             session.SetConfig('last_ndi_ref_marker', self.dir_ref.GetPath())
             session.SetConfig('last_ndi_obj_marker', self.dir_obj.GetPath())
 
-        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
+        com_port = self.com_ports.GetString(self.com_ports.GetSelection())
+
+        return com_port, fn_probe, fn_ref, fn_obj
 
 
 class SetCOMPort(wx.Dialog):

@@ -419,10 +419,10 @@ class PolarisTrackerConnection(TrackerConnection):
 
             lib_mode = 'wrapper'
 
-            com_port = self.configuration['com_port']
-            probe_dir = self.configuration['probe_dir']
-            ref_dir = self.configuration['ref_dir']
-            obj_dir = self.configuration['obj_dir']
+            com_port = self.configuration['com_port'].encode(const.FS_ENCODE)
+            probe_dir = self.configuration['probe_dir'].encode(const.FS_ENCODE)
+            ref_dir = self.configuration['ref_dir'].encode(const.FS_ENCODE)
+            obj_dir = self.configuration['obj_dir'].encode(const.FS_ENCODE)
 
             if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
                 lib_mode = None
@@ -478,10 +478,10 @@ class PolarisP4TrackerConnection(TrackerConnection):
             lib_mode = 'wrapper'
             connection = pypolarisP4.pypolarisP4()
 
-            com_port = self.configuration['com_port']
-            probe_dir = self.configuration['probe_dir']
-            ref_dir = self.configuration['ref_dir']
-            obj_dir = self.configuration['obj_dir']
+            com_port = self.configuration['com_port'].encode(const.FS_ENCODE)
+            probe_dir = self.configuration['probe_dir'].encode(const.FS_ENCODE)
+            ref_dir = self.configuration['ref_dir'].encode(const.FS_ENCODE)
+            obj_dir = self.configuration['obj_dir'].encode(const.FS_ENCODE)
 
             if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
                 connection = None
