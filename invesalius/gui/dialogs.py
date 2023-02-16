@@ -5263,15 +5263,16 @@ class SetNDIconfigs(wx.Dialog):
         return port_list, port_selec
 
     def _init_gui(self):
-        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
         com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
         row_com = wx.BoxSizer(wx.VERTICAL)
-        row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
+        row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port or IP"), 0, wx.TOP|wx.RIGHT,5)
         row_com.Add(com_ports, 0, wx.EXPAND)
 
         port_list, port_selec = self.serial_ports()
 
         com_ports.Append(port_list)
+        com_ports.Append(const.NDI_IP)
         if port_selec:
             com_ports.SetSelection(port_selec[0])
 
