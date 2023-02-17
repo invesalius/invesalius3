@@ -1637,7 +1637,7 @@ class Viewer(wx.Panel):
         self.efield_mapper.ScalarVisibilityOn()
         self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
-        self.Efield_lut = e_field_brain.lut
+        self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
