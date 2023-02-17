@@ -231,19 +231,18 @@ def ClaronCoord(tracker_connection, tracker_id, ref_mode):
 
 
 def PolhemusCoord(tracker_connection, tracker_id, ref_mode):
-    trck = tracker_connection.GetConnection()
     lib_mode = tracker_connection.GetLibMode()
 
     coord = None
 
     if lib_mode == 'serial':
-        coord = PolhemusSerialCoord(trck, tracker_id, ref_mode)
+        coord = PolhemusSerialCoord(tracker_connection, tracker_id, ref_mode)
 
     elif lib_mode == 'usb':
-        coord = PolhemusUSBCoord(trck, tracker_id, ref_mode)
+        coord = PolhemusUSBCoord(tracker_connection, tracker_id, ref_mode)
 
     elif lib_mode == 'wrapper':
-        coord = PolhemusWrapperCoord(trck, tracker_id, ref_mode)
+        coord = PolhemusWrapperCoord(tracker_connection, tracker_id, ref_mode)
 
     return coord, [True, True, True]
 
