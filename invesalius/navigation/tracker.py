@@ -138,7 +138,6 @@ class Tracker():
                                     label=_("Disconnecting tracker ..."))
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
-            Publisher.sendMessage('Robot navigation mode', robot_mode=False)
 
             # Stop thread for reading tracker coordinates. Do it before disconnecting
             # the tracker to avoid reading coordinates from already disconnected tracker.

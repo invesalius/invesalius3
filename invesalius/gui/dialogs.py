@@ -5790,13 +5790,17 @@ class RobotCoregistrationDialog(wx.Dialog):
             reader = csv.reader(file, delimiter='\t')
             content = [row for row in reader]
 
-        # Send registration to robot.
         self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+
+        # Send registration to robot.
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
         # Enable 'Ok' button if connection to robot is ok.
         if self.robot_status:
             self.btn_ok.Enable(True)
+
+    def GetValue(self):
+        return self.matrix_tracker_to_robot
 
 
 class SetNDIconfigs(wx.Dialog):

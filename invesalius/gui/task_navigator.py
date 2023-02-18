@@ -77,6 +77,7 @@ from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.image import Image
 from invesalius.navigation.tracker import Tracker
+from invesalius.navigation.robot import Robot
 from invesalius.data.converters import to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
@@ -177,9 +178,13 @@ class InnerFoldPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       (10, 330), 0, fpb.FPB_SINGLE_FOLD)
 
-        # Initialize Navigation, Tracker, Image, and PedalConnection objects here to make them available to several panels.
+        # Initialize Navigation, Tracker, Robot, Image, and PedalConnection objects here to make them
+        # available to several panels.
         #
         tracker = Tracker()
+        robot = Robot(
+            tracker=tracker
+        )
         image = Image()
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         icp = IterativeClosestPoint()
@@ -235,6 +240,7 @@ class InnerFoldPanel(wx.Panel):
             parent=item,
             navigation=navigation,
             tracker=tracker,
+            robot=robot,
             icp=icp,
             image=image,
             pedal_connection=pedal_connection,
@@ -390,7 +396,7 @@ class InnerFoldPanel(wx.Panel):
         self.checkcamera.Enable(enabled)
 
 class NeuronavigationPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, icp, image, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -409,6 +415,7 @@ class NeuronavigationPanel(wx.Panel):
         self.navigation = navigation
         self.icp = icp
         self.tracker = tracker
+        self.robot = robot
         self.image = image
 
         self.nav_status = False
@@ -598,7 +605,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
         Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
-        Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
+        Publisher.subscribe(self.DisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.UpdateTrekkerObject, 'Update Trekker object')
         Publisher.subscribe(self.UpdateNumTracts, 'Update number of tracts')
@@ -615,7 +622,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTarget, 'Update target')
         Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
-        Publisher.subscribe(self.DestroyRobotCoregistrationDialog, 'Dialog robot destroy')
 
     def LoadImageFiducials(self, label, position):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
@@ -726,8 +732,9 @@ class NeuronavigationPanel(wx.Panel):
         self.checkbox_icp.Enable(False)
         self.checkbox_icp.SetValue(False)
 
-    def OnDisconnectTracker(self):
+    def DisconnectTracker(self):
         self.tracker.DisconnectTracker()
+        self.robot.DisconnectRobot()
         self.ResetICP()
         self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
@@ -743,23 +750,21 @@ class NeuronavigationPanel(wx.Panel):
         else:
             choice = None
 
-        self.tracker.DisconnectTracker()
+        self.DisconnectTracker()
         self.tracker.SetTracker(choice)
 
+        # If 'robot tracker' was selected, configure and initialize robot.
         if self.tracker.tracker_id == const.ROBOT:
-            self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self.tracker)
-            status = self.robot_coregistration_dialog.ShowModal()
-
-            if status == wx.ID_OK:
-                Publisher.sendMessage('Robot navigation mode', robot_mode=True)
+            success = self.robot.ConfigureRobot()
+            if success:
+                self.robot.InitializeRobot()
             else:
-                Publisher.sendMessage('Disconnect tracker')
-                wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
+                self.DisconnectTracker()
 
-            self.robot_coregistration_dialog.Destroy()
-
-        self.ResetICP()
-        self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
+        # XXX: This could be refactored so that all these attributes from this class wouldn't be passed
+        #   onto tracker object. (If tracker needs them, maybe at least some of them should be attributes of
+        #   Tracker class.)
+        self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 
@@ -861,10 +866,6 @@ class NeuronavigationPanel(wx.Panel):
 
         for btn_c in self.btns_set_fiducial:
             btn_c.Enable(True)
-
-    def DestroyRobotCoregistrationDialog(self):
-        if self.robot_coregistration_dialog:
-            self.robot_coregistration_dialog.Destroy()
 
     def CheckFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker, self.image)
