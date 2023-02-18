@@ -3766,7 +3766,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+        self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
         txt_mode = wx.StaticText(self, -1, _('Registration mode:'))
@@ -3797,10 +3797,10 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         # Buttons to acquire and remove points
         create_point = wx.Button(self, -1, label=_('Create point'))
-        create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+        create_point.Bind(wx.EVT_BUTTON, self.CreatePoint)
 
         cont_point = wx.ToggleButton(self, -1, label=_('Continuous acquisition'))
-        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
+        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=cont_point))
         self.cont_point = cont_point
 
         btn_reset = wx.Button(self, -1, label=_('Remove points'))
@@ -4063,17 +4063,17 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnChoiceICPMethod(self, evt):
         self.icp_mode = evt.GetSelection()
 
-    def OnContinuousAcquisition(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(500)
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
+    def HandleContinuousAcquisition(self):
+        self.CreatePoint()
 
-    def OnCreatePoint(self, evt):
+    def CreatePoint(self, evt=None):
         current_coord, markers_flag = self.GetCurrentCoord()
         if markers_flag[:2] >= [1, 1]:
             self.AddMarker(3, (1, 0, 0), current_coord)
@@ -4090,14 +4090,14 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnDeleteLastPoint(self):
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.cont_point)
 
         self.RemoveSinglePointActor()
 
     def OnReset(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
 
         self.RemoveAllActors()
         self.LoadActor()
@@ -4105,7 +4105,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnICP(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
 
         self.SetProgress(0.3)
         time.sleep(1)
@@ -5585,7 +5585,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.tracker = tracker
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+        self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
         self._init_gui()
 
@@ -5594,10 +5594,10 @@ class RobotCoregistrationDialog(wx.Dialog):
         txt_acquisition = wx.StaticText(self, -1, _('Poses acquisition for robot registration:'))
 
         btn_create_point = wx.Button(self, -1, label=_('Single'))
-        btn_create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+        btn_create_point.Bind(wx.EVT_BUTTON, self.CreatePoint)
 
         btn_cont_point = wx.ToggleButton(self, -1, label=_('Continuous'))
-        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=btn_cont_point))
+        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=btn_cont_point))
         self.btn_cont_point = btn_cont_point
 
         txt_number = wx.StaticText(self, -1, _('0'))
@@ -5682,23 +5682,23 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.OnPointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
         Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
+        Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
-    def OnContinuousAcquisition(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(100)
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
+    def HandleContinuousAcquisition(self, evt):
+        self.CreatePoint()
 
-    def OnCreatePoint(self, evt):
+    def CreatePoint(self, evt=None):
         Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
 
-    def OnPointRegisteredByRobot(self):
+    def PointRegisteredByRobot(self):
         num_points = int(self.txt_number.GetLabel())
         num_points += 1
 
@@ -5718,7 +5718,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
 
         self.txt_number.SetLabel('0')
 
@@ -5731,7 +5731,7 @@ class RobotCoregistrationDialog(wx.Dialog):
     def OnApply(self, evt):
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
 
         Publisher.sendMessage('Robot transformation matrix estimation', data=None)
 
