@@ -568,11 +568,11 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
             ok_press = 1
         else:
             ok_press = 0
-    except(wx._core.PyAssertionError):  # FIX: win64
+    except wx._core.PyAssertionError:  # FIX: win64
         filepath = dlg.GetPath()
         ok_press = 1
 
-    # fix the extension if set different than expected
+    # Change the extension if it was set to a value different than expected.
     if save_ext and ok_press:
         extension = save_ext
         if sys.platform != 'win32':
@@ -5607,10 +5607,10 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.txt_number = txt_number
 
         btn_reset = wx.Button(self, -1, label=_('Reset points'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnResetPoints)
+        btn_reset.Bind(wx.EVT_BUTTON, self.ResetPoints)
 
         btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
-        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApplyRegistration)
+        btn_apply_reg.Bind(wx.EVT_BUTTON, self.ApplyRegistration)
         btn_apply_reg.Enable(False)
         self.btn_apply_reg = btn_apply_reg
 
@@ -5618,12 +5618,12 @@ class RobotCoregistrationDialog(wx.Dialog):
         txt_file = wx.StaticText(self, -1, _('Registration file'))
 
         btn_save = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
-        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
+        btn_save.Bind(wx.EVT_BUTTON, self.SaveRegistration)
         btn_save.Enable(False)
         self.btn_save = btn_save
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+        btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
         btn_load.Enable(False)
         self.btn_load = btn_load
 
@@ -5683,7 +5683,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
+        Publisher.subscribe(self.UpdateRobotTransformationMatrix, 'Update robot transformation matrix')
         Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
         Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
@@ -5731,7 +5731,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         if self.GetAcquiredPoints() >= 3:
             self.btn_apply_reg.Enable(True)
 
-    def OnResetPoints(self, evt):
+    def ResetPoints(self, evt):
         Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
 
         self.StopContinuousAcquisition()
@@ -5743,7 +5743,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         self.matrix_tracker_to_robot = []
 
-    def OnApplyRegistration(self, evt):
+    def ApplyRegistration(self, evt):
         self.StopContinuousAcquisition()
 
         Publisher.sendMessage('Robot transformation matrix estimation', data=None)
@@ -5753,34 +5753,50 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         #TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def OnUpdateTransformationMatrix(self, data):
+    def UpdateRobotTransformationMatrix(self, data):
         self.matrix_tracker_to_robot = np.array(data)
 
-    def OnSaveReg(self, evt):
-        filename = ShowLoadSaveDialog(message=_(u"Save robot transformation file as..."),
-                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
-                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                          default_filename="robottransform.rbtf", save_ext="rbtf")
+    def SaveRegistration(self, evt):
+        if self.matrix_tracker_to_robot is None:
+            return
 
-        if filename:
-            if self.matrix_tracker_to_robot is not None:
-                with open(filename, 'w', newline='') as file:
-                    writer = csv.writer(file, delimiter='\t')
-                    writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
+        # Open dialog to choose filename.
+        filename = ShowLoadSaveDialog(
+            message=_(u"Save robot transformation file as..."),
+            wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            default_filename="robottransform.rbtf",
+            save_ext="rbtf"
+        )
+        if not filename:
+            return
 
-    def OnLoadReg(self, evt):
-        filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
-                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"))
-        if filename:
-            with open(filename, 'r') as file:
-                reader = csv.reader(file, delimiter='\t')
-                content = [row for row in reader]
+        # Write registration to file.
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter='\t')
+            writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
 
-            self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
-            print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
-            Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
-            if self.robot_status:
-                self.btn_ok.Enable(True)
+    def LoadRegistration(self, evt):
+        # Open dialog to choose filename.
+        filename = ShowLoadSaveDialog(
+            message=_(u"Load robot transformation"),
+            wildcard=_("Robot transformation files (*.rbtf)|*.rbtf")
+        )
+        if not filename:
+            return
+
+        # Load registration from file.
+        with open(filename, 'r') as file:
+            reader = csv.reader(file, delimiter='\t')
+            content = [row for row in reader]
+
+        # Send registration to robot.
+        self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+        Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+
+        # Enable 'Ok' button if connection to robot is ok.
+        if self.robot_status:
+            self.btn_ok.Enable(True)
 
 
 class SetNDIconfigs(wx.Dialog):
