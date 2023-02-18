@@ -3803,8 +3803,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=cont_point))
         self.cont_point = cont_point
 
-        btn_reset = wx.Button(self, -1, label=_('Remove points'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset = wx.Button(self, -1, label=_('Reset points'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnResetPoints)
 
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
         btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
@@ -4088,13 +4088,15 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.interactor.Render()
 
     def OnDeleteLastPoint(self):
+        # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisitionButton(btn=self.cont_point)
 
         self.RemoveSinglePointActor()
 
-    def OnReset(self, evt):
+    def OnResetPoints(self, evt):
+        # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
@@ -5604,8 +5606,8 @@ class RobotCoregistrationDialog(wx.Dialog):
         txt_recorded = wx.StaticText(self, -1, _('Poses recorded'))
         self.txt_number = txt_number
 
-        btn_reset = wx.Button(self, -1, label=_('Reset'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset = wx.Button(self, -1, label=_('Reset points'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnResetPoints)
 
         btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
         btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
@@ -5722,7 +5724,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         if self.GetAcquiredPoints() >= 3:
             self.btn_apply_reg.Enable(True)
 
-    def OnReset(self, evt):
+    def OnResetPoints(self, evt):
         Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
