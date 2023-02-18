@@ -5571,7 +5571,7 @@ class SetRobotIP(wx.Dialog):
     def GetValue(self):
         return self.robot_ip
 
-class CreateTransformationMatrixRobot(wx.Dialog):
+class RobotCoregistrationDialog(wx.Dialog):
     def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)

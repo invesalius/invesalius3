@@ -615,7 +615,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTarget, 'Update target')
         Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
-        Publisher.subscribe(self.OnDialogRobotDestroy, 'Dialog robot destroy')
+        Publisher.subscribe(self.DestroyRobotCoregistrationDialog, 'Dialog robot destroy')
 
     def LoadImageFiducials(self, label, position):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
@@ -747,13 +747,17 @@ class NeuronavigationPanel(wx.Panel):
         self.tracker.SetTracker(choice)
 
         if self.tracker.tracker_id == const.ROBOT:
-            self.dlg_correg_robot = dlg.CreateTransformationMatrixRobot(self.tracker)
-            if self.dlg_correg_robot.ShowModal() == wx.ID_OK:
+            self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self.tracker)
+            status = self.robot_coregistration_dialog.ShowModal()
+
+            if status == wx.ID_OK:
                 Publisher.sendMessage('Robot navigation mode', robot_mode=True)
             else:
                 Publisher.sendMessage('Disconnect tracker')
-                wx.MessageBox(_("Not possible to connect to the robot."), _("InVesalius 3"))
-            self.dlg_correg_robot.Destroy()
+                wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
+
+            self.robot_coregistration_dialog.Destroy()
+
         self.ResetICP()
         self.tracker.UpdateUI(ctrl, self.numctrls_fiducial[3:6], self.txtctrl_fre)
 
@@ -858,9 +862,9 @@ class NeuronavigationPanel(wx.Panel):
         for btn_c in self.btns_set_fiducial:
             btn_c.Enable(True)
 
-    def OnDialogRobotDestroy(self):
-        if self.dlg_correg_robot:
-            self.dlg_correg_robot.Destroy()
+    def DestroyRobotCoregistrationDialog(self):
+        if self.robot_coregistration_dialog:
+            self.robot_coregistration_dialog.Destroy()
 
     def CheckFiducialRegistrationError(self):
         self.navigation.UpdateFiducialRegistrationError(self.tracker, self.image)
