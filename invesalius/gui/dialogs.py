@@ -5682,7 +5682,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.OnCoordinatesAdquired, 'Coordinates for the robot transformation matrix collected')
+        Publisher.subscribe(self.OnPointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
         Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
 
     def OnContinuousAcquisition(self, evt=None, btn=None):
@@ -5698,10 +5698,13 @@ class RobotCoregistrationDialog(wx.Dialog):
     def OnCreatePoint(self, evt):
         Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
 
-    def OnCoordinatesAdquired(self):
-        self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
+    def OnPointRegisteredByRobot(self):
+        num_points = int(self.txt_number.GetLabel())
+        num_points += 1
 
-        if self.robot_status and int(self.txt_number.GetLabel()) >= 3:
+        self.txt_number.SetLabel(str(num_points))
+
+        if self.robot_status and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
     def OnRobotConnectionStatus(self, data):
