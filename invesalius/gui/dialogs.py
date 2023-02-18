@@ -5610,7 +5610,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         btn_reset.Bind(wx.EVT_BUTTON, self.OnResetPoints)
 
         btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
-        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
+        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApplyRegistration)
         btn_apply_reg.Enable(False)
         self.btn_apply_reg = btn_apply_reg
 
@@ -5694,6 +5694,11 @@ class RobotCoregistrationDialog(wx.Dialog):
         else:
             self.timer.Stop()
 
+    def StopContinuousAcquisition(self):
+        if self.btn_cont_point:
+            self.btn_cont_point.SetValue(False)
+            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
+
     def HandleContinuousAcquisition(self, evt):
         self.CreatePoint()
 
@@ -5703,12 +5708,14 @@ class RobotCoregistrationDialog(wx.Dialog):
     def GetAcquiredPoints(self):
         return int(self.txt_number.GetLabel())
 
+    def SetAcquiredPoints(self, num_points):
+        self.txt_number.SetLabel(str(num_points))
+
     def PointRegisteredByRobot(self):
         # Increment the number of acquired points.
         num_points = self.GetAcquiredPoints()
         num_points += 1
-
-        self.txt_number.SetLabel(str(num_points))
+        self.SetAcquiredPoints(num_points)
 
         # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
         if self.robot_status and num_points >= 3:
@@ -5726,11 +5733,9 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def OnResetPoints(self, evt):
         Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
-        if self.btn_cont_point:
-            self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
 
-        self.txt_number.SetLabel('0')
+        self.StopContinuousAcquisition()
+        self.SetAcquiredPoints(0)
 
         self.btn_apply_reg.Enable(False)
         self.btn_save.Enable(False)
@@ -5738,10 +5743,8 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         self.matrix_tracker_to_robot = []
 
-    def OnApply(self, evt):
-        if self.btn_cont_point:
-            self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
+    def OnApplyRegistration(self, evt):
+        self.StopContinuousAcquisition()
 
         Publisher.sendMessage('Robot transformation matrix estimation', data=None)
 
