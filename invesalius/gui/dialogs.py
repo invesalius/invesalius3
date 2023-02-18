@@ -5682,7 +5682,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
+        Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
         Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
     def OnContinuousAcquisitionButton(self, evt=None, btn=None):
@@ -5698,21 +5698,29 @@ class RobotCoregistrationDialog(wx.Dialog):
     def CreatePoint(self, evt=None):
         Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
 
+    def GetAcquiredPoints(self):
+        return int(self.txt_number.GetLabel())
+
     def PointRegisteredByRobot(self):
-        num_points = int(self.txt_number.GetLabel())
+        # Increment the number of acquired points.
+        num_points = self.GetAcquiredPoints()
         num_points += 1
 
         self.txt_number.SetLabel(str(num_points))
 
+        # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
         if self.robot_status and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
-    def OnRobotConnectionStatus(self, data):
+    def UpdateRobotConnectionStatus(self, data):
         self.robot_status = data
-        if self.robot_status:
-            self.btn_load.Enable(True)
-            if int(self.txt_number.GetLabel()) >= 3:
-                self.btn_apply_reg.Enable(True)
+        if not self.robot_status:
+            return
+
+        # Enable 'Load' and 'Apply registration' buttons only when robot connection is ok.
+        self.btn_load.Enable(True)
+        if self.GetAcquiredPoints() >= 3:
+            self.btn_apply_reg.Enable(True)
 
     def OnReset(self, evt):
         Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
