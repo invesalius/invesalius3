@@ -4070,7 +4070,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         else:
             self.timer.Stop()
 
-    def HandleContinuousAcquisition(self):
+    def HandleContinuousAcquisition(self, evt):
         self.CreatePoint()
 
     def CreatePoint(self, evt=None):
