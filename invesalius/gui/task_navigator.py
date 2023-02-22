@@ -1678,7 +1678,7 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.DeleteItem(index)
             for n in range(0, self.marker_list_ctrl.GetItemCount()):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
-        Publisher.sendMessage('Remove multiple markers', index=brain_target_index)
+        Publisher.sendMessage('Remove multiple markers', indexes=brain_target_index)
 
     def __set_marker_as_target(self, idx, display_messagebox=True):
         """

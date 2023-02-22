@@ -66,6 +66,7 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleTrackballActor,
     vtkInteractorStyleTrackballCamera,
 )
+from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkCellPicker,
