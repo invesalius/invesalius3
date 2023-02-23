@@ -3827,8 +3827,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        for n in range(len(self.proj.surface_dict)):
-            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for n, item in enumerate(self.proj.surface_dict):
+            combo_surface_name.Insert(str(item.name), n)
 
         self.combo_surface_name = combo_surface_name
 
@@ -4075,8 +4075,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         subId = mutable(0)
         d = mutable(0.0)
         error = []
-        for i in range(len(points)):
-            cell_locator.FindClosestPoint(points[i], c, cellId, subId, d)
+        for i, item in enumerate(points):
+            cell_locator.FindClosestPoint(item, c, cellId, subId, d)
             error.append(np.sqrt(float(d)))
 
         return np.mean(error)
@@ -4163,8 +4163,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         sourcePoints = np.array(self.point_coord)
         sourcePoints_vtk = vtkPoints()
 
-        for i in range(len(sourcePoints)):
-            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
+        for i, item in enumerate(sourcePoints):
+            id0 = sourcePoints_vtk.InsertNextPoint(item)
 
         source = vtkPolyData()
         source.SetPoints(sourcePoints_vtk)
@@ -4323,8 +4323,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameScalpSurface)
-        for n in range(len(self.proj.surface_dict)):
-            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for n, item in enumerate(self.proj.surface_dict):
+            combo_surface_name.Insert(str(item.name), n)
 
         txt_brain_surface = wx.StaticText(self, -1, _('Select the brain surface:'))
 
@@ -4334,8 +4334,8 @@ class SetCoilOrientationDialog(wx.Dialog):
         if sys.platform != 'win32':
             combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for n, item in enumerate(self.proj.surface_dict):
+            combo_brain_surface_name.Insert(str(item.name), n)
 
         init_surface = 0
         combo_surface_name.SetSelection(init_surface)

@@ -657,12 +657,12 @@ class DicomPreviewSlice(wx.Panel):
             self.first_selection = dicom_id
             self.last_selection = dicom_id
 
-            for i in range(len(self.files)):
+            for i, item in enumerate(self.files):
             
                 if i == dicom_id:
-                    self.files[i].selected = True
+                    item.selected = True
                 else:
-                    self.files[i].selected = False
+                    item.selected = False
 
 
         my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
@@ -675,11 +675,11 @@ class DicomPreviewSlice(wx.Panel):
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
             
             if self.first_selection != self.last_selection:
-                for i in range(len(self.files)):
+                for i, item in enumerate(self.files):
                     if i >= self.first_selection and i <= self.last_selection:
-                        self.files[i].selected = True
+                        item.selected = True
                     else:
-                        self.files[i].selected = False
+                        item.selected = False
 
             else:
                 self.selected_panel.Select()

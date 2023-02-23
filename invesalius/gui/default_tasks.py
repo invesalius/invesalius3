@@ -256,8 +256,8 @@ class UpperTaskPanel(wx.Panel):
                      (_("Export data"), exporter.TaskPanel),
                      (_("Navigation system"), navigator.TaskPanel)]
 
-        for i in range(len(tasks)):
-            (name, panel) = tasks[i]
+        for i, item in enumerate(tasks):
+            (name, panel) = item
             # Create panel
             item = fold_panel.AddFoldPanel("%d. %s"%(i+1, name),
                                             collapsed=True,
