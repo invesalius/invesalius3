@@ -345,7 +345,7 @@ def PlhUSBConnection(tracker_id):
         for i in cfg:
             for x in i:
                 # TODO: try better code
-                x = x
+                pass # print(x)
         trck_init.set_configuration()
         endpoint = trck_init[0][(0, 0)][0]
         if tracker_id == 2:
