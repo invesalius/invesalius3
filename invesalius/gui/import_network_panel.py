@@ -677,7 +677,7 @@ class NodesPanel(wx.Panel):
         try:
             index = self.tree_node.InsertItem(sys.maxsize, "")
         except (OverflowError, AssertionError):
-            index = self.tree_node.InsertItem(sys.maxint, "")
+            index = self.tree_node.InsertItem(sys.maxsize, "")
         self.tree_node.SetItem(index, 1, "localhost")
         self.tree_node.SetItem(index, 2, "")
         self.tree_node.SetItem(index, 3, "invesalius")
