@@ -1586,7 +1586,7 @@ class Viewer(wx.Panel):
         self.RecolorEfieldActor()
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
-    def CreateLUTtableforefield(self, min, max):
+    def CreateLUTTableForEfield(self, min, max):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()

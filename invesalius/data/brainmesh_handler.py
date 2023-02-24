@@ -338,7 +338,7 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
         self.efield_mapper = vtkPolyDataMapper()
-        self.lut = CreateLUTtableforefield(0, 0.001)
+        self.lut = CreateLUTTableForEfield(0, 0.001)
 
 def GetCenters(mesh):
         # Compute centers of triangles
@@ -360,7 +360,7 @@ def GetNormals(mesh):
         # This converts to the normals to an array for easy access
         normals = normalComputer.GetOutput().GetCellData().GetNormals()
         return normals
-def CreateLUTtableforefield( min, max):
+def CreateLUTTableForEfield(min, max):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
