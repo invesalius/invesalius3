@@ -479,6 +479,8 @@ class VolumeToolPanel(wx.Panel):
             self.button_target._pressed = False
             Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
             Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
+            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                  target_index=None, target=None)
 
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
