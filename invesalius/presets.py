@@ -85,8 +85,7 @@ class Presets():
                 if (t_min is None) or (t_max is None): # setting custom preset
                     t_min = thresh_min
                     t_max = thresh_max
-                if (t_min < thresh_min):
-                    t_min = thresh_min
+                t_min = max(t_min, thresh_min)
                 if (t_max > thresh_max):
                     t_max = thresh_max
 

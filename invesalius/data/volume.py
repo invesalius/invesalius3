@@ -315,8 +315,7 @@ class Volume():
             factor = 1.0
             for n,i in enumerate(curve):
                 factor = abs(i['x'] - middle) / half
-                if factor < 0:
-                    factor = 0
+                factor = max(factor, 0)
                 i['x'] += shiftWL
                 if n < len(curve)/2.0:
                     i['x'] -= shiftWW * factor
