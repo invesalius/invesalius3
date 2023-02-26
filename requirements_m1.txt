@@ -1,6 +1,7 @@
 Cython==0.29.28
 Pillow==9.3.0
 Pypubsub==4.0.3
+pubsub==0.1.2
 configparser==5.0.1
 h5py==3.6.0
 imageio==2.9.0
