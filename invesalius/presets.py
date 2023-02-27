@@ -86,8 +86,7 @@ class Presets():
                     t_min = thresh_min
                     t_max = thresh_max
                 t_min = max(t_min, thresh_min)
-                if (t_max > thresh_max):
-                    t_max = thresh_max
+                t_max = max(t_max, thresh_max)
 
                 # This has happened in Analyze files
                 # TODO: find a good solution for presets in Analyze files
