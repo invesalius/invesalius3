@@ -369,9 +369,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             if progress == np.Inf:
                 progress = 1
                 self.AfterSegment()
-            progress = max(progress, 0)
-            if progress > 1:
-                progress = 1
+            progress = max(0, min(progress, 1))
             self.SetProgress(float(progress))
 
     def OnClose(self, evt):
