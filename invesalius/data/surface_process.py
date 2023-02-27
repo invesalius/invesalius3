@@ -1,7 +1,5 @@
-import multiprocessing
 import os
 import tempfile
-import time
 import weakref
 
 try:
@@ -10,7 +8,6 @@ except ImportError:
     import Queue as queue
 
 import numpy
-from scipy import ndimage
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 from vtkmodules.vtkFiltersCore import (
     vtkAppendPolyData,
@@ -26,7 +23,6 @@ from vtkmodules.vtkImagingCore import vtkImageFlip, vtkImageResample
 from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
-import invesalius.i18n as i18n
 import invesalius.data.converters as converters
 from invesalius_cy import cy_mesh
 

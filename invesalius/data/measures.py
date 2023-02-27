@@ -1,14 +1,12 @@
 # -*- coding: UTF-8 -*-
 
 import math
-import random
 import sys
 
 from invesalius.pubsub import pub as Publisher
 
 import numpy as np
 
-from imageio import imsave
 from vtkmodules.vtkCommonCore import vtkMath
 from vtkmodules.vtkFiltersCore import vtkAppendPolyData
 from vtkmodules.vtkFiltersSources import (
@@ -31,7 +29,7 @@ import invesalius.session as ses
 import invesalius.utils as utils
 
 from invesalius import math_utils
-from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon, CanvasHandlerBase
+from invesalius.gui.widgets.canvas_renderer import TextBox, Ellipse, Polygon, CanvasHandlerBase
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
