@@ -32,8 +32,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkImageSliceMapper,
 )
 
-import invesalius.data.imagedata_utils as imagedata_utils
-from invesalius.project import Project as project
 import invesalius.constants as const
 
 
