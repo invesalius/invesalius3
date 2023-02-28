@@ -310,7 +310,7 @@ class PolhemusTrackerConnection(TrackerConnection):
             for i in config:
                 for x in i:
                     # TODO: try better code
-                    x = x
+                    pass
 
             connection.set_configuration()
             endpoint = connection[0][(0, 0)][0]
