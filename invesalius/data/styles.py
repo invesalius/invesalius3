@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import math
 import multiprocessing
 import os
 import tempfile
@@ -27,7 +26,6 @@ from concurrent import futures
 import numpy as np
 import wx
 from scipy import ndimage
-from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
 try:
     # Skimage >= 0.19
@@ -51,7 +49,6 @@ from vtkmodules.vtkRenderingCore import (
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.data.converters as converters
 import invesalius.data.cursor_actors as ca
 import invesalius.data.geometry as geom
 import invesalius.data.transformations as transformations
@@ -68,8 +65,7 @@ from invesalius_cy import floodfill
 # For tracts
 import invesalius.data.tractography as dtr
 # import invesalius.project as prj
-import invesalius.data.slice_ as sl
-import invesalius.data.bases as bases
+
 # from time import sleep
 # ---
 

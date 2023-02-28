@@ -27,7 +27,6 @@ import weakref
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
-import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 from invesalius.data.volume import VolumeMask
 import numpy as np

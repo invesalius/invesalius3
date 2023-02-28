@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import math
 from invesalius.pubsub import pub as Publisher
 
 from vtkmodules.vtkCommonCore import vtkLookupTable
