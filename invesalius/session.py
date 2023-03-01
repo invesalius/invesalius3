@@ -301,4 +301,5 @@ class Session(metaclass=Singleton):
 
     def _Exit(self):
         if not self.StoreSessionDialog():
+            self.CloseProject()
             self.DeleteStateFile()
