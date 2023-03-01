@@ -76,8 +76,7 @@ def ShowProgress(number_of_filters = 1,
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
-    if number_of_filters < 1:
-        number_of_filters = 1
+    number_of_filters = max(number_of_filters, 1)
     ratio = (100.0 / number_of_filters)
 
     def UpdateProgress(obj, label=""):

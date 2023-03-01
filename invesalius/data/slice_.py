@@ -1473,8 +1473,7 @@ class Slice(metaclass=utils.Singleton):
 
             for n, node in enumerate(knodes):
                 factor = abs(node.value - middle) / half
-                if factor < 0:
-                    factor = 0
+                factor = max(factor, 0)
 
                 node.value += shiftWL
 

@@ -387,14 +387,12 @@ class CLUTRaycastingWidget(wx.Panel):
         if y <= self.padding:
             y = self.padding
 
-        if x < 0:
-            x = 0
+        x = max(x, 0)
 
         if x > width:
             x = width
 
-        if x < TOOLBAR_SIZE:
-            x = TOOLBAR_SIZE
+        x = max(x, TOOLBAR_SIZE)
 
         # A point must be greater than the previous one, but the first one
         if j > 0 and x <= self.curves[i].nodes[j-1].x:
