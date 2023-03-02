@@ -751,6 +751,7 @@ class NeuronavigationPanel(wx.Panel):
             choice = None
 
         self.DisconnectTracker()
+        self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice)
 
         # If 'robot tracker' was selected, configure and initialize robot.
