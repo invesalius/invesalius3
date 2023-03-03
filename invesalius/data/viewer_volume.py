@@ -1569,17 +1569,9 @@ class Viewer(wx.Panel):
     def InitLocatorViewer(self, locator):
         self.locator = locator
 
-    def RecolorEfieldActor(self, mesh):
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(mesh)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
+    def RecolorEfieldActor(self):
+        self.efield_mesh_normals_viewer.Modified()
 
-        self.efield_mapper.SetInputData(normals.GetOutput())
-        self.efield_mapper.ScalarVisibilityOn()
-        self.efield_actor.SetMapper(self.efield_mapper)
-        self.efield_actor.GetProperty().SetBackfaceCulling(1)
 
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
@@ -1591,10 +1583,10 @@ class Viewer(wx.Panel):
     def ReturnToDefaultColorActor(self):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
-        self.RecolorEfieldActor(self.efield_mesh)
+        self.RecolorEfieldActor()
         wx.CallAfter(Publisher.sendMessage,'Render volume viewer')
 
-    def CreateLUTtableforefield(self, min, max):
+    def CreateLUTTableForEfield(self, min, max):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
@@ -1636,6 +1628,16 @@ class Viewer(wx.Panel):
         self.locator_efield_cell = e_field_brain.locator_efield_Cell
         self.efield_mesh = e_field_brain.e_field_mesh
         self.efield_mapper = e_field_brain.efield_mapper
+        self.efield_mesh_normals_viewer = vtkPolyDataNormals()
+        self.efield_mesh_normals_viewer.SetInputData(self.efield_mesh)
+        self.efield_mesh_normals_viewer.SetFeatureAngle(80)
+        self.efield_mesh_normals_viewer.AutoOrientNormalsOn()
+        self.efield_mesh_normals_viewer.Update()
+        self.efield_mapper.SetInputConnection(self.efield_mesh_normals_viewer.GetOutputPort())
+        self.efield_mapper.ScalarVisibilityOn()
+        self.efield_actor.SetMapper(self.efield_mapper)
+        self.efield_actor.GetProperty().SetBackfaceCulling(1)
+        self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
@@ -1657,7 +1659,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            lut = self.CreateLUTtableforefield(self.min, self.max)
+            #lut = self.CreateLUTtableforefield(self.min, self.max)
 
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
@@ -1665,13 +1667,13 @@ class Viewer(wx.Panel):
             for h in range(self.radius_list.GetNumberOfIds()):
                 dcolor = 3 * [0.0]
                 index_id = self.radius_list.GetId(h)
-                lut.GetColor(self.e_field_norms[index_id], dcolor)
+                self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
                 color = 3 * [0.0]
                 for j in range(0, 3):
                     color[j] = int(255.0 * dcolor[j])
                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-            self.RecolorEfieldActor(self.efield_mesh)
+            self.RecolorEfieldActor()
             wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
 
         else:
@@ -1696,7 +1698,9 @@ class Viewer(wx.Panel):
             pass
 
     def GetEnorm(self, enorm):
-        self.GetEfieldMaxMin(enorm)
+        self.e_field_norms = enorm
+        wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
+        #self.GetEfieldMaxMin(enorm)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()

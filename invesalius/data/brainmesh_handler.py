@@ -31,6 +31,13 @@ from vtkmodules.vtkRenderingCore import (
     vtkPolyDataMapper,
     vtkWindowLevelLookupTable,
 )
+from vtkmodules.vtkCommonCore import (
+    vtkLookupTable,
+)
+from vtkmodules.vtkCommonColor import (
+    vtkColorSeries,
+    vtkNamedColors
+)
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
@@ -331,7 +338,7 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
         self.efield_mapper = vtkPolyDataMapper()
-
+        self.lut = CreateLUTTableForEfield(0, 0.001)
 
 def GetCenters(mesh):
         # Compute centers of triangles
@@ -353,6 +360,14 @@ def GetNormals(mesh):
         # This converts to the normals to an array for easy access
         normals = normalComputer.GetOutput().GetCellData().GetNormals()
         return normals
+def CreateLUTTableForEfield(min, max):
+        lut = vtkLookupTable()
+        lut.SetTableRange(min, max)
+        colorSeries = vtkColorSeries()
+        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        colorSeries.SetColorScheme(seriesEnum)
+        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        return lut
 
 def cleanMesh(inp):
     cleaned = vtkCleanPolyData()
