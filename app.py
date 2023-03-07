@@ -251,7 +251,11 @@ class Inv3SplashScreen(SplashScreen):
             project_path = session.GetState('project_path')
             if project_path is not None:
                 filepath = os.path.join(project_path[0], project_path[1])
-                Publisher.sendMessage('Open project', filepath=filepath)
+                if os.path.exists(filepath):
+                    Publisher.sendMessage('Open project', filepath=filepath)
+                else:
+                    utils.debug(f"File doesn't exist: {filepath}")
+                    session.CloseProject()
         else:
             session.CreateState()
 
