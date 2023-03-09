@@ -51,6 +51,7 @@ class TrackerCoordinates():
                          coord=self.coord.tolist(), markers_flag=self.markers_flag)
             if self.previous_markers_flag != self.markers_flag:
                 wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
+                wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
                 self.previous_markers_flag = self.markers_flag
 
     def GetCoordinates(self):
