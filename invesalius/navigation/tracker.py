@@ -44,6 +44,7 @@ class Tracker():
         self.event_coord = threading.Event()
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
+        self.sleep_coord = const.SLEEP_COORDINATES
 
     def SetTracker(self, new_tracker):
         if new_tracker:
@@ -59,8 +60,18 @@ class Tracker():
                 self.tracker_id = new_tracker
                 self.tracker_connected = True
                 self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
-                                       self.event_coord)
+                                       self.event_coord, self.sleep_coord)
                 self.thread_coord.start()
+
+    def Update_coord_sleep(self, sleep_coord):
+        self.sleep_coord =sleep_coord
+        if self.thread_coord:
+            self.event_coord.set()
+            self.thread_coord.join()
+            self.event_coord.clear()
+            self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
+                                           self.event_coord, self.sleep_coord)
+            self.thread_coord.start()
 
     def DisconnectTracker(self):
         if self.tracker_connected:
