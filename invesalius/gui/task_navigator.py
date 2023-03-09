@@ -2523,10 +2523,10 @@ class E_fieldPanel(wx.Panel):
         spin_coordsleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectCoordSleep, ctrl=spin_coordsleep))
 
         border = 1
-        line_sleep = wx.BoxSizer(wx.HORIZONTAL)
+        line_sleep = wx.BoxSizer(wx.VERTICAL)
         line_sleep.AddMany([(text_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
-        line_coordsleep = wx.BoxSizer(wx.HORIZONTAL)
+        line_coordsleep = wx.BoxSizer(wx.VERTICAL)
         line_coordsleep.AddMany([(text_coordsleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_coordsleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
         # Add line sizers into main sizer
@@ -2607,7 +2607,7 @@ class E_fieldPanel(wx.Panel):
         # self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
-    def OnSelectCoordSleep(self, ctrl):
+    def OnSelectCoordSleep(self,evt, ctrl):
         self.sleep_coord = ctrl.GetValue()
         Publisher.sendMessage('Update coordinates sleep', data = self.sleep_coord)
 
