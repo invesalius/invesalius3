@@ -725,7 +725,8 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.static_markers[self.marker_id])
         self.marker_id += 1
-        self.interactor.Render()
+        if not self.nav_status:
+            self.interactor.Render()
 
     def add_marker(self, coord, color):
         """Simplified version for creating a spherical marker in the 3D scene
@@ -756,27 +757,31 @@ class Viewer(wx.Panel):
         ballid = indexes
         for i in range(0, ballid):
             self.static_markers[i].SetVisibility(0)
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ShowAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
             self.static_markers[i].SetVisibility(1)
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def RemoveAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
             self.ren.RemoveActor(self.static_markers[i])
         self.static_markers = []
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def RemoveMultipleMarkers(self, index):
         for i in reversed(index):
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
             self.marker_id = self.marker_id - 1
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def BlinkMarker(self, index):
         if self.timer:
@@ -790,8 +795,8 @@ class Viewer(wx.Panel):
 
     def OnBlinkMarker(self, evt):
         self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
-        #self.Refresh()
-        self.interactor.Render()
+        if not self.nav_status:
+            self.interactor.Render()
         self.timer_count += 1
 
     def StopBlinkMarker(self, index=None):
@@ -799,12 +804,14 @@ class Viewer(wx.Panel):
             self.timer.Stop()
             if index is None:
                 self.static_markers[self.index].SetVisibility(1)
-                self.interactor.Render()
+                if not self.nav_status:
+                    self.interactor.Render()
             self.index = False
 
     def SetNewColor(self, index, color):
         self.static_markers[index].GetProperty().SetColor([round(s / 255.0, 3) for s in color])
-        self.interactor.Render()
+        if not self.nav_status:
+            self.interactor.Render()
 
     def OnTargetMarkerTransparency(self, status, index):
         if status:
@@ -925,7 +932,8 @@ class Viewer(wx.Panel):
             self.ren2.ResetCamera()
             self.ren2.GetActiveCamera().Zoom(2)
             self.ren2.InteractiveOff()
-            self.interactor.Render()
+            if not self.nav_status:
+                self.interactor.Render()
 
         else:
             self.DisableCoilTracker()
@@ -1168,7 +1176,8 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.interactor.Render()
 
     def RemoveTargetAim(self):
         self.ren.RemoveActor(self.aim_actor)
@@ -1191,7 +1200,8 @@ class Viewer(wx.Panel):
             self.SetViewAngle(const.VOL_FRONT)
             self.ren.RemoveActor(self.tdist.actor)
             self.CreateTargetAim()
-            self.interactor.Render()
+            if not self.nav_status:
+                self.interactor.Render()
         except:
             None
 
@@ -1553,7 +1563,9 @@ class Viewer(wx.Panel):
             self.actor_peel = actor
             self.ren.AddActor(self.object_orientation_torus_actor)
             self.ren.AddActor(self.obj_projection_arrow_actor)
-        self.interactor.Render()
+
+        if not self.nav_status:
+            self.interactor.Render()
 
     def GetPeelCenters(self, centers, normals):
         self.peel_centers = centers
@@ -2005,10 +2017,6 @@ class Viewer(wx.Panel):
         # Need to be outside condition for sphere marker position update
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
-        #if sys.platform == 'win32':
-        #    self.Refresh()
-        #else:
-        #self.interactor.Render()
 
     def OnExportSurface(self, filename, filetype):
         if filetype not in (const.FILETYPE_STL,
