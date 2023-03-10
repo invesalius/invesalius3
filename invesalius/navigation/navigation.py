@@ -93,10 +93,11 @@ class UpdateNavigationScene(threading.Thread):
         # count = 0
         while not self.event.is_set():
             got_coords = False
+            object_visible_flag = False
             try:
                 coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
-
+                object_visible_flag = markers_flag[2]
 
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
@@ -120,7 +121,7 @@ class UpdateNavigationScene(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
-                if self.e_field_loaded and markers_flag[2]:
+                if self.e_field_loaded and object_visible_flag:
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
                                  coord=coord, queue_IDs=self.e_field_IDs_queue)
                     if not self.e_field_norms_queue.empty():

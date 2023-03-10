@@ -577,3 +577,4 @@ class ReceiveCoordinates(threading.Thread):
             coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
             sleep(const.SLEEP_COORDINATES)
+

@@ -44,7 +44,6 @@ class Tracker():
         self.event_coord = threading.Event()
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
-        self.sleep_coord = const.SLEEP_COORDINATES
 
     def SetTracker(self, new_tracker):
         if new_tracker:

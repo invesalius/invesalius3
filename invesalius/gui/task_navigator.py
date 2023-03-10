@@ -2491,7 +2491,7 @@ class E_fieldPanel(wx.Panel):
         self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
-        self.sleep_nav = 0.2
+        self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
         self.session = ses.Session()
         #  Check box to enable e-field visualization
@@ -2504,14 +2504,14 @@ class E_fieldPanel(wx.Panel):
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
         spin_sleep.Enable(1)
-        spin_sleep.SetRange(0.2,10.0)
+        spin_sleep.SetRange(0.05,10.0)
         spin_sleep.SetValue(self.sleep_nav)
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
         spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
 
         border = 1
         line_sleep = wx.BoxSizer(wx.VERTICAL)
-        line_sleep.AddMany([(text_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+        line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
         # Add line sizers into main sizer
         border_last = 5
