@@ -578,3 +578,4 @@ class ReceiveCoordinates(threading.Thread):
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
             sleep(const.SLEEP_COORDINATES)
 
+
