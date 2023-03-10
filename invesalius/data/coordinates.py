@@ -566,15 +566,14 @@ def offset_coordinate(p_old, norm_vec, offset):
     return p_offset
 
 class ReceiveCoordinates(threading.Thread):
-    def __init__(self, trck_init, trck_id, TrackerCoordinates, event, sleep_coord):
+    def __init__(self, trck_init, trck_id, TrackerCoordinates, event):
         threading.Thread.__init__(self, name='ReceiveCoordinates')
         self.trck_init = trck_init
         self.trck_id = trck_id
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
-        self.sleep_coord = sleep_coord
     def run(self):
         while not self.event.is_set():
             coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
-            sleep(self.sleep_coord)
+            sleep(const.SLEEP_COORDINATES)
