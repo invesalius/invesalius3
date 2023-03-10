@@ -572,11 +572,12 @@ class ReceiveCoordinates(threading.Thread):
         self.trck_id = trck_id
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
+        
     def run(self):
         while not self.event.is_set():
             coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
             sleep(const.SLEEP_COORDINATES)
-            
+
 
 
