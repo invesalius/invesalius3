@@ -64,18 +64,18 @@ class TrackerCoordinates():
         return self.coord, self.markers_flag
 
 
-def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
+def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode):
     """
     Read coordinates from spatial tracking devices using
 
-    :param trck_init: Initialization variable of tracking device and connection type. See tracker.py.
-    :param trck_id: ID of tracking device.
+    :param tracker_connection: Connection object of tracking device and connection type. See tracker_connection.py.
+    :param tracker_id: ID of tracking device.
     :param ref_mode: Single or dynamic reference mode of tracking.
     :return: array of six coordinates (x, y, z, alpha, beta, gamma)
     """
 
     coord = None
-    if trck_id:
+    if tracker_id:
         getcoord = {const.MTC: ClaronCoord,
                     const.FASTRAK: PolhemusCoord,
                     const.ISOTRAKII: PolhemusCoord,
@@ -87,14 +87,14 @@ def GetCoordinatesForThread(trck_init, trck_id, ref_mode):
                     const.ROBOT: RobotCoord,
                     const.DEBUGTRACKRANDOM: DebugCoordRandom,
                     const.DEBUGTRACKAPPROACH: DebugCoordRandom}
-        coord, markers_flag = getcoord[trck_id](trck_init, trck_id, ref_mode)
+        coord, markers_flag = getcoord[tracker_id](tracker_connection, tracker_id, ref_mode)
     else:
         print("Select Tracker")
 
     return coord, markers_flag
 
-def PolarisP4Coord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
+def PolarisP4Coord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
     trck.Run()
 
     probe = trck.probe.decode(const.FS_ENCODE)
@@ -136,7 +136,7 @@ def PolarisP4Coord(trck_init, trck_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.objID]
 
-def OptitrackCoord(trck_init, trck_id, ref_mode):
+def OptitrackCoord(tracker_connection, tracker_id, ref_mode):
     """
 
     Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
@@ -144,15 +144,15 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
 
     Parameters
     ----------
-    :trck_init: tracker initialization instance from OptitrackTracker function at trackers.py
-    :trck_id: not used
+    :tracker_connection: tracker connection instance from OptitrackTrackerConnection class at tracker_connection.py
+    :tracker_id: not used
     :ref_mode: not used
 
     Returns
     -------
     coord: position of tracking rigid bodies
     """
-    trck=trck_init[0]
+    trck = tracker_connection.GetConnection()
     trck.Run()
 
     scale = 1000*np.array([1.0, 1.0, 1.0]) # coordinates are in millimeters in Motive API
@@ -177,8 +177,8 @@ def OptitrackCoord(trck_init, trck_id, ref_mode):
     return coord, [trck.probeID, trck.HeadID, trck.coilID]
 
 
-def PolarisCoord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
+def PolarisCoord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
     trck.Run()
 
     probe = trck.probe.decode(const.FS_ENCODE).split(',')
@@ -201,15 +201,16 @@ def PolarisCoord(trck_init, trck_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.objID]
 
 
-def CameraCoord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
+def CameraCoord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
     coord, probeID, refID, coilID = trck.Run()
 
     return coord, [probeID, refID, coilID]
 
-def ClaronCoord(trck_init, trck_id, ref_mode):
-    trck = trck_init[0]
+def ClaronCoord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
     trck.Run()
+
     scale = np.array([1.0, 1.0, 1.0])
 
     coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
@@ -229,23 +230,27 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
 
-def PolhemusCoord(trck, trck_id, ref_mode):
+def PolhemusCoord(tracker_connection, tracker_id, ref_mode):
+    lib_mode = tracker_connection.GetLibMode()
+
     coord = None
 
-    if trck[1] == 'serial':
-        coord = PolhemusSerialCoord(trck[0], trck_id, ref_mode)
+    if lib_mode == 'serial':
+        coord = PolhemusSerialCoord(tracker_connection, tracker_id, ref_mode)
 
-    elif trck[1] == 'usb':
-        coord = PolhemusUSBCoord(trck[0], trck_id, ref_mode)
+    elif lib_mode == 'usb':
+        coord = PolhemusUSBCoord(tracker_connection, tracker_id, ref_mode)
 
-    elif trck[1] == 'wrapper':
-        coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
+    elif lib_mode == 'wrapper':
+        coord = PolhemusWrapperCoord(tracker_connection, tracker_id, ref_mode)
 
     return coord, [True, True, True]
 
 
-def PolhemusWrapperCoord(trck, trck_id, ref_mode):
+def PolhemusWrapperCoord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
     trck.Run()
+
     scale = 10.0 * np.array([1., 1., 1.])
 
     coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
@@ -257,7 +262,7 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
                        float(trck.AngleX2), float(trck.AngleY2), float(trck.AngleZ2)])
     coord = np.vstack([coord1, coord2])
 
-    if trck_id == 2:
+    if tracker_id == 2:
         coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
                            float(trck.PositionTooltipZ3) * scale[2],
                            float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
@@ -272,12 +277,14 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
     return coord
 
 
-def PolhemusUSBCoord(trck, trck_id, ref_mode):
+def PolhemusUSBCoord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
+
     endpoint = trck[0][(0, 0)][0]
     # Tried to write some settings to Polhemus in trackers.py while initializing the device.
     # TODO: Check if it's working properly.
     trck.write(0x02, "P")
-    if trck_id == 2:
+    if tracker_id == 2:
         scale = 10. * np.array([1., 1.0, -1.0])
     else:
         scale = 25.4 * np.array([1., 1.0, -1.0])
@@ -309,14 +316,16 @@ def PolhemusUSBCoord(trck, trck_id, ref_mode):
         return coord
 
 
-def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
+def PolhemusSerialCoord(tracker_connection, tracker_id, ref_mode):
+    trck = tracker_connection.GetConnection()
+
     # mudanca para fastrak - ref 1 tem somente x, y, z
     # aoflt -> 0:letter 1:x 2:y 3:z
     # this method is not optimized to work with all trackers, only with ISOTRAK
     # serial connection is obsolete, remove in future
-    trck_init.write(str.encode("P"))
+    trck.write(str.encode("P"))
     scale = 10. * np.array([1., 1.0, 1.0])
-    lines = trck_init.readlines()
+    lines = trck.readlines()
 
     if lines is None:
         print("The Polhemus is not connected!")
@@ -341,29 +350,29 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
 
     return coord
 
-def RobotCoord(trk_init, trck_id, ref_mode):
-    #trck_id is the tracker related to the robot ID. To get the tracker ID, combined with the robot,
-    # it is required to get trk_init[1]
-    tracker_id = trk_init[1]
-    coord_tracker, markers_flag = GetCoordinatesForThread(trk_init[0], tracker_id, ref_mode)
+def RobotCoord(tracker_connection, tracker_id, ref_mode):
+    tracker_id = tracker_connection.GetTrackerId()
+
+    coord_tracker, markers_flag = GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode)
 
     return np.vstack([coord_tracker[0], coord_tracker[1], coord_tracker[2]]), markers_flag
 
-def DebugCoordRandom(trk_init, trck_id, ref_mode):
+def DebugCoordRandom(tracker_connection, tracker_id, ref_mode):
     """
     Method to simulate a tracking device for debug and error check. Generate a random
     x, y, z, alfa, beta and gama coordinates in interval [1, 200[
-    :param trk_init: tracker initialization instance
+    :param tracker_connection: tracker connection instance
     :param ref_mode: flag for singular of dynamic reference
-    :param trck_id: id of tracking device
+    :param tracker_id: id of tracking device
     :return: six coordinates x, y, z, alfa, beta and gama
     """
 
     # Started to take a more reasonable, limited random coordinate generator based on
     # the collected fiducials, but it is more complicated than this. It should account for the
     # dynamic reference computation
-    # if trk_init:
-    #     fiducials = trk_init[3:, :]
+    # trck = tracker_connection.GetConnection()
+    # if trck:
+    #     fiducials = trck[3:, :]
     #     fids_max = fiducials.max(axis=0)
     #     fids_min = fiducials.min(axis=0)
     #     fids_lim = np.hstack((fids_min[np.newaxis, :].T, fids_max[np.newaxis, :].T))
@@ -565,15 +574,16 @@ def offset_coordinate(p_old, norm_vec, offset):
     return p_offset
 
 class ReceiveCoordinates(threading.Thread):
-    def __init__(self, trck_init, trck_id, TrackerCoordinates, event):
+    def __init__(self, tracker_connection, tracker_id, TrackerCoordinates, event):
         threading.Thread.__init__(self, name='ReceiveCoordinates')
-        self.trck_init = trck_init
-        self.trck_id = trck_id
+
+        self.tracker_connection = tracker_connection
+        self.tracker_id = tracker_id
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
 
     def run(self):
         while not self.event.is_set():
-            coord_raw, markers_flag = GetCoordinatesForThread(self.trck_init, self.trck_id, const.DEFAULT_REF_MODE)
+            coord_raw, markers_flag = GetCoordinatesForThread(self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE)
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
             sleep(const.SLEEP_COORDINATES)

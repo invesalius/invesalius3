@@ -66,9 +66,7 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleTrackballActor,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkCellPicker,
@@ -100,6 +98,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.transformations as tr
+import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
@@ -234,43 +233,6 @@ def ShowNumberDialog(message, value=0):
     return 0
 
 
-class ProgressDialog(object):
-    def __init__(self, parent, maximum, abort=False):
-        self.title = "InVesalius 3"
-        self.msg = _("Loading DICOM files")
-        self.maximum = maximum
-        self.current = 0
-        self.style = wx.PD_APP_MODAL
-        if abort:
-            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
-
-        self.dlg = wx.ProgressDialog(self.title,
-                                     self.msg,
-                                     maximum = self.maximum,
-                                     parent = parent,
-                                     style  = self.style)
-
-        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
-        self.dlg.SetSize(wx.Size(250,150))
-
-    def Cancel(self, evt):
-        Publisher.sendMessage("Cancel DICOM load")
-
-    def Update(self, value, message):
-        if(int(value) != self.maximum):
-            try:
-                return self.dlg.Update(int(value),message)
-            #TODO:
-            #Exception in the Windows XP 64 Bits with wxPython 2.8.10
-            except(wx._core.PyAssertionError):
-                return True
-        else:
-            return False
-
-    def Close(self):
-        self.dlg.Destroy()
-
-
 # ---------
 
 INV_NON_COMPRESSED = 0
@@ -302,7 +264,7 @@ def ShowOpenProjectDialog():
     # Default system path
     current_dir = os.path.abspath(".")
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_inv3', '')
+    last_directory = session.GetConfig('last_directory_inv3', '')
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
                         defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_OPEN,
@@ -322,8 +284,8 @@ def ShowOpenProjectDialog():
         filepath = dlg.GetPath()
 
     if filepath:
-        session['paths']['last_directory_inv3'] = os.path.split(filepath)[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(filepath)[0]
+        session.SetConfig('last_directory_inv3', last_directory)
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -337,11 +299,7 @@ def ShowImportDirDialog(self):
 
     if sys.platform == 'win32' or sys.platform.startswith('linux'):
         session = ses.Session()
-
-        if (session.GetLastDicomFolder()):
-            folder = session.GetLastDicomFolder()
-        else:
-            folder = ''
+        folder = session.GetConfig('last_dicom_folder', '')
     else:
         folder = ''
 
@@ -360,13 +318,14 @@ def ShowImportDirDialog(self):
             else:
                 path = dlg.GetPath().encode('utf-8')
 
-    except(wx._core.PyAssertionError): #TODO: error win64
-         if (dlg.GetPath()):
+    except wx._core.PyAssertionError:  # TODO: error win64
+         if dlg.GetPath():
              path = dlg.GetPath()
 
-    if (sys.platform != 'darwin'):
-        if (path):
-            session.SetLastDicomFolder(path)
+    if sys.platform != 'darwin':
+        if path:
+            path_decoded = utils.decode(path, const.FS_ENCODE)
+            session.SetConfig('last_dicom_folder', path_decoded)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -376,17 +335,8 @@ def ShowImportDirDialog(self):
 def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
-    #  if sys.platform == 'win32' or sys.platform.startswith('linux'):
-        #  session = ses.Session()
-
-        #  if (session.GetLastDicomFolder()):
-            #  folder = session.GetLastDicomFolder()
-        #  else:
-            #  folder = ''
-    #  else:
-        #  folder = ''
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_bitmap', '')
+    last_directory = session.GetConfig('last_directory_bitmap', '')
 
     dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), last_directory,
                         style=wx.DD_DEFAULT_STYLE
@@ -400,17 +350,12 @@ def ShowImportBitmapDirDialog(self):
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
             path = dlg.GetPath()
 
-    except(wx._core.PyAssertionError): #TODO: error win64
-         if (dlg.GetPath()):
+    except wx._core.PyAssertionError:  # TODO: error win64
+         if dlg.GetPath():
              path = dlg.GetPath()
 
-    #  if (sys.platform != 'darwin'):
-        #  if (path):
-            #  session.SetLastDicomFolder(path)
-
     if path:
-        session['paths']['last_directory_bitmap'] = path
-        session.WriteSessionFile()
+        session.SetConfig('last_directory_bitmap', path)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -421,7 +366,7 @@ def ShowImportBitmapDirDialog(self):
 def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     # Default system path
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_%d' % id_type, '')
+    last_directory = session.GetConfig('last_directory_%d' % id_type, '')
     dlg = wx.FileDialog(None, message=msg, defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_NIFTI,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
@@ -468,8 +413,9 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
             filename = dlg.GetPath()
 
     if filename:
-        session['paths']['last_directory_%d' % id_type] = os.path.split(dlg.GetPath())[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(dlg.GetPath())[0]
+        session.SetConfig('last_directory_%d' % id_type, last_directory)
+
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
@@ -479,8 +425,10 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
 def ShowImportMeshFilesDialog():
     # Default system path
     current_dir = os.path.abspath(".")
+
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_surface_import', '')
+    last_directory = session.GetConfig('last_directory_surface_import', '')
+
     dlg = wx.FileDialog(None, message=_("Import surface file"),
                         defaultDir=last_directory,
                         wildcard=WILDCARD_MESH_FILES,
@@ -501,8 +449,7 @@ def ShowImportMeshFilesDialog():
             filename = dlg.GetPath()
 
     if filename:
-        session['paths']['last_directory_surface_import'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+        session.SetConfig('last_directory_surface_import', os.path.split(filename)[0])
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -529,8 +476,10 @@ def ImportMeshCoordSystem():
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
+
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_inv3', '')
+    last_directory = session.GetConfig('last_directory_inv3', '')
+
     dlg = wx.FileDialog(None,
                         _("Save project as..."), # title
                         last_directory, # last used directory
@@ -557,8 +506,8 @@ def ShowSaveAsProjectDialog(default_filename=None):
                 filename = filename + "." + extension
 
     if filename:
-        session['paths']['last_directory_inv3'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(filename)[0]
+        session.SetConfig('last_directory_inv3', last_directory)
 
     wildcard = dlg.GetFilterIndex()
     os.chdir(current_dir)
@@ -620,11 +569,11 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
             ok_press = 1
         else:
             ok_press = 0
-    except(wx._core.PyAssertionError):  # FIX: win64
+    except wx._core.PyAssertionError:  # FIX: win64
         filepath = dlg.GetPath()
         ok_press = 1
 
-    # fix the extension if set different than expected
+    # Change the extension if it was set to a value different than expected.
     if save_ext and ok_press:
         extension = save_ext
         if sys.platform != 'win32':
@@ -711,9 +660,8 @@ class UpdateMessageDialog(wx.Dialog):
         btn_yes.Bind(wx.EVT_BUTTON, self._OnYes)
         btn_no.Bind(wx.EVT_BUTTON, self._OnNo)
 
-        # Subscribing to the pubsub event which happens when InVesalius is
-        # closed.
-        Publisher.subscribe(self._OnCloseInV, 'Exit')
+        # Subscribing to the pubsub event which happens when InVesalius is closed.
+        Publisher.subscribe(self._Exit, 'Exit')
 
     def _OnYes(self, evt):
         # Launches the default browser with the url to download the new
@@ -727,7 +675,7 @@ class UpdateMessageDialog(wx.Dialog):
         self.Close()
         self.Destroy()
 
-    def _OnCloseInV(self):
+    def _Exit(self):
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()
@@ -1524,7 +1472,7 @@ def ExportPicture(type_=""):
     project = proj.Project()
 
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_screenshot', '')
+    last_directory = session.GetConfig('last_directory_screenshot', '')
 
     project_name = "%s_%s" % (project.name, type_)
     if not sys.platform in ('win32', 'linux2', 'linux'):
@@ -1543,8 +1491,10 @@ def ExportPicture(type_=""):
         filetype = INDEX_TO_TYPE[filetype_index]
         extension = INDEX_TO_EXTENSION[filetype_index]
         filename = dlg.GetPath()
-        session['paths']['last_directory_screenshot'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+
+        last_directory = os.path.split(filename)[0]
+        session.SetConfig('last_directory_screenshot', last_directory)
+
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "."+ extension
@@ -3433,7 +3383,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
+        self.tracker_id = tracker.GetTrackerId()
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
@@ -3447,7 +3397,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self._init_gui()
-        self.LoadObject()
+        self.InitializeObject()
 
         self.__bind_events()
 
@@ -3557,47 +3507,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:  # answer == wx.ID_NO:
             return 0
 
-    def LoadObject(self):
-        self.use_default_object = self.ObjectImportDialog()
-
-        if not self.use_default_object:
-            filename = ShowImportMeshFilesDialog()
-
-            if filename:
-                if filename.lower().endswith('.stl'):
-                    reader = vtkSTLReader()
-                elif filename.lower().endswith('.ply'):
-                    reader = vtkPLYReader()
-                elif filename.lower().endswith('.obj'):
-                    reader = vtkOBJReader()
-                elif filename.lower().endswith('.vtp'):
-                    reader = vtkXMLPolyDataReader()
-                else:
-                    wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
-                    return
-            else:
-                filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                reader = vtkSTLReader()
-
-                # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
-                #      use the default object after all. A more logical behavior in that case would be to cancel the
-                #      whole object calibration, but implementing that would need larger refactoring.
-                #
-                self.use_default_object = True
-        else:
-            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtkSTLReader()
-
-        if _has_win32api:
-            self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
-        else:
-            self.obj_name = filename.encode(const.FS_ENCODE)
-
-        reader.SetFileName(self.obj_name)
-        reader.Update()
-        polydata = reader.GetOutput()
-        self.polydata = polydata
-
+    def ShowObject(self, polydata):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
@@ -3631,6 +3541,47 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ren.ResetCamera()
 
         self.interactor.Render()
+
+    def ConfigureObject(self):
+        use_default_object = self.ObjectImportDialog()
+
+        if use_default_object:
+            path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+        else:
+            path = ShowImportMeshFilesDialog()
+
+            # Return if the open file dialog was canceled.
+            if path is None:
+                return False
+
+            # Validate the file extension.
+            valid_extensions = ('.stl', 'ply', '.obj', '.vtp')
+            if not path.lower().endswith(valid_extensions):
+                wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
+                return False
+
+        if _has_win32api:
+            path = win32api.GetShortPathName(path)
+
+        self.obj_name = path.encode(const.FS_ENCODE)
+        self.use_default_object = use_default_object
+
+        return True
+
+    def InitializeObject(self):
+        success = self.ConfigureObject()
+        if success:
+            # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
+            #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
+            #
+            object_path = self.obj_name.decode(const.FS_ENCODE)
+            self.polydata = pu.LoadPolydata(
+                path=object_path
+            )
+            self.ShowObject(
+                polydata=self.polydata
+            )
 
     def OnCreateObjectText(self, name, coord):
         ball_source = vtkSphereSource()
@@ -3781,11 +3732,11 @@ class ObjectCalibrationDialog(wx.Dialog):
 
 class ICPCorregistrationDialog(wx.Dialog):
 
-    def __init__(self, nav_prop):
+    def __init__(self, navigation, tracker):
         import invesalius.project as prj
 
-        self.m_change = nav_prop[0]
-        self.tracker = nav_prop[1]
+        self.tracker = tracker
+        self.m_change = navigation.m_change
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3816,7 +3767,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+        self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
         txt_mode = wx.StaticText(self, -1, _('Registration mode:'))
@@ -3847,14 +3798,14 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         # Buttons to acquire and remove points
         create_point = wx.Button(self, -1, label=_('Create point'))
-        create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+        create_point.Bind(wx.EVT_BUTTON, self.CreatePoint)
 
         cont_point = wx.ToggleButton(self, -1, label=_('Continuous acquisition'))
-        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
+        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=cont_point))
         self.cont_point = cont_point
 
-        btn_reset = wx.Button(self, -1, label=_('Remove points'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset = wx.Button(self, -1, label=_('Reset points'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnResetPoints)
 
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
         btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
@@ -4113,17 +4064,17 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnChoiceICPMethod(self, evt):
         self.icp_mode = evt.GetSelection()
 
-    def OnContinuousAcquisition(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(500)
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
+    def HandleContinuousAcquisition(self, evt):
+        self.CreatePoint()
 
-    def OnCreatePoint(self, evt):
+    def CreatePoint(self, evt=None):
         current_coord, markers_flag = self.GetCurrentCoord()
         if markers_flag[:2] >= [1, 1]:
             self.AddMarker(3, (1, 0, 0), current_coord)
@@ -4138,16 +4089,18 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.interactor.Render()
 
     def OnDeleteLastPoint(self):
+        # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.cont_point)
 
         self.RemoveSinglePointActor()
 
-    def OnReset(self, evt):
+    def OnResetPoints(self, evt):
+        # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
 
         self.RemoveAllActors()
         self.LoadActor()
@@ -4155,7 +4108,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnICP(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
 
         self.SetProgress(0.3)
         time.sleep(1)
@@ -5451,8 +5404,8 @@ class SetOptitrackconfigs(wx.Dialog):
 
     def _init_gui(self):
         session = ses.Session()
-        last_optitrack_cal_dir = session.get('paths', 'last_optitrack_cal_dir', '')
-        last_optitrack_User_Profile_dir = session.get('paths', 'last_optitrack_User_Profile_dir', '')
+        last_optitrack_cal_dir = session.GetConfig('last_optitrack_cal_dir', '')
+        last_optitrack_User_Profile_dir = session.GetConfig('last_optitrack_User_Profile_dir', '')
 
         if not last_optitrack_cal_dir:
             last_optitrack_cal_dir = inv_paths.OPTITRACK_CAL_DIR
@@ -5505,9 +5458,8 @@ class SetOptitrackconfigs(wx.Dialog):
 
         if fn_cal and fn_userprofile:
             session = ses.Session()
-            session['paths']['last_optitrack_cal_dir'] = self.dir_cal.GetPath()
-            session['paths']['last_optitrack_User_Profile_dir'] = self.dir_UserProfile.GetPath()
-            session.WriteSessionFile()
+            session.SetConfig('last_optitrack_cal_dir', self.dir_cal.GetPath())
+            session.SetConfig('last_optitrack_User_Profile_dir', self.dir_UserProfile.GetPath())
 
         return fn_cal, fn_userprofile
 
@@ -5526,8 +5478,11 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
         trackers = const.TRACKERS.copy()
-        if not ses.Session().debug:
+
+        session = ses.Session()
+        if not session.GetConfig('debug'):
             del trackers[-3:]
+
         tracker_options = [_("Select tracker:")] + trackers
         choice_trck = wx.ComboBox(self, -1, "",
                                   choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
@@ -5619,7 +5574,7 @@ class SetRobotIP(wx.Dialog):
     def GetValue(self):
         return self.robot_ip
 
-class CreateTransformationMatrixRobot(wx.Dialog):
+class RobotCoregistrationDialog(wx.Dialog):
     def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
@@ -5633,7 +5588,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.tracker = tracker
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+        self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
         self._init_gui()
 
@@ -5642,21 +5597,21 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         txt_acquisition = wx.StaticText(self, -1, _('Poses acquisition for robot registration:'))
 
         btn_create_point = wx.Button(self, -1, label=_('Single'))
-        btn_create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+        btn_create_point.Bind(wx.EVT_BUTTON, self.CreatePoint)
 
         btn_cont_point = wx.ToggleButton(self, -1, label=_('Continuous'))
-        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=btn_cont_point))
+        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=btn_cont_point))
         self.btn_cont_point = btn_cont_point
 
         txt_number = wx.StaticText(self, -1, _('0'))
         txt_recorded = wx.StaticText(self, -1, _('Poses recorded'))
         self.txt_number = txt_number
 
-        btn_reset = wx.Button(self, -1, label=_('Reset'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset = wx.Button(self, -1, label=_('Reset points'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.ResetPoints)
 
         btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
-        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
+        btn_apply_reg.Bind(wx.EVT_BUTTON, self.ApplyRegistration)
         btn_apply_reg.Enable(False)
         self.btn_apply_reg = btn_apply_reg
 
@@ -5664,12 +5619,12 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         txt_file = wx.StaticText(self, -1, _('Registration file'))
 
         btn_save = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
-        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
+        btn_save.Bind(wx.EVT_BUTTON, self.SaveRegistration)
         btn_save.Enable(False)
         self.btn_save = btn_save
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+        btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
         btn_load.Enable(False)
         self.btn_load = btn_load
 
@@ -5729,43 +5684,59 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.OnCoordinatesAdquired, 'Coordinates for the robot transformation matrix collected')
-        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
+        Publisher.subscribe(self.UpdateRobotTransformationMatrix, 'Update robot transformation matrix')
+        Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
+        Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
-    def OnContinuousAcquisition(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(100)
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
-
-    def OnCreatePoint(self, evt):
-        Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
-
-    def OnCoordinatesAdquired(self):
-        self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
-
-        if self.robot_status and int(self.txt_number.GetLabel()) >= 3:
-            self.btn_apply_reg.Enable(True)
-
-    def OnRobotConnectionStatus(self, data):
-        self.robot_status = data
-        if self.robot_status:
-            self.btn_load.Enable(True)
-            if int(self.txt_number.GetLabel()) >= 3:
-                self.btn_apply_reg.Enable(True)
-
-    def OnReset(self, evt):
-        Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
+    def StopContinuousAcquisition(self):
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
 
-        self.txt_number.SetLabel('0')
+    def HandleContinuousAcquisition(self, evt):
+        self.CreatePoint()
+
+    def CreatePoint(self, evt=None):
+        Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
+
+    def GetAcquiredPoints(self):
+        return int(self.txt_number.GetLabel())
+
+    def SetAcquiredPoints(self, num_points):
+        self.txt_number.SetLabel(str(num_points))
+
+    def PointRegisteredByRobot(self):
+        # Increment the number of acquired points.
+        num_points = self.GetAcquiredPoints()
+        num_points += 1
+        self.SetAcquiredPoints(num_points)
+
+        # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
+        if self.robot_status and num_points >= 3:
+            self.btn_apply_reg.Enable(True)
+
+    def UpdateRobotConnectionStatus(self, data):
+        self.robot_status = data
+        if not self.robot_status:
+            return
+
+        # Enable 'Load' and 'Apply registration' buttons only when robot connection is ok.
+        self.btn_load.Enable(True)
+        if self.GetAcquiredPoints() >= 3:
+            self.btn_apply_reg.Enable(True)
+
+    def ResetPoints(self, evt):
+        Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
+
+        self.StopContinuousAcquisition()
+        self.SetAcquiredPoints(0)
 
         self.btn_apply_reg.Enable(False)
         self.btn_save.Enable(False)
@@ -5773,10 +5744,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         self.matrix_tracker_to_robot = []
 
-    def OnApply(self, evt):
-        if self.btn_cont_point:
-            self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+    def ApplyRegistration(self, evt):
+        self.StopContinuousAcquisition()
 
         Publisher.sendMessage('Robot transformation matrix estimation', data=None)
 
@@ -5785,34 +5754,54 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         #TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def OnUpdateTransformationMatrix(self, data):
+    def UpdateRobotTransformationMatrix(self, data):
         self.matrix_tracker_to_robot = np.array(data)
 
-    def OnSaveReg(self, evt):
-        filename = ShowLoadSaveDialog(message=_(u"Save robot transformation file as..."),
-                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
-                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                          default_filename="robottransform.rbtf", save_ext="rbtf")
+    def SaveRegistration(self, evt):
+        if self.matrix_tracker_to_robot is None:
+            return
 
-        if filename:
-            if self.matrix_tracker_to_robot is not None:
-                with open(filename, 'w', newline='') as file:
-                    writer = csv.writer(file, delimiter='\t')
-                    writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
+        # Open dialog to choose filename.
+        filename = ShowLoadSaveDialog(
+            message=_(u"Save robot transformation file as..."),
+            wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            default_filename="robottransform.rbtf",
+            save_ext="rbtf"
+        )
+        if not filename:
+            return
 
-    def OnLoadReg(self, evt):
-        filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
-                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"))
-        if filename:
-            with open(filename, 'r') as file:
-                reader = csv.reader(file, delimiter='\t')
-                content = [row for row in reader]
+        # Write registration to file.
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter='\t')
+            writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
 
-            self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
-            print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
-            Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
-            if self.robot_status:
-                self.btn_ok.Enable(True)
+    def LoadRegistration(self, evt):
+        # Open dialog to choose filename.
+        filename = ShowLoadSaveDialog(
+            message=_(u"Load robot transformation"),
+            wildcard=_("Robot transformation files (*.rbtf)|*.rbtf")
+        )
+        if not filename:
+            return
+
+        # Load registration from file.
+        with open(filename, 'r') as file:
+            reader = csv.reader(file, delimiter='\t')
+            content = [row for row in reader]
+
+        self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+
+        # Send registration to robot.
+        Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+
+        # Enable 'Ok' button if connection to robot is ok.
+        if self.robot_status:
+            self.btn_ok.Enable(True)
+
+    def GetValue(self):
+        return self.matrix_tracker_to_robot
 
 
 class SetNDIconfigs(wx.Dialog):
@@ -5861,9 +5850,9 @@ class SetNDIconfigs(wx.Dialog):
         self.com_ports = com_ports
 
         session = ses.Session()
-        last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
-        last_ndi_ref_marker = session.get('paths', 'last_ndi_ref_marker', '')
-        last_ndi_obj_marker = session.get('paths', 'last_ndi_obj_marker', '')
+        last_ndi_probe_marker = session.GetConfig('last_ndi_probe_marker', '')
+        last_ndi_ref_marker = session.GetConfig('last_ndi_ref_marker', '')
+        last_ndi_obj_marker = session.GetConfig('last_ndi_obj_marker', '')
 
         if not last_ndi_probe_marker:
             last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
@@ -5929,18 +5918,19 @@ class SetNDIconfigs(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self):
-        fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)
-        fn_ref = self.dir_ref.GetPath().encode(const.FS_ENCODE)
-        fn_obj = self.dir_obj.GetPath().encode(const.FS_ENCODE)
+        fn_probe = self.dir_probe.GetPath()
+        fn_ref = self.dir_ref.GetPath()
+        fn_obj = self.dir_obj.GetPath()
 
         if fn_probe and fn_ref and fn_obj:
             session = ses.Session()
-            session['paths']['last_ndi_probe_marker'] = self.dir_probe.GetPath()
-            session['paths']['last_ndi_ref_marker'] = self.dir_ref.GetPath()
-            session['paths']['last_ndi_obj_marker'] = self.dir_obj.GetPath()
-            session.WriteSessionFile()
+            session.SetConfig('last_ndi_probe_marker', self.dir_probe.GetPath())
+            session.SetConfig('last_ndi_ref_marker', self.dir_ref.GetPath())
+            session.SetConfig('last_ndi_obj_marker', self.dir_obj.GetPath())
 
-        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
+        com_port = self.com_ports.GetString(self.com_ports.GetSelection())
+
+        return com_port, fn_probe, fn_ref, fn_obj
 
 
 class SetCOMPort(wx.Dialog):
@@ -6257,7 +6247,7 @@ class PeelsCreationDlg(wx.Dialog):
 
     def _from_files_gui(self):
         session = ses.Session()
-        last_directory = session.get('paths', 'last_directory_%d' % const.ID_NIFTI_IMPORT, '')
+        last_directory = session.GetConfig('last_directory_%d' % const.ID_NIFTI_IMPORT, '')
 
         files_box = wx.StaticBox(self, -1, _("From files"))
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
