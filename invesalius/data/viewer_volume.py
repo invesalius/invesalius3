@@ -473,7 +473,7 @@ class Viewer(wx.Panel):
 
             ren_win.StereoRenderOn()
 
-        self.interactor.Render()
+        self.UpdateRender()
 
     def _check_ball_reference(self, style):
         if style == const.SLICE_STATE_CROSS:
@@ -489,7 +489,7 @@ class Viewer(wx.Panel):
                 #self.ball_actor.SetVisibility(1)
             #else:
              #   self.ball_actor.SetVisibility(0)
-            self.interactor.Render()
+            self.UpdateRender()
 
     def _uncheck_ball_reference(self, style):
         if style == const.SLICE_STATE_CROSS:
@@ -500,7 +500,7 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.ball_actor)
                 self.ball_actor = None
 
-            self.interactor.Render()
+            self.UpdateRender()
 
     def OnSensors(self, markers_flag):
         probe_id, ref_id, obj_id = markers_flag
@@ -549,7 +549,7 @@ class Viewer(wx.Panel):
         obj.SetValue("O")
         self.obj = obj
         self.ren.AddActor(obj.actor)
-        self.interactor.Render()
+        self.UpdateRender()
 
     def OnRemoveSensorsID(self):
         if self.probe:
@@ -557,7 +557,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.ref.actor)
             self.ren.RemoveActor(self.obj.actor)
             self.probe = self.ref = self.obj = False
-            self.interactor.Render()
+            self.UpdateRender()
 
     # def OnShowSurface(self, index, visibility):
     #     if visibility:
@@ -641,12 +641,12 @@ class Viewer(wx.Panel):
 
     def OnHideText(self):
         self.text.Hide()
-        self.interactor.Render()
+        self.UpdateRender()
 
     def OnShowText(self):
         if self.on_wl:
             self.text.Show()
-            self.interactor.Render()
+            self.UpdateRender()
 
     def AddActors(self, actors):
         "Inserting actors"
@@ -657,7 +657,8 @@ class Viewer(wx.Panel):
         volumes = self.ren.GetVolumes()
         if (volumes.GetNumberOfItems()):
             self.ren.RemoveVolume(volumes.GetLastProp())
-            self.interactor.Render()
+            if not self.nav_status:
+                self.UpdateRender()
             # self._to_show_ball -= 1
             # self._check_and_set_ball_visibility()
 
@@ -759,7 +760,7 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.static_markers[self.marker_id])
         self.marker_id += 1
         if not self.nav_status:
-            self.interactor.Render()
+            self.UpdateRender()
 
     def add_marker(self, coord, color):
         """Simplified version for creating a spherical marker in the 3D scene
@@ -829,7 +830,7 @@ class Viewer(wx.Panel):
     def OnBlinkMarker(self, evt):
         self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
         if not self.nav_status:
-            self.interactor.Render()
+            self.UpdateRender()
         self.timer_count += 1
 
     def StopBlinkMarker(self, index=None):
@@ -838,13 +839,13 @@ class Viewer(wx.Panel):
             if index is None:
                 self.static_markers[self.index].SetVisibility(1)
                 if not self.nav_status:
-                    self.interactor.Render()
+                    self.UpdateRender()
             self.index = False
 
     def SetNewColor(self, index, color):
         self.static_markers[index].GetProperty().SetColor([round(s / 255.0, 3) for s in color])
         if not self.nav_status:
-            self.interactor.Render()
+            self.UpdateRender()
 
     def OnTargetMarkerTransparency(self, status, index):
         if status:
@@ -966,7 +967,7 @@ class Viewer(wx.Panel):
             self.ren2.GetActiveCamera().Zoom(2)
             self.ren2.InteractiveOff()
             if not self.nav_status:
-                self.interactor.Render()
+                self.UpdateRender()
 
         else:
             self.DisableCoilTracker()
@@ -1210,12 +1211,13 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.dummy_coil_actor)
         if not self.nav_status:
-            self.interactor.Render()
+            self.UpdateRender()
 
     def RemoveTargetAim(self):
         self.ren.RemoveActor(self.aim_actor)
         self.ren.RemoveActor(self.dummy_coil_actor)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def CreateTextDistance(self):
         tdist = vtku.Text()
@@ -1234,7 +1236,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.tdist.actor)
             self.CreateTargetAim()
             if not self.nav_status:
-                self.interactor.Render()
+                self.UpdateRender()
         except:
             None
 
@@ -1598,7 +1600,7 @@ class Viewer(wx.Panel):
             self.ren.AddActor(self.obj_projection_arrow_actor)
 
         if not self.nav_status:
-            self.interactor.Render()
+            self.UpdateRender()
 
     def GetPeelCenters(self, centers, normals):
         self.peel_centers = centers
@@ -1813,7 +1815,7 @@ class Viewer(wx.Panel):
                 #self.z_actor.SetVisibility(self.show_object)
                 #self.object_orientation_torus_actor.SetVisibility(self.show_object)
                 #self.obj_projection_arrow_actor.SetVisibility(self.show_object)
-        self.interactor.Render()
+        self.UpdateRender()
 
     def UpdateSeedOffset(self, data):
         self.seed_offset = data
@@ -1827,7 +1829,7 @@ class Viewer(wx.Panel):
             if self.mark_actor:
                 self.ren.RemoveActor(self.mark_actor)
                 self.mark_actor = None
-        self.interactor.Render()
+        self.UpdateRender()
 
     def UpdateObjectOrientation(self, m_img, coord):
         # print("Update object orientation")
@@ -1895,7 +1897,8 @@ class Viewer(wx.Panel):
         else:
             if self.obj_actor:
                 self.RemoveObjectActor()
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ShowObject(self, checked):
         self.show_object = checked
@@ -1909,7 +1912,8 @@ class Viewer(wx.Panel):
             #    self.ball_actor.SetVisibility(0)
             #else:
             #    self.ball_actor.SetVisibility(1)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
         mapper = vtkCompositePolyDataMapper2()
@@ -1953,7 +1957,7 @@ class Viewer(wx.Panel):
             self.ren_robot.AddActor(dummy_robot_actor)
             self.ren_robot.InteractiveOff()
 
-            self.interactor.Render()
+            self.UpdateRender()
         else:
             self.DisableRobotMode()
 
@@ -1968,7 +1972,7 @@ class Viewer(wx.Panel):
         if self.dummy_robot_actor:
             self.ren_robot.RemoveActor(self.dummy_robot_actor)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren_robot)
-            self.interactor.Render()
+            self.UpdateRender()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -1998,7 +2002,7 @@ class Viewer(wx.Panel):
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
-        self.interactor.Render()
+        self.UpdateRender()
 
         self.state = state
 
@@ -2154,7 +2158,7 @@ class Viewer(wx.Panel):
             ren.ResetCameraClippingRange()
 
         #self.ShowOrientationCube()
-        self.interactor.Render()
+        self.UpdateRender()
         # self._to_show_ball += 1
         # self._check_and_set_ball_visibility()
 
@@ -2162,7 +2166,8 @@ class Viewer(wx.Panel):
         utils.debug("RemoveActor")
         ren = self.ren
         ren.RemoveActor(actor)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
         # self._to_show_ball -= 1
         # self._check_and_set_ball_visibility()
 
@@ -2237,7 +2242,8 @@ class Viewer(wx.Panel):
 
         self.ren.ResetCameraClippingRange()
         self.ren.ResetCamera()
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ShowOrientationCube(self):
         cube = vtkAnnotatedCubeActor()
