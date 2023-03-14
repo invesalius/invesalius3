@@ -76,7 +76,7 @@ from invesalius.gui import utils as gui_utils
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
-from invesalius.data.converters import to_vtk
+from invesalius.data.converters import convert_custom_bin_to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 
@@ -2501,6 +2501,12 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
+        tooltip = wx.ToolTip(_("Load brain meshese"))
+        btn_act = wx.Button(self, -1, _("meshes"), size=wx.Size(50, 23))
+        btn_act.SetToolTip(tooltip)
+        btn_act.Enable(1)
+        btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
+
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
         spin_sleep.Enable(1)
@@ -2513,6 +2519,9 @@ class E_fieldPanel(wx.Panel):
         line_sleep = wx.BoxSizer(wx.VERTICAL)
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
+        line_btns = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
         # Add line sizers into main sizer
         border_last = 5
         txt_surface = wx.StaticText(self, -1, _('Select:'))
@@ -2528,12 +2537,20 @@ class E_fieldPanel(wx.Panel):
         main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
+        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
+
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
+    def OnAddMeshes(self, evt):
+        filename = dlg.ShowImportMeshFilesDialog()
+        if filename:
+            convert_to_inv = dlg.ImportMeshCoordSystem()
+            Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
+        Publisher.sendMessage('Import bin file', filename=filename)
 
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()

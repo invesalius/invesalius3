@@ -70,6 +70,7 @@ import invesalius.session as ses
 import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vtk_utils
+from invesalius.data.converters import convert_custom_bin_to_vtk
 
 from invesalius.gui import dialogs
 from invesalius_cy import cy_mesh
@@ -219,6 +220,7 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
+        Publisher.subscribe(self.OnImportCustumBinFile, 'Import bin file')
 
         Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
@@ -313,6 +315,16 @@ class SurfaceManager():
         new_polydata = pu.SelectLargestPart(surface.polydata)
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
+
+    def OnImportCustumBinFile(self,filename):
+        scalar = True
+        if filename.lower().endswith('.bin'):
+            polydata = convert_custom_bin_to_vtk(filename)
+        if polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        else:
+            name = os.path.splitext(os.path.split(filename)[-1])[0]
+            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
     def OnImportSurfaceFile(self, filename):
         """

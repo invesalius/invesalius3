@@ -192,3 +192,38 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
         return output
     else:
         return np_array
+
+def convert_custom_bin_to_vtk(filename):
+    import vtk
+    numbers = np.fromfile(filename, count=3, dtype=np.int32)
+    points = np.fromfile(filename, dtype=np.float32)
+    elements = np.fromfile(filename, dtype=np.int32)
+
+    points1 = points[3:(numbers[1]) * 3 + 3]*1000
+    elements1 = elements[numbers[1] * 3 + 3:]
+
+    points2 = points1.reshape(numbers[1], 3)
+    elements2 = elements1.reshape(numbers[2], 3)
+
+    points = vtk.vtkPoints()
+    triangles = vtk.vtkCellArray()
+    polydata = vtk.vtkPolyData()
+    data = {'e': elements2, 'p': points2}
+
+    for i in range(len(data['e'])):
+        id1 = points.InsertNextPoint(data['p'][data['e'][i, 0], :])
+        id2 = points.InsertNextPoint(data['p'][data['e'][i, 1], :])
+        id3 = points.InsertNextPoint(data['p'][data['e'][i, 2], :])
+
+        triangle = vtk.vtkTriangle()
+        triangle.GetPointIds().SetId(0, id1)
+        triangle.GetPointIds().SetId(1, id2)
+        triangle.GetPointIds().SetId(2, id3)
+
+        triangles.InsertNextCell(triangle)
+
+    polydata.SetPoints(points)
+    polydata.SetPolys(triangles)
+
+    return polydata
+
