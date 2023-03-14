@@ -188,11 +188,11 @@ class SurfaceManager():
     def _load_user_parameters(self):
         session = ses.Session()
 
-        if 'surface' in session:
-            self._default_parameters.update(session['surface'])
+        surface = session.GetConfig('surface')
+        if surface is not None:
+            self._default_parameters.update(surface)
         else:
-            session['surface'] = self._default_parameters
-            session.WriteSessionFile()
+            session.SetConfig('surface', self._default_parameters)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddNewActor, 'Create surface')
@@ -575,7 +575,8 @@ class SurfaceManager():
 
         prop = actor.GetProperty()
 
-        interpolation = int(ses.Session().surface_interpolation)
+        session = ses.Session()
+        interpolation = session.GetConfig('surface_interpolation')
 
         prop.SetInterpolation(interpolation)
 
@@ -587,7 +588,6 @@ class SurfaceManager():
             surface.index = index
             self.last_surface_index = index
 
-        session = ses.Session()
         session.ChangeProject()
 
         Publisher.sendMessage('Load surface actor into viewer', actor=actor)
@@ -663,7 +663,8 @@ class SurfaceManager():
         if keep_largest:
             pipeline_size += 1
 
-        language = ses.Session().language
+        session = ses.Session()
+        language = session.GetConfig('language')
 
         if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
@@ -832,11 +833,11 @@ class SurfaceManager():
         Publisher.sendMessage('Send Actor', e_field_actor=self.actors_dict[surface_index])
 
     def UpdateSurfaceInterpolation(self):
-        interpolation = int(ses.Session().surface_interpolation)
-        key_actors = self.actors_dict.keys()
+        session = ses.Session()
+        surface_interpolation = session.GetConfig('surface_interpolation')
 
         for key in self.actors_dict:
-            self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
+            self.actors_dict[key].GetProperty().SetInterpolation(surface_interpolation)
         Publisher.sendMessage('Render volume viewer')
 
     def RemoveActor(self, index):

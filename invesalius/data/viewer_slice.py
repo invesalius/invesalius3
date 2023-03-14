@@ -1235,7 +1235,8 @@ class Viewer(wx.Panel):
         # TODO: Create a option to let the user set if he wants to interpolate
         # the slice images.
        
-        if int(ses.Session().slice_interpolation) == 1:
+        session = ses.Session()
+        if session.GetConfig('slice_interpolation'):
             actor.InterpolateOff()
         else:
             actor.InterpolateOn()
@@ -1255,7 +1256,8 @@ class Viewer(wx.Panel):
 
     def UpdateInterpolatedSlice(self):
         if self.slice_actor != None:
-            if ses.Session().slice_interpolation:
+            session = ses.Session()
+            if session.GetConfig('slice_interpolation'):
                 self.slice_actor.InterpolateOff()
             else:
                 self.slice_actor.InterpolateOn()

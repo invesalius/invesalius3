@@ -323,7 +323,7 @@ class InnerTaskPanel(wx.Panel):
                 project_name = pathlib.Path(project.name).stem + ".stl"
 
             session = ses.Session()
-            last_directory = session.get('paths', 'last_directory_3d_surface', '')
+            last_directory = session.GetConfig('last_directory_3d_surface', '')
 
             dlg = wx.FileDialog(None,
                                 _("Save 3D surface as..."), # title
@@ -343,8 +343,8 @@ class InnerTaskPanel(wx.Panel):
                         filename = filename + "."+ extension
 
                 if filename:
-                    session['paths']['last_directory_3d_surface'] = os.path.split(filename)[0]
-                    session.WriteSessionFile()
+                    last_directory = os.path.split(filename)[0]
+                    session.SetConfig('last_directory_3d_surface', last_directory)
 
                 Publisher.sendMessage('Export surface to file',
                                       filename=filename, filetype=filetype)

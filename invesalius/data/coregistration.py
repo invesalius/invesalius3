@@ -305,8 +305,6 @@ class CoordinateCorregistrate(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 1
 
-        trck_init, trck_id = self.tracker.GetTrackerInfo()
-
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
@@ -381,7 +379,6 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 0
 
-        trck_init, trck_id = self.tracker.GetTrackerInfo()
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
