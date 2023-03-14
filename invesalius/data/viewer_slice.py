@@ -614,19 +614,19 @@ class Viewer(wx.Panel):
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
-            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'SAGITAL'),
                                        index=coord[0])
-            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'CORONAL'),
                                        index=coord[1])
         elif self.orientation == "SAGITAL":
-            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'AXIAL'),
                                        index=coord[2])
-            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'CORONAL'),
                                        index=coord[1])
         elif self.orientation == "CORONAL":
-            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'AXIAL'),
                                        index=coord[2])
-            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'SAGITAL'),
                                        index=coord[0])
 
     def get_slice_data(self, render):
@@ -1525,11 +1525,9 @@ class Viewer(wx.Panel):
         self._update_draw_list()
 
     def ChangeSliceNumber(self, index):
-        #self.set_slice_number(index)
         self.scroll.SetThumbPosition(int(index))
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
-        self.interactor.Render()
 
     def ReloadActualSlice(self):
         pos = self.scroll.GetThumbPosition()

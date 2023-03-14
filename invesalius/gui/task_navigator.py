@@ -2668,6 +2668,7 @@ class E_fieldPanel(wx.Panel):
         self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
+        self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
         self.session = ses.Session()
         #  Check box to enable e-field visualization
@@ -2677,8 +2678,19 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
-        # Add line sizers into main sizer
+        text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
+        spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
+        spin_sleep.Enable(1)
+        spin_sleep.SetRange(0.05,10.0)
+        spin_sleep.SetValue(self.sleep_nav)
+        spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
+        spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
+
         border = 1
+        line_sleep = wx.BoxSizer(wx.VERTICAL)
+        line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+                            (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
+        # Add line sizers into main sizer
         border_last = 5
         txt_surface = wx.StaticText(self, -1, _('Select:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
@@ -2692,6 +2704,7 @@ class E_fieldPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
+        main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
@@ -2748,6 +2761,11 @@ class E_fieldPanel(wx.Panel):
             self.enable_efield.Enable(False)
         else:
             self.enable_efield.Enable(True)
+
+    def OnSelectSleep(self, evt, ctrl):
+        self.sleep_nav = ctrl.GetValue()
+        # self.tract.seed_offset = ctrl.GetValue()
+        Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
 
 class SessionPanel(wx.Panel):

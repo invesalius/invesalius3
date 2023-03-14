@@ -94,10 +94,11 @@ class UpdateNavigationScene(threading.Thread):
         # count = 0
         while not self.event.is_set():
             got_coords = False
+            object_visible_flag = False
             try:
                 coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
-
+                object_visible_flag = markers_flag[2]
 
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
@@ -119,10 +120,9 @@ class UpdateNavigationScene(threading.Thread):
                 # see the red cross in the position of the offset marker
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
-                if self.e_field_loaded:
+                if self.e_field_loaded and object_visible_flag:
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
                                  coord=coord, queue_IDs=self.e_field_IDs_queue)
                     if not self.e_field_norms_queue.empty():
@@ -136,6 +136,8 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
 
+                wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
+                wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
                 self.coord_queue.task_done()
                 # print('UpdateScene: done {}'.format(count))
                 # count += 1
@@ -387,7 +389,7 @@ class Navigation(metaclass=Singleton):
 
             if self.e_field_loaded:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
-                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, self.sleep_nav,
+                jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, 2*self.sleep_nav,
                                                                   self.neuronavigation_api, self.debug_efield_enorm))
 
 
