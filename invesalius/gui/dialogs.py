@@ -79,7 +79,6 @@ from vtkmodules.vtkRenderingFreeType import vtkVectorText
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 from wx.lib import masked
-from wx.lib.agw import floatspin
 import wx.lib.filebrowsebutton as filebrowse
 from wx.lib.wordwrap import wordwrap
 from invesalius.pubsub import pub as Publisher
@@ -100,17 +99,11 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.transformations as tr
 import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
-from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
 from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
-
-try:
-    from agw import floatspin as FS
-except ImportError: # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.floatspin as FS
 
 
 class MaskEvent(wx.PyCommandEvent):

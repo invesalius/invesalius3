@@ -19,7 +19,6 @@
 import os
 import plistlib
 import tempfile
-import textwrap
 
 import wx
 import numpy as np
@@ -37,7 +36,6 @@ import invesalius.data.volume as volume
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
-import invesalius.reader.dicom_grouper as dg
 import invesalius.reader.dicom_reader as dcm
 import invesalius.reader.bitmap_reader as bmp
 import invesalius.reader.others_reader as oth
