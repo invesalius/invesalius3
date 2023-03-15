@@ -34,6 +34,7 @@ import invesalius.data.tractography as dti
 import invesalius.data.e_field as e_field
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
+import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -147,16 +148,14 @@ class UpdateNavigationScene(threading.Thread):
             sleep(self.sle)
 
 
-
 class Navigation(metaclass=Singleton):
     def __init__(self, pedal_connection, neuronavigation_api):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.image_fiducials = np.full([3, 3], np.nan)
         self.correg = None
         self.target = None
-        self.obj_reg = None
+        self.object_registration = None
         self.track_obj = False
         self.m_change = None
         self.obj_data = None
@@ -178,7 +177,6 @@ class Navigation(metaclass=Singleton):
 
         self.e_field_loaded = False
         self.debug_efield_enorm = None
-
 
         # Tractography parameters
         self.trk_inp = None
@@ -203,11 +201,47 @@ class Navigation(metaclass=Singleton):
         self.lock_to_target = False
         self.coil_at_target = False
 
+        self.LoadState()
+
         self.__bind_events()
 
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
+        Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
+        Publisher.subscribe(self.TrackObject, 'Track object')
+
+    def SaveState(self):
+        # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
+        #   None parameter when the project is closed, crashing without this checks.
+        if self.object_registration is None:
+            return
+
+        object_fiducials, object_orientations, object_reference_mode, object_name = self.object_registration
+
+        state = {
+            'object_fiducials': object_fiducials.tolist(),
+            'object_orientations': object_orientations.tolist(),
+            'object_reference_mode': object_reference_mode,
+            'object_name': object_name.decode(const.FS_ENCODE),
+        }
+
+        session = ses.Session()
+        session.SetState('navigation', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('navigation')
+
+        if state is None:
+            return
+
+        object_fiducials = np.array(state['object_fiducials'])
+        object_orientations = np.array(state['object_orientations'])
+        object_reference_mode = state['object_reference_mode']
+        object_name = state['object_name'].encode(const.FS_ENCODE)
+
+        self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -221,6 +255,14 @@ class Navigation(metaclass=Singleton):
         self.com_port = com_port
         self.baud_rate = baud_rate
 
+    def UpdateObjectRegistration(self, data=None):
+        self.object_registration = data
+
+        self.SaveState()
+
+    def TrackObject(self, enabled=False):
+        self.track_obj = enabled
+
     def SetLockToTarget(self, value):
         self.lock_to_target = value
 
@@ -230,18 +272,11 @@ class Navigation(metaclass=Singleton):
     def GetReferenceMode(self):
         return self.ref_mode_id
 
-    def SetImageFiducial(self, fiducial_index, position):
-        self.image_fiducials[fiducial_index, :] = position
-
-        print("Set image fiducial {} to coordinates {}".format(fiducial_index, position))
-
-    def AreImageFiducialsSet(self):
-        return not np.isnan(self.image_fiducials).any()
-
-    def UpdateFiducialRegistrationError(self, tracker):
+    def UpdateFiducialRegistrationError(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
+        image_fiducials = image.GetImageFiducials()
 
-        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 
         self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, self.ref_mode_id, self.m_change)
 
@@ -259,9 +294,11 @@ class Navigation(metaclass=Singleton):
         if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
-    def EstimateTrackerToInVTransformationMatrix(self, tracker):
+    def EstimateTrackerToInVTransformationMatrix(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
-        self.all_fiducials = np.vstack([self.image_fiducials, tracker_fiducials])
+        image_fiducials = image.GetImageFiducials()
+
+        self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 
         self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
                                                 shear=False, scale=False)
@@ -281,14 +318,14 @@ class Navigation(metaclass=Singleton):
 
         if self.track_obj:
             # if object tracking is selected
-            if self.obj_reg is None:
+            if self.object_registration is None:
                 # check if object registration was performed
                 wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
                 errors = True
             else:
                 # if object registration was correctly performed continue with navigation
-                # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
-                obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
+                # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
+                obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
 
                 coreg_data = [self.m_change, obj_ref_mode]
 

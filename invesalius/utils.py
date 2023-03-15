@@ -78,7 +78,7 @@ def debug(error_str):
     """
     from invesalius.session import Session
     session = Session()
-    #if session.debug:
+    #if session.GetConfig('debug'):
     print(error_str)
 
 def next_copy_name(original_name, names_list):
@@ -411,12 +411,12 @@ def UpdateCheck():
 
     print("Checking updates...")
 
-    # Check if there is a language set
-    #import invesalius.i18n as i18n    import invesalius.session as ses
+    # Check if a language has been set.
     session = ses.Session()
+    lang = session.GetConfig('language')
+    random_id = session.GetConfig('random_id')
+
     install_lang = 0
-    lang = session.GetLanguage()
-    random_id = session.GetRandomId()
     if lang:
         # Fetch update data from server
         import invesalius.constants as const

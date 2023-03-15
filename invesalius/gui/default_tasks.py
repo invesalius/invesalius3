@@ -242,14 +242,18 @@ class UpperTaskPanel(wx.Panel):
         self.overwrite = False
 
         session = ses.Session()
-        print("session mode: ", session.mode)
-        if int(session.mode) == const.MODE_RP:
+        mode = session.GetConfig('mode')
+
+        print("Mode: ", mode)
+
+        if mode == const.MODE_RP:
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
                      (_("Configure 3D surface"), surface.TaskPanel),
                      (_("Export data"), exporter.TaskPanel)
                     ]
-        elif int(session.mode) == const.MODE_NAVIGATOR:
+
+        elif mode == const.MODE_NAVIGATOR:
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
                      (_("Configure 3D surface"), surface.TaskPanel),
@@ -258,6 +262,7 @@ class UpperTaskPanel(wx.Panel):
 
         for i in range(len(tasks)):
             (name, panel) = tasks[i]
+
             # Create panel
             item = fold_panel.AddFoldPanel("%d. %s"%(i+1, name),
                                             collapsed=True,
@@ -272,7 +277,7 @@ class UpperTaskPanel(wx.Panel):
                                           leftSpacing=0,
                                           rightSpacing=0)
 
-            # All items, except the first one, should be disabled if.
+            # All items, except the first one, should be disabled if
             # no data has been imported initially.
             if i != 0:
                 self.enable_items.append(item)
@@ -344,21 +349,19 @@ class UpperTaskPanel(wx.Panel):
             if not self.fold_panel.GetFoldPanel(2).IsEnabled():
                 item.Disable()
 
-            # Setting configuration to MODE_NAVIGATOR
-            session.mode = const.MODE_NAVIGATOR
-        elif status and (self.fold_panel.GetCount()>4):
+            session.SetConfig('mode', const.MODE_NAVIGATOR)
+
+        elif status and (self.fold_panel.GetCount() > 4):
             self.fold_panel.GetFoldPanel(4).Show()
 
-            # Setting configuration to MODE_NAVIGATOR
-            session.mode = const.MODE_NAVIGATOR
+            session.SetConfig('mode', const.MODE_NAVIGATOR)
         else:
-            Publisher.sendMessage('Deactive target button')
+            Publisher.sendMessage('Hide target button')
             self.fold_panel.GetFoldPanel(4).Hide()
 
-            # Setting configuration to MODE_RP (default mode)
-            session.mode = const.MODE_RP
+            # Setting mode to MODE_RP (default)
+            session.SetConfig('mode', const.MODE_RP)
 
-        session.WriteSessionFile()
         self.sizer.Layout()
 
 
