@@ -337,7 +337,8 @@ class SurfaceManager():
         nop = polydata.GetNumberOfPoints()
         noe = polydata.GetNumberOfCells()
         for i in range(polydata.GetNumberOfPoints()):
-            points[i] = polydata.GetPoint(i)
+            x = polydata.GetPoint(i)
+            points[i] = [j / 1000 for j in x]
         for i in range(polydata.GetNumberOfCells()):
             polydata.GetCellPoints(i, idlist)
             elements[i, 0] = idlist.GetId(0)
