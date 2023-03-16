@@ -28,6 +28,7 @@ import tempfile
 import time
 import traceback
 import weakref
+import numpy as np
 
 try:
     import queue
@@ -44,6 +45,7 @@ from vtkmodules.vtkFiltersCore import (
     vtkStripper,
     vtkTriangleFilter,
 )
+from vtkmodules.vtkCommonCore import vtkIdList
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
@@ -220,7 +222,8 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
-        Publisher.subscribe(self.OnImportCustumBinFile, 'Import bin file')
+        Publisher.subscribe(self.OnImportCustomBinFile, 'Import bin file')
+        Publisher.subscribe(self.OnWriteCustomBinFile, 'Write bin file')
 
         Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
@@ -316,7 +319,7 @@ class SurfaceManager():
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
 
-    def OnImportCustumBinFile(self,filename):
+    def OnImportCustomBinFile(self, filename):
         scalar = True
         if filename.lower().endswith('.bin'):
             polydata = convert_custom_bin_to_vtk(filename)
@@ -325,6 +328,28 @@ class SurfaceManager():
         else:
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+
+    def OnWriteCustomBinFile(self, polydata, filename):
+        idlist = vtkIdList()
+        points = np.zeros((polydata.GetNumberOfPoints(), 3))
+        elements = np.zeros((polydata.GetNumberOfCells(), 3))
+        id = 0
+        nop = polydata.GetNumberOfPoints()
+        noe = polydata.GetNumberOfCells()
+        for i in range(polydata.GetNumberOfPoints()):
+            points[i] = polydata.GetPoint(i)
+        for i in range(polydata.GetNumberOfCells()):
+            polydata.GetCellPoints(i, idlist)
+            elements[i, 0] = idlist.GetId(0)
+            elements[i, 1] = idlist.GetId(1)
+            elements[i, 2] = idlist.GetId(2)
+        data = {'p': points, 'e': elements}
+        with open(filename, 'wb') as f:
+            np.array(id, dtype=np.int32).tofile(f)
+            np.array(nop, dtype=np.int32).tofile(f)
+            np.array(noe, dtype=np.int32).tofile(f)
+            np.array(data['p'], dtype=np.float32).tofile(f)
+            np.array(data['e'], dtype=np.int32).tofile(f)
 
     def OnImportSurfaceFile(self, filename):
         """
