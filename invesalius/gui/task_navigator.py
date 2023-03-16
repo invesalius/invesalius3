@@ -2679,8 +2679,8 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
-        tooltip = wx.ToolTip(_("Load brain meshese"))
-        btn_act = wx.Button(self, -1, _("meshes"), size=wx.Size(50, 23))
+        tooltip = wx.ToolTip(_("Load Brain Meshes"))
+        btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
         btn_act.SetToolTip(tooltip)
         btn_act.Enable(1)
         btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
@@ -2702,20 +2702,20 @@ class E_fieldPanel(wx.Panel):
 
         # Add line sizers into main sizer
         border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Select:'))
+        txt_surface = wx.StaticText(self, -1, _('Select brain mesh:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
         # combo_surface_name.SetSelection(0)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboNameClic)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.combo_surface_name.Insert('Select',0)
+        self.combo_surface_name.Insert('Select brain mesh:',0)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
-        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
 
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
