@@ -208,11 +208,10 @@ def convert_custom_bin_to_vtk(filename):
     points = vtk.vtkPoints()
     triangles = vtk.vtkCellArray()
     polydata = vtk.vtkPolyData()
-    data = {'e': elements2, 'p': points2}
 
-    for i in range(len(data['p'])):
+    for i in range(len(points2)):
         points.InsertNextPoint(points2[i])
-    for i in range(len(data['e'])):
+    for i in range(len(elements2)):
         triangle = vtk.vtkTriangle()
         triangle.GetPointIds().SetId(0, elements2[i, 0])
         triangle.GetPointIds().SetId(1, elements2[i, 1])
