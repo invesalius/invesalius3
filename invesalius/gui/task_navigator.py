@@ -2752,6 +2752,12 @@ class E_fieldPanel(wx.Panel):
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
+                                              wildcard=_("Registration files (*.bin)|*.bin"),
+                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                              default_filename="my_binfile", save_ext="bin")
+            print('filename:',filename)
+            Publisher.sendMessage('Write bin file', polydata = self.e_field_mesh, filename=filename)
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(False)
