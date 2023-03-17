@@ -37,7 +37,7 @@ except ImportError:
 
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
-
+import vtk
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkMassProperties,
@@ -323,11 +323,53 @@ class SurfaceManager():
         scalar = True
         if filename.lower().endswith('.bin'):
             polydata = convert_custom_bin_to_vtk(filename)
+        elif filename.lower().endswith('.stl'):
+            scalar = False
+            reader = vtkSTLReader()
+
+            if _has_win32api:
+                reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+            else:
+                reader.SetFileName(filename.encode(const.FS_ENCODE))
+            reader.Update()
+            polydata = reader.GetOutput()
+            polydata= self.CoverttoMetersPolydata(polydata)
+
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
         else:
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+
+    def CoverttoMetersPolydata(self, polydata):
+        idlist = vtkIdList()
+        points = np.zeros((polydata.GetNumberOfPoints(), 3))
+        elements = np.zeros((polydata.GetNumberOfCells(), 3), dtype= np.int32)
+        for i in range(polydata.GetNumberOfPoints()):
+            x = polydata.GetPoint(i)
+            points[i] = [j * 1000 for j in x]
+        for i in range(polydata.GetNumberOfCells()):
+            polydata.GetCellPoints(i, idlist)
+            elements[i, 0] = idlist.GetId(0)
+            elements[i, 1] = idlist.GetId(1)
+            elements[i, 2] = idlist.GetId(2)
+        points_vtk = vtk.vtkPoints()
+        triangles = vtk.vtkCellArray()
+        polydata = vtk.vtkPolyData()
+        for i in range(len(points)):
+            points_vtk.InsertNextPoint(points[i])
+        for i in range(len(elements)):
+            triangle = vtk.vtkTriangle()
+            triangle.GetPointIds().SetId(0, elements[i, 0])
+            triangle.GetPointIds().SetId(1, elements[i, 1])
+            triangle.GetPointIds().SetId(2, elements[i, 2])
+
+            triangles.InsertNextCell(triangle)
+
+        polydata.SetPoints(points_vtk)
+        polydata.SetPolys(triangles)
+
+        return polydata
 
     def OnWriteCustomBinFile(self, polydata, filename):
         idlist = vtkIdList()
