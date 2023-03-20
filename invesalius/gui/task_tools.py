@@ -19,7 +19,6 @@
 
 import wx
 import os
-import wx.lib.embeddedimage as emb
 
 try:
     import wx.lib.agw.hyperlink as hl

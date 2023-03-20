@@ -26,7 +26,6 @@ from itertools import chain
 
 from invesalius.pubsub import pub as Publisher
 
-import invesalius.constants as consts
 from invesalius import inv_paths
 
 

@@ -54,11 +54,6 @@ import wx
 import sys
 from invesalius.pubsub import pub as Publisher
 
-try:
-    from agw import floatspin as FS
-except ImportError: # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.floatspin as FS
-
 import invesalius.constants as const
 import invesalius.data.cursor_actors as ca
 import invesalius.data.slice_ as sl

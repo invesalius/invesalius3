@@ -1,6 +1,4 @@
-from urllib.error import HTTPError
 from urllib.request import urlopen, Request
-from urllib.parse import urlparse
 import pathlib
 import tempfile
 import typing
