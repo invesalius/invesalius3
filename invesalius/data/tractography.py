@@ -326,7 +326,10 @@ class ComputeTractsThread(threading.Thread):
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
                 # self.visualization_queue.put_nowait([coord, m_img, bundle])
-                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset))
+                coord_offset_w = np.hstack((coord_offset, 1.0)).reshape([4, 1])
+                coord_offset_w = np.linalg.inv(affine) @ coord_offset_w
+                coord_offset_w = np.squeeze(coord_offset_w.T[:, :3])
+                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset, coord_offset_w))
                 # print('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_tracts_queue.task_done()
