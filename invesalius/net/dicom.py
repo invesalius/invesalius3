@@ -1,51 +1,59 @@
+from typing import Any
 import gdcm
 import invesalius.utils as utils
+from dataclasses import dataclass
 
+@dataclass
 class DicomNet:
+    """
+    Class for managing DICOM network configuration and to make standard Requests
+    """
+    address: str = ''
+    port: int = 0
+    aetitle_call: str = ''
+    aetitle: str = ''
+    search_word: str = ''
+    search_type: str = 'patient'
     
-    def __init__(self):
-        self.address = ''
-        self.port = ''
-        self.aetitle_call = ''
-        self.aetitle = ''
-        self.search_word = ''
-        self.search_type = 'patient'
-
-    def __call__(self):
-        return self
-   
-    def SetHost(self, address):
+    def set_host(self, address: str):
         self.address = address
-
-    def SetPort(self, port):
+    
+    def set_port(self, port: int):
         self.port = port
-
-    def SetAETitleCall(self, name):
+    
+    def set_aetitle_call(self, name: str):
         self.aetitle_call = name
-
-    def SetAETitle(self, ae_title):
+    
+    def set_aetitle(self, ae_title: str):
         self.aetitle = ae_title
-
-    def SetSearchWord(self, word):
+    
+    def set_search_word(self, word: str):
         self.search_word = word
-
-    def SetSearchType(self, stype):
+    
+    def set_search_type(self, stype: str):
         self.search_type = stype
-
-    def GetValueFromDICOM(self, ret, tag):
-        value = str(ret.GetDataElement(gdcm.Tag(tag[0],\
-                                        tag[1])).GetValue())
+    
+    def get_value_from_dicom(self, ret:Any, tag: tuple) -> str:
+        value = str(ret.GetDataElement(gdcm.Tag(tag[0], tag[1])).GetValue())
         if value == 'None' and tag != (0x0008,0x103E):
             value = ''
         return value
+    
+    
 
-
-    def RunCEcho(self):
+    def run_c_echo(self) -> bool:
         cnf = gdcm.CompositeNetworkFunctions()
-        return cnf.CEcho(self.address, int(self.port),\
-                         self.aetitle, self.aetitle_call)
+        try:
+            res = cnf.CEcho(self.address, self.port, \
+                            self.aetitle, self.aetitle_call)        
+        except TimeoutError:
+            print('TIMEOUT ERROR')
+        except Exception as e:
+            print(f"ERROR: {e}")
 
-    def RunCFind(self):
+        return res
+
+    def run_c_find(self) -> dict:
 
         tags = [(0x0010, 0x0010), (0x0010, 0x1010), (0x0010,0x0040), (0x0008,0x1030),\
                 (0x0008,0x0060), (0x0008,0x0022), (0x0008,0x0080), (0x0010,0x0030),\
@@ -73,10 +81,10 @@ class DicomNet:
 
 
         cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
+        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImage, ds)
         ret = gdcm.DataSetArrayType()
 
-        cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\
+        cnf.CFind(self.address, self.port, theQuery, ret, self.aetitle,\
                   self.aetitle_call)
 
         patients = {}
@@ -95,20 +103,20 @@ class DicomNet:
         
                 rt = ret[i]
 
-                name = self.GetValueFromDICOM(rt, (0x0010, 0x0010))
-                age = self.GetValueFromDICOM(rt, (0x0010, 0x1010))
-                gender = self.GetValueFromDICOM(rt, (0x0010,0x0040))
-                study_description = self.GetValueFromDICOM(rt, (0x0008,0x1030))
-                modality = self.GetValueFromDICOM(rt, (0x0008,0x0060))
-                institution = self.GetValueFromDICOM(rt, (0x0008,0x0080))
-                date_of_birth = utils.format_date(self.GetValueFromDICOM(rt, (0x0010,0x0030)))
-                acession_number = self.GetValueFromDICOM(rt, (0x0008,0x0050))
-                ref_physician = self.GetValueFromDICOM(rt, (0x0008,0x0090))
-                serie_description = self.GetValueFromDICOM(rt, (0x0008,0x103E))
-                acquisition_time = utils.format_time(self.GetValueFromDICOM(rt, (0x0008,0x0032)))
-                acquisition_date = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
+                name = self.get_value_from_dicom(rt, (0x0010, 0x0010))
+                age = self.get_value_from_dicom(rt, (0x0010, 0x1010))
+                gender = self.get_value_from_dicom(rt, (0x0010,0x0040))
+                study_description = self.get_value_from_dicom(rt, (0x0008,0x1030))
+                modality = self.get_value_from_dicom(rt, (0x0008,0x0060))
+                institution = self.get_value_from_dicom(rt, (0x0008,0x0080))
+                date_of_birth = utils.format_date(self.get_value_from_dicom(rt, (0x0010,0x0030)))
+                acession_number = self.get_value_from_dicom(rt, (0x0008,0x0050))
+                ref_physician = self.get_value_from_dicom(rt, (0x0008,0x0090))
+                serie_description = self.get_value_from_dicom(rt, (0x0008,0x103E))
+                acquisition_time = utils.format_time(self.get_value_from_dicom(rt, (0x0008,0x0032)))
+                acquisition_date = utils.format_date(self.get_value_from_dicom(rt, (0x0008,0x0022)))
 
-                teste = self.GetValueFromDICOM(rt, (0x0020,0x000d))
+                teste = self.get_value_from_dicom(rt, (0x0020,0x000d))
 
                 patients[patient_id][serie_id] = {'name':name, 'age':age, 'gender':gender,\
                                                   'study_description':study_description,\
@@ -128,7 +136,7 @@ class DicomNet:
         return patients 
 
 
-    def RunCMove(self, values):
+    def run_c_move(self, values:list) -> None:
 
         ds = gdcm.DataSet()
 
@@ -152,7 +160,8 @@ class DicomNet:
 
 
         cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
+        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImage, ds)
+
         #ret = gdcm.DataSetArrayType()
 
         """
@@ -169,8 +178,8 @@ class DicomNet:
                   self.aetitle_call, "/home/phamorim/Desktop/output/")
 
 
-        cnf.CMove(self.address, int(self.port), theQuery, 11112, self.aetitle,\
-                  self.aetitle_call, "/home/phamorim/Desktop/")
+        cnf.CMove(self.address, self.port, theQuery, 11112, self.aetitle,\
+                  self.aetitle_call, "D:\Opensource\Invesaliusproject\dicomfiles")
 
         print("BAIXOUUUUUUUU")
         #ret = gdcm.DataSetArrayType()
@@ -186,3 +195,5 @@ class DicomNet:
         #for r in ret:
         #    print r
         #    print "\n"
+
+
