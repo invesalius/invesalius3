@@ -22,7 +22,7 @@
 # from math import cos, sin
 import os
 import sys
-
+import time
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
@@ -37,6 +37,7 @@ from vtkmodules.vtkCommonCore import (
     vtkPoints,
     vtkUnsignedCharArray
 )
+from vtkmodules.all import vtkCenterOfMass
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
@@ -1294,22 +1295,25 @@ class Viewer(wx.Panel):
         return actor_arrow
 
     def CenterOfMass(self):
-        barycenter = [0.0, 0.0, 0.0]
+        st = time.time()
+
         proj = prj.Project()
         try:
             surface = proj.surface_dict[0].polydata
         except KeyError:
             print("There is not any surface created")
-            return barycenter
-        n = surface.GetNumberOfPoints()
-        for i in range(n):
-            point = surface.GetPoint(i)
-            barycenter[0] += point[0]
-            barycenter[1] += point[1]
-            barycenter[2] += point[2]
-        barycenter[0] /= n
-        barycenter[1] /= n
-        barycenter[2] /= n
+
+        polydata = surface
+
+        centerOfMass = vtk.vtkCenterOfMass()
+        centerOfMass.SetInputData(polydata)
+        centerOfMass.SetUseScalarsAsWeights(False)
+        centerOfMass.Update()
+
+        barycenter = centerOfMass.GetCenter()
+        et = time.time()
+        elapsed_time = et - st
+        print('Execution time:', elapsed_time, 'seconds')
 
         return barycenter
 
