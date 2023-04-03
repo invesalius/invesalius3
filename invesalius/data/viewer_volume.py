@@ -59,6 +59,8 @@ from vtkmodules.vtkInteractionWidgets import (
     vtkImagePlaneWidget,
     vtkOrientationMarkerWidget,
 )
+from vtkmodules.all import vtkCenterOfMass
+
 from vtkmodules.vtkIOExport import (
     vtkIVExporter,
     vtkOBJExporter,
@@ -1305,7 +1307,7 @@ class Viewer(wx.Panel):
 
         polydata = surface
 
-        centerOfMass = vtk.vtkCenterOfMass()
+        centerOfMass = vtkCenterOfMass()
         centerOfMass.SetInputData(polydata)
         centerOfMass.SetUseScalarsAsWeights(False)
         centerOfMass.Update()
