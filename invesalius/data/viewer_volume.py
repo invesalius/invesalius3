@@ -37,7 +37,7 @@ from vtkmodules.vtkCommonCore import (
     vtkPoints,
     vtkUnsignedCharArray
 )
-from vtkmodules.all import vtkCenterOfMass
+
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
