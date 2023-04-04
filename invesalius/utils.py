@@ -392,10 +392,9 @@ def UpdateCheck():
     try:
         from urllib.parse import urlencode
         from urllib.request import urlopen, Request
-        from urllib.error import HTTPError
     except ImportError:
         from urllib import urlencode
-        from urllib2 import urlopen, Request, HTTPError
+        from urllib2 import urlopen, Request
 
     import wx
     import invesalius.session as ses

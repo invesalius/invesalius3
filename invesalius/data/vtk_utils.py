@@ -309,7 +309,7 @@ class TextZero(object):
         try:
             self.actor.SetInput(value.encode("cp1252"))
         except(UnicodeEncodeError):
-            self.actor.SetInput(value.encode("utf-8"))
+            self.actor.SetInput(value.encode("utf-8","surrogatepass"))
 
         self.text = value
 

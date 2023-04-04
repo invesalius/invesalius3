@@ -38,7 +38,6 @@ import invesalius.session as ses
 import invesalius.utils as utils
 import wx
 import wx.aui
-import wx.lib.agw.toasterbox as TB
 import wx.lib.popupctl as pc
 from invesalius import inv_paths
 from invesalius.gui import project_properties

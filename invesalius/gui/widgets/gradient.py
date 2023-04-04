@@ -22,7 +22,6 @@ import sys
 
 import numpy
 import wx
-from wx.lib import intctrl
 
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 

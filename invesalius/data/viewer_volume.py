@@ -34,7 +34,6 @@ from vtkmodules.vtkCommonCore import (
     vtkIdList,
     vtkMath,
     vtkLookupTable,
-    vtkMinimalStandardRandomSequence,
     vtkPoints,
     vtkUnsignedCharArray
 )

@@ -515,7 +515,7 @@ def img2memmap(group):
 
     temp_file = tempfile.mktemp()
 
-    data = group.get_data()
+    data = group.get_fdata()
 
     # if scalar range is larger than uint16 maximum number, the image needs
     # to be rescalaed so that no negative values are created when converting to int16

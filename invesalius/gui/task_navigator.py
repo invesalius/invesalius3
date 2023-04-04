@@ -39,13 +39,6 @@ try:
 except:
     has_mTMS = False
 
-try:
-    import invesalius.data.elfin as elfin
-    import invesalius.data.elfin_processing as elfin_process
-    has_robot = True
-except ImportError:
-    has_robot = False
-
 import wx
 
 try:

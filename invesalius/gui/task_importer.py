@@ -281,7 +281,7 @@ class InnerTaskPanel(wx.Panel):
         if id == BTN_IMPORT_LOCAL:
             self.ImportDicom()
         elif id == BTN_IMPORT_NIFTI:
-            self.ImportNifit()
+            self.ImportNifti()
         elif id == BTN_IMPORT_PACS:
             self.ImportPACS()
         else: #elif id == BTN_OPEN_PROJECT:
