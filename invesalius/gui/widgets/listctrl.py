@@ -140,7 +140,7 @@ class ColumnSorterMixin:
         item2 = self.itemDataMap[key2][col]
 
         #--- Internationalization of string sorting with locale module
-        if type(item1) == type('') or type(item2) == type(''):
+        if type(item1) is type('') or type(item2) is type(''):
             cmpVal = locale.strcoll(str(item1), str(item2))
         else:
             cmpVal = cmp(item1, item2)
