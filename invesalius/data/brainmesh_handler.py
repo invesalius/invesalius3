@@ -41,9 +41,11 @@ from vtkmodules.vtkCommonColor import (
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
+from vtk import vtkImageData
+
 
 class Brain:
-    def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
+    def __init__(self, n_peels, window_width, window_level, affine, inv_proj) -> None:
         # Create arrays to access the peel data and peel Actors
         self.peel = []
         self.peelActors = []
@@ -53,13 +55,13 @@ class Brain:
         self.affine = affine
         self.inv_proj = inv_proj
 
-    def from_mask(self, mask):
+    def from_mask(self, mask) -> None:
         mask= np.array(mask.matrix[1:, 1:, 1:])
         slic = sl.Slice()
         image = slic.matrix
 
-        mask = to_vtk(mask, spacing=slic.spacing)
-        image = to_vtk(image, spacing=slic.spacing)
+        mask: vtkImageData = to_vtk(mask, spacing=slic.spacing)
+        image: vtkImageData = to_vtk(image, spacing=slic.spacing)
 
         flip = vtkImageFlip()
         flip.SetInputData(image)
@@ -83,11 +85,11 @@ class Brain:
         self._do_surface_creation(mask)
 
 
-    def from_mask_file(self, mask_path):
+    def from_mask_file(self, mask_path) -> None:
         slic = sl.Slice()
         image = slic.matrix
         image = np.flip(image, axis=1)
-        image = to_vtk(image, spacing=slic.spacing)
+        image: vtkImageData = to_vtk(image, spacing=slic.spacing)
 
         # Read the mask
         mask_reader = vtkNIFTIImageReader()
@@ -99,12 +101,12 @@ class Brain:
         mask_sFormMatrix = mask_reader.GetSFormMatrix()
 
         # Image
-        self.refImage = image
+        self.refImage: vtkImageData = image
 
         self._do_surface_creation(mask, mask_sFormMatrix)
 
 
-    def _do_surface_creation(self, mask, mask_sFormMatrix=None):
+    def _do_surface_creation(self, mask, mask_sFormMatrix=None) -> None:
         if mask_sFormMatrix is None:
             mask_sFormMatrix = vtkMatrix4x4()
 
@@ -170,7 +172,7 @@ class Brain:
         self.peel.append(newPeel)
         self.currentPeelActor = vtkActor()
         if not np.all(np.equal(self.affine, np.eye(4))):
-            affine_vtk = self.CreateTransformedVTKAffine()
+            affine_vtk: vtkMatrix4x4 = self.CreateTransformedVTKAffine()
             self.currentPeelActor.SetUserMatrix(affine_vtk)
         self.GetCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
@@ -178,14 +180,14 @@ class Brain:
         self.locator = vtkCellLocator()
         self.PeelDown(currentPeel)
 
-    def CreateTransformedVTKAffine(self):
+    def CreateTransformedVTKAffine(self) -> vtkMatrix4x4:
         affine_transformed = self.affine.copy()
         matrix_shape = tuple(self.inv_proj.matrix_shape)
         affine_transformed[1, -1] -= matrix_shape[1]
 
         return vtk_utils.numpy_to_vtkMatrix4x4(affine_transformed)
 
-    def get_actor(self, n):
+    def get_actor(self, n) -> vtkActor:
         return self.GetPeelActor(n)
 
     def SliceDown(self, currentPeel):
@@ -237,7 +239,7 @@ class Brain:
         currentPeel = self.refImageSpace2_xyz.GetOutput()
         return currentPeel
 
-    def PeelDown(self, currentPeel):
+    def PeelDown(self, currentPeel) -> None:
         for i in range(0, self.numberOfPeels):
             currentPeel = self.SliceDown(currentPeel)
             currentPeel = self.MapImageOnCurrentPeel(currentPeel)
@@ -256,7 +258,7 @@ class Brain:
     def TransformPeelPosition(self, p):
         peel_transform = vtkTransform()
         if not np.all(np.equal(self.affine, np.eye(4))):
-            affine_vtk = self.CreateTransformedVTKAffine()
+            affine_vtk: vtkMatrix4x4 = self.CreateTransformedVTKAffine()
             peel_transform.SetMatrix(affine_vtk)
         refpeelspace = vtkTransformPolyDataFilter()
         refpeelspace.SetInputData(self.peel[p])
@@ -265,7 +267,7 @@ class Brain:
         currentPeel = refpeelspace.GetOutput()
         return currentPeel
 
-    def GetPeelActor(self, p):
+    def GetPeelActor(self, p) -> vtkActor:
         lut = vtkWindowLevelLookupTable()
         lut.SetWindow(self.window_width)
         lut.SetLevel(self.window_level)
@@ -293,7 +295,7 @@ class Brain:
 
         return self.currentPeelActor
 
-    def GetCurrentPeelActor(self, currentPeel):
+    def GetCurrentPeelActor(self, currentPeel) -> vtkActor:
         lut = vtkWindowLevelLookupTable()
         lut.SetWindow(self.window_width)
         lut.SetLevel(self.window_level)
@@ -318,10 +320,10 @@ class Brain:
         return self.currentPeelActor
 
 class E_field_brain:
-    def __init__(self, e_field_mesh):
+    def __init__(self, e_field_mesh) -> None:
         self.GetEfieldActor(e_field_mesh)
 
-    def GetEfieldActor(self, mesh):
+    def GetEfieldActor(self, mesh) -> None:
         self.e_field_mesh_normals = vtkFloatArray()
         self.e_field_mesh_centers = vtkFloatArray()
 
@@ -338,7 +340,7 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
         self.efield_mapper = vtkPolyDataMapper()
-        self.lut = CreateLUTTableForEfield(0, 0.001)
+        self.lut: vtkLookupTable = CreateLUTTableForEfield(0, 0.001)
 
 def GetCenters(mesh):
         # Compute centers of triangles
@@ -360,11 +362,11 @@ def GetNormals(mesh):
         # This converts to the normals to an array for easy access
         normals = normalComputer.GetOutput().GetCellData().GetNormals()
         return normals
-def CreateLUTTableForEfield(min, max):
+def CreateLUTTableForEfield(min, max) -> vtkLookupTable:
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
-        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        seriesEnum: ColorSchemes = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         return lut

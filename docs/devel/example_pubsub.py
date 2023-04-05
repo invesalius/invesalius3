@@ -11,45 +11,45 @@ from invesalius.pubsub import pub as Publisher
 
 
 class Student:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name: str = name
         self.mood = ":|"
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.ReceiveProject, "Set Student Project")
         Publisher.subscribe(self.ReceiveGrade, "Set Student Grade")
 
-    def ReceiveProject(self, pubsub_evt):
-        projects_dict = pubsub_evt.data
+    def ReceiveProject(self, pubsub_evt) -> None:
+        projects_dict: Dict[str, str] = pubsub_evt.data
         self.project = projects_dict[self.name]
-        print "%s: I've received the project %s" % (self.name, self.project)
+        print("%s: I've received the project %s" % (self.name, self.project))
 
-    def ReceiveGrade(self, pubsub_evt):
-        grades_dict = pubsub_evt.data
+    def ReceiveGrade(self, pubsub_evt) -> None:
+        grades_dict: Dict[str, float] = pubsub_evt.data
         self.grade = grades_dict[self.name]
         if self.grade > 6:
             self.mood = ":)"
         else:
             self.mood = ":("
-        print "%s: I've received the grade %d %s" % (self.name, self.grade, self.mood)
+        print("%s: I've received the grade %d %s" % (self.name, self.grade, self.mood))
 
 
 class Teacher:
-    def __init__(self, name, course):
-        self.name = name
-        self.course = course
+    def __init__(self, name: str, course: "Course") -> None:
+        self.name: str = name
+        self.course: Course = course
 
-    def SendMessage(self):
+    def SendMessage(self) -> None:
         print "%s: Telling students the projects" % (self.name)
         Publisher.sendMessage("Set Student Project", self.course.projects_dict)
 
-        print "\n%s: Telling students the grades" % (self.name)
+        print("\n%s: Telling students the grades" % (self.name))
         Publisher.sendMessage("Set Student Grade", self.course.grades_dict)
 
 
 class Course:
-    def __init__(self, subject):
+    def __init__(self, subject) -> None:
         self.subject = subject
         self.grades_dict = {}
         self.projects_dict = {}

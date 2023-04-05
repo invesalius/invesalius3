@@ -3,7 +3,7 @@ import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.coregistration as dcr
 
-def angle_calculation(ap_axis, coil_axis):
+def angle_calculation(ap_axis, coil_axis) -> float:
     """
     Calculate angle between two given axis (in degrees)
 
@@ -13,7 +13,7 @@ def angle_calculation(ap_axis, coil_axis):
     """
 
     ap_axis = np.array([ap_axis[0], ap_axis[1]])
-    coil_axis = np.array([float(coil_axis[0]), float(coil_axis[1])])
+    coil_axis: ndarray[Any, dtype] = np.array([float(coil_axis[0]), float(coil_axis[1])])
     angle = np.rad2deg(np.arccos((np.dot(ap_axis, coil_axis))/(
         np.linalg.norm(ap_axis)*np.linalg.norm(coil_axis))))
 
@@ -45,7 +45,7 @@ def base_creation_old(fiducials):
     if not g1.any():
         g1 = p2 - q
 
-    g3 = np.cross(g2, g1)
+    g3: ndarray[Any, dtype] = np.cross(g2, g1)
 
     g1 = g1/np.sqrt(np.dot(g1, g1))
     g2 = g2/np.sqrt(np.dot(g2, g2))
@@ -55,7 +55,7 @@ def base_creation_old(fiducials):
                    [g2[0], g2[1], g2[2]],
                    [g3[0], g3[1], g3[2]]])
 
-    m_inv = m.I
+    m_inv: matrix = m.I
 
     return m, q, m_inv
 
@@ -86,13 +86,13 @@ def base_creation(fiducials):
     if not g1.any():
         g1 = p2 - q
 
-    g3 = np.cross(g1, g2)
+    g3: ndarray[Any, dtype] = np.cross(g1, g2)
 
     g1 = g1/np.sqrt(np.dot(g1, g1))
     g2 = g2/np.sqrt(np.dot(g2, g2))
     g3 = g3/np.sqrt(np.dot(g3, g3))
 
-    m = np.zeros([3, 3])
+    m: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([3, 3])
     m[:, 0] = g1/np.sqrt(np.dot(g1, g1))
     m[:, 1] = g2/np.sqrt(np.dot(g2, g2))
     m[:, 2] = g3/np.sqrt(np.dot(g3, g3))
@@ -121,7 +121,7 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
     else:
         icp = [False, None]
 
-    dist = np.zeros([3, 1])
+    dist: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([3, 1])
     for i in range(0, 6, 2):
         p_m, _ = dcr.corregistrate_dynamic((m_change, 0), fiducials_raw[i:i+2], ref_mode_id, icp)
         dist[int(i/2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i/2), :]), 2)))
@@ -182,9 +182,9 @@ def object_registration(fiducials, orients, coord_raw, m_change):
 
     coords = np.hstack((fiducials, orients))
 
-    fids_dyn = np.zeros([4, 6])
-    fids_img = np.zeros([4, 6])
-    fids_raw = np.zeros([3, 3])
+    fids_dyn: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([4, 6])
+    fids_img: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([4, 6])
+    fids_raw: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([3, 3])
 
     # compute fiducials of object with reference to the fixed probe in source frame
     for ic in range(0, 3):
@@ -196,9 +196,9 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     #      the lines below, and then again in dco.coordinates_to_transformation_matrix.
     #
     a, b, g = np.radians(coords[3, 3:])
-    r_s0_raw = tr.euler_matrix(a, b, g, axes='rzyx')
+    r_s0_raw: ndarray[Any, dtype[floating[_64Bit]]] = tr.euler_matrix(a, b, g, axes='rzyx')
 
-    s0_raw = dco.coordinates_to_transformation_matrix(
+    s0_raw: ndarray[Any, dtype[floating[_64Bit]]] | Any = dco.coordinates_to_transformation_matrix(
         position=coords[3, :3],
         orientation=coords[3, 3:],
         axes='rzyx',
@@ -206,10 +206,10 @@ def object_registration(fiducials, orients, coord_raw, m_change):
 
     # compute change of basis for object fiducials in source frame
     base_obj_raw, q_obj_raw = base_creation(fids_raw[:3, :3])
-    r_obj_raw = np.identity(4)
+    r_obj_raw: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     r_obj_raw[:3, :3] = base_obj_raw[:3, :3]
-    t_obj_raw = tr.translation_matrix(q_obj_raw)
-    m_obj_raw = tr.concatenate_matrices(t_obj_raw, r_obj_raw)
+    t_obj_raw: ndarray[Any, dtype[floating[_64Bit]]] = tr.translation_matrix(q_obj_raw)
+    m_obj_raw: ndarray[Any, dtype[floating[_64Bit]]] | Any = tr.concatenate_matrices(t_obj_raw, r_obj_raw)
 
     for ic in range(0, 4):
         if coord_raw.any():
@@ -221,7 +221,7 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         fids_dyn[ic, 2] = -fids_dyn[ic, 2]
 
         # compute object fiducials in vtk head frame
-        M_p = dco.coordinates_to_transformation_matrix(
+        M_p: ndarray[Any, dtype[floating[_64Bit]]] | Any = dco.coordinates_to_transformation_matrix(
             position=fids_dyn[ic, :3],
             orientation=fids_dyn[ic, 3:],
             axes='rzyx',
@@ -236,11 +236,11 @@ def object_registration(fiducials, orients, coord_raw, m_change):
 
     # compute object base change in vtk head frame
     base_obj_img, _ = base_creation(fids_img[:3, :3])
-    r_obj_img = np.identity(4)
+    r_obj_img: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     r_obj_img[:3, :3] = base_obj_img[:3, :3]
 
     # compute initial alignment of probe fixed in the object in reference (or static) frame
-    s0_dyn = dco.coordinates_to_transformation_matrix(
+    s0_dyn: ndarray[Any, dtype[floating[_64Bit]]] | Any = dco.coordinates_to_transformation_matrix(
         position=fids_dyn[3, :3],
         orientation=fids_dyn[3, 3:],
         axes='rzyx',

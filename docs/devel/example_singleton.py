@@ -7,7 +7,7 @@
 class Singleton(type):
     # This is a Gary Robinson implementation:
     # http://www.garyrobinson.net/2004/03/python_singleto.html
-    def __init__(cls,name,bases,dic):
+    def __init__(cls,name,bases,dic) -> None:
         super(Singleton,cls).__init__(name,bases,dic)
         cls.instance=None
         
@@ -21,18 +21,18 @@ class Bone(object):
     # Singleton design pattern for implementing it
     __metaclass__= Singleton
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.size = 100
         
-    def RemovePart(self, part_size):
+    def RemovePart(self, part_size) -> None:
         self.size -= part_size # self.size = self.size - part_size
 
 class Dog():
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
         self.bone = Bone()
         
-    def EatBonePart(self, part_size):
+    def EatBonePart(self, part_size) -> None:
         self.bone.RemovePart(part_size) 
 
 print "Initial state:"

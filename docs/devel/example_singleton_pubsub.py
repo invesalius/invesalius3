@@ -6,7 +6,7 @@ class Singleton(type):
     # This is a Gary Robinson implementation:
     # http://www.garyrobinson.net/2004/03/python_singleto.html
     
-    def __init__(cls,name,bases,dic):
+    def __init__(cls,name,bases,dic) -> None:
         super(Singleton,cls).__init__(name,bases,dic)
         cls.instance=None
         
@@ -20,15 +20,15 @@ class Pizza(object):
     # Singleton design pattern for implementing it
     __metaclass__= Singleton
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.npieces = 8
         self.__bind_events()
         
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         ps.Publisher().subscribe(self.RemovePiece,
                                  'Eat piece of pizza')
         
-    def RemovePiece(self, pubsub_evt):
+    def RemovePiece(self, pubsub_evt) -> None:
         person = pubsub_evt.data
         if self.npieces:
             self.npieces -= 1
@@ -37,11 +37,11 @@ class Pizza(object):
             print "%s is hungry!"%(person.name)
 
 class Person():
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
         self.pizza = Pizza()
         
-    def EatPieceOfPizza(self):
+    def EatPieceOfPizza(self) -> None:
         ps.Publisher.sendMessage('Eat piece of pizza',(self))
         
 
@@ -49,7 +49,7 @@ print "Initial state:"
 p1 = Person("Paulo ") 
 p2 = Person("Thiago")
 p3 = Person("Andre ")
-people = [p1, p2, p3]
+people: list[Person] = [p1, p2, p3]
 
 print "Everyone eats 2 pieces:"
 for i in range(2):
