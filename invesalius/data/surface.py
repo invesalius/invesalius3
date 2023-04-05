@@ -37,7 +37,6 @@ except ImportError:
 
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
-import vtk
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkMassProperties,
@@ -45,7 +44,14 @@ from vtkmodules.vtkFiltersCore import (
     vtkStripper,
     vtkTriangleFilter,
 )
-from vtkmodules.vtkCommonCore import vtkIdList
+from vtkmodules.vtkCommonCore import (vtkIdList,
+vtkPoints,
+)
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+    vtkTriangle
+)
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
@@ -353,13 +359,13 @@ class SurfaceManager():
             elements[i, 0] = idlist.GetId(0)
             elements[i, 1] = idlist.GetId(1)
             elements[i, 2] = idlist.GetId(2)
-        points_vtk = vtk.vtkPoints()
-        triangles = vtk.vtkCellArray()
-        polydata = vtk.vtkPolyData()
+        points_vtk = vtkPoints()
+        triangles = vtkCellArray()
+        polydata = vtkPolyData()
         for i in range(len(points)):
             points_vtk.InsertNextPoint(points[i])
         for i in range(len(elements)):
-            triangle = vtk.vtkTriangle()
+            triangle = vtkTriangle()
             triangle.GetPointIds().SetId(0, elements[i, 0])
             triangle.GetPointIds().SetId(1, elements[i, 1])
             triangle.GetPointIds().SetId(2, elements[i, 2])

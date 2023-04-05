@@ -22,8 +22,14 @@ import numpy as np
 
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonDataModel import vtkImageData
-
-
+from vtkmodules.vtkCommonCore import (
+    vtkPoints,
+)
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+    vtkTriangle
+)
 def to_vtk(
     n_array,
     spacing=(1.0, 1.0, 1.0),
@@ -194,7 +200,6 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
         return np_array
 
 def convert_custom_bin_to_vtk(filename):
-    import vtk
     numbers = np.fromfile(filename, count=3, dtype=np.int32)
     points = np.fromfile(filename, dtype=np.float32)
     elements = np.fromfile(filename, dtype=np.int32)
@@ -205,14 +210,14 @@ def convert_custom_bin_to_vtk(filename):
     points2 = points1.reshape(numbers[1], 3)
     elements2 = elements1.reshape(numbers[2], 3)
 
-    points = vtk.vtkPoints()
-    triangles = vtk.vtkCellArray()
-    polydata = vtk.vtkPolyData()
+    points = vtkPoints()
+    triangles = vtkCellArray()
+    polydata = vtkPolyData()
 
     for i in range(len(points2)):
         points.InsertNextPoint(points2[i])
     for i in range(len(elements2)):
-        triangle = vtk.vtkTriangle()
+        triangle = vtkTriangle()
         triangle.GetPointIds().SetId(0, elements2[i, 0])
         triangle.GetPointIds().SetId(1, elements2[i, 1])
         triangle.GetPointIds().SetId(2, elements2[i, 2])
