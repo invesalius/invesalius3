@@ -22,6 +22,8 @@ import numpy as np
 
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonDataModel import vtkImageData
+from vtk import vtkDataArray
+
 
 
 def to_vtk(
@@ -31,7 +33,7 @@ def to_vtk(
     orientation="AXIAL",
     origin=(0, 0, 0),
     padding=(0, 0, 0),
-):
+) -> vtkImageData:
     if orientation == "SAGITTAL":
         orientation = "SAGITAL"
 
@@ -43,7 +45,7 @@ def to_vtk(
 
     px, py, pz = padding
 
-    v_image = numpy_support.numpy_to_vtk(n_array.flat)
+    v_image: vtkDataArray = numpy_support.numpy_to_vtk(n_array.flat)
 
     if orientation == "AXIAL":
         extent = (
@@ -94,7 +96,7 @@ def to_vtk(
     return image_copy
 
 
-def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
+def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)) -> vtkImageData:
     dz, dy, dx = n_array.shape
     ox, oy, oz = origin
     sx, sy, sz = spacing
@@ -103,7 +105,7 @@ def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
     oy -= sy
     oz -= sz
 
-    v_image = numpy_support.numpy_to_vtk(n_array.flat)
+    v_image: vtkDataArray = numpy_support.numpy_to_vtk(n_array.flat)
     extent = (0, dx - 1, 0, dy - 1, 0, dz - 1)
 
     # Generating the vtkImageData
@@ -125,9 +127,9 @@ def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
     return image
 
 
-def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
+def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)) -> vtkImageData:
     dy, dx, dc = n_array.shape
-    v_image = numpy_support.numpy_to_vtk(n_array.reshape(dy * dx, dc))
+    v_image: vtkDataArray = numpy_support.numpy_to_vtk(n_array.reshape(dy * dx, dc))
 
     extent = (0, dx - 1, 0, dy - 1, 0, 0)
 
@@ -148,7 +150,7 @@ def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
 
 
 # Based on http://gdcm.sourceforge.net/html/ConvertNumpy_8py-example.html
-def gdcm_to_numpy(image, apply_intercep_scale=True):
+def gdcm_to_numpy(image, apply_intercep_scale=True) -> ndarray[Any, dtype[signedinteger[_16Bit]]] | ndarray[Any, dtype[unsignedinteger[_8Bit]]] | ndarray[Any, dtype[floating[_64Bit]]]:
     map_gdcm_np = {
         gdcm.PixelFormat.SINGLEBIT: np.uint8,
         gdcm.PixelFormat.UINT8: np.uint8,
@@ -176,7 +178,7 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
         shape = image.GetDimension(1), image.GetDimension(0), pf.GetSamplesPerPixel()
     dtype = map_gdcm_np[pf.GetScalarType()]
     gdcm_array = image.GetBuffer()
-    np_array = np.frombuffer(
+    np_array: ndarray[Any, dtype[floating[_64Bit]]] = np.frombuffer(
         gdcm_array.encode("utf-8", errors="surrogateescape"), dtype=dtype
     )
     if pf.GetScalarType() == gdcm.PixelFormat.SINGLEBIT:
@@ -187,7 +189,7 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
     if apply_intercep_scale:
         shift = image.GetIntercept()
         scale = image.GetSlope()
-        output = np.empty_like(np_array, np.int16)
+        output: ndarray[Any, dtype[signedinteger[_16Bit]]] = np.empty_like(np_array, np.int16)
         output[:] = scale * np_array + shift
         return output
     else:

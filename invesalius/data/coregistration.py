@@ -30,7 +30,7 @@ import invesalius.data.coordinates as dco
 
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
 
-def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw):
+def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw) -> ndarray[Any, dtype[floating[_64Bit]]] | Any:
     """Translate and rotate the raw coordinate given by the tracking device to the reference system created during
     the object registration.
 
@@ -49,17 +49,17 @@ def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw
     """
 
     as1, bs1, gs1 = np.radians(coord_raw[obj_ref_mode, 3:])
-    r_probe = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
-    t_probe_raw = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
+    r_probe: ndarray[Any, dtype[floating[_64Bit]]] = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
+    t_probe_raw: ndarray[Any, dtype[floating[_64Bit]]] = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
     t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
-    t_offset = np.identity(4)
+    t_offset: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     t_offset[:, -1] = t_offset_aux[:, -1]
     t_probe = s0_raw @ t_offset @ np.linalg.inv(s0_raw) @ t_probe_raw
     ## t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
     ##t_offset = np.identity(4)
     ##t_offset[:, -1] = t_offset_aux[:, -1]
     ##t_probe_raw = s0_raw @ np.linalg.inv(t_offset) @ np.linalg.inv(s0_raw) @ t_probe
-    m_probe = tr.concatenate_matrices(t_probe, r_probe)
+    m_probe: ndarray[Any, dtype[floating[_64Bit]]] | Any = tr.concatenate_matrices(t_probe, r_probe)
 
     return m_probe
 
@@ -106,7 +106,7 @@ def tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn):
     return m_img
 
 
-def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
+def image_to_tracker(m_change, coord_raw, target, icp, obj_data) -> ndarray[Any, dtype[floating[_64Bit]]]:
     """Compute the transformation matrix to the tracker coordinate system.
     The transformation matrix is splitted in two steps, one for rotation and one for translation
 
@@ -151,24 +151,24 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     )
     # transform from head base to raw tracker coordinate system
     m_probe = m_ref @ m_trk_flip
-    t_probe = np.identity(4)
+    t_probe: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     t_probe[:, -1] = m_probe[:, -1]
-    r_probe = np.identity(4)
+    r_probe: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     r_probe[:, :3] = m_probe[:, :3]
     # translate object center to raw tracker coordinate system
     t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
-    t_offset = np.identity(4)
+    t_offset: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     t_offset[:, -1] = t_offset_aux[:, -1]
     t_probe_raw = s0_raw @ np.linalg.inv(t_offset) @ np.linalg.inv(s0_raw) @ t_probe
 
-    m_target_in_tracker = np.identity(4)
+    m_target_in_tracker: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
     m_target_in_tracker[:, -1] = t_probe_raw[:, -1]
     m_target_in_tracker[:3, :3] = r_probe[:3, :3]
 
     return m_target_in_tracker
 
 
-def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
+def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp)  -> ndarray[Any, dtype[floating[_64Bit]]]:
 
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
 
@@ -189,7 +189,7 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles: tuple[float, float, float] = tr.euler_from_matrix(m_img, axes='sxyz')
 
     # create output coordinate list
     coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
@@ -207,7 +207,7 @@ def compute_marker_transformation(coord_raw, obj_ref_mode):
     return m_probe
 
 
-def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
+def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp)  -> ndarray[Any, dtype[floating[_64Bit]]]:
 
     m_change, obj_ref_mode = inp
 
@@ -261,7 +261,7 @@ def ComputeRelativeDistanceToTarget(target_coord=None, img_coord=None, m_target=
     m_relative_target = np.linalg.inv(m_target) @ m_img
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_relative_target, axes='sxyz')
+    angles: tuple[float, float, float] = tr.euler_from_matrix(m_relative_target, axes='sxyz')
 
     # create output coordinate list
     distance = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
@@ -271,7 +271,7 @@ def ComputeRelativeDistanceToTarget(target_coord=None, img_coord=None, m_target=
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, tracker_id, target, icp,e_field_loaded):
+    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, tracker_id, target, icp,e_field_loaded) -> None:
         threading.Thread.__init__(self, name='CoordCoregObject')
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
@@ -301,7 +301,7 @@ class CoordinateCorregistrate(threading.Thread):
             #
             self.target[1] = -self.target[1]
 
-    def run(self):
+    def run(self) -> None:
         coreg_data = self.coreg_data
         view_obj = 1
 
@@ -359,7 +359,7 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp, e_field_loaded):
+    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp, e_field_loaded) -> None:
         threading.Thread.__init__(self, name='CoordCoregNoObject')
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
@@ -375,7 +375,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         self.efield_queue = queues[3]
         self.e_field_loaded = e_field_loaded
 
-    def run(self):
+    def run(self) -> None:
         coreg_data = self.coreg_data
         view_obj = 0
 
