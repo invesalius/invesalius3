@@ -54,7 +54,7 @@ class TrackerCoordinates():
                 wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
                 self.previous_markers_flag = self.markers_flag
 
-    def GetCoordinates(self):
+    def GetCoordinates(self) -> tuple:
         if self.nav_status:
             wx.CallAfter(Publisher.sendMessage, 'Update tracker coordinates',
                          coord=self.coord.tolist(), markers_flag=self.markers_flag)
@@ -65,7 +65,7 @@ class TrackerCoordinates():
         return self.coord, self.markers_flag
 
 
-def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode):
+def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode) -> tuple:
     """
     Read coordinates from spatial tracking devices using
 
@@ -94,7 +94,7 @@ def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode):
 
     return coord, markers_flag
 
-def PolarisP4Coord(tracker_connection, tracker_id, ref_mode):
+def PolarisP4Coord(tracker_connection, tracker_id, ref_mode) -> tuple:
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -137,7 +137,7 @@ def PolarisP4Coord(tracker_connection, tracker_id, ref_mode):
 
     return coord, [trck.probeID, trck.refID, trck.objID]
 
-def OptitrackCoord(tracker_connection, tracker_id, ref_mode):
+def OptitrackCoord(tracker_connection, tracker_id, ref_mode) -> tuple:
     """
 
     Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
@@ -178,7 +178,7 @@ def OptitrackCoord(tracker_connection, tracker_id, ref_mode):
     return coord, [trck.probeID, trck.HeadID, trck.coilID]
 
 
-def PolarisCoord(tracker_connection, tracker_id, ref_mode):
+def PolarisCoord(tracker_connection, tracker_id, ref_mode) -> tuple:
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -202,13 +202,13 @@ def PolarisCoord(tracker_connection, tracker_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.objID]
 
 
-def CameraCoord(tracker_connection, tracker_id, ref_mode):
+def CameraCoord(tracker_connection, tracker_id, ref_mode) -> tuple:
     trck = tracker_connection.GetConnection()
     coord, probeID, refID, coilID = trck.Run()
 
     return coord, [probeID, refID, coilID]
 
-def ClaronCoord(tracker_connection, tracker_id, ref_mode):
+def ClaronCoord(tracker_connection, tracker_id, ref_mode) -> tuple:
     trck = tracker_connection.GetConnection()
     trck.Run()
 

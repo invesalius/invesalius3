@@ -117,7 +117,7 @@ def ResampleImage2D(
     return resample.GetOutput()
 
 
-def resize_slice(im_array, resolution_percentage):
+def resize_slice(im_array, resolution_percentage) -> np.ndarray:
     """
     Uses ndimage.zoom to resize a slice.
 
@@ -129,7 +129,7 @@ def resize_slice(im_array, resolution_percentage):
     return out
 
 
-def resize_image_array(image, resolution_percentage, as_mmap=False):
+def resize_image_array(image, resolution_percentage, as_mmap=False) -> np.ndarray:
     out = zoom(image, resolution_percentage, image.dtype, order=2)
     if as_mmap:
         fname = tempfile.mktemp(suffix="_resized")
@@ -139,7 +139,7 @@ def resize_image_array(image, resolution_percentage, as_mmap=False):
     return out
 
 
-def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
+def read_dcm_slice_as_np2(filename, resolution_percentage=1.0)->np.ndarray :
     reader = gdcm.ImageReader()
     reader.SetFileName(filename)
     reader.Read()
@@ -150,14 +150,14 @@ def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
     return output
 
 
-def FixGantryTilt(matrix, spacing, tilt):
+def FixGantryTilt(matrix, spacing, tilt) -> None:
     """
     Fix gantry tilt given a vtkImageData and the tilt value. Return new
     vtkImageData.
     """
     angle = numpy.radians(tilt)
     spacing = spacing[0], spacing[1], spacing[2]
-    gntan = math.tan(angle)
+    gntan: float = math.tan(angle)
 
     for n, slice_ in enumerate(matrix):
         offset = gntan * n * spacing[2]
@@ -221,7 +221,7 @@ def BuildEditedImage(imagedata, points):
     return app.GetOutput()
 
 
-def Export(imagedata, filename, bin=False):
+def Export(imagedata, filename, bin=False) -> None:
     writer = vtkXMLImageDataWriter()
     writer.SetFileName(filename)
     if bin:
@@ -242,7 +242,7 @@ def Import(filename):
     return reader.GetOutput()
 
 
-def View(imagedata):
+def View(imagedata) -> None:
     viewer = vtkImageViewer()
     viewer.SetInput(imagedata)
     viewer.SetColorWindow(200)
@@ -267,7 +267,7 @@ def ExtractVOI(imagedata, xi, xf, yi, yf, zi, zf):
     return voi.GetOutput()
 
 
-def create_dicom_thumbnails(image, window=None, level=None):
+def create_dicom_thumbnails(image, window=None, level=None) -> List[str]:
     pf = image.GetPixelFormat()
     np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     if window is None or level is None:
@@ -279,10 +279,10 @@ def create_dicom_thumbnails(image, window=None, level=None):
         thumbnail_paths = []
         for i in range(np_image.shape[0]):
             thumb_image = zoom(np_image[i], 0.25)
-            thumb_image = np.array(
+            thumb_image: ndarray[Any, dtype[unsignedinteger[_8Bit]]] = np.array(
                 get_LUT_value_255(thumb_image, window, level), dtype=np.uint8
             )
-            thumbnail_path = tempfile.mktemp(prefix="thumb_", suffix=".png")
+            thumbnail_path: str = tempfile.mktemp(prefix="thumb_", suffix=".png")
             imageio.imsave(thumbnail_path, thumb_image)
             thumbnail_paths.append(thumbnail_path)
         return thumbnail_paths
@@ -299,16 +299,16 @@ def create_dicom_thumbnails(image, window=None, level=None):
         return thumbnail_path
 
 
-def array2memmap(arr, filename=None):
+def array2memmap(arr, filename=None) -> memmap[Any, dtype[unsignedinteger[_8Bit]]]:
     if filename is None:
-        filename = tempfile.mktemp(prefix="inv3_", suffix=".dat")
+        filename: str = tempfile.mktemp(prefix="inv3_", suffix=".dat")
     matrix = numpy.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
     return matrix
 
 
-def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
+def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage  ) -> memmap[Any, dtype[unsignedinteger[_8Bit]]]:
     """
     From a list of dicom files it creates memmap file in the temp folder and
     returns it and its related filename.
@@ -319,7 +319,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             len(files) - 1, dialog_type="ProgressDialog"
         )
 
-    temp_file = tempfile.mktemp()
+    temp_file: str = tempfile.mktemp()
 
     if orientation == "SAGITTAL":
         if resolution_percentage == 1.0:
@@ -361,8 +361,8 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     first_resample_entry = False
 
     for n, f in enumerate(files):
-        image_as_array = bitmap_reader.ReadBitmap(f)
-        image = converters.to_vtk(
+        image_as_array: ndarray[Any, dtype] | ndarray[Any, dtype[floating[_64Bit]]] | Literal[False] = bitmap_reader.ReadBitmap(f)
+        image: vtkImageData = converters.to_vtk(
             image_as_array,
             spacing=spacing,
             slice_number=1,
@@ -398,10 +398,10 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
         if max_scalar is None or max_aux > max_scalar:
             max_scalar = max_aux
 
-        array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
+        array: ndarray[Any, dtype[floating[_64Bit]]] = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
 
         if array.dtype == "uint16":
-            new_array = np.empty_like(array, dtype=np.int16)
+            new_array: ndarray[Any, dtype[signedinteger[_16Bit]]] = np.empty_like(array, dtype=np.int16)
             new_array = array - 32768
             array = new_array
 
@@ -428,7 +428,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     return matrix, scalar_range, temp_file
 
 
-def dcm2memmap(files, slice_size, orientation, resolution_percentage):
+def dcm2memmap(files, slice_size, orientation, resolution_percentage) -> tuple[memmap[Any, dtype], tuple, str]:
     """
     From a list of dicom files it creates memmap file in the temp folder and
     returns it and its related filename.
@@ -440,12 +440,12 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
         )
 
     first_slice = read_dcm_slice_as_np2(files[0], resolution_percentage)
-    slice_size = first_slice.shape[::-1]
+    slice_size: tuple[int, ...] = first_slice.shape[::-1]
 
     temp_file = tempfile.mktemp()
 
     if orientation == "SAGITTAL":
-        shape = slice_size[0], slice_size[1], len(files)
+        shape: tuple[int, int, int] = slice_size[0], slice_size[1], len(files)
     elif orientation == "CORONAL":
         shape = slice_size[1], len(files), slice_size[0]
     else:
@@ -473,7 +473,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     return matrix, scalar_range, temp_file
 
 
-def dcmmf2memmap(dcm_file, orientation):
+def dcmmf2memmap(dcm_file, orientation  ) -> tuple[memmap[Any, dtype], tuple, str]:
     reader = gdcm.ImageReader()
     reader.SetFileName(dcm_file)
     reader.Read()
@@ -483,8 +483,8 @@ def dcmmf2memmap(dcm_file, orientation):
     samples_per_pixel = pf.GetSamplesPerPixel()
     np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     if samples_per_pixel == 3:
-        np_image = image_normalize(rgb2gray(np_image), 0, 255)
-    temp_file = tempfile.mktemp()
+        np_image: ndarray[Any, dtype[signedinteger[_16Bit]]] = image_normalize(rgb2gray(np_image), 0, 255)
+    temp_file: str = tempfile.mktemp()
     matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=np_image.shape)
     z, y, x = np_image.shape
     if orientation == "CORONAL":
@@ -502,18 +502,18 @@ def dcmmf2memmap(dcm_file, orientation):
         matrix[:] = np_image[:, ::-1, :]
 
     matrix.flush()
-    scalar_range = matrix.min(), matrix.max()
+    scalar_range: tuple = matrix.min(), matrix.max()
 
     return matrix, scalar_range, spacing, temp_file
 
 
-def img2memmap(group):
+def img2memmap(group) -> tuple[memmap[Any, dtype[signedinteger[_16Bit]]], tuple[signedinteger[_16Bit], signedinteger[_16Bit]], str]:
     """
     From a nibabel image data creates a memmap file in the temp folder and
     returns it and its related filename.
     """
 
-    temp_file = tempfile.mktemp()
+    temp_file: str = tempfile.mktemp()
 
     data = group.get_fdata()
 
@@ -522,7 +522,7 @@ def img2memmap(group):
     # maximum of 10000 was selected arbitrarily by testing with one MRI example
     # alternatively could test if "data.dtype == 'float64'" but maybe it is too specific
     if numpy.ptp(data) > (2**16/2-1):
-        data = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
+        data: ndarray[Any, dtype[signedinteger[_16Bit]]] = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = numpy.swapaxes(data, 0, 2)
@@ -532,12 +532,12 @@ def img2memmap(group):
     matrix[:] = data[:]
     matrix.flush()
 
-    scalar_range = numpy.amin(matrix), numpy.amax(matrix)
+    scalar_range: tuple[signedinteger[_16Bit], signedinteger[_16Bit]] = numpy.amin(matrix), numpy.amax(matrix)
 
     return matrix, scalar_range, temp_file
 
 
-def get_LUT_value_255(data, window, level):
+def get_LUT_value_255(data, window, level)-> ndarray[Any, dtype[signedinteger[_8Bit]]]:
     shape = data.shape
     data_ = data.ravel()
     data = np.piecewise(
@@ -552,7 +552,7 @@ def get_LUT_value_255(data, window, level):
     return data
 
 
-def get_LUT_value(data, window, level):
+def get_LUT_value(data, window, level)-> ndarray[Any, dtype[signedinteger[_16Bit]]]:
     shape = data.shape
     data_ = data.ravel()
     data = np.piecewise(data_,
@@ -563,8 +563,8 @@ def get_LUT_value(data, window, level):
     return data
 
 
-def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
-    output = np.empty(shape=image.shape, dtype=output_dtype)
+def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16) -> ndarray[Any, dtype[signedinteger[_16Bit]]]:
+    output: ndarray[Any, dtype[signedinteger[_16Bit]]] = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
     output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
     return output
@@ -588,14 +588,14 @@ def convert_world_to_voxel(xyz, affine):
     :return: a 1x3 array with the point coordinates in image space (i, j, k)
     """
     # convert xyz coordinate to 1x4 homogeneous coordinates array
-    xyz_homo = np.hstack((xyz, 1.0)).reshape([4, 1])
+    xyz_homo: ndarray[Any, dtype] = np.hstack((xyz, 1.0)).reshape([4, 1])
     ijk_homo = np.linalg.inv(affine) @ xyz_homo
     ijk = ijk_homo.T[np.newaxis, 0, :3]
 
     return ijk
 
 
-def convert_invesalius_to_voxel(position):
+def convert_invesalius_to_voxel(position) -> ndarray[Any,dtype]:
     """
     Convert position from InVesalius space to the voxel space.
 
@@ -612,7 +612,7 @@ def convert_invesalius_to_voxel(position):
     return np.array((position[0], slice.spacing[1]*(slice.matrix.shape[1] - 1) - position[1], position[2]))
 
 
-def convert_invesalius_to_world(position, orientation):
+def convert_invesalius_to_world(position, orientation) -> tuple:
     """
     Convert position and orientation from InVesalius space to the world space.
 
@@ -632,8 +632,8 @@ def convert_invesalius_to_world(position, orientation):
     slice = sl.Slice()
 
     if slice.affine is None:
-        position_world = (None, None, None)
-        orientation_world = (None, None, None)
+        position_world: tuple[None, None, None] = (None, None, None)
+        orientation_world: tuple[None, None, None] = (None, None, None)
 
         return position_world, orientation_world
 
@@ -654,27 +654,27 @@ def convert_invesalius_to_world(position, orientation):
     return position_world, orientation_world
 
 
-def create_grid(xy_range, z_range, z_offset, spacing):
+def create_grid(xy_range, z_range, z_offset, spacing) -> ndarray[Any, dtype]:
     x = np.arange(xy_range[0], xy_range[1] + 1, spacing)
     y = np.arange(xy_range[0], xy_range[1] + 1, spacing)
     z = z_offset + np.arange(z_range[0], z_range[1] + 1, spacing)
     xv, yv, zv = np.meshgrid(x, y, -z)
-    coord_grid = np.array([xv, yv, zv])
+    coord_grid: ndarray[Any, dtype] = np.array([xv, yv, zv])
     # create grid of points
     grid_number = x.shape[0] * y.shape[0] * z.shape[0]
     coord_grid = coord_grid.reshape([3, grid_number]).T
     # sort grid from distance to the origin/coil center
     coord_list = coord_grid[np.argsort(np.linalg.norm(coord_grid, axis=1)), :]
     # make the coordinates homogeneous
-    coord_list_w = np.append(coord_list.T, np.ones([1, grid_number]), axis=0)
+    coord_list_w: ndarray[Any, dtype] = np.append(coord_list.T, np.ones([1, grid_number]), axis=0)
 
     return coord_list_w
 
 
-def create_spherical_grid(radius=10, subdivision=1):
-    x = np.linspace(-radius, radius, int(2 * radius / subdivision) + 1)
+def create_spherical_grid(radius=10, subdivision=1) -> ndarray[Any, dtype]:
+    x: ndarray[Any, dtype[floating]] = np.linspace(-radius, radius, int(2 * radius / subdivision) + 1)
     xv, yv, zv = np.meshgrid(x, x, x)
-    coord_grid = np.array([xv, yv, zv])
+    coord_grid: ndarray[Any, dtype] = np.array([xv, yv, zv])
     # create grid of points
     grid_number = x.shape[0] ** 3
     coord_grid = coord_grid.reshape([3, grid_number]).T
@@ -685,11 +685,11 @@ def create_spherical_grid(radius=10, subdivision=1):
     return sph_sort
 
 
-def random_sample_sphere(radius=3, size=100):
-    uvw = np.random.normal(0, 1, (size, 3))
+def random_sample_sphere(radius=3, size=100) -> ndarray[Any, dtype[floating]]:
+    uvw: ndarray[Any, dtype[floating[_64Bit]]] = np.random.normal(0, 1, (size, 3))
     norm = np.linalg.norm(uvw, axis=1, keepdims=True)
     # Change/remove **(1./3) to make samples more concentrated around the center
-    r = np.random.uniform(0, 1, (size, 1)) ** 1.5
-    scale = radius * np.divide(r, norm)
+    r: ndarray[Any, dtype[floating]] = np.random.uniform(0, 1, (size, 1)) ** 1.5
+    scale: ndarray[Any, dtype[signedinteger]] = radius * np.divide(r, norm)
     xyz = scale * uvw
     return xyz

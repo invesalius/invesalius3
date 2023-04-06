@@ -6,7 +6,7 @@ import numpy as np
 from vtkmodules.vtkCommonCore import (
     vtkIdList)
 
-def Get_coil_position(m_img):
+def Get_coil_position(m_img: ndarray[Any, dtype]) -> tuple[ndarray[Any, dtype], ndarray[Any, dtype]]:
     # coil position cp : the center point at the bottom of the coil casing,
     # corresponds to the origin of the coil template.
     # coil normal cn: outer normal of the coil, i.e. away from the head
@@ -25,15 +25,15 @@ def Get_coil_position(m_img):
     ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
     coil_dir = m_img_flip[:-1, 0]
     coil_face = m_img_flip[:-1, 1]
-    cn = np.cross(coil_dir, coil_face)
-    T_rot = np.append(ct1, ct2, axis=0)
+    cn: ndarray[Any, dtype] = np.cross(coil_dir, coil_face)
+    T_rot: ndarray[Any, dtype] = np.append(ct1, ct2, axis=0)
     T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
     T_rot = T_rot.tolist()  # to list
 
     return [T_rot,cp]
 
 class Visualize_E_field_Thread(threading.Thread):
-    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm):
+    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm) -> None:
         threading.Thread.__init__(self, name='Visualize_E_field_Thread')
         #self.inp = inp #list of inputs
         self.efield_queue = queues[0]
@@ -52,7 +52,7 @@ class Visualize_E_field_Thread(threading.Thread):
         else:
             self.debug = False
 
-    def run(self):
+    def run(self) -> None:
         while not self.event.is_set():
 
             if not self.e_field_IDs_queue.empty():

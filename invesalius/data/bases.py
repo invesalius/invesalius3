@@ -20,7 +20,7 @@ def angle_calculation(ap_axis, coil_axis) -> float:
     return float(angle)
 
 
-def base_creation_old(fiducials):
+def base_creation_old(fiducials) -> tuple:
     """
     Calculate the origin and matrix for coordinate system transformation.
     q: origin of coordinate system
@@ -60,7 +60,7 @@ def base_creation_old(fiducials):
     return m, q, m_inv
 
 
-def base_creation(fiducials):
+def base_creation(fiducials) -> tuple:
     """
     Calculate the origin and matrix for coordinate system
     transformation.
@@ -100,7 +100,7 @@ def base_creation(fiducials):
     return m, q
 
 
-def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
+def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None) -> float:
     """
     Calculate the Fiducial Registration Error for neuronavigation.
 
@@ -170,7 +170,7 @@ def inverse_transform_icp(m_img, m_icp):
 
     return m_img
 
-def object_registration(fiducials, orients, coord_raw, m_change):
+def object_registration(fiducials, orients, coord_raw, m_change = None) -> ndarray[Any, dtype[floating[_64Bit]]]:
     """
 
     :param fiducials: 3x3 array of fiducials translations

@@ -40,7 +40,7 @@ class Editor:
     editor.Render()
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         
         self.interactor = None
         self.image_original = None
@@ -66,13 +66,13 @@ class Editor:
         self.clicked = 0
         self.orientation = AXIAL
 
-        self.w = (200, 1200)
+        self.w: tuple[Literal[200], Literal[1200]] = (200, 1200)
     
         #self.plane_widget_x = vtkImagePlaneWidget()
     
         #self.actor.PickableOff()
     
-    def SetInteractor(self, interactor):
+    def SetInteractor(self, interactor) -> None:
         
         self.interactor = interactor
         self.render = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
@@ -86,28 +86,28 @@ class Editor:
         istyle.AddObserver("LeftButtonReleaseEvent", self.Release)
         istyle.AddObserver("MouseMoveEvent",self.Moved)
 
-        pick = self.pick = vtkCellPicker()
+        pick = self.pick: vtkCellPicker = vtkCellPicker()
 
-    def SetActor(self, actor):
+    def SetActor(self, actor) -> None:
         self.actor = actor
 
-    def SetImage(self, image):
+    def SetImage(self, image) -> None:
         self.image = image
 
-    def SetCursor(self, cursor):
+    def SetCursor(self, cursor) -> None:
         self.cursor = cursor
         self.cursor.CursorCircle(self.render)
 
-    def SetOrientation(self, orientation):
+    def SetOrientation(self, orientation) -> None:
         self.orientation = orientation
 
-    def Click(self, obj, evt):
+    def Click(self, obj, evt) -> None:
         self.clicked = 1
 
-    def Release(self, obj, evt):
+    def Release(self, obj, evt) -> None:
         self.clicked = 0
 
-    def Moved(self, obj, evt):
+    def Moved(self, obj, evt) -> None:
         pos = self.interactor.GetEventPosition()
         wx = pos[0] #- last[0]
         wy = pos[1] #- last[1]
@@ -130,7 +130,7 @@ class Editor:
 
         self.interactor.Render()
 
-    def From3dToImagePixel(self, mPos, pPos):
+    def From3dToImagePixel(self, mPos, pPos)-> tuple[float, float, float]:
         """
         mPos - The mouse position in the screen position.
         pPos - the pick position in the 3d world
@@ -173,33 +173,33 @@ class Editor:
         
         return wx, wy, wz
 
-    def SetInput(self, image_original, image_threshold):
+    def SetInput(self, image_original, image_threshold) -> None:
     
         self.image_original = image_original
         self.image_threshold = image_threshold
    
-    def SetSlice(self, a):
+    def SetSlice(self, a) -> None:
         self.slice = a
 
-    def ChangeShowSlice(self, value):
+    def ChangeShowSlice(self, value) -> None:
         self.map.SetZSlice(value) 
         self.interactor.Render()
 
-    def ErasePixel(self, x, y, z):
+    def ErasePixel(self, x, y, z) -> None:
         """
         Deletes pixel, it is necessary to pass x, y and z.
         """
         self.image.SetScalarComponentFromDouble(x, y, z, 0, 0)
         self.image.Update()
         
-    def FillPixel(self, x, y, z, colour = 3200):
+    def FillPixel(self, x, y, z, colour = 3200) -> None:
         """
         Fill pixel, it is necessary to pass x, y and z 
         """
 
         self.image.SetScalarComponentFromDouble(x, y, z, 0, colour)
         
-    def PixelThresholdLevel(self, x, y, z):
+    def PixelThresholdLevel(self, x, y, z) -> None:
         """
         Erase or Fill with Threshold level
         """
@@ -219,7 +219,7 @@ class Editor:
             self.ErasePixel(x, y, z)
 
     
-    def DoOperation(self, xc, yc, zc):
+    def DoOperation(self, xc, yc, zc) -> None:
         """
         This method scans the circle line by line.
         Extracted equation. 
@@ -227,7 +227,7 @@ class Editor:
         """
         extent = self.image.GetWholeExtent()
         cursor = self.cursor
-        b = [0,0,0,0,0,0]
+        b: list[int] = [0,0,0,0,0,0]
         self.actor.GetDisplayBounds(b)
         xs, ys, zs = self.image.GetSpacing()
         try:
@@ -255,12 +255,12 @@ class Editor:
                 #and extent[2] <= yi+yc <=extent[3]]
         
     def SetOperationType(self, operation_type = 0, 
-                   w = (100,1200)):
+                   w = (100,1200)) -> None:
         """
         Set Operation Type
         0 -> Remove
         1 -> Add
         2 -> Add or Remove with Threshold Level
         """            
-        self.operation_type = operation_type
+        self.operation_type: int = operation_type
         self.w = w #threshold_value

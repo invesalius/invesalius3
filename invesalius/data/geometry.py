@@ -35,7 +35,7 @@ class Box(metaclass=utils.Singleton):
     coordinates (min and max) of box used in crop-mask.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.xi = None
         self.xf = None
 
@@ -59,22 +59,22 @@ class Box(metaclass=utils.Singleton):
 
         self.first_run = True
 
-    def SetX(self, i, f):
+    def SetX(self, i, f) -> None:
         self.xi = i
         self.xf = f
         self.size_x = f
 
-    def SetY(self, i, f):
+    def SetY(self, i, f) -> None:
         self.yi = i
         self.yf = f
         self.size_y = f
 
-    def SetZ(self, i, f):
+    def SetZ(self, i, f) -> None:
         self.zi = i
         self.zf = f
         self.size_z = f
 
-    def SetSpacing(self, x, y, z):
+    def SetSpacing(self, x, y, z) -> None:
         self.xs = x
         self.ys = y
         self.zs = z
@@ -95,7 +95,7 @@ class Box(metaclass=utils.Singleton):
         if self.first_run:
             self.first_run = False
 
-    def MakeMatrix(self):
+    def MakeMatrix(self) -> None:
         """
         Update values in a matrix to each orientation.
         """
@@ -162,12 +162,12 @@ class Box(metaclass=utils.Singleton):
 
         Publisher.sendMessage("Update crop limits into gui", limits=self.GetLimits())
 
-    def GetLimits(self):
+    def GetLimits(self) -> list[int]:
         """
         Return the bounding box limits (initial and final) in x, y and z.
         """
 
-        limits = [
+        limits: list[int] = [
             int(self.xi / self.xs),
             int(self.xf / self.xs),
             int(self.yi / self.ys),
@@ -237,7 +237,7 @@ class Box(metaclass=utils.Singleton):
 
         self.MakeMatrix()
 
-    def UpdatePositionByInsideBox(self, pc, axis):
+    def UpdatePositionByInsideBox(self, pc, axis) -> None:
         """
         Checks the coordinates are inside the box and update it. 
         Is necessary to move box in pan event.
@@ -283,7 +283,7 @@ class DrawCrop2DRetangle:
     anatomical orientation (axial, sagital or coronal).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.viewer = None
         self.points_in_display = {}
         self.box = None
@@ -296,7 +296,7 @@ class DrawCrop2DRetangle:
         self.last_z = 0
         self.layer = 0
 
-    def MouseMove(self, x, y):
+    def MouseMove(self, x, y) -> None:
 
         self.MouseInLine(x, y)
 
@@ -378,10 +378,10 @@ class DrawCrop2DRetangle:
 
         Publisher.sendMessage("Redraw canvas")
 
-    def ReleaseLeft(self):
+    def ReleaseLeft(self) -> None:
         self.status_move = None
 
-    def LeftPressed(self, x, y):
+    def LeftPressed(self, x, y) -> None:
         self.mouse_pressed = True
 
     def MouseInLine(self, x, y):
@@ -398,7 +398,7 @@ class DrawCrop2DRetangle:
                 p0 = p[0]
                 p1 = p[1]
 
-                dist = self.distance_from_point_line(
+                dist: floating = self.distance_from_point_line(
                     (p0[0], p0[1]), (p1[0], p1[1]), (x_pos_sl, y_pos_sl)
                 )
 
@@ -482,7 +482,7 @@ class DrawCrop2DRetangle:
                 if not (self.mouse_pressed) and k != self.status_move:
                     self.status_move = None
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc, canvas) -> None:
         """
         Draws to an wx.GraphicsContext.
 
@@ -493,7 +493,7 @@ class DrawCrop2DRetangle:
         self.canvas = canvas
         self.UpdateValues(canvas)
 
-    def point_into_box(self, p1, p2, pc, axis):
+    def point_into_box(self, p1, p2, pc, axis) -> bool | None:
 
         if axis == "AXIAL":
             if (
@@ -528,7 +528,7 @@ class DrawCrop2DRetangle:
             else:
                 return False
 
-    def point_between_line(self, p1, p2, pc, axis):
+    def point_between_line(self, p1, p2, pc, axis) -> bool | None:
         """
         Checks whether a point is in the line limits 
         """
@@ -555,7 +555,7 @@ class DrawCrop2DRetangle:
             else:
                 return False
 
-    def distance_from_point_line(self, p1, p2, pc):
+    def distance_from_point_line(self, p1, p2, pc) -> float:
         """
         Calculate the distance from point pc to a line formed by p1 and p2.
         """
@@ -564,19 +564,19 @@ class DrawCrop2DRetangle:
         # Create a function to organize it.
 
         # Create a vector pc-p1 and p2-p1
-        A = np.array(pc) - np.array(p1)
-        B = np.array(p2) - np.array(p1)
+        A: ndarray[Any, dtype] = np.array(pc) - np.array(p1)
+        B: ndarray[Any, dtype] = np.array(p2) - np.array(p1)
         # Calculate the size from those vectors
-        len_A = np.linalg.norm(A)
-        len_B = np.linalg.norm(B)
+        len_A: floating = np.linalg.norm(A)
+        len_B: floating = np.linalg.norm(B)
         # calculate the angle theta (in radians) between those vector
-        theta = math.acos(np.dot(A, B) / (len_A * len_B))
+        theta: float = math.acos(np.dot(A, B) / (len_A * len_B))
         # Using the sin from theta, calculate the adjacent leg, which is the
         # distance from the point to the line
         distance = math.sin(theta) * len_A
         return distance
 
-    def Coord3DtoDisplay(self, x, y, z, canvas):
+    def Coord3DtoDisplay(self, x, y, z, canvas) -> tuple[int, int]:
 
         coord = vtkCoordinate()
         coord.SetValue(x, y, z)
@@ -584,7 +584,7 @@ class DrawCrop2DRetangle:
 
         return (cx, cy)
 
-    def MakeBox(self):
+    def MakeBox(self) -> None:
 
         slice_size = self.viewer.slice_.matrix.shape
         zf, yf, xf = slice_size[0] - 1, slice_size[1] - 1, slice_size[2] - 1
@@ -601,9 +601,9 @@ class DrawCrop2DRetangle:
             box.SetSpacing(xs, ys, zs)
             box.MakeMatrix()
 
-    def UpdateValues(self, canvas):
+    def UpdateValues(self, canvas) -> None:
 
-        box = self.box
+        box: Box | None = self.box
         slice_number = self.viewer.slice_data.number
 
         slice_spacing = self.viewer.slice_.spacing
@@ -653,6 +653,6 @@ class DrawCrop2DRetangle:
                         (s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255)
                     )
 
-    def SetViewer(self, viewer):
+    def SetViewer(self, viewer) -> None:
         self.viewer = viewer
         self.MakeBox()

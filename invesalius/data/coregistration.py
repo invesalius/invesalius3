@@ -229,7 +229,7 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp)  -> ndarray[Any, dty
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles: tuple[float, float, float] = tr.euler_from_matrix(m_img, axes='sxyz')
 
     # create output coordinate list
     coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
