@@ -43,7 +43,7 @@ PROJECTIONS_ID = OrderedDict(((_('Normal'), const.PROJECTION_NORMAL),
                 
 
 class SliceMenu(wx.Menu):
-    def __init__(self):
+    def __init__(self) -> None:
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM = {}
         self.cdialog = None
@@ -90,7 +90,7 @@ class SliceMenu(wx.Menu):
 
         #------------ Sub menu of the pseudo colors ----------------
         if sys.platform.startswith('linux'):
-            mkind = wx.ITEM_CHECK
+            mkind: Literal[0] = wx.ITEM_CHECK
         else:
             mkind = wx.ITEM_RADIO
 
@@ -173,14 +173,14 @@ class SliceMenu(wx.Menu):
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.CheckWindowLevelOther, 'Check window and level other')
         Publisher.subscribe(self.FirstItemSelect, 'Select first item from slice menu')
         Publisher.subscribe(self._close, 'Close project data')
 
         Publisher.subscribe(self._check_projection_menu, 'Check projection menu')
     
-    def FirstItemSelect(self):
+    def FirstItemSelect(self) -> None:
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
         item.Check(True)
         
@@ -194,15 +194,15 @@ class SliceMenu(wx.Menu):
         #  item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
         #  item.Check(True)    
         
-    def CheckWindowLevelOther(self):
+    def CheckWindowLevelOther(self) -> None:
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()
 
-    def _check_projection_menu(self, projection_id):
+    def _check_projection_menu(self, projection_id) -> None:
         item = self.projection_items[projection_id]
         item.Check()
 
-    def OnPopup(self, evt):
+    def OnPopup(self, evt) -> None:
         id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetItemLabelText()
@@ -282,11 +282,11 @@ class SliceMenu(wx.Menu):
 
         evt.Skip()
 
-    def HideClutDialog(self):
+    def HideClutDialog(self) -> None:
         if self.cdialog:
             self.cdialog.Hide()
 
-    def _close(self):
+    def _close(self) -> None:
         if self.cdialog:
             self.cdialog.Destroy()
             self.cdialog = None

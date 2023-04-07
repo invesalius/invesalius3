@@ -59,7 +59,7 @@ class ColumnSorterMixin:
     GetSecondarySortValues, and GetSortImages.  See below for details.
     """
 
-    def __init__(self, numColumns):
+    def __init__(self, numColumns) -> None:
         self.SetColumnCount(numColumns)
         list = self.GetListCtrl()
         if not list:
@@ -67,22 +67,22 @@ class ColumnSorterMixin:
         list.Bind(wx.EVT_LIST_COL_CLICK, self.__OnColClick, list)
 
 
-    def SetColumnCount(self, newNumColumns):
+    def SetColumnCount(self, newNumColumns) -> None:
         self._colSortFlag = [0] * newNumColumns
         self._col = -1
 
 
-    def SortListItems(self, col=-1, ascending=1):
+    def SortListItems(self, col=-1, ascending=1) -> None:
         """Sort the list on demand.  Can also be used to set the sort column and order."""
         oldCol = self._col
         if col != -1:
-            self._col = col
+            self._col: int = col
             self._colSortFlag[col] = ascending
         self.GetListCtrl().SortItems(self.GetColumnSorter())
         self.__updateImages(oldCol)
 
 
-    def GetColumnWidths(self):
+    def GetColumnWidths(self) -> list:
         """
         Returns a list of column widths.  Can be used to help restore the current
         view later.
@@ -94,7 +94,7 @@ class ColumnSorterMixin:
         return rv
 
 
-    def GetSortImages(self):
+    def GetSortImages(self) -> tuple[Literal[-1], Literal[-1]]:
         """
         Returns a tuple of image list indexesthe indexes in the image list for an image to be put on the column
         header when sorting in descending order.
@@ -102,20 +102,20 @@ class ColumnSorterMixin:
         return (-1, -1)  # (decending, ascending) image IDs
 
 
-    def GetColumnSorter(self):
+    def GetColumnSorter(self) -> callable:
         """Returns a callable object to be used for comparing column values when sorting."""
         return self.__ColumnSorter
 
 
-    def GetSecondarySortValues(self, col, key1, key2):
+    def GetSecondarySortValues(self, col, key1, key2)-> tuple:
         """Returns a tuple of 2 values to use for secondary sort values when the
            items in the selected column match equal.  The default just returns the
            item data values."""
         return (key1, key2)
 
 
-    def __OnColClick(self, evt):
-        oldCol = self._col
+    def __OnColClick(self, evt) -> None:
+        oldCol: int = self._col
         self._col = col = evt.GetColumn()
         self._colSortFlag[col] = int(not self._colSortFlag[col])
         self.GetListCtrl().SortItems(self.GetColumnSorter())
@@ -125,7 +125,7 @@ class ColumnSorterMixin:
         self.OnSortOrderChanged()
         
         
-    def OnSortOrderChanged(self):
+    def OnSortOrderChanged(self) -> None:
         """
         Callback called after sort order has changed (whenever user
         clicked column header).
@@ -133,15 +133,15 @@ class ColumnSorterMixin:
         pass
 
 
-    def __ColumnSorter(self, key1, key2):
-        col = self._col
+    def __ColumnSorter(self, key1, key2)-> int:
+        col: int = self._col
         ascending = self._colSortFlag[col]
         item1 = self.itemDataMap[key1][col]
         item2 = self.itemDataMap[key2][col]
 
         #--- Internationalization of string sorting with locale module
         if type(item1) == type('') or type(item2) == type(''):
-            cmpVal = locale.strcoll(str(item1), str(item2))
+            cmpVal: int = locale.strcoll(str(item1), str(item2))
         else:
             cmpVal = cmp(item1, item2)
         #---
@@ -156,7 +156,7 @@ class ColumnSorterMixin:
             return -cmpVal
 
 
-    def __updateImages(self, oldCol):
+    def __updateImages(self, oldCol) -> None:
         sortImages = self.GetSortImages()
         if self._col != -1 and sortImages[0] != -1:
             img = sortImages[self._colSortFlag[self._col]]
@@ -185,7 +185,7 @@ class ListCtrlAutoWidthMixin:
 
         This mix-in class was written by Erik Westra <ewestra@wave.co.nz>
     """
-    def __init__(self):
+    def __init__(self) -> None:
         """ Standard initialiser.
         """
         self._resizeColMinWidth = None
@@ -195,7 +195,7 @@ class ListCtrlAutoWidthMixin:
         self.Bind(wx.EVT_LIST_COL_END_DRAG, self._onResize, self)
 
 
-    def setResizeColumn(self, col):
+    def setResizeColumn(self, col) -> None:
         """
         Specify which column that should be autosized.  Pass either
         'LAST' or the column number.  Default is 'LAST'.
@@ -207,7 +207,7 @@ class ListCtrlAutoWidthMixin:
             self._resizeCol = col
         
 
-    def resizeLastColumn(self, minWidth):
+    def resizeLastColumn(self, minWidth) -> None:
         """ Resize the last column appropriately.
 
             If the list's columns are too wide to fit within the window, we use
@@ -224,7 +224,7 @@ class ListCtrlAutoWidthMixin:
         self.resizeColumn(minWidth)
 
 
-    def resizeColumn(self, minWidth):
+    def resizeColumn(self, minWidth) -> None:
         self._resizeColMinWidth = minWidth
         self._doResize()
         
@@ -233,7 +233,7 @@ class ListCtrlAutoWidthMixin:
     # == Private Methods ==
     # =====================
 
-    def _onResize(self, event):
+    def _onResize(self, event) -> None:
         """ Respond to the wx.ListCtrl being resized.
 
             We automatically resize the last column in the list.
@@ -245,7 +245,7 @@ class ListCtrlAutoWidthMixin:
         event.Skip()
 
 
-    def _doResize(self):
+    def _doResize(self) -> None:
         """ Resize the last column as appropriate.
 
             If the list's columns are too wide to fit within the window, we use
@@ -308,8 +308,8 @@ class ListCtrlAutoWidthMixin:
 #----------------------------------------------------------------------------
 #----------------------------------------------------------------------------
 
-SEL_FOC = wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED
-def selectBeforePopup(event):
+SEL_FOC: int = wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED
+def selectBeforePopup(event) -> None:
     """Ensures the item the mouse is pointing at is selected before a popup.
 
     Works with both single-select and multi-select lists."""
@@ -325,7 +325,7 @@ def selectBeforePopup(event):
                 ctrl.SetItemState(n, SEL_FOC, SEL_FOC)
 
 
-def getListCtrlSelection(listctrl, state=wx.LIST_STATE_SELECTED):
+def getListCtrlSelection(listctrl, state=wx.LIST_STATE_SELECTED)->List[int]:
     """ Returns list of item indexes of given state (selected by defaults) """
     res = []
     idx = -1
@@ -348,7 +348,7 @@ class ListCtrlSelectionManagerMix:
     """
     _menu = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.Bind(wx.EVT_RIGHT_DOWN, self.OnLCSMRightDown)
         self.Bind(EVT_DOPOPUPMENU, self.OnLCSMDoPopup)
 #        self.Connect(-1, -1, self.wxEVT_DOPOPUPMENU, self.OnLCSMDoPopup)
@@ -359,17 +359,17 @@ class ListCtrlSelectionManagerMix:
         return self._menu
 
 
-    def setPopupMenu(self, menu):
+    def setPopupMenu(self, menu) -> None:
         """ Must be set for default behaviour """
         self._menu = menu
 
 
-    def afterPopupMenu(self, menu):
+    def afterPopupMenu(self, menu) -> None:
         """ Override to implement dynamic menus (destroy) """
         pass
 
 
-    def getSelection(self):
+    def getSelection(self) -> Any | Literal[-1]:
         res = getListCtrlSelection(self)
         if self.GetWindowStyleFlag() & wx.LC_SINGLE_SEL:
             if res:
@@ -380,7 +380,7 @@ class ListCtrlSelectionManagerMix:
             return res
 
 
-    def OnLCSMRightDown(self, event):
+    def OnLCSMRightDown(self, event) -> None:
         selectBeforePopup(event)
         event.Skip()
         menu = self.getPopupMenu()
@@ -392,7 +392,7 @@ class ListCtrlSelectionManagerMix:
             wx.PostEvent(self, evt)
 
 
-    def OnLCSMDoPopup(self, event):
+    def OnLCSMDoPopup(self, event) -> None:
         self.PopupMenu(event.menu, event.pos)
         self.afterPopupMenu(event.menu)
 
@@ -426,7 +426,7 @@ class TextEditMixin:
     editorBgColour = wx.Colour(255,255,175) # Yellow
     editorFgColour = wx.Colour(0,0,0)       # black
         
-    def __init__(self, check_image=None, uncheck_image=None, imgsz=(16,16)):
+    def __init__(self, check_image=None, uncheck_image=None, imgsz=(16,16)) -> None:
         #editor = wx.TextCtrl(self, -1, pos=(-1,-1), size=(-1,-1),
         #                     style=wx.TE_PROCESS_ENTER|wx.TE_PROCESS_TAB \
         #                     |wx.TE_RICH2)
@@ -467,7 +467,7 @@ class TextEditMixin:
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
 
     ######### 2 down
-    def __CreateBitmap(self, flag=0, size=(16, 16)):
+    def __CreateBitmap(self, flag=0, size=(16, 16)) ->Any:
         """Create a bitmap of the platforms native checkbox. The flag
         is used to determine the checkboxes state (see wx.CONTROL_*)
 
@@ -486,13 +486,13 @@ class TextEditMixin:
         index = self.InsertImageStringItem(index, label, 0)
         return index
 
-    def OnCheckItem(self, index, flag):
+    def OnCheckItem(self, index, flag) -> None:
         pass
 
     def IsChecked(self, index):
         return self.GetItem(index).GetImage() == 1
 
-    def CheckItem(self, index, check = True):
+    def CheckItem(self, index, check = True) -> None:
         img_idx = self.GetItem(index).GetImage()
         if img_idx == 0 and check is True:
             self.SetItemImage(index, 1)
@@ -501,7 +501,7 @@ class TextEditMixin:
             self.SetItemImage(index, 0)
             self.OnCheckItem(index, False)
 
-    def ToggleItem(self, index):
+    def ToggleItem(self, index) -> None:
         self.CheckItem(index, not self.IsChecked(index))
     ######## 2 up
     
@@ -509,9 +509,9 @@ class TextEditMixin:
 
 
 
-    def make_editor(self, col_style=wx.LIST_FORMAT_LEFT):
+    def make_editor(self, col_style=wx.LIST_FORMAT_LEFT) -> None:
         
-        style =wx.TE_PROCESS_ENTER|wx.TE_PROCESS_TAB|wx.TE_RICH2
+        style: int =wx.TE_PROCESS_ENTER|wx.TE_PROCESS_TAB|wx.TE_RICH2
         style |= {wx.LIST_FORMAT_LEFT: wx.TE_LEFT,
                   wx.LIST_FORMAT_RIGHT: wx.TE_RIGHT,
                   wx.LIST_FORMAT_CENTRE : wx.TE_CENTRE
@@ -529,19 +529,19 @@ class TextEditMixin:
         editor.Hide()
         if hasattr(self, 'editor'):
             self.editor.Destroy()
-        self.editor = editor
+        self.editor: TextCtrl = editor
 
-        self.col_style = col_style
+        self.col_style: int = col_style
         self.editor.Bind(wx.EVT_CHAR, self.OnChar)
         self.editor.Bind(wx.EVT_KILL_FOCUS, self.CloseEditor)
         
         
-    def OnItemSelected(self, evt):
+    def OnItemSelected(self, evt) -> None:
         self.curRow = evt.GetIndex()
         evt.Skip()
         
 
-    def OnChar(self, event):
+    def OnChar(self, event) -> None:
         ''' Catch the TAB, Shift-TAB, cursor DOWN/UP key code
             so we can open the editor at the next column (if any).'''
 
@@ -575,7 +575,7 @@ class TextEditMixin:
             event.Skip()
 
 
-    def OnLeftDown2(self, evt=None):
+    def OnLeftDown2(self, evt=None) -> None:
         (index, flags) = self.HitTest(evt.GetPosition())
         if flags == wx.LIST_HITTEST_ONITEMICON:
             img_idx = self.GetItem(index).GetImage()
@@ -605,7 +605,7 @@ class TextEditMixin:
         else:
             evt.Skip()    
 
-    def OnLeftDown(self, evt=None):
+    def OnLeftDown(self, evt=None) -> None:
         ''' Examine the click and double
         click events to see if a row has been click on twice. If so,
         determine the current row and columnn and open the editor.'''
@@ -625,21 +625,21 @@ class TextEditMixin:
         # ListCtrl (generally not a good idea) on the other hand,
         # doing this here handles adjustable column widths
         
-        self.col_locs = [0]
+        self.col_locs: list[int] = [0]
         loc = 0
         for n in range(self.GetColumnCount()):
             loc = loc + self.GetColumnWidth(n)
             self.col_locs.append(loc)
 
         
-        col = bisect(self.col_locs, x+self.GetScrollPos(wx.HORIZONTAL)) - 1
+        col: int = bisect(self.col_locs, x+self.GetScrollPos(wx.HORIZONTAL)) - 1
         if col == 1:
             self.OpenEditor(col, row)
         else:
             self.OnLeftDown2(evt)
 
 
-    def OpenEditor(self, col, row):
+    def OpenEditor(self, col, row) -> None:
         ''' Opens an editor at the current position. '''
 
         # give the derived class a chance to Allow/Veto this edit.
@@ -709,7 +709,7 @@ class TextEditMixin:
     
     # FIXME: this function is usually called twice - second time because
     # it is binded to wx.EVT_KILL_FOCUS. Can it be avoided? (MW)
-    def CloseEditor(self, evt=None):
+    def CloseEditor(self, evt=None) -> None:
         ''' Close the editor and save the new value to the ListCtrl. '''
         if not self.editor.IsShown():
             return
@@ -742,7 +742,7 @@ class TextEditMixin:
                 self.SetItem(self.curRow, self.curCol, text)
         self.RefreshItem(self.curRow)
 
-    def _SelectIndex(self, row):
+    def _SelectIndex(self, row) -> None:
         listlen = self.GetItemCount()
         if row < 0 and not listlen:
             return
@@ -804,7 +804,7 @@ class CheckListCtrlMixin:
 
     You should not set a imagelist for the ListCtrl once this mixin is used.
     """
-    def __init__(self, check_image=None, uncheck_image=None, imgsz=(16,16)):
+    def __init__(self, check_image=None, uncheck_image=None, imgsz=(16,16)) -> None:
         if check_image is not None:
             imgsz = check_image.GetSize()
         elif uncheck_image is not None:
@@ -855,7 +855,7 @@ class CheckListCtrlMixin:
         index = self.InsertImageStringItem(index, label, 0)
         return index
 
-    def __OnLeftDown_(self, evt):
+    def __OnLeftDown_(self, evt) -> None:
         (index, flags) = self.HitTest(evt.GetPosition())
         if flags == wx.LIST_HITTEST_ONITEMICON:
             img_idx = self.GetItem(index).GetImage()
@@ -885,13 +885,13 @@ class CheckListCtrlMixin:
         else:
             evt.Skip()
 
-    def OnCheckItem(self, index, flag):
+    def OnCheckItem(self, index, flag) -> None:
         pass
 
     def IsChecked(self, index):
         return self.GetItem(index).GetImage() == 1
 
-    def CheckItem(self, index, check = True):
+    def CheckItem(self, index, check = True) -> None:
         img_idx = self.GetItem(index).GetImage()
         if img_idx == 0 and check is True:
             self.SetItemImage(index, 1)
@@ -900,5 +900,5 @@ class CheckListCtrlMixin:
             self.SetItemImage(index, 0)
             self.OnCheckItem(index, False)
 
-    def ToggleItem(self, index):
+    def ToggleItem(self, index) -> None:
         self.CheckItem(index, not self.IsChecked(index))

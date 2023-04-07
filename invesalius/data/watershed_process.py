@@ -6,7 +6,7 @@ try:
 except ImportError:
     from skimage.morphology import watershed
 
-def get_LUT_value(data, window, level):
+def get_LUT_value(data, window, level)->np.ndarray:
     shape = data.shape
     data_ = data.ravel()
     data = np.piecewise(data_,
@@ -17,7 +17,7 @@ def get_LUT_value(data, window, level):
     return data
 
 
-def do_watershed(image, markers,  tfile, shape, bstruct, algorithm, mg_size, use_ww_wl, wl, ww, q):
+def do_watershed(image, markers,  tfile, shape, bstruct, algorithm, mg_size, use_ww_wl, wl, ww, q) -> None:
     mask = np.memmap(tfile, shape=shape, dtype='uint8', mode='r+')
                 
     if use_ww_wl:
@@ -27,7 +27,7 @@ def do_watershed(image, markers,  tfile, shape, bstruct, algorithm, mg_size, use
                            mg_size)
             tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
         else:
-            tmp_image = get_LUT_value(image, ww, wl).astype('uint16')
+            tmp_image: ndarray[Any, dtype] = get_LUT_value(image, ww, wl).astype('uint16')
             #tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
             #tmp_image = ndimage.morphological_gradient(
                            #get_LUT_value(image, ww, wl).astype('uint16'),

@@ -35,7 +35,7 @@ if HAS_TORCH:
     if torch.cuda.is_available():
         for i in range(torch.cuda.device_count()):
             name = torch.cuda.get_device_name()
-            device_id = f"cuda:{i}"
+            device_id: str = f"cuda:{i}"
             TORCH_DEVICES[name] = device_id
     TORCH_DEVICES["CPU"] = "cpu"
 
@@ -59,7 +59,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         has_plaidml=True,
         has_theano=True,
         segmenter=None
-    ):
+    ) -> None:
         wx.Dialog.__init__(
             self,
             parent,
@@ -83,7 +83,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.segmented = False
         self.mask = None
 
-        self.overlap_options = (0, 10, 25, 50)
+        self.overlap_options: tuple[Literal[0], Literal[10], Literal[25], Literal[50]] = (0, 10, 25, 50)
         self.default_overlap = 50
 
         self.cb_backends = wx.ComboBox(
@@ -144,7 +144,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.__do_layout()
         self.__set_events()
 
-    def __do_layout(self):
+    def __do_layout(self) -> None:
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_backends = wx.BoxSizer(wx.HORIZONTAL)
@@ -185,7 +185,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         main_sizer.Fit(self)
         main_sizer.SetSizeHints(self)
 
-        self.main_sizer = main_sizer
+        self.main_sizer: BoxSizer = main_sizer
 
         self.OnSetBackend()
         self.HideProgress()
@@ -193,7 +193,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.Layout()
         self.Centre()
 
-    def __set_events(self):
+    def __set_events(self) -> None:
         self.cb_backends.Bind(wx.EVT_COMBOBOX, self.OnSetBackend)
         self.sld_threshold.Bind(wx.EVT_SCROLL, self.OnScrollThreshold)
         self.txt_threshold.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
@@ -203,20 +203,20 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.elapsed_time_timer.Bind(wx.EVT_TIMER, self.OnTickTimer)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def apply_segment_threshold(self):
+    def apply_segment_threshold(self) -> None:
         threshold = self.sld_threshold.GetValue() / 100.0
         if self.ps is not None:
             self.ps.apply_segment_threshold(threshold)
             slc.Slice().discard_all_buffers()
             Publisher.sendMessage("Reload actual slice")
 
-    def CalcSizeFromTextSize(self, text):
+    def CalcSizeFromTextSize(self, text) -> Tuple[int, int]:
         dc = wx.WindowDC(self)
         dc.SetFont(self.GetFont())
         width, height = dc.GetTextExtent(text)
         return width, height
 
-    def OnSetBackend(self, evt=None):
+    def OnSetBackend(self, evt=None) -> None:
         if self.cb_backends.GetValue().lower() == "pytorch":
             if HAS_TORCH:
                 choices = list(self.torch_devices.keys())
@@ -244,13 +244,13 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.main_sizer.Fit(self)
         self.main_sizer.SetSizeHints(self)
 
-    def OnScrollThreshold(self, evt):
+    def OnScrollThreshold(self, evt) -> None:
         value = self.sld_threshold.GetValue()
         self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
         if self.segmented:
             self.apply_segment_threshold()
 
-    def OnKillFocus(self, evt):
+    def OnKillFocus(self, evt) -> None:
         value = self.txt_threshold.GetValue()
         value = value.replace("%", "")
         try:
@@ -263,9 +263,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         if self.segmented:
             self.apply_segment_threshold()
 
-    def OnSegment(self, evt):
+    def OnSegment(self, evt) -> None:
         self.ShowProgress()
-        self.t0 = time.time()
+        self.t0: float = time.time()
         self.elapsed_time_timer.Start(1000)
         image = slc.Slice().matrix
         backend = self.cb_backends.GetValue()
@@ -319,7 +319,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             )
             dlg.ShowModal()
 
-    def OnStop(self, evt):
+    def OnStop(self, evt) -> None:
         if self.ps is not None:
             self.ps.terminate()
         self.btn_close.Enable()
@@ -328,10 +328,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.chk_new_mask.Enable()
         self.elapsed_time_timer.Stop()
 
-    def OnBtnClose(self, evt):
+    def OnBtnClose(self, evt) -> None:
         self.Close()
 
-    def AfterSegment(self):
+    def AfterSegment(self) -> None:
         self.segmented = True
         self.btn_close.Enable()
         self.btn_stop.Disable()
@@ -340,11 +340,11 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.elapsed_time_timer.Stop()
         self.apply_segment_threshold()
 
-    def SetProgress(self, progress):
+    def SetProgress(self, progress) -> None:
         self.progress.SetValue(int(progress * 100))
         wx.GetApp().Yield()
 
-    def OnTickTimer(self, evt):
+    def OnTickTimer(self, evt) -> None:
         fmt = "%H:%M:%S"
         self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
         if self.ps is not None:
@@ -369,10 +369,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             if progress == np.Inf:
                 progress = 1
                 self.AfterSegment()
-            progress = max(0, min(progress, 1))
+            progress: int = max(0, min(progress, 1))
             self.SetProgress(float(progress))
 
-    def OnClose(self, evt):
+    def OnClose(self, evt) -> None:
         #  self.segmenter.stop = True
         self.btn_stop.Disable()
         self.btn_segment.Enable()
@@ -385,14 +385,14 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
         self.Destroy()
 
-    def HideProgress(self):
+    def HideProgress(self) -> None:
         self.progress.Hide()
         self.lbl_progress_caption.Hide()
         self.lbl_time.Hide()
         self.main_sizer.Fit(self)
         self.main_sizer.SetSizeHints(self)
 
-    def ShowProgress(self):
+    def ShowProgress(self) -> None:
         self.progress.Show()
         self.lbl_progress_caption.Show()
         self.lbl_time.Show()
@@ -401,7 +401,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
 
 class BrainSegmenterDialog(DeepLearningSegmenterDialog):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__(
             parent=parent,
             title=_("Brain segmentation"),
@@ -413,7 +413,7 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
 
 
 class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__(
             parent=parent,
             title=_("Trachea segmentation"),

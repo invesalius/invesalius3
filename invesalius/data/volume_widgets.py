@@ -41,8 +41,8 @@ class Plane():
     axial_plane.Show()
     axial_plane.Update()
     """
-    def __init__(self):
-        self.orientation = AXIAL
+    def __init__(self) -> None:
+        self.orientation: Literal[0] = AXIAL
         self.render = None
         self.iren = None
         self.index = 0
@@ -50,16 +50,16 @@ class Plane():
         self.widget = None
         self.actor = None
 
-    def SetOrientation(self, orientation=AXIAL):
+    def SetOrientation(self, orientation=AXIAL) -> None:
         self.orientation = orientation
 
-    def SetRender(self, render=None):
+    def SetRender(self, render=None) -> None:
         self.render = render
 
-    def SetInteractor(self, iren=None):
+    def SetInteractor(self, iren=None) -> None:
         self.iren = iren
 
-    def SetSliceIndex(self, index):
+    def SetSliceIndex(self, index) -> None:
         self.index = 0
         try:
             self.widget.SetSliceIndex(int(index))
@@ -71,7 +71,7 @@ class Plane():
                 print("send signal - update slice info in panel and in 2d")
                 
 
-    def SetInput(self, imagedata):
+    def SetInput(self, imagedata) -> None:
         axes = PLANE_DATA[self.orientation][0] # "x", "y" or "z"
         colour = PLANE_DATA[self.orientation][1]
         
@@ -102,7 +102,7 @@ class Plane():
         widget.RestrictPlaneToVolumeOff()
         exec("widget.SetPlaneOrientationTo"+axes.upper()+"Axes()")
         widget.AddObserver("InteractionEvent",self.Update)
-        self.widget = widget
+        self.widget: vtkImagePlaneWidget = widget
         
         prop = widget.GetPlaneProperty()
         prop.SetColor(colour)
@@ -113,7 +113,7 @@ class Plane():
         source.SetPoint1(widget.GetPoint1())
         source.SetPoint2(widget.GetPoint2())
         source.SetNormal(widget.GetNormal())
-        self.source = source
+        self.source: vtkPlaneSource = source
         
         mapper = vtkPolyDataMapper()
         mapper.SetInput(source.GetOutput())
@@ -122,22 +122,22 @@ class Plane():
         actor.SetMapper(mapper)
         actor.SetTexture(widget.GetTexture())
         actor.VisibilityOff()
-        self.actor = actor
+        self.actor: vtkActor = actor
 
         self.render.AddActor(actor)
 
-    def Update(self, x=None, y=None):
-        source = self.source
-        widget = self.widget
+    def Update(self, x=None, y=None) -> None:
+        source: vtkPlaneSource = self.source
+        widget: vtkImagePlaneWidget = self.widget
 
         source.SetOrigin(widget.GetOrigin())
         source.SetPoint1(widget.GetPoint1())
         source.SetPoint2(widget.GetPoint2())
         source.SetNormal(widget.GetNormal())
 
-    def Show(self, show=1):
-        actor = self.actor
-        widget = self.widget
+    def Show(self, show=1) -> None:
+        actor: vtkActor = self.actor
+        widget: vtkImagePlaneWidget = self.widget
         
         if show:
             actor.VisibilityOn()

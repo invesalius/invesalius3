@@ -40,12 +40,12 @@ from invesalius import inv_paths
 
 
 class ProgressDialog(object):
-    def __init__(self, parent, maximum, abort=False):
+    def __init__(self, parent, maximum, abort=False) -> None:
         self.title = "InVesalius 3"
         self.msg = _("Loading DICOM files")
         self.maximum = maximum
         self.current = 0
-        self.style = wx.PD_APP_MODAL
+        self.style: Literal[0] = wx.PD_APP_MODAL
         if abort:
             self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
@@ -58,7 +58,7 @@ class ProgressDialog(object):
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
         self.dlg.SetSize(wx.Size(250,150))
 
-    def Cancel(self, evt):
+    def Cancel(self, evt) -> None:
         Publisher.sendMessage("Cancel DICOM load")
 
     def Update(self, value, message):
@@ -72,7 +72,7 @@ class ProgressDialog(object):
         else:
             return False
 
-    def Close(self):
+    def Close(self) -> None:
         self.dlg.Destroy()
 
 
@@ -96,14 +96,14 @@ else:
 # http://jjinux.blogspot.com/2006/10/python-modifying-counter-in-closure.html
 
 def ShowProgress(number_of_filters = 1,
-                 dialog_type="GaugeProgress"):
+                 dialog_type="GaugeProgress") :
     """
     To use this closure, do something like this:
         UpdateProgress = ShowProgress(NUM_FILTERS)
         UpdateProgress(vtkObject)
     """
-    progress = [0]
-    last_obj_progress = [0]
+    progress: list[int] = [0]
+    last_obj_progress: list[int] = [0]
     if (dialog_type == "ProgressDialog"):
         try:
             dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
@@ -113,8 +113,8 @@ def ShowProgress(number_of_filters = 1,
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
-    number_of_filters = max(number_of_filters, 1)
-    ratio = (100.0 / number_of_filters)
+    number_of_filters: int = max(number_of_filters, 1)
+    ratio: float = (100.0 / number_of_filters)
 
     def UpdateProgress(obj, label=""):
         """
@@ -124,7 +124,7 @@ def ShowProgress(number_of_filters = 1,
         # is necessary verify in case is sending the progress
         #represented by number in case multiprocess, not vtk object
         if isinstance(obj, float) or isinstance(obj, int):
-            obj_progress = obj
+            obj_progress: float | int = obj
         else:
             obj_progress = obj.GetProgress()
 
@@ -154,7 +154,7 @@ def ShowProgress(number_of_filters = 1,
     return UpdateProgress
 
 class Text(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.layer = 99
         self.children = []
         property = vtkTextProperty()
@@ -166,33 +166,33 @@ class Text(object):
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
-        self.property = property
+        self.property: vtkTextProperty = property
 
         mapper = vtkTextMapper()
         mapper.SetTextProperty(property)
-        self.mapper = mapper
+        self.mapper: vtkTextMapper = mapper
 
         actor = vtkActor2D()
         actor.SetMapper(mapper)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
-        self.actor = actor
+        self.actor: vtkActor2D = actor
 
         self.SetPosition(const.TEXT_POS_LEFT_UP)
 
-    def SetColour(self, colour):
+    def SetColour(self, colour) -> None:
         self.property.SetColor(colour)
 
-    def ShadowOff(self):
+    def ShadowOff(self) -> None:
         self.property.ShadowOff()
 
-    def BoldOn(self):
+    def BoldOn(self) -> None:
         self.property.BoldOn()
 
-    def SetSize(self, size):
+    def SetSize(self, size) -> None:
         self.property.SetFontSize(size)
 
-    def SetValue(self, value):
+    def SetValue(self, value) -> None:
         if isinstance(value, int) or isinstance(value, float):
             value = str(value)
             if sys.platform == 'win32':
@@ -208,13 +208,13 @@ class Text(object):
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8", errors='replace'))
 
-    def GetValue(self):
+    def GetValue(self) -> str:
         return self.mapper.GetInput()
 
-    def SetCoilDistanceValue(self, value):
+    def SetCoilDistanceValue(self, value) -> None:
         #TODO: Not being used anymore. Can be deleted.
         if isinstance(value, int) or isinstance(value, float):
-            value = 'Dist: ' + str("{:06.2f}".format(value)) + ' mm'
+            value: str = 'Dist: ' + str("{:06.2f}".format(value)) + ' mm'
             if sys.platform == 'win32':
                 value += ""  # Otherwise 0 is not shown under win32
                 # With some encoding in some dicom fields (like name) raises a
@@ -229,37 +229,37 @@ class Text(object):
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8"))
 
-    def SetPosition(self, position):
+    def SetPosition(self, position) -> None:
         self.actor.GetPositionCoordinate().SetValue(position[0],
                                                     position[1])
 
-    def GetPosition(self, position):
+    def GetPosition(self, position) -> None:
         self.actor.GetPositionCoordinate().GetValue()
 
-    def SetJustificationToRight(self):
+    def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
 
-    def SetJustificationToCentered(self):
+    def SetJustificationToCentered(self) -> None:
         self.property.SetJustificationToCentered()
 
 
-    def SetVerticalJustificationToBottom(self):
+    def SetVerticalJustificationToBottom(self) -> None:
         self.property.SetVerticalJustificationToBottom()
 
-    def SetVerticalJustificationToCentered(self):
+    def SetVerticalJustificationToCentered(self) -> None:
         self.property.SetVerticalJustificationToCentered()
 
-    def Show(self, value=1):
+    def Show(self, value=1) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.actor.VisibilityOff()
 
 class TextZero(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.layer = 99
         self.children = []
         property = vtkTextProperty()
@@ -271,34 +271,34 @@ class TextZero(object):
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
-        self.property = property
+        self.property: vtkTextProperty = property
 
         actor = vtkTextActor()
         actor.GetTextProperty().ShallowCopy(property)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
-        self.actor = actor
+        self.actor: vtkTextActor = actor
 
-        self.text = ''
-        self.position = (0, 0)
-        self.symbolic_syze = wx.FONTSIZE_MEDIUM
+        self.text: Literal[''] = ''
+        self.position: tuple[Literal[0], Literal[0]] = (0, 0)
+        self.symbolic_syze: Literal[0] = wx.FONTSIZE_MEDIUM
         self.bottom_pos = False
         self.right_pos = False
 
-    def SetColour(self, colour):
+    def SetColour(self, colour) -> None:
         self.property.SetColor(colour)
 
-    def ShadowOff(self):
+    def ShadowOff(self) -> None:
         self.property.ShadowOff()
 
-    def SetSize(self, size):
+    def SetSize(self, size) -> None:
         self.property.SetFontSize(size)
         self.actor.GetTextProperty().ShallowCopy(self.property)
 
-    def SetSymbolicSize(self, size):
+    def SetSymbolicSize(self, size) -> None:
         self.symbolic_syze = size
 
-    def SetValue(self, value):
+    def SetValue(self, value) -> None:
         if isinstance(value, int) or isinstance(value, float):
             value = str(value)
             if sys.platform == 'win32':
@@ -313,37 +313,37 @@ class TextZero(object):
 
         self.text = value
 
-    def SetPosition(self, position):
+    def SetPosition(self, position) -> None:
         self.position = position
         self.actor.GetPositionCoordinate().SetValue(position[0],
                                                     position[1])
 
-    def GetPosition(self):
+    def GetPosition(self) -> Tuple[float, float, float]:
         return self.actor.GetPositionCoordinate().GetValue()
 
-    def SetJustificationToRight(self):
+    def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
 
-    def SetJustificationToCentered(self):
+    def SetJustificationToCentered(self) -> None:
         self.property.SetJustificationToCentered()
 
 
-    def SetVerticalJustificationToBottom(self):
+    def SetVerticalJustificationToBottom(self) -> None:
         self.property.SetVerticalJustificationToBottom()
 
-    def SetVerticalJustificationToCentered(self):
+    def SetVerticalJustificationToCentered(self) -> None:
         self.property.SetVerticalJustificationToCentered()
 
-    def Show(self, value=1):
+    def Show(self, value=1) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.actor.VisibilityOff()
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc, canvas) -> None:
         coord = vtkCoordinate()
         coord.SetCoordinateSystemToNormalizedDisplay()
         coord.SetValue(*self.position)
@@ -360,7 +360,7 @@ class TextZero(object):
         canvas.draw_text(self.text, (x, y), font=font)
 
 
-def numpy_to_vtkMatrix4x4(affine):
+def numpy_to_vtkMatrix4x4(affine) -> vtkMatrix4x4:
     """
     Convert a numpy 4x4 array to a vtk 4x4 matrix
     :param affine: 4x4 array
@@ -397,11 +397,11 @@ def CreateObjectPolyData(filename):
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
     else:
-        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+        filename: str = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
         reader = vtkSTLReader()
 
     if _has_win32api:
-        obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+        obj_name: bytes = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
     else:
         obj_name = filename.encode(const.FS_ENCODE)
 

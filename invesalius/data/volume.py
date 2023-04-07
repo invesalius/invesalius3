@@ -58,7 +58,7 @@ import invesalius.session as ses
 from invesalius import inv_paths
 
 
-Kernels = { 
+Kernels: dict[str, list[float]] = { 
     "Basic Smooth 5x5" : [1.0, 1.0, 1.0, 1.0, 1.0,
                           1.0, 4.0, 4.0, 4.0, 1.0,
                           1.0, 4.0, 12.0, 4.0, 1.0,
@@ -99,7 +99,7 @@ SHADING = {
 
 class Volume():
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = None
         self.exist = None
         self.color_transfer = None
@@ -115,7 +115,7 @@ class Volume():
         self.to_reload = False
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.OnHideVolume,
                                 'Hide raycasting volume')
         Publisher.subscribe(self.OnUpdatePreset,
@@ -138,16 +138,16 @@ class Volume():
 
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
 
-    def ResetRayCasting(self):
+    def ResetRayCasting(self) -> None:
         if self.exist:
             self.exist = None
             self.LoadVolume()
 
 
-    def OnCloseProject(self):
+    def OnCloseProject(self) -> None:
         self.CloseProject()
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         #if self.plane:
         #    self.plane = None
         #    Publisher.sendMessage('Remove surface actor from viewer', self.plane_actor)
@@ -179,19 +179,19 @@ class Volume():
             self.color_transfer = None
             Publisher.sendMessage('Render volume viewer')
 
-    def OnLoadVolume(self, label):
+    def OnLoadVolume(self, label) -> None:
         label = label
         #self.LoadConfig(label)
         self.LoadVolume()
 
-    def OnHideVolume(self):
+    def OnHideVolume(self) -> None:
         print('Hide Volume')
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
             self.plane.Disable()
         Publisher.sendMessage('Render volume viewer')
 
-    def OnShowVolume(self):
+    def OnShowVolume(self) -> None:
         print('Show volume')
         if self.exist:
             print('Volume exists')
@@ -207,7 +207,7 @@ class Volume():
             self.LoadVolume()
             self.exist = 1
 
-    def OnUpdatePreset(self):
+    def OnUpdatePreset(self) -> None:
         self.__load_preset_config()
 
         if self.config:
@@ -246,17 +246,17 @@ class Volume():
             self.color_transfer = None
             Publisher.sendMessage('Render volume viewer')
 
-    def OnFlipVolume(self, axis):
+    def OnFlipVolume(self, axis) -> None:
         print("Flipping Volume")
         self.loaded_image = False
         del self.image
         self.image = None
         self.to_reload = True
         
-    def __load_preset_config(self):
-        self.config = prj.Project().raycasting_preset
+    def __load_preset_config(self) -> None:
+        self.config: str = prj.Project().raycasting_preset
 
-    def __update_colour_table(self):
+    def __update_colour_table(self) -> None:
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
             self.CreateOpacityTable(self.scale)
@@ -264,7 +264,7 @@ class Volume():
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
 
-    def __load_preset(self):   
+    def __load_preset(self) -> None:   
         # Update colour table
         self.__update_colour_table()
 
@@ -277,14 +277,14 @@ class Volume():
         self.SetShading()
         self.SetTypeRaycasting()
 
-    def OnSetCurve(self, curve):
+    def OnSetCurve(self, curve) -> None:
         self.curve = curve
         self.CalculateWWWL()
         ww = self.ww
         wl = self.wl
         Publisher.sendMessage('Set volume window and level text', ww=ww, wl=wl)
 
-    def OnSetRelativeWindowLevel(self, diff_wl, diff_ww):
+    def OnSetRelativeWindowLevel(self, diff_wl, diff_ww) -> None:
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         Publisher.sendMessage('Set volume window and level text', ww=ww, wl=wl)
@@ -292,20 +292,20 @@ class Volume():
         self.ww = ww
         self.wl = wl
 
-    def OnSetWindowLevel(self, ww, wl, curve):
+    def OnSetWindowLevel(self, ww, wl, curve) -> None:
         self.curve = curve
         self.SetWWWL(ww, wl)
 
-    def SetWWWL(self, ww, wl):
+    def SetWWWL(self, ww, wl) -> None:
         if self.config['advancedCLUT']:
             try:
-                curve = self.config['16bitClutCurves'][self.curve]
+                curve: str = self.config['16bitClutCurves'][self.curve]
             except IndexError:
                 self.curve = 0
                 curve = self.config['16bitClutCurves'][self.curve]
 
-            p1 = curve[0]
-            p2 = curve[-1]
+            p1: str = curve[0]
+            p2: str = curve[-1]
             half = (p2['x'] - p1['x']) / 2.0
             middle = p1['x'] + half
 
@@ -315,7 +315,7 @@ class Volume():
             factor = 1.0
             for n,i in enumerate(curve):
                 factor = abs(i['x'] - middle) / half
-                factor = max(factor, 0)
+                factor: int = max(factor, 0)
                 i['x'] += shiftWL
                 if n < len(curve)/2.0:
                     i['x'] -= shiftWW * factor
@@ -327,38 +327,38 @@ class Volume():
 
         self.__update_colour_table()
 
-    def CalculateWWWL(self):
+    def CalculateWWWL(self) -> None:
         """
         Get the window width & level from the selected curve
         """
         try:
-            curve = self.config['16bitClutCurves'][self.curve]
+            curve: str = self.config['16bitClutCurves'][self.curve]
         except IndexError:
             self.curve -= 1
             curve = self.config['16bitClutCurves'][self.curve]
-        first_point = curve[0]['x']
-        last_point = curve[-1]['x']
+        first_point: str = curve[0]['x']
+        last_point: str = curve[-1]['x']
         self.ww = last_point - first_point
         self.wl = first_point + self.ww / 2.0
 
-    def Refresh(self):
+    def Refresh(self) -> None:
         self.__update_colour_table()
 
-    def Create16bColorTable(self, scale):
+    def Create16bColorTable(self, scale) -> None:
         if self.color_transfer:
-            color_transfer = self.color_transfer
+            color_transfer: vtkColorTransferFunction = self.color_transfer
         else:
             color_transfer = vtkColorTransferFunction()
         color_transfer.RemoveAllPoints()
-        curve_table = self.config['16bitClutCurves']
-        color_table = self.config['16bitClutColors']
+        curve_table: str = self.config['16bitClutCurves']
+        color_table: str = self.config['16bitClutColors']
         colors = []
         for i, l in enumerate(curve_table):
             for j, lopacity in enumerate(l):
-                gray_level = lopacity['x']
-                r = color_table[i][j]['red']
-                g = color_table[i][j]['green']
-                b = color_table[i][j]['blue']
+                gray_level: str = lopacity['x']
+                r: str = color_table[i][j]['red']
+                g: str = color_table[i][j]['green']
+                b: str = color_table[i][j]['blue']
 
                 colors.append((gray_level, r, g, b))
                 color_transfer.AddRGBPoint(
@@ -366,15 +366,15 @@ class Volume():
                     r, g, b)
         self.color_transfer = color_transfer
 
-    def Create8bColorTable(self, scale):
+    def Create8bColorTable(self, scale) -> None:
         if self.color_transfer:
             color_transfer = self.color_transfer
         else:
             color_transfer = vtkColorTransferFunction()
         color_transfer.RemoveAllPoints()
-        color_preset = self.config['CLUT']
+        color_preset: str = self.config['CLUT']
         if color_preset != "No CLUT":
-            path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
+            path: str = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                 'color_list', color_preset + '.plist')
             with open(path, 'rb') as f:
                 p = plistlib.load(f, fmt=plistlib.FMT_XML)
@@ -385,9 +385,9 @@ class Volume():
             colors = list(zip(r,g,b))
         else:
             # Grayscale from black to white
-            colors = [(i, i, i) for i in range(256)]
+            colors: list[tuple[int, int, int]] = [(i, i, i) for i in range(256)]
 
-        ww = self.config['ww']
+        ww: str = self.config['ww']
         wl = self.TranslateScale(scale, self.config['wl'])
         init = wl - ww/2.0
         inc = ww / (len(colors) - 1.0)
@@ -396,19 +396,19 @@ class Volume():
 
         self.color_transfer = color_transfer
 
-    def CreateOpacityTable(self, scale):
+    def CreateOpacityTable(self, scale) -> None:
         if self.opacity_transfer_func:
-            opacity_transfer_func = self.opacity_transfer_func
+            opacity_transfer_func: vtkPiecewiseFunction = self.opacity_transfer_func
         else:
             opacity_transfer_func = vtkPiecewiseFunction()
         opacity_transfer_func.RemoveAllPoints()
-        curve_table = self.config['16bitClutCurves']
+        curve_table: str = self.config['16bitClutCurves']
         opacities = []
 
-        ww = self.config['ww']
-        wl = self.config['wl']
-        self.ww = ww
-        self.wl = wl
+        ww: str = self.config['ww']
+        wl: str = self.config['wl']
+        self.ww: str = ww
+        self.wl: str = wl
 
         l1 = wl - ww/2.0
         l2 = wl + ww/2.0
@@ -420,19 +420,19 @@ class Volume():
 
         for i, l in enumerate(curve_table):
             for j, lopacity in enumerate(l):
-                gray_level = lopacity['x']
+                gray_level: str = lopacity['x']
                 #if gray_level <= l1:
                 #    opacity = k1
                 #elif gray_level > l2:
                 #    opacity = k2
                 #else:
-                opacity = lopacity['y']
+                opacity: str = lopacity['y']
                 opacities.append((gray_level, opacity))
                 opacity_transfer_func.AddPoint(
                     self.TranslateScale(scale, gray_level), opacity)
         self.opacity_transfer_func = opacity_transfer_func
 
-    def Create8bOpacityTable(self, scale):
+    def Create8bOpacityTable(self, scale) -> vtkPiecewiseFunction:
         if self.opacity_transfer_func:
             opacity_transfer_func = self.opacity_transfer_func
         else:
@@ -440,7 +440,7 @@ class Volume():
         opacity_transfer_func.RemoveAllPoints()
         opacities = []
 
-        ww = self.config['ww']
+        ww: str = self.config['ww']
         wl = self.TranslateScale(scale, self.config['wl'])
 
         l1 = wl - ww/2.0
@@ -461,19 +461,19 @@ class Volume():
         self.opacity_transfer_func = opacity_transfer_func
         return opacity_transfer_func
 
-    def GetBackgroundColour(self):
-        colour = (self.config['backgroundColorRedComponent'],
+    def GetBackgroundColour(self) -> tuple[str, str, str]:
+        colour: tuple[str, str, str] = (self.config['backgroundColorRedComponent'],
                             self.config['backgroundColorGreenComponent'],
                             self.config['backgroundColorBlueComponent'])
         return colour
 
-    def ChangeBackgroundColour(self, colour):
+    def ChangeBackgroundColour(self, colour) -> None:
         if (self.config):
             self.config['backgroundColorRedComponent'] = colour[0] * 255
             self.config['backgroundColorGreenComponent'] = colour[1] * 255
             self.config['backgroundColorBlueComponent'] = colour[2] * 255
 
-    def BuildTable():
+    def BuildTable()-> tuple[list[tuple[int, int, int]], list[tuple[int, int]], list[int], bool]:
         curve_table = p['16bitClutCurves']
         color_background = (p['backgroundColorRedComponent'],
                             p['backgroundColorGreenComponent'],
@@ -497,7 +497,7 @@ class Volume():
 
         return colors, opacities, color_background, p['useShading']
 
-    def SetShading(self):
+    def SetShading(self) -> None:
         if self.config['useShading']:
             self.volume_properties.ShadeOn()
         else:
@@ -509,7 +509,7 @@ class Volume():
         self.volume_properties.SetSpecular(shading['specular'])
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
-    def SetTypeRaycasting(self):
+    def SetTypeRaycasting(self) -> None:
         if self.volume_mapper.IsA("vtkFixedPointVolumeRayCastMapper") or self.volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
 
             if self.config.get('MIP', False):
@@ -528,7 +528,7 @@ class Volume():
                 self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
 
     def ApplyConvolution(self, imagedata, update_progress = None):
-        number_filters = len(self.config['convolutionFilters'])
+        number_filters: int = len(self.config['convolutionFilters'])
         if number_filters:
             if not(update_progress):
                 update_progress = vtk_utils.ShowProgress(number_filters)
@@ -549,17 +549,17 @@ class Volume():
                 #convolve.GetOutput().ReleaseDataFlagOn()
         return imagedata
 
-    def LoadImage(self):
+    def LoadImage(self) -> None:
         slice_data = slice_.Slice()
         n_array = slice_data.matrix
-        spacing = slice_data.spacing
+        spacing: tuple[float, float, float] = slice_data.spacing
         slice_number = 0
         orientation = 'AXIAL'
 
-        image = converters.to_vtk(n_array, spacing, slice_number, orientation) 
+        image: vtkImageData = converters.to_vtk(n_array, spacing, slice_number, orientation) 
         self.image = image
 
-    def LoadVolume(self):
+    def LoadVolume(self) -> None:
         proj = prj.Project()
         #image = imagedata_utils.to_vtk(n_array, spacing, slice_number, orientation) 
 
@@ -569,7 +569,7 @@ class Volume():
 
         image = self.image
 
-        number_filters = len(self.config['convolutionFilters'])
+        number_filters: int = len(self.config['convolutionFilters'])
         
         if (prj.Project().original_orientation == const.AXIAL):
             flip_image = True
@@ -603,9 +603,9 @@ class Volume():
         cast_ref().AddObserver("ProgressEvent", lambda obj,evt:
                             update_progress(cast_ref(), "Rendering..."))
         cast.Update()
-        image2 = cast
+        image2: vtkImageShiftScale = cast
 
-        self.imagedata = image2
+        self.imagedata: vtkImageShiftScale = image2
         if self.config['advancedCLUT']:
             self.Create16bColorTable(scale)
             self.CreateOpacityTable(scale)
@@ -632,7 +632,7 @@ class Volume():
             if not session.GetConfig('rendering'):
                 volume_mapper = vtkFixedPointVolumeRayCastMapper()
                 #volume_mapper.AutoAdjustSampleDistancesOff()
-                self.volume_mapper = volume_mapper
+                self.volume_mapper: vtkFixedPointVolumeRayCastMapper = volume_mapper
                 volume_mapper.IntermixIntersectingGeometryOn()
             else:
                 volume_mapper = vtkOpenGLGPUVolumeRayCastMapper()
@@ -671,16 +671,16 @@ class Volume():
             volume_mapper.SetSampleDistance(pix_diag / 5.0)
             volume_properties.SetScalarOpacityUnitDistance(pix_diag)
 
-        self.volume_properties = volume_properties
+        self.volume_properties: vtkVolumeProperty = volume_properties
 
         self.SetShading()
 
         volume = vtkVolume()
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
-        self.volume = volume
+        self.volume: vtkVolume = volume
 
-        colour = self.GetBackgroundColour()
+        colour: tuple[str, str, str] = self.GetBackgroundColour()
 
         self.exist = 1
 
@@ -694,7 +694,7 @@ class Volume():
         del flip
         del cast
 
-    def OnEnableTool(self, tool_name, flag):
+    def OnEnableTool(self, tool_name, flag) -> None:
         if tool_name == _("Cut plane"):
             if self.plane:
                 if flag:
@@ -709,7 +709,7 @@ class Volume():
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)
 
-    def CalculateHistogram(self):
+    def CalculateHistogram(self) -> None:
         image = self.image
         r = int(image.GetScalarRange()[1] - image.GetScalarRange()[0])
         accumulate = vtkImageAccumulate()
@@ -718,7 +718,7 @@ class Volume():
         accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
         #  accumulate.ReleaseDataFlagOn()
         accumulate.Update()
-        n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
+        n_image: ndarray[Any, dtype[floating[_64Bit]]] = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
         del accumulate
         init, end = image.GetScalarRange()
         Publisher.sendMessage('Load histogram', histogram=n_image, init=init, end=end)
@@ -733,7 +733,7 @@ class Volume():
         return value - scale[0]
 
 class VolumeMask:
-    def __init__(self, mask):
+    def __init__(self, mask) -> None:
         self.mask = mask
         self.colour = mask.colour
         self._volume_mapper = None
@@ -742,7 +742,7 @@ class VolumeMask:
         self._piecewise_function = None
         self._actor = None
 
-    def create_volume(self):
+    def create_volume(self) -> None:
         if self._actor is None:
             session = ses.Session()
             if not session.GetConfig('rendering'):
@@ -806,10 +806,10 @@ class VolumeMask:
             self._actor.SetProperty(self._volume_property)
             self._actor.Update()
 
-    def change_imagedata(self):
+    def change_imagedata(self) -> None:
         self._flip.SetInputData(self.mask.imagedata)
 
-    def set_colour(self, colour):
+    def set_colour(self, colour) -> None:
         self.colour = colour
         r, g, b = self.colour
         self._color_transfer.RemoveAllPoints()
@@ -819,13 +819,13 @@ class VolumeMask:
 
 
 class CutPlane:
-    def __init__(self, img, volume_mapper):
+    def __init__(self, img, volume_mapper) -> None:
         self.img = img
         self.volume_mapper = volume_mapper
         self.Create()
         self.__bind_events()
     
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.Reset,
                                 'Reset Cut Plane')
         Publisher.subscribe(self.Enable,
@@ -833,7 +833,7 @@ class CutPlane:
         Publisher.subscribe(self.Disable,
                                 'Disable Cut Plane')
             
-    def Create(self):
+    def Create(self) -> None:
         self.plane_widget = plane_widget = vtkImagePlaneWidget()
         plane_widget.SetInputData(self.img)
         plane_widget.SetPlaneOrientationToXAxes()
@@ -868,18 +868,18 @@ class CutPlane:
         plane.SetOrigin(self.plane_source.GetOrigin())
         self.volume_mapper.AddClippingPlane(plane) 
         #Storage First Position
-        self.origin = plane_widget.GetOrigin()
-        self.p1 = plane_widget.GetPoint1()
-        self.p2 = plane_widget.GetPoint2()
-        self.normal = plane_widget.GetNormal()
+        self.origin: Tuple[float, float, float] = plane_widget.GetOrigin()
+        self.p1: Tuple[float, float, float] = plane_widget.GetPoint1()
+        self.p2: Tuple[float, float, float] = plane_widget.GetPoint2()
+        self.normal: Tuple[float, float, float] = plane_widget.GetNormal()
 
-    def SetVolumeMapper(self, volume_mapper):
+    def SetVolumeMapper(self, volume_mapper) -> None:
         self.volume_mapper = volume_mapper
         self.volume_mapper.AddClippingPlane(self.plane)
 
-    def Update(self, a, b):        
-        plane_source = self.plane_source
-        plane_widget = self.plane_widget
+    def Update(self, a, b) -> None:        
+        plane_source: vtkPlaneSource = self.plane_source
+        plane_widget: vtkImagePlaneWidget = self.plane_widget
         plane_source.SetOrigin(plane_widget.GetOrigin())
         plane_source.SetPoint1(plane_widget.GetPoint1())
         plane_source.SetPoint2(plane_widget.GetPoint2())
@@ -889,21 +889,21 @@ class CutPlane:
         self.plane.SetOrigin(plane_source.GetOrigin())
         Publisher.sendMessage('Render volume viewer')
         
-    def Enable(self):
+    def Enable(self) -> None:
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.AddClippingPlane(self.plane)
         Publisher.sendMessage('Render volume viewer')
         
-    def Disable(self):
+    def Disable(self) -> None:
         self.plane_widget.Off() 
         self.plane_actor.VisibilityOff()
         self.volume_mapper.RemoveClippingPlane(self.plane)
         Publisher.sendMessage('Render volume viewer')
         
-    def Reset(self):
-        plane_source = self.plane_source
-        plane_widget = self.plane_widget
+    def Reset(self) -> None:
+        plane_source: vtkPlaneSource = self.plane_source
+        plane_widget: vtkImagePlaneWidget = self.plane_widget
         plane_source.SetOrigin(self.origin)
         plane_source.SetPoint1(self.p1)
         plane_source.SetPoint2(self.p2)
@@ -913,7 +913,7 @@ class CutPlane:
         self.plane.SetOrigin(self.origin)
         Publisher.sendMessage('Render volume viewer')  
         
-    def DestroyObjs(self):
+    def DestroyObjs(self) -> None:
         Publisher.sendMessage('Remove surface actor from viewer', actor=self.plane_actor)
         self.Disable()
         del self.plane_widget   
