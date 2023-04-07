@@ -46,7 +46,7 @@ import invesalius.data.imagedata_utils as img_utils
 # np.set_printoptions(suppress=True)
 
 
-def compute_directions(trk_n, alpha=255):
+def compute_directions(trk_n, alpha=255) -> ndarray[Any, dtype]:
     """Compute direction of a single tract in each point and return as an RGBA color
 
     :param trk_n: nx3 array of doubles (x, y, z) point coordinates composing the tract
@@ -58,16 +58,16 @@ def compute_directions(trk_n, alpha=255):
     """
 
     # trk_d = np.diff(trk_n, axis=0, append=2*trk_n[np.newaxis, -1, :])
-    trk_d = np.diff(trk_n, axis=0, append=trk_n[np.newaxis, -2, :])
+    trk_d: ndarray[Any, dtype] = np.diff(trk_n, axis=0, append=trk_n[np.newaxis, -2, :])
     trk_d[-1, :] *= -1
     # check that linalg norm makes second norm
     # https://stackoverflow.com/questions/21030391/how-to-normalize-an-array-in-numpy
     direction = 255 * np.absolute((trk_d / np.linalg.norm(trk_d, axis=1)[:, None]))
-    direction = np.hstack([direction, alpha * np.ones([direction.shape[0], 1])])
+    direction: ndarray[Any, dtype] = np.hstack([direction, alpha * np.ones([direction.shape[0], 1])])
     return direction.astype(int)
 
 
-def compute_tubes(trk, direction):
+def compute_tubes(trk, direction) -> vtkTubeFilter:
     """Compute and assign colors to a vtkTube for visualization of a single tract
 
     :param trk: nx3 array of doubles (x, y, z) point coordinates composing the tract
@@ -108,7 +108,7 @@ def compute_tubes(trk, direction):
     return trk_tube
 
 
-def create_branch(out_list, n_block):
+def create_branch(out_list, n_block) -> vtkMultiBlockDataSet:
     """Adds a set of tracts to given position in a given vtkMultiBlockDataSet
 
     :param out_list: List of vtkTubeFilters representing the tracts
@@ -133,7 +133,7 @@ def create_branch(out_list, n_block):
     return branch
 
 
-def compute_tracts(trk_list, n_tract=0, alpha=255):
+def compute_tracts(trk_list, n_tract=0, alpha=255) -> vtkMultiBlockDataSet:
     """Convert the list of all computed tracts given by Trekker run and returns a vtkMultiBlockDataSet
 
     :param trk_list: List of lists containing the computed tracts and corresponding coordinates
@@ -151,14 +151,14 @@ def compute_tracts(trk_list, n_tract=0, alpha=255):
     # Compute the directions
     trk_dir = [compute_directions(trk_n, alpha) for trk_n in trk_arr]
     # Compute the vtk tubes
-    out_list = [compute_tubes(trk_arr_n, trk_dir_n) for trk_arr_n, trk_dir_n in zip(trk_arr, trk_dir)]
+    out_list: list[vtkTubeFilter] = [compute_tubes(trk_arr_n, trk_dir_n) for trk_arr_n, trk_dir_n in zip(trk_arr, trk_dir)]
     # create a branch and add the tracts
-    branch = create_branch(out_list, n_tract)
+    branch: vtkMultiBlockDataSet = create_branch(out_list, n_tract)
 
     return branch
 
 
-def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts_max):
+def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts_max) -> None:
     """ Compute tractograms using the Trekker library.
 
     :param trekker: Trekker library instance
@@ -181,14 +181,14 @@ def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts
     seed_trk = img_utils.convert_world_to_voxel(position, affine)
     bundle = vtkMultiBlockDataSet()
     n_branches, n_tracts, count_loop = 0, 0, 0
-    n_threads = 2 * const.N_CPU - 1
+    n_threads: int = 2 * const.N_CPU - 1
 
     while n_tracts < n_tracts_max:
-        n_param = 1 + (count_loop % 10)
+        n_param: int = 1 + (count_loop % 10)
         # rescale the alpha value that defines the opacity of the branch
         # the n interval is [1, 10] and the new interval is [51, 255]
         # the new interval is defined to have no 0 opacity (minimum is 51, i.e., 20%)
-        alpha = (n_param - 1) * (255 - 51) / (10 - 1) + 51
+        alpha: float = (n_param - 1) * (255 - 51) / (10 - 1) + 51
         trekker.minFODamp(n_param * 0.01)
 
         # print("seed example: {}".format(seed_trk))
@@ -197,7 +197,7 @@ def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts
         trk_list = trekker.run()
         n_tracts += len(trk_list)
         if len(trk_list):
-            branch = compute_tracts(trk_list, n_tract=0, alpha=alpha)
+            branch: vtkMultiBlockDataSet = compute_tracts(trk_list, n_tract=0, alpha=alpha)
             bundle.SetBlock(n_branches, branch)
             n_branches += 1
 
@@ -215,7 +215,7 @@ def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts
 class ComputeTractsThread(threading.Thread):
     # TODO: Remove this class and create a case where no ACT is provided in the class ComputeTractsACTThread
 
-    def __init__(self, inp, queues, event, sle):
+    def __init__(self, inp, queues, event, sle) -> None:
         """Class (threading) to compute real time tractography data for visualization.
 
         Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
@@ -246,12 +246,12 @@ class ComputeTractsThread(threading.Thread):
         self.event = event
         self.sle = sle
 
-    def run(self):
+    def run(self) -> None:
 
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.inp
         # n_threads = n_tracts_total
         n_threads = int(n_threads/4)
-        p_old = np.array([[0., 0., 0.]])
+        p_old: ndarray[Any, dtype] = np.array([[0., 0., 0.]])
         n_tracts = 0
 
         # Compute the tracts
@@ -277,7 +277,7 @@ class ComputeTractsThread(threading.Thread):
                 # translate the coordinate along the normal vector of the object/coil
                 coord_offset = m_img_flip[:3, -1] - offset * m_img_flip[:3, 2]
                 # coord_offset = np.array([[27.53, -77.37, 46.42]])
-                dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
+                dist: floating = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
                 p_old = coord_offset.copy()
 
                 # print("p_new_shape", coord_offset.shape)
@@ -304,10 +304,10 @@ class ComputeTractsThread(threading.Thread):
                         # when moving the coil further than the seed_radius restart the bundle computation
                         bundle = vtkMultiBlockDataSet()
                         n_branches = 0
-                        branch = compute_tracts(trk_list, n_tract=0, alpha=255)
+                        branch: vtkMultiBlockDataSet = compute_tracts(trk_list, n_tract=0, alpha=255)
                         bundle.SetBlock(n_branches, branch)
                         n_branches += 1
-                        n_tracts = branch.GetNumberOfBlocks()
+                        n_tracts: int = branch.GetNumberOfBlocks()
 
                     # TODO: maybe keep computing even if reaches the maximum
                     elif dist < seed_radius and n_tracts < n_tracts_total:
@@ -348,7 +348,7 @@ class ComputeTractsThread(threading.Thread):
 
 class ComputeTractsACTThread(threading.Thread):
 
-    def __init__(self, input_list, queues, event, sleep_thread):
+    def __init__(self, input_list, queues, event, sleep_thread) -> None:
         """Class (threading) to compute real time tractography data for visualization.
 
         Tracts are computed using the Trekker library by Baran Aydogan (https://dmritrekker.github.io/)
@@ -380,11 +380,11 @@ class ComputeTractsACTThread(threading.Thread):
         self.event = event
         self.sleep_thread = sleep_thread
 
-    def run(self):
+    def run(self) -> None:
 
         trekker, affine, offset, n_tracts_total, seed_radius, n_threads, act_data, affine_vtk, img_shift = self.input_list
 
-        p_old = np.array([[0., 0., 0.]])
+        p_old: ndarray[Any, dtype] = np.array([[0., 0., 0.]])
         n_branches, n_tracts, count_loop = 0, 0, 0
         bundle = None
         dist_radius = 1.5
@@ -396,8 +396,8 @@ class ComputeTractsACTThread(threading.Thread):
 
         # create the spherical grid to sample around the seed location
         samples_in_sphere = img_utils.random_sample_sphere(radius=seed_radius, size=100)
-        coord_list_sphere = np.hstack([samples_in_sphere, np.ones([samples_in_sphere.shape[0], 1])]).T
-        m_seed = np.identity(4)
+        coord_list_sphere: ndarray[Any, dtype[floating[_64Bit]]] = np.hstack([samples_in_sphere, np.ones([samples_in_sphere.shape[0], 1])]).T
+        m_seed: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
 
         # Compute the tracts
         while not self.event.is_set():
@@ -407,7 +407,7 @@ class ComputeTractsACTThread(threading.Thread):
 
                 # DEBUG: Uncomment the m_img_flip below so that distance is fixed and tracts keep computing
                 # m_img_flip[:3, -1] = (5., 10., 12.)
-                dist = abs(np.linalg.norm(p_old - np.asarray(m_img_flip[:3, -1])))
+                dist: floating = abs(np.linalg.norm(p_old - np.asarray(m_img_flip[:3, -1])))
                 p_old = m_img_flip[:3, -1].copy()
 
                 # Uncertainty visualization  --
@@ -415,11 +415,11 @@ class ComputeTractsACTThread(threading.Thread):
                 # the higher the minFODamp the more the streamlines are faithful to the data, so they become more strict
                 # but also may loose some connections.
                 # the lower the more relaxed streamline also increases the chance of false positives
-                n_param = 1 + (count_loop % 10)
+                n_param: int = 1 + (count_loop % 10)
                 # rescale the alpha value that defines the opacity of the branch
                 # the n interval is [1, 10] and the new interval is [51, 255]
                 # the new interval is defined to have no 0 opacity (minimum is 51, i.e., 20%)
-                alpha = (n_param - 1) * (255 - 51) / (10 - 1) + 51
+                alpha: float = (n_param - 1) * (255 - 51) / (10 - 1) + 51
                 trekker.minFODamp(n_param * 0.01)
                 # ---
 
@@ -439,7 +439,7 @@ class ComputeTractsACTThread(threading.Thread):
                 # Spherical sampling of seed coordinates ---
                 # compute the samples of a sphere centered on seed coordinate offset by the grid
                 # given in the invesalius-vtk space
-                samples = np.random.choice(coord_list_sphere.shape[1], size=100)
+                samples: ndarray[Any, dtype[signedinteger]] = np.random.choice(coord_list_sphere.shape[1], size=100)
                 m_seed[:-1, -1] = coord_offset.copy()
                 # translate the spherical grid samples to the coil location in invesalius-vtk space
                 seed_trk_r_inv = m_seed @ coord_list_sphere[:, samples]
@@ -454,7 +454,7 @@ class ComputeTractsACTThread(threading.Thread):
                     seed_trk_r_mri = seed_trk_r_inv[:3, :].T.astype(int) + np.array([[0, img_shift, 0]], dtype=np.int32)
                     labs = act_data[seed_trk_r_mri[..., 0], seed_trk_r_mri[..., 1], seed_trk_r_mri[..., 2]]
                     # find all samples in the white matter
-                    labs_id = np.where(labs == 1)
+                    labs_id: tuple[ndarray[Any, dtype[signedinteger]], ...] = np.where(labs == 1)
                     # Trekker has internal multiprocessing approach done in C. Here the number of available threads - 1
                     # is given, but in case a large number of tracts is requested, it will compute all in parallel
                     # automatically for a more fluent navigation, better to compute the maximum number the computer can
@@ -506,8 +506,8 @@ class ComputeTractsACTThread(threading.Thread):
                     if len(trk_list):
                         # a bundle consists for multiple branches and each branch consists of multiple streamlines
                         # every iteration in the main loop adds a branch to the bundle
-                        branch = compute_tracts(trk_list, n_tract=0, alpha=alpha)
-                        n_tracts = branch.GetNumberOfBlocks()
+                        branch: vtkMultiBlockDataSet = compute_tracts(trk_list, n_tract=0, alpha=alpha)
+                        n_tracts: int = branch.GetNumberOfBlocks()
 
                         # create and add branch to the bundle
                         bundle = vtkMultiBlockDataSet()
@@ -560,7 +560,7 @@ class ComputeTractsACTThread(threading.Thread):
             # sleep required to prevent user interface from being unresponsive
             time.sleep(self.sleep_thread)
 
-def set_trekker_parameters(trekker, params):
+def set_trekker_parameters(trekker, params) -> list:
     """Set all user-defined parameters for tractography computation using the Trekker library
 
     :param trekker: Trekker instance
@@ -590,7 +590,7 @@ def set_trekker_parameters(trekker, params):
 
     # check number if number of cores is valid in configuration file,
     # otherwise use the maximum number of threads which is usually 2*N_CPUS
-    n_threads = 2 * const.N_CPU - 1
+    n_threads: int = 2 * const.N_CPU - 1
     if isinstance((params['numb_threads']), int) and params['numb_threads'] <= (2*const.N_CPU-1):
         n_threads = params['numb_threads']
 
@@ -609,7 +609,7 @@ def grid_offset(data, coord_list_w_tr, img_shift):
 
     # extract the first occurrence of a specific label from the MRI image
     labs = data[coord_list_w_tr_mri[..., 0], coord_list_w_tr_mri[..., 1], coord_list_w_tr_mri[..., 2]]
-    lab_first = np.where(labs == 1)
+    lab_first: tuple[ndarray[Any, dtype[signedinteger]], ...] = np.where(labs == 1)
     if not lab_first:
         pt_found_inv = None
     else:

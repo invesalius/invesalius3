@@ -31,24 +31,24 @@ class Record(threading.Thread):
     Thread created to save obj coords with software during neuronavigation
     """
 
-    def __init__(self, nav_id, timestamp):
+    def __init__(self, nav_id, timestamp) -> None:
         threading.Thread.__init__(self)
         self.nav_id = nav_id
         self.coord = None
         self.timestamp = timestamp
-        self.coord_list = array([])
+        self.coord_list: ndarray[Any, dtype] = array([])
         self.__bind_events()
         self._pause_ = False
         self.start()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         # Publisher.subscribe(self.UpdateCurrentCoords, 'Co-registered points')
         Publisher.subscribe(self.UpdateCurrentCoords, 'Set cross focal point')
 
-    def UpdateCurrentCoords(self, position):
+    def UpdateCurrentCoords(self, position) -> None:
         self.coord = asarray(position)
 
-    def stop(self):
+    def stop(self) -> None:
         self._pause_ = True
         #save coords dialog
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save coords as..."),
@@ -58,10 +58,10 @@ class Record(threading.Thread):
         if filename:
             savetxt(filename, self.coord_list, delimiter=',', fmt='%.4f', header="time, x, y, z, a, b, g", comments="")
 
-    def run(self):
-        initial_time = time.time()
+    def run(self) -> None:
+        initial_time: float = time.time()
         while self.nav_id:
-            relative_time = asarray(time.time() - initial_time)
+            relative_time: ndarray[Any, dtype] = asarray(time.time() - initial_time)
             time.sleep(self.timestamp)
             if self.coord_list.size == 0:
                 self.coord_list = hstack((relative_time, self.coord))

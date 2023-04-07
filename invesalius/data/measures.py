@@ -94,10 +94,10 @@ class MeasureData(metaclass=utils.Singleton):
                          const.SAGITAL: {}}
         self._list_measures = []
 
-    def get(self, location, slice_number):
+    def get(self, location, slice_number) -> list:
         return self.measures[map_locations_id[location]].get(slice_number, [])
 
-    def pop(self, idx=None):
+    def pop(self, idx=None) -> list:
         if idx is None:
             m = self._list_measures.pop()
         else:
@@ -423,7 +423,7 @@ class Measurement():
         self.points = info["points"]
         self.visible = info["visible"]
 
-    def get_as_dict(self):
+    def get_as_dict(self) -> dict:
         d = {
             'index': self.index,
             'name': self.name,
@@ -472,7 +472,7 @@ class DensityMeasurement():
         self.mean = info["mean"]
         self.std = info["std"]
 
-    def get_as_dict(self):
+    def get_as_dict(self) -> dict:
         d = {
             'index': self.index,
             'name': self.name,
@@ -786,7 +786,7 @@ class AngularMeasure(object):
             representation = CirclePointRepresentation(colour)
         self.representation = representation
 
-    def IsComplete(self):
+    def IsComplete(self) -> bool:
         return not self.point_actor3 is None
 
     def AddPoint(self, x, y, z) -> Tuple[vtkActor2D, ...]:
@@ -1506,7 +1506,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         print('Area', area)
         return area
 
-    def get_bounds(self):
+    def get_bounds(self) -> tuple:
         min_x = min(self.points, key=lambda x: x[0])[0]
         max_x = max(self.points, key=lambda x: x[0])[0]
 

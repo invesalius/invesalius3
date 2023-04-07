@@ -49,7 +49,7 @@ def ResampleImage3D(imagedata, value):
     return resample.GetOutput()
 
 
-def pad_image(image, pad_value, pad_bottom, pad_top):
+def pad_image(image, pad_value, pad_bottom, pad_top) -> ndarray[Any, dtype[floating[_64Bit]]]:
     dz, dy, dx = image.shape
     z_iadd = 0
     z_eadd = 0
@@ -61,7 +61,7 @@ def pad_image(image, pad_value, pad_bottom, pad_top):
         dz += 1
     new_shape = dz, dy + 2, dx + 2
 
-    paded_image = numpy.empty(shape=new_shape, dtype=image.dtype)
+    paded_image: ndarray[Any, dtype[floating[_64Bit]]] = numpy.empty(shape=new_shape, dtype=image.dtype)
     paded_image[:] = pad_value
     paded_image[z_iadd: z_iadd + image.shape[0], 1:-1, 1:-1] = image
 
@@ -72,10 +72,10 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          mask_dtype, roi, spacing, mode, min_value, max_value,
                          decimate_reduction, smooth_relaxation_factor,
                          smooth_iterations, language, flip_image,
-                         from_binary, algorithm, imagedata_resolution, fill_border_holes):
+                         from_binary, algorithm, imagedata_resolution, fill_border_holes) -> str:
 
 
-    log_path = tempfile.mktemp('vtkoutput.txt')
+    log_path: str = tempfile.mktemp('vtkoutput.txt')
     fow = vtkFileOutputWindow()
     fow.SetFileName(log_path)
     ow = vtkOutputWindow()
@@ -88,7 +88,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     if fill_border_holes:
         padding = (1, 1, pad_bottom)
     else:
-        padding = (0, 0, 0)
+        padding: tuple[Literal[0], Literal[0], Literal[0]] = (0, 0, 0)
 
     if from_binary:
         mask = numpy.memmap(mask_filename, mode='r',
@@ -97,8 +97,8 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         if fill_border_holes:
             a_mask = pad_image(mask[roi.start + 1: roi.stop + 1, 1:, 1:], 0, pad_bottom, pad_top)
         else:
-            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1, 1:, 1:])
-        image =  converters.to_vtk(a_mask, spacing, roi.start, "AXIAL", padding=padding)
+            a_mask: ndarray[Any, dtype[unsignedinteger[_8Bit]]] = numpy.array(mask[roi.start + 1: roi.stop + 1, 1:, 1:])
+        image: vtkImageData =  converters.to_vtk(a_mask, spacing, roi.start, "AXIAL", padding=padding)
         del a_mask
     else:
         image = numpy.memmap(filename, mode='r', dtype=dtype,
@@ -176,7 +176,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     del image
     del contour
 
-    filename = tempfile.mktemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
+    filename: str = tempfile.mktemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
     writer = vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
@@ -188,13 +188,13 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
 
 
 def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxation_factor, decimate_reduction, keep_largest, fill_holes, options, msg_queue):
-    def send_message(msg):
+    def send_message(msg) -> None:
         try:
             msg_queue.put_nowait(msg)
         except queue.Full as e:
             print(e)
 
-    log_path = tempfile.mktemp('vtkoutput.txt')
+    log_path: str = tempfile.mktemp('vtkoutput.txt')
     fow = vtkFileOutputWindow()
     fow.SetFileName(log_path)
     ow = vtkOutputWindow()
@@ -423,7 +423,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     area =  float(measured_polydata.GetSurfaceArea())
     del measured_polydata
 
-    filename = tempfile.mktemp(suffix='_full.vtp')
+    filename: str = tempfile.mktemp(suffix='_full.vtp')
     writer = vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)

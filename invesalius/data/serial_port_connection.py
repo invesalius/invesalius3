@@ -27,7 +27,7 @@ from invesalius.pubsub import pub as Publisher
 
 
 class SerialPortConnection(threading.Thread):
-    def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav):
+    def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav) -> None:
         """
         Thread created to communicate using the serial port to interact with software during neuronavigation.
         """
@@ -42,7 +42,7 @@ class SerialPortConnection(threading.Thread):
         self.event = event
         self.sleep_nav = sleep_nav
 
-    def Connect(self):
+    def Connect(self) -> None:
         if self.com_port is None:
             print("Serial port init error: COM port is unset.")
             return
@@ -55,25 +55,25 @@ class SerialPortConnection(threading.Thread):
         except:
             print("Serial port init error: Connecting to port {} failed.".format(self.com_port))
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         if self.connection:
             self.connection.close()
             print("Connection to port {} closed.".format(self.com_port))
 
             Publisher.sendMessage('Serial port connection', state=False)
 
-    def SendPulse(self):
+    def SendPulse(self) -> None:
         try:
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
             Publisher.sendMessage('Serial port pulse triggered')
         except:
             print("Error: Serial port could not be written into.")
 
-    def run(self):
+    def run(self) -> None:
         while not self.event.is_set():
             trigger_on = False
             try:
-                lines = self.connection.readlines()
+                lines: list[bytes] = self.connection.readlines()
                 if lines:
                     trigger_on = True
             except:

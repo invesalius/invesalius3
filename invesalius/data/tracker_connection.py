@@ -30,18 +30,18 @@ from invesalius.pubsub import pub as Publisher
 
 
 class TrackerConnection():
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         self.connection = None
         self.configuration = None
         self.model = model
 
-    def Configure(self):
+    def Configure(self) -> NoReturn:
         assert False, "Not implemented"
 
-    def Connect(self):
+    def Connect(self) -> NoReturn:
         assert False, "Not implemented"
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         try:
             self.connection.Close()
             self.connection = False
@@ -52,24 +52,24 @@ class TrackerConnection():
             self.lib_mode = 'error'
             print('The tracker could not be disconnected.')
 
-    def IsConnected(self):
+    def IsConnected(self) -> bool | None:
         # TODO: It would be cleaner to compare self.connection to None here; however, currently it can also have
         #   True and False values. Hence, return the connection object as a whole for now.
         return self.connection
 
-    def GetConnection(self):
+    def GetConnection(self) -> bool | None:
         # TODO: A nicer API would not expose connection object to outside, but instead use it directly to reply to queries
         #   for coordinates. To be able to do this, code that currently resides in coordinates.py (and that uses the connection
         #   object) would need to be incorporated into TrackerConnection class.
         return self.connection
 
-    def GetLibMode(self):
+    def GetLibMode(self) -> str:
         return self.lib_mode
 
     def GetConfiguration(self):
         return self.configuration
 
-    def SetConfiguration(self, configuration):
+    def SetConfiguration(self, configuration) -> Literal[True]:
         self.configuration = configuration
         return True
 
@@ -79,7 +79,7 @@ class OptitrackTrackerConnection(TrackerConnection):
     Connects to optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration,
     loads User Profile (Rigid bodies information).
     """
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
     def Configure(self):
@@ -100,7 +100,7 @@ class OptitrackTrackerConnection(TrackerConnection):
         dialog.Destroy()
         return success
 
-    def Connect(self):
+    def Connect(self) -> None:
         assert self.configuration is not None, "No configuration defined"
 
         try:
@@ -122,20 +122,20 @@ class OptitrackTrackerConnection(TrackerConnection):
             lib_mode = 'error'
             print('Error')
 
-        self.lib_mode = lib_mode
+        self.lib_mode: Literal['wrapper', 'error'] = lib_mode
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         super().Disconnect()
 
 
 class ClaronTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
-    def Configure(self):
+    def Configure(self) -> Literal[True]:
         return True
 
-    def Connect(self):
+    def Connect(self) -> None:
         try:
             import pyclaron
 
@@ -162,19 +162,19 @@ class ClaronTrackerConnection(TrackerConnection):
             lib_mode = 'error'
             print('The ClaronTracker library is not installed.')
 
-        self.lib_mode = lib_mode
+        self.lib_mode: Literal['wrapper', 'error'] = lib_mode
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         super().Disconnect()
 
 
 class PolhemusTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         assert model in ['fastrak', 'isotrak', 'patriot'], "Unsupported model for Polhemus tracker: {}".format(model)
 
         super().__init__(model)
 
-    def Configure(self):
+    def Configure(self) -> Literal[True]:
         return True
 
     def ConfigureCOMPort(self):
@@ -203,7 +203,7 @@ class PolhemusTrackerConnection(TrackerConnection):
     #   the COM port, and a serial connection is attempted. Unfortunately, that requires
     #   some additional logic in Connect function to support connecting with preset configuration
     #   (namely, by setting 'reconfigure' to False.)
-    def Connect(self, reconfigure):
+    def Connect(self, reconfigure) -> None:
         connection = None
         try:
             connection = self.PolhemusWrapperConnection()
@@ -218,14 +218,14 @@ class PolhemusTrackerConnection(TrackerConnection):
 
                     if reconfigure:
                         self.ConfigureCOMPort()
-                    connection = self.PolhemusSerialConnection()
+                    connection: Serial | None = self.PolhemusSerialConnection()
                     lib_mode = 'serial'
         except:
             lib_mode = 'error'
             print('Could not connect to Polhemus by any method.')
 
         self.connection = connection
-        self.lib_mode = lib_mode
+        self.lib_mode: Literal['serial', 'usb', 'wrapper', 'error'] = lib_mode
 
     def PolhemusWrapperConnection(self):
         try:
@@ -253,7 +253,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
         return connection
 
-    def PolhemusSerialConnection(self):
+    def PolhemusSerialConnection(self) -> Serial | None:
         assert self.configuration is not None, "No configuration defined"
 
         import serial
@@ -283,7 +283,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 connection.write(str.encode("Y"))
 
             connection.write(str.encode("P"))
-            data = connection.readlines()
+            data: list[bytes] = connection.readlines()
             if not data:
                 connection = None
                 print('Could not connect to Polhemus serial without error.')
@@ -335,7 +335,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
         return connection
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         try:
             if self.model == 'isotrak':
                 self.connection.close()
@@ -353,13 +353,13 @@ class PolhemusTrackerConnection(TrackerConnection):
 
 
 class CameraTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
-    def Configure(self):
+    def Configure(self) -> Literal[True]:
         return True
 
-    def Connect(self):
+    def Connect(self) -> None:
         try:
             import invesalius.data.camera_tracker as cam
 
@@ -374,14 +374,14 @@ class CameraTrackerConnection(TrackerConnection):
             print('Could not connect to camera tracker.')
             lib_mode = 'error'
 
-        self.lib_mode = lib_mode
+        self.lib_mode: Literal['wrapper', 'error'] = lib_mode
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         super().Disconnect()
 
 
 class PolarisTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
     def Configure(self):
@@ -406,7 +406,7 @@ class PolarisTrackerConnection(TrackerConnection):
 
         return success
 
-    def Connect(self):
+    def Connect(self) -> None:
         assert self.configuration is not None, "No configuration defined"
 
         try:
@@ -436,14 +436,14 @@ class PolarisTrackerConnection(TrackerConnection):
             connection = None
             print('Could not connect to polaris tracker.')
 
-        self.lib_mode = lib_mode
+        self.lib_mode: Literal['wrapper', 'error'] | None = lib_mode
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         super().Disconnect()
 
 
 class PolarisP4TrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
     def Configure(self):
@@ -468,7 +468,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
 
         return success
 
-    def Connect(self):
+    def Connect(self) -> None:
         assert self.configuration is not None, "No configuration defined"
 
         connection = None
@@ -496,17 +496,17 @@ class PolarisP4TrackerConnection(TrackerConnection):
             print('Could not connect to Polaris P4 tracker.')
 
         self.connection = connection
-        self.lib_mode = lib_mode
+        self.lib_mode: Literal['wrapper', 'error'] | None = lib_mode
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         super().Disconnect()
 
 
 class RobotTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
-    def Configure(self):
+    def Configure(self) -> bool:
         select_tracker_dialog = dlg.SetTrackerDeviceToRobot()
         status = select_tracker_dialog.ShowModal()
 
@@ -539,7 +539,7 @@ class RobotTrackerConnection(TrackerConnection):
 
         return success
 
-    def Connect(self):
+    def Connect(self) -> None:
         assert self.configuration is not None, "No configuration defined"
 
         tracker_id = self.configuration['tracker_id']
@@ -556,7 +556,7 @@ class RobotTrackerConnection(TrackerConnection):
         if not self.connection.IsConnected():
             print("Failed to connect to tracker.")
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         try:
             Publisher.sendMessage('Reset robot', data=None)
 
@@ -586,42 +586,42 @@ class RobotTrackerConnection(TrackerConnection):
     def IsConnected(self):
         return self.connection and self.connection.IsConnected()
 
-    def SetConfiguration(self, configuration):
+    def SetConfiguration(self, configuration) -> Literal[True]:
         self.configuration = configuration
         return True
 
 
 class DebugTrackerRandomConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
-    def Configure(self):
+    def Configure(self) -> Literal[True]:
         return True
 
-    def Connect(self):
+    def Connect(self) -> None:
         self.connection = True
         self.lib_mode = 'debug'
         print('Debug device (random) started.')
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         self.connection = False
         self.lib_mode = 'debug'
         print('Debug tracker (random) disconnected.')
 
 
 class DebugTrackerApproachConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None) -> None:
         super().__init__(model)
 
-    def Configure(self):
+    def Configure(self) -> Literal[True]:
         return True
 
-    def Connect(self):
+    def Connect(self) -> None:
         self.connection = True
         self.lib_mode = 'debug'
         print('Debug device (approach) started.')
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         self.connection = False
         self.lib_mode = 'debug'
         print('Debug tracker (approach) disconnected.')

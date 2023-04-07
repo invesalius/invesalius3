@@ -81,38 +81,38 @@ class Surface():
     """
     Represent both vtkPolyData and associated properties.
     """
-    general_index = -1
-    def __init__(self, index=None, name=""):
+    general_index: int = -1
+    def __init__(self, index=None, name="") -> None:
         Surface.general_index += 1
         if index is None:
-            self.index = Surface.general_index
+            self.index: int = Surface.general_index
         else:
             self.index = index
             Surface.general_index -= 1
-        self.polydata = ''
-        self.colour = ''
-        self.transparency = const.SURFACE_TRANSPARENCY
+        self.polydata: Literal[''] = ''
+        self.colour: Literal[''] = ''
+        self.transparency: float = const.SURFACE_TRANSPARENCY
         self.volume = 0.0
         self.area = 0.0
         self.is_shown = 1
         if not name:
             self.name = const.SURFACE_NAME_PATTERN %(self.index+1)
         else:
-            self.name = name
+            self.name: str = name
 
         self.filename = None
 
-    def SavePlist(self, dir_temp, filelist):
+    def SavePlist(self, dir_temp, filelist) -> str:
         if self.filename and os.path.exists(self.filename):
-            filename = u'surface_%d' % self.index
-            vtp_filename = filename + u'.vtp'
-            vtp_filepath = self.filename
+            filename: str = u'surface_%d' % self.index
+            vtp_filename: str = filename + u'.vtp'
+            vtp_filepath: str = self.filename
         else:
-            filename = u'surface_%d' % self.index
-            vtp_filename = filename + u'.vtp'
-            vtp_filepath = tempfile.mktemp()
+            filename: str = u'surface_%d' % self.index
+            vtp_filename: str = filename + u'.vtp'
+            vtp_filepath: str = tempfile.mktemp()
             pu.Export(self.polydata, vtp_filepath, bin=True)
-            self.filename = vtp_filepath
+            self.filename: str = vtp_filepath
 
         filelist[vtp_filepath] = vtp_filename
 
@@ -125,9 +125,9 @@ class Surface():
                    'volume': self.volume,
                    'area': self.area,
                   }
-        plist_filename = filename + u'.plist'
+        plist_filename: str = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
-        temp_plist = tempfile.mktemp()
+        temp_plist: str = tempfile.mktemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(surface, f)
 
@@ -135,7 +135,7 @@ class Surface():
 
         return plist_filename
 
-    def OpenPList(self, filename):
+    def OpenPList(self, filename) -> None:
         with open(filename, 'r+b') as f:
             sp = plistlib.load(f, fmt=plistlib.FMT_XML)
         dirpath = os.path.abspath(os.path.split(filename)[0])
@@ -152,7 +152,7 @@ class Surface():
         self.polydata = pu.Import(os.path.join(dirpath, sp['polydata']))
         Surface.general_index = max(Surface.general_index, self.index)
 
-    def _set_class_index(self, index):
+    def _set_class_index(self, index) -> None:
         Surface.general_index = index
 
 
@@ -169,7 +169,7 @@ class SurfaceManager():
      - volume_viewer: Sends surface actors as the are created
 
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self.actors_dict = {}
         self.last_surface_index = 0
         self.convert_to_inv = None
@@ -185,7 +185,7 @@ class SurfaceManager():
 
         self._load_user_parameters()
 
-    def _load_user_parameters(self):
+    def _load_user_parameters(self) -> None:
         session = ses.Session()
 
         surface = session.GetConfig('surface')
@@ -194,7 +194,7 @@ class SurfaceManager():
         else:
             session.SetConfig('surface', self._default_parameters)
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.AddNewActor, 'Create surface')
         Publisher.subscribe(self.GetActor, 'Get Actor')
         Publisher.subscribe(self.SetActorTransparency,
@@ -224,7 +224,7 @@ class SurfaceManager():
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
 
-    def OnDuplicate(self, surface_indexes):
+    def OnDuplicate(self, surface_indexes) -> None:
         proj = prj.Project()
         surface_dict = proj.surface_dict
         for index in surface_indexes:
@@ -242,7 +242,7 @@ class SurfaceManager():
                                            volume = original_surface.volume,
                                            area = original_surface.area)
 
-    def OnRemove(self, surface_indexes):
+    def OnRemove(self, surface_indexes) -> None:
         proj = prj.Project()
 
         old_dict = self.actors_dict
@@ -267,7 +267,7 @@ class SurfaceManager():
             else:
                 self.last_surface_index = None
 
-    def OnSeedSurface(self, seeds):
+    def OnSeedSurface(self, seeds) -> None:
         """
         Create a new surface, based on the last selected surface,
         using as reference seeds user add to surface of reference.
@@ -277,13 +277,13 @@ class SurfaceManager():
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
-        new_polydata = pu.JoinSeedsParts(surface.polydata,
+        new_polydata: vtkPolyData = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
-        index = self.CreateSurfaceFromPolydata(new_polydata)
+        index: int = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', index=index, visibility=True)
         #self.ShowActor(index, True)
 
-    def OnSplitSurface(self):
+    def OnSplitSurface(self) -> None:
         """
         Create n new surfaces, based on the last selected surface,
         according to their connectivity.
@@ -295,13 +295,13 @@ class SurfaceManager():
         index_list = []
         new_polydata_list = pu.SplitDisconectedParts(surface.polydata)
         for polydata in new_polydata_list:
-            index = self.CreateSurfaceFromPolydata(polydata)
+            index: int = self.CreateSurfaceFromPolydata(polydata)
             index_list.append(index)
             #self.ShowActor(index, True)
 
         Publisher.sendMessage('Show multiple surfaces', index_list=index_list, visibility=True)
 
-    def OnLargestSurface(self):
+    def OnLargestSurface(self) -> None:
         """
         Create a new surface, based on largest part of the last
         selected surface.
@@ -310,17 +310,17 @@ class SurfaceManager():
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
-        new_polydata = pu.SelectLargestPart(surface.polydata)
-        new_index = self.CreateSurfaceFromPolydata(new_polydata)
+        new_polydata: vtkPolyData = pu.SelectLargestPart(surface.polydata)
+        new_index: int = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
 
-    def OnImportSurfaceFile(self, filename):
+    def OnImportSurfaceFile(self, filename) -> None:
         """
         Creates a new surface from a surface file (STL, PLY, OBJ or VTP)
         """
         self.CreateSurfaceFromFile(filename)
 
-    def CreateSurfaceFromFile(self, filename):
+    def CreateSurfaceFromFile(self, filename) -> None:
         scalar = False
         if filename.lower().endswith('.stl'):
             reader = vtkSTLReader()
@@ -350,20 +350,20 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
-    def UpdateConvertToInvFlag(self, convert_to_inv=False):
-        self.convert_to_inv = convert_to_inv
+    def UpdateConvertToInvFlag(self, convert_to_inv=False) -> None:
+        self.convert_to_inv: bool = convert_to_inv
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False, index=None,
                                   name=None, colour=None, transparency=None,
-                                  volume=None, area=None, scalar=False):
+                                  volume=None, area=None, scalar=False) -> int:
         if self.convert_to_inv:
             # convert between invesalius and world space with shift in the Y coordinate
             matrix_shape = sl.Slice().matrix.shape
-            spacing = sl.Slice().spacing
+            spacing: tuple[float, float, float] = sl.Slice().spacing
             img_shift = spacing[1] * (matrix_shape[1] - 1)
             affine = sl.Slice().affine.copy()
             affine[1, -1] -= img_shift
-            affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+            affine_vtk: vtkMatrix4x4 = vtk_utils.numpy_to_vtkMatrix4x4(affine)
 
             polydata_transform = vtkTransform()
             polydata_transform.PostMultiply()
@@ -418,9 +418,9 @@ class SurfaceManager():
         if overwrite:
             proj.ChangeSurface(surface)
         else:
-            index = proj.AddSurface(surface)
+            index: int = proj.AddSurface(surface)
             surface.index = index
-            self.last_surface_index = index
+            self.last_surface_index: int = index
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour)
@@ -447,8 +447,8 @@ class SurfaceManager():
             measured_polydata = vtkMassProperties()
             measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
             measured_polydata.Update()
-            volume =  measured_polydata.GetVolume()
-            area =  measured_polydata.GetSurfaceArea()
+            volume: float =  measured_polydata.GetVolume()
+            area: float =  measured_polydata.GetSurfaceArea()
             surface.volume = volume
             surface.area = area
             print(">>>>", surface.volume)
@@ -462,10 +462,10 @@ class SurfaceManager():
         Publisher.sendMessage('Update surface info in GUI', surface=surface)
         return surface.index
 
-    def OnCloseProject(self):
+    def OnCloseProject(self) -> None:
         self.CloseProject()
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         for index in self.actors_dict:
             Publisher.sendMessage('Remove surface actor from viewer', actor=self.actors_dict[index])
         del self.actors_dict
@@ -478,7 +478,7 @@ class SurfaceManager():
         self.convert_to_inv = False
 
 
-    def OnSelectSurface(self, surface_index):
+    def OnSelectSurface(self, surface_index) -> None:
         #self.last_surface_index = surface_index
         # self.actors_dict.
         proj = prj.Project()
@@ -488,7 +488,7 @@ class SurfaceManager():
         #  if surface.is_shown:
         self.ShowActor(surface_index, True)
 
-    def OnLoadSurfaceDict(self, surface_dict):
+    def OnLoadSurfaceDict(self, surface_dict) -> None:
         for key in surface_dict:
             surface = surface_dict[key]
 
@@ -535,11 +535,11 @@ class SurfaceManager():
     ####
     #(mask_index, surface_name, quality, fill_holes, keep_largest)
 
-    def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
+    def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog) -> None:
         surface_filename, surface_measures = args
         wx.CallAfter(self._show_surface, surface_filename, surface_measures, overwrite, surface_name, colour, dialog)
 
-    def _show_surface(self, surface_filename, surface_measures, overwrite, surface_name, colour, dialog):
+    def _show_surface(self, surface_filename, surface_measures, overwrite, surface_name, colour, dialog) -> None:
         print(surface_filename, surface_measures)
         reader = vtkXMLPolyDataReader()
         reader.SetFileName(surface_filename)
@@ -573,7 +573,7 @@ class SurfaceManager():
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
 
-        prop = actor.GetProperty()
+        prop: vtkProperty = actor.GetProperty()
 
         session = ses.Session()
         interpolation = session.GetConfig('surface_interpolation')
@@ -584,7 +584,7 @@ class SurfaceManager():
         if overwrite:
             proj.ChangeSurface(surface)
         else:
-            index = proj.AddSurface(surface)
+            index: int = proj.AddSurface(surface)
             surface.index = index
             self.last_surface_index = index
 
@@ -604,9 +604,9 @@ class SurfaceManager():
 
         dialog.running = False
 
-    def _on_callback_error(self, e, dialog=None):
+    def _on_callback_error(self, e, dialog=None) -> None:
         dialog.running = False
-        msg = utl.log_traceback(e)
+        msg: str = utl.log_traceback(e)
         dialog.error = msg
 
     def AddNewActor(self, slice_, mask, surface_parameters):
@@ -616,7 +616,7 @@ class SurfaceManager():
         if mask.matrix.max() < 127:
             wx.MessageBox(_("It's not possible to create a surface because there is not any voxel selected on mask"), _("Create surface warning"))
             return
-        t_init = time.time()
+        t_init: float = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
@@ -678,10 +678,10 @@ class SurfaceManager():
 
             filename_img = matrix.filename
             mask_temp_file = mask.filename
-            mask_shape = mask.shape
+            mask_shape: Tuple[int, ...] = mask.shape
             mask_dtype = mask.dtype
 
-        n_processors = multiprocessing.cpu_count()
+        n_processors: int = multiprocessing.cpu_count()
 
         o_piece = 1
         piece_size = 20
@@ -689,9 +689,9 @@ class SurfaceManager():
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
         filenames = []
-        ctx = multiprocessing.get_context('spawn')
+        ctx: SpawnContext = multiprocessing.get_context('spawn')
         pool = ctx.Pool(processes=min(n_pieces, n_processors))
-        manager = multiprocessing.Manager()
+        manager: SyncManager = multiprocessing.Manager()
         msg_queue = manager.Queue(1)
 
         print("Resolution", imagedata_resolution)
@@ -699,8 +699,8 @@ class SurfaceManager():
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
             for i in range(n_pieces):
-                init = i * piece_size
-                end = init + piece_size + o_piece
+                init: int = i * piece_size
+                end: int = init + piece_size + o_piece
                 roi = slice(init, end)
                 print("new_piece", roi)
                 f = pool.apply_async(surface_process.create_surface_piece,
@@ -746,7 +746,7 @@ class SurfaceManager():
                 proj.ChangeSurface(surface)
             else:
                 surface = Surface(name=surface_name)
-                index = proj.AddSurface(surface)
+                index: int = proj.AddSurface(surface)
                 surface.index = index
                 self.last_surface_index = index
 
@@ -808,7 +808,7 @@ class SurfaceManager():
                         sp.Update(None)
                     wx.Yield()
 
-            t_end = time.time()
+            t_end: float = time.time()
             print("Elapsed time - {}".format(t_end-t_init))
             sp.Close()
             if sp.error:
@@ -829,10 +829,10 @@ class SurfaceManager():
         import gc
         gc.collect()
 
-    def GetActor(self, surface_index):
+    def GetActor(self, surface_index) -> None:
         Publisher.sendMessage('Send Actor', e_field_actor=self.actors_dict[surface_index])
 
-    def UpdateSurfaceInterpolation(self):
+    def UpdateSurfaceInterpolation(self) -> None:
         session = ses.Session()
         surface_interpolation = session.GetConfig('surface_interpolation')
 
@@ -840,7 +840,7 @@ class SurfaceManager():
             self.actors_dict[key].GetProperty().SetInterpolation(surface_interpolation)
         Publisher.sendMessage('Render volume viewer')
 
-    def RemoveActor(self, index):
+    def RemoveActor(self, index) -> None:
         """
         Remove actor, according to given actor index.
         """
@@ -850,14 +850,14 @@ class SurfaceManager():
         proj = prj.Project()
         proj.surface_dict.pop(index)
 
-    def OnChangeSurfaceName(self, index, name):
+    def OnChangeSurfaceName(self, index, name) -> None:
         proj = prj.Project()
         proj.surface_dict[index].name = name
 
-    def OnShowSurface(self, index, visibility):
+    def OnShowSurface(self, index, visibility) -> None:
         self.ShowActor(index, visibility)
 
-    def ShowActor(self, index, value):
+    def ShowActor(self, index, value) -> None:
         """
         Show or hide actor, according to given actor index and value.
         """
@@ -867,7 +867,7 @@ class SurfaceManager():
         proj.surface_dict[index].is_shown = value
         Publisher.sendMessage('Render volume viewer')
 
-    def SetActorTransparency(self, surface_index, transparency):
+    def SetActorTransparency(self, surface_index, transparency) -> None:
         """
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
@@ -878,7 +878,7 @@ class SurfaceManager():
         proj.surface_dict[surface_index].transparency = transparency
         Publisher.sendMessage('Render volume viewer')
 
-    def SetActorColour(self, surface_index, colour):
+    def SetActorColour(self, surface_index, colour) -> None:
         """
         """
         self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
@@ -887,7 +887,7 @@ class SurfaceManager():
         proj.surface_dict[surface_index].colour = colour
         Publisher.sendMessage('Render volume viewer')
 
-    def OnExportSurface(self, filename, filetype):
+    def OnExportSurface(self, filename, filetype) -> None:
         ftype_prefix = {
             const.FILETYPE_STL: '.stl',
             const.FILETYPE_VTP: '.vtp',
@@ -895,11 +895,11 @@ class SurfaceManager():
             const.FILETYPE_STL_ASCII: '.stl',
         }
         if filetype in ftype_prefix:
-            temp_file = tempfile.mktemp(suffix=ftype_prefix[filetype])
+            temp_file: str = tempfile.mktemp(suffix=ftype_prefix[filetype])
 
             if _has_win32api:
                 utl.touch(temp_file)
-                _temp_file = temp_file
+                _temp_file: str = temp_file
                 temp_file = win32api.GetShortPathName(temp_file)
                 os.remove(_temp_file)
 
@@ -930,7 +930,7 @@ class SurfaceManager():
                 os.remove(temp_file)
 
 
-    def _export_surface(self, filename, filetype):
+    def _export_surface(self, filename, filetype) -> None:
         if filetype in (const.FILETYPE_STL,
                         const.FILETYPE_VTP,
                         const.FILETYPE_PLY,

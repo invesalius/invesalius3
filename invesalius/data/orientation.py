@@ -21,14 +21,14 @@ CORONAL = 1
 SAGITAL = 0
 
 class Orientation(object):
-    def __init__(self, interactor, actor):
+    def __init__(self, interactor, actor) -> None:
         self.interactor = interactor
         self.actor = actor
         self.image = actor.GetInput()
         self.ren = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
         self.slice = 0
 
-    def SetOrientation(self, orientation):
+    def SetOrientation(self, orientation) -> None:
         cam = self.ren.GetActiveCamera()
         self.orientation = orientation
         extent = self.image.GetWholeExtent()
@@ -79,7 +79,7 @@ class Orientation(object):
         self.ren.Render()
         
 
-    def UpdateDisplayExtent(self):
+    def UpdateDisplayExtent(self) -> None:
         extent = self.image.GetWholeExtent()
         if self.orientation == AXIAL:
             xs = extent[1] - extent[0] + 1
@@ -122,13 +122,13 @@ class Orientation(object):
         cpos = cam.GetPosition()[self.orientation]
         range = abs(spos - cpos)
         spacing = self.actor.GetInput().GetSpacing()
-        avg_spacing = sum(spacing)/3.0
+        avg_spacing: float = sum(spacing)/3.0
         cam.SetClippingRange(range - avg_spacing * 3.0, range +\
                              avg_spacing * 3.0)
       
         self.ren.Render()
 
-    def SetSlice(self, slice):
+    def SetSlice(self, slice) -> None:
         self.slice = slice
         self.UpdateDisplayExtent()
         

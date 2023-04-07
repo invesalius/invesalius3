@@ -25,12 +25,12 @@ BORDER_UP = 1
 BORDER_DOWN = 2
 BORDER_LEFT = 4
 BORDER_RIGHT = 8
-BORDER_ALL = BORDER_UP | BORDER_DOWN | BORDER_LEFT | BORDER_RIGHT
+BORDER_ALL: int = BORDER_UP | BORDER_DOWN | BORDER_LEFT | BORDER_RIGHT
 BORDER_NONE = 0
 
 
 class SliceData(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.actor = None
         self.cursor = None
         self.text = None
@@ -42,7 +42,7 @@ class SliceData(object):
         self.overlay_renderer = None
         self.__create_text()
 
-    def __create_text(self):
+    def __create_text(self) -> None:
         colour = const.ORIENTATION_COLOUR[self.orientation]
 
         text = vu.TextZero()
@@ -52,15 +52,15 @@ class SliceData(object):
         text.SetSymbolicSize(wx.FONTSIZE_LARGE)
         #text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
-        self.text = text
+        self.text: TextZero = text
 
-    def SetCursor(self, cursor):
+    def SetCursor(self, cursor) -> None:
         if self.cursor:
             self.overlay_renderer.RemoveActor(self.cursor.actor)
         self.overlay_renderer.AddActor(cursor.actor)
         self.cursor = cursor
 
-    def SetNumber(self, init, end=None):
+    def SetNumber(self, init, end=None) -> None:
         if end is None:
             self.number = init
             self.text.SetValue("%d" % self.number)
@@ -69,18 +69,18 @@ class SliceData(object):
             self.text.SetValue("%d - %d" % (init, end))
         self.text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
 
-    def SetOrientation(self, orientation):
+    def SetOrientation(self, orientation) -> None:
         self.orientation = orientation
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.overlay_renderer.RemoveActor(self.actor)
         self.renderer.RemoveActor(self.text.actor)
 
-    def Show(self):
+    def Show(self) -> None:
         self.renderer.AddActor(self.actor)
         self.renderer.AddActor(self.text.actor)
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc, canvas) -> None:
         w, h = self.renderer.GetSize()
         colour = const.ORIENTATION_COLOUR[self.orientation]
         canvas.draw_rectangle((0, 0), w, h, line_colour=[255*i for i in colour] + [255], line_width=2)

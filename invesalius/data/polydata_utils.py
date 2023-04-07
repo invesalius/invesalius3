@@ -98,7 +98,7 @@ def FillSurfaceHole(polydata):
     filled_polydata.SetHoleSize(500)
     return filled_polydata.GetOutput()
 
-def CalculateSurfaceVolume(polydata):
+def CalculateSurfaceVolume(polydata) -> float:
     """
     Calculate the volume from the given polydata
     """
@@ -107,7 +107,7 @@ def CalculateSurfaceVolume(polydata):
     measured_polydata.SetInputData(polydata)
     return measured_polydata.GetVolume()
 
-def CalculateSurfaceArea(polydata):
+def CalculateSurfaceArea(polydata) -> float:
     """
     Calculate the volume from the given polydata
     """
@@ -132,11 +132,11 @@ def Merge(polydata_list):
 
     return append.GetOutput()
 
-def Export(polydata, filename, bin=False):
+def Export(polydata, filename, bin=False) -> None:
     writer = vtkXMLPolyDataWriter()
     if _has_win32api:
         touch(filename)
-        filename = win32api.GetShortPathName(filename)
+        filename: str = win32api.GetShortPathName(filename)
     writer.SetFileName(filename.encode(const.FS_ENCODE))
     if bin:
         writer.SetDataModeToBinary()
@@ -176,7 +176,7 @@ def LoadPolydata(path):
 
     return polydata
 
-def JoinSeedsParts(polydata, point_id_list):
+def JoinSeedsParts(polydata, point_id_list) -> vtkPolyData:
     """
     The function require vtkPolyData and point id
     from vtkPolyData.
@@ -199,7 +199,7 @@ def JoinSeedsParts(polydata, point_id_list):
     result.DeepCopy(conn.GetOutput())
     return result
 
-def SelectLargestPart(polydata):
+def SelectLargestPart(polydata) -> vtkPolyData:
     """
     """
     UpdateProgress = vu.ShowProgress(1)
@@ -214,7 +214,7 @@ def SelectLargestPart(polydata):
     result.DeepCopy(conn.GetOutput())
     return result
 
-def SplitDisconectedParts(polydata):
+def SplitDisconectedParts(polydata) -> list:
     """
     """
     conn = vtkPolyDataConnectivityFilter()
@@ -222,7 +222,7 @@ def SplitDisconectedParts(polydata):
     conn.SetExtractionModeToAllRegions()
     conn.Update()
 
-    nregions = conn.GetNumberOfExtractedRegions()
+    nregions: int = conn.GetNumberOfExtractedRegions()
 
     conn.SetExtractionModeToSpecifiedRegions()
     conn.Update()
@@ -230,7 +230,7 @@ def SplitDisconectedParts(polydata):
     polydata_collection = []
 
     # Update progress value in GUI
-    progress = nregions -1
+    progress: int = nregions -1
     if progress:
         UpdateProgress = vu.ShowProgress(progress)
 

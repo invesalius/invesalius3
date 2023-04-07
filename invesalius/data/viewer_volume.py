@@ -122,7 +122,7 @@ PROP_MEASURE = 0.8
 #  from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX, Polygon
 
 class Viewer(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
@@ -135,14 +135,14 @@ class Viewer(wx.Panel):
         self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
-        self.interactor = interactor
+        self.interactor: wxVTKRenderWindowInteractor = interactor
         self.interactor.SetRenderWhenDisabled(True)
 
         self.enable_style(const.STATE_DEFAULT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.EXPAND)
-        self.sizer = sizer
+        self.sizer: BoxSizer = sizer
         self.SetSizer(sizer)
         self.Layout()
 
@@ -157,13 +157,13 @@ class Viewer(wx.Panel):
         interactor.Enable(1)
 
         ren = vtkRenderer()
-        self.ren = ren
+        self.ren: vtkRenderer = ren
 
         canvas_renderer = vtkRenderer()
         canvas_renderer.SetLayer(1)
         canvas_renderer.SetInteractive(0)
         canvas_renderer.PreserveDepthBufferOn()
-        self.canvas_renderer = canvas_renderer
+        self.canvas_renderer: vtkRenderer = canvas_renderer
 
         interactor.GetRenderWindow().SetNumberOfLayers(2)
         interactor.GetRenderWindow().AddRenderer(ren)
@@ -230,7 +230,7 @@ class Viewer(wx.Panel):
         self.show_object = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
-        self.pTarget = [0., 0., 0.]
+        self.pTarget: list[float] = [0., 0., 0.]
 
         # self.obj_axes = None
         self.x_actor = None
@@ -269,11 +269,11 @@ class Viewer(wx.Panel):
         self.colors_init = vtkUnsignedCharArray()
 
         self.set_camera_position = True
-        self.old_coord = np.zeros((6,),dtype=float)
+        self.old_coord: ndarray[Any, dtype] = np.zeros((6,),dtype=float)
 
         self.LoadState()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
         Publisher.subscribe(self.RemoveActor,
@@ -398,7 +398,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
         use_default_object = self.use_default_object
 
@@ -410,7 +410,7 @@ class Viewer(wx.Panel):
         session = ses.Session()
         session.SetState('viewer', state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState('viewer')
 
@@ -425,7 +425,7 @@ class Viewer(wx.Panel):
 
         self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
 
-    def get_vtk_mouse_position(self):
+    def get_vtk_mouse_position(self) -> tuple[int, int]:
         """
         Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
         tuple with X and Y position.
@@ -446,8 +446,8 @@ class Viewer(wx.Panel):
             my *= scale
         return int(mx), int(my)
 
-    def SetStereoMode(self, mode):
-        ren_win = self.interactor.GetRenderWindow()
+    def SetStereoMode(self, mode) -> None:
+        ren_win: vtkRenderWindow = self.interactor.GetRenderWindow()
 
         if mode == const.STEREO_OFF:
             ren_win.StereoRenderOff()
@@ -474,7 +474,7 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def _check_ball_reference(self, style):
+    def _check_ball_reference(self, style) -> None:
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = True
             # self._check_and_set_ball_visibility()
@@ -490,7 +490,7 @@ class Viewer(wx.Panel):
              #   self.ball_actor.SetVisibility(0)
             self.UpdateRender()
 
-    def _uncheck_ball_reference(self, style):
+    def _uncheck_ball_reference(self, style) -> None:
         if style == const.SLICE_STATE_CROSS:
             self._mode_cross = False
             # self.RemoveBallReference()
@@ -501,22 +501,22 @@ class Viewer(wx.Panel):
 
             self.UpdateRender()
 
-    def OnSensors(self, markers_flag):
+    def OnSensors(self, markers_flag) -> None:
         probe_id, ref_id, obj_id = markers_flag
 
         if not self.probe:
             self.CreateSensorID()
 
         if probe_id:
-            colour1 = (0, 1, 0)
+            colour1: tuple[Literal[0], Literal[1], Literal[0]] = (0, 1, 0)
         else:
             colour1 = (1, 0, 0)
         if ref_id:
-            colour2 = (0, 1, 0)
+            colour2: tuple[Literal[0], Literal[1], Literal[0]] = (0, 1, 0)
         else:
             colour2 = (1, 0, 0)
         if obj_id:
-            colour3 = (0, 1, 0)
+            colour3: tuple[Literal[0], Literal[1], Literal[0]] = (0, 1, 0)
         else:
             colour3 = (1, 0, 0)
 
@@ -524,13 +524,13 @@ class Viewer(wx.Panel):
         self.ref.SetColour(colour2)
         self.obj.SetColour(colour3)
 
-    def CreateSensorID(self):
+    def CreateSensorID(self) -> None:
         probe = vtku.Text()
         probe.SetSize(const.TEXT_SIZE_LARGE)
         probe.SetPosition((const.X, const.Y))
         probe.ShadowOff()
         probe.SetValue("P")
-        self.probe = probe
+        self.probe: Text = probe
         self.ren.AddActor(probe.actor)
 
         ref = vtku.Text()
@@ -538,7 +538,7 @@ class Viewer(wx.Panel):
         ref.SetPosition((const.X+0.04, const.Y))
         ref.ShadowOff()
         ref.SetValue("R")
-        self.ref = ref
+        self.ref: Text = ref
         self.ren.AddActor(ref.actor)
 
         obj = vtku.Text()
@@ -546,11 +546,11 @@ class Viewer(wx.Panel):
         obj.SetPosition((const.X+0.08, const.Y))
         obj.ShadowOff()
         obj.SetValue("O")
-        self.obj = obj
+        self.obj: Text = obj
         self.ren.AddActor(obj.actor)
         self.UpdateRender()
 
-    def OnRemoveSensorsID(self):
+    def OnRemoveSensorsID(self) -> None:
         if self.probe:
             self.ren.RemoveActor(self.probe.actor)
             self.ren.RemoveActor(self.ref.actor)
@@ -565,27 +565,27 @@ class Viewer(wx.Panel):
     #         self._to_show_ball -= 1
     #     self._check_and_set_ball_visibility()
 
-    def OnStartSeed(self):
+    def OnStartSeed(self) -> None:
         self.seed_points = []
 
-    def OnEndSeed(self):
+    def OnEndSeed(self) -> None:
         Publisher.sendMessage("Create surface from seeds",
                               seeds=self.seed_points)
 
-    def OnExportPicture(self, orientation, filename, filetype):
+    def OnExportPicture(self, orientation, filename, filetype) -> None:
         if orientation == const.VOLUME:
             Publisher.sendMessage('Begin busy cursor')
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename: str = win32api.GetShortPathName(filename)
                 self._export_picture(orientation, win_filename, filetype)
             else:
                 self._export_picture(orientation, filename, filetype)
             Publisher.sendMessage('End busy cursor')
 
-    def _export_picture(self, id, filename, filetype):
+    def _export_picture(self, id, filename, filetype) -> None:
             if filetype == const.FILETYPE_POV:
-                renwin = self.interactor.GetRenderWindow()
+                renwin: vtkRenderWindow = self.interactor.GetRenderWindow()
                 image = vtkWindowToImageFilter()
                 image.SetInput(renwin)
                 writer = vtkPOVExporter()
@@ -622,7 +622,7 @@ class Viewer(wx.Panel):
                 wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
 
-    def OnCloseProject(self):
+    def OnCloseProject(self) -> None:
         if self.raycasting_volume:
             self.raycasting_volume = False
 
@@ -638,22 +638,22 @@ class Viewer(wx.Panel):
         self.interaction_style.Reset()
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
-    def OnHideText(self):
+    def OnHideText(self) -> None:
         self.text.Hide()
         self.UpdateRender()
 
-    def OnShowText(self):
+    def OnShowText(self) -> None:
         if self.on_wl:
             self.text.Show()
             self.UpdateRender()
 
-    def AddActors(self, actors):
+    def AddActors(self, actors) -> None:
         "Inserting actors"
         for actor in actors:
             self.ren.AddActor(actor)
 
-    def RemoveVolume(self):
-        volumes = self.ren.GetVolumes()
+    def RemoveVolume(self) -> None:
+        volumes: vtkVolumeCollection = self.ren.GetVolumes()
         if (volumes.GetNumberOfItems()):
             self.ren.RemoveVolume(volumes.GetLastProp())
             if not self.nav_status:
@@ -661,12 +661,12 @@ class Viewer(wx.Panel):
             # self._to_show_ball -= 1
             # self._check_and_set_ball_visibility()
 
-    def RemoveActors(self, actors):
+    def RemoveActors(self, actors) -> None:
         "Remove a list of actors"
         for actor in actors:
             self.ren.RemoveActor(actor)
 
-    def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
+    def AddPointReference(self, position, radius=1, colour=(1, 0, 0)) -> None:
         """
         Add a point representation in the given x,y,z position with a optional
         radius and colour.
@@ -689,12 +689,12 @@ class Viewer(wx.Panel):
         self.ren.AddActor(actor)
         self.points_reference.append(actor)
 
-    def RemoveAllPointsReference(self):
+    def RemoveAllPointsReference(self) -> None:
         for actor in self.points_reference:
             self.ren.RemoveActor(actor)
         self.points_reference = []
 
-    def RemovePointReference(self, point):
+    def RemovePointReference(self, point) -> None:
         """
         Remove the point reference. The point argument is the position that is
         added.
@@ -702,7 +702,7 @@ class Viewer(wx.Panel):
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
 
-    def SetMarkers(self, markers):
+    def SetMarkers(self, markers) -> None:
         """
         Set all markers, overwriting the previous markers.
         """
@@ -737,7 +737,7 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def AddMarker(self, marker_id, size, colour, position, orientation, arrow_flag):
+    def AddMarker(self, marker_id, size, colour, position, orientation, arrow_flag) -> None:
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
@@ -749,7 +749,7 @@ class Viewer(wx.Panel):
             """
             Markers arrow with orientation created by navigation tools and rendered in volume viewer.
             """
-            marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
+            marker_actor: vtkActor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
         else:
             marker_actor = self.CreateActorBall(position_flip, colour, size)
 
@@ -761,7 +761,7 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def add_marker(self, coord, color):
+    def add_marker(self, coord, color) -> vtkActor:
         """Simplified version for creating a spherical marker in the 3D scene
 
         :param coord:
@@ -786,21 +786,21 @@ class Viewer(wx.Panel):
         actor.GetProperty().SetOpacity(1.)
         return actor
 
-    def HideAllMarkers(self, indexes):
+    def HideAllMarkers(self, indexes) -> None:
         ballid = indexes
         for i in range(0, ballid):
             self.static_markers[i].SetVisibility(0)
         if not self.nav_status:
             self.UpdateRender()
 
-    def ShowAllMarkers(self, indexes):
+    def ShowAllMarkers(self, indexes) -> None:
         ballid = indexes
         for i in range(0, ballid):
             self.static_markers[i].SetVisibility(1)
         if not self.nav_status:
             self.UpdateRender()
 
-    def RemoveAllMarkers(self, indexes):
+    def RemoveAllMarkers(self, indexes) -> None:
         ballid = indexes
         for i in range(0, ballid):
             self.ren.RemoveActor(self.static_markers[i])
@@ -808,7 +808,7 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def RemoveMultipleMarkers(self, indexes):
+    def RemoveMultipleMarkers(self, indexes) -> None:
         for i in reversed(indexes):
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
@@ -816,7 +816,7 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def BlinkMarker(self, index):
+    def BlinkMarker(self, index) -> None:
         if self.timer:
             self.timer.Stop()
             self.static_markers[self.index].SetVisibility(1)
@@ -826,13 +826,13 @@ class Viewer(wx.Panel):
         self.timer.Start(500)
         self.timer_count = 0
 
-    def OnBlinkMarker(self, evt):
+    def OnBlinkMarker(self, evt) -> None:
         self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
         if not self.nav_status:
             self.UpdateRender()
         self.timer_count += 1
 
-    def StopBlinkMarker(self, index=None):
+    def StopBlinkMarker(self, index=None) -> None:
         if self.timer:
             self.timer.Stop()
             if index is None:
@@ -841,25 +841,25 @@ class Viewer(wx.Panel):
                     self.UpdateRender()
             self.index = False
 
-    def SetNewColor(self, index, color):
+    def SetNewColor(self, index, color) -> None:
         self.static_markers[index].GetProperty().SetColor([round(s / 255.0, 3) for s in color])
         if not self.nav_status:
             self.UpdateRender()
 
-    def OnTargetMarkerTransparency(self, status, index):
+    def OnTargetMarkerTransparency(self, status, index) -> None:
         if status:
             self.static_markers[index].GetProperty().SetOpacity(1)
             # self.staticballs[index].GetProperty().SetOpacity(0.4)
         else:
             self.static_markers[index].GetProperty().SetOpacity(1)
 
-    def OnUpdateAngleThreshold(self, angle):
+    def OnUpdateAngleThreshold(self, angle) -> None:
         self.anglethreshold = angle
 
-    def OnUpdateDistThreshold(self, dist_threshold):
+    def OnUpdateDistThreshold(self, dist_threshold) -> None:
         self.distthreshold = dist_threshold
 
-    def ActivateTargetMode(self, evt=None, target_mode=None):
+    def ActivateTargetMode(self, evt=None, target_mode=None) -> None:
 
         vtk_colors = vtkNamedColors()
         self.target_mode = target_mode
@@ -919,37 +919,37 @@ class Viewer(wx.Panel):
             obj_pitch.RotateY(90)
             obj_pitch.RotateZ(180)
 
-            arrow_roll_z1 = self.CreateArrowActor([-50, -35, 12], [-50, -35, 50])
+            arrow_roll_z1: vtkActor = self.CreateArrowActor([-50, -35, 12], [-50, -35, 50])
             arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
             arrow_roll_z1.RotateX(-60)
             arrow_roll_z1.RotateZ(180)
-            arrow_roll_z2 = self.CreateArrowActor([50, -35, 0], [50, -35, -50])
+            arrow_roll_z2: vtkActor = self.CreateArrowActor([50, -35, 0], [50, -35, -50])
             arrow_roll_z2.GetProperty().SetColor(1, 1, 0)
             arrow_roll_z2.RotateX(-60)
             arrow_roll_z2.RotateZ(180)
 
-            arrow_yaw_y1 = self.CreateArrowActor([-50, -35, 0], [-50, 5, 0])
+            arrow_yaw_y1: vtkActor = self.CreateArrowActor([-50, -35, 0], [-50, 5, 0])
             arrow_yaw_y1.GetProperty().SetColor(0, 1, 0)
             arrow_yaw_y1.SetPosition(0, -150, 0)
             arrow_yaw_y1.RotateZ(180)
-            arrow_yaw_y2 = self.CreateArrowActor([50, -35, 0], [50, -75, 0])
+            arrow_yaw_y2: vtkActor = self.CreateArrowActor([50, -35, 0], [50, -75, 0])
             arrow_yaw_y2.GetProperty().SetColor(0, 1, 0)
             arrow_yaw_y2.SetPosition(0, -150, 0)
             arrow_yaw_y2.RotateZ(180)
 
-            arrow_pitch_x1 = self.CreateArrowActor([0, 65, 38], [0, 65, 68])
+            arrow_pitch_x1: vtkActor = self.CreateArrowActor([0, 65, 38], [0, 65, 68])
             arrow_pitch_x1.GetProperty().SetColor(1, 0, 0)
             arrow_pitch_x1.SetPosition(0, -300, 0)
             arrow_pitch_x1.RotateY(90)
             arrow_pitch_x1.RotateZ(180)
-            arrow_pitch_x2 = self.CreateArrowActor([0, -55, 5], [0, -55, -30])
+            arrow_pitch_x2: vtkActor = self.CreateArrowActor([0, -55, 5], [0, -55, -30])
             arrow_pitch_x2.GetProperty().SetColor(1, 0, 0)
             arrow_pitch_x2.SetPosition(0, -300, 0)
             arrow_pitch_x2.RotateY(90)
             arrow_pitch_x2.RotateZ(180)
 
-            self.obj_actor_list = obj_roll, obj_yaw, obj_pitch
-            self.arrow_actor_list = arrow_roll_z1, arrow_roll_z2, arrow_yaw_y1, arrow_yaw_y2,\
+            self.obj_actor_list: tuple[vtkActor, vtkActor, vtkActor] = obj_roll, obj_yaw, obj_pitch
+            self.arrow_actor_list: tuple[vtkActor, vtkActor, vtkActor, vtkActor, vtkActor, vtkActor] = arrow_roll_z1, arrow_roll_z2, arrow_yaw_y1, arrow_yaw_y2,\
                                      arrow_pitch_x1, arrow_pitch_x2
 
             for ind in self.obj_actor_list:
@@ -976,12 +976,12 @@ class Viewer(wx.Panel):
                 if self.obj_projection_arrow_actor:
                     self.obj_projection_arrow_actor.SetVisibility(1)
 
-    def OnUpdateObjectTargetGuide(self, m_img, coord):
+    def OnUpdateObjectTargetGuide(self, m_img, coord) -> None:
         vtk_colors = vtkNamedColors()
 
         if self.target_coord and self.target_mode:
 
-            target_dist = distance.euclidean(coord[0:3],
+            target_dist: float = distance.euclidean(coord[0:3],
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
 
             # self.txt.SetCoilDistanceValue(target_dist)
@@ -1038,12 +1038,12 @@ class Viewer(wx.Panel):
 
             offset = 5
 
-            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
+            arrow_roll_x1: vtkActor = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
             arrow_roll_x1.RotateX(-60)
             arrow_roll_x1.RotateZ(180)
             arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
 
-            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset + coordrx_arrow])
+            arrow_roll_x2: vtkActor = self.CreateArrowActor([55, -35, offset], [55, -35, offset + coordrx_arrow])
             arrow_roll_x2.RotateX(-60)
             arrow_roll_x2.RotateZ(180)
             arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
