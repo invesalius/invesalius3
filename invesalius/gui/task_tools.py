@@ -36,7 +36,7 @@ ID_BTN_MEASURE_ANGULAR = wx.NewId()
 ID_BTN_ANNOTATION = wx.NewId()
 
 class TaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self)
@@ -51,7 +51,7 @@ class TaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 class InnerTaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         self.SetBackgroundColour(wx.Colour(255,255,255))
         self.SetAutoLayout(1)
@@ -88,7 +88,7 @@ class InnerTaskPanel(wx.Panel):
         BMP_DISTANCE.SetHeight(25)
 
         # Buttons related to hyperlinks
-        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_style: int = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
         button_measure_linear = pbtn.PlateButton(self, ID_BTN_MEASURE_LINEAR, "",
                                                BMP_DISTANCE, style=button_style)
@@ -102,8 +102,8 @@ class InnerTaskPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Tags and grid sizer for fixed items
-        flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
-        flag_button = wx.EXPAND | wx.GROW
+        flag_link: int = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
+        flag_button: int = wx.EXPAND | wx.GROW
 
         sizer = wx.GridBagSizer(hgap=0, vgap=0)
         sizer.Add(txt_measure,pos=(0,0),flag=wx.GROW|wx.EXPAND|wx.TOP,border=3)
@@ -121,18 +121,18 @@ class InnerTaskPanel(wx.Panel):
         # Update main sizer and panel layout
         self.SetSizer(sizer)
         self.Fit()
-        self.sizer = main_sizer
+        self.sizer: BoxSizer = main_sizer
 
-    def OnTextAnnotation(self, evt=None):
+    def OnTextAnnotation(self, evt=None) -> None:
         print("TODO: Send Signal - Add text annotation (both 2d and 3d)")
 
-    def OnLinkLinearMeasure(self):
+    def OnLinkLinearMeasure(self) -> None:
         Publisher.sendMessage('Enable style', style=constants.STATE_MEASURE_DISTANCE)
 
-    def OnLinkAngularMeasure(self):
+    def OnLinkAngularMeasure(self) -> None:
         Publisher.sendMessage('Enable style', style=constants.STATE_MEASURE_ANGLE)
 
-    def OnButton(self, evt):
+    def OnButton(self, evt) -> None:
         id = evt.GetId()
 
         if id == ID_BTN_MEASURE_LINEAR:

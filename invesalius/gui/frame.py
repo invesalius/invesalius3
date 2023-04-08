@@ -59,7 +59,7 @@ WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
     "NIfTI 1 (*.nii)|*.nii|" \
     "Compressed NIfTI (*.nii.gz)|*.nii.gz"
 
-IDX_EXT = {
+IDX_EXT: dict[int, str] = {
     0: '.hdf5',
     1: '.nii',
     2: '.nii.gz'
@@ -67,7 +67,7 @@ IDX_EXT = {
 
 
 class MessageWatershed(wx.PopupWindow):
-    def __init__(self, prnt, msg):
+    def __init__(self, prnt, msg) -> None:
         wx.PopupWindow.__init__(self, prnt, -1)
         self.txt = wx.StaticText(self, -1, msg)
 
@@ -87,7 +87,7 @@ class Frame(wx.Frame):
     """
     Main frame of the whole software.
     """
-    def __init__(self, prnt):
+    def __init__(self, prnt) -> None:
         """
         Initialize frame, given its parent.
         """
@@ -96,7 +96,7 @@ class Frame(wx.Frame):
               size=wx.Size(1024, 748), #size = wx.DisplaySize(),
               style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3')
         self.Center(wx.BOTH)
-        icon_path = inv_paths.ICON_DIR.joinpath("invesalius.ico")
+        icon_path: Path = inv_paths.ICON_DIR.joinpath("invesalius.ico")
         self.SetIcon(wx.Icon(str(icon_path), wx.BITMAP_TYPE_ICO))
 
         self.mw = None
@@ -116,10 +116,10 @@ class Frame(wx.Frame):
         #to control check and unckeck of menu view -> interpolated_slices
         main_menu = MenuBar(self)
 
-        self.actived_interpolated_slices = main_menu.view_menu
-        self.actived_navigation_mode = main_menu.mode_menu
+        self.actived_interpolated_slices: Menu = main_menu.view_menu
+        self.actived_navigation_mode: Menu = main_menu.mode_menu
         self.actived_dbs_mode = main_menu.mode_dbs
-        self.tools_menu = main_menu.tools_menu
+        self.tools_menu: Menu = main_menu.tools_menu
 
         # Set menus, status and task bar
         self.SetMenuBar(main_menu)
@@ -136,7 +136,7 @@ class Frame(wx.Frame):
         self.__bind_events_wx()
 
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -158,7 +158,7 @@ class Frame(wx.Frame):
         sub(self._UpdateViewerFocus, 'Set viewer orientation focus')
         sub(self._Exit, 'Exit')
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         """
         Bind normal events from wx (except pubsub related).
         """
@@ -169,7 +169,7 @@ class Frame(wx.Frame):
         # Close InVesalius main window, hence exit the software.
         self.Bind(wx.EVT_CLOSE, self.OnExit)
 
-    def __init_aui(self):
+    def __init_aui(self) -> None:
         """
         Build AUI manager and all panels inside InVesalius frame.
         """
@@ -273,14 +273,14 @@ class Frame(wx.Frame):
 
         self.Layout()
 
-    def _BeginBusyCursor(self):
+    def _BeginBusyCursor(self) -> None:
         """
         Start busy cursor.
         Note: _EndBusyCursor should be called after.
         """
         wx.BeginBusyCursor()
 
-    def _EndBusyCursor(self):
+    def _EndBusyCursor(self) -> None:
         """
         End busy cursor.
         Note: _BeginBusyCursor should have been called previously.
@@ -291,7 +291,7 @@ class Frame(wx.Frame):
             #no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
-    def _Exit(self):
+    def _Exit(self) -> None:
         """
         Exit InVesalius.
         """
@@ -302,7 +302,7 @@ class Frame(wx.Frame):
         if hasattr(sys,"frozen") and sys.platform == 'darwin':
             sys.exit(0)
 
-    def _HideContentPanel(self):
+    def _HideContentPanel(self) -> None:
         """
         Hide data and tasks panels.
         """
@@ -311,7 +311,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def _HideImportPanel(self):
+    def _HideImportPanel(self) -> None:
         """
         Hide import panel and show tasks.
         """
@@ -321,14 +321,14 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def _HideTask(self):
+    def _HideTask(self) -> None:
         """
         Hide task panel.
         """
         self.aui_manager.GetPane("Tasks").Hide()
         self.aui_manager.Update()
 
-    def _SetProjectName(self, proj_name=""):
+    def _SetProjectName(self, proj_name="") -> None:
         """
         Set project name into frame's title.
         """
@@ -337,7 +337,7 @@ class Frame(wx.Frame):
         else:
             self.SetTitle("%s - InVesalius 3"%(proj_name))
 
-    def _ShowContentPanel(self):
+    def _ShowContentPanel(self) -> None:
         """
         Show viewers and task, hide import panel.
         """
@@ -351,7 +351,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def _ShowImportNetwork(self):
+    def _ShowImportNetwork(self) -> None:
         """
         Show viewers and task, hide import panel.
         """
@@ -363,7 +363,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Import").Show(0)
         aui_manager.Update()
 
-    def _ShowImportBitmap(self):
+    def _ShowImportBitmap(self) -> None:
         """
         Show viewers and task, hide import panel.
         """
@@ -375,14 +375,14 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Import").Show(0)
         aui_manager.Update()
 
-    def _ShowHelpMessage(self, message):
+    def _ShowHelpMessage(self, message) -> None:
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw = MessageWatershed(self, message)
         self.mw.SetPosition(pos)
         self.mw.Show()
 
-    def _ShowImportPanel(self):
+    def _ShowImportPanel(self) -> None:
         """
         Show only DICOM import panel. as dicom        """
         Publisher.sendMessage("Set layout button data only")
@@ -392,27 +392,27 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(0)
         aui_manager.Update()
 
-    def _ShowTask(self):
+    def _ShowTask(self) -> None:
         """
         Show task panel.
         """
         self.aui_manager.GetPane("Tasks").Show()
         self.aui_manager.Update()
 
-    def _UpdateAUI(self):
+    def _UpdateAUI(self) -> None:
         """
         Refresh AUI panels/data.
         """
         self.aui_manager.Update()
 
-    def _UpdateViewerFocus(self, orientation):
+    def _UpdateViewerFocus(self, orientation) -> None:
         if orientation in (const.AXIAL_STR, const.CORONAL_STR, const.SAGITAL_STR):
             self._last_viewer_orientation_focus = orientation
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         Publisher.sendMessage('Close Project')
 
-    def OnExit(self, evt):
+    def OnExit(self, evt) -> None:
         """
         Exit InVesalius: disconnect tracker and send 'Exit' message.
         """
@@ -463,7 +463,7 @@ class Frame(wx.Frame):
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
-            axis = {const.ID_FLIP_X: 2,
+            axis: int = {const.ID_FLIP_X: 2,
                     const.ID_FLIP_Y: 1,
                     const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
@@ -572,7 +572,7 @@ class Frame(wx.Frame):
         elif id == const.ID_PLUGINS_SHOW_PATH:
             self.ShowPluginsFolder()
 
-    def OnDbsMode(self):
+    def OnDbsMode(self) -> None:
         st = self.actived_dbs_mode.IsChecked()
         Publisher.sendMessage('Hide target button')
         if st:
@@ -583,10 +583,10 @@ class Frame(wx.Frame):
             Publisher.sendMessage('Hide dbs folder')
         self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION,0)
 
-    def OnInterpolatedSlices(self, status):
+    def OnInterpolatedSlices(self, status) -> None:
         Publisher.sendMessage('Set interpolated slices', flag=status)
 
-    def OnNavigationMode(self, status):
+    def OnNavigationMode(self, status) -> None:
         if status and self._show_navigator_message and sys.platform != 'win32':
             wx.MessageBox(_('Currently the Navigation mode is only working on Windows'), 'Info', wx.OK | wx.ICON_INFORMATION)
             self._show_navigator_message = False
@@ -594,7 +594,7 @@ class Frame(wx.Frame):
         if not status:
             Publisher.sendMessage('Remove sensors ID')
 
-    def OnSize(self, evt):
+    def OnSize(self, evt) -> None:
         """
         Refresh GUI when frame is resized.
         """
@@ -602,21 +602,21 @@ class Frame(wx.Frame):
         self.Reposition()
         self.sizeChanged = True
 
-    def OnIdle(self, evt):
+    def OnIdle(self, evt) -> None:
         if self.sizeChanged:
             self.Reposition()
 
-    def Reposition(self):
+    def Reposition(self) -> None:
         Publisher.sendMessage(('ProgressBar Reposition'))
         self.sizeChanged = False
 
 
-    def OnMove(self, evt):
+    def OnMove(self, evt) -> None:
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
 
-    def ShowPreferences(self):
+    def ShowPreferences(self) -> None:
         preferences_dialog = preferences.Preferences(self)
         preferences_dialog.LoadPreferences()
         preferences_dialog.Center()
@@ -644,19 +644,19 @@ class Frame(wx.Frame):
             Publisher.sendMessage('Update Navigation Mode MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
 
-    def ShowAbout(self):
+    def ShowAbout(self) -> None:
         """
         Shows about dialog.
         """
         dlg.ShowAboutDialog(self)
 
-    def SaveProject(self):
+    def SaveProject(self) -> None:
         """
         Save project.
         """
         Publisher.sendMessage('Show save dialog', save_as=False)
 
-    def ShowGettingStarted(self):
+    def ShowGettingStarted(self) -> None:
         """
         Show getting started window.
         """
@@ -666,39 +666,39 @@ class Frame(wx.Frame):
         else:
             user_guide = "user_guide_en.pdf"
 
-        path = os.path.join(inv_paths.DOC_DIR,
+        path: str = os.path.join(inv_paths.DOC_DIR,
                             user_guide)
         if sys.platform == 'darwin':
             path = r'file://' + path
         webbrowser.open(path)
 
-    def ShowImportDicomPanel(self):
+    def ShowImportDicomPanel(self) -> None:
         """
         Show import DICOM panel. as dicom        """
         Publisher.sendMessage('Show import directory dialog')
 
-    def ShowImportOtherFiles(self, id_file):
+    def ShowImportOtherFiles(self, id_file) -> None:
         """
         Show import Analyze, NiFTI1 or PAR/REC dialog.
         """
         Publisher.sendMessage('Show import other files dialog', id_type=id_file)
 
-    def ShowRetrieveDicomPanel(self):
+    def ShowRetrieveDicomPanel(self) -> None:
         Publisher.sendMessage('Show retrieve dicom panel')
 
-    def ShowOpenProject(self):
+    def ShowOpenProject(self) -> None:
         """
         Show open project dialog.
         """
         Publisher.sendMessage('Show open project dialog')
 
-    def ShowSaveAsProject(self):
+    def ShowSaveAsProject(self) -> None:
         """
         Show save as dialog.
         """
         Publisher.sendMessage('Show save dialog', save_as=True)
 
-    def ExportProject(self):
+    def ExportProject(self) -> None:
         """
         Show save dialog to export slice.
         """
@@ -715,7 +715,7 @@ class Frame(wx.Frame):
                             wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if fdlg.ShowModal() == wx.ID_OK:
             filename = fdlg.GetPath()
-            ext = IDX_EXT[fdlg.GetFilterIndex()]
+            ext: str = IDX_EXT[fdlg.GetFilterIndex()]
             dirpath = os.path.split(filename)[0]
             if not filename.endswith(ext):
                 filename += ext
@@ -723,7 +723,7 @@ class Frame(wx.Frame):
                 p.export_project(filename)
             except (OSError, IOError) as err:
                 if err.errno == errno.EACCES:
-                    message = "It was not possible to save because you don't have permission to write at {}".format(dirpath)
+                    message: str = "It was not possible to save because you don't have permission to write at {}".format(dirpath)
                 else:
                     message = "It was not possible to save because"
                 d = dlg.ErrorMessageBox(
@@ -736,7 +736,7 @@ class Frame(wx.Frame):
             else:
                 session.SetConfig('last_directory_export_prj', dirpath)
 
-    def ShowProjectProperties(self):
+    def ShowProjectProperties(self) -> None:
         window = project_properties.ProjectProperties(self)
         if window.ShowModal() == wx.ID_OK:
             p = prj.Project()
@@ -750,68 +750,68 @@ class Frame(wx.Frame):
 
         window.Destroy()
 
-    def ShowBitmapImporter(self):
+    def ShowBitmapImporter(self) -> None:
         """
         Tiff, BMP, JPEG and PNG
         """
         Publisher.sendMessage('Show bitmap dialog')
 
-    def FlipVolume(self, axis):
+    def FlipVolume(self, axis) -> None:
         Publisher.sendMessage('Flip volume', axis=axis)
         Publisher.sendMessage('Reload actual slice')
 
-    def SwapAxes(self, axes):
+    def SwapAxes(self, axes) -> None:
         Publisher.sendMessage('Swap volume axes', axes=axes)
         Publisher.sendMessage('Update scroll')
         Publisher.sendMessage('Reload actual slice')
 
-    def OnUndo(self):
+    def OnUndo(self) -> None:
         Publisher.sendMessage('Undo edition')
 
-    def OnRedo(self):
+    def OnRedo(self) -> None:
         Publisher.sendMessage('Redo edition')
 
-    def OnGotoSlice(self):
+    def OnGotoSlice(self) -> None:
         gt_dialog = dlg.GoToDialog(init_orientation=self._last_viewer_orientation_focus)
         gt_dialog.CenterOnParent()
         gt_dialog.ShowModal()
         self.Refresh()
 
-    def GoToDialogScannerCoord(self):
+    def GoToDialogScannerCoord(self) -> None:
         gts_dialog = dlg.GoToDialogScannerCoord()
         gts_dialog.CenterOnParent()
         gts_dialog.ShowModal()
         self.Refresh()
 
-    def OnMaskBoolean(self):
+    def OnMaskBoolean(self) -> None:
         Publisher.sendMessage('Show boolean dialog')
 
-    def OnCleanMask(self):
+    def OnCleanMask(self) -> None:
         Publisher.sendMessage('Clean current mask')
         Publisher.sendMessage('Reload actual slice')
 
-    def OnReorientImg(self):
+    def OnReorientImg(self) -> None:
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_REORIENT)
         rdlg = dlg.ReorientImageDialog()
         rdlg.Show()
 
-    def OnFillHolesManually(self):
+    def OnFillHolesManually(self) -> None:
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_MASK_FFILL)
 
-    def OnFillHolesAutomatically(self):
+    def OnFillHolesAutomatically(self) -> None:
         fdlg = dlg.FillHolesAutoDialog(_(u"Fill holes automatically"))
         fdlg.Show()
 
-    def OnRemoveMaskParts(self):
+    def OnRemoveMaskParts(self) -> None:
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_REMOVE_MASK_PARTS)
 
-    def OnSelectMaskParts(self):
+    def OnSelectMaskParts(self) -> None:
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_SELECT_MASK_PARTS)
 
-    def OnFFillSegmentation(self):
+    def OnFFillSegmentation(self) -> None:
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
-    def OnBrainSegmentation(self):
+    def OnBrainSegmentation(self) -> None:
         from invesalius.gui import deep_learning_seg_dialog
         if deep_learning_seg_dialog.HAS_PLAIDML or deep_learning_seg_dialog.HAS_THEANO or deep_learning_seg_dialog.HAS_TORCH:
             dlg = deep_learning_seg_dialog.BrainSegmenterDialog(self)
@@ -825,7 +825,7 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
-    def OnTracheSegmentation(self):
+    def OnTracheSegmentation(self) -> None:
         from invesalius.gui import deep_learning_seg_dialog
         if deep_learning_seg_dialog.HAS_TORCH:
             dlg = deep_learning_seg_dialog.TracheaSegmenterDialog(self)
@@ -839,22 +839,22 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
-    def OnInterpolatedSlices(self, status):
+    def OnInterpolatedSlices(self, status) -> None:
         Publisher.sendMessage('Set interpolated slices', flag=status)
 
-    def OnCropMask(self):
+    def OnCropMask(self) -> None:
         Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
 
-    def OnEnableMask3DPreview(self, value):
+    def OnEnableMask3DPreview(self, value) -> None:
         if value:
             Publisher.sendMessage('Enable mask 3D preview')
         else:
             Publisher.sendMessage('Disable mask 3D preview')
 
-    def OnUpdateMaskPreview(self):
+    def OnUpdateMaskPreview(self) -> None:
         Publisher.sendMessage('Update mask 3D preview')
 
-    def ShowPluginsFolder(self):
+    def ShowPluginsFolder(self) -> None:
         """
         Show getting started window.
         """
@@ -876,7 +876,7 @@ class MenuBar(wx.MenuBar):
     MenuBar which contains menus used to control project, tools and
     help.
     """
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.MenuBar.__init__(self)
 
         self.parent = parent
@@ -918,7 +918,7 @@ class MenuBar(wx.MenuBar):
 
         self.SetStateProjectClose()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -943,7 +943,7 @@ class MenuBar(wx.MenuBar):
 
         self.num_masks = 0
 
-    def __init_items(self):
+    def __init_items(self) -> None:
         """
         Create all menu and submenus, and add them to self.
         """
@@ -979,13 +979,13 @@ class MenuBar(wx.MenuBar):
         app(const.ID_EXIT, _("Exit\tCtrl+Q"))
 
         file_edit = wx.Menu()
-        d = inv_paths.ICON_DIR
+        d: Path = inv_paths.ICON_DIR
         if not(sys.platform == 'darwin'):
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "undo_menu.png")
+            p: str = os.path.join(d, "undo_menu.png")
             self.BMP_UNDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "redo_menu.png")
+            p: str = os.path.join(d, "redo_menu.png")
             self.BMP_REDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
 
             file_edit_item_undo = wx.MenuItem(file_edit, wx.ID_UNDO,  _("Undo\tCtrl+Z"))
@@ -1104,7 +1104,7 @@ class MenuBar(wx.MenuBar):
         tools_menu.Append(-1,  _(u"Mask"), mask_menu)
         tools_menu.Append(-1, _(u"Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _(u"Surface"), surface_menu)
-        self.tools_menu = tools_menu
+        self.tools_menu: Menu = tools_menu
 
         #View
         self.view_menu = view_menu = wx.Menu()
@@ -1114,7 +1114,7 @@ class MenuBar(wx.MenuBar):
         v = self.SliceInterpolationStatus()
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
-        self.actived_interpolated_slices = self.view_menu
+        self.actived_interpolated_slices: Menu = self.view_menu
 
         #view_tool_menu = wx.Menu()
         #app = view_tool_menu.Append
@@ -1159,11 +1159,11 @@ class MenuBar(wx.MenuBar):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
-        self.actived_navigation_mode = self.mode_menu
+        self.actived_navigation_mode: Menu = self.mode_menu
 
         plugins_menu = wx.Menu()
         plugins_menu.Append(const.ID_PLUGINS_SHOW_PATH, _("Open Plugins folder"))
-        self.plugins_menu = plugins_menu
+        self.plugins_menu: Menu = plugins_menu
 
         # HELP
         help_menu = wx.Menu()
@@ -1190,7 +1190,7 @@ class MenuBar(wx.MenuBar):
 
         plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
 
-    def OnPluginMenu(self, evt):
+    def OnPluginMenu(self, evt) -> None:
         id = evt.GetId()
         if id != const.ID_PLUGINS_SHOW_PATH:
             try:
@@ -1213,15 +1213,15 @@ class MenuBar(wx.MenuBar):
 
         return mode == 1
 
-    def OnUpdateSliceInterpolation(self):
+    def OnUpdateSliceInterpolation(self) -> None:
         v = self.SliceInterpolationStatus()
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
-    def OnUpdateNavigationMode(self):
+    def OnUpdateNavigationMode(self) -> None:
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
-    def AddPluginsItems(self, items):
+    def AddPluginsItems(self, items) -> None:
         for menu_item in self.plugins_menu.GetMenuItems():
             if menu_item.GetId() != const.ID_PLUGINS_SHOW_PATH:
                 self.plugins_menu.DestroyItem(menu_item)
@@ -1233,7 +1233,7 @@ class MenuBar(wx.MenuBar):
             menu_item.Enable(items[item]["enable_startup"])
             print(">>> menu", item)
 
-    def OnEnableState(self, state):
+    def OnEnableState(self, state) -> None:
         """
         Based on given state, enables or disables menu items which
         depend if project is open or not.
@@ -1243,7 +1243,7 @@ class MenuBar(wx.MenuBar):
         else:
             self.SetStateProjectClose()
 
-    def SetStateProjectClose(self):
+    def SetStateProjectClose(self) -> None:
         """
         Disable menu items (e.g. save) when project is closed.
         """
@@ -1255,7 +1255,7 @@ class MenuBar(wx.MenuBar):
             if not self._plugins_menu_ids[item]["enable_startup"]:
                 self.Enable(item, False)
 
-    def SetStateProjectOpen(self):
+    def SetStateProjectOpen(self) -> None:
         """
         Enable menu items (e.g. save) when project is opened.
         """
@@ -1267,19 +1267,19 @@ class MenuBar(wx.MenuBar):
             if not self._plugins_menu_ids[item]["enable_startup"]:
                 self.Enable(item, True)
 
-    def OnEnableUndo(self, value):
+    def OnEnableUndo(self, value) -> None:
         if value:
             self.FindItemById(wx.ID_UNDO).Enable(True)
         else:
             self.FindItemById(wx.ID_UNDO).Enable(False)
 
-    def OnEnableRedo(self, value):
+    def OnEnableRedo(self, value) -> None:
         if value:
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
 
-    def OnEnableGotoCoord(self, status=True):
+    def OnEnableGotoCoord(self, status=True) -> None:
         """
         Enable or disable goto coord depending on the imported affine matrix.
         :param status: True for enabling and False for disabling the Go-To-Coord
@@ -1287,7 +1287,7 @@ class MenuBar(wx.MenuBar):
 
         self.FindItemById(const.ID_GOTO_COORD).Enable(status)
 
-    def OnEnableNavigation(self, nav_status, vis_status):
+    def OnEnableNavigation(self, nav_status, vis_status) -> None:
         """
         Disable mode menu when navigation is on.
         :param nav_status: Navigation status
@@ -1299,18 +1299,18 @@ class MenuBar(wx.MenuBar):
         else:
             self.FindItemById(const.ID_MODE_NAVIGATION).Enable(True)
 
-    def OnAddMask(self, mask):
+    def OnAddMask(self, mask) -> None:
         self.num_masks += 1
         self.bool_op_menu.Enable(self.num_masks >= 2)
         self.mask_preview.Enable(True)
         self.mask_auto_reload.Enable(True)
         self.mask_preview_reload.Enable(True)
 
-    def OnRemoveMasks(self, mask_indexes):
+    def OnRemoveMasks(self, mask_indexes) -> None:
         self.num_masks -= len(mask_indexes)
         self.bool_op_menu.Enable(self.num_masks >= 2)
 
-    def OnShowMask(self, index, value):
+    def OnShowMask(self, index, value) -> None:
         self.clean_mask_menu.Enable(value)
         self.crop_mask_menu.Enable(value)
         self.mask_preview.Enable(value)
@@ -1327,21 +1327,21 @@ class ProgressBar(wx.Gauge):
     Progress bar / gauge.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Gauge.__init__(self, parent, -1, 100)
         self.parent = parent
         self._Layout()
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
         sub = Publisher.subscribe
         sub(self._Layout, 'ProgressBar Reposition')
 
-    def _Layout(self):
+    def _Layout(self) -> None:
         """
         Compute new size and position, according to parent resize
         """
@@ -1350,7 +1350,7 @@ class ProgressBar(wx.Gauge):
         self.SetSize((rect.width - 4, rect.height - 4))
         self.Show()
 
-    def SetPercentage(self, value):
+    def SetPercentage(self, value) -> None:
         """
         Set value [0;100] into gauge, moving "status" percentage.
         """
@@ -1368,7 +1368,7 @@ class StatusBar(wx.StatusBar):
     """
     Control general status (both text and gauge)
     """
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.StatusBar.__init__(self, parent, -1)
 
         # General status configurations
@@ -1383,7 +1383,7 @@ class StatusBar(wx.StatusBar):
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -1391,7 +1391,7 @@ class StatusBar(wx.StatusBar):
         sub(self._SetProgressValue, 'Update status in GUI')
         sub(self._SetProgressLabel, 'Update status text in GUI')
 
-    def _SetProgressValue(self, value, label):
+    def _SetProgressValue(self, value, label) -> None:
         """
         Set both percentage value in gauge and text progress label in
         status.
@@ -1409,7 +1409,7 @@ class StatusBar(wx.StatusBar):
             except(wx._core.PyAssertionError):
                 utils.debug("wx._core.PyAssertionError")
 
-    def _SetProgressLabel(self, label):
+    def _SetProgressLabel(self, label) -> None:
         """
         Set text progress label.
         """
@@ -1426,7 +1426,7 @@ class TaskBarIcon(wx_TaskBarIcon):
         - darwin: Show icon on Dock
         - linux2: Show icon on "Notification Area" (near clock)
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         wx_TaskBarIcon.__init__(self)
         self.frame = parent
 
@@ -1438,7 +1438,7 @@ class TaskBarIcon(wx_TaskBarIcon):
         # bind some events
         self.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarActivate)
 
-    def OnTaskBarActivate(self, evt):
+    def OnTaskBarActivate(self, evt) -> None:
         pass
 
 # ------------------------------------------------------------------
@@ -1450,7 +1450,7 @@ class ProjectToolBar(AuiToolBar):
     Toolbar related to general invesalius.project operations, including: import, as project    open, save and saveas, among others.
     """
     def __init__(self, parent):
-        style = AUI_TB_PLAIN_BACKGROUND
+        style: int = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
                             agwStyle=style)
@@ -1468,19 +1468,19 @@ class ProjectToolBar(AuiToolBar):
         self.Realize()
         self.SetStateProjectClose()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
 
-    def __init_items(self):
+    def __init_items(self) -> None:
         """
         Add tools into toolbar.
         """
         # Load bitmaps
-        d = inv_paths.ICON_DIR
+        d: Path = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             path = d.joinpath("file_from_internet_original.png")
             BMP_NET = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
@@ -1547,7 +1547,7 @@ class ProjectToolBar(AuiToolBar):
         #                   "Print medical image...",
         #                   BMP_PRINT)
 
-    def _EnableState(self, state):
+    def _EnableState(self, state) -> None:
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
@@ -1558,7 +1558,7 @@ class ProjectToolBar(AuiToolBar):
             self.SetStateProjectClose()
         self.Refresh()
 
-    def SetStateProjectClose(self):
+    def SetStateProjectClose(self) -> None:
         """
         Disable menu items (e.g. save) when project is closed.
         """
@@ -1566,7 +1566,7 @@ class ProjectToolBar(AuiToolBar):
             self.EnableTool(tool, False)
         self.Refresh()
 
-    def SetStateProjectOpen(self):
+    def SetStateProjectOpen(self) -> None:
         """
         Enable menu items (e.g. save) when project is opened.
         """
@@ -1585,8 +1585,8 @@ class ObjectToolBar(AuiToolBar):
     Toolbar related to general object operations, including: zoom
     move, rotate, brightness/contrast, etc.
     """
-    def __init__(self, parent):
-        style = AUI_TB_PLAIN_BACKGROUND
+    def __init__(self, parent) -> None:
+        style: int = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize, agwStyle=style)
 
@@ -1595,7 +1595,7 @@ class ObjectToolBar(AuiToolBar):
         self.parent = parent
         # Used to enable/disable menu items if project is opened or
         # not. Eg. save should only be available if a project is open
-        self.enable_items = [const.STATE_WL, const.STATE_PAN,
+        self.enable_items: list[int] = [const.STATE_WL, const.STATE_PAN,
                              const.STATE_SPIN, const.STATE_ZOOM_SL,
                              const.STATE_ZOOM,
                              const.STATE_MEASURE_DISTANCE,
@@ -1611,7 +1611,7 @@ class ObjectToolBar(AuiToolBar):
         self.Realize()
         self.SetStateProjectClose()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -1622,17 +1622,17 @@ class ObjectToolBar(AuiToolBar):
         sub(self._ToggleAngularMeasure, "Set tool angular measure")
         sub(self.ToggleItem, 'Toggle toolbar item')
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         """
         Bind normal events from wx (except pubsub related).
         """
         self.Bind(wx.EVT_TOOL, self.OnToggle)
 
-    def __init_items(self):
+    def __init_items(self) -> None:
         """
         Add tools into toolbar.
         """
-        d = inv_paths.ICON_DIR
+        d: Path = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             path = os.path.join(d, "tool_rotate_original.png")
             BMP_ROTATE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
@@ -1665,7 +1665,7 @@ class ObjectToolBar(AuiToolBar):
             #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         else:
-            path = os.path.join(d, "tool_rotate.png")
+            path: str = os.path.join(d, "tool_rotate.png")
             BMP_ROTATE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d, "tool_translate.png")
@@ -1758,7 +1758,7 @@ class ObjectToolBar(AuiToolBar):
         #                bitmap = BMP_ANNOTATE,
         #                kind = wx.ITEM_CHECK)
 
-    def _EnableState(self, state):
+    def _EnableState(self, state) -> None:
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
@@ -1769,7 +1769,7 @@ class ObjectToolBar(AuiToolBar):
             self.SetStateProjectClose()
         self.Refresh()
 
-    def _UntoggleAllItems(self):
+    def _UntoggleAllItems(self) -> None:
         """
         Untoggle all items on toolbar.
         """
@@ -1779,7 +1779,7 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(id, False)
         self.Refresh()
 
-    def _ToggleLinearMeasure(self):
+    def _ToggleLinearMeasure(self) -> None:
         """
         Force measure distance tool to be toggled and bind pubsub
         events to other classes whici are interested on this.
@@ -1794,7 +1794,7 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(item, False)
 
 
-    def _ToggleAngularMeasure(self):
+    def _ToggleAngularMeasure(self) -> None:
         """
         Force measure angle tool to be toggled and bind pubsub
         events to other classes which are interested on this.
@@ -1808,7 +1808,7 @@ class ObjectToolBar(AuiToolBar):
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def OnToggle(self, evt):
+    def OnToggle(self, evt) -> None:
         """
         Update status of other items on toolbar (only one item
         should be toggle each time).
@@ -1831,12 +1831,12 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(item, False)
         evt.Skip()
 
-    def ToggleItem(self, _id, value):
+    def ToggleItem(self, _id, value) -> None:
         if _id in self.enable_items:
             self.ToggleTool(_id, value)
             self.Refresh()
 
-    def SetStateProjectClose(self):
+    def SetStateProjectClose(self) -> None:
         """
         Disable menu items (e.g. zoom) when project is closed.
         """
@@ -1844,7 +1844,7 @@ class ObjectToolBar(AuiToolBar):
             self.EnableTool(tool, False)
             self._UntoggleAllItems()
 
-    def SetStateProjectOpen(self):
+    def SetStateProjectOpen(self) -> None:
         """
         Enable menu items (e.g. zoom) when project is opened.
         """
@@ -1860,8 +1860,8 @@ class SliceToolBar(AuiToolBar):
     Toolbar related to 2D slice specific operations, including: cross
     intersection reference and scroll slices.
     """
-    def __init__(self, parent):
-        style = AUI_TB_PLAIN_BACKGROUND
+    def __init__(self, parent) -> None:
+        style: int = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
                             agwStyle=style)
@@ -1869,7 +1869,7 @@ class SliceToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
-        self.enable_items = [const.SLICE_STATE_SCROLL,
+        self.enable_items: list[int] = [const.SLICE_STATE_SCROLL,
                              const.SLICE_STATE_CROSS,]
         self.__init_items()
         self.__bind_events()
@@ -1878,11 +1878,11 @@ class SliceToolBar(AuiToolBar):
         self.Realize()
         self.SetStateProjectClose()
 
-    def __init_items(self):
+    def __init_items(self) -> None:
         """
         Add tools into toolbar.
         """
-        d = inv_paths.ICON_DIR
+        d: Path = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             path = os.path.join(d, "slice_original.png")
             BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
@@ -1890,7 +1890,7 @@ class SliceToolBar(AuiToolBar):
             path = os.path.join(d,"cross_original.png")
             BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
         else:
-            path = os.path.join(d, "slice.png")
+            path: str = os.path.join(d, "slice.png")
             BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d,"cross.png")
@@ -1908,7 +1908,7 @@ class SliceToolBar(AuiToolBar):
                           toggle=True,
                           short_help_string=_("Slices' cross intersection"))
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -1918,13 +1918,13 @@ class SliceToolBar(AuiToolBar):
         sub(self.OnToggle, 'Toggle Cross')
         sub(self.ToggleItem, 'Toggle toolbar item')
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         """
         Bind normal events from wx (except pubsub related).
         """
         self.Bind(wx.EVT_TOOL, self.OnToggle)
 
-    def _EnableState(self, state):
+    def _EnableState(self, state) -> None:
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
@@ -1936,7 +1936,7 @@ class SliceToolBar(AuiToolBar):
             self._UntoggleAllItems()
         self.Refresh()
 
-    def _UntoggleAllItems(self):
+    def _UntoggleAllItems(self) -> None:
         """
         Untoggle all items on toolbar.
         """
@@ -1949,7 +1949,7 @@ class SliceToolBar(AuiToolBar):
                     Publisher.sendMessage(msg, visibility=0)
         self.Refresh()
 
-    def OnToggle(self, evt=None, id=None):
+    def OnToggle(self, evt=None, id=None) -> None:
         """
         Update status of other items on toolbar (only one item
         should be toggle each time).
@@ -1980,12 +1980,12 @@ class SliceToolBar(AuiToolBar):
         ##print ">>>", self.sst.IsToggled()
         #print ">>>", self.sst.GetState()
 
-    def ToggleItem(self, _id, value):
+    def ToggleItem(self, _id, value) -> None:
         if _id in self.enable_items:
             self.ToggleTool(_id, value)
             self.Refresh()
 
-    def SetStateProjectClose(self):
+    def SetStateProjectClose(self) -> None:
         """
         Disable menu items (e.g. cross) when project is closed.
         """
@@ -1993,7 +1993,7 @@ class SliceToolBar(AuiToolBar):
             self.EnableTool(tool, False)
         self.Refresh()
 
-    def SetStateProjectOpen(self):
+    def SetStateProjectOpen(self) -> None:
         """
         Enable menu items (e.g. cross) when project is opened.
         """
@@ -2010,8 +2010,8 @@ class LayoutToolBar(AuiToolBar):
     Toolbar related to general layout/ visualization configuration
     e.g: show/hide task panel and show/hide text on viewers.
     """
-    def __init__(self, parent):
-        style = AUI_TB_PLAIN_BACKGROUND
+    def __init__(self, parent) -> None:
+        style: int = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
                             agwStyle=style)
@@ -2030,7 +2030,7 @@ class LayoutToolBar(AuiToolBar):
         self.Realize()
         self.SetStateProjectClose()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -2039,17 +2039,17 @@ class LayoutToolBar(AuiToolBar):
         sub(self._SetLayoutWithTask, "Set layout button data only")
         sub(self._SetLayoutWithoutTask, "Set layout button full")
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         """
         Bind normal events from wx (except pubsub related).
         """
         self.Bind(wx.EVT_TOOL, self.OnToggle)
 
-    def __init_items(self):
+    def __init_items(self) -> None:
         """
         Add tools into toolbar.
         """
-        d = inv_paths.ICON_DIR
+        d: Path = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             # Bitmaps for show/hide task panel item
             p = os.path.join(d, "layout_data_only_original.png")
@@ -2067,7 +2067,7 @@ class LayoutToolBar(AuiToolBar):
 
         else:
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only.png")
+            p: str = os.path.join(d, "layout_data_only.png")
             self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
             p = os.path.join(d, "layout_full.png")
@@ -2093,7 +2093,7 @@ class LayoutToolBar(AuiToolBar):
                           wx.ITEM_NORMAL,
                           short_help_string= _("Hide text"))
 
-    def _EnableState(self, state):
+    def _EnableState(self, state) -> None:
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
@@ -2104,19 +2104,19 @@ class LayoutToolBar(AuiToolBar):
             self.SetStateProjectClose()
         self.Refresh()
 
-    def _SetLayoutWithoutTask(self):
+    def _SetLayoutWithoutTask(self) -> None:
         """
         Set item bitmap to task panel hiden.
         """
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
 
-    def _SetLayoutWithTask(self):
+    def _SetLayoutWithTask(self) -> None:
         """
         Set item bitmap to task panel shown.
         """
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
 
-    def OnToggle(self, event):
+    def OnToggle(self, event) -> None:
         """
         Update status of toolbar item (bitmap and help)
         """
@@ -2131,7 +2131,7 @@ class LayoutToolBar(AuiToolBar):
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def SetStateProjectClose(self):
+    def SetStateProjectClose(self) -> None:
         """
         Disable menu items (e.g. text) when project is closed.
         """
@@ -2140,7 +2140,7 @@ class LayoutToolBar(AuiToolBar):
         for tool in self.enable_items:
             self.EnableTool(tool, False)
 
-    def SetStateProjectOpen(self):
+    def SetStateProjectOpen(self) -> None:
         """
         Disable menu items (e.g. text) when project is closed.
         """
@@ -2149,7 +2149,7 @@ class LayoutToolBar(AuiToolBar):
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
-    def ToggleLayout(self):
+    def ToggleLayout(self) -> None:
         """
         Based on previous layout item state, toggle it.
         """
@@ -2159,13 +2159,13 @@ class LayoutToolBar(AuiToolBar):
             self.SetToolShortHelp(ID_LAYOUT,_("Hide task panel"))
             self.ontool_layout = False
         else:
-            self.bitmap = self.BMP_WITH_MENU
+            self.bitmap: Bitmap = self.BMP_WITH_MENU
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
             Publisher.sendMessage('Hide task panel')
             self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
             self.ontool_layout = True
 
-    def ToggleText(self):
+    def ToggleText(self) -> None:
         """
         Based on previous text item state, toggle it.
         """
@@ -2188,8 +2188,8 @@ class HistoryToolBar(AuiToolBar):
     Toolbar related to general layout/ visualization configuration
     e.g: show/hide task panel and show/hide text on viewers.
     """
-    def __init__(self, parent):
-        style = AUI_TB_PLAIN_BACKGROUND
+    def __init__(self, parent) -> None:
+        style: int = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
                             agwStyle=style)
@@ -2208,7 +2208,7 @@ class HistoryToolBar(AuiToolBar):
         self.Realize()
         #self.SetStateProjectClose()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind events related to pubsub.
         """
@@ -2219,7 +2219,7 @@ class HistoryToolBar(AuiToolBar):
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         """
         Bind normal events from wx (except pubsub related).
         """
@@ -2227,11 +2227,11 @@ class HistoryToolBar(AuiToolBar):
         self.Bind(wx.EVT_TOOL, self.OnUndo, id=wx.ID_UNDO)
         self.Bind(wx.EVT_TOOL, self.OnRedo, id=wx.ID_REDO)
 
-    def __init_items(self):
+    def __init_items(self) -> None:
         """
         Add tools into toolbar.
         """
-        d = inv_paths.ICON_DIR
+        d: Path = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
             # Bitmaps for show/hide task panel item
             p = os.path.join(d, "undo_original.png")
@@ -2242,7 +2242,7 @@ class HistoryToolBar(AuiToolBar):
 
         else:
             # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "undo_small.png")
+            p: str = os.path.join(d, "undo_small.png")
             self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
             p = os.path.join(d, "redo_small.png")
@@ -2265,7 +2265,7 @@ class HistoryToolBar(AuiToolBar):
         self.EnableTool(wx.ID_UNDO, False)
         self.EnableTool(wx.ID_REDO, False)
 
-    def _EnableState(self, state):
+    def _EnableState(self, state) -> None:
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
@@ -2276,25 +2276,25 @@ class HistoryToolBar(AuiToolBar):
             self.SetStateProjectClose()
         self.Refresh()
 
-    def _SetLayoutWithoutTask(self):
+    def _SetLayoutWithoutTask(self) -> None:
         """
         Set item bitmap to task panel hiden.
         """
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
 
-    def _SetLayoutWithTask(self):
+    def _SetLayoutWithTask(self) -> None:
         """
         Set item bitmap to task panel shown.
         """
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
 
-    def OnUndo(self, event):
+    def OnUndo(self, event) -> None:
         Publisher.sendMessage('Undo edition')
 
-    def OnRedo(self, event):
+    def OnRedo(self, event) -> None:
         Publisher.sendMessage('Redo edition')
 
-    def OnToggle(self, event):
+    def OnToggle(self, event) -> None:
         """
         Update status of toolbar item (bitmap and help)
         """
@@ -2309,7 +2309,7 @@ class HistoryToolBar(AuiToolBar):
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def SetStateProjectClose(self):
+    def SetStateProjectClose(self) -> None:
         """
         Disable menu items (e.g. text) when project is closed.
         """
@@ -2318,7 +2318,7 @@ class HistoryToolBar(AuiToolBar):
         for tool in self.enable_items:
             self.EnableTool(tool, False)
 
-    def SetStateProjectOpen(self):
+    def SetStateProjectOpen(self) -> None:
         """
         Disable menu items (e.g. text) when project is closed.
         """
@@ -2327,7 +2327,7 @@ class HistoryToolBar(AuiToolBar):
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
-    def ToggleLayout(self):
+    def ToggleLayout(self) -> None:
         """
         Based on previous layout item state, toggle it.
         """
@@ -2343,7 +2343,7 @@ class HistoryToolBar(AuiToolBar):
             self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
             self.ontool_layout = True
 
-    def ToggleText(self):
+    def ToggleText(self) -> None:
         """
         Based on previous text item state, toggle it.
         """
@@ -2360,14 +2360,14 @@ class HistoryToolBar(AuiToolBar):
             Publisher.sendMessage('Update AUI')
             self.ontool_text = True
 
-    def OnEnableUndo(self, value):
+    def OnEnableUndo(self, value) -> None:
         if value:
             self.EnableTool(wx.ID_UNDO, True)
         else:
             self.EnableTool(wx.ID_UNDO, False)
         self.Refresh()
 
-    def OnEnableRedo(self, value):
+    def OnEnableRedo(self, value) -> None:
         if value:
             self.EnableTool(wx.ID_REDO, True)
         else:

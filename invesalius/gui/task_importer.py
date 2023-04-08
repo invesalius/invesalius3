@@ -41,7 +41,7 @@ BTN_IMPORT_NIFTI = wx.NewId()
 
 
 class TaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self)
@@ -56,7 +56,7 @@ class TaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 class InnerTaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         backgroud_colour = wx.Colour(255,255,255)
@@ -118,13 +118,13 @@ class InnerTaskPanel(wx.Panel):
         BMP_NET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
         BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open.png")), wx.BITMAP_TYPE_PNG)
 
-        bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
+        bmp_list: list[Bitmap] = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
         #for bmp in bmp_list:
             #bmp.SetWidth(25)
             #bmp.SetHeight(25)
 
         # Buttons related to hyperlinks
-        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_style: int = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
         #button_import_pacs = pbtn.PlateButton(self, BTN_IMPORT_PACS, "", BMP_NET,
         #                                      style=button_style)
@@ -142,8 +142,8 @@ class InnerTaskPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Tags and grid sizer for fixed items
-        flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
-        flag_button = wx.EXPAND | wx.GROW
+        flag_link: int = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
+        flag_button: int = wx.EXPAND | wx.GROW
 
         #fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
@@ -165,7 +165,7 @@ class InnerTaskPanel(wx.Panel):
         self.SetSizer(main_sizer)
         self.Update()
         self.SetAutoLayout(1)
-        self.sizer = main_sizer
+        self.sizer: BoxSizer = main_sizer
 
         # Test load and unload specific projects' links
         self.TestLoadProjects2()
@@ -181,7 +181,7 @@ class InnerTaskPanel(wx.Panel):
     #        path = tuple[0]
     #        self.LoadProject(filename, path)
 
-    def TestLoadProjects2(self):
+    def TestLoadProjects2(self) -> None:
         import invesalius.session as ses
 
         session = ses.Session()
@@ -191,12 +191,12 @@ class InnerTaskPanel(wx.Panel):
             self.LoadProject(filename, path)
 
 
-    def TestLoadProjects(self):
+    def TestLoadProjects(self) -> None:
         self.LoadProject("test1.inv3", "/Volumes/file/inv3")
         self.LoadProject("test2.inv3", "/Volumes/file/inv3")
         self.LoadProject("test3.inv3", "/Volumes/file/inv3")
 
-    def LoadProject(self, proj_name="Unnamed", proj_dir=""):
+    def LoadProject(self, proj_name="Unnamed", proj_dir="") -> None:
         """
         Load into user interface name of invesalius.project into import task panel.
         Can be called 3 times in sequence.
@@ -205,13 +205,13 @@ class InnerTaskPanel(wx.Panel):
         # TODO: What todo when it is called more than 3 times?
         # TODO: Load from config file last 3 recent projects
 
-        proj_path = os.path.join(proj_dir, proj_name)
+        proj_path: str = os.path.join(proj_dir, proj_name)
 
         if (self.proj_count < 3):
             self.proj_count += 1
 
             # Create name to be plot on GUI
-            label = "     "+str(self.proj_count)+". "+proj_name
+            label: str = "     "+str(self.proj_count)+". "+proj_name
 
             # Create corresponding hyperlink
             proj_link = hl.HyperLinkCtrl(self, -1, label)
@@ -231,51 +231,51 @@ class InnerTaskPanel(wx.Panel):
             self.float_hyper_list.append(proj_link)
 
 
-    def OnLinkImport(self, event):
+    def OnLinkImport(self, event) -> None:
         self.ImportDicom()
         event.Skip()
 
-    def OnLinkImportNifti(self, event):
+    def OnLinkImportNifti(self, event) -> None:
         self.ImportNifti()
         event.Skip()
 
-    def OnLinkImportPACS(self, event):
+    def OnLinkImportPACS(self, event) -> None:
         self.ImportPACS()
         event.Skip()
 
-    def OnLinkOpenProject(self, event):
+    def OnLinkOpenProject(self, event) -> None:
         self.OpenProject()
         event.Skip()
 
 
-    def ImportPACS(self):
+    def ImportPACS(self) -> None:
         print("TODO: Send Signal - Import DICOM files from PACS")
 
 
 #######
-    def ImportDicom(self):
+    def ImportDicom(self) -> None:
         Publisher.sendMessage('Show import directory dialog')
 
-    def ImportNifti(self):
+    def ImportNifti(self) -> None:
         Publisher.sendMessage('Show import other files dialog', id_type=const.ID_NIFTI_IMPORT)
 
-    def OpenProject(self, path=None):
+    def OpenProject(self, path=None) -> None:
         if path:
             Publisher.sendMessage('Open recent project', filepath=path)
         else:
             Publisher.sendMessage('Show open project dialog')
 
-    def SaveAsProject(self):
+    def SaveAsProject(self) -> None:
         Publisher.sendMessage('Show save dialog', save_as=True)
 
-    def SaveProject(self):
+    def SaveProject(self) -> None:
         Publisher.sendMessage('Show save dialog', save_as=False)
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         Publisher.sendMessage('Close Project')
 #######
 
-    def OnButton(self, evt):
+    def OnButton(self, evt) -> None:
         id = evt.GetId()
 
         if id == BTN_IMPORT_LOCAL:
@@ -289,7 +289,7 @@ class InnerTaskPanel(wx.Panel):
 
 
 
-    def UnloadProjects(self):
+    def UnloadProjects(self) -> None:
         """
         Unload all projects from interface into import task panel.
         This will be called when the current project is closed.

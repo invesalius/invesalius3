@@ -46,24 +46,24 @@ myEVT_SELECT_SERIE_TEXT = wx.NewEventType()
 EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
 
 class SelectEvent(wx.PyCommandEvent):
-    def __init__(self , evtType, id):
+    def __init__(self , evtType, id) -> None:
         super(SelectEvent, self).__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
 
-    def SetSelectedID(self, id):
+    def SetSelectedID(self, id) -> None:
         self.SelectedID = id
 
     def GetItemData(self):
         return self.data
 
-    def SetItemData(self, data):
+    def SetItemData(self, data) -> None:
         self.data = data
 
 
 class Panel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
                           #size=wx.Size(280, 656))
 
@@ -80,7 +80,7 @@ class Panel(wx.Panel):
 
 # Inner fold panel
 class InnerPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
                           #size=wx.Size(680, 656))
 
@@ -91,10 +91,10 @@ class InnerPanel(wx.Panel):
         self._bind_events()
         self._bind_pubsubevt()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetOrientation(wx.VERTICAL)
-        self.splitter = splitter
+        self.splitter: MultiSplitterWindow = splitter
 
         panel = wx.Panel(self)
         self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
@@ -133,16 +133,16 @@ class InnerPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-    def _bind_pubsubevt(self):
+    def _bind_pubsubevt(self) -> None:
         #Publisher.subscribe(self.ShowDicomPreview, "Load import panel")
         #Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")     
         pass
     
-    def GetSelectedImages(self, pubsub_evt):
+    def GetSelectedImages(self, pubsub_evt) -> None:
         self.first_image_selection = pubsub_evt.data[0]
         self.last_image_selection = pubsub_evt.data[1]
         
-    def _bind_events(self):
+    def _bind_events(self) -> None:
         self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
@@ -150,12 +150,12 @@ class InnerPanel(wx.Panel):
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
         self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
 
-    def ShowDicomPreview(self, pubsub_evt):
+    def ShowDicomPreview(self, pubsub_evt) -> None:
         dicom_groups = pubsub_evt.data
         self.patients.extend(dicom_groups)
         self.text_panel.Populate(dicom_groups)
 
-    def OnSelectSerie(self, evt):
+    def OnSelectSerie(self, evt) -> None:
         patient_id, serie_number = evt.GetSelectID()
         self.text_panel.SelectSerie(evt.GetSelectID())
         for patient in self.patients:
@@ -164,27 +164,27 @@ class InnerPanel(wx.Panel):
                     if serie_number == group.GetDicomSample().acquisition.serie_number:
                         self.image_panel.SetSerie(group)
 
-    def OnSelectSlice(self, evt):
+    def OnSelectSlice(self, evt) -> None:
         pass
 
-    def OnSelectPatient(self, evt):
+    def OnSelectPatient(self, evt) -> None:
         pass
 
-    def OnDblClickTextPanel(self, evt):
+    def OnDblClickTextPanel(self, evt) -> None:
         group = evt.GetItemData()
         self.LoadDicom(group)
 
-    def OnClickOk(self, evt):
+    def OnClickOk(self, evt) -> None:
         group = self.text_panel.GetSelection()
 
         if group:
             self.LoadDicom(group)
 
-    def OnClickCancel(self, evt):
+    def OnClickCancel(self, evt) -> None:
         #Publisher.sendMessage("Cancel DICOM load")
         pass
 
-    def LoadDicom(self, group):
+    def LoadDicom(self, group) -> None:
         interval = self.combo_interval.GetSelection()
 
         if not isinstance(group, dcm.DicomGroup):
@@ -206,7 +206,7 @@ class InnerPanel(wx.Panel):
             dlg.MissingFilesForReconstruction()
 
 class TextPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, -1)
 
         self._selected_by_user = True
@@ -217,15 +217,15 @@ class TextPanel(wx.Panel):
         self.__bind_events_wx()
         self.__bind_pubsub_evt()
 
-    def __bind_pubsub_evt(self):
+    def __bind_pubsub_evt(self) -> None:
         #Publisher.subscribe(self.SelectSeries, 'Select series in import panel')
         Publisher.subscribe(self.Populate, 'Populate tree')
         Publisher.subscribe(self.SetHostsList, 'Set FindPanel hosts list')
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def __init_gui(self):
+    def __init_gui(self) -> None:
         tree = gizmos.TreeListCtrl(self, -1, style =
                                    wx.TR_DEFAULT_STYLE
                                    | wx.TR_HIDE_ROOT
@@ -264,12 +264,12 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(11, 160) # Referring physician
 
         self.root = tree.AddRoot(_("InVesalius Database"))
-        self.tree = tree
+        self.tree: TreeListCtrl = tree
 
-    def SelectSeries(self, group_index):
+    def SelectSeries(self, group_index) -> None:
         pass
 
-    def Populate(self, pubsub_evt):
+    def Populate(self, pubsub_evt) -> None:
         tree = self.tree
         #print ">>>>>>>>>>>>>>>>>>>>>>>>>>", dir(tree.GetRootItem())
         #print ">>>>>>>>>>>>",dir(self.tree)
@@ -401,14 +401,14 @@ class TextPanel(wx.Panel):
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
         tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)"""
 
-    def SetHostsList(self, evt_pub):
+    def SetHostsList(self, evt_pub) -> None:
         self.hosts = evt_pub.data
 
     def GetHostList(self):
         Publisher.sendMessage('Get NodesPanel host list')
         return self.hosts 
 
-    def OnSelChanged(self, evt):
+    def OnSelChanged(self, evt) -> None:
         item = self.tree.GetSelection()
         if self._selected_by_user:
             group = self.tree.GetItemPyData(item)
@@ -430,7 +430,7 @@ class TextPanel(wx.Panel):
             self.tree.Expand(parent_id)
         evt.Skip()
 
-    def OnActivate(self, evt):
+    def OnActivate(self, evt) -> None:
         
 
         item = evt.GetItem()
@@ -460,10 +460,10 @@ class TextPanel(wx.Panel):
         #self.GetEventHandler().ProcessEvent(my_evt)
 
 
-    def OnSize(self, evt):
+    def OnSize(self, evt) -> None:
         self.tree.SetSize(self.GetSize())
 
-    def SelectSerie(self, serie):
+    def SelectSerie(self, serie) -> None:
         self._selected_by_user = False
         item = self.idserie_treeitem[serie]
         self.tree.SelectItem(item)
@@ -487,7 +487,7 @@ class TextPanel(wx.Panel):
 
 
 class FindPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, -1)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -523,19 +523,19 @@ class FindPanel(wx.Panel):
         self.__bind_evt()
         self._bind_gui_evt()
 
-    def __bind_evt(self):
+    def __bind_evt(self) -> None:
         Publisher.subscribe(self.SetHostsList, 'Set FindPanel hosts list')
         #Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
         #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
         #Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
         pass
 
-    def _bind_gui_evt(self):
+    def _bind_gui_evt(self) -> None:
         #self.serie_preview.Bind(dpp.EVT_CLICK_SERIE, self.OnSelectSerie)
         #self.dicom_preview.Bind(dpp.EVT_CLICK_SLICE, self.OnSelectSlice)
         self.Bind(wx.EVT_BUTTON, self.OnButtonFind, self.btn_find)
 
-    def OnButtonFind(self, evt):
+    def OnButtonFind(self, evt) -> None:
         hosts = self.GetHostList()
 
         for key in hosts.keys():
@@ -550,7 +550,7 @@ class FindPanel(wx.Panel):
                 Publisher.sendMessage('Populate tree', dn.RunCFind())
 
 
-    def SetHostsList(self, evt_pub):
+    def SetHostsList(self, evt_pub) -> None:
         self.hosts = evt_pub.data
 
     def GetHostList(self):
@@ -558,15 +558,15 @@ class FindPanel(wx.Panel):
         return self.hosts 
 
 class HostFindPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, -1)
         self._init_ui()
         self._bind_events()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetOrientation(wx.HORIZONTAL)
-        self.splitter = splitter
+        self.splitter: MultiSplitterWindow = splitter
 
         # TODO: Rever isso
         #  splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -588,51 +588,51 @@ class HostFindPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-    def _bind_events(self):
+    def _bind_events(self) -> None:
         self.text_panel.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.text_panel.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
 
-    def OnSelectSerie(self, evt):
+    def OnSelectSerie(self, evt) -> None:
         evt.Skip()
 
-    def OnSelectSlice(self, evt):
+    def OnSelectSlice(self, evt) -> None:
         self.image_panel.dicom_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
 
-    def SetSerie(self, serie):
+    def SetSerie(self, serie) -> None:
         self.image_panel.dicom_preview.SetDicomGroup(serie)
 
 
 class NodesTree(wx.ListCtrl, CheckListCtrlMixin,listmix.ListCtrlAutoWidthMixin,
                    listmix.TextEditMixin):
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         self.item = 0
-        self.col_locs = [0]
+        self.col_locs: list[int] = [0]
         self.editorBgColour = wx.Colour(255, 255, 255, 255)
         wx.ListCtrl.__init__(self, parent, -1, style=wx.LC_REPORT |wx.LC_HRULES)
         listmix.CheckListCtrlMixin.__init__(self)
         listmix.TextEditMixin.__init__(self)
     
-    def OnCheckItem(self, index, flag):
+    def OnCheckItem(self, index, flag) -> None:
         Publisher.sendMessage("Check item dict", [index, flag])
 
-    def OpenEditor(self, col, row):
+    def OpenEditor(self, col, row) -> None:
 
         if col >= 1 and col < 4:
             listmix.TextEditMixin.OpenEditor(self, col, row)
         else:
             listmix.CheckListCtrlMixin.ToggleItem(self, self.item)
 
-    def SetSelected(self, item):
+    def SetSelected(self, item) -> None:
         self.item = item
 
-    def SetDeselected(self, item):
+    def SetDeselected(self, item) -> None:
         self.item = item
 
 
 class NodesPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
 
         self.selected_item = None
         self.hosts = {}
@@ -642,7 +642,7 @@ class NodesPanel(wx.Panel):
         self.__bind_evt()
 
 
-    def __bind_evt(self):
+    def __bind_evt(self) -> None:
 
         self.Bind(wx.EVT_COMMAND_RIGHT_CLICK, self.RightButton, self.tree_node)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.tree_node)
@@ -658,7 +658,7 @@ class NodesPanel(wx.Panel):
         #Publisher.subscribe(self.UnCheckItemDict, "Uncheck item dict")
 
 
-    def __init_gui(self):
+    def __init_gui(self) -> None:
         self.tree_node = NodesTree(self)
 
         self.tree_node.InsertColumn(0, _("Active"))
@@ -714,13 +714,13 @@ class NodesPanel(wx.Panel):
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
-        self.sizer = sizer
+        self.sizer: BoxSizer = sizer
 
-    def GetHostsList(self, pub_evt):
+    def GetHostsList(self, pub_evt) -> None:
         Publisher.sendMessage('Set FindPanel hosts list', self.hosts)
 
 
-    def EndEdition(self, evt):
+    def EndEdition(self, evt) -> None:
         index = evt.m_itemIndex
         item = evt.m_item
         col = item.GetColumn()
@@ -730,7 +730,7 @@ class NodesPanel(wx.Panel):
         values[col] = str(txt)
         self.hosts[index] = values
 
-    def OnButtonAdd(self, evt):
+    def OnButtonAdd(self, evt) -> None:
         #adiciona vazio a coluna de check
         index = self.tree_node.InsertItem(sys.maxsize, "")
 
@@ -740,10 +740,10 @@ class NodesPanel(wx.Panel):
         self.tree_node.SetItem(index, 3, "")
         self.tree_node.CheckItem(index)
 
-    def OnLeftDown(self, evt):
+    def OnLeftDown(self, evt) -> None:
         evt.Skip()
 
-    def OnButtonRemove(self, evt):
+    def OnButtonRemove(self, evt) -> None:
         if self.selected_item != None and self.selected_item != 0:
             self.tree_node.DeleteItem(self.selected_item)
             self.hosts.pop(self.selected_item)
@@ -760,7 +760,7 @@ class NodesPanel(wx.Panel):
 
             
 
-    def OnButtonCheck(self, evt):
+    def OnButtonCheck(self, evt) -> None:
         for key in self.hosts.keys():
             if key != 0:
                 dn = dcm_net.DicomNet()
@@ -774,18 +774,18 @@ class NodesPanel(wx.Panel):
                 else:
                     self.tree_node.SetItem(key, 4, _("error"))
 
-    def RightButton(self,evt):
+    def RightButton(self,evt) -> None:
         event.Skip()
 
-    def OnItemSelected(self, evt):
+    def OnItemSelected(self, evt) -> None:
         self.selected_item = evt.m_itemIndex
         self.tree_node.SetSelected(evt.m_itemIndex)
         
-    def OnItemDeselected(self, evt):
+    def OnItemDeselected(self, evt) -> None:
         if evt.m_itemIndex != 0:
             self.tree_node.SetDeselected(evt.m_itemIndex)
 
-    def CheckItemDict(self, evt_pub):
+    def CheckItemDict(self, evt_pub) -> None:
         index, flag = evt_pub.data
         if index != 0:
             self.hosts[index][0] = flag

@@ -63,7 +63,7 @@ INDEX_TO_TYPE_3D = {0: const.FILETYPE_IV,
                     6: const.FILETYPE_VTP,
                     7: const.FILETYPE_OBJ,
                     8: const.FILETYPE_X3D}
-INDEX_TO_EXTENSION = {0: "iv",
+INDEX_TO_EXTENSION: dict[int, str] = {0: "iv",
                       1: "ply",
                       2: "rib",
                       3: "stl",
@@ -90,7 +90,7 @@ WILDCARD_SAVE_MASK = "VTK ImageData (*.vti)|*.vti"
 
 
 class TaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self)
@@ -106,7 +106,7 @@ class TaskPanel(wx.Panel):
 
 class InnerTaskPanel(wx.Panel):
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         backgroud_colour = wx.Colour(255,255,255)
         self.SetBackgroundColour(backgroud_colour)
@@ -198,13 +198,13 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Buttons related to hyperlinks
-        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_style: int = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
         button_picture = pbtn.PlateButton(self, BTN_PICTURE, "",
                                                BMP_TAKE_PICTURE,
                                                style=button_style)
         button_picture.SetBackgroundColour(self.GetBackgroundColour())
-        self.button_picture = button_picture
+        self.button_picture: PlateButton = button_picture
 
         button_surface = pbtn.PlateButton(self, BTN_SURFACE, "",
                                                 BMP_EXPORT_SURFACE,
@@ -223,8 +223,8 @@ class InnerTaskPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Tags and grid sizer for fixed items
-        flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
-        flag_button = wx.EXPAND | wx.GROW
+        flag_link: int = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
+        flag_button: int = wx.EXPAND | wx.GROW
 
         fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
@@ -246,10 +246,10 @@ class InnerTaskPanel(wx.Panel):
         # Update main sizer and panel layout
         self.SetSizer(main_sizer)
         self.Fit()
-        self.sizer = main_sizer
+        self.sizer: BoxSizer = main_sizer
         self.__init_menu()
 
-    def __init_menu(self):
+    def __init_menu(self) -> None:
 
 
         menu = wx.Menu()
@@ -265,7 +265,7 @@ class InnerTaskPanel(wx.Panel):
         self.menu_picture = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuPicture)
 
-    def OnMenuPicture(self, evt):
+    def OnMenuPicture(self, evt) -> None:
         id = evt.GetId()
         value = dlg.ExportPicture(self.id_to_name[id])
         if value:
@@ -275,14 +275,14 @@ class InnerTaskPanel(wx.Panel):
 
 
 
-    def OnLinkExportPicture(self, evt=None):
+    def OnLinkExportPicture(self, evt=None) -> None:
         self.button_picture.PopupMenu(self.menu_picture)
 
 
-    def OnLinkExportMask(self, evt=None):
+    def OnLinkExportMask(self, evt=None) -> None:
         project = proj.Project()
         if sys.platform == 'win32':
-            project_name = project.name
+            project_name: str | Any = project.name
         else:
             project_name = project.name+".vti"
 
@@ -307,7 +307,7 @@ class InnerTaskPanel(wx.Panel):
                                   filetype=filetype)
 
 
-    def OnLinkExportSurface(self, evt=None):
+    def OnLinkExportSurface(self, evt=None) -> None:
         "OnLinkExportSurface"
         project = proj.Project()
         n_surface = 0
@@ -318,7 +318,7 @@ class InnerTaskPanel(wx.Panel):
 
         if n_surface:
             if sys.platform == 'win32':
-                project_name = pathlib.Path(project.name).stem
+                project_name: str = pathlib.Path(project.name).stem
             else:
                 project_name = pathlib.Path(project.name).stem + ".stl"
 
@@ -337,7 +337,7 @@ class InnerTaskPanel(wx.Panel):
                 filetype_index = dlg.GetFilterIndex()
                 filetype = INDEX_TO_TYPE_3D[filetype_index]
                 filename = dlg.GetPath()
-                extension = INDEX_TO_EXTENSION[filetype_index]
+                extension: str = INDEX_TO_EXTENSION[filetype_index]
                 if sys.platform != 'win32':
                     if filename.split(".")[-1] != extension:
                         filename = filename + "."+ extension
@@ -359,13 +359,13 @@ class InnerTaskPanel(wx.Panel):
             finally:
                 dlg.Destroy()
 
-    def OnLinkRequestRP(self, evt=None):
+    def OnLinkRequestRP(self, evt=None) -> None:
         pass
 
-    def OnLinkReport(self, evt=None):
+    def OnLinkReport(self, evt=None) -> None:
         pass
 
-    def OnButton(self, evt):
+    def OnButton(self, evt) -> None:
         id = evt.GetId()
         if id == BTN_PICTURE:
             self.OnLinkExportPicture()

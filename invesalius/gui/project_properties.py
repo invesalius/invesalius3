@@ -31,13 +31,13 @@ ORIENTATION_LABEL = {
 
 
 class ProjectProperties(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__(id=-1, name='', parent=parent,
               style=wx.DEFAULT_FRAME_STYLE, title=_('Project Properties'))
         self.Center(wx.BOTH)
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         project = prj.Project()
         self.name_txt = wx.TextCtrl(self, -1, value=project.name)
         self.name_txt.SetMinSize((utils.calc_width_needed(self.name_txt, 30), -1))

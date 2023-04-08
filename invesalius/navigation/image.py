@@ -24,19 +24,19 @@ from invesalius.pubsub import pub as Publisher
 
 
 class Image():
-    def __init__(self):
-        self.image_fiducials = np.full([3, 3], np.nan)
+    def __init__(self) -> None:
+        self.image_fiducials: ndarray[Any, dtype] = np.full([3, 3], np.nan)
 
         self.LoadState()
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         state = {
             'image_fiducials': self.image_fiducials.tolist(),
         }
         session = ses.Session()
         session.SetState('image', state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState('image')
 
@@ -46,7 +46,7 @@ class Image():
         image_fiducials = np.array(state['image_fiducials'])
         self.image_fiducials = image_fiducials
 
-    def SetImageFiducial(self, fiducial_index, position):
+    def SetImageFiducial(self, fiducial_index, position) -> None:
         self.image_fiducials[fiducial_index, :] = position
         print("Image fiducial {} set to coordinates {}".format(fiducial_index, position))
 
@@ -55,15 +55,15 @@ class Image():
     def GetImageFiducials(self):
         return self.image_fiducials
 
-    def GetImageFiducialForUI(self, fiducial_index, coordinate):
+    def GetImageFiducialForUI(self, fiducial_index, coordinate) -> (Any | Literal[0]):
         value = self.image_fiducials[fiducial_index, coordinate]
         if np.isnan(value):
             value = 0
 
         return value
 
-    def AreImageFiducialsSet(self):
+    def AreImageFiducialsSet(self) -> bool:
         return not np.isnan(self.image_fiducials).any()
 
-    def IsImageFiducialSet(self, fiducial_index):
+    def IsImageFiducialSet(self, fiducial_index) -> bool:
         return not np.isnan(self.image_fiducials)[fiducial_index].any()

@@ -27,14 +27,14 @@ from invesalius.utils import Singleton
 
 
 class IterativeClosestPoint(metaclass=Singleton):
-    def __init__(self):
+    def __init__(self) -> None:
         self.use_icp = False
         self.m_icp = None
         self.icp_fre = None
 
         self.LoadState()
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         m_icp = self.m_icp.tolist() if self.m_icp is not None else None
         state = {
             'use_icp': self.use_icp,
@@ -45,7 +45,7 @@ class IterativeClosestPoint(metaclass=Singleton):
         session = ses.Session()
         session.SetState('icp', state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState('icp')
 
@@ -56,7 +56,7 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.m_icp = np.array(state['m_icp'])
         self.icp_fre = state['icp_fre']
 
-    def RegisterICP(self, navigation, tracker):
+    def RegisterICP(self, navigation, tracker) -> None:
 
         # If ICP is already in use, return.
         if self.use_icp:
@@ -95,18 +95,18 @@ class IterativeClosestPoint(metaclass=Singleton):
 
         # Compute FRE (fiducial registration error).
         ref_mode_id = navigation.GetReferenceMode()
-        self.icp_fre = db.calculate_fre(tracker.tracker_fiducials_raw, navigation.all_fiducials,
+        self.icp_fre: float = db.calculate_fre(tracker.tracker_fiducials_raw, navigation.all_fiducials,
                                         ref_mode_id, navigation.m_change, self.m_icp)
 
         self.SetICP(navigation, self.use_icp)
 
-    def SetICP(self, navigation, use_icp):
+    def SetICP(self, navigation, use_icp) -> None:
         self.use_icp = use_icp
         navigation.icp_queue.put_nowait([self.use_icp, self.m_icp])
 
         self.SaveState()
 
-    def ResetICP(self):
+    def ResetICP(self) -> None:
         self.use_icp = False
         self.m_icp = None
         self.icp_fre = None

@@ -14,7 +14,7 @@ class Preferences(wx.Dialog):
         id_=-1,
         title=_("Preferences"),
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-    ):
+    ) -> None:
         super().__init__(parent, id_, title, style=style)
 
         self.book = wx.Notebook(self, -1)
@@ -42,10 +42,10 @@ class Preferences(wx.Dialog):
         self.Layout()
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.LoadPreferences, "Load Preferences")
 
-    def GetPreferences(self):
+    def GetPreferences(self)-> dict:
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
@@ -56,7 +56,7 @@ class Preferences(wx.Dialog):
 
         return values
 
-    def LoadPreferences(self):
+    def LoadPreferences(self) -> None:
         session = ses.Session()
 
         rendering = session.GetConfig('rendering')
@@ -77,7 +77,7 @@ class Preferences(wx.Dialog):
 
 
 class Viewer3D(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
 
         wx.Panel.__init__(self, parent)
 
@@ -115,7 +115,7 @@ class Viewer3D(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
-    def GetSelection(self):
+    def GetSelection(self) -> dict[int, Any]:
 
         options = {
             const.RENDERING: self.rb_rendering.GetSelection(),
@@ -124,7 +124,7 @@ class Viewer3D(wx.Panel):
 
         return options
 
-    def LoadSelection(self, values):
+    def LoadSelection(self, values) -> None:
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
 
@@ -133,7 +133,7 @@ class Viewer3D(wx.Panel):
 
 
 class Viewer2D(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
 
         wx.Panel.__init__(self, parent)
 
@@ -155,19 +155,19 @@ class Viewer2D(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
-    def GetSelection(self):
+    def GetSelection(self)-> dict[int, Any]:
 
         options = {const.SLICE_INTERPOLATION: self.rb_inter.GetSelection()}
 
         return options
 
-    def LoadSelection(self, values):
+    def LoadSelection(self, values) -> None:
         value = values[const.SLICE_INTERPOLATION]
         self.rb_inter.SetSelection(int(value))
 
 
 class Language(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Language"))
@@ -187,21 +187,21 @@ class Language(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
-    def GetSelection(self):
+    def GetSelection(self)-> dict[int, Any]:
         selection = self.cmb_lang.GetSelection()
         locales = self.lg.GetLocalesKey()
         options = {const.LANGUAGE: locales[selection]}
         return options
 
-    def LoadSelection(self, values):
+    def LoadSelection(self, values) -> None:
         language = values[const.LANGUAGE]
         locales = self.lg.GetLocalesKey()
-        selection = locales.index(language)
+        selection: int = locales.index(language)
         self.cmb_lang.SetSelection(int(selection))
 
 
 class SurfaceCreation(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         self.rb_fill_border = wx.RadioBox(
             self,
@@ -216,8 +216,8 @@ class SurfaceCreation(wx.Panel):
 
         self.SetSizerAndFit(sizer)
 
-    def GetSelection(self):
+    def GetSelection(self)-> dict[int, Any]:
         return {}
 
-    def LoadSelection(self, values):
+    def LoadSelection(self, values) -> None:
         pass

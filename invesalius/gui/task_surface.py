@@ -55,7 +55,7 @@ OP_LIST = [_("Draw"), _("Erase"), _("Threshold")]
 
 
 class TaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self)
@@ -76,7 +76,7 @@ class TaskPanel(wx.Panel):
         # enable / disable Fill holes
 
 class InnerTaskPanel(scrolled.ScrolledPanel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         scrolled.ScrolledPanel.__init__(self, parent)
         default_colour = self.GetBackgroundColour()
         backgroud_colour = wx.Colour(255,255,255)
@@ -133,26 +133,26 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
         self.Update()
         #self.SetAutoLayout(1)
 
-        self.sizer = main_sizer
+        self.sizer: BoxSizer = main_sizer
 
         self.SetupScrolling()
 
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def OnSize(self, evt):
+    def OnSize(self, evt) -> None:
         self.SetupScrolling()
 
-    def OnButton(self, evt):
+    def OnButton(self, evt) -> None:
         id = evt.GetId()
         if id == BTN_NEW:
             self.OnLinkNewSurface()
 
-    def OnButtonNextTask(self, evt):
+    def OnButtonNextTask(self, evt) -> None:
         if evt:
             Publisher.sendMessage('Fold export task')
             evt.Skip()
 
-    def OnLinkNewSurface(self, evt=None):
+    def OnLinkNewSurface(self, evt=None) -> None:
         
         is_pubsub = True
 
@@ -212,7 +212,7 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
 
 
 class FoldPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent, size=(50,700))
 
         inner_panel = InnerFoldPanel(self)
@@ -226,7 +226,7 @@ class FoldPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 class InnerFoldPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -282,14 +282,14 @@ class InnerFoldPanel(wx.Panel):
         self.ResizeFPB()
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
-    def __bind_evt(self):
+    def __bind_evt(self) -> None:
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
 
-    def OnFoldPressCaption(self, evt):
+    def OnFoldPressCaption(self, evt) -> None:
         evt.Skip()
         wx.CallAfter(self.ResizeFPB)
 
-    def ResizeFPB(self):
+    def ResizeFPB(self) -> None:
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
@@ -298,7 +298,7 @@ BTN_LARGEST = wx.NewId()
 BTN_SPLIT = wx.NewId()
 BTN_SEEDS = wx.NewId()
 class SurfaceTools(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -355,8 +355,8 @@ class SurfaceTools(wx.Panel):
         bmp_seeds = img_seeds.ConvertToBitmap()
 
         # Buttons related to hyperlinks
-        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
-        button_style_plus = button_style|pbtn.PB_STYLE_TOGGLE
+        button_style: int = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_style_plus: int = button_style|pbtn.PB_STYLE_TOGGLE
 
         button_split = pbtn.PlateButton(self, BTN_SPLIT, "", bmp_split_all,
                                         style=button_style)
@@ -365,15 +365,15 @@ class SurfaceTools(wx.Panel):
         button_seeds = pbtn.PlateButton(self, BTN_SEEDS, "", bmp_seeds,
                                         style=button_style_plus)
 
-        self.button_seeds = button_seeds
+        self.button_seeds: PlateButton = button_seeds
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
         self.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButton)
 
         # Tags and grid sizer for fixed items
-        flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
-        flag_button = wx.EXPAND | wx.GROW
+        flag_link: int = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
+        flag_button: int = wx.EXPAND | wx.GROW
 
         #fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
@@ -392,20 +392,20 @@ class SurfaceTools(wx.Panel):
         # Update main sizer and panel layout
         self.SetSizerAndFit(main_sizer)
         self.Update()
-        self.sizer = main_sizer
+        self.sizer: BoxSizer = main_sizer
 
-    def OnLinkLargest(self, evt):
+    def OnLinkLargest(self, evt) -> None:
         self.SelectLargest()
 
-    def OnLinkSplit(self, evt):
+    def OnLinkSplit(self, evt) -> None:
         self.SplitSurface()
 
-    def OnLinkSeed(self, evt):
+    def OnLinkSeed(self, evt) -> None:
         self.button_seeds._SetState(not self.button_seeds.GetState())
         self.button_seeds.Refresh()
         self.SelectSeed()
 
-    def OnButton(self, evt):
+    def OnButton(self, evt) -> None:
         id = evt.GetId()
         if id == BTN_LARGEST:
             self.SelectLargest()
@@ -414,31 +414,31 @@ class SurfaceTools(wx.Panel):
         else:
             self.SelectSeed()
 
-    def OnToggleButton(self, evt):
+    def OnToggleButton(self, evt) -> None:
         id = evt.GetId()
         if id == BTN_SEEDS:
             self.button_seeds._SetState(self.button_seeds.IsPressed())
             self.button_seeds.Refresh()
             self.SelectSeed()
 
-    def SelectLargest(self):
+    def SelectLargest(self) -> None:
         Publisher.sendMessage('Create surface from largest region')
 
-    def SplitSurface(self):
+    def SplitSurface(self) -> None:
         Publisher.sendMessage('Split surface')
 
-    def SelectSeed(self):
+    def SelectSeed(self) -> None:
         if self.button_seeds.GetState() == 1:
             self.StartSeeding()
         else:
             self.EndSeeding()
 
-    def StartSeeding(self):
+    def StartSeeding(self) -> None:
         print("Start Seeding")
         Publisher.sendMessage('Enable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - start')
 
-    def EndSeeding(self):
+    def EndSeeding(self) -> None:
         print("End Seeding")
         Publisher.sendMessage('Disable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
@@ -446,7 +446,7 @@ class SurfaceTools(wx.Panel):
 
 
 class SurfaceProperties(scrolled.ScrolledPanel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         scrolled.ScrolledPanel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -465,7 +465,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.combo_surface_name = combo_surface_name
+        self.combo_surface_name: ComboBox = combo_surface_name
 
         # Mask colour
         button_colour= csel.ColourSelect(self, -1,colour=(0,0,255),size=(22, -1))
@@ -487,13 +487,13 @@ class SurfaceProperties(scrolled.ScrolledPanel):
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_transparency.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_transparency.Bind(wx.EVT_SLIDER, self.OnTransparency)
-        self.slider_transparency = slider_transparency
+        self.slider_transparency: Slider = slider_transparency
 
 
         ## MIX LINE 2 AND 3
-        flag_link = wx.EXPAND|wx.GROW|wx.RIGHT
-        flag_slider = wx.EXPAND | wx.GROW| wx.LEFT|wx.TOP
-        flag_combo = wx.EXPAND | wx.GROW| wx.LEFT
+        flag_link: int = wx.EXPAND|wx.GROW|wx.RIGHT
+        flag_slider: int = wx.EXPAND | wx.GROW| wx.LEFT|wx.TOP
+        flag_combo: int = wx.EXPAND | wx.GROW| wx.LEFT
 
         fixed_sizer = wx.BoxSizer(wx.HORIZONTAL)
         fixed_sizer.AddMany([ (text_transparency, 0, flag_link, 0),
@@ -521,10 +521,10 @@ class SurfaceProperties(scrolled.ScrolledPanel):
 
         self.__bind_events()
 
-    def OnResize(self, evt):
+    def OnResize(self, evt) -> None:
         self.SetupScrolling()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.InsertNewSurface,
                                 'Update surface info in GUI')
         Publisher.subscribe(self.ChangeSurfaceName,
@@ -533,7 +533,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
 
 
-    def OnRemoveSurfaces(self, surface_indexes):
+    def OnRemoveSurfaces(self, surface_indexes) -> None:
         s = self.combo_surface_name.GetSelection()
         ns = 0
 
@@ -544,7 +544,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
             if n not in surface_indexes:
                 new_dict.append([name, i])
                 if s == n:
-                    ns = i
+                    ns: int = i
                 i+=1
         self.surface_list = new_dict
 
@@ -553,26 +553,26 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         if self.surface_list:
             self.combo_surface_name.SetSelection(ns)
 
-    def OnCloseProject(self):
+    def OnCloseProject(self) -> None:
         self.CloseProject()
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         n = self.combo_surface_name.GetCount()
         for i in range(n-1, -1, -1):
             self.combo_surface_name.Delete(i)
         self.surface_list = []
 
-    def ChangeSurfaceName(self, index, name):
+    def ChangeSurfaceName(self, index, name) -> None:
         self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
 
-    def InsertNewSurface(self, surface):
+    def InsertNewSurface(self, surface) -> None:
         index = surface.index
         name = surface.name
         colour = [value*255 for value in surface.colour]
         i = 0
         try:
-            i = self.surface_list.index([name, index])
+            i: int = self.surface_list.index([name, index])
             overwrite = True
         except ValueError:
             overwrite = False
@@ -590,18 +590,18 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.slider_transparency.SetValue(int(transparency))
         #  Publisher.sendMessage('Update surface data', (index))
 
-    def OnComboName(self, evt):
+    def OnComboName(self, evt) -> None:
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         Publisher.sendMessage('Change surface selected', surface_index=self.surface_list[surface_index][1])
 
-    def OnSelectColour(self, evt):
+    def OnSelectColour(self, evt) -> None:
         colour = [value/255.0 for value in evt.GetValue()]
         Publisher.sendMessage('Set surface colour',
                               surface_index=self.combo_surface_name.GetSelection(),
                               colour=colour)
 
-    def OnTransparency(self, evt):
+    def OnTransparency(self, evt) -> None:
         transparency = evt.GetInt()/float(MAX_TRANSPARENCY)
         # FIXME: In Mac OS/X, wx.Slider (wx.Python 2.8.10) has problem on the
         # right-limit as reported on http://trac.wxwidgets.org/ticket/4555.
@@ -614,7 +614,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
 
 
 class QualityAdjustment(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         import invesalius.constants as const
         wx.Panel.__init__(self, parent)
         try:
@@ -649,9 +649,9 @@ class QualityAdjustment(wx.Panel):
         spin_smooth = InvSpinCtrl(self, -1, value=0, min_value=1, max_values=100, size=(30, 50))
 
         # MIXED LINE 2 AND 3
-        flag_link = wx.EXPAND|wx.GROW|wx.RIGHT|wx.LEFT
-        flag_slider = wx.EXPAND | wx.GROW| wx.LEFT|wx.TOP
-        flag_combo = wx.EXPAND | wx.GROW| wx.LEFT
+        flag_link: int = wx.EXPAND|wx.GROW|wx.RIGHT|wx.LEFT
+        flag_slider: int = wx.EXPAND | wx.GROW| wx.LEFT|wx.TOP
+        flag_combo: int = wx.EXPAND | wx.GROW| wx.LEFT
 
         fixed_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=2, vgap=0)
         fixed_sizer.AddMany([ (check_decimate, 0, flag_combo, 2),
@@ -671,8 +671,8 @@ class QualityAdjustment(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-    def OnComboQuality(self, evt):
+    def OnComboQuality(self, evt) -> None:
         print("TODO: Send Signal - Change surface quality: %s" % (evt.GetString()))
 
-    def OnDecimate(self, evt):
+    def OnDecimate(self, evt) -> None:
         print("TODO: Send Signal - Decimate: %s" % float(self.spin.GetValue())/100)

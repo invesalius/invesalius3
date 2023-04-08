@@ -28,7 +28,7 @@ class TaskPanel(wx.Panel):
     This panel works as a "frame", drawing a white margin arround 
     the panel that really matters (InnerTaskPanel).
     """
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         # note: don't change this class!!!
         wx.Panel.__init__(self, parent)
 
@@ -45,7 +45,7 @@ class TaskPanel(wx.Panel):
 
 class InnerTaskPanel(wx.Panel):
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         self.SetBackgroundColour(wx.Colour(255,255,255))
         self.SetAutoLayout(1)
@@ -57,7 +57,7 @@ class InnerTaskPanel(wx.Panel):
         self.__bind_events()
         self.__bind_wx_events()
 
-    def __init_gui(self):
+    def __init_gui(self) -> None:
         """
         Build widgets in current panel
         """
@@ -75,21 +75,21 @@ class InnerTaskPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Fit()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind pubsub events
         """
         # Example: ps.Publisher().subscribe("Test")
         pass
 
-    def __bind_wx_events(self):
+    def __bind_wx_events(self) -> None:
         """
         Bind wx general events
         """
         # Example: self.Bind(wx.EVT_BUTTON, self.OnButton)
         self.link_test.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTest)
     
-    def OnTest(self, event):
+    def OnTest(self, event) -> None:
         """
         Describe what this method does
         """

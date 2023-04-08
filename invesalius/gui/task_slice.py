@@ -61,7 +61,7 @@ MENU_UNIT_PX = wx.NewId()
 MASK_LIST = []
 
 class TaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self)
@@ -77,7 +77,7 @@ class TaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 class InnerTaskPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         backgroud_colour = wx.Colour(255,255,255)
         self.SetBackgroundColour(backgroud_colour)
@@ -129,12 +129,12 @@ class InnerTaskPanel(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         fold_panel = FoldPanel(self)
         fold_panel.SetBackgroundColour(default_colour)
-        self.fold_panel = fold_panel
+        self.fold_panel: FoldPanel = fold_panel
 
         # Button to fold to select region task
         button_next = wx.Button(self, -1, _("Create surface"))
         check_box = wx.CheckBox(self, -1, _("Overwrite last surface"))
-        self.check_box = check_box
+        self.check_box: CheckBox = check_box
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
             check_box.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
@@ -160,15 +160,15 @@ class InnerTaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-        self.sizer = main_sizer
+        self.sizer: BoxSizer = main_sizer
 
-    def OnButton(self, evt):
+    def OnButton(self, evt) -> None:
         id = evt.GetId()
         if id == BTN_NEW:
             self.OnLinkNewMask()
 
 
-    def OnButtonNextTask(self, evt):
+    def OnButtonNextTask(self, evt) -> None:
         overwrite = self.check_box.IsChecked()
         algorithm = 'Default'
         options = {}
@@ -178,7 +178,7 @@ class InnerTaskPanel(wx.Panel):
             if sl.current_mask.was_edited:
                 dlgs = dlg.SurfaceDialog()
                 if dlgs.ShowModal() == wx.ID_OK:
-                    algorithm = dlgs.GetAlgorithmSelected()
+                    algorithm: str = dlgs.GetAlgorithmSelected()
                     options = dlgs.GetOptions()
                 else:
                     to_generate = False
@@ -210,7 +210,7 @@ class InnerTaskPanel(wx.Panel):
         else:
             dlg.InexistentMask()
 
-    def OnLinkNewMask(self, evt=None):
+    def OnLinkNewMask(self, evt=None) -> None:
 
         try:
             evt.data
@@ -241,7 +241,7 @@ class InnerTaskPanel(wx.Panel):
         return self.fold_panel.GetMaskSelected()
 
 class FoldPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerFoldPanel(self)
@@ -254,14 +254,14 @@ class FoldPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-        self.inner_panel = inner_panel
+        self.inner_panel: InnerFoldPanel = inner_panel
 
     def GetMaskSelected(self):
         x = self.inner_panel.GetMaskSelected()
         return self.inner_panel.GetMaskSelected()
 
 class InnerFoldPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -342,7 +342,7 @@ class InnerFoldPanel(wx.Panel):
         self.__bind_evt()
         self.__bind_pubsub_evt()
 
-    def __calc_best_size(self, panel):
+    def __calc_best_size(self, panel) -> None:
         parent = panel.GetParent()
         q = panel.Reparent(self)
 
@@ -372,16 +372,16 @@ class InnerFoldPanel(wx.Panel):
         #if self.last_size is None or self.last_size.GetHeight() < size.GetHeight():
             #self.SetInitialSize(size)
 
-    def __bind_evt(self):
+    def __bind_evt(self) -> None:
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
 
-    def __bind_pubsub_evt(self):
+    def __bind_pubsub_evt(self) -> None:
         Publisher.subscribe(self.OnRetrieveStyle, 'Retrieve task slice style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable task slice style')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.OnColapsePanel, 'Show panel')
 
-    def OnFoldPressCaption(self, evt):
+    def OnFoldPressCaption(self, evt) -> None:
         id = evt.GetTag().GetId()
         closed = evt.GetFoldStatus()
 
@@ -408,23 +408,23 @@ class InnerFoldPanel(wx.Panel):
         wx.CallAfter(self.ResizeFPB)
 
 
-    def ResizeFPB(self):
+    def ResizeFPB(self) -> None:
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
-    def OnRetrieveStyle(self):
+    def OnRetrieveStyle(self) -> None:
         if (self.last_style == const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Enable style', style=const.SLICE_STATE_EDITOR)
 
-    def OnDisableStyle(self):
+    def OnDisableStyle(self) -> None:
         if (self.last_style == const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
 
-    def OnCloseProject(self):
+    def OnCloseProject(self) -> None:
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
 
-    def OnColapsePanel(self, panel_id):
+    def OnColapsePanel(self, panel_id) -> None:
         panel_seg_id = {
             const.ID_THRESHOLD_SEGMENTATION: 0,
             const.ID_MANUAL_SEGMENTATION: 1,
@@ -432,7 +432,7 @@ class InnerFoldPanel(wx.Panel):
         }
 
         try:
-            _id = panel_seg_id[panel_id]
+            _id: int = panel_seg_id[panel_id]
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(_id))
             self.Layout()
         except KeyError:
@@ -443,7 +443,7 @@ class InnerFoldPanel(wx.Panel):
         return self.mask_prop_panel.GetMaskSelected()
 
 class MaskProperties(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
 
         ## LINE 1
@@ -454,7 +454,7 @@ class MaskProperties(wx.Panel):
         #combo_mask_name.SetSelection(0) # wx.CB_SORT
         if sys.platform != 'win32':
             combo_mask_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_mask_name = combo_mask_name
+        self.combo_mask_name: ComboBox = combo_mask_name
 
         # Mask colour
         button_colour= csel.ColourSelect(self, 111,colour=(0,255,0),size=(22,-1))
@@ -470,20 +470,20 @@ class MaskProperties(wx.Panel):
                                     _("Set predefined or manual threshold:"))
 
         ### LINE 3
-        THRESHOLD_LIST = ["",]
+        THRESHOLD_LIST: list[str] = ["",]
         combo_thresh = wx.ComboBox(self, -1, "", #size=(15,-1),
                                    choices=THRESHOLD_LIST,
                                    style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_thresh.SetSelection(0)
         if sys.platform != 'win32':
             combo_thresh.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_thresh = combo_thresh
+        self.combo_thresh: ComboBox = combo_thresh
 
 
         ## LINE 4
         gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000,
                                            (0, 255, 0, 100))
-        self.gradient = gradient
+        self.gradient: GradientCtrl = gradient
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -508,14 +508,14 @@ class MaskProperties(wx.Panel):
         # Non GUI stuff
 
         proj = Project()
-        self.threshold_modes = proj.threshold_modes
+        self.threshold_modes: TwoWaysDictionary = proj.threshold_modes
         self.threshold_modes_names = []
         self.bind_evt_gradient = True
         self.__bind_events()
         self.__bind_events_wx()
 
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.AddMask, 'Add mask')
         # TODO: Uncomment
         Publisher.subscribe(self.SetThresholdBounds,
@@ -530,10 +530,10 @@ class MaskProperties(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.SetThresholdValues2, 'Set threshold values')
 
-    def OnCloseProject(self):
+    def OnCloseProject(self) -> None:
         self.CloseProject()
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         n = self.combo_mask_name.GetCount()
         for i in range(n-1, -1, -1):
             self.combo_mask_name.Delete(i)
@@ -541,7 +541,7 @@ class MaskProperties(wx.Panel):
         for i in range(n-1, -1, -1):
             self.combo_thresh.Delete(i)
 
-    def OnRemoveMasks(self, mask_indexes):
+    def OnRemoveMasks(self, mask_indexes) -> None:
         for i in mask_indexes:
             self.combo_mask_name.Delete(i)
 
@@ -550,24 +550,24 @@ class MaskProperties(wx.Panel):
             self.Disable()
 
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanging, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
         self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
 
-    def SelectMaskName(self, index):
+    def SelectMaskName(self, index) -> None:
         if index >= 0:
             self.combo_mask_name.SetSelection(index)
         else:
             self.combo_mask_name.SetValue('')
 
-    def ChangeMaskName(self, index, name):
+    def ChangeMaskName(self, index, name) -> None:
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
 
-    def SetThresholdValues(self, threshold_range):
+    def SetThresholdValues(self, threshold_range) -> None:
         thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient.SetMinValue(thresh_min)
@@ -584,7 +584,7 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
-    def SetThresholdValues2(self, threshold_range):
+    def SetThresholdValues2(self, threshold_range) -> None:
         thresh_min, thresh_max = threshold_range
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
@@ -598,16 +598,16 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
-    def SetItemsColour(self, colour):
+    def SetItemsColour(self, colour) -> None:
         self.gradient.SetColour(colour)
         self.button_colour.SetColour(colour)
 
-    def AddMask(self, mask):
+    def AddMask(self, mask) -> None:
         if self.combo_mask_name.IsEmpty():
             self.Enable()
         mask_name = mask.name
         mask_thresh = mask.threshold_range
-        mask_colour = [int(c*255) for c in mask.colour]
+        mask_colour: list[int] = [int(c*255) for c in mask.colour]
         index = self.combo_mask_name.Append(mask_name)
         #  self.combo_mask_name.SetSelection(index)
         #  self.button_colour.SetColour(mask_colour)
@@ -618,7 +618,7 @@ class MaskProperties(wx.Panel):
         x = self.combo_mask_name.GetSelection()
         return self.combo_mask_name.GetSelection()
 
-    def SetThresholdModes(self, thresh_modes_names, default_thresh):
+    def SetThresholdModes(self, thresh_modes_names, default_thresh) -> None:
         self.combo_thresh.SetItems(thresh_modes_names)
         self.threshold_modes_names = thresh_modes_names
         proj = Project()
@@ -645,26 +645,26 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
-    def SetThresholdBounds(self, threshold_range):
+    def SetThresholdBounds(self, threshold_range) -> None:
         thresh_min = threshold_range[0]
         thresh_max = threshold_range[1]
         self.gradient.SetMinRange(thresh_min)
         self.gradient.SetMaxRange(thresh_max)
 
-    def OnComboName(self, evt):
+    def OnComboName(self, evt) -> None:
         mask_name = evt.GetString()
         mask_index = evt.GetSelection()
         Publisher.sendMessage('Change mask selected', index=mask_index)
         Publisher.sendMessage('Show mask', index=mask_index, value=True)
 
-    def OnComboThresh(self, evt):
+    def OnComboThresh(self, evt) -> None:
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
         self.OnSlideChanging(None)
         self.OnSlideChanged(None)
 
-    def OnSlideChanged(self, evt):
+    def OnSlideChanged(self, evt) -> None:
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         Publisher.sendMessage('Set threshold values',
@@ -672,7 +672,7 @@ class MaskProperties(wx.Panel):
         session = ses.Session()
         session.ChangeProject()
 
-    def OnSlideChanging(self, evt):
+    def OnSlideChanging(self, evt) -> None:
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         Publisher.sendMessage('Changing threshold values',
@@ -680,13 +680,13 @@ class MaskProperties(wx.Panel):
         session = ses.Session()
         session.ChangeProject()
 
-    def OnSelectColour(self, evt):
+    def OnSelectColour(self, evt) -> None:
         colour = evt.GetValue()[:3]
         self.gradient.SetColour(colour)
         Publisher.sendMessage('Change mask colour', colour=colour)
 
 class EditionTools(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -713,20 +713,20 @@ class EditionTools(wx.Panel):
         menu.Append(item)
         menu.Append(item2)
 
-        bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
+        bmp_brush_format: dict[int, Bitmap] = {const.BRUSH_CIRCLE: CIRCLE_BMP,
                             const.BRUSH_SQUARE: SQUARE_BMP}
-        selected_bmp = bmp_brush_format[const.DEFAULT_BRUSH_FORMAT]
+        selected_bmp: Bitmap = bmp_brush_format[const.DEFAULT_BRUSH_FORMAT]
 
         btn_brush_format = pbtn.PlateButton(self, wx.ID_ANY,"", selected_bmp,
                                           style=pbtn.PB_STYLE_SQUARE)
         btn_brush_format.SetMenu(menu)
-        self.btn_brush_format = btn_brush_format
+        self.btn_brush_format: PlateButton = btn_brush_format
 
         spin_brush_size = InvSpinCtrl(self, -1, value=const.BRUSH_SIZE, min_value=1, max_value=1000, spin_button=False)
         # To calculate best width to spinctrl
         spin_brush_size.CalcSizeFromTextSize("MMMM")
         spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
-        self.spin = spin_brush_size
+        self.spin: InvSpinCtrl = spin_brush_size
 
         self.txt_unit = wx.StaticText(self, -1, "mm")
         self.txt_unit.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
@@ -737,7 +737,7 @@ class EditionTools(wx.Panel):
         combo_brush_op.SetSelection(const.DEFAULT_BRUSH_OP)
         if sys.platform != 'win32':
             combo_brush_op.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_brush_op = combo_brush_op
+        self.combo_brush_op: ComboBox = combo_brush_op
 
         # Sizer which represents the second line
         line2 = wx.BoxSizer(wx.HORIZONTAL)
@@ -752,7 +752,7 @@ class EditionTools(wx.Panel):
         ## LINE 4
         gradient_thresh = grad.GradientCtrl(self, -1, 0, 5000, 0, 5000,
                                        (0, 0, 255, 100))
-        self.gradient_thresh = gradient_thresh
+        self.gradient_thresh: GradientCtrl = gradient_thresh
         self.bind_evt_gradient = True
 
         # Add lines into main sizer
@@ -776,13 +776,13 @@ class EditionTools(wx.Panel):
         self.__bind_events_wx()
 
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         self.btn_brush_format.Bind(wx.EVT_MENU, self.OnMenu)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged,
                   self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.SetThresholdBounds,
                                         'Update threshold limits')
         Publisher.subscribe(self.ChangeMaskColour, 'Change mask colour')
@@ -791,21 +791,21 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self._set_threshold_range_gui, 'Set edition threshold gui')
         Publisher.subscribe(self.ChangeMaskColour, 'Set GUI items colour')
 
-    def ChangeMaskColour(self, colour):
+    def ChangeMaskColour(self, colour) -> None:
         self.gradient_thresh.SetColour(colour)
 
-    def SetGradientColour(self, mask):
+    def SetGradientColour(self, mask) -> None:
         wx_colour = [c*255 for c in mask.colour]
         self.gradient_thresh.SetColour(wx_colour)
 
-    def SetThresholdValues(self, threshold_range):
+    def SetThresholdValues(self, threshold_range) -> None:
         thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
-    def SetThresholdBounds(self, threshold_range):
+    def SetThresholdBounds(self, threshold_range) -> None:
         thresh_min = threshold_range[0]
         thresh_max = threshold_range[1]
         self.gradient_thresh.SetMinRange(thresh_min)
@@ -813,14 +813,14 @@ class EditionTools(wx.Panel):
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
 
-    def OnGradientChanged(self, evt):
+    def OnGradientChanged(self, evt) -> None:
         thresh_min = self.gradient_thresh.GetMinValue()
         thresh_max = self.gradient_thresh.GetMaxValue()
         if self.bind_evt_gradient:
             Publisher.sendMessage('Set edition threshold values',
                                   threshold_range=(thresh_min, thresh_max))
 
-    def OnMenu(self, evt):
+    def OnMenu(self, evt) -> None:
         SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
         CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
 
@@ -833,14 +833,14 @@ class EditionTools(wx.Panel):
 
         Publisher.sendMessage('Set brush format', cursor_format=brush[evt.GetId()])
 
-    def OnBrushSize(self, evt):
+    def OnBrushSize(self, evt) -> None:
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size', size=self.spin.GetValue())
 
-    def OnContextMenu(self, evt):
+    def OnContextMenu(self, evt) -> None:
         print("Context")
         menu = wx.Menu()
         mm_item = menu.AppendRadioItem(MENU_UNIT_MM, "mm")
@@ -859,13 +859,13 @@ class EditionTools(wx.Panel):
         self.txt_unit.PopupMenu(menu)
         menu.Destroy()
 
-    def _set_threshold_range_gui(self, threshold_range):
+    def _set_threshold_range_gui(self, threshold_range) -> None:
         self.SetThresholdValues(threshold_range)
 
-    def _set_brush_size(self, size):
+    def _set_brush_size(self, size) -> None:
         self.spin.SetValue(size)
 
-    def OnComboBrushOp(self, evt):
+    def OnComboBrushOp(self, evt) -> None:
         brush_op_id = evt.GetSelection()
         Publisher.sendMessage('Set edition operation', operation=brush_op_id)
         if brush_op_id == const.BRUSH_THRESH:
@@ -873,7 +873,7 @@ class EditionTools(wx.Panel):
         else:
             self.gradient_thresh.Disable()
 
-    def OnSetUnit(self, evt):
+    def OnSetUnit(self, evt) -> None:
         if evt.GetId() == MENU_UNIT_MM:
             self.txt_unit.SetLabel("mm")
         elif evt.GetId() == MENU_UNIT_UM:
@@ -885,7 +885,7 @@ class EditionTools(wx.Panel):
 
 
 class WatershedTool(EditionTools):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -912,9 +912,9 @@ class WatershedTool(EditionTools):
         menu.Append(item)
         menu.Append(item2)
 
-        bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
+        bmp_brush_format: dict[int, Bitmap] = {const.BRUSH_CIRCLE: CIRCLE_BMP,
                             const.BRUSH_SQUARE: SQUARE_BMP}
-        selected_bmp = bmp_brush_format[const.DEFAULT_BRUSH_FORMAT]
+        selected_bmp: Bitmap = bmp_brush_format[const.DEFAULT_BRUSH_FORMAT]
 
         btn_brush_format = pbtn.PlateButton(self, wx.ID_ANY,"", selected_bmp,
                                           style=pbtn.PB_STYLE_SQUARE)
@@ -955,8 +955,8 @@ class WatershedTool(EditionTools):
         check_box = wx.CheckBox(self, -1, _("Overwrite mask"))
         ww_wl_cbox = wx.CheckBox(self, -1, _("Use WW&WL"))
         ww_wl_cbox.SetValue(True)
-        self.check_box = check_box
-        self.ww_wl_cbox = ww_wl_cbox
+        self.check_box: CheckBox = check_box
+        self.ww_wl_cbox: CheckBox = ww_wl_cbox
 
         # Line 6
         bmp = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "configuration.png"), wx.BITMAP_TYPE_PNG)
@@ -991,7 +991,7 @@ class WatershedTool(EditionTools):
         self.__bind_pubsub_evt()
 
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         self.btn_brush_format.Bind(wx.EVT_MENU, self.OnMenu)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
         self.check_box.Bind(wx.EVT_CHECKBOX, self.OnCheckOverwriteMask)
@@ -999,25 +999,25 @@ class WatershedTool(EditionTools):
         self.btn_exp_watershed.Bind(wx.EVT_BUTTON, self.OnExpandWatershed)
         self.btn_wconfig.Bind(wx.EVT_BUTTON, self.OnConfig)
 
-    def __bind_pubsub_evt(self):
+    def __bind_pubsub_evt(self) -> None:
         Publisher.subscribe(self._set_brush_size, 'Set watershed brush size')
 
-    def ChangeMaskColour(self, colour):
+    def ChangeMaskColour(self, colour) -> None:
         self.gradient_thresh.SetColour(colour)
 
-    def SetGradientColour(self, mask):
+    def SetGradientColour(self, mask) -> None:
         vtk_colour = mask.colour
         wx_colour = [c*255 for c in vtk_colour]
         self.gradient_thresh.SetColour(wx_colour)
 
-    def SetThresholdValues(self, threshold_range):
+    def SetThresholdValues(self, threshold_range) -> None:
         thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
-    def SetThresholdBounds(self, threshold_range):
+    def SetThresholdBounds(self, threshold_range) -> None:
         thresh_min = threshold_range[0]
         thresh_max  = threshold_range[1]
         self.gradient_thresh.SetMinRange(thresh_min)
@@ -1025,7 +1025,7 @@ class WatershedTool(EditionTools):
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
 
-    def OnMenu(self, evt):
+    def OnMenu(self, evt) -> None:
         SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
         CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
 
@@ -1038,14 +1038,14 @@ class WatershedTool(EditionTools):
 
         Publisher.sendMessage('Set watershed brush format', brush_format=brush[evt.GetId()])
 
-    def OnBrushSize(self, evt):
+    def OnBrushSize(self, evt) -> None:
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
         Publisher.sendMessage('Set watershed brush size', size=self.spin.GetValue())
 
-    def OnContextMenu(self, evt):
+    def OnContextMenu(self, evt) -> None:
         print("Context")
         menu = wx.Menu()
         mm_item = menu.AppendRadioItem(MENU_UNIT_MM, "mm")
@@ -1063,10 +1063,10 @@ class WatershedTool(EditionTools):
         self.txt_unit.PopupMenu(menu)
         menu.Destroy()
 
-    def _set_brush_size(self, size):
+    def _set_brush_size(self, size) -> None:
         self.spin.SetValue(size)
 
-    def OnSetUnit(self, evt):
+    def OnSetUnit(self, evt) -> None:
         if evt.GetId() == MENU_UNIT_MM:
             self.txt_unit.SetLabel("mm")
         elif evt.GetId() == MENU_UNIT_UM:
@@ -1076,22 +1076,22 @@ class WatershedTool(EditionTools):
         self.unit = self.txt_unit.GetLabel()
         Publisher.sendMessage('Set watershed brush unit', unit=self.unit)
 
-    def OnComboBrushOp(self, evt):
+    def OnComboBrushOp(self, evt) -> None:
         brush_op = self.combo_brush_op.GetValue()
         Publisher.sendMessage('Set watershed operation', operation=brush_op)
 
-    def OnCheckOverwriteMask(self, evt):
+    def OnCheckOverwriteMask(self, evt) -> None:
         value = self.check_box.GetValue()
         Publisher.sendMessage('Set overwrite mask', flag=value)
 
-    def OnCheckWWWL(self, evt):
+    def OnCheckWWWL(self, evt) -> None:
         value = self.ww_wl_cbox.GetValue()
         Publisher.sendMessage('Set use ww wl', use_ww_wl=value)
 
-    def OnConfig(self, evt):
+    def OnConfig(self, evt) -> None:
         from invesalius.data.styles import WatershedConfig
         config = WatershedConfig()
         dlg.WatershedOptionsDialog(config).Show()
 
-    def OnExpandWatershed(self, evt):
+    def OnExpandWatershed(self, evt) -> None:
         Publisher.sendMessage('Expand watershed to 3D AXIAL')
