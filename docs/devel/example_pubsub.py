@@ -41,7 +41,7 @@ class Teacher:
         self.course: Course = course
 
     def SendMessage(self) -> None:
-        print "%s: Telling students the projects" % (self.name)
+        print("%s: Telling students the projects" % (self.name))
         Publisher.sendMessage("Set Student Project", self.course.projects_dict)
 
         print("\n%s: Telling students the grades" % (self.name))

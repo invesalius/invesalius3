@@ -29,22 +29,22 @@ from invesalius.pubsub import pub as Publisher
 from invesalius import inv_paths
 
 
-def import_source(module_name, module_file_path):
-    module_spec = importlib.util.spec_from_file_location(module_name, module_file_path)
-    module = importlib.util.module_from_spec(module_spec)
+def import_source(module_name, module_file_path) -> ModuleType:
+    module_spec: ModuleSpec | None = importlib.util.spec_from_file_location(module_name, module_file_path)
+    module: ModuleType = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
     return module
 
 
 class PluginManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.plugins = {}
         self.__bind_pubsub_evt()
 
-    def __bind_pubsub_evt(self):
+    def __bind_pubsub_evt(self) -> None:
         Publisher.subscribe(self.load_plugin, "Load plugin")
 
-    def find_plugins(self):
+    def find_plugins(self) -> None:
         self.plugins = {}
         for p in chain(
                 glob.glob(str(inv_paths.PLUGIN_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
@@ -69,11 +69,11 @@ class PluginManager:
 
         Publisher.sendMessage("Add plugins menu items", items=self.plugins)
 
-    def load_plugin(self, plugin_name):
+    def load_plugin(self, plugin_name) -> None:
         if plugin_name in self.plugins:
             plugin_module = import_source(
                 plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")
             )
             sys.modules[plugin_name] = plugin_module
-            main = importlib.import_module(plugin_name + ".main")
+            main: ModuleType = importlib.import_module(plugin_name + ".main")
             main.load()

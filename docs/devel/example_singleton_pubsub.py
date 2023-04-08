@@ -32,9 +32,9 @@ class Pizza(object):
         person = pubsub_evt.data
         if self.npieces:
             self.npieces -= 1
-            print "%s ate pizza!"%(person.name)
+            print( "%s ate pizza!"%(person.name))
         else:
-            print "%s is hungry!"%(person.name)
+            print( "%s is hungry!"%(person.name))
 
 class Person():
     def __init__(self, name) -> None:
@@ -45,18 +45,18 @@ class Person():
         ps.Publisher.sendMessage('Eat piece of pizza',(self))
         
 
-print "Initial state:"
+print( "Initial state:")
 p1 = Person("Paulo ") 
 p2 = Person("Thiago")
 p3 = Person("Andre ")
 people: list[Person] = [p1, p2, p3]
 
-print "Everyone eats 2 pieces:"
+print( "Everyone eats 2 pieces:")
 for i in range(2):
     for person in people:
         person.EatPieceOfPizza()
     
-print "Everyone tries to eat another piece:"
+print( "Everyone tries to eat another piece:")
 for person in people:
     person.EatPieceOfPizza()
 

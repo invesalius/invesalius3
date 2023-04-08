@@ -86,7 +86,7 @@ class Editor:
         istyle.AddObserver("LeftButtonReleaseEvent", self.Release)
         istyle.AddObserver("MouseMoveEvent",self.Moved)
 
-        pick = self.pick: vtkCellPicker = vtkCellPicker()
+        pick = self.pick = vtkCellPicker()
 
     def SetActor(self, actor) -> None:
         self.actor = actor

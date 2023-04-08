@@ -62,7 +62,7 @@ else:
 
 
 class Singleton:
-    def __init__(self, klass):
+    def __init__(self, klass) -> None:
         self.klass = klass
         self.instance = None
 
@@ -74,23 +74,23 @@ class Singleton:
 
 @Singleton
 class BitmapData:
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = None
 
-    def GetData(self):
+    def GetData(self)-> (Any | None):
         return self.data
 
-    def SetData(self, data):
+    def SetData(self, data) -> None:
         self.data = data
 
-    def GetOnlyBitmapPath(self):
+    def GetOnlyBitmapPath(self)-> list:
         paths = [item[0] for item in self.data]
         return paths
 
-    def GetFirstBitmapSize(self):
+    def GetFirstBitmapSize(self)-> tuple:
         return (self.data[0][3], self.data[0][4])
 
-    def IsAllBitmapSameSize(self):
+    def IsAllBitmapSameSize(self) -> bool:
         sizes = [item[5] for item in self.data]
 
         k = {}
@@ -102,33 +102,33 @@ class BitmapData:
         else:
             return True
 
-    def GetFirstPixelSize(self):
+    def GetFirstPixelSize(self) -> int:
 
         path = self.data[0][0]
         size = ReadBitmap(path).dtype.itemsize * 8
 
         return size
 
-    def RemoveFileByPath(self, path):
+    def RemoveFileByPath(self, path) -> None:
         for d in self.data:
             if path in d:
                 self.data.remove(d)
 
-    def GetIndexByPath(self, path):
+    def GetIndexByPath(self, path) -> int | None:
         for i, v in enumerate(self.data):
             if path in v:
                 return i
 
 
 class BitmapFiles:
-    def __init__(self):
+    def __init__(self) -> None:
         self.bitmapfiles = []
 
-    def Add(self, bmp):
+    def Add(self, bmp) -> None:
         self.bitmapfiles.append(bmp)
 
-    def Sort(self, x):
-        c_re = re.compile("\d+")
+    def Sort(self, x) -> list[int] | list[str]:
+        c_re: Pattern[str] = re.compile("\d+")
         if len(c_re.findall(x[6])) > 0:
             return [int(i) for i in c_re.findall(x[6])]
         else:
@@ -145,31 +145,31 @@ class BitmapFiles:
 
 
 class LoadBitmap:
-    def __init__(self, bmp_file, filepath):
+    def __init__(self, bmp_file, filepath) -> None:
         self.bmp_file = bmp_file
         #self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.filepath = filepath
 
         self.run()
 
-    def run(self):
+    def run(self) -> Literal[False] | None:
         global vtk_error
 
         # ----- verify extension ------------------
-        extension = VerifyDataType(self.filepath)
+        extension: str | Literal[False] = VerifyDataType(self.filepath)
         
         file_name = self.filepath.decode(const.FS_ENCODE).split(os.path.sep)[-1]
         
-        n_array = ReadBitmap(self.filepath)
+        n_array: ndarray[Any, dtype] | ndarray[Any, dtype[floating[_64Bit]]] | Literal[False] = ReadBitmap(self.filepath)
 
         if not (isinstance(n_array, numpy.ndarray)):
             return False
 
-        image = converters.to_vtk(
+        image: vtkImageData = converters.to_vtk(
             n_array, spacing=(1, 1, 1), slice_number=1, orientation="AXIAL"
         )
 
-        dim = image.GetDimensions()
+        dim: Tuple[int, int, int] = image.GetDimensions()
         x = dim[0]
         y = dim[1]
 
@@ -222,7 +222,7 @@ class LoadBitmap:
         self.bmp_file.Add(bmp_item)
 
 
-def yGetBitmaps(directory, recursive=True, gui=True):
+def yGetBitmaps(directory, recursive=True, gui=True)-> Generator[tuple[int, int] | list, None, None]:
     """
     Return all full paths to DICOM files inside given directory.
     """
@@ -233,7 +233,7 @@ def yGetBitmaps(directory, recursive=True, gui=True):
             nfiles += len(filenames)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
-        nfiles = len(filenames)
+        nfiles: int = len(filenames)
 
     counter = 0
     bmp_file = BitmapFiles()
@@ -250,7 +250,7 @@ def yGetBitmaps(directory, recursive=True, gui=True):
     else:
         dirpath, dirnames, filenames = os.walk(directory)
         for name in filenames:
-            filepath = str(os.path.join(dirpath, name)).encode(const.FS_ENCODE)
+            filepath: bytes = str(os.path.join(dirpath, name)).encode(const.FS_ENCODE)
             counter += 1
             if gui:
                 yield (counter, nfiles)
@@ -259,28 +259,28 @@ def yGetBitmaps(directory, recursive=True, gui=True):
 
 
 class ProgressBitmapReader:
-    def __init__(self):
+    def __init__(self) -> None:
         Publisher.subscribe(self.CancelLoad, "Cancel bitmap load")
 
-    def CancelLoad(self):
+    def CancelLoad(self) -> None:
         self.running = False
         self.stoped = True
 
-    def SetWindowEvent(self, frame):
+    def SetWindowEvent(self, frame) -> None:
         self.frame = frame
 
-    def SetDirectoryPath(self, path, recursive=True):
+    def SetDirectoryPath(self, path, recursive=True) -> None:
         self.running = True
         self.stoped = False
         self.GetBitmaps(path, recursive)
 
-    def UpdateLoadFileProgress(self, cont_progress):
+    def UpdateLoadFileProgress(self, cont_progress) -> None:
         Publisher.sendMessage("Update bitmap load", data=cont_progress)
 
-    def EndLoadFile(self, bitmap_list):
+    def EndLoadFile(self, bitmap_list) -> None:
         Publisher.sendMessage("End bitmap load", data=bitmap_list)
 
-    def GetBitmaps(self, path, recursive):
+    def GetBitmaps(self, path, recursive) -> None:
         y = yGetBitmaps(path, recursive)
         for value_progress in y:
             if not self.running:
@@ -294,18 +294,18 @@ class ProgressBitmapReader:
         self.stoped = False
 
 
-def VtkErrorPNGWriter(obj, f):
+def VtkErrorPNGWriter(obj, f) -> None:
     global vtk_error
     vtk_error = True
 
 
-def ScipyRead(filepath):
+def ScipyRead(filepath)-> (NDArray | Any | Literal[False]):
     try:
         r = imread(filepath, flatten=True)
         dt = r.dtype
         if dt == "float" or dt == "float16" or dt == "float32" or dt == "float64":
             shift = -r.max() / 2
-            simage = numpy.zeros_like(r, dtype="int16")
+            simage: ndarray[Any, dtype] = numpy.zeros_like(r, dtype="int16")
             simage[:] = r.astype("int32") + shift
 
             return simage
@@ -315,9 +315,9 @@ def ScipyRead(filepath):
         return False
 
 
-def VtkRead(filepath, t):
+def VtkRead(filepath, t) -> ndarray[Any, dtype[floating[_64Bit]]] | Literal[False]:
     if not const.VTK_WARNING:
-        log_path = os.path.join(inv_paths.USER_LOG_DIR, "vtkoutput.txt")
+        log_path: str = os.path.join(inv_paths.USER_LOG_DIR, "vtkoutput.txt")
         fow = vtkFileOutputWindow()
         fow.SetFileName(log_path.encode(const.FS_ENCODE))
         ow = vtkOutputWindow()
@@ -356,7 +356,7 @@ def VtkRead(filepath, t):
             image = vtkImageData()
             image.DeepCopy(luminanceFilter.GetOutput())
 
-        img_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
+        img_array: ndarray[Any, dtype[floating[_64Bit]]] = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
         img_array.shape = (dim[1], dim[0])
 
         return img_array
@@ -365,11 +365,11 @@ def VtkRead(filepath, t):
         return False
 
 
-def ReadBitmap(filepath):
-    t = VerifyDataType(filepath)
+def ReadBitmap(filepath)-> (ndarray | Literal[False]):
+    t: str | Literal[False] = VerifyDataType(filepath)
 
     if _has_win32api:
-        filepath = win32api.GetShortPathName(filepath)
+        filepath: str = win32api.GetShortPathName(filepath)
 
     if t == False:
         try:
@@ -395,15 +395,15 @@ def ReadBitmap(filepath):
     return img_array
 
 
-def GetPixelSpacingFromInfoFile(filepath):
+def GetPixelSpacingFromInfoFile(filepath) -> (list[float] | list[float | Any] | Literal[False]):
     filepath = utils.decode(filepath, const.FS_ENCODE)
     
     if filepath.endswith(".DS_Store"):
         return False
 
     try: 
-        fi = open(filepath, "r")  
-        lines = fi.readlines()
+        fi: TextIOWrapper = open(filepath, "r")  
+        lines: list[str] = fi.readlines()
     except(UnicodeDecodeError):
 
         #fix uCTI from CTI file 
@@ -444,7 +444,7 @@ def GetPixelSpacingFromInfoFile(filepath):
 
                 # convert um to mm (InVesalius default)
                 if measure_scale == "um":
-                    value = float(value) * 0.001
+                    value: float = float(value) * 0.001
                     measure_scale = "mm"
 
                 elif measure_scale == "nm":
@@ -457,15 +457,15 @@ def GetPixelSpacingFromInfoFile(filepath):
         return False
 
 
-def VtkErrorToPy(obj, evt):
+def VtkErrorToPy(obj, evt) -> None:
     global no_error
     no_error = False
 
 
-def VerifyDataType(filepath):
+def VerifyDataType(filepath) -> str | Literal[False]:
     try:
         filepath = utils.decode(filepath, const.FS_ENCODE)
-        t = imghdr.what(filepath)
+        t: str | None = imghdr.what(filepath)
         if t:
             return t
         else:

@@ -30,13 +30,13 @@ from invesalius.pubsub import pub as Publisher
 
 
 class Tracker():
-    def __init__(self):
+    def __init__(self) -> None:
         self.tracker_connection = None
-        self.tracker_id = const.DEFAULT_TRACKER
+        self.tracker_id: Literal[0] = const.DEFAULT_TRACKER
 
-        self.tracker_fiducials = np.full([3, 3], np.nan)
-        self.tracker_fiducials_raw = np.zeros((6, 6))
-        self.m_tracker_fiducials_raw = np.zeros((6, 4, 4))
+        self.tracker_fiducials: ndarray[Any, dtype] = np.full([3, 3], np.nan)
+        self.tracker_fiducials_raw: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros((6, 6))
+        self.m_tracker_fiducials_raw: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros((6, 4, 4))
 
         self.tracker_connected = False
 
@@ -48,14 +48,14 @@ class Tracker():
 
         self.LoadState()
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         tracker_id = self.tracker_id
         tracker_fiducials = self.tracker_fiducials.tolist()
         tracker_fiducials_raw = self.tracker_fiducials_raw.tolist()
         marker_tracker_fiducials_raw = self.m_tracker_fiducials_raw.tolist()
         configuration = self.tracker_connection.GetConfiguration() if self.tracker_connection else None
 
-        state = {
+        state: dict[str, Any] = {
             'tracker_id': tracker_id,
             'tracker_fiducials': tracker_fiducials,
             'tracker_fiducials_raw': tracker_fiducials_raw,
@@ -65,7 +65,7 @@ class Tracker():
         session = ses.Session()
         session.SetState('tracker', state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState('tracker')
 
@@ -88,7 +88,7 @@ class Tracker():
             configuration=configuration
         )
 
-    def SetTracker(self, tracker_id, configuration=None):
+    def SetTracker(self, tracker_id, configuration=None) -> None:
         if tracker_id:
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
 
@@ -108,7 +108,7 @@ class Tracker():
             #   it happens with a different workflow than the other trackers. (See
             #   PolhemusTrackerConnection class for a more detailed explanation.)
             if isinstance(self.tracker_connection, tc.PolhemusTrackerConnection):
-                reconfigure = configuration is None
+                reconfigure: bool = configuration is None
                 self.tracker_connection.Connect(reconfigure)
             else:
                 self.tracker_connection.Connect()
@@ -128,7 +128,7 @@ class Tracker():
 
             self.SaveState()
 
-    def DisconnectTracker(self):
+    def DisconnectTracker(self) -> None:
         if self.tracker_connected:
             Publisher.sendMessage('Update status text in GUI',
                                     label=_("Disconnecting tracker ..."))
@@ -155,13 +155,13 @@ class Tracker():
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
 
-    def IsTrackerInitialized(self):
+    def IsTrackerInitialized(self)-> (bool | Any | None):
         return self.tracker_connection and self.tracker_id and self.tracker_connected
 
-    def AreTrackerFiducialsSet(self):
+    def AreTrackerFiducialsSet(self) -> bool:
         return not np.isnan(self.tracker_fiducials).any()
 
-    def GetTrackerCoordinates(self, ref_mode_id, n_samples=1):
+    def GetTrackerCoordinates(self, ref_mode_id, n_samples=1) -> tuple:
         coord_raw_samples = {}
         coord_samples = {}
 
@@ -182,7 +182,7 @@ class Tracker():
 
         return coord_avg, coord_raw_avg
 
-    def SetTrackerFiducial(self, ref_mode_id, fiducial_index):
+    def SetTrackerFiducial(self, ref_mode_id, fiducial_index) -> None:
         coord, coord_raw = self.GetTrackerCoordinates(
             ref_mode_id=ref_mode_id,
             n_samples=const.CALIBRATION_TRACKER_SAMPLES,
@@ -203,16 +203,16 @@ class Tracker():
 
         self.SaveState()
 
-    def ResetTrackerFiducials(self):
+    def ResetTrackerFiducials(self) -> None:
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
 
         self.SaveState()
 
-    def GetTrackerFiducials(self):
+    def GetTrackerFiducials(self)-> tuple:
         return self.tracker_fiducials, self.tracker_fiducials_raw
 
-    def GetTrackerFiducialForUI(self, index, coordinate_index):
+    def GetTrackerFiducialForUI(self, index, coordinate_index)-> (Any | Literal[0]):
         value = self.tracker_fiducials[index, coordinate_index]
         if np.isnan(value):
             value = 0
@@ -229,7 +229,7 @@ class Tracker():
     def GetTrackerId(self):
         return self.tracker_id
 
-    def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
+    def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre) -> None:
         if self.tracker_connected:
             selection_ctrl.SetSelection(self.tracker_id)
         else:
@@ -239,7 +239,7 @@ class Tracker():
         for m in range(3):
             coord = self.tracker_fiducials[m, :]
             for n in range(0, 3):
-                value = 0.0 if np.isnan(coord[n]) else float(coord[n])
+                value: float = 0.0 if np.isnan(coord[n]) else float(coord[n])
                 numctrls_fiducial[m][n].SetValue(value)
 
         txtctrl_fre.SetValue('')

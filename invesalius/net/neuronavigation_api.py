@@ -46,7 +46,7 @@ class NeuronavigationApi(metaclass=Singleton):
     """
     N_VERTICES_IN_POLYGON = 3
 
-    def __init__(self, connection=None):
+    def __init__(self, connection=None) -> None:
         if connection is not None:
             self.assert_valid(connection)
 
@@ -55,23 +55,23 @@ class NeuronavigationApi(metaclass=Singleton):
 
         self.connection = connection
 
-    def _hasmethod(self, obj, name):
+    def _hasmethod(self, obj, name) -> bool:
         return hasattr(obj, name) and callable(getattr(obj, name))
 
-    def assert_valid(self, connection):
+    def assert_valid(self, connection) -> None:
         assert self._hasmethod(connection, 'update_coil_at_target')
         assert self._hasmethod(connection, 'update_coil_pose')
         assert self._hasmethod(connection, 'update_focus')
         assert self._hasmethod(connection, 'set_callback__set_markers')
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         Publisher.subscribe(self.update_focus, 'Set cross focal point')
         Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
 
     # Functions for InVesalius to send updates.
 
-    def update_target_orientation(self, target_id, orientation):
+    def update_target_orientation(self, target_id, orientation) -> None:
         if self.connection is not None:
             self.connection.update_target_orientation(
                 target_id=target_id,
@@ -85,26 +85,26 @@ class NeuronavigationApi(metaclass=Singleton):
     #   would require changing 'Set cross focal point' publishers and subscribers
     #   throughout the code.
     #
-    def update_focus(self, position):
+    def update_focus(self, position) -> None:
         if self.connection is not None:
             self.connection.update_focus(
                 position=position[:3],
                 orientation=position[3:],
             )
 
-    def update_coil_pose(self, position, orientation):
+    def update_coil_pose(self, position, orientation) -> None:
         if self.connection is not None:
             self.connection.update_coil_pose(
                 position=position,
                 orientation=orientation,
             )
 
-    def update_coil_mesh(self, polydata):
+    def update_coil_mesh(self, polydata) -> None:
         if self.connection is not None:
             wrapped = dataset_adapter.WrapDataObject(polydata)
 
-            points = np.asarray(wrapped.Points)
-            polygons_raw = np.asarray(wrapped.Polygons)
+            points: ndarray[Any, dtype] = np.asarray(wrapped.Points)
+            polygons_raw: ndarray[Any, dtype] = np.asarray(wrapped.Polygons)
 
             # The polygons are returned as 1d-array of the form
             #
@@ -125,13 +125,13 @@ class NeuronavigationApi(metaclass=Singleton):
                 polygons=polygons,
             )
 
-    def update_coil_at_target(self, state):
+    def update_coil_at_target(self, state) -> None:
         if self.connection is not None:
             self.connection.update_coil_at_target(
                 state=state
             )
 
-    def update_efield(self, position, orientation, T_rot):
+    def update_efield(self, position, orientation, T_rot)-> (Any | None):
         if self.connection is not None:
             return self.connection.update_efield(
                 position=position,
@@ -142,7 +142,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     # Functions for InVesalius to receive updates via callbacks.
 
-    def __set_callbacks(self, connection):
+    def __set_callbacks(self, connection) -> None:
         connection.set_callback__set_markers(self.set_markers)
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
 
@@ -154,12 +154,12 @@ class NeuronavigationApi(metaclass=Singleton):
                 remove_when_released=remove_when_released,
             )
 
-    def remove_pedal_callback(self, name):
+    def remove_pedal_callback(self, name) -> None:
         if self.connection is not None:
             self.connection.remove_pedal_callback(name=name)
 
-    def open_orientation_dialog(self, target_id):
+    def open_orientation_dialog(self, target_id) -> None:
         wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
 
-    def set_markers(self, markers):
+    def set_markers(self, markers) -> None:
         wx.CallAfter(Publisher.sendMessage, 'Set markers', markers=markers)

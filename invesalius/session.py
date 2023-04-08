@@ -40,10 +40,10 @@ from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, decode, deep_merge_dict
 
 
-CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.json')
-OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.cfg')
+CONFIG_PATH: str = os.path.join(inv_paths.USER_INV_DIR, 'config.json')
+OLD_CONFIG_PATH: str = os.path.join(inv_paths.USER_INV_DIR, 'config.cfg')
 
-STATE_PATH = os.path.join(inv_paths.USER_INV_DIR, 'state.json')
+STATE_PATH: str = os.path.join(inv_paths.USER_INV_DIR, 'state.json')
 
 SESSION_ENCODING = 'utf8'
 
@@ -52,7 +52,7 @@ SESSION_ENCODING = 'utf8'
 # Singleton design pattern for implementing it
 class Session(metaclass=Singleton):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.temp_item = False
         self.mask_3d_preview = False
 
@@ -61,14 +61,14 @@ class Session(metaclass=Singleton):
             'language': '',
             'auto_reload_preview': False,
         }
-        self._exited_successfully_last_time = not self._ReadState()
+        self._exited_successfully_last_time: bool = not self._ReadState()
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self._Exit, 'Exit')
 
-    def CreateConfig(self):
+    def CreateConfig(self) -> None:
         import invesalius.constants as const
         self._config = {
             'mode': const.MODE_RP,
@@ -86,21 +86,21 @@ class Session(metaclass=Singleton):
         }
         self.WriteConfigFile()
 
-    def CreateState(self):
+    def CreateState(self) -> None:
         self._state = {}
         self.WriteStateFile()
 
-    def DeleteStateFile(self):
+    def DeleteStateFile(self) -> None:
         if os.path.exists(STATE_PATH):
             os.remove(STATE_PATH)
             print("Successfully deleted state file.")
         else:
             print("State file does not exist.")
 
-    def ExitedSuccessfullyLastTime(self):
+    def ExitedSuccessfullyLastTime(self) -> bool:
         return self._exited_successfully_last_time
 
-    def SetConfig(self, key, value):
+    def SetConfig(self, key, value) -> None:
         self._config[key] = value
         self.WriteConfigFile()
 
@@ -110,7 +110,7 @@ class Session(metaclass=Singleton):
         else:
             return default_value
 
-    def SetState(self, key, value):
+    def SetState(self, key, value) -> None:
         self._state[key] = value
         self.WriteStateFile()
 
@@ -124,7 +124,7 @@ class Session(metaclass=Singleton):
         import invesalius.constants as const
         return self.GetConfig('project_status') != const.PROJECT_STATUS_CLOSED
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         import invesalius.constants as const
         debug("Session.CloseProject")
         self.SetState('project_path', None)
@@ -132,7 +132,7 @@ class Session(metaclass=Singleton):
         #self.mode = const.MODE_RP
         self.temp_item = False
 
-    def SaveProject(self, path=()):
+    def SaveProject(self, path=()) -> None:
         import invesalius.constants as const
         debug("Session.SaveProject")
         if path:
@@ -143,12 +143,12 @@ class Session(metaclass=Singleton):
 
         self.SetConfig('project_status', const.PROJECT_STATUS_OPENED)
 
-    def ChangeProject(self):
+    def ChangeProject(self) -> None:
         import invesalius.constants as const
         debug("Session.ChangeProject")
         self.SetConfig('project_status', const.PROJECT_STATUS_CHANGED)
 
-    def CreateProject(self, filename):
+    def CreateProject(self, filename) -> None:
         import invesalius.constants as const
         debug("Session.CreateProject")
         Publisher.sendMessage('Begin busy cursor')
@@ -163,7 +163,7 @@ class Session(metaclass=Singleton):
 
         self.SetConfig('project_status', const.PROJECT_STATUS_NEW)
 
-    def OpenProject(self, filepath):
+    def OpenProject(self, filepath) -> None:
         import invesalius.constants as const
         debug("Session.OpenProject")
 
@@ -175,17 +175,17 @@ class Session(metaclass=Singleton):
         self.SetState('project_path', project_path)
         self.SetConfig('project_status', const.PROJECT_STATUS_OPENED)
 
-    def WriteConfigFile(self):
+    def WriteConfigFile(self) -> None:
         self._write_to_json(self._config, CONFIG_PATH)
 
-    def WriteStateFile(self):
+    def WriteStateFile(self) -> None:
         self._write_to_json(self._state, STATE_PATH)
 
-    def _write_to_json(self, config_dict, config_filename):
+    def _write_to_json(self, config_dict, config_filename) -> None:
         with open(config_filename, 'w') as config_file:
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
-    def _add_to_recent_projects(self, item):
+    def _add_to_recent_projects(self, item) -> None:
         import invesalius.constants as const
 
         # Recent projects list
@@ -200,7 +200,7 @@ class Session(metaclass=Singleton):
         recent_projects.insert(0, item)
         self.SetConfig('recent_projects', recent_projects[:const.RECENT_PROJECTS_MAXIMUM])
 
-    def _read_config_from_json(self, json_filename):
+    def _read_config_from_json(self, json_filename) -> None:
         with open(json_filename, 'r') as config_file:
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
@@ -209,25 +209,25 @@ class Session(metaclass=Singleton):
         # isn't a recover session tool in InVesalius yet.
         self.project_status = 3
 
-    def _read_config_from_ini(self, config_filename):
-        file = codecs.open(config_filename, 'rb', SESSION_ENCODING)
+    def _read_config_from_ini(self, config_filename) -> None:
+        file: StreamReaderWriter = codecs.open(config_filename, 'rb', SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
         config.readfp(file)
         file.close()
 
-        mode = config.getint('session', 'mode')
-        debug = config.getboolean('session', 'debug')
-        debug_efield = config.getboolean('session','debug_efield')
-        language = config.get('session','language')
-        last_dicom_folder = config.get('paths','last_dicom_folder') 
-        project_status = config.getint('session', 'status')
-        surface_interpolation = config.getint('session', 'surface_interpolation')
-        slice_interpolation = config.getint('session', 'slice_interpolation')
-        rendering = config.getint('session', 'rendering')
-        random_id = config.getint('session','random_id')
+        mode: int = config.getint('session', 'mode')
+        debug: bool = config.getboolean('session', 'debug')
+        debug_efield: bool = config.getboolean('session','debug_efield')
+        language: str = config.get('session','language')
+        last_dicom_folder: str = config.get('paths','last_dicom_folder') 
+        project_status: int = config.getint('session', 'status')
+        surface_interpolation: int = config.getint('session', 'surface_interpolation')
+        slice_interpolation: int = config.getint('session', 'slice_interpolation')
+        rendering: int = config.getint('session', 'rendering')
+        random_id: int = config.getint('session','random_id')
 
         recent_projects = eval(config.get('project','recent_projects'))
-        recent_projects = [list(rp) for rp in recent_projects]
+        recent_projects: list[list] = [list(rp) for rp in recent_projects]
 
         self.SetConfig('mode', mode)
         self.SetConfig('debug', debug)
@@ -249,7 +249,7 @@ class Session(metaclass=Singleton):
 
     # TODO: Make also this function private so that it is run when the class constructor is run.
     #   (Compare to _ReadState below.)
-    def ReadConfig(self):
+    def ReadConfig(self) -> bool:
         try:
             self._read_config_from_json(CONFIG_PATH)
         except Exception as e1:
@@ -262,12 +262,12 @@ class Session(metaclass=Singleton):
         self.WriteConfigFile()
         return True
 
-    def _ReadState(self):
+    def _ReadState(self) -> bool:
         success = False
         if os.path.exists(STATE_PATH):
             print("Restoring a previous state...")
 
-            state_file = open(STATE_PATH, 'r')
+            state_file: TextIOWrapper = open(STATE_PATH, 'r')
             try:
                 self._state = json.load(state_file)
                 success = True
@@ -285,7 +285,7 @@ class Session(metaclass=Singleton):
 
     # Exit-related functions
 
-    def StoreSessionDialog(self):
+    def StoreSessionDialog(self)-> Any:
         msg = _("Would you like to store the session?")
         if sys.platform == 'darwin':
             dialog = wx.MessageDialog(None, "", msg,
@@ -299,7 +299,7 @@ class Session(metaclass=Singleton):
 
         return answer == wx.ID_YES
 
-    def _Exit(self):
+    def _Exit(self) -> None:
         if not self.StoreSessionDialog():
             self.CloseProject()
             self.DeleteStateFile()

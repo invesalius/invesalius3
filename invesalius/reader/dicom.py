@@ -38,7 +38,7 @@ WL_MULT = 0  # allow selection of multiple window and level tuples if 1
 # dictionary to be used by module functions
 info = {}
 # keys to be used to generate dictionary info
-INFO_KEYS = [
+INFO_KEYS: list[str] = [
     "AcquisitionDate",
     "AcquisitionGantryTilt",
     "AcquisitionModality",
@@ -90,10 +90,10 @@ class Parser:
       >>> print image.GetImagePixelSpacing()
     """
 
-    def __init__(self):
-        self.filename = ""
-        self.encoding = ""
-        self.filepath = ""
+    def __init__(self) -> None:
+        self.filename: Literal[''] = ""
+        self.encoding: Literal[''] = ""
+        self.filepath: Literal[''] = ""
 
         # def SetFileName(self, filename):
         """
@@ -140,18 +140,18 @@ class Parser:
     # def GetImageData(self):
     #    return None#self.vtkgdcm_reader.GetOutput()
 
-    def SetDataImage(self, data_image, filename, thumbnail_path):
+    def SetDataImage(self, data_image, filename, thumbnail_path) -> None:
         self.data_image = data_image
         self.filename = self.filepath = filename
         self.thumbnail_path = thumbnail_path
 
-    def __format_time(self, value):
+    def __format_time(self, value)-> (Any | str):
         sp1 = value.split(".")
         sp2 = value.split(":")
 
         if (len(sp1) == 2) and (len(sp2) == 3):
             new_value = str(sp2[0] + sp2[1] + str(int(float(sp2[2]))))
-            data = time.strptime(new_value, "%H%M%S")
+            data: struct_time = time.strptime(new_value, "%H%M%S")
         elif len(sp1) == 2:
             data = time.gmtime(float(value))
         elif len(sp1) > 2:
@@ -166,14 +166,14 @@ class Parser:
                 return value
         return time.strftime("%H:%M:%S", data)
 
-    def __format_date(self, value):
+    def __format_date(self, value) -> str:
 
         sp1 = value.split(".")
         try:
 
             if len(sp1) > 1:
                 if len(sp1[0]) <= 2:
-                    data = time.strptime(value, "%D.%M.%Y")
+                    data: struct_time = time.strptime(value, "%D.%M.%Y")
                 else:
                     data = time.strptime(value, "%Y.%M.%d")
             elif len(value.split("//")) > 1:
@@ -185,7 +185,7 @@ class Parser:
         except (ValueError):
             return ""
 
-    def GetImageOrientationLabel(self):
+    def GetImageOrientationLabel(self)-> (Any | Literal['']):
         """
         Return Label regarding the orientation of
         an image. (AXIAL, SAGITTAL, CORONAL,
@@ -198,7 +198,7 @@ class Parser:
         else:
             return ""
 
-    def GetDimensionX(self):
+    def GetDimensionX(self) -> int | Literal['']:
         """
         Return integer associated to X dimension. This is related
         to the number of columns on the image.
@@ -209,7 +209,7 @@ class Parser:
             return int(str(data))
         return ""
 
-    def GetDimensionY(self):
+    def GetDimensionY(self) -> int | Literal['']:
         """
         Return integer associated to Y dimension. This is related
         to the number of rows on the image.
@@ -231,7 +231,7 @@ class Parser:
     #        return float(data)
     #    return ""
 
-    def GetImageDataType(self):
+    def GetImageDataType(self) -> Literal['Int8', 'Int16', '', 'UInt16', 'Int32', 'Float64']:
         """
         Return image's pixel representation data type (string). This
         might be:
@@ -242,12 +242,12 @@ class Parser:
           - UInt16
         Return "" otherwise.
         """
-        repres = self._GetPixelRepresentation()
+        repres: int | Literal[''] = self._GetPixelRepresentation()
 
-        bits = self._GetBitsAllocated()
+        bits: int | Literal[''] = self._GetBitsAllocated()
 
         if not bits:
-            answer = ""
+            answer: Literal[''] = ""
         else:
             answer = "UInt16"
 
@@ -263,7 +263,7 @@ class Parser:
 
         return answer
 
-    def GetImagePixelSpacingY(self):
+    def GetImagePixelSpacingY(self)-> (Any | float | Literal['']):
         """
         Return spacing between adjacent pixels considerating y axis
         (height). Values are usually floating point and represent mm.
@@ -276,7 +276,7 @@ class Parser:
             return spacing[1]
         return ""
 
-    def GetImagePixelSpacingX(self):
+    def GetImagePixelSpacingX(self) -> (Any | float | Literal['']):
         """
         Return spacing between adjacent pixels considerating x axis
         (width). Values are usually floating point and represent mm.
@@ -290,7 +290,7 @@ class Parser:
             return spacing[0]
         return ""
 
-    def GetAcquisitionDate(self):
+    def GetAcquisitionDate(self) -> str:
         """
         Return string containing the acquisition date using the
         format "dd/mm/yyyy".
@@ -308,7 +308,7 @@ class Parser:
             return self.__format_date(str(date))
         return ""
 
-    def GetAcquisitionNumber(self):
+    def GetAcquisitionNumber(self) -> int | Literal['']:
         """
         Return integer related to acquisition of this slice.
         Return "" if field is not defined.
@@ -320,7 +320,7 @@ class Parser:
             return int(str(data))
         return ""
 
-    def GetAccessionNumber(self):
+    def GetAccessionNumber(self) -> Literal['']:
         """
         Return integer related to acession number
 
@@ -336,7 +336,7 @@ class Parser:
             return value
         return ""
 
-    def GetAcquisitionTime(self):
+    def GetAcquisitionTime(self) -> (Any | str):
         """
         Return string containing the acquisition time using the
         format "hh:mm:ss".
@@ -349,7 +349,7 @@ class Parser:
             return self.__format_time(str(data))
         return ""
 
-    def GetPatientAdmittingDiagnosis(self):
+    def GetPatientAdmittingDiagnosis(self) -> int | Literal['']:
         """
         Return admitting diagnosis description (string).
         Return "" (empty string) if not defined.
@@ -365,7 +365,7 @@ class Parser:
             return int(res[1])
         return ""
 
-    def GetImageWindowLevel(self, preset=WL_PRESET, multiple=WL_MULT):
+    def GetImageWindowLevel(self, preset=WL_PRESET, multiple=WL_MULT) -> list[float] | float | Literal['300']:
         """
         Return image window center / level (related to brightness).
         This is an integer or a floating point. If the value can't
@@ -387,14 +387,14 @@ class Parser:
             # If multiple values are present for the "Window Center"
             # we choose only one. As this should be paired to "Window
             # Width", it is set based on WL_PRESET
-            value_list = [float(value) for value in data.split("\\")]
+            value_list: list[float] = [float(value) for value in data.split("\\")]
             if multiple:
                 return value_list
             else:
                 return value_list[preset]
         return "300"
 
-    def GetImageWindowWidth(self, preset=WL_PRESET, multiple=WL_MULT):
+    def GetImageWindowWidth(self, preset=WL_PRESET, multiple=WL_MULT) -> str:
         """
         Return image window width (related to contrast). This is an
         integer or a floating point. If the value can't be read,
@@ -420,7 +420,7 @@ class Parser:
             # If multiple values are present for the "Window Center"
             # we choose only one. As this should be paired to "Window
             # Width", it is set based on WL_PRESET
-            value_list = [float(value) for value in data.split("\\")]
+            value_list: list[float] = [float(value) for value in data.split("\\")]
 
             if multiple:
                 return str(value_list)
@@ -428,7 +428,7 @@ class Parser:
                 return str(value_list[preset])
         return "2000"
 
-    def GetImagePosition(self):
+    def GetImagePosition(self) -> list | Literal['']:
         """
         Return [x, y, z] (number list) related to coordinates
         of the upper left corner voxel (first voxel transmitted).
@@ -446,7 +446,7 @@ class Parser:
             return [eval(value) for value in data.split("\\")]
         return ""
 
-    def GetImageLocation(self):
+    def GetImageLocation(self) -> Any | Literal['']:
         """
         Return image location (floating value), related to the
         series acquisition.
@@ -459,7 +459,7 @@ class Parser:
             return eval(data)
         return ""
 
-    def GetImageOffset(self):
+    def GetImageOffset(self) -> int | Literal['']:
         """
         Return image pixel offset (memory position).
         Return "" if field is not defined.
@@ -475,7 +475,7 @@ class Parser:
             return int(data.split(":")[1])
         return ""
 
-    def GetImageSeriesNumber(self):
+    def GetImageSeriesNumber(self) -> int | Literal['']:
         """
         Return integer related to acquisition series where this
         slice is included.
@@ -492,7 +492,7 @@ class Parser:
             return int(data)
         return ""
 
-    def GetPixelSpacing(self):
+    def GetPixelSpacing(self)-> (Any | list[float]):
         """
         Return [x, y] (number list) related to the distance between
         each pair of pixel. That is, adjacent row spacing (delimiter)
@@ -509,7 +509,7 @@ class Parser:
         try:
             tag_spacing = self.data_image[str(0x0028)][str(0x0030)]
         except KeyError:
-            tag_spacing = ""
+            tag_spacing: Literal[''] = ""
 
         # Some dicom images have comma (,) as decimal separation. In this case
         # InVesalius is not using the spacing given by gdcm.ImageHelper but
@@ -519,7 +519,7 @@ class Parser:
         else:
             return [float(value) for value in tag_spacing.replace(",", ".").split("\\")]
 
-    def GetPatientWeight(self):
+    def GetPatientWeight(self) -> float | Literal['']:
         """
         Return patient's weight as a float value (kilograms).
         Return "" if field is not defined.
@@ -535,7 +535,7 @@ class Parser:
             return float(data)
         return ""
 
-    def GetPatientHeight(self):
+    def GetPatientHeight(self) -> float | Literal['']:
         """
         Return patient's height as a float value (meters).
         Return "" if field is not defined.
@@ -551,7 +551,7 @@ class Parser:
             return float(data)
         return ""
 
-    def GetPatientAddress(self):
+    def GetPatientAddress(self) -> (Any | Literal['']):
         """
         Return string containing patient's address.
 
@@ -565,7 +565,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientMilitarRank(self):
+    def GetPatientMilitarRank(self) -> (Any | Literal['']):
         """
         Return string containing patient's militar rank.
         Return "" if field is not defined.
@@ -580,7 +580,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientMilitarBranch(self):
+    def GetPatientMilitarBranch(self) -> (Any | Literal['']):
         """
         Return string containing the militar branch.
         The country allegiance may also be included
@@ -597,7 +597,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientCountry(self):
+    def GetPatientCountry(self) -> (Any | Literal['']):
         """
         Return string containing the country where the patient
         currently resides.
@@ -614,7 +614,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientRegion(self):
+    def GetPatientRegion(self) -> (Any | Literal['']):
         """
         Return string containing the region where the patient
         currently resides.
@@ -631,7 +631,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientTelephone(self):
+    def GetPatientTelephone(self) -> (Any | Literal['']):
         """
         Return string containing the patient's telephone number.
         Return "" if field is not defined.
@@ -647,7 +647,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientResponsible(self):
+    def GetPatientResponsible(self) -> (Any | Literal['']):
         """
         Return string containing the name of the person with
         medical decision authority in regards to this patient.
@@ -664,7 +664,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientResponsibleRole(self):
+    def GetPatientResponsibleRole(self) -> (Any | Literal['']):
         """
         Return string containing the relationship of the responsible
         person in regards to this patient.
@@ -681,7 +681,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientResponsibleOrganization(self):
+    def GetPatientResponsibleOrganization(self) -> (Any | Literal['']):
         """
         Return string containing the organization name with
         medical decision authority in regards to this patient.
@@ -698,7 +698,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientMedicalCondition(self):
+    def GetPatientMedicalCondition(self) -> (Any | Literal['']):
         """
         Return string containing patient medical conditions
         (e.g. contagious illness, drug allergies, etc.).
@@ -715,7 +715,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientContrastAllergies(self):
+    def GetPatientContrastAllergies(self) -> (Any | Literal['']):
         """
         Return string containing description of prior alergical
         reactions to contrast agents.
@@ -732,7 +732,7 @@ class Parser:
             return data
         return ""
 
-    def GetPhysicianReferringName(self):
+    def GetPhysicianReferringName(self) -> (Any | Literal['']):
         """
         Return string containing physician
         of the patient.
@@ -751,7 +751,7 @@ class Parser:
             return data
         return ""
 
-    def GetPhysicianReferringAddress(self):
+    def GetPhysicianReferringAddress(self) -> (Any | Literal['']):
         """
         Return string containing physician's address.
         Return "" if field is not defined.
@@ -767,7 +767,7 @@ class Parser:
             return data
         return ""
 
-    def GetPhysicianeReferringTelephone(self):
+    def GetPhysicianeReferringTelephone(self) -> (Any | Literal['']):
         """
         Return string containing physician's telephone.
         Return "" if field is not defined.
@@ -783,7 +783,7 @@ class Parser:
             return data
         return ""
 
-    def GetProtocolName(self):
+    def GetProtocolName(self)-> (Any | None):
         """
         Return string containing the protocal name
         used in the acquisition
@@ -799,7 +799,7 @@ class Parser:
             return data
         return None
 
-    def GetImageType(self):
+    def GetImageType(self)-> (Any | None):
         """
         Return list containing strings related to image origin.
         Eg: ["ORIGINAL", "PRIMARY", "AXIAL"] or ["DERIVED",
@@ -824,7 +824,7 @@ class Parser:
                 return []
         return []
 
-    def GetSOPClassUID(self):
+    def GetSOPClassUID(self)-> (Any | Literal['']):
         """
         Return string containing the Unique Identifier for the SOP
         class.
@@ -841,7 +841,7 @@ class Parser:
             return data
         return ""
 
-    def GetSOPInstanceUID(self):
+    def GetSOPInstanceUID(self)-> (Any | Literal['']):
         """
         Return string containing Unique Identifier for the SOP
         instance.
@@ -858,7 +858,7 @@ class Parser:
             return data
         return ""
 
-    def GetStudyInstanceUID(self):
+    def GetStudyInstanceUID(self)-> (Any | Literal['']):
         """
         Return string containing Unique Identifier of the
         Study Instance.
@@ -875,7 +875,7 @@ class Parser:
             return data
         return ""
 
-    def GetImagePatientOrientation(self):
+    def GetImagePatientOrientation(self) -> list[float]:
         """
         Return matrix [x0, x1, x2, y0, y1, y2] related to patient
         image acquisition orientation. All values are in floating
@@ -895,7 +895,7 @@ class Parser:
             return [float(value) for value in data.split("\\")]
         return [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
 
-    def GetImageColumnOrientation(self):
+    def GetImageColumnOrientation(self) -> list[float]:
         """
         Return matrix [x0, x1, x2] related to patient images'
         column acquisition orientation. All values are in floating
@@ -913,7 +913,7 @@ class Parser:
             return [float(value) for value in data.split("\\")[3:6]]
         return [0.0, 1.0, 0.0]
 
-    def GetImageRowOrientation(self):
+    def GetImageRowOrientation(self) -> list[float]:
         """
         Return matrix [y0, y1, y2] related to patient images'
         row acquisition orientation. All values are in floating
@@ -931,7 +931,7 @@ class Parser:
             return [float(value) for value in data.split("\\")[0:3]]
         return [1.0, 0.0, 0.0]
 
-    def GetFrameReferenceUID(self):
+    def GetFrameReferenceUID(self)-> (Any | Literal['']):
         """
         Return string containing Frame of Reference UID.
         Return "" if field is not defined.
@@ -947,7 +947,7 @@ class Parser:
             return data
         return ""
 
-    def GetImageSamplesPerPixel(self):
+    def GetImageSamplesPerPixel(self) -> int:
         """
         Return integer related to Samples per Pixel. Eg. 1.
         Return "" if field is not defined.
@@ -963,7 +963,7 @@ class Parser:
             return 1
         return int(data)
 
-    def GetPhotometricInterpretation(self):
+    def GetPhotometricInterpretation(self)-> (Any | Literal['']):
         """
         Return string containing the photometric interpretation.
         Eg. "MONOCHROME2".
@@ -979,7 +979,7 @@ class Parser:
             return res[1]
         return ""
 
-    def GetBitsStored(self):
+    def GetBitsStored(self)-> (Any | Literal['']):
         """
         Return number related to number of bits stored.
         Eg. 12 or 16.
@@ -995,7 +995,7 @@ class Parser:
             return int(res[1])
         return ""
 
-    def GetHighBit(self):
+    def GetHighBit(self)-> (Any | Literal['']):
         """
         Return string containing hight bit. This is commonly 11 or 15.
         Return "" if field is not defined.
@@ -1010,7 +1010,7 @@ class Parser:
             return int(res[1])
         return ""
 
-    def GetProtocolName(self):
+    def GetProtocolName(self)-> (Any | Literal['']):
         """
         Return protocol name (string). This info varies according to
         manufactor and software interface. Eg. "FACE", "aFaceSpi",
@@ -1027,7 +1027,7 @@ class Parser:
             return ""
         return ""
 
-    def GetAcquisionSequence(self):
+    def GetAcquisionSequence(self)-> (Any | Literal['']):
         """
         Return description (string) of the sequence how data was
         acquired. That is:
@@ -1052,7 +1052,7 @@ class Parser:
             return data
         return ""
 
-    def GetInstitutionName(self):
+    def GetInstitutionName(self)-> (Any | Literal['']):
         """
         Return instution name (string) of the institution where the
         acquisitin quipment is located.
@@ -1068,7 +1068,7 @@ class Parser:
             return data
         return ""
 
-    def GetInstitutionAddress(self):
+    def GetInstitutionAddress(self)-> (Any | Literal['']):
         """
         Return mailing address (string) of the institution where the
         acquisitin quipment is located. Some institutions record only
@@ -1086,7 +1086,7 @@ class Parser:
             return data
         return ""
 
-    def GetStudyInstanceUID(self):
+    def GetStudyInstanceUID(self)-> (Any | Literal['']):
         """
         Return Study Instance UID (string), related to series being
         analized.
@@ -1103,7 +1103,7 @@ class Parser:
             return data
         return ""
 
-    def GetPatientOccupation(self):
+    def GetPatientOccupation(self)-> (Any | Literal['']):
         """
         Return occupation of the patient (string).
         Return "" if field is not defined.
@@ -1119,7 +1119,7 @@ class Parser:
             return data
         return ""
 
-    def _GetPixelRepresentation(self):
+    def _GetPixelRepresentation(self) -> int | Literal['']:
         """
         Return pixel representation of the data sample. Each sample
         should have the same pixel representation. Common values are:
@@ -1136,7 +1136,7 @@ class Parser:
             return int(res[1])
         return ""
 
-    def _GetBitsAllocated(self):
+    def _GetBitsAllocated(self) -> int | Literal['']:
         """
         Return integer containing the number of bits allocated for
         each pixel sample. Each sample should have the same number
@@ -1157,7 +1157,7 @@ class Parser:
             return int(data)
         return ""
 
-    def GetNumberOfFrames(self):
+    def GetNumberOfFrames(self) -> int:
         """
         Number of frames in a multi-frame image.
 
@@ -1169,7 +1169,7 @@ class Parser:
             return 1
         return int(data)
 
-    def GetPatientBirthDate(self):
+    def GetPatientBirthDate(self) -> str:
         """
         Return string containing the patient's birth date using the
         format "dd/mm/yyyy".
@@ -1187,7 +1187,7 @@ class Parser:
             return self.__format_date(str(data))
         return ""
 
-    def GetStudyID(self):
+    def GetStudyID(self) -> str:
         """
         Return string containing the Study ID.
         Return "" if not set.
@@ -1203,7 +1203,7 @@ class Parser:
             return str(data)
         return ""
 
-    def GetAcquisitionGantryTilt(self):
+    def GetAcquisitionGantryTilt(self) -> float:
         """
         Return floating point containing nominal angle of
         tilt (in degrees) accordingly to the scanning gantry.
@@ -1220,7 +1220,7 @@ class Parser:
             return float(str(data))
         return 0.0
 
-    def GetPatientGender(self):
+    def GetPatientGender(self)-> (Any | Literal['']):
         """
         Return patient gender (string):
           - M: male
@@ -1246,7 +1246,7 @@ class Parser:
 
         return ""
 
-    def GetPatientAge(self):
+    def GetPatientAge(self) -> (int | Any | Literal['']):
         """
         Return patient's age (integer). In case there are alpha
         characters in this field, a string is returned.
@@ -1267,7 +1267,7 @@ class Parser:
                 return age
         return ""
 
-    def GetPatientName(self):
+    def GetPatientName(self)-> (Any | Literal['']):
         """
         Return patient's full legal name (string).
         If not defined, return "".
@@ -1286,7 +1286,7 @@ class Parser:
             print(err)
         return data
 
-    def GetPatientID(self):
+    def GetPatientID(self)-> (Any | Literal['']):
         """
         Return primary hospital identification number (string)
         or patient's identification number (string).
@@ -1308,7 +1308,7 @@ class Parser:
                 return data
         return ""
 
-    def GetEquipmentXRayTubeCurrent(self):
+    def GetEquipmentXRayTubeCurrent(self)-> (Any | Literal['']):
         """
         Return float value associated to the X-ray tube current
         (expressed in mA).
@@ -1325,7 +1325,7 @@ class Parser:
             return data
         return ""
 
-    def GetExposureTime(self):
+    def GetExposureTime(self) -> float | Literal['']:
         """
         Return float value associated to the time of X-ray tube current
         exposure (expressed in s).
@@ -1342,7 +1342,7 @@ class Parser:
             return float(data)
         return ""
 
-    def GetEquipmentKVP(self):
+    def GetEquipmentKVP(self) -> float | Literal['']:
         """
         Return float value associated to the kilo voltage peak
         output of the (x-ray) used generator.
@@ -1359,7 +1359,7 @@ class Parser:
             return float(data)
         return ""
 
-    def GetImageThickness(self):
+    def GetImageThickness(self) -> float | Literal[0]:
         """
         Return float value related to the nominal reconstructed
         slice thickness (expressed in mm).
@@ -1375,7 +1375,7 @@ class Parser:
             return float(data)
         return 0
 
-    def GetImageConvolutionKernel(self):
+    def GetImageConvolutionKernel(self)-> (Any | Literal['']):
         """
         Return string related to convolution kernel or algorithm
         used to reconstruct the data. This is very dependent on the
@@ -1394,7 +1394,7 @@ class Parser:
             return data
         return ""
 
-    def GetEquipmentInstitutionName(self):
+    def GetEquipmentInstitutionName(self)-> (Any | Literal['']):
         """
         Return institution name (string) where the acquisition
         equipment is located.
@@ -1411,7 +1411,7 @@ class Parser:
             return data
         return ""
 
-    def GetStationName(self):
+    def GetStationName(self)-> (Any | Literal['']):
         """
         Return user defined machine name (string) used to produce exam
         files.
@@ -1428,7 +1428,7 @@ class Parser:
             return data
         return ""
 
-    def GetManufacturerModelName(self):
+    def GetManufacturerModelName(self)-> (Any | Literal['']):
         """
         Return equipment model name (string) used to generate exam
         files.
@@ -1445,7 +1445,7 @@ class Parser:
             return data
         return ""
 
-    def GetManufacturerName(self):
+    def GetManufacturerName(self)-> (Any | Literal['']):
         """
         Return Manufacturer of the equipment that produced
         the composite instances.
@@ -1459,7 +1459,7 @@ class Parser:
             return data
         return ""
 
-    def GetEquipmentManufacturer(self):
+    def GetEquipmentManufacturer(self)-> (Any | Literal['']):
         """
         Return manufacturer name (string).
         Return "" if not defined.
@@ -1475,7 +1475,7 @@ class Parser:
             return data
         return ""
 
-    def GetAcquisitionModality(self):
+    def GetAcquisitionModality(self)-> (Any | Literal['']):
         """
         Return modality of acquisition:
           - CT: Computed Tomography
@@ -1493,7 +1493,7 @@ class Parser:
             return data
         return ""
 
-    def GetImageNumber(self):
+    def GetImageNumber(self) -> int:
         """
         Return slice number (integer).
         Return "" if not defined.
@@ -1509,7 +1509,7 @@ class Parser:
             return int(data)
         return 0
 
-    def GetStudyDescription(self):
+    def GetStudyDescription(self) -> (Any | Literal[''] | None):
         """
         Return study description (string).
         Return "" if not defined.
@@ -1524,7 +1524,7 @@ class Parser:
         except (KeyError):
             return ""
 
-    def GetStudyAdmittingDiagnosis(self):
+    def GetStudyAdmittingDiagnosis(self) -> str:
         """
         Return admitting diagnosis description (string).
         Return "" (empty string) if not defined.
@@ -1551,7 +1551,7 @@ class Parser:
         except (KeyError):
             return _("unnamed")
 
-        encoding = self.GetEncoding()
+        encoding: str = self.GetEncoding()
         try:
             data = data.encode(encoding, errors="surrogateescape").decode(encoding)
         except Exception as err:
@@ -1564,7 +1564,7 @@ class Parser:
         else:
             return _("unnamed")
 
-    def GetImageTime(self):
+    def GetImageTime(self)-> (Any | str):
         """
         Return the image time.
         DICOM standard tag (0x0008,0x0033) was used.
@@ -1578,7 +1578,7 @@ class Parser:
             return self.__format_time(data)
         return ""
 
-    def GetAcquisitionTime(self):
+    def GetAcquisitionTime(self)-> (Any | str):
         """
         Return the acquisition time.
         DICOM standard tag (0x0008,0x032) was used.
@@ -1592,7 +1592,7 @@ class Parser:
             return self.__format_time(data)
         return ""
 
-    def GetSerieNumber(self):
+    def GetSerieNumber(self)-> (Any | Literal['']):
         """
         Return the serie number
         DICOM standard tag (0x0020, 0x0011) was used.
@@ -1606,7 +1606,7 @@ class Parser:
             return data
         return ""
 
-    def GetEncoding(self):
+    def GetEncoding(self) -> str:
         """
         Return the dicom encoding
         DICOM standard tag (0x0008, 0x0005) was used.
@@ -1647,15 +1647,15 @@ class DicomWriter:
     >>> write.Save()
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
-        self.reader = ""
+        self.reader: Literal[''] = ""
         self.anony = gdcm.Anonymizer()
-        self.path = ""
+        self.path: Literal[''] = ""
         self.new_dicom = vtkgdcm.vtkGDCMImageWriter()
         reader = self.reader = gdcm.Reader()
 
-    def SetFileName(self, path):
+    def SetFileName(self, path) -> None:
         """
         Set Dicom File Name
         """
@@ -1667,13 +1667,13 @@ class DicomWriter:
 
             self.anony.SetFile(self.reader.GetFile())
 
-    def SetInput(self, img_data):
+    def SetInput(self, img_data) -> None:
         """
         Input vtkImageData
         """
         self.img_data = img_data
 
-    def __CreateNewDicom(self, img_data):
+    def __CreateNewDicom(self, img_data) -> None:
         """
         Create New Dicom File, input is
         a vtkImageData
@@ -1683,7 +1683,7 @@ class DicomWriter:
         new_dicom.SetInput(img_data)
         new_dicom.Write()
 
-    def SaveIsNew(self, img_data):
+    def SaveIsNew(self, img_data) -> None:
         """
         Write Changes in Dicom file or Create
         New Dicom File
@@ -1696,7 +1696,7 @@ class DicomWriter:
         self.SetFileName(self.path)
         self.anony.SetFile(self.reader.GetFile())
 
-    def Save(self):
+    def Save(self) -> None:
 
         reader = self.reader
 
@@ -1705,37 +1705,37 @@ class DicomWriter:
         writer.SetFileName(self.path)
         writer.Write()
 
-    def SetPatientName(self, patient):
+    def SetPatientName(self, patient) -> None:
         """
         Set Patient Name requeries string type
         """
         self.anony.Replace(gdcm.Tag(0x0010, 0x0010), str(patient))
 
-    def SetImageThickness(self, thickness):
+    def SetImageThickness(self, thickness) -> None:
         """
         Set thickness value requeries float type
         """
         self.anony.Replace(gdcm.Tag(0x0018, 0x0050), str(thickness))
 
-    def SetImageSeriesNumber(self, number):
+    def SetImageSeriesNumber(self, number) -> None:
         """
         Set Serie Number value requeries int type
         """
         self.anony.Replace(gdcm.Tag(0x0020, 0x0011), str(number))
 
-    def SetImageNumber(self, number):
+    def SetImageNumber(self, number) -> None:
         """
         Set image Number value requeries int type
         """
         self.anony.Replace(gdcm.Tag(0x0020, 0x0013), str(number))
 
-    def SetImageLocation(self, location):
+    def SetImageLocation(self, location) -> None:
         """
         Set slice location value requeries float type
         """
         self.anony.Replace(gdcm.Tag(0x0020, 0x1041), str(number))
 
-    def SetImagePosition(self, position):
+    def SetImagePosition(self, position) -> None:
         """
         Set slice position value requeries list
         with three values x, y and z
@@ -1745,26 +1745,26 @@ class DicomWriter:
             str(position[0]) + "\\" + str(position[1]) + "\\" + str(position[2]),
         )
 
-    def SetAcquisitionModality(self, modality):
+    def SetAcquisitionModality(self, modality) -> None:
         """
         Set modality study CT or RM
         """
         self.anony.Replace(gdcm.Tag(0x0008, 0x0060), str(modality))
 
-    def SetPixelSpacing(self, spacing):
+    def SetPixelSpacing(self, spacing) -> None:
         """
         Set pixel spacing x and y
         """
         self.anony.Replace(gdcm.Tag(0x0028, 0x0030), str(spacing))
 
-    def SetInstitutionName(self, institution):
+    def SetInstitutionName(self, institution) -> None:
         """
         Set institution name
         """
         self.anony.Replace(gdcm.Tag(0x0008, 0x0080), str(institution))
 
 
-def BuildDictionary(filename):
+def BuildDictionary(filename)-> dict:
     """
     Given a DICOM filename, generate dictionary containing parsed
     information.
@@ -1791,20 +1791,20 @@ def LoadDictionary(filename):
     """
     import pickle
 
-    fp = open(filename, "rb")
+    fp: BufferedReader = open(filename, "rb")
     info = pickle.load(fp)
     fp.close()
     return info
 
 
-def DumpDictionary(filename, dictionary=info):
+def DumpDictionary(filename, dictionary=info) -> None:
     """
     Given a filename and a dictionary (optional), write DICOM
     information to file in binary form.
     """
     import pickle
 
-    fp = open(filename, "wb")
+    fp: BufferedWriter = open(filename, "wb")
     pickle.dump(info, fp)
     fp.close()
 
@@ -1816,7 +1816,7 @@ if __name__ == "__main__":
     total = 48
 
     for i in range(1, total + 1):
-        filename = "..//data//" + str(i) + ".dcm"
+        filename: str = "..//data//" + str(i) + ".dcm"
 
         parser = Parser()
         if parser.SetFileName(filename):
@@ -1849,10 +1849,10 @@ if __name__ == "__main__":
 
 
 class Dicom(object):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def SetParser(self, parser):
+    def SetParser(self, parser) -> None:
         self.parser = parser
 
         self.LoadImageInfo()
@@ -1860,24 +1860,24 @@ class Dicom(object):
         self.LoadAcquisitionInfo()
         # self.LoadStudyInfo()
 
-    def LoadImageInfo(self):
+    def LoadImageInfo(self) -> None:
         self.image = Image()
         self.image.SetParser(self.parser)
 
-    def LoadPatientInfo(self):
+    def LoadPatientInfo(self) -> None:
         self.patient = Patient()
         self.patient.SetParser(self.parser)
 
-    def LoadAcquisitionInfo(self):
+    def LoadAcquisitionInfo(self) -> None:
         self.acquisition = Acquisition()
         self.acquisition.SetParser(self.parser)
 
 
 class Patient(object):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def SetParser(self, parser):
+    def SetParser(self, parser) -> None:
         self.name = parser.GetPatientName()
         self.id = parser.GetPatientID()
         self.age = parser.GetPatientAge()
@@ -1887,10 +1887,10 @@ class Patient(object):
 
 
 class Acquisition(object):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def SetParser(self, parser):
+    def SetParser(self, parser) -> None:
         self.patient_orientation = parser.GetImagePatientOrientation()
         self.tilt = parser.GetAcquisitionGantryTilt()
         self.id_study = parser.GetStudyID()
@@ -1908,16 +1908,16 @@ class Acquisition(object):
 
 
 class Image(object):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def SetParser(self, parser):
+    def SetParser(self, parser) -> None:
         self.level = parser.GetImageWindowLevel()
         self.window = parser.GetImageWindowWidth()
 
         self.position = parser.GetImagePosition()
         if not (self.position):
-            self.position = [1, 1, 1]
+            self.position: list[int] = [1, 1, 1]
 
         self.number = parser.GetImageNumber()
         self.spacing = list(parser.GetPixelSpacing())

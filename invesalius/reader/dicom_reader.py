@@ -56,7 +56,7 @@ else:
     _has_win32api = False
 
 
-def ReadDicomGroup(dir_):
+def ReadDicomGroup(dir_) -> (tuple | Literal[False]):
 
     patient_group = GetDicomGroups(dir_)
     if len(patient_group) > 0:
@@ -109,12 +109,12 @@ dict_file = {}
 
 
 class LoadDicom:
-    def __init__(self, grouper, filepath):
+    def __init__(self, grouper, filepath) -> None:
         self.grouper = grouper
         self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
 
-    def run(self):
+    def run(self) -> None:
         grouper = self.grouper
         reader = gdcm.ImageReader()
         if _has_win32api:
@@ -152,13 +152,13 @@ class LoadDicom:
                 if data_element.IsEmpty():
                     encoding_value = "ISO_IR 100"
                 else:
-                    encoding_value = str(ds.GetDataElement(tag).GetValue()).split("\\")[0]
+                    encoding_value: str = str(ds.GetDataElement(tag).GetValue()).split("\\")[0]
 
                 if encoding_value.startswith("Loaded"):
                     encoding = "ISO_IR 100"
                 else:
                     try:
-                        encoding = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
+                        encoding: str = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
                     except KeyError:
                         encoding = "ISO_IR 100"
             else:
@@ -217,9 +217,9 @@ class LoadDicom:
 
             try:
                 data = data_dict[str(0x028)][str(0x1050)]
-                level = [float(value) for value in data.split("\\")][0]
+                level: float = [float(value) for value in data.split("\\")][0]
                 data = data_dict[str(0x028)][str(0x1051)]
-                window = [float(value) for value in data.split("\\")][0]
+                window: float = [float(value) for value in data.split("\\")][0]
             except (KeyError, ValueError):
                 level = None
                 window = None
@@ -276,7 +276,7 @@ class LoadDicom:
         # plistlib.writePlist(main_dict, ".//teste.plist")
 
 
-def yGetDicomGroups(directory, recursive=True, gui=True):
+def yGetDicomGroups(directory, recursive=True, gui=True)-> Generator[tuple[int, int] | list, None, None]:
     """
     Return all full paths to DICOM files inside given directory.
     """
@@ -332,31 +332,31 @@ def GetDicomGroups(directory, recursive=True):
 
 
 class ProgressDicomReader:
-    def __init__(self):
+    def __init__(self) -> None:
         Publisher.subscribe(self.CancelLoad, "Cancel DICOM load")
 
-    def CancelLoad(self):
+    def CancelLoad(self) -> None:
         self.running = False
         self.stoped = True
 
-    def SetWindowEvent(self, frame):
+    def SetWindowEvent(self, frame) -> None:
         self.frame = frame
 
-    def SetDirectoryPath(self, path, recursive=True):
+    def SetDirectoryPath(self, path, recursive=True) -> None:
         self.running = True
         self.stoped = False
         self.GetDicomGroups(path, recursive)
 
-    def UpdateLoadFileProgress(self, cont_progress):
+    def UpdateLoadFileProgress(self, cont_progress) -> None:
         Publisher.sendMessage("Update dicom load", data=cont_progress)
 
-    def EndLoadFile(self, patient_list):
+    def EndLoadFile(self, patient_list) -> None:
         Publisher.sendMessage("End dicom load", patient_series=patient_list)
 
-    def GetDicomGroups(self, path, recursive):
+    def GetDicomGroups(self, path, recursive) -> None:
 
         if not const.VTK_WARNING:
-            log_path = utils.encode(
+            log_path: bytes | str = utils.encode(
                 str(inv_paths.USER_LOG_DIR.joinpath("vtkoutput.txt")), const.FS_ENCODE
             )
             fow = vtkFileOutputWindow()

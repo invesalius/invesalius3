@@ -33,7 +33,7 @@ from invesalius.pubsub import pub as Publisher
 #   functionality should be gathered here.
 
 class Robot():
-    def __init__(self, tracker):
+    def __init__(self, tracker) -> None:
         self.tracker = tracker
 
         self.matrix_tracker_to_robot = None
@@ -44,19 +44,19 @@ class Robot():
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
 
-        state = {
+        state: dict[str, Any] = {
             'tracker_to_robot': matrix_tracker_to_robot,
         }
         session = ses.Session()
         session.SetState('robot', state)
 
-    def LoadState(self):
+    def LoadState(self) -> bool:
         session = ses.Session()
         state = session.GetState('robot')
 
@@ -66,7 +66,7 @@ class Robot():
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
         return True
 
-    def ConfigureRobot(self):
+    def ConfigureRobot(self) -> bool:
         self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self.tracker)
 
         # Show dialog and store relevant output values.
@@ -86,13 +86,13 @@ class Robot():
 
         return True
 
-    def AbortRobotConfiguration(self):
+    def AbortRobotConfiguration(self) -> None:
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
-    def InitializeRobot(self):
+    def InitializeRobot(self) -> None:
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
-    def DisconnectRobot(self):
+    def DisconnectRobot(self) -> None:
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)

@@ -22,14 +22,14 @@ import shutil
 import sys
 import tempfile
 
-HOME_DIR = pathlib.Path().home()
+HOME_DIR: Path = pathlib.Path().home()
 CONF_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", HOME_DIR.joinpath(".config")))
-USER_INV_DIR = CONF_DIR.joinpath("invesalius")
+USER_INV_DIR: Path = CONF_DIR.joinpath("invesalius")
 USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")
 USER_LOG_DIR = USER_INV_DIR.joinpath("logs")
 USER_DL_WEIGHTS = USER_INV_DIR.joinpath("deep_learning/weights/")
 USER_RAYCASTING_PRESETS_DIRECTORY = USER_PRESET_DIR.joinpath("raycasting")
-TEMP_DIR = tempfile.gettempdir()
+TEMP_DIR: str = tempfile.gettempdir()
 
 USER_PLUGINS_DIRECTORY = USER_INV_DIR.joinpath("plugins")
 
@@ -37,7 +37,7 @@ OLD_USER_INV_DIR = HOME_DIR.joinpath(".invesalius")
 OLD_USER_PRESET_DIR = OLD_USER_INV_DIR.joinpath("presets")
 OLD_USER_LOG_DIR = OLD_USER_INV_DIR.joinpath("logs")
 
-INV_TOP_DIR = pathlib.Path(__file__).parent.parent.resolve()
+INV_TOP_DIR: Path = pathlib.Path(__file__).parent.parent.resolve()
 
 PLUGIN_DIRECTORY = INV_TOP_DIR.joinpath("plugins") 
 
@@ -94,7 +94,7 @@ if not os.path.exists(ICON_DIR):
     DOC_DIR = INV_TOP_DIR.parent.parent.joinpath("docs").resolve()
 
 
-def create_conf_folders():
+def create_conf_folders() -> None:
     USER_INV_DIR.mkdir(parents=True, exist_ok=True)
     USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
     USER_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -102,7 +102,7 @@ def create_conf_folders():
     USER_PLUGINS_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
-def copy_old_files():
+def copy_old_files() -> None:
     for f in OLD_USER_INV_DIR.glob("*"):
         if f.is_file():
             print(

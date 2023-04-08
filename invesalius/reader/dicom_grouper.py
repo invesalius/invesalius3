@@ -68,21 +68,21 @@ import invesalius.utils as utils
 import invesalius.constants as const
 
 
-ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
+ORIENT_MAP: dict[str, int] = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 
 class DicomGroup:
 
-    general_index = -1
-    def __init__(self):
+    general_index: int = -1
+    def __init__(self) -> None:
         DicomGroup.general_index += 1
-        self.index = DicomGroup.general_index
+        self.index: int = DicomGroup.general_index
         # key:
         # (dicom.patient.name, dicom.acquisition.id_study,
         #  dicom.acquisition.series_number,
         #  dicom.image.orientation_label, index)
-        self.key = ()
-        self.title = ""
+        self.key: tuple[()] = ()
+        self.title: Literal[''] = ""
         self.slices_dict = {} # slice_position: Dicom.dicom
         # IDEA (13/10): Represent internally as dictionary,
         # externally as list
@@ -90,7 +90,7 @@ class DicomGroup:
         self.zspacing = 1
         self.dicom = None
         
-    def AddSlice(self, dicom):
+    def AddSlice(self, dicom) -> bool:
         if not self.dicom:
             self.dicom = dicom
 
@@ -112,7 +112,7 @@ class DicomGroup:
             self.nslices += dicom.image.number_of_frames
             return True
 
-    def GetList(self):
+    def GetList(self) -> dict_values:
         # Should be called when user selects this group
         # This list will be used to create the vtkImageData
         # (interpolated)
@@ -124,7 +124,7 @@ class DicomGroup:
         # (interpolated)
 
         if _has_win32api:
-            filelist = [win32api.GetShortPathName(dicom.image.file)
+            filelist: list[str] = [win32api.GetShortPathName(dicom.image.file)
                         for dicom in
                         self.slices_dict.values()]
         else:
@@ -149,22 +149,22 @@ class DicomGroup:
 
         return filelist
 
-    def GetHandSortedList(self):
+    def GetHandSortedList(self)-> list:
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
         list_ = list(self.slices_dict.values())
         dicom = list_[0]
-        axis = ORIENT_MAP[dicom.image.orientation_label]
+        axis: int = ORIENT_MAP[dicom.image.orientation_label]
         #list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
         list_ = sorted(list_, key = lambda dicom:dicom.image.number)
         return list_
 
-    def UpdateZSpacing(self):
+    def UpdateZSpacing(self) -> None:
         list_ = self.GetHandSortedList()
         
         if (len(list_) > 1):
             dicom = list_[0]
-            axis = ORIENT_MAP[dicom.image.orientation_label]
+            axis: int = ORIENT_MAP[dicom.image.orientation_label]
             p1 = dicom.image.position[axis]
             
             dicom = list_[1]
@@ -175,21 +175,21 @@ class DicomGroup:
             self.zspacing = 1
 
     def GetDicomSample(self):
-        size = len(self.slices_dict)
+        size: int = len(self.slices_dict)
         dicom = self.GetHandSortedList()[size//2]
         return dicom
             
 class PatientGroup:
-    def __init__(self):
+    def __init__(self) -> None:
         # key:
         # (dicom.patient.name, dicom.patient.id)
-        self.key = ()
+        self.key: tuple[()] = ()
         self.groups_dict = {} # group_key: DicomGroup
         self.nslices = 0
         self.ngroups = 0
         self.dicom = None
 
-    def AddFile(self, dicom, index=0):
+    def AddFile(self, dicom, index=0) -> None:
         # Given general DICOM information, we group slices according
         # to main series information (group_key)
 
@@ -198,7 +198,7 @@ class PatientGroup:
 
         # Problem 2 is being fixed by the way this method is
         # implemented, dinamically during new dicom's addition
-        group_key = (dicom.patient.name,
+        group_key: tuple[Any, Any, Any, Any, int] = (dicom.patient.name,
                      dicom.acquisition.id_study,
                      dicom.acquisition.serie_number,
                      dicom.image.orientation_label,
@@ -227,7 +227,7 @@ class PatientGroup:
             #Getting the spacing in the Z axis
             group.UpdateZSpacing()
                     
-    def Update(self):
+    def Update(self) -> None:
         # Ideally, AddFile would be sufficient for splitting DICOM
         # files into groups (series). However, this does not work for
         # acquisitions / equipments and manufacturers.
@@ -248,16 +248,16 @@ class PatientGroup:
             utils.debug("Problem1")
             self.groups_dict = self.FixProblem1(self.groups_dict)
         
-    def GetGroups(self):
+    def GetGroups(self)-> list:
         glist = self.groups_dict.values()
         glist = sorted(glist, key = lambda group:group.title,
                 reverse=True)
         return glist
 
-    def GetDicomSample(self):
+    def GetDicomSample(self)-> (Any | None):
         return self.dicom
 
-    def FixProblem1(self, dict):
+    def FixProblem1(self, dict)-> dict:
         """
         Merge multiple DICOM groups in case Problem 1 (description
         above) occurs.
@@ -347,10 +347,10 @@ class DicomPatientGrouper:
     # grouper.Update()
     # groups = GetPatientGroups()
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.patients_dict = {}
     
-    def AddFile(self, dicom):
+    def AddFile(self, dicom) -> None:
         patient_key = (dicom.patient.name,
                        dicom.patient.id)
     
@@ -365,11 +365,11 @@ class DicomPatientGrouper:
             patient = self.patients_dict[patient_key]
             patient.AddFile(dicom)
        
-    def Update(self):
+    def Update(self) -> None:
         for patient in self.patients_dict.values():
             patient.Update()
     
-    def GetPatientsGroups(self):
+    def GetPatientsGroups(self)-> list:
         """
         How to use:
         patient_list = grouper.GetPatientsGroups()

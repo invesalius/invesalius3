@@ -30,7 +30,7 @@ from invesalius.utils import TwoWaysDictionary
 
 class Presets():
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.thresh_ct = TwoWaysDictionary({
             _("Bone"):(226,3071),
             _("Soft Tissue"):(-700,225),
@@ -68,13 +68,13 @@ class Presets():
         })
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.UpdateThresholdModes,
                             'Update threshold limits list')
 
-    def UpdateThresholdModes(self, threshold_range):
+    def UpdateThresholdModes(self, threshold_range) -> None:
         thresh_min, thresh_max = threshold_range
-        presets_list = (self.thresh_ct, self.thresh_mri)
+        presets_list: tuple[TwoWaysDictionary, TwoWaysDictionary] = (self.thresh_ct, self.thresh_mri)
 
         for presets in presets_list:
             for key in presets:
@@ -100,8 +100,8 @@ class Presets():
         Publisher.sendMessage('Update threshold limits',
                               threshold_range=(thresh_min, thresh_max))
 
-    def SavePlist(self, filename):
-        filename = "%s$%s" % (filename, 'presets.plist')
+    def SavePlist(self, filename) -> LiteralString:
+        filename: LiteralString = "%s$%s" % (filename, 'presets.plist')
         preset = {}
         
         translate_to_en = {_("Bone"):"Bone",
@@ -134,7 +134,7 @@ class Presets():
             plistlib.dump(preset, f)
         return os.path.split(filename)[1]
 
-    def OpenPlist(self, filename):
+    def OpenPlist(self, filename) -> None:
 
         translate_to_x = {"Bone":_("Bone"),
                 "Soft Tissue":_("Soft Tissue"),
@@ -171,8 +171,8 @@ class Presets():
 
 
 
-def get_wwwl_presets():
-    files = glob.glob(os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
+def get_wwwl_presets()->dict:
+    files: list[str] = glob.glob(os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
     presets = {}
     for f in files:
         p = os.path.splitext(os.path.basename(f))[0]
@@ -180,10 +180,10 @@ def get_wwwl_presets():
     return presets
 
 
-def get_wwwl_preset_colours(pfile):
+def get_wwwl_preset_colours(pfile)->list:
     with open(pfile, 'rb') as f:
         preset = plistlib.load(f, fmt=plistlib.FMT_XML)
-    ncolours = len(preset['Blue'])
+    ncolours: int = len(preset['Blue'])
     colours = []
     for i in range(ncolours):
         r = preset['Red'][i]

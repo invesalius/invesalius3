@@ -75,7 +75,7 @@ import invesalius.utils as utils
 
 from invesalius import inv_paths
 
-FS_ENCODE = sys.getfilesystemencoding()
+FS_ENCODE: str = sys.getfilesystemencoding()
 LANG = None
 
 # ------------------------------------------------------------------
@@ -95,7 +95,7 @@ if session.ReadConfig():
     lang = session.GetConfig('language')
     if lang:
         try:
-            _ = i18n.InstallLanguage(lang)
+            _: str = i18n.InstallLanguage(lang)
             LANG = lang
         except FileNotFoundError:
             pass
@@ -105,7 +105,7 @@ class InVesalius(wx.App):
     """
     InVesalius wxPython application class.
     """
-    def OnInit(self):
+    def OnInit(self) -> Literal[True]:
         """
         Initialize splash screen and main frame.
         """
@@ -119,16 +119,16 @@ class InVesalius(wx.App):
 
         return True
 
-    def MacOpenFile(self, filename):
+    def MacOpenFile(self, filename) -> None:
         """
         Open drag & drop files under darwin
         """
         path = os.path.abspath(filename)
         Publisher.sendMessage('Open project', filepath=path)
 
-    def Startup2(self):
-        self.control = self.splash.control
-        self.frame = self.splash.main
+    def Startup2(self) -> None:
+        self.control: Controller = self.splash.control
+        self.frame: Frame = self.splash.main
         self.SetTopWindow(self.frame)
         self.frame.Show()
         self.frame.Raise()
@@ -139,7 +139,7 @@ class Inv3SplashScreen(SplashScreen):
     """
     Splash screen to be shown in InVesalius initialization.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         # Splash screen image will depend on the current language
         lang = LANG
         self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
@@ -147,11 +147,11 @@ class Inv3SplashScreen(SplashScreen):
         # Language information is available in session configuration
         # file. First we need to check if this file exist, if now, it
         # should be created
-        create_session = LANG is None
+        create_session: bool = LANG is None
 
         install_lang = False
         if lang:
-            _ = i18n.InstallLanguage(lang)
+            _: str = i18n.InstallLanguage(lang)
             install_lang = True
 
         # If no language is set into session file, show dialog so
@@ -171,8 +171,8 @@ class Inv3SplashScreen(SplashScreen):
                     session.SetConfig('language', lang)
                     _ = i18n.InstallLanguage(lang)
                 else:
-                    homedir = os.path.expanduser('~')
-                    config_dir = os.path.join(homedir, ".invesalius")
+                    homedir: str = os.path.expanduser('~')
+                    config_dir: str = os.path.join(homedir, ".invesalius")
                     shutil.rmtree(config_dir)
 
                     sys.exit()
@@ -202,13 +202,13 @@ class Inv3SplashScreen(SplashScreen):
 
             if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
                                         or sys.frozen == "console_exe"):
-                abs_file_path = os.path.abspath(".." + os.sep)
-                path = abs_file_path
-                path = os.path.join(path, 'icons', icon_file)
+                abs_file_path: str = os.path.abspath(".." + os.sep)
+                path: str = abs_file_path
+                path: str = os.path.join(path, 'icons', icon_file)
             else:
-                path = os.path.join(inv_paths.ICON_DIR, icon_file)
+                path: str = os.path.join(inv_paths.ICON_DIR, icon_file)
                 if not os.path.exists(path):
-                    path = os.path.join(inv_paths.ICON_DIR, "splash_en.png")
+                    path: str = os.path.join(inv_paths.ICON_DIR, "splash_en.png")
 
             bmp = wx.Image(path).ConvertToBitmap()
 
@@ -227,7 +227,7 @@ class Inv3SplashScreen(SplashScreen):
             wx.GetApp().Yield()
             wx.CallLater(200, self.Startup)
 
-    def Startup(self):
+    def Startup(self) -> None:
         # Importing takes sometime, therefore it will be done
         # while splash is being shown
         from invesalius.gui.frame import Frame
@@ -238,7 +238,7 @@ class Inv3SplashScreen(SplashScreen):
         self.control = Controller(self.main)
 
         self.fc = wx.CallLater(200, self.ShowMain)
-        args = parse_command_line()
+        args: Namespace = parse_command_line()
         wx.CallLater(1, use_cmd_optargs, args)
 
         # Check for updates
@@ -259,7 +259,7 @@ class Inv3SplashScreen(SplashScreen):
         else:
             session.CreateState()
 
-    def OnClose(self, evt):
+    def OnClose(self, evt) -> None:
         # Make sure the default handler runs too so this window gets
         # destroyed
         evt.Skip()
@@ -272,7 +272,7 @@ class Inv3SplashScreen(SplashScreen):
             self.fc.Stop()
             self.ShowMain()
 
-    def ShowMain(self):
+    def ShowMain(self) -> None:
         # Show main frame
         self.main.Show()
 
@@ -280,12 +280,12 @@ class Inv3SplashScreen(SplashScreen):
             self.Raise()
 
 
-def non_gui_startup(args):
+def non_gui_startup(args) -> None:
     if LANG:
         lang = LANG
     else:
         lang = 'en'
-    _ = i18n.InstallLanguage(lang)
+    _: str = i18n.InstallLanguage(lang)
 
     from invesalius.control import Controller
     from invesalius.project import Project
@@ -302,7 +302,7 @@ def non_gui_startup(args):
 # ------------------------------------------------------------------
 
 
-def parse_command_line():
+def parse_command_line() -> Namespace:
     """
     Handle command line arguments.
     """
@@ -361,11 +361,11 @@ def parse_command_line():
     parser.add_argument("--debug-efield", action="store_true", dest="debug_efield",
                       help="Debug navigated TMS E-field computation")
 
-    args = parser.parse_args()
+    args: Namespace = parser.parse_args()
     return args
 
 
-def use_cmd_optargs(args):
+def use_cmd_optargs(args) -> bool:
     # If import DICOM argument...
     if args.dicom_dir:
         import_dir = args.dicom_dir
@@ -425,13 +425,13 @@ def use_cmd_optargs(args):
     return False
 
 
-def sanitize(text):
+def sanitize(text) -> str:
     text = str(text).strip().replace(' ', '_')
     return re.sub(r'(?u)[^-\w.]', '', text)
 
 
-def check_for_export(args, suffix='', remove_surfaces=False):
-    suffix = sanitize(suffix)
+def check_for_export(args, suffix='', remove_surfaces=False) -> None:
+    suffix: str = sanitize(suffix)
 
     if args.export:
         if not args.threshold:
@@ -441,7 +441,7 @@ def check_for_export(args, suffix='', remove_surfaces=False):
 
         if suffix:
             if args.export.endswith('.stl'):
-                path_ = '{}-{}.stl'.format(args.export[:-4], suffix)
+                path_: str = '{}-{}.stl'.format(args.export[:-4], suffix)
             else:
                 path_ = '{}-{}.stl'.format(args.export, suffix)
         else:
@@ -468,13 +468,13 @@ def check_for_export(args, suffix='', remove_surfaces=False):
         export_filename = args.export_project
         if suffix:
             export_filename, ext = os.path.splitext(export_filename)
-            export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
+            export_filename: str = u'{}-{}{}'.format(export_filename, suffix, ext)
 
         prj.export_project(export_filename, save_masks=args.save_masks)
         print("Saved {}".format(export_filename))
 
 
-def export(path_, threshold_range, remove_surface=False):
+def export(path_, threshold_range, remove_surface=False) -> None:
     import invesalius.constants as const
 
     Publisher.sendMessage('Set threshold values',
@@ -502,14 +502,14 @@ def export(path_, threshold_range, remove_surface=False):
                               surface_indexes=(0,))
 
 
-def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
+def print_events(topic=Publisher.AUTO_TOPIC, **msg_data) -> None:
     """
     Print pubsub messages
     """
     utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
 
-def init():
+def init() -> None:
     """
     Initialize InVesalius.
 
@@ -526,7 +526,7 @@ def init():
         key = "InVesalius 3.1\InstallationDir"
         hKey = winreg.OpenKey (root, key, 0, winreg.KEY_READ)
         value, type_ = winreg.QueryValueEx (hKey, "")
-        path = os.path.join(value,'dist')
+        path: str = os.path.join(value,'dist')
 
         os.chdir(path)
 
@@ -541,7 +541,7 @@ def init():
         sys.stderr = open(path, "w")
 
 
-def main(connection=None):
+def main(connection=None) -> None:
     """
     Start InVesalius.
 

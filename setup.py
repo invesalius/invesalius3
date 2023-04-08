@@ -12,21 +12,21 @@ if sys.platform == "darwin":
     unix_copt = ["-Xpreprocessor", "-fopenmp", "-lomp"]
     unix_lopt = ["-Xpreprocessor", "-fopenmp", "-lomp"]
 else:
-    unix_copt = [
+    unix_copt: list[str] = [
         "-fopenmp",
     ]
-    unix_lopt = [
+    unix_lopt: list[str] = [
         "-fopenmp",
     ]
 
 
-copt = {"msvc": ["/openmp"], "mingw32": ["-fopenmp"], "unix": unix_copt}
+copt: dict[str, list[str]] = {"msvc": ["/openmp"], "mingw32": ["-fopenmp"], "unix": unix_copt}
 
-lopt = {"mingw32": ["-fopenmp"], "unix": unix_lopt}
+lopt: dict[str, list[str]] = {"mingw32": ["-fopenmp"], "unix": unix_lopt}
 
 
 class build_ext_subclass(build_ext):
-    def build_extensions(self):
+    def build_extensions(self) -> None:
         c = self.compiler.compiler_type
         print("Compiler", c)
         if c in copt:
@@ -45,21 +45,21 @@ class BuildPluginsCommand(setuptools.Command):
     A custom command to build all plugins with cython code.
     """
 
-    description = "Build all plugins with cython code"
+    description: str = "Build all plugins with cython code"
     user_options = []
 
-    def initialize_options(self):
+    def initialize_options(self) -> None:
         pass
 
-    def finalize_options(self):
+    def finalize_options(self) -> None:
         pass
 
-    def run(self):
-        compilable_plugins = ["porous_creation", "remove_tiny_objects"]
-        inv_folder = pathlib.Path(__file__).parent.resolve()
-        plugins_folder = inv_folder.joinpath("plugins")
+    def run(self) -> None:
+        compilable_plugins: list[str] = ["porous_creation", "remove_tiny_objects"]
+        inv_folder: Path = pathlib.Path(__file__).parent.resolve()
+        plugins_folder: Path = inv_folder.joinpath("plugins")
         for p in compilable_plugins:
-            plugin_folder = plugins_folder.joinpath(p)
+            plugin_folder: Path = plugins_folder.joinpath(p)
             self.announce("Compiling plugin: {}".format(p))
             os.chdir(plugin_folder)
             subprocess.check_call(

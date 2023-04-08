@@ -26,20 +26,20 @@ import wx
 from invesalius.pubsub import pub as Publisher
 
 class RemoteControl:
-    def __init__(self, remote_host):
+    def __init__(self, remote_host) -> None:
         self._remote_host = remote_host
         self._connected = False
         self._sio = None
 
-    def _on_connect(self):
+    def _on_connect(self) -> None:
         print("Connected to {}".format(self._remote_host))
         self._connected = True
 
-    def _on_disconnect(self):
+    def _on_disconnect(self) -> None:
         print("Disconnected")
         self._connected = False
 
-    def _to_neuronavigation(self, msg):
+    def _to_neuronavigation(self, msg) -> None:
         topic = msg["topic"]
         data = msg["data"]
         if data is None:
@@ -51,12 +51,12 @@ class RemoteControl:
             **data
         )
 
-    def _to_neuronavigation_wrapper(self, msg):
+    def _to_neuronavigation_wrapper(self, msg) -> None:
         # wx.CallAfter wrapping is needed to make messages that update WxPython UI work properly, as the
         # Socket.IO listener runs inside a thread. (See WxPython and thread-safety for more information.)
         wx.CallAfter(self._to_neuronavigation, msg)
 
-    def connect(self):
+    def connect(self) -> None:
         self._sio = socketio.Client()
 
         self._sio.on('connect', self._on_connect)
@@ -70,7 +70,7 @@ class RemoteControl:
             print("Connecting...")
             time.sleep(1.0)
 
-        def _emit(topic, data):
+        def _emit(topic, data) -> None:
             #print("Emitting data {} to topic {}".format(data, topic))
             try:
                 if isinstance(topic, str):

@@ -39,8 +39,8 @@ MEASURE_NAME_PATTERN = _("M %d")
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
 
-DEFAULT_MEASURE_COLOUR = (1,0,0)
-DEFAULT_MEASURE_BG_COLOUR = (250/255.0, 247/255.0, 218/255.0)
+DEFAULT_MEASURE_COLOUR: tuple[Literal[1], Literal[0], Literal[0]] = (1,0,0)
+DEFAULT_MEASURE_BG_COLOUR: tuple[float, float, float] = (250/255.0, 247/255.0, 218/255.0)
 DEFAULT_MEASURE_RADIUS = 1
 DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
 
@@ -64,33 +64,33 @@ TEXT_SIZE = 12
 TEXT_SIZE_LARGE = 16
 TEXT_SIZE_EXTRA_LARGE = 20
 TEXT_SIZE_DIST_NAV = 32
-TEXT_COLOUR = (1,1,1)
+TEXT_COLOUR: tuple[Literal[1], Literal[1], Literal[1]] = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
 (XZ, YZ) = (0.05, 0.93)
-TEXT_POS_LEFT_UP = (X, Y)
+TEXT_POS_LEFT_UP: tuple[float, float] = (X, Y)
 #------------------------------------------------------------------
-TEXT_POS_LEFT_DOWN = (X, 1-Y) # SetVerticalJustificationToBottom
+TEXT_POS_LEFT_DOWN: tuple[float, float] = (X, 1-Y) # SetVerticalJustificationToBottom
 
-TEXT_POS_LEFT_DOWN_ZERO = (X, 1-YZ)
+TEXT_POS_LEFT_DOWN_ZERO: tuple[float, float] = (X, 1-YZ)
 #------------------------------------------------------------------
-TEXT_POS_RIGHT_UP = (1-X, Y) # SetJustificationToRight
+TEXT_POS_RIGHT_UP: tuple[float, float] = (1-X, Y) # SetJustificationToRight
 #------------------------------------------------------------------
-TEXT_POS_RIGHT_DOWN = (1-X, 1-Y) # SetVerticalJustificationToBottom &
+TEXT_POS_RIGHT_DOWN: tuple[float, float] = (1-X, 1-Y) # SetVerticalJustificationToBottom &
                                  # SetJustificationToRight
 #------------------------------------------------------------------
-TEXT_POS_HCENTRE_DOWN = (0.5, 1-Y) # SetJustificationToCentered
+TEXT_POS_HCENTRE_DOWN: tuple[float, float] = (0.5, 1-Y) # SetJustificationToCentered
                                    # ChildrticalJustificationToBottom
 
-TEXT_POS_HCENTRE_DOWN_ZERO = (0.5, 1-YZ)
+TEXT_POS_HCENTRE_DOWN_ZERO: tuple[float, float] = (0.5, 1-YZ)
 #------------------------------------------------------------------
-TEXT_POS_HCENTRE_UP = (0.5, Y)  # SetJustificationToCentered
+TEXT_POS_HCENTRE_UP: tuple[float, float] = (0.5, Y)  # SetJustificationToCentered
 #------------------------------------------------------------------
-TEXT_POS_VCENTRE_RIGHT = (1-X, 0.5) # SetVerticalJustificationToCentered
+TEXT_POS_VCENTRE_RIGHT: tuple[float, float] = (1-X, 0.5) # SetVerticalJustificationToCentered
                                     # SetJustificationToRight
-TEXT_POS_VCENTRE_RIGHT_ZERO = (1-XZ, 0.5)
+TEXT_POS_VCENTRE_RIGHT_ZERO: tuple[float, float] = (1-XZ, 0.5)
 #------------------------------------------------------------------
-TEXT_POS_VCENTRE_LEFT = (X, 0.5) # SetVerticalJustificationToCentered
+TEXT_POS_VCENTRE_LEFT: tuple[float, float] = (X, 0.5) # SetVerticalJustificationToCentered
 #------------------------------------------------------------------
 
 
@@ -222,9 +222,9 @@ VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
 
 #proj = Project()
 #THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
-THRESHOLD_RANGE = [0,3033]
+THRESHOLD_RANGE: list[int] = [0,3033]
 THRESHOLD_PRESETS_INDEX = _("Bone")
-THRESHOLD_HUE_RANGE = (0, 0.6667)
+THRESHOLD_HUE_RANGE: tuple[Literal[0], float] = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
 THRESHOLD_OUTVALUE = 0
 
@@ -276,7 +276,7 @@ SURFACE_COLOUR =  [(0.33, 1, 0.33),
 # Related to slice editor brush
 BRUSH_CIRCLE = 0 #
 BRUSH_SQUARE = 1
-DEFAULT_BRUSH_FORMAT = BRUSH_CIRCLE
+DEFAULT_BRUSH_FORMAT: Literal[0] = BRUSH_CIRCLE
 
 BRUSH_DRAW = 0
 BRUSH_ERASE = 1
@@ -287,7 +287,7 @@ BRUSH_THRESH_ERASE_ONLY = 5
 DEFAULT_BRUSH_OP = BRUSH_THRESH
 BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
-BRUSH_COLOUR = (0,0,1.0)
+BRUSH_COLOUR: tuple[Literal[0], Literal[0], float] = (0,0,1.0)
 BRUSH_SIZE = 30
 BRUSH_MAX_SIZE = 100
 
@@ -334,7 +334,7 @@ REDUCE_IMAGEDATA_QUALITY = 0
 
 
 # PATHS
-FS_ENCODE = sys.getfilesystemencoding()
+FS_ENCODE: str = sys.getfilesystemencoding()
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), str(inv_paths.ICON_DIR.joinpath("view_front.png"))],
              VOL_BACK: [_("Back"), str(inv_paths.ICON_DIR.joinpath("view_back.png"))],
@@ -400,7 +400,7 @@ RAYCASTING_TOOLS = [_("Cut plane")]
 # If 0 dont't blur, 1 blur
 RAYCASTING_WWWL_BLUR = 0
 
-RAYCASTING_PRESETS_FOLDERS = (inv_paths.RAYCASTING_PRESETS_DIRECTORY,
+RAYCASTING_PRESETS_FOLDERS: tuple[Path, Path] = (inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                               inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY)
 
 
@@ -471,8 +471,8 @@ VTK_WARNING = 0
  ID_IMPORT_OTHERS_FILES, ID_PREFERENCES, ID_DICOM_NETWORK, ID_TIFF_JPG_PNG,
  ID_VIEW_INTERPOLATED, ID_MODE_NAVIGATION, ID_ANALYZE_IMPORT, ID_NIFTI_IMPORT,
  ID_PARREC_IMPORT, ID_MODE_DBS] = [wx.NewId() for number in range(22)]
-ID_EXIT = wx.ID_EXIT
-ID_ABOUT = wx.ID_ABOUT
+ID_EXIT: Literal[0] = wx.ID_EXIT
+ID_ABOUT: Literal[0] = wx.ID_ABOUT
 
 
 [ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] =\
@@ -560,7 +560,7 @@ VOLUME_STATE_SEED = 2001
 #  STATE_LINEAR_MEASURE = 3001
 #  STATE_ANGULAR_MEASURE = 3002
 
-TOOL_STATES = [STATE_WL, STATE_SPIN, STATE_ZOOM,
+TOOL_STATES: list[int] = [STATE_WL, STATE_SPIN, STATE_ZOOM,
                STATE_ZOOM_SL, STATE_PAN, STATE_MEASURE_DISTANCE,
                STATE_MEASURE_ANGLE, STATE_MEASURE_DENSITY_ELLIPSE,
                STATE_MEASURE_DENSITY_POLYGON,
@@ -568,11 +568,11 @@ TOOL_STATES = [STATE_WL, STATE_SPIN, STATE_ZOOM,
 
 
 
-TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL,
+TOOL_SLICE_STATES: list[int] = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL,
                      SLICE_STATE_REORIENT, SLICE_STATE_TRACTS]
 
 
-SLICE_STYLES = TOOL_STATES + TOOL_SLICE_STATES
+SLICE_STYLES: list[int] = TOOL_STATES + TOOL_SLICE_STATES
 SLICE_STYLES.append(STATE_DEFAULT)
 SLICE_STYLES.append(SLICE_STATE_EDITOR)
 SLICE_STYLES.append(SLICE_STATE_WATERSHED)
@@ -585,7 +585,7 @@ SLICE_STYLES.append(STATE_MEASURE_DENSITY)
 SLICE_STYLES.append(STATE_MEASURE_DENSITY_ELLIPSE)
 SLICE_STYLES.append(STATE_MEASURE_DENSITY_POLYGON)
 
-STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
+STYLE_LEVEL: dict[int, int] = {SLICE_STATE_EDITOR: 1,
                SLICE_STATE_WATERSHED: 1,
                SLICE_STATE_MASK_FFILL: 2,
                SLICE_STATE_REMOVE_MASK_PARTS: 2,
@@ -616,7 +616,7 @@ LANGUAGE = 2
 SLICE_INTERPOLATION = 3
 
 #Correlaction extracted from pyDicom
-DICOM_ENCODING_TO_PYTHON = {
+DICOM_ENCODING_TO_PYTHON: dict[str | None, str] = {
                             'None':'iso8859',
                             None:'iso8859',
                             '': 'iso8859',
@@ -668,7 +668,7 @@ Z_COLUMN = 6
 
 #------------ Navigation defaults -------------------
 
-MARKER_COLOUR = (1.0, 1.0, 0.)
+MARKER_COLOUR: tuple[float, float, float] = (1.0, 1.0, 0.)
 MARKER_SIZE = 2
 ARROW_MARKER_SIZE = 10
 CALIBRATION_TRACKER_SAMPLES = 10
@@ -686,10 +686,10 @@ OPTITRACK = 8
 ROBOT = 9
 DEBUGTRACKRANDOM = 10
 DEBUGTRACKAPPROACH = 11
-DEFAULT_TRACKER = SELECT
+DEFAULT_TRACKER: Literal[0] = SELECT
 
 NDICOMPORT = b'COM1'
-NDI_IP = ['169.254.145.124']
+NDI_IP: list[str] = ['169.254.145.124']
 
 TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
@@ -704,7 +704,7 @@ DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
 
-DEFAULT_COIL = SELECT
+DEFAULT_COIL: Literal[0] = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
            _("Magstim 70 mm"), _("Nexstim")]
 
@@ -827,7 +827,7 @@ SLEEP_NAVIGATION = 0.2
 SLEEP_COORDINATES = 0.1
 
 BRAIN_OPACITY = 0.6
-N_CPU = psutil.cpu_count()
+N_CPU: int = psutil.cpu_count()
 # the max_sampling_step can be set to something different as well. Above 100 is probably not necessary
 TREKKER_CONFIG = {'seed_max': 1,
                   'step_size': 0.03125,
@@ -850,11 +850,11 @@ CURRENT_MARKER_FILE_VERSION = 0
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") 
 
 # Serial port
-BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
+BAUD_RATES: list[int] = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
 BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 #Robot
-ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_ElFIN_IP: list[str] = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
 
 MTMS_RADIUS = 15

@@ -25,7 +25,7 @@ import os
 import os.path
 import re
 
-def get_svn_revision(path=None):
+def get_svn_revision(path=None) -> (str | Any):
     """
     Returns the SVN revision in the form pspb-XXXX,
     where XXXX is the revision number.
@@ -39,20 +39,20 @@ def get_svn_revision(path=None):
     """
     rev = None
     if path is None:
-        path = os.curdir
-        entries_path = '%s/.svn/entries' % path
+        path: str = os.curdir
+        entries_path: str = '%s/.svn/entries' % path
  	
     try:
-        entries = open(entries_path, 'r').read()
+        entries: str = open(entries_path, 'r').read()
     except IOError:
         pass
     else:
         # Versions >= 7 of the entries file are flat text.  The first line is
         # the version number. The next set of digits after 'dir' is the revision.
         if re.match('(\d+)', entries):
-            rev_match = re.search('\d+\s+dir\s+(\d+)', entries)
+            rev_match: Match[str] | None = re.search('\d+\s+dir\s+(\d+)', entries)
             if rev_match:
-                rev = rev_match.groups()[0]
+                rev: str | Any = rev_match.groups()[0]
         # Older XML versions of the file specify revision as an attribute of
         # the first entries node.
         else:

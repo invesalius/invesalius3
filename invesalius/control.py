@@ -54,7 +54,7 @@ DEFAULT_THRESH_MODE = 0
 
 class Controller():
 
-    def __init__(self, frame):
+    def __init__(self, frame) -> None:
         self.surface_manager = srf.SurfaceManager()
         self.volume = volume.Volume()
         self.plugin_manager = plugins.PluginManager()
@@ -69,7 +69,7 @@ class Controller():
         # DICOM = 1
         # TIFF uCT = 2
         self.img_type = 0
-        self.affine = np.identity(4)
+        self.affine: ndarray[Any, dtype[floating[_64Bit]]] = np.identity(4)
 
         self.measure_manager = measures.MeasurementManager()
 
@@ -77,7 +77,7 @@ class Controller():
 
         self.plugin_manager.find_plugins()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnImportGroup, 'Import group')
         Publisher.subscribe(self.OnImportFolder, 'Import folder')
@@ -128,42 +128,42 @@ class Controller():
         Publisher.subscribe(self.disable_mask_preview, 'Disable mask 3D preview')
         Publisher.subscribe(self.update_mask_preview, 'Update mask 3D preview')
 
-    def SetBitmapSpacing(self, spacing):
+    def SetBitmapSpacing(self, spacing) -> None:
         proj = prj.Project()
         proj.spacing = spacing
 
-    def OnCancelImport(self):
+    def OnCancelImport(self) -> None:
         #self.cancel_import = True
         Publisher.sendMessage('Hide import panel')
 
 
-    def OnCancelImportBitmap(self):
+    def OnCancelImportBitmap(self) -> None:
         #self.cancel_import = True
         Publisher.sendMessage('Hide import bitmap panel')
 
 ###########################
 ###########################
 
-    def OnShowDialogImportDirectory(self):
+    def OnShowDialogImportDirectory(self) -> None:
         self.ShowDialogImportDirectory()
 
-    def OnShowDialogImportOtherFiles(self, id_type):
+    def OnShowDialogImportOtherFiles(self, id_type) -> None:
         self.ShowDialogImportOtherFiles(id_type)
 
-    def OnShowDialogOpenProject(self):
+    def OnShowDialogOpenProject(self) -> None:
         self.ShowDialogOpenProject()
 
-    def OnShowDialogSaveProject(self, save_as):
+    def OnShowDialogSaveProject(self, save_as) -> None:
         self.ShowDialogSaveProject(save_as)
 
-    def OnShowDialogCloseProject(self):
+    def OnShowDialogCloseProject(self) -> None:
         self.ShowDialogCloseProject()
 
-    def OnShowBitmapFile(self):
+    def OnShowBitmapFile(self) -> None:
         self.ShowDialogImportBitmapFile()
 ###########################
 
-    def ShowDialogImportBitmapFile(self):
+    def ShowDialogImportBitmapFile(self) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig('project_status')
@@ -189,7 +189,7 @@ class Controller():
             self.StartImportBitmapPanel(dirpath)
         #    Publisher.sendMessage("Load data to import panel", dirpath)
 
-    def ShowDialogImportDirectory(self):
+    def ShowDialogImportDirectory(self) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig('project_status')
@@ -212,7 +212,7 @@ class Controller():
         elif dirpath:
             self.StartImportPanel(dirpath)
 
-    def ShowDialogImportOtherFiles(self, id_type):
+    def ShowDialogImportOtherFiles(self, id_type) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig('project_status')
@@ -236,7 +236,7 @@ class Controller():
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
         Publisher.sendMessage("Open other files", filepath=filepath)
 
-    def ShowDialogOpenProject(self):
+    def ShowDialogOpenProject(self) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig('project_status')
@@ -255,7 +255,7 @@ class Controller():
                 self.CloseProject()
             self.OpenProject(filepath)
 
-    def ShowDialogSaveProject(self, saveas=False):
+    def ShowDialogSaveProject(self, saveas=False) -> None:
         session = ses.Session()
         if saveas or session.temp_item:
             proj = prj.Project()
@@ -264,14 +264,14 @@ class Controller():
                 return
         else:
             proj = prj.Project()
-            compress = proj.compress
+            compress: bool | Any = proj.compress
             dirpath, filename = session.GetState('project_path')
             filepath = os.path.join(dirpath, filename)
 
         self.SaveProject(filepath, compress)
 
 
-    def ShowDialogCloseProject(self):
+    def ShowDialogCloseProject(self) -> Literal[-1] | None:
         session = ses.Session()
         project_status = session.GetConfig('project_status')
         if project_status == const.PROJECT_STATUS_CLOSED:
@@ -312,10 +312,10 @@ class Controller():
 
 
 ###########################
-    def OnOpenProject(self, filepath):
+    def OnOpenProject(self, filepath) -> None:
         self.OpenProject(filepath)
 
-    def OnOpenRecentProject(self, filepath):
+    def OnOpenRecentProject(self, filepath) -> None:
         if os.path.exists(filepath):
             session = ses.Session()
             project_status = session.GetConfig('project_status')
@@ -332,7 +332,7 @@ class Controller():
         else:
             dialog.InexistentPath(filepath)
 
-    def OpenProject(self, filepath):
+    def OpenProject(self, filepath) -> None:
         Publisher.sendMessage('Begin busy cursor')
         path = os.path.abspath(filepath)
 
@@ -360,10 +360,10 @@ class Controller():
         session.OpenProject(filepath)
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnSaveProject(self, filepath):
+    def OnSaveProject(self, filepath) -> None:
         self.SaveProject(filepath)
 
-    def SaveProject(self, path=None, compress=False):
+    def SaveProject(self, path=None, compress=False) -> None:
         Publisher.sendMessage('Begin busy cursor')
         session = ses.Session()
         if path:
@@ -393,7 +393,7 @@ class Controller():
 
         Publisher.sendMessage('End busy cursor')
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
@@ -414,21 +414,21 @@ class Controller():
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 ###########################
 
-    def StartImportBitmapPanel(self, path):
+    def StartImportBitmapPanel(self, path) -> None:
         # retrieve DICOM files splited into groups
         reader = bmp.ProgressBitmapReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage('End busy cursor')
 
-    def StartImportPanel(self, path):
+    def StartImportPanel(self, path) -> None:
         # retrieve DICOM files split into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage('End busy cursor')
 
-    def Progress(self, data):
+    def Progress(self, data) -> None:
         if (data):
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
@@ -445,21 +445,21 @@ class Controller():
                 self.progress_dialog.Close()
                 self.progress_dialog = None
 
-    def OnLoadImportPanel(self, patient_series):
-        ok = self.LoadImportPanel(patient_series)
+    def OnLoadImportPanel(self, patient_series) -> None:
+        ok: bool = self.LoadImportPanel(patient_series)
         if ok:
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
             self.img_type = 1
 
-    def OnLoadImportBitmapPanel(self, data):
-        ok = self.LoadImportBitmapPanel(data)
+    def OnLoadImportBitmapPanel(self, data) -> None:
+        ok: bool = self.LoadImportBitmapPanel(data)
         if ok:
             Publisher.sendMessage('Show import bitmap panel in frame')
             self.img_type = 2
             #Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
-    def LoadImportBitmapPanel(self, data):
+    def LoadImportBitmapPanel(self, data) -> bool:
         #if patient_series and isinstance(patient_series, list):
             #Publisher.sendMessage("Load import panel", patient_series)
             #first_patient = patient_series[0]
@@ -472,7 +472,7 @@ class Controller():
         return False
 
 
-    def LoadImportPanel(self, patient_series):
+    def LoadImportPanel(self, patient_series) -> bool:
         if patient_series and isinstance(patient_series, list):
             Publisher.sendMessage("Load import panel", dicom_groups=patient_series)
             first_patient = patient_series[0]
@@ -485,10 +485,10 @@ class Controller():
 
     #----------- to import by command line ---------------------------------------------------
 
-    def OnImportMedicalImages(self, directory, use_gui):
+    def OnImportMedicalImages(self, directory, use_gui) -> None:
         self.ImportMedicalImages(directory, use_gui)
 
-    def ImportMedicalImages(self, directory, gui=True):
+    def ImportMedicalImages(self, directory, gui=True) -> None:
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
 
@@ -504,7 +504,7 @@ class Controller():
             if name[-1] == 'gz':
                 name[1] = 'nii.gz'
 
-            suptype = ('hdr', 'nii', 'nii.gz', 'par')
+            suptype: tuple[Literal['hdr'], Literal['nii'], Literal['nii.gz'], Literal['par']] = ('hdr', 'nii', 'nii.gz', 'par')
             filetype = name[1].lower()
 
             if filetype in suptype:
@@ -521,10 +521,10 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportGroup(self, group, use_gui):
+    def OnImportGroup(self, group, use_gui) -> None:
         self.ImportGroup(group, use_gui)
 
-    def ImportGroup(self, group, gui=True):
+    def ImportGroup(self, group, gui=True) -> None:
 
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         if matrix is None:
@@ -534,7 +534,7 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportFolder(self, folder):
+    def OnImportFolder(self, folder) -> None:
         Publisher.sendMessage('Begin busy cursor')
         folder = os.path.abspath(folder)
 
@@ -553,7 +553,7 @@ class Controller():
                               threshold_range=proj.threshold_range)
 
         filename = proj.name + ".inv3"
-        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
+        filename: str | Any = filename.replace("/", "") #Fix problem case other/Skull_DICOM
         
         session = ses.Session()
         session.CreateProject(filename)
@@ -565,7 +565,7 @@ class Controller():
 
     #-------------------------------------------------------------------------------------
 
-    def LoadProject(self):
+    def LoadProject(self) -> None:
         proj = prj.Project()
         
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
@@ -603,7 +603,7 @@ class Controller():
 
         if len(proj.mask_dict):
             self.Slice.current_mask = None
-            mask_index = len(proj.mask_dict) -1
+            mask_index: int = len(proj.mask_dict) -1
             for key, m in proj.mask_dict.items():
                 Publisher.sendMessage('Add mask', mask=m)
                 if m.is_shown:
@@ -618,7 +618,7 @@ class Controller():
             if proj.modality != "UNKNOWN":
                 thresh = const.THRESHOLD_RANGE
             else:
-                thresh = proj.threshold_range
+                thresh: str | Any = proj.threshold_range
 
             colour = const.MASK_COLOUR[0]
             Publisher.sendMessage('Create new mask',
@@ -643,8 +643,8 @@ class Controller():
         
         Publisher.sendMessage('End busy cursor')
 
-    def CreateDicomProject(self, dicom, matrix, matrix_filename):
-        name_to_const = {"AXIAL":const.AXIAL,
+    def CreateDicomProject(self, dicom, matrix, matrix_filename) -> None:
+        name_to_const: dict[str, int] = {"AXIAL":const.AXIAL,
                          "CORONAL":const.CORONAL,
                          "SAGITTAL":const.SAGITAL}
 
@@ -673,8 +673,8 @@ class Controller():
         session.CreateProject(filename)
 
 
-    def CreateBitmapProject(self, bmp_data, rec_data, matrix, matrix_filename):
-        name_to_const = {"AXIAL":const.AXIAL,
+    def CreateBitmapProject(self, bmp_data, rec_data, matrix, matrix_filename) -> None:
+        name_to_const: dict[str, int] = {"AXIAL":const.AXIAL,
                          "CORONAL":const.CORONAL,
                          "SAGITTAL":const.SAGITAL}
 
@@ -714,8 +714,8 @@ class Controller():
         session = ses.Session()
         session.CreateProject(filename)
 
-    def CreateOtherProject(self, name, matrix, matrix_filename):
-        name_to_const = {"AXIAL": const.AXIAL,
+    def CreateOtherProject(self, name, matrix, matrix_filename) -> None:
+        name_to_const: dict[str, int] = {"AXIAL": const.AXIAL,
                          "CORONAL": const.CORONAL,
                          "SAGITTAL": const.SAGITAL}
 
@@ -751,7 +751,7 @@ class Controller():
         session.CreateProject(filename)
 
 
-    def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False):
+    def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False) -> None:
         """
         Creates a new project from a Numpy 3D array.
 
@@ -768,7 +768,7 @@ class Controller():
         window_width = int(window_width)
         window_level = int(window_level)
 
-        name_to_const = {"AXIAL": const.AXIAL,
+        name_to_const: dict[str, int] = {"AXIAL": const.AXIAL,
                          "CORONAL": const.CORONAL,
                          "SAGITTAL": const.SAGITAL}
 
@@ -824,7 +824,7 @@ class Controller():
             Publisher.sendMessage("Enable state project", state=True)
 
 
-    def OnOpenBitmapFiles(self, rec_data):
+    def OnOpenBitmapFiles(self, rec_data) -> None:
         bmp_data = bmp.BitmapData()
 
         if bmp_data.IsAllBitmapSameSize():
@@ -838,7 +838,7 @@ class Controller():
         else:
             dialogs.BitmapNotSameSize()
 
-    def OpenBitmapFiles(self, bmp_data, rec_data):
+    def OpenBitmapFiles(self, bmp_data, rec_data)-> tuple[np.ndarray, str]:
        name = rec_data[0]
        orientation = rec_data[1]
        sp_x = float(rec_data[2])
@@ -852,11 +852,11 @@ class Controller():
        bits = bmp_data.GetFirstPixelSize()
 
        sx, sy = size =  bmp_data.GetFirstBitmapSize()
-       n_slices = len(filelist)
+       n_slices: int = len(filelist)
        resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
        
-       zspacing = sp_z * interval
-       xyspacing = (sp_y, sp_x)
+       zspacing: float = sp_z * interval
+       xyspacing: tuple[float, float] = (sp_y, sp_x)
 
        if resolution_percentage < 1.0:
 
@@ -893,14 +893,14 @@ class Controller():
        self.Slice.window_level = float(self.matrix.max()/4)
        self.Slice.window_width = float(self.matrix.max())
 
-       scalar_range = int(self.matrix.min()), int(self.matrix.max())
+       scalar_range: tuple[int, int] = int(self.matrix.min()), int(self.matrix.max())
        Publisher.sendMessage('Update threshold limits list',
                              threshold_range=scalar_range)
 
        return self.matrix, self.filename#, dicom
 
 
-    def OnOpenDicomGroup(self, group, interval, file_range):
+    def OnOpenDicomGroup(self, group, interval, file_range) -> None:
         dicom = group.GetDicomSample()
         samples_per_pixel = dicom.image.samples_per_pixel
         if samples_per_pixel == 3:
@@ -914,7 +914,7 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenOtherFiles(self, filepath):
+    def OnOpenOtherFiles(self, filepath) -> None:
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if not(filepath) == None:
             name = os.path.basename(filepath).split(".")[0]
@@ -928,7 +928,7 @@ class Controller():
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
 
-    def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True):
+    def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True)-> (tuple[None, None, None] | tuple[Any, str | Any, Any] | None):
         # Retrieve general DICOM headers
         dicom = dicom_group.GetDicomSample()
 
@@ -963,8 +963,8 @@ class Controller():
 
         if dicom.image.number_of_frames == 1:
             sx, sy = size
-            n_slices = len(filelist)
-            resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
+            n_slices: int = len(filelist)
+            resolution_percentage: float = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
 
             if resolution_percentage < 1.0 and gui:
                 re_dialog = dialog.ResizeImageDialog()
@@ -980,7 +980,7 @@ class Controller():
 
             xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
 
-            self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
+            self.matrix, scalar_range, self.filename= image_utils.dcm2memmap(filelist, size,
                                                                         orientation, resolution_percentage)
 
             if orientation == 'AXIAL':
@@ -1021,14 +1021,14 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
-        scalar_range = int(self.matrix.min()), int(self.matrix.max())
+        scalar_range: tuple[int, int] = int(self.matrix.min()), int(self.matrix.max())
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=scalar_range)
 
         return self.matrix, self.filename, dicom
 
-    def OpenOtherFiles(self, group):
+    def OpenOtherFiles(self, group)-> tuple[Any, str]:
         # Retreaving matrix from image data
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
@@ -1058,14 +1058,14 @@ class Controller():
         else:
             self.Slice.affine = None
 
-        scalar_range = int(scalar_range[0]), int(scalar_range[1])
+        scalar_range: tuple[int, int] = int(scalar_range[0]), int(scalar_range[1])
 
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=scalar_range)
 
         return self.matrix, self.filename
 
-    def LoadImagedataInfo(self):
+    def LoadImagedataInfo(self) -> None:
         proj = prj.Project()
 
         thresh_modes =  proj.threshold_modes.keys()
@@ -1076,8 +1076,8 @@ class Controller():
             last = max(keys)
             (a,b) = proj.mask_dict[last].threshold_range
             default_threshold = [a,b]
-            min_ = proj.threshold_range[0]
-            max_ = proj.threshold_range[1]
+            min_: str | Any = proj.threshold_range[0]
+            max_: str | Any = proj.threshold_range[1]
             if default_threshold[0] < min_:
                 default_threshold[0] = min_
             if default_threshold[1] > max_:
@@ -1088,10 +1088,10 @@ class Controller():
                               thresh_modes_names=thresh_modes,
                               default_thresh=default_threshold)
 
-    def LoadRaycastingPreset(self, preset_name):
+    def LoadRaycastingPreset(self, preset_name) -> None:
         if preset_name != const.RAYCASTING_OFF_LABEL:
             if preset_name in const.RAYCASTING_FILES.keys():
-                path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
+                path: str = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
                                     const.RAYCASTING_FILES[preset_name])
             else:
                 path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY,
@@ -1109,26 +1109,26 @@ class Controller():
             prj.Project().raycasting_preset = 0
             Publisher.sendMessage('Update raycasting preset')
 
-    def SaveRaycastingPreset(self, preset_name):
-        preset = prj.Project().raycasting_preset
+    def SaveRaycastingPreset(self, preset_name) -> None:
+        preset: str = prj.Project().raycasting_preset
         preset['name'] = preset_name
-        preset_dir = inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.joinpath(f'{preset_name}.plist')
+        preset_dir: Path = inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.joinpath(f'{preset_name}.plist')
         inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.mkdir(parents=True, exist_ok=True)
         with open(preset_dir, 'w+b') as f:
             plistlib.dump(preset, f)
 
-    def ShowBooleanOpDialog(self):
+    def ShowBooleanOpDialog(self) -> None:
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
         dlg.Show()
 
-    def ApplyReorientation(self):
+    def ApplyReorientation(self) -> None:
         self.Slice.apply_reorientation()
 
-    def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level):
+    def start_new_inv_instance(self, image, name, spacing, modality, orientation, window_width, window_level) -> None:
         p = prj.Project()
-        project_folder = tempfile.mkdtemp()
+        project_folder: str = tempfile.mkdtemp()
         p.create_project_file(name, spacing, modality, orientation, window_width, window_level, image, folder=project_folder)
-        err_msg = ''
+        err_msg: Literal[''] = ''
         try:
             sp = subprocess.Popen([sys.executable, sys.argv[0], '--import-folder', project_folder],
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
@@ -1145,7 +1145,7 @@ class Controller():
         if err_msg:
             dialog.MessageBox(None, "It was not possible to launch new instance of InVesalius3", err_msg)
 
-    def show_mask_preview(self, index, flag=True):
+    def show_mask_preview(self, index, flag=True) -> None:
         proj = prj.Project()
         mask = proj.mask_dict[index]
         self.Slice.do_threshold_to_all_slices(mask)
@@ -1153,7 +1153,7 @@ class Controller():
         Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=flag)
         Publisher.sendMessage("Reload actual slice")
 
-    def enable_mask_preview(self):
+    def enable_mask_preview(self) -> None:
         ses.Session().mask_3d_preview = True
         mask = self.Slice.current_mask
         if mask is not None:
@@ -1162,14 +1162,14 @@ class Controller():
             Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=True)
             Publisher.sendMessage("Render volume viewer")
 
-    def disable_mask_preview(self):
+    def disable_mask_preview(self) -> None:
         ses.Session().mask_3d_preview = False
         mask = self.Slice.current_mask
         if mask is not None:
             Publisher.sendMessage("Remove mask preview", mask_3d_actor=mask.volume._actor)
             Publisher.sendMessage("Render volume viewer")
 
-    def update_mask_preview(self):
+    def update_mask_preview(self) -> None:
         mask = self.Slice.current_mask
         if mask is not None:
             mask._update_imagedata()

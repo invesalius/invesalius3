@@ -3,40 +3,40 @@ import invesalius.utils as utils
 
 class DicomNet:
     
-    def __init__(self):
-        self.address = ''
-        self.port = ''
-        self.aetitle_call = ''
-        self.aetitle = ''
-        self.search_word = ''
+    def __init__(self) -> None:
+        self.address: Literal[''] = ''
+        self.port: Literal[''] = ''
+        self.aetitle_call: Literal[''] = ''
+        self.aetitle: Literal[''] = ''
+        self.search_word: Literal[''] = ''
         self.search_type = 'patient'
 
-    def __call__(self):
+    def __call__(self) -> Self:
         return self
    
-    def SetHost(self, address):
+    def SetHost(self, address) -> None:
         self.address = address
 
-    def SetPort(self, port):
+    def SetPort(self, port) -> None:
         self.port = port
 
-    def SetAETitleCall(self, name):
+    def SetAETitleCall(self, name) -> None:
         self.aetitle_call = name
 
-    def SetAETitle(self, ae_title):
+    def SetAETitle(self, ae_title) -> None:
         self.aetitle = ae_title
 
-    def SetSearchWord(self, word):
+    def SetSearchWord(self, word) -> None:
         self.search_word = word
 
-    def SetSearchType(self, stype):
+    def SetSearchType(self, stype) -> None:
         self.search_type = stype
 
-    def GetValueFromDICOM(self, ret, tag):
+    def GetValueFromDICOM(self, ret, tag) -> str:
         value = str(ret.GetDataElement(gdcm.Tag(tag[0],\
                                         tag[1])).GetValue())
         if value == 'None' and tag != (0x0008,0x103E):
-            value = ''
+            value: Literal[''] = ''
         return value
 
 
@@ -45,7 +45,7 @@ class DicomNet:
         return cnf.CEcho(self.address, int(self.port),\
                          self.aetitle, self.aetitle_call)
 
-    def RunCFind(self):
+    def RunCFind(self)-> dict:
 
         tags = [(0x0010, 0x0010), (0x0010, 0x1010), (0x0010,0x0040), (0x0008,0x1030),\
                 (0x0008,0x0060), (0x0008,0x0022), (0x0008,0x0080), (0x0010,0x0030),\
@@ -95,18 +95,18 @@ class DicomNet:
         
                 rt = ret[i]
 
-                name = self.GetValueFromDICOM(rt, (0x0010, 0x0010))
-                age = self.GetValueFromDICOM(rt, (0x0010, 0x1010))
-                gender = self.GetValueFromDICOM(rt, (0x0010,0x0040))
-                study_description = self.GetValueFromDICOM(rt, (0x0008,0x1030))
-                modality = self.GetValueFromDICOM(rt, (0x0008,0x0060))
-                institution = self.GetValueFromDICOM(rt, (0x0008,0x0080))
-                date_of_birth = utils.format_date(self.GetValueFromDICOM(rt, (0x0010,0x0030)))
-                acession_number = self.GetValueFromDICOM(rt, (0x0008,0x0050))
-                ref_physician = self.GetValueFromDICOM(rt, (0x0008,0x0090))
-                serie_description = self.GetValueFromDICOM(rt, (0x0008,0x103E))
+                name: str = self.GetValueFromDICOM(rt, (0x0010, 0x0010))
+                age: str = self.GetValueFromDICOM(rt, (0x0010, 0x1010))
+                gender: str = self.GetValueFromDICOM(rt, (0x0010,0x0040))
+                study_description: str = self.GetValueFromDICOM(rt, (0x0008,0x1030))
+                modality: str = self.GetValueFromDICOM(rt, (0x0008,0x0060))
+                institution: str = self.GetValueFromDICOM(rt, (0x0008,0x0080))
+                date_of_birth: str = utils.format_date(self.GetValueFromDICOM(rt, (0x0010,0x0030)))
+                acession_number: str = self.GetValueFromDICOM(rt, (0x0008,0x0050))
+                ref_physician: str = self.GetValueFromDICOM(rt, (0x0008,0x0090))
+                serie_description: str = self.GetValueFromDICOM(rt, (0x0008,0x103E))
                 acquisition_time = utils.format_time(self.GetValueFromDICOM(rt, (0x0008,0x0032)))
-                acquisition_date = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
+                acquisition_date: str = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
 
                 teste = self.GetValueFromDICOM(rt, (0x0020,0x000d))
 
@@ -128,7 +128,7 @@ class DicomNet:
         return patients 
 
 
-    def RunCMove(self, values):
+    def RunCMove(self, values) -> None:
 
         ds = gdcm.DataSet()
 

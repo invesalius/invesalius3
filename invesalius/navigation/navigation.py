@@ -48,13 +48,13 @@ class QueueCustom(queue.Queue):
     possibly limiting the queue size is good.
     """
 
-    def clear(self):
+    def clear(self) -> None:
         """
         Clears all items from the queue.
         """
 
         with self.mutex:
-            unfinished = self.unfinished_tasks - len(self.queue)
+            unfinished: int = self.unfinished_tasks - len(self.queue)
             if unfinished <= 0:
                 if unfinished < 0:
                     raise ValueError('task_done() called too many times')
@@ -66,7 +66,7 @@ class QueueCustom(queue.Queue):
 
 class UpdateNavigationScene(threading.Thread):
 
-    def __init__(self, vis_queues, vis_components, event, sle, neuronavigation_api):
+    def __init__(self, vis_queues, vis_components, event, sle, neuronavigation_api) -> None:
         """Class (threading) to update the navigation scene with all graphical elements.
 
         Sleep function in run method is used to avoid blocking GUI and more fluent, real-time navigation
@@ -90,7 +90,7 @@ class UpdateNavigationScene(threading.Thread):
         self.event = event
         self.neuronavigation_api = neuronavigation_api
 
-    def run(self):
+    def run(self) -> None:
         # count = 0
         while not self.event.is_set():
             got_coords = False
@@ -149,7 +149,7 @@ class UpdateNavigationScene(threading.Thread):
 
 
 class Navigation(metaclass=Singleton):
-    def __init__(self, pedal_connection, neuronavigation_api):
+    def __init__(self, pedal_connection, neuronavigation_api) -> None:
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
@@ -159,7 +159,7 @@ class Navigation(metaclass=Singleton):
         self.track_obj = False
         self.m_change = None
         self.obj_data = None
-        self.all_fiducials = np.zeros((6, 6))
+        self.all_fiducials: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros((6, 6))
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
         self.icp_queue = QueueCustom(maxsize=1)
@@ -188,8 +188,8 @@ class Navigation(metaclass=Singleton):
         self.act_data = None
         self.n_tracts = const.N_TRACTS
         self.seed_offset = const.SEED_OFFSET
-        self.seed_radius = const.SEED_RADIUS
-        self.sleep_nav = const.SLEEP_NAVIGATION
+        self.seed_radius: float = const.SEED_RADIUS
+        self.sleep_nav: float = const.SLEEP_NAVIGATION
 
         # Serial port
         self.serial_port_in_use = False
@@ -205,13 +205,13 @@ class Navigation(metaclass=Singleton):
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.CoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateSerialPort, 'Update serial port')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.TrackObject, 'Track object')
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
         #   None parameter when the project is closed, crashing without this checks.
         if self.object_registration is None:
@@ -229,7 +229,7 @@ class Navigation(metaclass=Singleton):
         session = ses.Session()
         session.SetState('navigation', state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState('navigation')
 
@@ -243,48 +243,48 @@ class Navigation(metaclass=Singleton):
 
         self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
-    def CoilAtTarget(self, state):
+    def CoilAtTarget(self, state) -> None:
         self.coil_at_target = state
 
-    def UpdateSleep(self, sleep):
+    def UpdateSleep(self, sleep) -> None:
         self.sleep_nav = sleep
         # self.serial_port_connection.sleep_nav = sleep
 
-    def UpdateSerialPort(self, serial_port_in_use, com_port=None, baud_rate=None):
+    def UpdateSerialPort(self, serial_port_in_use, com_port=None, baud_rate=None) -> None:
         self.serial_port_in_use = serial_port_in_use
         self.com_port = com_port
         self.baud_rate = baud_rate
 
-    def UpdateObjectRegistration(self, data=None):
+    def UpdateObjectRegistration(self, data=None) -> None:
         self.object_registration = data
 
         self.SaveState()
 
-    def TrackObject(self, enabled=False):
-        self.track_obj = enabled
+    def TrackObject(self, enabled=False) -> None:
+        self.track_obj: bool = enabled
 
-    def SetLockToTarget(self, value):
+    def SetLockToTarget(self, value) -> None:
         self.lock_to_target = value
 
-    def SetReferenceMode(self, value):
+    def SetReferenceMode(self, value) -> None:
         self.ref_mode_id = value
 
-    def GetReferenceMode(self):
+    def GetReferenceMode(self) -> (int | Any):
         return self.ref_mode_id
 
-    def UpdateFiducialRegistrationError(self, tracker, image):
+    def UpdateFiducialRegistrationError(self, tracker, image) -> None:
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
         image_fiducials = image.GetImageFiducials()
 
         self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 
-        self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, self.ref_mode_id, self.m_change)
+        self.fre: float = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, self.ref_mode_id, self.m_change)
 
-    def GetFiducialRegistrationError(self, icp):
+    def GetFiducialRegistrationError(self, icp)-> tuple[Any | float, Any | bool]:
         fre = icp.icp_fre if icp.use_icp else self.fre
         return fre, fre <= const.FIDUCIAL_REGISTRATION_ERROR_THRESHOLD
 
-    def PedalStateChanged(self, state):
+    def PedalStateChanged(self, state) -> None:
         if not self.serial_port_in_use:
             return
 
@@ -294,7 +294,7 @@ class Navigation(metaclass=Singleton):
         if state and permission_to_stimulate:
             self.serial_port_connection.SendPulse()
 
-    def EstimateTrackerToInVTransformationMatrix(self, tracker, image):
+    def EstimateTrackerToInVTransformationMatrix(self, tracker, image) -> None:
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
         image_fiducials = image.GetImageFiducials()
 
@@ -303,7 +303,7 @@ class Navigation(metaclass=Singleton):
         self.m_change = tr.affine_matrix_from_points(self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T,
                                                 shear=False, scale=False)
 
-    def StartNavigation(self, tracker, icp):
+    def StartNavigation(self, tracker, icp) -> None:
         # initialize jobs list
         jobs_list = []
 
@@ -311,7 +311,7 @@ class Navigation(metaclass=Singleton):
             self.event.clear()
 
         vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
-        vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
+        vis_queues: list[QueueCustom] = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
         errors = False
@@ -332,12 +332,12 @@ class Navigation(metaclass=Singleton):
                 if self.ref_mode_id:
                     coord_raw, markers_flag = tracker.TrackerCoordinates.GetCoordinates()
                 else:
-                    coord_raw = np.array([None])
+                    coord_raw: ndarray[Any, dtype] = np.array([None])
 
                 self.obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, self.m_change)
                 coreg_data.extend(self.obj_data)
 
-                queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue, self.efield_queue]
+                queues: list[QueueCustom] = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.object_at_target_queue, self.efield_queue]
                 jobs_list.append(dcr.CoordinateCorregistrate(self.ref_mode_id, tracker, coreg_data,
                                                                 self.view_tracts, queues,
                                                                 self.event, self.sleep_nav, tracker.tracker_id,
@@ -374,11 +374,11 @@ class Navigation(metaclass=Singleton):
                 img_shift = spacing[1] * (matrix_shape[1] - 1)
                 affine = slic.affine.copy()
                 affine[1, -1] -= img_shift
-                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                affine_vtk: vtkMatrix4x4 = vtk_utils.numpy_to_vtkMatrix4x4(affine)
 
                 Publisher.sendMessage("Update marker offset state", create=True)
 
-                self.trk_inp = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
+                self.trk_inp: tuple[None, Any, int, int, float, None, None, Any, Any] = self.trekker, affine, self.seed_offset, self.n_tracts, self.seed_radius,\
                                 self.n_threads, self.act_data, affine_vtk, img_shift
                 # print("Appending the tract computation thread!")
                 queues = [self.coord_tracts_queue, self.tracts_queue]
@@ -414,7 +414,7 @@ class Navigation(metaclass=Singleton):
             if self.neuronavigation_api is not None:
                 self.neuronavigation_api.add_pedal_callback(name='navigation', callback=self.PedalStateChanged)
 
-    def StopNavigation(self):
+    def StopNavigation(self) -> None:
         self.event.set()
 
         if self.pedal_connection is not None:

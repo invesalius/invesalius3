@@ -53,14 +53,14 @@ else:
 # Only one project will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Project(metaclass=Singleton):
-    def __init__(self):
+    def __init__(self) -> None:
         # Patient/ acquistion information
-        self.name = ''
-        self.modality = ''
-        self.original_orientation = ''
-        self.window = ''
-        self.level = ''
-        self.affine = ''
+        self.name: Literal[''] = ''
+        self.modality: Literal[''] = ''
+        self.original_orientation: Literal[''] = ''
+        self.window: Literal[''] = ''
+        self.level: Literal[''] = ''
+        self.affine: Literal[''] = ''
 
         # Masks (vtkImageData)
         self.mask_dict = TwoWaysDictionary()
@@ -83,10 +83,10 @@ class Project(metaclass=Singleton):
 
         self.presets = Presets()
 
-        self.threshold_modes = self.presets.thresh_ct
-        self.threshold_range = ''
+        self.threshold_modes: TwoWaysDictionary = self.presets.thresh_ct
+        self.threshold_range: Literal[''] = ''
 
-        self.raycasting_preset = ''
+        self.raycasting_preset: Literal[''] = ''
 
 
         #self.surface_quality_list = ["Low", "Medium", "High", "Optimal *",
@@ -97,14 +97,14 @@ class Project(metaclass=Singleton):
         # TODO: Future +
         # Allow insertion of new surface quality modes
 
-    def Close(self):
+    def Close(self) -> None:
         for name in self.__dict__:
             attr = getattr(self, name)
             del attr
 
         self.__init__()
 
-    def AddMask(self, mask):
+    def AddMask(self, mask) -> int:
         """
         Insert new mask (Mask) into project data.
 
@@ -114,12 +114,12 @@ class Project(metaclass=Singleton):
         output
             @ index: index of item that was inserted
         """
-        index = len(self.mask_dict)
+        index: int = len(self.mask_dict)
         self.mask_dict[index] = mask
         mask.index = index
         return index
 
-    def RemoveMask(self, index):
+    def RemoveMask(self, index) -> None:
         new_dict = TwoWaysDictionary()
         new_index = 0
         for i in self.mask_dict:
@@ -130,22 +130,22 @@ class Project(metaclass=Singleton):
                 new_dict[new_index] = self.mask_dict[i]
                 self.mask_dict[i] = new_index
                 new_index += 1
-        self.mask_dict = new_dict
+        self.mask_dict: TwoWaysDictionary = new_dict
 
     def GetMask(self, index):
         return self.mask_dict[index]
 
-    def AddSurface(self, surface):
+    def AddSurface(self, surface) -> int:
         #self.last_surface_index = surface.index
-        index = len(self.surface_dict)
+        index: int = len(self.surface_dict)
         self.surface_dict[index] = surface
         return index
 
-    def ChangeSurface(self, surface):
+    def ChangeSurface(self, surface) -> None:
         index = surface.index
         self.surface_dict[index] = surface
 
-    def RemoveSurface(self, index):
+    def RemoveSurface(self, index) -> None:
         new_dict = {}
         for i in self.surface_dict:
             if i < index:
@@ -156,17 +156,17 @@ class Project(metaclass=Singleton):
         self.surface_dict = new_dict
 
 
-    def AddMeasurement(self, measurement):
-        index = len(self.measurement_dict)
+    def AddMeasurement(self, measurement) -> int:
+        index: int = len(self.measurement_dict)
         measurement.index = index
         self.measurement_dict[index] = measurement
         return index
 
-    def ChangeMeasurement(self, measurement):
+    def ChangeMeasurement(self, measurement) -> None:
         index = measurement.index
         self.measurement_dict[index] = measurement
 
-    def RemoveMeasurement(self, index):
+    def RemoveMeasurement(self, index) -> None:
         new_dict = {}
         for i in self.measurement_dict:
             if i < index:
@@ -177,7 +177,7 @@ class Project(metaclass=Singleton):
         self.measurement_dict = new_dict
 
 
-    def SetAcquisitionModality(self, type_=None):
+    def SetAcquisitionModality(self, type_=None) -> None:
         if type_ is None:
             type_ = self.modality
 
@@ -189,13 +189,13 @@ class Project(metaclass=Singleton):
             debug("Different Acquisition Modality!!!")
         self.modality = type_
 
-    def SetRaycastPreset(self, label):
+    def SetRaycastPreset(self, label) -> None:
         path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + '.plist')
         with open(path, 'r+b') as f:
             preset = plistlib.load(f, fmt=plistlib.FMT_XML)
         Publisher.sendMessage('Set raycasting preset', preset)
 
-    def GetMeasuresDict(self):
+    def GetMeasuresDict(self)-> dict:
         measures = {}
         d = self.measurement_dict
         for i in d:
@@ -203,12 +203,12 @@ class Project(metaclass=Singleton):
             measures[str(m.index)] = m.get_as_dict()
         return measures
 
-    def SavePlistProject(self, dir_, filename, compress=False):
+    def SavePlistProject(self, dir_, filename, compress=False) -> None:
         dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
 
-        self.compress = compress
+        self.compress: bool = compress
 
-        filename_tmp = os.path.join(dir_temp, u'matrix.dat')
+        filename_tmp: str = os.path.join(dir_temp, u'matrix.dat')
         filelist = {}
 
         project = {
@@ -256,7 +256,7 @@ class Project(metaclass=Singleton):
         # Saving the measurements
         measurements = self.GetMeasuresDict()
         measurements_filename = 'measurements.plist'
-        temp_mplist = tempfile.mktemp()
+        temp_mplist: str = tempfile.mktemp()
         with open(temp_mplist, 'w+b') as f:
             plistlib.dump(measurements, f)
         filelist[temp_mplist] = measurements_filename
@@ -266,7 +266,7 @@ class Project(metaclass=Singleton):
         project['annotations'] = {}
 
         # Saving the main plist
-        temp_plist = tempfile.mktemp()
+        temp_plist: str = tempfile.mktemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(project, f)
         filelist[temp_plist] = 'main.plist'
@@ -282,9 +282,9 @@ class Project(metaclass=Singleton):
             if filelist[f].endswith('.plist'):
                 os.remove(f)
 
-    def OpenPlistProject(self, filename):
+    def OpenPlistProject(self, filename) -> None:
         if not const.VTK_WARNING:
-            log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
+            log_path: str = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtkFileOutputWindow()
             fow.SetFileName(log_path.encode(const.FS_ENCODE))
             ow = vtkOutputWindow()
@@ -294,7 +294,7 @@ class Project(metaclass=Singleton):
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
         self.load_from_folder(dirpath)
 
-    def load_from_folder(self, dirpath):
+    def load_from_folder(self, dirpath) -> None:
         """
         Loads invesalius3 project files from dipath.
         """
@@ -302,7 +302,7 @@ class Project(metaclass=Singleton):
         import invesalius.data.mask as msk
         import invesalius.data.surface as srf
         # Opening the main file from invesalius 3 project
-        main_plist =  os.path.join(dirpath ,'main.plist')
+        main_plist: str =  os.path.join(dirpath ,'main.plist')
         with open(main_plist, 'r+b') as f:
             project = plistlib.load(f, fmt=plistlib.FMT_XML)
 
@@ -367,10 +367,10 @@ class Project(metaclass=Singleton):
 
     def create_project_file(self, name, spacing, modality, orientation, window_width, window_level, image, affine='', folder=None):
         if folder is None:
-            folder = tempfile.mkdtemp()
+            folder: str = tempfile.mkdtemp()
         if not os.path.exists(folder):
             os.mkdir(folder)
-        image_file = os.path.join(folder, 'matrix.dat')
+        image_file: str = os.path.join(folder, 'matrix.dat')
         image_mmap = imagedata_utils.array2memmap(image, image_file)
         matrix = {
             'filename': 'matrix.dat',
@@ -397,18 +397,18 @@ class Project(metaclass=Singleton):
                    "matrix": matrix,
                   }
 
-        path = os.path.join(folder, 'main.plist')
+        path: str = os.path.join(folder, 'main.plist')
         with open(path, 'w+b') as f:
             plistlib.dump(project, f)
 
 
-    def export_project(self, filename, save_masks=True):
+    def export_project(self, filename, save_masks=True) -> None:
         if filename.lower().endswith('.hdf5') or filename.lower().endswith('.h5'):
             self.export_project_to_hdf5(filename, save_masks)
         elif filename.lower().endswith('.nii') or filename.lower().endswith('.nii.gz'):
             self.export_project_to_nifti(filename, save_masks)
 
-    def export_project_to_hdf5(self, filename, save_masks=True):
+    def export_project_to_hdf5(self, filename, save_masks=True) -> None:
         import h5py
         import invesalius.data.slice_ as slc
         s = slc.Slice()
@@ -430,7 +430,7 @@ class Project(metaclass=Singleton):
                 for index in self.mask_dict:
                     mask = self.mask_dict[index]
                     s.do_threshold_to_all_slices(mask)
-                    key = 'masks/{}'.format(index)
+                    key: str = 'masks/{}'.format(index)
                     f[key + '/name'] = mask.name
                     f[key + '/matrix'] = mask.matrix[1:, 1:, 1:]
                     f[key + '/colour'] = mask.colour[:3]
@@ -440,7 +440,7 @@ class Project(metaclass=Singleton):
                     f[key + '/visible'] = mask.is_shown
                     f[key + '/edited'] = mask.was_edited
 
-    def export_project_to_nifti(self, filename, save_masks=True):
+    def export_project_to_nifti(self, filename, save_masks=True) -> None:
         import invesalius.data.slice_ as slc
         import nibabel as nib
         s = slc.Slice()
@@ -466,10 +466,10 @@ class Project(metaclass=Singleton):
                 nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
 
 
-def Compress(folder, filename, filelist, compress=False):
+def Compress(folder, filename, filelist, compress=False) -> None:
     tmpdir, tmpdir_ = os.path.split(folder)
-    current_dir = os.path.abspath(".")
-    temp_inv3 = tempfile.mktemp()
+    current_dir: str = os.path.abspath(".")
+    temp_inv3: str = tempfile.mktemp()
     if _has_win32api:
         touch(temp_inv3)
         temp_inv3 = win32api.GetShortPathName(temp_inv3)
@@ -478,9 +478,9 @@ def Compress(folder, filename, filelist, compress=False):
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
     if compress:
-        tar = tarfile.open(temp_inv3, "w:gz")
+        tar: TarFile = tarfile.open(temp_inv3, "w:gz")
     else:
-        tar = tarfile.open(temp_inv3, "w")
+        tar: TarFile = tarfile.open(temp_inv3, "w")
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
@@ -488,19 +488,19 @@ def Compress(folder, filename, filelist, compress=False):
     #os.chdir(current_dir)
 
 
-def Extract(filename, folder):
+def Extract(filename, folder)-> List[str]:
     if _has_win32api:
-        folder = win32api.GetShortPathName(folder)
+        folder: str = win32api.GetShortPathName(folder)
     folder = decode(folder, const.FS_ENCODE)
 
-    tar = tarfile.open(filename, "r")
+    tar: TarFile = tarfile.open(filename, "r")
     idir = decode(os.path.split(tar.getnames()[0])[0], 'utf8')
     os.mkdir(os.path.join(folder, idir))
     filelist = []
     for t in tar.getmembers():
         fsrc = tar.extractfile(t)
-        fname = os.path.join(folder, decode(t.name, 'utf-8'))
-        fdst = open(fname, 'wb')
+        fname: str = os.path.join(folder, decode(t.name, 'utf-8'))
+        fdst: BufferedWriter = open(fname, 'wb')
         shutil.copyfileobj(fsrc, fdst)
         filelist.append(fname)
         fsrc.close()
@@ -511,10 +511,10 @@ def Extract(filename, folder):
     return filelist
 
 
-def Extract_(filename, folder):
-    tar = tarfile.open(filename, "r:gz")
+def Extract_(filename, folder) -> list[str]:
+    tar: TarFile = tarfile.open(filename, "r:gz")
     #tar.list(verbose=True)
     tar.extractall(folder)
-    filelist = [os.path.join(folder, i) for i in tar.getnames()]
+    filelist: list[str] = [os.path.join(folder, i) for i in tar.getnames()]
     tar.close()
     return filelist

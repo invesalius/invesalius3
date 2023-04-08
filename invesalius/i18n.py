@@ -31,7 +31,7 @@ import sys
  
 import invesalius.utils as utl
  
-def GetLocales(): 
+def GetLocales() -> TwoWaysDictionary: 
     """Return a dictionary which defines supported languages""" 
     d = utl.TwoWaysDictionary ({'zh_TW': u'中文', 
                                 'en': u'English', 
@@ -52,7 +52,7 @@ def GetLocales():
                                 'be': u'Беларуская',}) 
     return d 
  
-def GetLocaleOS(): 
+def GetLocaleOS() -> str | None: 
         """Return language of the operating system.""" 
         if sys.platform == 'darwin': 
             #The app can't get the location then it has to set
@@ -63,22 +63,22 @@ def GetLocaleOS():
  
         return locale.getdefaultlocale()[0] 
  
-def InstallLanguage(language):
-    file_path = os.path.split(__file__)[0]
+def InstallLanguage(language)-> str:
+    file_path: str = os.path.split(__file__)[0]
 
-    abs_file_path = os.path.abspath(file_path + os.sep + "..")
+    abs_file_path: str = os.path.abspath(file_path + os.sep + "..")
 
     if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):
         abs_file_path = os.path.abspath(abs_file_path + os.sep + ".." + os.sep + "..")
 
-    language_dir = os.path.join(abs_file_path, 'locale')
+    language_dir: str = os.path.join(abs_file_path, 'locale')
 
     # MAC app
     if not os.path.exists(language_dir):
         abs_file_path = os.path.abspath(os.path.join(file_path, '..', '..',  '..', '..'))
         language_dir = os.path.join(abs_file_path, 'locale')
 
-    lang = gettext.translation('invesalius', language_dir, languages=[language])
+    lang: GNUTranslations = gettext.translation('invesalius', language_dir, languages=[language])
 
     # Using unicode
     try:

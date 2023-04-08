@@ -27,7 +27,7 @@ import invesalius.constants as const
 from invesalius import inv_paths
 
 
-def ReadOthers(dir_):
+def ReadOthers(dir_)-> (Any | Literal[False]):
     """
     Read the given Analyze, NIfTI, Compressed NIfTI or PAR/REC file,
     remove singleton image dimensions and convert image orientation to
@@ -40,7 +40,7 @@ def ReadOthers(dir_):
     """
 
     if not const.VTK_WARNING:
-        log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
+        log_path: str = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
         fow = vtkFileOutputWindow()
         fow.SetFileName(log_path.encode(const.FS_ENCODE))
         ow = vtkOutputWindow()

@@ -35,20 +35,20 @@ class Dog():
     def EatBonePart(self, part_size) -> None:
         self.bone.RemovePart(part_size) 
 
-print "Initial state:"
+print( "Initial state:")
 d1 = Dog("Nina")
 d2 = Dog("Tang")
-print "Bone size of %s: %d"%(d1.name, d1.bone.size)
-print "Bone size of %s: %d\n"%(d2.name, d2.bone.size)
+print( "Bone size of %s: %d"%(d1.name, d1.bone.size))
+print( "Bone size of %s: %d\n"%(d2.name, d2.bone.size))
 
-print "Only Nina eats:"
+print( "Only Nina eats:")
 d1.EatBonePart(5)
-print "Bone size of %s: %d"%(d1.name, d1.bone.size)
-print "Bone size of %s: %d\n"%(d2.name, d2.bone.size)
+print( "Bone size of %s: %d"%(d1.name, d1.bone.size))
+print( "Bone size of %s: %d\n"%(d2.name, d2.bone.size))
 
-print "Tang eats after Nina:"
+print( "Tang eats after Nina:")
 d2.EatBonePart(20)
-print "Bone size of %s: %d"%(d1.name, d1.bone.size)
-print "Bone size of %s: %d"%(d2.name, d2.bone.size)
+print( "Bone size of %s: %d"%(d1.name, d1.bone.size))
+print( "Bone size of %s: %d"%(d2.name, d2.bone.size))
 
 

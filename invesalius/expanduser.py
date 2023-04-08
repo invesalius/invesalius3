@@ -13,14 +13,14 @@ class GUID(ctypes.Structure):
          ('Data4', wintypes.BYTE * 8)
     ]
 
-    def __init__(self, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8):
+    def __init__(self, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) -> None:
         """Create a new GUID."""
         self.Data1 = l
         self.Data2 = w1
         self.Data3 = w2
         self.Data4[:] = (b1, b2, b3, b4, b5, b6, b7, b8)
 
-    def __repr__(self):
+    def __repr__(self) -> LiteralString:
         b1, b2, b3, b4, b5, b6, b7, b8 = self.Data4
         return 'GUID(%x-%x-%x-%x%x%x%x%x%x%x%x)' % (
                    self.Data1, self.Data2, self.Data3, b1, b2, b3, b4, b5, b6, b7, b8)
@@ -29,9 +29,9 @@ class GUID(ctypes.Structure):
 CSIDL_PROFILE = 40
 FOLDERID_Profile = GUID(0x5E6C858F, 0x0E22, 0x4760, 0x9A, 0xFE, 0xEA, 0x33, 0x17, 0xB6, 0x71, 0x73)
 
-def expand_user():
+def expand_user() -> str | Any | None:
     # get the function that we can find from Vista up, not the one in XP
-    get_folder_path = getattr(windll.shell32, 'SHGetKnownFolderPath', None)
+    get_folder_path: Any | None = getattr(windll.shell32, 'SHGetKnownFolderPath', None)
     #import pdb; pdb.set_trace()
     if get_folder_path is not None:
         # ok, we can use the new function which is recomended by the msdn
@@ -41,6 +41,6 @@ def expand_user():
     else:
         # use the deprecated one found in XP and on for compatibility reasons
        get_folder_path = getattr(windll.shell32, 'SHGetSpecialFolderPathW', None)
-       buf = ctypes.create_unicode_buffer(300)
+       buf: Array[c_wchar] = ctypes.create_unicode_buffer(300)
        get_folder_path(None, buf, CSIDL_PROFILE, False)
        return buf.value

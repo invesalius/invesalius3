@@ -10,7 +10,7 @@ def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback
     file_size = None
     total_downloaded = 0
     if hash is not None:
-        calc_hash = hashlib.sha256()
+        calc_hash: _Hash = hashlib.sha256()
     req = Request(url)
     response =  urlopen(req)
     meta = response.info()
@@ -22,7 +22,7 @@ def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback
     if content_length is not None and len(content_length) > 0:
         file_size = int(content_length[0])
     dst.parent.mkdir(parents=True, exist_ok=True)
-    f = tempfile.NamedTemporaryFile(delete=False, dir=dst.parent)
+    f: _TemporaryFileWrapper[bytes] = tempfile.NamedTemporaryFile(delete=False, dir=dst.parent)
     try:
         while True:
             buffer = response.read(8192)

@@ -70,7 +70,7 @@ class StyleStateManager(object):
 # don't need to be singleton, only needs to be instantiated inside
 # (Controller) self.slice_mode = SliceMode()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.stack = {}
 
         # push default value to stack
@@ -115,7 +115,7 @@ class StyleStateManager(object):
         state = self.stack[max_level]
         return state
 
-    def Reset(self):
+    def Reset(self) -> None:
         self.stack = {}
         self.stack[const.STYLE_LEVEL[const.STATE_DEFAULT]] = \
                     const.STATE_DEFAULT

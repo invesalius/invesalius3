@@ -32,7 +32,7 @@ class PedalConnection(Thread, metaclass=Singleton):
 
     Started by calling PedalConnection().start()
     """
-    def __init__(self):
+    def __init__(self) -> None:
         Thread.__init__(self)
         self.daemon = True
 
@@ -42,7 +42,7 @@ class PedalConnection(Thread, metaclass=Singleton):
         self._active_inputs = None
         self._callback_infos = []
 
-    def _midi_to_pedal(self, msg):
+    def _midi_to_pedal(self, msg) -> None:
         # TODO: At this stage, interpret all note_on messages as the pedal being pressed,
         #       and note_off messages as the pedal being released. Later, use the correct
         #       message types and be more stringent about the messages.
@@ -65,7 +65,7 @@ class PedalConnection(Thread, metaclass=Singleton):
         if not state:
             self._callback_infos = [callback_info for callback_info in self._callback_infos if not callback_info['remove_when_released']]
 
-    def _connect_if_disconnected(self):
+    def _connect_if_disconnected(self) -> None:
         if self._midi_in is None and len(self._midi_inputs) > 0:
             self._active_input = self._midi_inputs[0]
             self._midi_in = mido.open_input(self._active_input)
@@ -76,7 +76,7 @@ class PedalConnection(Thread, metaclass=Singleton):
 
             print("Connected to MIDI device")
 
-    def _check_disconnected(self):
+    def _check_disconnected(self) -> None:
         if self._midi_in is not None:
             if self._active_input not in self._midi_inputs:
                 self._midi_in = None
@@ -85,23 +85,23 @@ class PedalConnection(Thread, metaclass=Singleton):
 
                 print("Disconnected from MIDI device")
 
-    def _update_midi_inputs(self):
+    def _update_midi_inputs(self) -> None:
         self._midi_inputs = mido.get_input_names()
 
-    def is_connected(self):
+    def is_connected(self) -> bool:
         return self._midi_in is not None
 
-    def add_callback(self, name, callback, remove_when_released=False):
+    def add_callback(self, name, callback, remove_when_released=False) -> None:
         self._callback_infos.append({
             'name': name,
             'callback': callback,
             'remove_when_released': remove_when_released,
         })
 
-    def remove_callback(self, name):
+    def remove_callback(self, name) -> None:
         self._callback_infos = [callback_info for callback_info in self._callback_infos if callback_info['name'] != name]
 
-    def run(self):
+    def run(self) -> NoReturn:
         self.in_use = True
         while True:
             self._update_midi_inputs()

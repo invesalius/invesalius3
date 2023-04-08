@@ -44,18 +44,18 @@ app = socketio.ASGIApp(sio)
 connected = False
 
 @sio.event
-def connect(sid, environ):
+def connect(sid, environ) -> None:
     global connected
     connected = True
 
-def print_json_error(e):
+def print_json_error(e) -> None:
     print("Invalid JSON")
     print(e.doc)
     print(" " * e.pos + "^")
     print(e.msg)
     print("")
 
-async def run():
+async def run() -> NoReturn:
     while True:
         if not connected:
             await asyncio.sleep(1)
@@ -80,7 +80,7 @@ async def run():
             }
         )
 
-async def main():
+async def main() -> None:
     asyncio.create_task(run())
     uvicorn.run(app, port=port, host='0.0.0.0', loop='asyncio')
 
