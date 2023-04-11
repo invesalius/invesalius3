@@ -131,6 +131,13 @@ class NeuronavigationApi(metaclass=Singleton):
                 state=state
             )
 
+    def init_efield(self, name):
+        if self.connection is not None:
+            return self.connection.init_efield(
+                name=name,
+            )
+        return None
+
     def update_efield(self, position, orientation, T_rot):
         if self.connection is not None:
             return self.connection.update_efield(

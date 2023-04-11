@@ -93,7 +93,11 @@ class Visualize_E_field_Thread(threading.Thread):
         self.coord_old = []
         #self.enorm_debug = self.load_temporarly_e_field_CSV()
         self.debug = False
-
+        sucess = self.neuronavigation_api.init_efield(
+            name="/app/ros2_ws/src/targeting/efield/efield_libraries/data/example-cortex.bin"
+        )
+        if sucess:
+            print("SUCESS FILE")
     def run(self):
         while not self.event.is_set():
 
