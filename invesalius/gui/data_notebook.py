@@ -29,10 +29,6 @@ except ImportError:
 import wx
 import wx.grid
 import numpy as np
-try:
-    import wx.lib.agw.flatnotebook as fnb
-except ImportError:
-    import wx.lib.flatnotebook as fnb
 
 import wx.lib.platebtn as pbtn
 from invesalius.pubsub import pub as Publisher
@@ -42,7 +38,6 @@ import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 #  import invesalius.gui.widgets.listctrl as listmix
 import wx.lib.mixins.listctrl as listmix
-import invesalius.utils as ul
 
 from invesalius import project
 

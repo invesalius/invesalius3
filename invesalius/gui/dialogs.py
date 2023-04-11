@@ -36,12 +36,14 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
+from scipy.spatial import distance
 import wx
 try:
     from wx.adv import BitmapComboBox
 except ImportError:
     from wx.combo import BitmapComboBox
 
+from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import mutable, vtkPoints
 from vtkmodules.vtkCommonDataModel import (
@@ -57,17 +59,17 @@ from vtkmodules.vtkFiltersSources import (
     vtkArrowSource,
     vtkCylinderSource,
     vtkParametricFunctionSource,
+    vtkRegularPolygonSource,
     vtkSphereSource,
 )
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleTrackballActor,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkCellPicker,
     vtkFollower,
     vtkPolyDataMapper,
     vtkProperty,
@@ -77,7 +79,6 @@ from vtkmodules.vtkRenderingFreeType import vtkVectorText
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 from wx.lib import masked
-from wx.lib.agw import floatspin
 import wx.lib.filebrowsebutton as filebrowse
 from wx.lib.wordwrap import wordwrap
 from invesalius.pubsub import pub as Publisher
@@ -93,19 +94,16 @@ import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
 import invesalius.data.vtk_utils as vtku
+import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.transformations as tr
+import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
-from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
 from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
-
-try:
-    from agw import floatspin as FS
-except ImportError: # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.floatspin as FS
 
 
 class MaskEvent(wx.PyCommandEvent):
@@ -228,43 +226,6 @@ def ShowNumberDialog(message, value=0):
     return 0
 
 
-class ProgressDialog(object):
-    def __init__(self, parent, maximum, abort=False):
-        self.title = "InVesalius 3"
-        self.msg = _("Loading DICOM files")
-        self.maximum = maximum
-        self.current = 0
-        self.style = wx.PD_APP_MODAL
-        if abort:
-            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
-
-        self.dlg = wx.ProgressDialog(self.title,
-                                     self.msg,
-                                     maximum = self.maximum,
-                                     parent = parent,
-                                     style  = self.style)
-
-        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
-        self.dlg.SetSize(wx.Size(250,150))
-
-    def Cancel(self, evt):
-        Publisher.sendMessage("Cancel DICOM load")
-
-    def Update(self, value, message):
-        if(int(value) != self.maximum):
-            try:
-                return self.dlg.Update(int(value),message)
-            #TODO:
-            #Exception in the Windows XP 64 Bits with wxPython 2.8.10
-            except(wx._core.PyAssertionError):
-                return True
-        else:
-            return False
-
-    def Close(self):
-        self.dlg.Destroy()
-
-
 # ---------
 
 INV_NON_COMPRESSED = 0
@@ -296,7 +257,7 @@ def ShowOpenProjectDialog():
     # Default system path
     current_dir = os.path.abspath(".")
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_inv3', '')
+    last_directory = session.GetConfig('last_directory_inv3', '')
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
                         defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_OPEN,
@@ -316,8 +277,8 @@ def ShowOpenProjectDialog():
         filepath = dlg.GetPath()
 
     if filepath:
-        session['paths']['last_directory_inv3'] = os.path.split(filepath)[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(filepath)[0]
+        session.SetConfig('last_directory_inv3', last_directory)
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -331,11 +292,7 @@ def ShowImportDirDialog(self):
 
     if sys.platform == 'win32' or sys.platform.startswith('linux'):
         session = ses.Session()
-
-        if (session.GetLastDicomFolder()):
-            folder = session.GetLastDicomFolder()
-        else:
-            folder = ''
+        folder = session.GetConfig('last_dicom_folder', '')
     else:
         folder = ''
 
@@ -354,13 +311,14 @@ def ShowImportDirDialog(self):
             else:
                 path = dlg.GetPath().encode('utf-8')
 
-    except(wx._core.PyAssertionError): #TODO: error win64
-         if (dlg.GetPath()):
+    except wx._core.PyAssertionError:  # TODO: error win64
+         if dlg.GetPath():
              path = dlg.GetPath()
 
-    if (sys.platform != 'darwin'):
-        if (path):
-            session.SetLastDicomFolder(path)
+    if sys.platform != 'darwin':
+        if path:
+            path_decoded = utils.decode(path, const.FS_ENCODE)
+            session.SetConfig('last_dicom_folder', path_decoded)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -370,17 +328,8 @@ def ShowImportDirDialog(self):
 def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
-    #  if sys.platform == 'win32' or sys.platform.startswith('linux'):
-        #  session = ses.Session()
-
-        #  if (session.GetLastDicomFolder()):
-            #  folder = session.GetLastDicomFolder()
-        #  else:
-            #  folder = ''
-    #  else:
-        #  folder = ''
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_bitmap', '')
+    last_directory = session.GetConfig('last_directory_bitmap', '')
 
     dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), last_directory,
                         style=wx.DD_DEFAULT_STYLE
@@ -394,17 +343,12 @@ def ShowImportBitmapDirDialog(self):
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
             path = dlg.GetPath()
 
-    except(wx._core.PyAssertionError): #TODO: error win64
-         if (dlg.GetPath()):
+    except wx._core.PyAssertionError:  # TODO: error win64
+         if dlg.GetPath():
              path = dlg.GetPath()
 
-    #  if (sys.platform != 'darwin'):
-        #  if (path):
-            #  session.SetLastDicomFolder(path)
-
     if path:
-        session['paths']['last_directory_bitmap'] = path
-        session.WriteSessionFile()
+        session.SetConfig('last_directory_bitmap', path)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -415,7 +359,7 @@ def ShowImportBitmapDirDialog(self):
 def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     # Default system path
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_%d' % id_type, '')
+    last_directory = session.GetConfig('last_directory_%d' % id_type, '')
     dlg = wx.FileDialog(None, message=msg, defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_NIFTI,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
@@ -462,8 +406,9 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
             filename = dlg.GetPath()
 
     if filename:
-        session['paths']['last_directory_%d' % id_type] = os.path.split(dlg.GetPath())[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(dlg.GetPath())[0]
+        session.SetConfig('last_directory_%d' % id_type, last_directory)
+
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
@@ -473,8 +418,10 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
 def ShowImportMeshFilesDialog():
     # Default system path
     current_dir = os.path.abspath(".")
+
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_surface_import', '')
+    last_directory = session.GetConfig('last_directory_surface_import', '')
+
     dlg = wx.FileDialog(None, message=_("Import surface file"),
                         defaultDir=last_directory,
                         wildcard=WILDCARD_MESH_FILES,
@@ -495,8 +442,7 @@ def ShowImportMeshFilesDialog():
             filename = dlg.GetPath()
 
     if filename:
-        session['paths']['last_directory_surface_import'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+        session.SetConfig('last_directory_surface_import', os.path.split(filename)[0])
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -523,8 +469,10 @@ def ImportMeshCoordSystem():
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
+
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_inv3', '')
+    last_directory = session.GetConfig('last_directory_inv3', '')
+
     dlg = wx.FileDialog(None,
                         _("Save project as..."), # title
                         last_directory, # last used directory
@@ -551,13 +499,52 @@ def ShowSaveAsProjectDialog(default_filename=None):
                 filename = filename + "." + extension
 
     if filename:
-        session['paths']['last_directory_inv3'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+        last_directory = os.path.split(filename)[0]
+        session.SetConfig('last_directory_inv3', last_directory)
 
     wildcard = dlg.GetFilterIndex()
     os.chdir(current_dir)
     return filename, wildcard == INV_COMPRESSED
 
+
+def ShowLoadCSVDebugEfield(message=_(u"Load debug CSV Enorm file"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+                           wildcard=_("(*.csv)|*.csv"), default_filename=""):
+
+    dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
+                        wildcard=wildcard, style=style)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                filepath = dlg.GetPath()
+            else:
+                filepath = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    if filepath:
+        with open(filepath, 'r') as file:
+            my_reader = csv.reader(file, delimiter=',')
+            rows = []
+            for row in my_reader:
+                rows.append(row)
+        e_field = rows
+        e_field_norms = np.array(e_field).astype(float)
+
+        return e_field_norms
+    else:
+        return None
 
 def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
                        wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
@@ -575,11 +562,11 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
             ok_press = 1
         else:
             ok_press = 0
-    except(wx._core.PyAssertionError):  # FIX: win64
+    except wx._core.PyAssertionError:  # FIX: win64
         filepath = dlg.GetPath()
         ok_press = 1
 
-    # fix the extension if set different than expected
+    # Change the extension if it was set to a value different than expected.
     if save_ext and ok_press:
         extension = save_ext
         if sys.platform != 'win32':
@@ -666,9 +653,8 @@ class UpdateMessageDialog(wx.Dialog):
         btn_yes.Bind(wx.EVT_BUTTON, self._OnYes)
         btn_no.Bind(wx.EVT_BUTTON, self._OnNo)
 
-        # Subscribing to the pubsub event which happens when InVesalius is
-        # closed.
-        Publisher.subscribe(self._OnCloseInV, 'Exit')
+        # Subscribing to the pubsub event which happens when InVesalius is closed.
+        Publisher.subscribe(self._Exit, 'Exit')
 
     def _OnYes(self, evt):
         # Launches the default browser with the url to download the new
@@ -682,7 +668,7 @@ class UpdateMessageDialog(wx.Dialog):
         self.Close()
         self.Destroy()
 
-    def _OnCloseInV(self):
+    def _Exit(self):
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()
@@ -931,6 +917,17 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
 
 def Efield_connection_warning():
     msg = _('No connection to E-field library')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def Efield_debug_Enorm_warning():
+    msg = _('The CSV Enorm file is not loaded.')
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_INFORMATION | wx.OK)
@@ -1468,7 +1465,7 @@ def ExportPicture(type_=""):
     project = proj.Project()
 
     session = ses.Session()
-    last_directory = session.get('paths', 'last_directory_screenshot', '')
+    last_directory = session.GetConfig('last_directory_screenshot', '')
 
     project_name = "%s_%s" % (project.name, type_)
     if not sys.platform in ('win32', 'linux2', 'linux'):
@@ -1487,8 +1484,10 @@ def ExportPicture(type_=""):
         filetype = INDEX_TO_TYPE[filetype_index]
         extension = INDEX_TO_EXTENSION[filetype_index]
         filename = dlg.GetPath()
-        session['paths']['last_directory_screenshot'] = os.path.split(filename)[0]
-        session.WriteSessionFile()
+
+        last_directory = os.path.split(filename)[0]
+        session.SetConfig('last_directory_screenshot', last_directory)
+
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "."+ extension
@@ -3372,25 +3371,26 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, tracker, pedal_connection):
+    def __init__(self, tracker, pedal_connection, neuronavigation_api):
         self.tracker = tracker
         self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
 
-        self.trk_init, self.tracker_id = tracker.GetTrackerInfo()
+        self.tracker_id = tracker.GetTrackerId()
         self.obj_ref_id = 2
         self.obj_name = None
         self.polydata = None
         self.use_default_object = False
         self.object_fiducial_being_set = None
 
-        self.obj_fiducials = np.full([5, 3], np.nan)
-        self.obj_orients = np.full([5, 3], np.nan)
+        self.obj_fiducials = np.full([4, 3], np.nan)
+        self.obj_orients = np.full([4, 3], np.nan)
 
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self._init_gui()
-        self.LoadObject()
+        self.InitializeObject()
 
         self.__bind_events()
 
@@ -3404,10 +3404,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         # Initialize list of buttons and txtctrls for wx objects
-        self.btns_coord = [None] * 5
-        self.text_actors = [None] * 5
-        self.ball_actors = [None] * 5
-        self.txt_coord = [list(), list(), list(), list(), list()]
+        self.btns_coord = [None] * 4
+        self.text_actors = [None] * 4
+        self.ball_actors = [None] * 4
+        self.txt_coord = [list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
@@ -3459,14 +3459,14 @@ class ObjectCalibrationDialog(wx.Dialog):
 
             self.btns_coord[index] = ctrl
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             for n in range(0, 3):
                 self.txt_coord[m].append(wx.StaticText(self, -1, label='-',
                                                        style=wx.ALIGN_RIGHT, size=wx.Size(40, 23)))
 
         coord_sizer = wx.GridBagSizer(hgap=20, vgap=5)
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
             for n in range(0, 3):
                 coord_sizer.Add(self.txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
@@ -3500,47 +3500,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:  # answer == wx.ID_NO:
             return 0
 
-    def LoadObject(self):
-        self.use_default_object = self.ObjectImportDialog()
-
-        if not self.use_default_object:
-            filename = ShowImportMeshFilesDialog()
-
-            if filename:
-                if filename.lower().endswith('.stl'):
-                    reader = vtkSTLReader()
-                elif filename.lower().endswith('.ply'):
-                    reader = vtkPLYReader()
-                elif filename.lower().endswith('.obj'):
-                    reader = vtkOBJReader()
-                elif filename.lower().endswith('.vtp'):
-                    reader = vtkXMLPolyDataReader()
-                else:
-                    wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
-                    return
-            else:
-                filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-                reader = vtkSTLReader()
-
-                # XXX: If the user cancels the dialog for importing the coil mesh file, the current behavior is to
-                #      use the default object after all. A more logical behavior in that case would be to cancel the
-                #      whole object calibration, but implementing that would need larger refactoring.
-                #
-                self.use_default_object = True
-        else:
-            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-            reader = vtkSTLReader()
-
-        if _has_win32api:
-            self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
-        else:
-            self.obj_name = filename.encode(const.FS_ENCODE)
-
-        reader.SetFileName(self.obj_name)
-        reader.Update()
-        polydata = reader.GetOutput()
-        self.polydata = polydata
-
+    def ShowObject(self, polydata):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
@@ -3574,6 +3534,47 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ren.ResetCamera()
 
         self.interactor.Render()
+
+    def ConfigureObject(self):
+        use_default_object = self.ObjectImportDialog()
+
+        if use_default_object:
+            path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+        else:
+            path = ShowImportMeshFilesDialog()
+
+            # Return if the open file dialog was canceled.
+            if path is None:
+                return False
+
+            # Validate the file extension.
+            valid_extensions = ('.stl', 'ply', '.obj', '.vtp')
+            if not path.lower().endswith(valid_extensions):
+                wx.MessageBox(_("File format not recognized by InVesalius"), _("Import surface error"))
+                return False
+
+        if _has_win32api:
+            path = win32api.GetShortPathName(path)
+
+        self.obj_name = path.encode(const.FS_ENCODE)
+        self.use_default_object = use_default_object
+
+        return True
+
+    def InitializeObject(self):
+        success = self.ConfigureObject()
+        if success:
+            # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
+            #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
+            #
+            object_path = self.obj_name.decode(const.FS_ENCODE)
+            self.polydata = pu.LoadPolydata(
+                path=object_path
+            )
+            self.ShowObject(
+                polydata=self.polydata
+            )
 
     def OnCreateObjectText(self, name, coord):
         ball_source = vtkSphereSource()
@@ -3636,11 +3637,21 @@ class ObjectCalibrationDialog(wx.Dialog):
                     callback=set_fiducial_callback,
                     remove_when_released=True,
                 )
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(
+                    name='fiducial',
+                    callback=set_fiducial_callback,
+                    remove_when_released=True,
+                )
         else:
             set_fiducial_callback(True)
 
             if self.pedal_connection is not None:
                 self.pedal_connection.remove_callback(name='fiducial')
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
 
     def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(
@@ -3660,13 +3671,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
         #      and not change the function to the point of potentially breaking it.)
         #
-        if self.obj_ref_id and fiducial_index == 4:
+        if self.obj_ref_id and fiducial_index == 3:
             coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
-
-        if fiducial_index == 3:
-            coord = np.zeros([6,])
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
@@ -3697,7 +3705,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
             self.choice_sensor.Show(self.obj_ref_id)
 
-        for m in range(0, 5):
+        for m in range(0, 4):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):
@@ -3717,11 +3725,11 @@ class ObjectCalibrationDialog(wx.Dialog):
 
 class ICPCorregistrationDialog(wx.Dialog):
 
-    def __init__(self, nav_prop):
+    def __init__(self, navigation, tracker):
         import invesalius.project as prj
 
-        self.m_change = nav_prop[0]
-        self.tracker = nav_prop[1]
+        self.tracker = tracker
+        self.m_change = navigation.m_change
         self.obj_ref_id = 2
         self.obj_name = None
         self.obj_actor = None
@@ -3752,7 +3760,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.GetRenderWindow().AddRenderer(self.ren)
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+        self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
         txt_mode = wx.StaticText(self, -1, _('Registration mode:'))
@@ -3783,14 +3791,14 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         # Buttons to acquire and remove points
         create_point = wx.Button(self, -1, label=_('Create point'))
-        create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+        create_point.Bind(wx.EVT_BUTTON, self.CreatePoint)
 
         cont_point = wx.ToggleButton(self, -1, label=_('Continuous acquisition'))
-        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=cont_point))
+        cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=cont_point))
         self.cont_point = cont_point
 
-        btn_reset = wx.Button(self, -1, label=_('Remove points'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset = wx.Button(self, -1, label=_('Reset points'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnResetPoints)
 
         btn_apply_icp = wx.Button(self, -1, label=_('Apply registration'))
         btn_apply_icp.Bind(wx.EVT_BUTTON, self.OnICP)
@@ -4049,17 +4057,17 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnChoiceICPMethod(self, evt):
         self.icp_mode = evt.GetSelection()
 
-    def OnContinuousAcquisition(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(500)
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
+    def HandleContinuousAcquisition(self, evt):
+        self.CreatePoint()
 
-    def OnCreatePoint(self, evt):
+    def CreatePoint(self, evt=None):
         current_coord, markers_flag = self.GetCurrentCoord()
         if markers_flag[:2] >= [1, 1]:
             self.AddMarker(3, (1, 0, 0), current_coord)
@@ -4074,16 +4082,18 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.interactor.Render()
 
     def OnDeleteLastPoint(self):
+        # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.cont_point)
 
         self.RemoveSinglePointActor()
 
-    def OnReset(self, evt):
+    def OnResetPoints(self, evt):
+        # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
 
         self.RemoveAllActors()
         self.LoadActor()
@@ -4091,7 +4101,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def OnICP(self, evt):
         if self.cont_point:
             self.cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.cont_point)
+            self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
 
         self.SetProgress(0.3)
         time.sleep(1)
@@ -4183,17 +4193,25 @@ class ICPCorregistrationDialog(wx.Dialog):
         return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
 
 
-
 class SetCoilOrientationDialog(wx.Dialog):
 
-    def __init__(self, marker):
+    def __init__(self, marker, mTMS=None, brain_target=False, brain_actor=None):
         import invesalius.project as prj
 
         self.obj_actor = None
         self.polydata = None
         self.initial_focus = None
 
+        self.mTMS = mTMS
         self.marker = marker
+        self.brain_target = brain_target
+        self.peel_brain_actor = brain_actor
+        self.brain_target_actor_list = []
+        self.coil_target_actor_list = []
+        self.center_brain_target_actor = None
+        self.marker_actor = None
+        self.dummy_coil_actor = None
+        self.m_img_vtk = None
 
         self.spinning = False
         self.rotationX = 0
@@ -4218,6 +4236,13 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.actor_style = vtkInteractorStyleTrackballActor()
         self.camera_style = vtkInteractorStyleTrackballCamera()
 
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        # self.picker.SetUseCells(True)
+        self.interactor.SetPicker(self.picker)
+        self.actor_style.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
+        self.actor_style.AddObserver("MiddleButtonPressEvent", self.OnWheelMouseClick)
+
         self.interactor.SetInteractorStyle(self.actor_style)
         self.actor_style.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.actor_style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
@@ -4234,6 +4259,7 @@ class SetCoilOrientationDialog(wx.Dialog):
                                      self.OnZoomMove)
         self.camera_style.AddObserver('MouseWheelBackwardEvent',
                                      self.OnZoomMove)
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnDepth)
 
         txt_surface = wx.StaticText(self, -1, _('Select the surface:'))
 
@@ -4242,26 +4268,65 @@ class SetCoilOrientationDialog(wx.Dialog):
         # combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameScalpSurface)
         for n in range(len(self.proj.surface_dict)):
             combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
-        self.combo_surface_name = combo_surface_name
+        txt_brain_surface = wx.StaticText(self, -1, _('Select the brain surface:'))
+
+        combo_brain_surface_name = wx.ComboBox(self, -1, size=(210, 23),
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
         init_surface = 0
         combo_surface_name.SetSelection(init_surface)
+        combo_brain_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
-        self.LoadActor()
+        self.brain_surface = self.proj.surface_dict[init_surface].polydata
+        if self.peel_brain_actor:
+            self.peel_brain_actor.PickableOff()
+            self.ren.AddActor(self.peel_brain_actor)
+        self.obj_actor = self.LoadActor(self.surface)
+        if self.brain_target:
+            self.brain_surface = self.surface
+        else:
+            self.brain_actor = self.LoadActor(self.brain_surface)
+        self.coil_pose_actor = self.LoadTarget()
+
+        self.chk_show_surface = wx.CheckBox(self, wx.ID_ANY, _("Show scalp surface"))
+        self.chk_show_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxScalp)
+        self.chk_show_surface.SetValue(True)
+        self.chk_show_brain_surface = wx.CheckBox(self, wx.ID_ANY, _("Show brain surface"))
+        self.chk_show_brain_surface.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxBrain)
+        self.chk_show_brain_surface.SetValue(True)
 
         reset_orientation = wx.Button(self, -1, label=_('Reset arrow orientation'))
         reset_orientation.Bind(wx.EVT_BUTTON, self.OnResetOrientation)
+
         change_view = wx.Button(self, -1, label=_('Change view'))
         change_view.Bind(wx.EVT_BUTTON, self.OnChangeView)
 
+        create_random_target_grid = wx.Button(self, -1, label=_('Create random coil target grid'))
+        create_random_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateRandomTargetGrid)
+
+        create_target_grid = wx.Button(self, -1, label=_('Create coil target grid'))
+        create_target_grid.Bind(wx.EVT_BUTTON, self.OnCreateTargetGrid)
+
+        create_brain_grid = wx.Button(self, -1, label=_('Create brain target grid'))
+        create_brain_grid.Bind(wx.EVT_BUTTON, self.OnCreateBrainGrid)
+
+        send_to_mtms = wx.Button(self, -1, label=_('Send to mTMS'))
+        send_to_mtms.Bind(wx.EVT_BUTTON, self.OnSendMtms)
+        send_to_mtms.Hide()
+
         text_rotation_x = wx.StaticText(self, -1, _("Rotation X:"))
 
-        slider_rotation_x = wx.Slider(self, -1, 0, -180,
-                                        180,
+        slider_rotation_x = wx.Slider(self, -1, 0, -180, 180,
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_rotation_x.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_rotation_x.Bind(wx.EVT_SLIDER, self.OnRotationX)
@@ -4269,8 +4334,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         text_rotation_y = wx.StaticText(self, -1, _("Rotation Y:"))
 
-        slider_rotation_y = wx.Slider(self, -1, 0, -180,
-                                        180,
+        slider_rotation_y = wx.Slider(self, -1, 0, -180, 180,
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_rotation_y.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_rotation_y.Bind(wx.EVT_SLIDER, self.OnRotationY)
@@ -4278,8 +4342,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         text_rotation_z = wx.StaticText(self, -1, _("Rotation Z:"))
 
-        slider_rotation_z = wx.Slider(self, -1, 0, -180,
-                                        180,
+        slider_rotation_z = wx.Slider(self, -1, 0, -180, 180,
                                         style=wx.SL_HORIZONTAL)#|wx.SL_AUTOTICKS)
         slider_rotation_z.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider_rotation_z.Bind(wx.EVT_SLIDER, self.OnRotationZ)
@@ -4293,13 +4356,31 @@ class SetCoilOrientationDialog(wx.Dialog):
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
         btn_cancel.SetHelpText("")
 
-        top_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=50, vgap=5)
+        if self.brain_target:
+            self.chk_show_brain_surface.Hide()
+            txt_brain_surface.Hide()
+            combo_brain_surface_name.Hide()
+            create_random_target_grid.Hide()
+            create_target_grid.Hide()
+            create_brain_grid.Hide()
+            send_to_mtms.Show()
+
+        top_sizer = wx.FlexGridSizer(rows=3, cols=3, hgap=50, vgap=5)
         top_sizer.AddMany([txt_surface,
+                           txt_brain_surface,
                            (wx.StaticText(self, -1, ''), 0, wx.EXPAND),
                            combo_surface_name,
+                           combo_brain_surface_name,
                            change_view,
+                           self.chk_show_surface,
+                           self.chk_show_brain_surface,
+                          (wx.StaticText(self, -1, ''), 0, wx.EXPAND)
                            ])
-        btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_changes_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=20, vgap=20)
+        btn_changes_sizer.AddMany([create_random_target_grid])
+        btn_changes_sizer.AddMany([create_target_grid])
+        btn_changes_sizer.AddMany([create_brain_grid])
+        btn_changes_sizer.AddMany([send_to_mtms])
         btn_changes_sizer.AddMany([reset_orientation])
         btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
         btn_ok_sizer.AddMany([btn_ok, btn_cancel])
@@ -4335,7 +4416,117 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def OnResetOrientation(self, evt):
+    def get_vtk_mouse_position(self):
+        """
+        Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
+        tuple with X and Y position.
+        Please use this instead of using iren.GetEventPosition because it's
+        not returning the correct values on Mac with HighDPI display, maybe
+        the same is happing with Windows and Linux, we need to test.
+        """
+        mposx, mposy = wx.GetMousePosition()
+        cposx, cposy = self.interactor.ScreenToClient((mposx, mposy))
+        mx, my = cposx, self.interactor.GetSize()[1] - cposy
+        if sys.platform == 'darwin':
+            # It's needed to mutiple by scale factor in HighDPI because of
+            # https://docs.wxpython.org/wx.glcanvas.GLCanvas.html
+            # For now we are doing this only on Mac but it may be needed on
+            # Windows and Linux too.
+            scale = self.interactor.GetContentScaleFactor()
+            mx *= scale
+            my *= scale
+        return int(mx), int(my)
+
+    def OnCreateDummyCoil(self, target_actor):
+        if self.dummy_coil_actor:
+            self.RemoveActor(self.dummy_coil_actor)
+
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
+        filename = utils.decode(filename, const.FS_ENCODE)
+        reader = vtkSTLReader()
+        if _has_win32api:
+            obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+        else:
+            obj_name = filename.encode(const.FS_ENCODE)
+
+        reader.SetFileName(obj_name)
+        reader.Update()
+        obj_polydata = reader.GetOutput()
+
+        transform = vtkTransform()
+        transform.RotateZ(90)
+        transform_filt = vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(obj_polydata)
+        transform_filt.Update()
+        obj_mapper = vtkPolyDataMapper()
+        obj_mapper.SetInputData(transform_filt.GetOutput())
+        self.dummy_coil_actor = vtkActor()
+        self.dummy_coil_actor.SetMapper(obj_mapper)
+        vtk_colors = vtkNamedColors()
+        self.dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('cornsilk4'))
+        self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
+        self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
+        self.dummy_coil_actor.GetProperty().SetOpacity(.3)
+        self.dummy_coil_actor.SetVisibility(1)
+        self.dummy_coil_actor.SetUserMatrix(target_actor.GetMatrix())
+        self.dummy_coil_actor.SetScale(0.1)
+        self.dummy_coil_actor.PickableOff()
+        self.ren.AddActor(self.dummy_coil_actor)
+
+    def OnWheelMouseClick(self, obj, evt):
+        x, y = self.get_vtk_mouse_position()
+        self.picker.Pick(x, y, 0, self.ren)
+        if self.picker.GetActor():
+            if self.brain_target:
+                colour = [1, 0, 0]
+            else:
+                colour = [0, 0, 1]
+            self.marker_actor.GetProperty().SetColor(colour)
+            self.marker_actor = self.picker.GetActor()
+            self.marker_actor.GetProperty().SetColor([0, 1, 0])
+            self.rotationX = self.rotationY = self.rotationZ = 0
+            self.slider_rotation_x.SetValue(0)
+            self.slider_rotation_y.SetValue(0)
+            self.slider_rotation_z.SetValue(0)
+            if not self.brain_target:
+                self.OnCreateDummyCoil(self.marker_actor)
+            self.interactor.Render()
+
+    def OnCrossMouseClick(self, obj, evt):
+        if self.brain_target:
+            self.obj_actor.PickableOn()
+            if self.peel_brain_actor:
+                self.peel_brain_actor.PickableOn()
+            x, y = self.get_vtk_mouse_position()
+            self.picker.Pick(x, y, 0, self.ren)
+            x, y, z = self.picker.GetPickPosition()
+            coord_flip = list(self.marker)
+            coord_flip[1] = -coord_flip[1]
+            if self.picker.GetActor():
+                if self.marker_actor != self.coil_pose_actor:
+                    self.marker_actor.GetProperty().SetColor([1, 0, 0])
+                coord = [x, y, z, coord_flip[3], coord_flip[4], coord_flip[5]]
+                brain_target_actor, _ = self.AddTarget(coord, colour=[1.0, 0.0, 0.0], scale=2)
+                self.marker_actor.GetProperty().SetColor([0, 1, 0])
+                self.brain_target_actor_list.append(brain_target_actor)
+                self.OnResetOrientation()
+            self.obj_actor.PickableOff()
+            if self.peel_brain_actor:
+                self.peel_brain_actor.PickableOff()
+            self.interactor.Render()
+
+    def OnCheckBoxScalp(self, evt=None):
+        status = self.chk_show_surface.GetValue()
+        self.obj_actor.SetVisibility(status)
+        self.interactor.Render()
+
+    def OnCheckBoxBrain(self, evt=None):
+        status = self.chk_show_brain_surface.GetValue()
+        self.brain_actor.SetVisibility(status)
+        self.interactor.Render()
+
+    def OnResetOrientation(self, evt=None):
         self.rotationX = self.rotationY = self.rotationZ = 0
         self.slider_rotation_x.SetValue(0)
         self.slider_rotation_y.SetValue(0)
@@ -4356,6 +4547,16 @@ class SetCoilOrientationDialog(wx.Dialog):
     def OnRotationZ(self, evt):
         self.rotationZ = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
+        self.interactor.Render()
+
+    def OnDepth(self, evt):
+        if evt.GetKeyCode() == wx.WXK_UP:
+            depth = 1
+        elif evt.GetKeyCode() == wx.WXK_DOWN:
+            depth = -1
+        else:
+            depth = 0
+        self.marker_actor.AddPosition(0, 0, depth)
         self.interactor.Render()
 
     def OnPressLeftButton(self, evt, obj):
@@ -4381,57 +4582,138 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.ren.GetActiveCamera().Roll(90)
         self.interactor.Render()
 
-    def OnComboName(self, evt):
+    def OnComboNameBrainSurface(self, evt):
+        surface_index = evt.GetSelection()
+        self.brain_surface = self.proj.surface_dict[surface_index].polydata
+        if self.brain_actor:
+            self.RemoveActor(self.brain_actor)
+        self.brain_actor = self.LoadActor(self.brain_surface)
+        self.chk_show_brain_surface.SetValue(True)
+
+    def OnComboNameScalpSurface(self, evt):
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
-            self.RemoveActor()
-        self.LoadActor()
+            self.RemoveAllActor()
+            if self.peel_brain_actor:
+                self.peel_brain_actor.PickableOff()
+                self.ren.AddActor(self.peel_brain_actor)
+        self.brain_target_actor_list = []
+        self.coil_target_actor_list = []
+        self.center_brain_target_actor = None
+        self.obj_actor = self.LoadActor(self.surface)
+        if not self.brain_target:
+            self.brain_actor = self.LoadActor(self.brain_surface)
+        self.coil_pose_actor = self.LoadTarget()
+        self.chk_show_surface.SetValue(True)
 
-    def LoadActor(self):
+    def LoadCenterBrainTarget(self, coil_target_position, coil_target_orientation):
+        m_coil = dco.coordinates_to_transformation_matrix(
+            position=coil_target_position,
+            orientation=coil_target_orientation,
+            axes='sxyz',
+        )
+        m_offset_brain = dco.coordinates_to_transformation_matrix(
+            position=[0, 0, -20],
+            orientation=coil_target_orientation,
+            axes='sxyz',
+        )
+        m_brain = m_coil @ m_offset_brain
+        coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], coil_target_orientation[0], coil_target_orientation[1], coil_target_orientation[2]
+
+        brain_target_actor, _ = self.AddTarget(coord, scale=2)
+        brain_target_actor.PickableOff()
+        brain_target_actor.GetProperty().SetColor([1, 1, 0])
+        self.brain_target_actor_list.append(brain_target_actor)
+
+        print('Adding brain markers')
+
+    def LoadTarget(self):
+        coord_flip = list(self.marker)
+        coord_flip[1] = -coord_flip[1]
+        if self.brain_target:
+            marker_actor, _ = self.AddTarget(coord_flip, scale=5)
+            self.ren.GetActiveCamera().Zoom(2)
+            colors = vtkNamedColors()
+            # Create a circle
+            polygonSource = vtkRegularPolygonSource()
+            # Comment this line to generate a disk instead of a circle.
+            polygonSource.GeneratePolygonOff()
+            polygonSource.SetNumberOfSides(50)
+            polygonSource.SetRadius(const.MTMS_RADIUS)
+            polygonSource.SetCenter(0, 0, 0)
+            #  Visualize
+            mapper = vtkPolyDataMapper()
+            mapper.SetInputConnection(polygonSource.GetOutputPort())
+            circle_actor = vtkActor()
+            circle_actor.SetMapper(mapper)
+            circle_actor.PickableOff()
+            circle_actor.GetProperty().SetColor(colors.GetColor3d('Red'))
+            circle_actor.SetUserMatrix(self.m_img_vtk)
+            self.ren.AddActor(circle_actor)
+            self.marker_actor.PickableOff()
+        else:
+            marker_actor, coordinates = self.AddTarget(coord_flip, scale=10)
+            self.marker[3], self.marker[4], self.marker[5] = coordinates[3], coordinates[4], coordinates[5]
+        self.interactor.Render()
+
+        return marker_actor
+
+    def LoadActor(self, surface):
         '''
         Load the selected actor from the project (self.surface) into the scene
         :return:
         '''
         mapper = vtkPolyDataMapper()
-        mapper.SetInputData(self.surface)
+        mapper.SetInputData(surface)
         mapper.ScalarVisibilityOff()
 
         obj_actor = vtkActor()
         obj_actor.SetMapper(mapper)
         #obj_actor.GetProperty().SetOpacity(0.1)
         obj_actor.PickableOff()
-        self.obj_actor = obj_actor
+
         self.ren.AddActor(obj_actor)
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
         self.ren.ResetCamera()
         self.SetVolumeCamera(coord_flip[:3])
-        self.AddTarget(coord_flip)
-
         self.interactor.Render()
 
-    def RemoveActor(self):
+        return obj_actor
+
+    def RemoveActor(self, actor):
+        self.ren.RemoveActor(actor)
+        self.interactor.Render()
+
+    def RemoveAllActor(self):
         self.ren.RemoveAllViewProps()
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def AddTarget(self, coord_flip):
-        rx, ry, rz = coord_flip[3:6]
+    def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0], scale=10):
+        rx, ry, rz = coord_flip[3:]
         if rx is None:
-            coord = self.Versor(self.CenterOfMass(self.surface), coord_flip[:3])
+            coord = self.Versor(self.CenterOfMass(self.brain_surface), coord_flip[:3])
             rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
             ry += 90
+            m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=True)
+            self.m_img_vtk = m_img_vtk
         else:
-            rx, ry, rz = coord_flip[3:6]
+            m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=False)
+            if not self.m_img_vtk:
+                self.m_img_vtk = m_img_vtk
 
-        m_img_vtk = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz])
-        marker_actor = self.CreateActorArrow(m_img_vtk)
+        coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
+        marker_actor = self.CreateActorArrow(m_img_vtk, colour=colour)
+        marker_actor.SetScale(scale)
         self.marker_actor = marker_actor
 
         self.ren.AddActor(marker_actor)
 
-    def CreateActorArrow(self, m_img_vtk, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+        return marker_actor, coordinate
+
+    def CreateActorArrow(self, m_img_vtk, colour, size=const.ARROW_MARKER_SIZE):
         input1 = vtkPolyData()
         input2 = vtkPolyData()
         input3 = vtkPolyData()
@@ -4503,8 +4785,266 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         return actor
 
-    def CreateVTKObjectMatrix(self, direction, orientation):
-        import invesalius.data.coordinates as dco
+    def vtkmatrix2numpy(self, matrix):
+        """
+        Copies the elements of a vtkMatrix4x4 into a numpy array.
+        param matrix: The matrix to be copied into an array.
+        Args:
+            matrix: vtk type matrix
+        """
+        m = np.ones((4, 4))
+        for i in range(4):
+            for j in range(4):
+                m[i, j] = matrix.GetElement(i, j)
+        return m
+
+    def ICP(self, coord, center, surface):
+        """
+        Apply ICP transforms to fit the spiral points to the surface
+        Args:
+            coord: raw coordinates to apply ICP
+        """
+        sourcePoints = np.array(coord[:3])
+        sourcePoints_vtk = vtkPoints()
+        for i in range(len(sourcePoints)):
+            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints)
+        source = vtkPolyData()
+        source.SetPoints(sourcePoints_vtk)
+
+        if float(center[0]) > 100.0:
+            transform = vtkTransform()
+            transform.Translate(
+                float(center[0]),
+                -float(center[1]),
+                float(center[2]))
+            transform.RotateY(35)
+            transform.Translate(
+                -float(center[0]),
+                float(center[1]),
+                -float(center[2]))
+
+        if float(center[0]) <= 100.00:
+            transform = vtkTransform()
+            transform.Translate(
+                float(center[0]),
+                -float(center[1]),
+                float(center[2]))
+            transform.RotateY(-35)
+            transform.Translate(
+                -float(center[0]),
+                float(center[1]),
+                -float(center[2]))
+
+        transform_filt = vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(source)
+        transform_filt.Update()
+
+        source_points = transform_filt.GetOutput()
+
+        icp = vtkIterativeClosestPointTransform()
+        icp.SetSource(source_points)
+        icp.SetTarget(surface)
+
+        icp.GetLandmarkTransform().SetModeToRigidBody()
+        # icp.GetLandmarkTransform().SetModeToAffine()
+        icp.DebugOn()
+        icp.SetMaximumNumberOfIterations(100)
+        icp.Modified()
+        icp.Update()
+
+        self.m_icp = self.vtkmatrix2numpy(icp.GetMatrix())
+
+        icpTransformFilter = vtkTransformPolyDataFilter()
+        icpTransformFilter.SetInputData(source_points)
+        icpTransformFilter.SetTransform(icp)
+        icpTransformFilter.Update()
+
+        transformedSource = icpTransformFilter.GetOutput()
+        p = [0, 0, 0]
+        transformedSource.GetPoint(0, p)
+        # source_points.GetPoint(0, p)
+        point = vtkSphereSource()
+        point.SetCenter(p)
+        point.SetRadius(1.5)
+        point.SetPhiResolution(10)
+        point.SetThetaResolution(10)
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(point.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor((0, 0, 1))
+
+        #self.ren.AddActor(actor)
+        #self.ActorCollection.AddItem(actor)
+        #self.interactor.Render()
+        #coord = p[0], p[1], p[2], center[3], center[4], center[5]
+        coord = p[0], p[1], p[2], None,  None,  None
+
+        return coord
+
+        #p[1] = -p[1]
+        #self.icp_points.append(p)
+
+    def CreateSphere(self, center, radius):
+        point = vtkSphereSource()
+        point.SetCenter(center)
+        point.SetRadius(radius)
+        point.SetPhiResolution(100)
+        point.SetThetaResolution(100)
+        point.Update()
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(point.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor((0, 1, 0))
+
+        self.ren.AddActor(actor)
+
+        return point.GetOutput()
+
+    def CreateGrid(self, resolution, space_x, space_y):
+        minX, maxX, minY, maxY = -space_x, space_x, -space_y, space_y
+        # create one-dimensional arrays for x and y
+        x = np.linspace(minX, maxX, resolution)
+        y = np.linspace(minY, maxY, resolution)
+
+        return np.meshgrid(x, y)
+
+    def OnCreateRandomTargetGrid(self, evt):
+        vtkmat = self.coil_pose_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], narray[1][-1], narray[2][-1]]
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+        coil_target_position = position
+        coil_target_orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+        if self.center_brain_target_actor is None:
+            self.center_brain_target_actor = self.LoadCenterBrainTarget(coil_target_position, coil_target_orientation)
+
+        self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
+        self.coil_pose_actor.GetProperty().SetOpacity(1)
+        self.coil_pose_actor.PickableOff()
+        if self.dummy_coil_actor:
+            self.RemoveActor(self.dummy_coil_actor)
+
+        number_of_targets = 10
+        # radius of the circle
+        circle_r = 15
+
+        for i in range(number_of_targets):
+            alpha = 2 * np.pi * random.random()
+            r = circle_r * np.sqrt(random.random())
+            X = r * np.cos(alpha)
+            Y = r * np.sin(alpha)
+            rZ = random.randrange(-30, 30, 1)
+
+            m_offset_target = dco.coordinates_to_transformation_matrix(
+                position=[X, Y, 0],
+                orientation=[0, 0, rZ],
+                axes='sxyz',
+            )
+            m_origin_coil = dco.coordinates_to_transformation_matrix(
+                position=coil_target_position,
+                orientation=coil_target_orientation,
+                axes='sxyz',
+            )
+            m_target = m_origin_coil @ m_offset_target
+            position, orientation = dco.transformation_matrix_to_coordinates(m_target, axes='sxyz')
+            coord = [position[0], position[1], position[2],
+                     orientation[0], orientation[1], orientation[2]]
+            coil_target_actor, coordinate = self.AddTarget(coord)
+            self.coil_target_actor_list.append(coil_target_actor)
+
+        self.interactor.Render()
+
+    def OnCreateTargetGrid(self, evt):
+        vtkmat = self.coil_pose_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], narray[1][-1], narray[2][-1]]
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+        coil_target_position = position
+        coil_target_orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+
+        # coord_flip = list(self.marker)
+        # coord_flip[1] = -coord_flip[1]
+        self.coil_pose_actor.GetProperty().SetColor([1, 0, 0])
+        self.coil_pose_actor.GetProperty().SetOpacity(0)
+        self.coil_pose_actor.PickableOff()
+        if self.dummy_coil_actor:
+            self.RemoveActor(self.dummy_coil_actor)
+
+        grid_resolution = 3
+        X, Y = self.CreateGrid(grid_resolution, 5, 5)
+        self.coil_target_actor_list = []
+        for i in range(grid_resolution):
+            for j in range(grid_resolution):
+                m_offset_target = dco.coordinates_to_transformation_matrix(
+                    position=[X[i][j], Y[i][j], 0],
+                    orientation=coil_target_orientation[:3],
+                    axes='sxyz',
+                )
+                m_origin_coil = dco.coordinates_to_transformation_matrix(
+                    position=[coil_target_position[0], coil_target_position[1], coil_target_position[2]],
+                    orientation=[0, 0, 0],
+                    axes='sxyz',
+                )
+                m_target = m_origin_coil @ m_offset_target
+                position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
+                coord_scalp = self.ICP(position, coil_target_position, self.surface)
+                coord = coord_scalp[0], coord_scalp[1], coord_scalp[2], coil_target_orientation[0], \
+                        coil_target_orientation[1], coil_target_orientation[2]
+                coil_target_actor, coordinate = self.AddTarget(coord)
+                # self.marker_actor.AddPosition(0, 0, 5)
+                self.coil_target_actor_list.append(coil_target_actor)
+
+        self.interactor.Render()
+
+    def OnCreateBrainGrid(self, evt):
+        if self.coil_target_actor_list:
+            for coil_target_actor in self.coil_target_actor_list:
+                vtkmat = coil_target_actor.GetMatrix()
+                narray = np.eye(4)
+                vtkmat.DeepCopy(narray.ravel(), vtkmat)
+                position = [narray[0][-1], narray[1][-1], narray[2][-1]]
+                m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+                orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+
+                m_coil = dco.coordinates_to_transformation_matrix(
+                    position=position,
+                    orientation=orientation,
+                    axes='sxyz',
+                )
+                m_offset_brain = dco.coordinates_to_transformation_matrix(
+                    position=[0, 0, -20],
+                    orientation=orientation,
+                    axes='sxyz',
+                )
+                m_brain = m_coil @ m_offset_brain
+                coord = m_brain[0][-1], m_brain[1][-1], m_brain[2][-1], orientation[0], orientation[1], orientation[2]
+
+                brain_target_actor, _ = self.AddTarget(coord, scale=1.5)
+                brain_target_actor.PickableOff()
+                brain_target_actor.GetProperty().SetColor([1,1,0])
+                self.brain_target_actor_list.append(brain_target_actor)
+                print('Adding brain markers')
+
+    def OnSendMtms(self, evt=None):
+        vtkmat = self.marker_actor.GetMatrix()
+        narray = np.eye(4)
+        vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+        m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+        orientation = list(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz")))
+        if self.mTMS:
+            self.mTMS.UpdateTarget(coil_pose=self.marker, brain_target=position+orientation)
+
+    def CreateVTKObjectMatrix(self, direction, orientation, new_target):
         m_img = dco.coordinates_to_transformation_matrix(
             position=direction,
             orientation=orientation,
@@ -4516,7 +5056,14 @@ class SetCoilOrientationDialog(wx.Dialog):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
-        return m_img_vtk
+        RotateTransform = vtkTransform()
+        RotateTransform.SetMatrix(m_img_vtk)
+        if new_target:
+            RotateTransform.RotateZ(-135)
+        m_img_vtk_rotate = RotateTransform.GetMatrix()
+        rx, ry, rz = RotateTransform.GetOrientation()
+
+        return m_img_vtk_rotate, rx, ry, rz
 
     def SetVolumeCamera(self, cam_focus):
         cam = self.ren.GetActiveCamera()
@@ -4604,13 +5151,53 @@ class SetCoilOrientationDialog(wx.Dialog):
         return up_vector
 
     def GetValue(self):
-        import invesalius.data.transformations as tr
-        vtkmat = self.marker_actor.GetMatrix()
+        self.ren.RemoveActor(self.peel_brain_actor)
+        vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
+        position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+        coil_target_position = [position]
+        coil_target_orientation = [np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))]
 
-        return np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+        brain_target_position = []
+        brain_target_orientation = []
+        for coil_target_actor in self.coil_target_actor_list:
+            vtkmat = coil_target_actor.GetMatrix()
+            narray = np.eye(4)
+            vtkmat.DeepCopy(narray.ravel(), vtkmat)
+            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            coil_target_position.append(position)
+            coil_target_orientation.append(orientation)
+
+        for brain_target_actor in self.brain_target_actor_list:
+            vtkmat = brain_target_actor.GetMatrix()
+            narray = np.eye(4)
+            vtkmat.DeepCopy(narray.ravel(), vtkmat)
+            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            brain_target_position.append(position)
+            brain_target_orientation.append(orientation)
+
+        return coil_target_position, coil_target_orientation, brain_target_position, brain_target_orientation
+
+    def GetValueBrainTarget(self):
+        import invesalius.data.transformations as tr
+        brain_target_position = []
+        brain_target_orientation = []
+        for brain_target_actor in self.brain_target_actor_list:
+            vtkmat = brain_target_actor.GetMatrix()
+            narray = np.eye(4)
+            vtkmat.DeepCopy(narray.ravel(), vtkmat)
+            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
+            orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
+            brain_target_position.append(position)
+            brain_target_orientation.append(orientation)
+        return brain_target_position, brain_target_orientation
 
 
 class SurfaceProgressWindow(object):
@@ -4810,8 +5397,8 @@ class SetOptitrackconfigs(wx.Dialog):
 
     def _init_gui(self):
         session = ses.Session()
-        last_optitrack_cal_dir = session.get('paths', 'last_optitrack_cal_dir', '')
-        last_optitrack_User_Profile_dir = session.get('paths', 'last_optitrack_User_Profile_dir', '')
+        last_optitrack_cal_dir = session.GetConfig('last_optitrack_cal_dir', '')
+        last_optitrack_User_Profile_dir = session.GetConfig('last_optitrack_User_Profile_dir', '')
 
         if not last_optitrack_cal_dir:
             last_optitrack_cal_dir = inv_paths.OPTITRACK_CAL_DIR
@@ -4864,9 +5451,8 @@ class SetOptitrackconfigs(wx.Dialog):
 
         if fn_cal and fn_userprofile:
             session = ses.Session()
-            session['paths']['last_optitrack_cal_dir'] = self.dir_cal.GetPath()
-            session['paths']['last_optitrack_User_Profile_dir'] = self.dir_UserProfile.GetPath()
-            session.WriteSessionFile()
+            session.SetConfig('last_optitrack_cal_dir', self.dir_cal.GetPath())
+            session.SetConfig('last_optitrack_User_Profile_dir', self.dir_UserProfile.GetPath())
 
         return fn_cal, fn_userprofile
 
@@ -4885,8 +5471,11 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose the tracking device"))
         trackers = const.TRACKERS.copy()
-        if not ses.Session().debug:
+
+        session = ses.Session()
+        if not session.GetConfig('debug'):
             del trackers[-3:]
+
         tracker_options = [_("Select tracker:")] + trackers
         choice_trck = wx.ComboBox(self, -1, "",
                                   choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
@@ -4978,7 +5567,7 @@ class SetRobotIP(wx.Dialog):
     def GetValue(self):
         return self.robot_ip
 
-class CreateTransformationMatrixRobot(wx.Dialog):
+class RobotCoregistrationDialog(wx.Dialog):
     def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
@@ -4992,7 +5581,7 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.tracker = tracker
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnUpdate, self.timer)
+        self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
         self._init_gui()
 
@@ -5001,21 +5590,21 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         txt_acquisition = wx.StaticText(self, -1, _('Poses acquisition for robot registration:'))
 
         btn_create_point = wx.Button(self, -1, label=_('Single'))
-        btn_create_point.Bind(wx.EVT_BUTTON, self.OnCreatePoint)
+        btn_create_point.Bind(wx.EVT_BUTTON, self.CreatePoint)
 
         btn_cont_point = wx.ToggleButton(self, -1, label=_('Continuous'))
-        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisition, btn=btn_cont_point))
+        btn_cont_point.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnContinuousAcquisitionButton, btn=btn_cont_point))
         self.btn_cont_point = btn_cont_point
 
         txt_number = wx.StaticText(self, -1, _('0'))
         txt_recorded = wx.StaticText(self, -1, _('Poses recorded'))
         self.txt_number = txt_number
 
-        btn_reset = wx.Button(self, -1, label=_('Reset'))
-        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset = wx.Button(self, -1, label=_('Reset points'))
+        btn_reset.Bind(wx.EVT_BUTTON, self.ResetPoints)
 
         btn_apply_reg = wx.Button(self, -1, label=_('Apply'))
-        btn_apply_reg.Bind(wx.EVT_BUTTON, self.OnApply)
+        btn_apply_reg.Bind(wx.EVT_BUTTON, self.ApplyRegistration)
         btn_apply_reg.Enable(False)
         self.btn_apply_reg = btn_apply_reg
 
@@ -5023,12 +5612,12 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         txt_file = wx.StaticText(self, -1, _('Registration file'))
 
         btn_save = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
-        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveReg)
+        btn_save.Bind(wx.EVT_BUTTON, self.SaveRegistration)
         btn_save.Enable(False)
         self.btn_save = btn_save
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadReg)
+        btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
         btn_load.Enable(False)
         self.btn_load = btn_load
 
@@ -5088,43 +5677,59 @@ class CreateTransformationMatrixRobot(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnUpdateTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.OnCoordinatesAdquired, 'Coordinates for the robot transformation matrix collected')
-        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot connection status')
+        Publisher.subscribe(self.UpdateRobotTransformationMatrix, 'Update robot transformation matrix')
+        Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
+        Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
-    def OnContinuousAcquisition(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
             self.timer.Start(100)
         else:
             self.timer.Stop()
 
-    def OnUpdate(self, evt):
-        self.OnCreatePoint(evt=None)
-
-    def OnCreatePoint(self, evt):
-        Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
-
-    def OnCoordinatesAdquired(self):
-        self.txt_number.SetLabel(str(int(self.txt_number.GetLabel())+1))
-
-        if self.robot_status and int(self.txt_number.GetLabel()) >= 3:
-            self.btn_apply_reg.Enable(True)
-
-    def OnRobotConnectionStatus(self, data):
-        self.robot_status = data
-        if self.robot_status:
-            self.btn_load.Enable(True)
-            if int(self.txt_number.GetLabel()) >= 3:
-                self.btn_apply_reg.Enable(True)
-
-    def OnReset(self, evt):
-        Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
+    def StopContinuousAcquisition(self):
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+            self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
 
-        self.txt_number.SetLabel('0')
+    def HandleContinuousAcquisition(self, evt):
+        self.CreatePoint()
+
+    def CreatePoint(self, evt=None):
+        Publisher.sendMessage('Collect coordinates for the robot transformation matrix', data=None)
+
+    def GetAcquiredPoints(self):
+        return int(self.txt_number.GetLabel())
+
+    def SetAcquiredPoints(self, num_points):
+        self.txt_number.SetLabel(str(num_points))
+
+    def PointRegisteredByRobot(self):
+        # Increment the number of acquired points.
+        num_points = self.GetAcquiredPoints()
+        num_points += 1
+        self.SetAcquiredPoints(num_points)
+
+        # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
+        if self.robot_status and num_points >= 3:
+            self.btn_apply_reg.Enable(True)
+
+    def UpdateRobotConnectionStatus(self, data):
+        self.robot_status = data
+        if not self.robot_status:
+            return
+
+        # Enable 'Load' and 'Apply registration' buttons only when robot connection is ok.
+        self.btn_load.Enable(True)
+        if self.GetAcquiredPoints() >= 3:
+            self.btn_apply_reg.Enable(True)
+
+    def ResetPoints(self, evt):
+        Publisher.sendMessage('Reset coordinates collection for the robot transformation matrix', data=None)
+
+        self.StopContinuousAcquisition()
+        self.SetAcquiredPoints(0)
 
         self.btn_apply_reg.Enable(False)
         self.btn_save.Enable(False)
@@ -5132,10 +5737,8 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         self.matrix_tracker_to_robot = []
 
-    def OnApply(self, evt):
-        if self.btn_cont_point:
-            self.btn_cont_point.SetValue(False)
-            self.OnContinuousAcquisition(evt=None, btn=self.btn_cont_point)
+    def ApplyRegistration(self, evt):
+        self.StopContinuousAcquisition()
 
         Publisher.sendMessage('Robot transformation matrix estimation', data=None)
 
@@ -5144,34 +5747,54 @@ class CreateTransformationMatrixRobot(wx.Dialog):
 
         #TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def OnUpdateTransformationMatrix(self, data):
+    def UpdateRobotTransformationMatrix(self, data):
         self.matrix_tracker_to_robot = np.array(data)
 
-    def OnSaveReg(self, evt):
-        filename = ShowLoadSaveDialog(message=_(u"Save robot transformation file as..."),
-                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
-                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                          default_filename="robottransform.rbtf", save_ext="rbtf")
+    def SaveRegistration(self, evt):
+        if self.matrix_tracker_to_robot is None:
+            return
 
-        if filename:
-            if self.matrix_tracker_to_robot is not None:
-                with open(filename, 'w', newline='') as file:
-                    writer = csv.writer(file, delimiter='\t')
-                    writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
+        # Open dialog to choose filename.
+        filename = ShowLoadSaveDialog(
+            message=_(u"Save robot transformation file as..."),
+            wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"),
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            default_filename="robottransform.rbtf",
+            save_ext="rbtf"
+        )
+        if not filename:
+            return
 
-    def OnLoadReg(self, evt):
-        filename = ShowLoadSaveDialog(message=_(u"Load robot transformation"),
-                                          wildcard=_("Robot transformation files (*.rbtf)|*.rbtf"))
-        if filename:
-            with open(filename, 'r') as file:
-                reader = csv.reader(file, delimiter='\t')
-                content = [row for row in reader]
+        # Write registration to file.
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter='\t')
+            writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
 
-            self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
-            print("Matrix tracker to robot:", self.matrix_tracker_to_robot)
-            Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
-            if self.robot_status:
-                self.btn_ok.Enable(True)
+    def LoadRegistration(self, evt):
+        # Open dialog to choose filename.
+        filename = ShowLoadSaveDialog(
+            message=_(u"Load robot transformation"),
+            wildcard=_("Robot transformation files (*.rbtf)|*.rbtf")
+        )
+        if not filename:
+            return
+
+        # Load registration from file.
+        with open(filename, 'r') as file:
+            reader = csv.reader(file, delimiter='\t')
+            content = [row for row in reader]
+
+        self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+
+        # Send registration to robot.
+        Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+
+        # Enable 'Ok' button if connection to robot is ok.
+        if self.robot_status:
+            self.btn_ok.Enable(True)
+
+    def GetValue(self):
+        return self.matrix_tracker_to_robot
 
 
 class SetNDIconfigs(wx.Dialog):
@@ -5205,24 +5828,25 @@ class SetNDIconfigs(wx.Dialog):
         return port_list, port_selec
 
     def _init_gui(self):
-        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
         com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
         row_com = wx.BoxSizer(wx.VERTICAL)
-        row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port"), 0, wx.TOP|wx.RIGHT,5)
+        row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port or IP"), 0, wx.TOP|wx.RIGHT,5)
         row_com.Add(com_ports, 0, wx.EXPAND)
 
         port_list, port_selec = self.serial_ports()
 
         com_ports.Append(port_list)
+        com_ports.Append(const.NDI_IP)
         if port_selec:
             com_ports.SetSelection(port_selec[0])
 
         self.com_ports = com_ports
 
         session = ses.Session()
-        last_ndi_probe_marker = session.get('paths', 'last_ndi_probe_marker', '')
-        last_ndi_ref_marker = session.get('paths', 'last_ndi_ref_marker', '')
-        last_ndi_obj_marker = session.get('paths', 'last_ndi_obj_marker', '')
+        last_ndi_probe_marker = session.GetConfig('last_ndi_probe_marker', '')
+        last_ndi_ref_marker = session.GetConfig('last_ndi_ref_marker', '')
+        last_ndi_obj_marker = session.GetConfig('last_ndi_obj_marker', '')
 
         if not last_ndi_probe_marker:
             last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
@@ -5288,18 +5912,19 @@ class SetNDIconfigs(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self):
-        fn_probe = self.dir_probe.GetPath().encode(const.FS_ENCODE)
-        fn_ref = self.dir_ref.GetPath().encode(const.FS_ENCODE)
-        fn_obj = self.dir_obj.GetPath().encode(const.FS_ENCODE)
+        fn_probe = self.dir_probe.GetPath()
+        fn_ref = self.dir_ref.GetPath()
+        fn_obj = self.dir_obj.GetPath()
 
         if fn_probe and fn_ref and fn_obj:
             session = ses.Session()
-            session['paths']['last_ndi_probe_marker'] = self.dir_probe.GetPath()
-            session['paths']['last_ndi_ref_marker'] = self.dir_ref.GetPath()
-            session['paths']['last_ndi_obj_marker'] = self.dir_obj.GetPath()
-            session.WriteSessionFile()
+            session.SetConfig('last_ndi_probe_marker', self.dir_probe.GetPath())
+            session.SetConfig('last_ndi_ref_marker', self.dir_ref.GetPath())
+            session.SetConfig('last_ndi_obj_marker', self.dir_obj.GetPath())
 
-        return self.com_ports.GetString(self.com_ports.GetSelection()).encode(const.FS_ENCODE), fn_probe, fn_ref, fn_obj
+        com_port = self.com_ports.GetString(self.com_ports.GetSelection())
+
+        return com_port, fn_probe, fn_ref, fn_obj
 
 
 class SetCOMPort(wx.Dialog):
@@ -5616,7 +6241,7 @@ class PeelsCreationDlg(wx.Dialog):
 
     def _from_files_gui(self):
         session = ses.Session()
-        last_directory = session.get('paths', 'last_directory_%d' % const.ID_NIFTI_IMPORT, '')
+        last_directory = session.GetConfig('last_directory_%d' % const.ID_NIFTI_IMPORT, '')
 
         files_box = wx.StaticBox(self, -1, _("From files"))
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)

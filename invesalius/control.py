@@ -19,7 +19,6 @@
 import os
 import plistlib
 import tempfile
-import textwrap
 
 import wx
 import numpy as np
@@ -34,9 +33,9 @@ import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
 import invesalius.data.transformations as tr
 import invesalius.data.volume as volume
+import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dialog
 import invesalius.project as prj
-import invesalius.reader.dicom_grouper as dg
 import invesalius.reader.dicom_reader as dcm
 import invesalius.reader.bitmap_reader as bmp
 import invesalius.reader.others_reader as oth
@@ -64,15 +63,14 @@ class Controller():
         self.progress_dialog = None
         self.cancel_import = False
 
-        #type of imported image
-        #None, others and opened Project = 0
-        #DICOM = 1
-        #TIFF uCT = 2
+        # Type of imported image:
+        #
+        # None, others and opened Project = 0
+        # DICOM = 1
+        # TIFF uCT = 2
         self.img_type = 0
         self.affine = np.identity(4)
 
-        #Init session
-        session = ses.Session()
         self.measure_manager = measures.MeasurementManager()
 
         Publisher.sendMessage('Load Preferences')
@@ -168,9 +166,11 @@ class Controller():
     def ShowDialogImportBitmapFile(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            filename = session.project_path[1]
+        project_status = session.GetConfig('project_status')
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -192,9 +192,11 @@ class Controller():
     def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            filename = session.project_path[1]
+        project_status = session.GetConfig('project_status')
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -213,9 +215,11 @@ class Controller():
     def ShowDialogImportOtherFiles(self, id_type):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            filename = session.project_path[1]
+        project_status = session.GetConfig('project_status')
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -235,9 +239,11 @@ class Controller():
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
         session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            filename = session.project_path[1]
+        project_status = session.GetConfig('project_status')
+        if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
@@ -259,7 +265,7 @@ class Controller():
         else:
             proj = prj.Project()
             compress = proj.compress
-            dirpath, filename = session.project_path
+            dirpath, filename = session.GetState('project_path')
             filepath = os.path.join(dirpath, filename)
 
         self.SaveProject(filepath, compress)
@@ -267,17 +273,18 @@ class Controller():
 
     def ShowDialogCloseProject(self):
         session = ses.Session()
-        st = session.project_status
-        if st == const.PROJ_CLOSE:
+        project_status = session.GetConfig('project_status')
+        if project_status == const.PROJECT_STATUS_CLOSED:
             return -1
         try:
-            filename = session.project_path[1]
-        except(AttributeError):
+            project_path = session.GetState('project_path')
+            filename = project_path[1]
+        except AttributeError:
             utils.debug("Project doesn't exist")
             filename = None
 
-        if (filename):
-            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+        if filename:
+            if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
                 answer = dialog.SaveChangesDialog(filename, self.frame)
                 if not answer:
                     utils.debug("Close without changes")
@@ -311,9 +318,11 @@ class Controller():
     def OnOpenRecentProject(self, filepath):
         if os.path.exists(filepath):
             session = ses.Session()
-            st = session.project_status
-            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-                filename = session.project_path[1]
+            project_status = session.GetConfig('project_status')
+            if project_status == const.PROJECT_STATUS_NEW or project_status == const.PROJECT_STATUS_CHANGED:
+                project_path = session.GetState('project_path')
+                filename = project_path[1]
+
                 answer = dialog.SaveChangesDialog2(filename)
                 if answer:
                     self.ShowDialogSaveProject()
@@ -360,7 +369,7 @@ class Controller():
         if path:
             dirpath, filename = os.path.split(path)
         else:
-            dirpath, filename = session.project_path
+            dirpath, filename = session.GetState('project_path')
 
         if isinstance(filename, str):
             filename = utils.decode(filename, const.FS_ENCODE)
@@ -423,7 +432,7 @@ class Controller():
         if (data):
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
-                self.progress_dialog = dialog.ProgressDialog(
+                self.progress_dialog = vtk_utils.ProgressDialog(
                                     parent=self.frame, maximum = data[1], abort=1)
             else:
                 if not(self.progress_dialog.Update(data[0],message)):
@@ -543,13 +552,15 @@ class Controller():
         Publisher.sendMessage('Update threshold limits list',
                               threshold_range=proj.threshold_range)
 
-        session = ses.Session()
-        filename = proj.name+".inv3"
+        filename = proj.name + ".inv3"
         filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
-        dirpath = session.CreateProject(filename)
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", state=True)
+        
+        session = ses.Session()
+        session.CreateProject(filename)
 
+        self.LoadProject()
+        
+        Publisher.sendMessage("Enable state project", state=True)
         Publisher.sendMessage('End busy cursor')
 
     #-------------------------------------------------------------------------------------
@@ -655,14 +666,11 @@ class Controller():
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
 
-        ######
-        session = ses.Session()
-        filename = proj.name+".inv3"
-
+        filename = proj.name + ".inv3"
         filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
 
-        dirpath = session.CreateProject(filename)
-        #proj.SavePlistProject(dirpath, filename)
+        session = ses.Session()
+        session.CreateProject(filename)
 
 
     def CreateBitmapProject(self, bmp_data, rec_data, matrix, matrix_filename):
@@ -700,13 +708,11 @@ class Controller():
 
         proj.spacing = self.Slice.spacing
 
-        ######
+        filename = proj.name + ".inv3"
+        filename = filename.replace("/", "") # Fix problem case other/Skull_DICOM
+
         session = ses.Session()
-        filename = proj.name+".inv3"
-
-        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
-
-        dirpath = session.CreateProject(filename)
+        session.CreateProject(filename)
 
     def CreateOtherProject(self, name, matrix, matrix_filename):
         name_to_const = {"AXIAL": const.AXIAL,
@@ -738,13 +744,11 @@ class Controller():
         if self.Slice.affine is not None:
             proj.affine = self.Slice.affine.tolist()
 
-        ######
-        session = ses.Session()
         filename = proj.name + ".inv3"
-
         filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
 
-        dirpath = session.CreateProject(filename)
+        session = ses.Session()
+        session.CreateProject(filename)
 
 
     def create_project_from_matrix(self, name, matrix, orientation="AXIAL", spacing=(1.0, 1.0, 1.0), modality="CT", window_width=None, window_level=None, new_instance=False):
@@ -772,13 +776,13 @@ class Controller():
             self.start_new_inv_instance(matrix, name, spacing, modality, name_to_const[orientation], window_width, window_level)
         else:
             # Verifying if there is a project open
-            s = ses.Session()
-            if s.IsOpen():
+            session = ses.Session()
+            if session.IsOpen():
                 Publisher.sendMessage('Close Project')
                 Publisher.sendMessage('Disconnect tracker')
 
             # Check if user really closed the project, if not, stop project creation
-            if s.IsOpen():
+            if session.IsOpen():
                 return
 
             mmap_matrix = image_utils.array2memmap(matrix)
@@ -811,13 +815,10 @@ class Controller():
             Publisher.sendMessage('Update threshold limits list',
                                   threshold_range=proj.threshold_range)
 
-            ######
-            session = ses.Session()
             filename = proj.name + ".inv3"
-
             filename = filename.replace("/", "")
 
-            dirpath = session.CreateProject(filename)
+            session.CreateProject(filename)
 
             self.LoadProject()
             Publisher.sendMessage("Enable state project", state=True)
@@ -1111,8 +1112,8 @@ class Controller():
     def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
-        preset_dir = os.path.join(inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY,
-                                  preset_name + '.plist')
+        preset_dir = inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.joinpath(f'{preset_name}.plist')
+        inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.mkdir(parents=True, exist_ok=True)
         with open(preset_dir, 'w+b') as f:
             plistlib.dump(preset, f)
 

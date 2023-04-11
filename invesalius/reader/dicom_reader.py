@@ -25,8 +25,11 @@ from multiprocessing import cpu_count
 import gdcm
 
 # Not showing GDCM warning and debug messages
-gdcm.Trace_DebugOff()
-gdcm.Trace_WarningOff()
+try:
+    gdcm.Trace_DebugOff()
+    gdcm.Trace_WarningOff()
+except AttributeError:
+    pass
 
 import glob
 import plistlib
@@ -36,7 +39,7 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom
 import invesalius.reader.dicom_grouper as dicom_grouper
-import invesalius.session as session
+import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
@@ -63,7 +66,10 @@ def ReadDicomGroup(dir_):
         bits = dicom.image.bits_allocad
 
         imagedata = CreateImageData(filelist, zspacing, size, bits)
-        session.Session().project_status = const.NEW_PROJECT
+
+        session = ses.Session()
+        session.SetConfig('project_status', const.PROJECT_STATUS_NEW)
+
         return imagedata, dicom
     else:
         return False

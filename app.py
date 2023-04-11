@@ -91,8 +91,8 @@ if sys.platform in ('linux2', 'linux', 'win32'):
 
 
 session = ses.Session()
-if session.ReadSession():
-    lang = session.GetLanguage()
+if session.ReadConfig():
+    lang = session.GetConfig('language')
     if lang:
         try:
             _ = i18n.InstallLanguage(lang)
@@ -109,7 +109,6 @@ class InVesalius(wx.App):
         """
         Initialize splash screen and main frame.
         """
-
         from multiprocessing import freeze_support
         freeze_support()
 
@@ -169,24 +168,21 @@ class Inv3SplashScreen(SplashScreen):
             finally:
                 if ok:
                     lang = dialog.GetSelectedLanguage()
-                    session.SetLanguage(lang)
+                    session.SetConfig('language', lang)
                     _ = i18n.InstallLanguage(lang)
                 else:
-                    homedir = self.homedir = os.path.expanduser('~')
-                    invdir = os.path.join(homedir, ".invesalius")
-                    shutil.rmtree(invdir)
+                    homedir = os.path.expanduser('~')
+                    config_dir = os.path.join(homedir, ".invesalius")
+                    shutil.rmtree(config_dir)
+
                     sys.exit()
 
             dialog.Destroy()
 
         # Session file should be created... So we set the recently chosen language.
         if create_session:
-            session.CreateItens()
-            session.SetLanguage(lang)
-            session.WriteSessionFile()
-
-        #  session.SaveConfigFileBackup()
-
+            session.CreateConfig()
+            session.SetConfig('language', lang)
 
         # Only after language was defined, splash screen will be shown.
         if lang:
@@ -250,6 +246,19 @@ class Inv3SplashScreen(SplashScreen):
         p = Thread(target=utils.UpdateCheck, args=())
         p.start()
 
+        if not session.ExitedSuccessfullyLastTime():
+            # Reopen project
+            project_path = session.GetState('project_path')
+            if project_path is not None:
+                filepath = os.path.join(project_path[0], project_path[1])
+                if os.path.exists(filepath):
+                    Publisher.sendMessage('Open project', filepath=filepath)
+                else:
+                    utils.debug(f"File doesn't exist: {filepath}")
+                    session.CloseProject()
+        else:
+            session.CreateState()
+
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
         # destroyed
@@ -282,10 +291,9 @@ def non_gui_startup(args):
     from invesalius.project import Project
 
     session = ses.Session()
-    if not session.ReadSession():
-        session.CreateItens()
-        session.SetLanguage(lang)
-        session.WriteSessionFile()
+    if not session.ReadConfig():
+        session.CreateConfig()
+        session.SetConfig('language', lang)
 
     control = Controller(None)
 
@@ -298,9 +306,6 @@ def parse_command_line():
     """
     Handle command line arguments.
     """
-    session = ses.Session()
-
-
     # Parse command line arguments
     parser = argparse.ArgumentParser()
 
@@ -353,6 +358,9 @@ def parse_command_line():
     parser.add_argument("--use-pedal", action="store_true", dest="use_pedal",
                       help="Use an external trigger pedal")
 
+    parser.add_argument("--debug-efield", action="store_true", dest="debug_efield",
+                      help="Debug navigated TMS E-field computation")
+
     args = parser.parse_args()
     return args
 
@@ -370,6 +378,7 @@ def use_cmd_optargs(args):
         check_for_export(args)
 
         return True
+
     elif args.import_folder:
         Publisher.sendMessage('Import folder', folder=args.import_folder)
         if args.save:
@@ -552,7 +561,8 @@ def main(connection=None):
     args = parse_command_line()
 
     session = ses.Session()
-    session.debug = args.debug
+    session.SetConfig('debug', args.debug)
+    session.SetConfig('debug_efield', args.debug_efield)
 
     if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)

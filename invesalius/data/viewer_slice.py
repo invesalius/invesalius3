@@ -54,11 +54,6 @@ import wx
 import sys
 from invesalius.pubsub import pub as Publisher
 
-try:
-    from agw import floatspin as FS
-except ImportError: # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.floatspin as FS
-
 import invesalius.constants as const
 import invesalius.data.cursor_actors as ca
 import invesalius.data.slice_ as sl
@@ -614,19 +609,19 @@ class Viewer(wx.Panel):
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
-            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'SAGITAL'),
                                        index=coord[0])
-            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'CORONAL'),
                                        index=coord[1])
         elif self.orientation == "SAGITAL":
-            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'AXIAL'),
                                        index=coord[2])
-            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'CORONAL'),
                                        index=coord[1])
         elif self.orientation == "CORONAL":
-            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'AXIAL'),
                                        index=coord[2])
-            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+            wx.CallAfter(Publisher.sendMessage, ('Set scroll position', 'SAGITAL'),
                                        index=coord[0])
 
     def get_slice_data(self, render):
@@ -1235,7 +1230,8 @@ class Viewer(wx.Panel):
         # TODO: Create a option to let the user set if he wants to interpolate
         # the slice images.
        
-        if int(ses.Session().slice_interpolation) == 1:
+        session = ses.Session()
+        if session.GetConfig('slice_interpolation'):
             actor.InterpolateOff()
         else:
             actor.InterpolateOn()
@@ -1255,7 +1251,8 @@ class Viewer(wx.Panel):
 
     def UpdateInterpolatedSlice(self):
         if self.slice_actor != None:
-            if ses.Session().slice_interpolation:
+            session = ses.Session()
+            if session.GetConfig('slice_interpolation'):
                 self.slice_actor.InterpolateOff()
             else:
                 self.slice_actor.InterpolateOn()
@@ -1485,10 +1482,8 @@ class Viewer(wx.Panel):
 
     def set_slice_number(self, index):
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
-        if index < 0:
-            index = 0
-        if index >= max_slice_number:
-            index = max_slice_number - 1
+        index = max(index, 0)
+        index = min(index, max_slice_number - 1)
         inverted = self.mip_ctrls.inverted.GetValue()
         border_size = self.mip_ctrls.border_spin.GetValue()
         try:
@@ -1525,11 +1520,9 @@ class Viewer(wx.Panel):
         self._update_draw_list()
 
     def ChangeSliceNumber(self, index):
-        #self.set_slice_number(index)
-        self.scroll.SetThumbPosition(index)
+        self.scroll.SetThumbPosition(int(index))
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
-        self.interactor.Render()
 
     def ReloadActualSlice(self):
         pos = self.scroll.GetThumbPosition()

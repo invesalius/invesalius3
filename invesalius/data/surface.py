@@ -28,6 +28,7 @@ import tempfile
 import time
 import traceback
 import weakref
+import numpy as np
 
 try:
     import queue
@@ -36,13 +37,20 @@ except ImportError:
 
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
-
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkMassProperties,
     vtkPolyDataNormals,
     vtkStripper,
     vtkTriangleFilter,
+)
+from vtkmodules.vtkCommonCore import (vtkIdList,
+vtkPoints,
+)
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+    vtkTriangle
 )
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
@@ -70,6 +78,7 @@ import invesalius.session as ses
 import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vtk_utils
+from invesalius.data.converters import convert_custom_bin_to_vtk
 
 from invesalius.gui import dialogs
 from invesalius_cy import cy_mesh
@@ -188,11 +197,11 @@ class SurfaceManager():
     def _load_user_parameters(self):
         session = ses.Session()
 
-        if 'surface' in session:
-            self._default_parameters.update(session['surface'])
+        surface = session.GetConfig('surface')
+        if surface is not None:
+            self._default_parameters.update(surface)
         else:
-            session['surface'] = self._default_parameters
-            session.WriteSessionFile()
+            session.SetConfig('surface', self._default_parameters)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddNewActor, 'Create surface')
@@ -219,6 +228,8 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
+        Publisher.subscribe(self.OnImportCustomBinFile, 'Import bin file')
+        Publisher.subscribe(self.OnWriteCustomBinFile, 'Write bin file')
 
         Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
@@ -313,6 +324,81 @@ class SurfaceManager():
         new_polydata = pu.SelectLargestPart(surface.polydata)
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
+
+    def OnImportCustomBinFile(self, filename):
+        scalar = True
+        if filename.lower().endswith('.bin'):
+            polydata = convert_custom_bin_to_vtk(filename)
+        elif filename.lower().endswith('.stl'):
+            scalar = False
+            reader = vtkSTLReader()
+
+            if _has_win32api:
+                reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+            else:
+                reader.SetFileName(filename.encode(const.FS_ENCODE))
+            reader.Update()
+            polydata = reader.GetOutput()
+            polydata= self.CoverttoMetersPolydata(polydata)
+
+        if polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        else:
+            name = os.path.splitext(os.path.split(filename)[-1])[0]
+            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+
+    def CoverttoMetersPolydata(self, polydata):
+        idlist = vtkIdList()
+        points = np.zeros((polydata.GetNumberOfPoints(), 3))
+        elements = np.zeros((polydata.GetNumberOfCells(), 3), dtype= np.int32)
+        for i in range(polydata.GetNumberOfPoints()):
+            x = polydata.GetPoint(i)
+            points[i] = [j * 1000 for j in x]
+        for i in range(polydata.GetNumberOfCells()):
+            polydata.GetCellPoints(i, idlist)
+            elements[i, 0] = idlist.GetId(0)
+            elements[i, 1] = idlist.GetId(1)
+            elements[i, 2] = idlist.GetId(2)
+        points_vtk = vtkPoints()
+        triangles = vtkCellArray()
+        polydata = vtkPolyData()
+        for i in range(len(points)):
+            points_vtk.InsertNextPoint(points[i])
+        for i in range(len(elements)):
+            triangle = vtkTriangle()
+            triangle.GetPointIds().SetId(0, elements[i, 0])
+            triangle.GetPointIds().SetId(1, elements[i, 1])
+            triangle.GetPointIds().SetId(2, elements[i, 2])
+
+            triangles.InsertNextCell(triangle)
+
+        polydata.SetPoints(points_vtk)
+        polydata.SetPolys(triangles)
+
+        return polydata
+
+    def OnWriteCustomBinFile(self, polydata, filename):
+        idlist = vtkIdList()
+        points = np.zeros((polydata.GetNumberOfPoints(), 3))
+        elements = np.zeros((polydata.GetNumberOfCells(), 3))
+        id = 0
+        nop = polydata.GetNumberOfPoints()
+        noe = polydata.GetNumberOfCells()
+        for i in range(polydata.GetNumberOfPoints()):
+            x = polydata.GetPoint(i)
+            points[i] = [j / 1000 for j in x]
+        for i in range(polydata.GetNumberOfCells()):
+            polydata.GetCellPoints(i, idlist)
+            elements[i, 0] = idlist.GetId(0)
+            elements[i, 1] = idlist.GetId(1)
+            elements[i, 2] = idlist.GetId(2)
+        data = {'p': points, 'e': elements}
+        with open(filename, 'wb') as f:
+            np.array(id, dtype=np.int32).tofile(f)
+            np.array(nop, dtype=np.int32).tofile(f)
+            np.array(noe, dtype=np.int32).tofile(f)
+            np.array(data['p'], dtype=np.float32).tofile(f)
+            np.array(data['e'], dtype=np.int32).tofile(f)
 
     def OnImportSurfaceFile(self, filename):
         """
@@ -575,7 +661,8 @@ class SurfaceManager():
 
         prop = actor.GetProperty()
 
-        interpolation = int(ses.Session().surface_interpolation)
+        session = ses.Session()
+        interpolation = session.GetConfig('surface_interpolation')
 
         prop.SetInterpolation(interpolation)
 
@@ -587,7 +674,6 @@ class SurfaceManager():
             surface.index = index
             self.last_surface_index = index
 
-        session = ses.Session()
         session.ChangeProject()
 
         Publisher.sendMessage('Load surface actor into viewer', actor=actor)
@@ -663,7 +749,8 @@ class SurfaceManager():
         if keep_largest:
             pipeline_size += 1
 
-        language = ses.Session().language
+        session = ses.Session()
+        language = session.GetConfig('language')
 
         if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
@@ -832,11 +919,11 @@ class SurfaceManager():
         Publisher.sendMessage('Send Actor', e_field_actor=self.actors_dict[surface_index])
 
     def UpdateSurfaceInterpolation(self):
-        interpolation = int(ses.Session().surface_interpolation)
-        key_actors = self.actors_dict.keys()
+        session = ses.Session()
+        surface_interpolation = session.GetConfig('surface_interpolation')
 
         for key in self.actors_dict:
-            self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
+            self.actors_dict[key].GetProperty().SetInterpolation(surface_interpolation)
         Publisher.sendMessage('Render volume viewer')
 
     def RemoveActor(self, index):

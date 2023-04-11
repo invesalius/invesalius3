@@ -66,7 +66,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
-        Publisher.subscribe(self.update_focus, 'Set cross focal point')
+        #Publisher.subscribe(self.update_focus, 'Set cross focal point')
         Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
 
     # Functions for InVesalius to send updates.
@@ -152,6 +152,18 @@ class NeuronavigationApi(metaclass=Singleton):
     def __set_callbacks(self, connection):
         connection.set_callback__set_markers(self.set_markers)
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
+
+    def add_pedal_callback(self, name, callback, remove_when_released=False):
+        if self.connection is not None:
+            self.connection.add_pedal_callback(
+                name=name,
+                callback=callback,
+                remove_when_released=remove_when_released,
+            )
+
+    def remove_pedal_callback(self, name):
+        if self.connection is not None:
+            self.connection.remove_pedal_callback(name=name)
 
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)

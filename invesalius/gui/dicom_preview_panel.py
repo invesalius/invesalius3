@@ -431,7 +431,7 @@ class DicomPreviewSeries(wx.Panel):
             self.files.append(info)
             n+=1
 
-        scroll_range = len(self.files)/NCOLS
+        scroll_range = len(self.files)//NCOLS
         if scroll_range * NCOLS < len(self.files):
             scroll_range +=1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
@@ -476,7 +476,7 @@ class DicomPreviewSeries(wx.Panel):
         self._display_previews()
 
     def OnWheel(self, evt):
-        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        d = evt.GetWheelDelta() // evt.GetWheelRotation()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
 
@@ -601,7 +601,7 @@ class DicomPreviewSlice(wx.Panel):
                 self.files.append(info)
                 n+=1
 
-        scroll_range = len(self.files)/NCOLS
+        scroll_range = len(self.files)//NCOLS
         if scroll_range * NCOLS < len(self.files):
             scroll_range +=1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
@@ -702,7 +702,7 @@ class DicomPreviewSlice(wx.Panel):
         self._display_previews()
 
     def OnWheel(self, evt):
-        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        d = evt.GetWheelDelta() // evt.GetWheelRotation()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
 

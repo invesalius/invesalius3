@@ -135,17 +135,15 @@ CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL"
 SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
                   SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION],
                   CORONAL:[CORONAL_SLICE_CAM_VIEW_UP, CORONAL_SLICE_CAM_POSITION]}
-#Project Status
-#NEW_PROJECT = 0
-#OPEN_PROJECT = 1
-#CHANGE_PROJECT = 2
-#SAVE_PROJECT = 3
-PROJ_NEW = 0
-PROJ_OPEN = 1
-PROJ_CHANGE = 2
-PROJ_CLOSE = 3
 
-PROJ_MAX = 4
+# Project Status
+
+PROJECT_STATUS_NEW = 0
+PROJECT_STATUS_OPENED = 1
+PROJECT_STATUS_CHANGED = 2
+PROJECT_STATUS_CLOSED = 3
+
+RECENT_PROJECTS_MAXIMUM = 4
 
 
 ####
@@ -691,6 +689,7 @@ DEBUGTRACKAPPROACH = 11
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
+NDI_IP = ['169.254.145.124']
 
 TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
@@ -772,7 +771,6 @@ BTNS_IMG_MARKERS = {IR1: {0: 'LEI'},
 OBJL = wx.NewId()
 OBJR = wx.NewId()
 OBJA = wx.NewId()
-OBJC = wx.NewId()
 OBJF = wx.NewId()
 
 OBJECT_FIDUCIALS = [
@@ -796,12 +794,6 @@ OBJECT_FIDUCIALS = [
     },
     {
         'fiducial_index': 3,
-        'button_id': OBJC,
-        'label': _('Center'),
-        'tip': _("Select object center"),
-    },
-    {
-        'fiducial_index': 4,
         'button_id': OBJF,
         'label': _('Fixed'),
         'tip': _("Attach sensor to object"),
@@ -832,7 +824,7 @@ SEED_RADIUS = 1.5
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.2
-SLEEP_COORDINATES = 0.05
+SLEEP_COORDINATES = 0.1
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
@@ -863,4 +855,6 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 #Robot
-ROBOT_ElFIN_IP = ['143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+
+MTMS_RADIUS = 15

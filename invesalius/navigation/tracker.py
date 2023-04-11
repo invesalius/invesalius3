@@ -22,15 +22,16 @@ import threading
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
-import invesalius.data.trackers as dt
-import invesalius.gui.dialogs as dlg
 import invesalius.data.coregistration as dcr
+import invesalius.data.tracker_connection as tc
+import invesalius.gui.dialogs as dlg
+import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 
 
 class Tracker():
     def __init__(self):
-        self.trk_init = None
+        self.tracker_connection = None
         self.tracker_id = const.DEFAULT_TRACKER
 
         self.tracker_fiducials = np.full([3, 3], np.nan)
@@ -45,40 +46,106 @@ class Tracker():
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-    def SetTracker(self, new_tracker):
-        if new_tracker:
-            self.DisconnectTracker()
+        self.LoadState()
 
-            self.trk_init = dt.TrackerConnection(new_tracker, None, 'connect')
-            if not all(list(self.trk_init)):
-                dlg.ShowNavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+    def SaveState(self):
+        tracker_id = self.tracker_id
+        tracker_fiducials = self.tracker_fiducials.tolist()
+        tracker_fiducials_raw = self.tracker_fiducials_raw.tolist()
+        marker_tracker_fiducials_raw = self.m_tracker_fiducials_raw.tolist()
+        configuration = self.tracker_connection.GetConfiguration() if self.tracker_connection else None
+
+        state = {
+            'tracker_id': tracker_id,
+            'tracker_fiducials': tracker_fiducials,
+            'tracker_fiducials_raw': tracker_fiducials_raw,
+            'marker_tracker_fiducials_raw': marker_tracker_fiducials_raw,
+            'configuration': configuration,
+        }
+        session = ses.Session()
+        session.SetState('tracker', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('tracker')
+
+        if state is None:
+            return
+
+        tracker_id = state['tracker_id']
+        tracker_fiducials = np.array(state['tracker_fiducials'])
+        tracker_fiducials_raw = np.array(state['tracker_fiducials_raw'])
+        m_tracker_fiducials_raw = np.array(state['marker_tracker_fiducials_raw'])
+        configuration = state['configuration']
+
+        self.tracker_id = tracker_id
+        self.tracker_fiducials = tracker_fiducials
+        self.tracker_fiducials_raw = tracker_fiducials_raw
+        self.m_tracker_fiducials_raw = m_tracker_fiducials_raw
+
+        self.SetTracker(
+            tracker_id=self.tracker_id,
+            configuration=configuration
+        )
+
+    def SetTracker(self, tracker_id, configuration=None):
+        if tracker_id:
+            self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+
+            # Configure tracker.
+            if configuration is not None:
+                success = self.tracker_connection.SetConfiguration(configuration)
+            else:
+                success = self.tracker_connection.Configure()
+
+            if not success:
+                self.tracker_connection = None
+                return
+
+            # Connect to tracker.
+
+            # XXX: Unfortunately, PolhemusTracker forms a special case here, as configuring
+            #   it happens with a different workflow than the other trackers. (See
+            #   PolhemusTrackerConnection class for a more detailed explanation.)
+            if isinstance(self.tracker_connection, tc.PolhemusTrackerConnection):
+                reconfigure = configuration is None
+                self.tracker_connection.Connect(reconfigure)
+            else:
+                self.tracker_connection.Connect()
+
+            # Check that the connection was successful.
+            if not self.tracker_connection.IsConnected():
+                dlg.ShowNavigationTrackerWarning(tracker_id, self.tracker_connection.GetLibMode())
 
                 self.tracker_id = 0
                 self.tracker_connected = False
             else:
-                self.tracker_id = new_tracker
+                self.tracker_id = tracker_id
                 self.tracker_connected = True
-                self.thread_coord = dco.ReceiveCoordinates(self.trk_init, self.tracker_id, self.TrackerCoordinates,
+                self.thread_coord = dco.ReceiveCoordinates(self.tracker_connection, self.tracker_id, self.TrackerCoordinates,
                                        self.event_coord)
                 self.thread_coord.start()
 
+            self.SaveState()
+
     def DisconnectTracker(self):
         if self.tracker_connected:
-            self.ResetTrackerFiducials()
             Publisher.sendMessage('Update status text in GUI',
                                     label=_("Disconnecting tracker ..."))
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
-            Publisher.sendMessage('Robot navigation mode', robot_mode=False)
-            self.trk_init = dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
-            if not self.trk_init[0]:
+
+            # Stop thread for reading tracker coordinates. Do it before disconnecting
+            # the tracker to avoid reading coordinates from already disconnected tracker.
+            if self.thread_coord:
+                self.event_coord.set()
+                self.thread_coord.join()
+                self.event_coord.clear()
+
+            self.tracker_connection.Disconnect()
+            if not self.tracker_connection.IsConnected():
                 self.tracker_connected = False
                 self.tracker_id = 0
-
-                if self.thread_coord:
-                    self.event_coord.set()
-                    self.thread_coord.join()
-                    self.event_coord.clear()
 
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker disconnected"))
@@ -88,9 +155,8 @@ class Tracker():
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
 
-
     def IsTrackerInitialized(self):
-        return self.trk_init and self.tracker_id and self.tracker_connected
+        return self.tracker_connection and self.tracker_id and self.tracker_connected
 
     def AreTrackerFiducialsSet(self):
         return not np.isnan(self.tracker_fiducials).any()
@@ -135,12 +201,23 @@ class Tracker():
 
         print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
 
+        self.SaveState()
+
     def ResetTrackerFiducials(self):
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
 
+        self.SaveState()
+
     def GetTrackerFiducials(self):
         return self.tracker_fiducials, self.tracker_fiducials_raw
+
+    def GetTrackerFiducialForUI(self, index, coordinate_index):
+        value = self.tracker_fiducials[index, coordinate_index]
+        if np.isnan(value):
+            value = 0
+
+        return value
 
     def GetMatrixTrackerFiducials(self):
         m_probe_ref_left = np.linalg.inv(self.m_tracker_fiducials_raw[1]) @ self.m_tracker_fiducials_raw[0]
@@ -149,8 +226,8 @@ class Tracker():
 
         return [m_probe_ref_left.tolist(), m_probe_ref_right.tolist(), m_probe_ref_nasion.tolist()]
 
-    def GetTrackerInfo(self):
-        return self.trk_init, self.tracker_id
+    def GetTrackerId(self):
+        return self.tracker_id
 
     def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
         if self.tracker_connected:

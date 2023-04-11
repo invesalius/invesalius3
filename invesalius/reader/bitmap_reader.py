@@ -111,12 +111,12 @@ class BitmapData:
 
     def RemoveFileByPath(self, path):
         for d in self.data:
-            if path.encode(const.FS_ENCODE) in d:
+            if path in d:
                 self.data.remove(d)
 
     def GetIndexByPath(self, path):
         for i, v in enumerate(self.data):
-            if path.encode(const.FS_ENCODE) in v:
+            if path in v:
                 return i
 
 
@@ -147,7 +147,8 @@ class BitmapFiles:
 class LoadBitmap:
     def __init__(self, bmp_file, filepath):
         self.bmp_file = bmp_file
-        self.filepath = utils.decode(filepath, const.FS_ENCODE)
+        #self.filepath = utils.decode(filepath, const.FS_ENCODE)
+        self.filepath = filepath
 
         self.run()
 
@@ -156,9 +157,9 @@ class LoadBitmap:
 
         # ----- verify extension ------------------
         extension = VerifyDataType(self.filepath)
-
-        file_name = self.filepath.split(os.path.sep)[-1]
-
+        
+        file_name = self.filepath.decode(const.FS_ENCODE).split(os.path.sep)[-1]
+        
         n_array = ReadBitmap(self.filepath)
 
         if not (isinstance(n_array, numpy.ndarray)):
@@ -282,14 +283,11 @@ class ProgressBitmapReader:
     def GetBitmaps(self, path, recursive):
         y = yGetBitmaps(path, recursive)
         for value_progress in y:
-            print(">>> YYYYYY", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
-                print("UPDATE PROGRESS")
                 self.UpdateLoadFileProgress(value_progress)
             else:
-                print("END PROGRESS")
                 self.EndLoadFile(value_progress)
 
         self.UpdateLoadFileProgress(None)
@@ -399,10 +397,22 @@ def ReadBitmap(filepath):
 
 def GetPixelSpacingFromInfoFile(filepath):
     filepath = utils.decode(filepath, const.FS_ENCODE)
+    
     if filepath.endswith(".DS_Store"):
         return False
-    fi = open(filepath, "r")
-    lines = fi.readlines()
+
+    try: 
+        fi = open(filepath, "r")  
+        lines = fi.readlines()
+    except(UnicodeDecodeError):
+
+        #fix uCTI from CTI file 
+        try:
+            fi = open(filepath,"r",encoding="iso8859-1")
+            lines = fi.readlines()
+        except(UnicodeDecodeError):
+            return False
+
     measure_scale = "mm"
     values = []
 
@@ -454,6 +464,7 @@ def VtkErrorToPy(obj, evt):
 
 def VerifyDataType(filepath):
     try:
+        filepath = utils.decode(filepath, const.FS_ENCODE)
         t = imghdr.what(filepath)
         if t:
             return t

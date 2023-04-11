@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
 import sys
 
 import wx
@@ -27,10 +28,62 @@ from vtkmodules.vtkRenderingCore import (
     vtkTextMapper,
     vtkTextProperty,
 )
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
-from invesalius.gui.dialogs import ProgressDialog
+import invesalius.utils as utils
+
+from invesalius import inv_paths
+
+
+class ProgressDialog(object):
+    def __init__(self, parent, maximum, abort=False):
+        self.title = "InVesalius 3"
+        self.msg = _("Loading DICOM files")
+        self.maximum = maximum
+        self.current = 0
+        self.style = wx.PD_APP_MODAL
+        if abort:
+            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     maximum = self.maximum,
+                                     parent = parent,
+                                     style  = self.style)
+
+        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.dlg.SetSize(wx.Size(250,150))
+
+    def Cancel(self, evt):
+        Publisher.sendMessage("Cancel DICOM load")
+
+    def Update(self, value, message):
+        if(int(value) != self.maximum):
+            try:
+                return self.dlg.Update(int(value),message)
+            #TODO:
+            #Exception in the Windows XP 64 Bits with wxPython 2.8.10
+            except(wx._core.PyAssertionError):
+                return True
+        else:
+            return False
+
+    def Close(self):
+        self.dlg.Destroy()
+
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 # If you are frightened by the code bellow, or think it must have been result of
 # an identation error, lookup at:
@@ -60,8 +113,7 @@ def ShowProgress(number_of_filters = 1,
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
-    if number_of_filters < 1:
-        number_of_filters = 1
+    number_of_filters = max(number_of_filters, 1)
     ratio = (100.0 / number_of_filters)
 
     def UpdateProgress(obj, label=""):
@@ -257,7 +309,7 @@ class TextZero(object):
         try:
             self.actor.SetInput(value.encode("cp1252"))
         except(UnicodeEncodeError):
-            self.actor.SetInput(value.encode("utf-8"))
+            self.actor.SetInput(value.encode("utf-8","surrogatepass"))
 
         self.text = value
 
@@ -324,3 +376,41 @@ def numpy_to_vtkMatrix4x4(affine):
             affine_vtk.SetElement(row, col, affine[row, col])
 
     return affine_vtk
+
+
+# TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
+def CreateObjectPolyData(filename):
+    """
+    Coil for navigation rendered in volume viewer.
+    """
+    filename = utils.decode(filename, const.FS_ENCODE)
+    if filename:
+        if filename.lower().endswith('.stl'):
+            reader = vtkSTLReader()
+        elif filename.lower().endswith('.ply'):
+            reader = vtkPLYReader()
+        elif filename.lower().endswith('.obj'):
+            reader = vtkOBJReader()
+        elif filename.lower().endswith('.vtp'):
+            reader = vtkXMLPolyDataReader()
+        else:
+            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+            return
+    else:
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+        reader = vtkSTLReader()
+
+    if _has_win32api:
+        obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+    else:
+        obj_name = filename.encode(const.FS_ENCODE)
+
+    reader.SetFileName(obj_name)
+    reader.Update()
+    obj_polydata = reader.GetOutput()
+
+    if obj_polydata.GetNumberOfPoints() == 0:
+        wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        obj_polydata = None
+
+    return obj_polydata

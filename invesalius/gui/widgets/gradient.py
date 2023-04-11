@@ -22,7 +22,6 @@ import sys
 
 import numpy
 import wx
-from wx.lib import intctrl
 
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 
@@ -75,11 +74,11 @@ class GradientSlider(wx.Panel):
         self.max_range = maxRange
         self.minimun = minValue
         self.maximun = maxValue
-        self.colour = colour
         self.selected = 0
 
         self._gradient_colours = None
 
+        self.SetColour(colour)
         self.CalculateControlPositions()
 
     def _bind_events_wx(self):
@@ -340,7 +339,7 @@ class GradientSlider(wx.Panel):
             return 0
 
     def SetColour(self, colour):
-        self.colour = colour
+        self.colour = [int(i) for i in colour]
 
     def SetGradientColours(self, colors):
         self._gradient_colours = colors
@@ -509,7 +508,7 @@ class GradientCtrl(wx.Panel):
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
     def SetColour(self, colour):
-        colour = list(colour[:3]) + [90]
+        colour = list(int(i) for i in colour[:3]) + [90]
         self.colour = colour
         self.gradient_slider.SetColour(colour)
         self.gradient_slider.Refresh()

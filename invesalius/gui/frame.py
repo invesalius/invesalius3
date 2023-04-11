@@ -38,7 +38,6 @@ import invesalius.session as ses
 import invesalius.utils as utils
 import wx
 import wx.aui
-import wx.lib.agw.toasterbox as TB
 import wx.lib.popupctl as pc
 from invesalius import inv_paths
 from invesalius.gui import project_properties
@@ -166,30 +165,40 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_IDLE, self.OnIdle)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
-        #self.Bind(wx.EVT_MOVE, self.OnMove)
+
+        # Close InVesalius main window, hence exit the software.
+        self.Bind(wx.EVT_CLOSE, self.OnExit)
 
     def __init_aui(self):
         """
         Build AUI manager and all panels inside InVesalius frame.
         """
-
         # Tell aui_manager to manage this frame
         aui_manager = self.aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
+
+        # XXX: Create viewers panel before task panel: the latter depends on the
+        # former already existing - this is because when a state is restored after a
+        # crash, we add markers to task panel, which then communicates to the viewers
+        # panel by publishing an 'Add marker' message.
+        #
+        viewers_panel = viewers.Panel(self)
+        task_panel = tasks.Panel(self)
+        import_panel = imp.Panel(self)
+        import_bitmap_panel = imp_bmp.Panel(self)
 
         # Add panels to manager
 
         # First, the task panel, to be on the left fo the frame
         # This will be specific according to InVesalius application
-        aui_manager.AddPane(tasks.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(task_panel, wx.aui.AuiPaneInfo().
                           Name("Tasks").CaptionVisible(False))
 
         # Then, add the viewers panel, which will contain slices and
         # volume panels. In future this might also be specific
         # according to InVesalius application (e.g. panoramic
         # visualization, in odontology)
-        aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(viewers_panel, wx.aui.AuiPaneInfo().
                           Caption(_("Data panel")).CaptionVisible(False).
                           Centre().CloseButton(False).Floatable(False).
                           Hide().Layer(1).MaximizeButton(True).
@@ -197,13 +206,13 @@ class Frame(wx.Frame):
 
         # This is the DICOM import panel. When the two panels above as dicom        # are shown, this should be hiden
         caption = _("Preview medical data to be reconstructed")
-        aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(import_panel, wx.aui.AuiPaneInfo().
                           Name("Import").CloseButton(False).Centre().Hide().
                           MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
 
         caption = _("Preview bitmap to be reconstructed")
-        aui_manager.AddPane(imp_bmp.Panel(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(import_bitmap_panel, wx.aui.AuiPaneInfo().
                           Name("ImportBMP").CloseButton(False).Centre().Hide().
                           MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
@@ -403,15 +412,12 @@ class Frame(wx.Frame):
     def CloseProject(self):
         Publisher.sendMessage('Close Project')
 
-    def OnClose(self, evt):
+    def OnExit(self, evt):
         """
-        Close all project data.
+        Exit InVesalius: disconnect tracker and send 'Exit' message.
         """
-        Publisher.sendMessage('Close Project')
         Publisher.sendMessage('Disconnect tracker')
-        s = ses.Session()
-        if not s.IsOpen() or not s.project_path:
-            Publisher.sendMessage('Exit')
+        Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):
         """
@@ -447,7 +453,7 @@ class Frame(wx.Frame):
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
-            self.OnClose(None)
+            self.OnExit(None)
         elif id == const.ID_ABOUT:
             self.ShowAbout()
         elif id == const.ID_START:
@@ -535,8 +541,8 @@ class Frame(wx.Frame):
 
 
         elif id == const.ID_MODE_NAVIGATION:
-            Publisher.sendMessage('Deactive dbs folder')
-            Publisher.sendMessage('Active target button')
+            Publisher.sendMessage('Hide dbs folder')
+            Publisher.sendMessage('Show target button')
             self.actived_dbs_mode.Check(0)
             st = self.actived_navigation_mode.IsChecked(const.ID_MODE_NAVIGATION)
             self.OnNavigationMode(st)
@@ -551,7 +557,8 @@ class Frame(wx.Frame):
             self.OnEnableMask3DPreview(value=self.tools_menu.IsChecked(const.ID_MASK_3D_PREVIEW))
 
         elif id == const.ID_MASK_3D_AUTO_RELOAD:
-            ses.Session().auto_reload_preview = self.tools_menu.IsChecked(const.ID_MASK_3D_AUTO_RELOAD)
+            session = ses.Session()
+            session.SetConfig('auto_reload_preview', self.tools_menu.IsChecked(const.ID_MASK_3D_AUTO_RELOAD))
 
         elif id == const.ID_MASK_3D_RELOAD:
             self.OnUpdateMaskPreview()
@@ -567,13 +574,13 @@ class Frame(wx.Frame):
 
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
-        Publisher.sendMessage('Deactive target button')
+        Publisher.sendMessage('Hide target button')
         if st:
             self.OnNavigationMode(st)
-            Publisher.sendMessage('Active dbs folder')
+            Publisher.sendMessage('Show dbs folder')
         else:
             self.OnNavigationMode(st)
-            Publisher.sendMessage('Deactive dbs folder')
+            Publisher.sendMessage('Hide dbs folder')
         self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION,0)
 
     def OnInterpolatedSlices(self, status):
@@ -618,11 +625,17 @@ class Frame(wx.Frame):
             values = preferences_dialog.GetPreferences()
             preferences_dialog.Destroy()
 
-            ses.Session().rendering = values[const.RENDERING]
-            ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
-            ses.Session().language = values[const.LANGUAGE]
-            ses.Session().slice_interpolation = values[const.SLICE_INTERPOLATION]
-            ses.Session().WriteSessionFile()
+            session = ses.Session()
+
+            rendering = values[const.RENDERING]
+            surface_interpolation = values[const.SURFACE_INTERPOLATION]
+            language = values[const.LANGUAGE]
+            slice_interpolation = values[const.SLICE_INTERPOLATION]
+
+            session.SetConfig('rendering', rendering)
+            session.SetConfig('surface_interpolation', surface_interpolation)
+            session.SetConfig('language', language)
+            session.SetConfig('slice_interpolation', slice_interpolation)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
@@ -647,7 +660,8 @@ class Frame(wx.Frame):
         """
         Show getting started window.
         """
-        if ses.Session().language == 'pt_BR':
+        session = ses.Session()
+        if session.GetConfig('language') == 'pt_BR':
             user_guide = "user_guide_pt_BR.pdf"
         else:
             user_guide = "user_guide_en.pdf"
@@ -691,7 +705,8 @@ class Frame(wx.Frame):
         p = prj.Project()
 
         session = ses.Session()
-        last_directory = session.get('paths', 'last_directory_export_prj', '')
+        last_directory = session.GetConfig('last_directory_export_prj', '')
+
         fdlg = wx.FileDialog(None,
                             "Export slice ...",
                             last_directory, # last used directory
@@ -719,7 +734,7 @@ class Frame(wx.Frame):
                 d.ShowModal()
                 d.Destroy()
             else:
-                session['paths']['last_directory_export_prj'] = dirpath
+                session.SetConfig('last_directory_export_prj', dirpath)
 
     def ShowProjectProperties(self):
         window = project_properties.ProjectProperties(self)
@@ -727,8 +742,12 @@ class Frame(wx.Frame):
             p = prj.Project()
             if window.name_txt.GetValue() != p.name:
                 p.name = window.name_txt.GetValue()
-                ses.Session().ChangeProject()
+
+                session = ses.Session()
+                session.ChangeProject()
+
                 self._SetProjectName(p.name)
+
         window.Destroy()
 
     def ShowBitmapImporter(self):
@@ -1031,7 +1050,11 @@ class MenuBar(wx.MenuBar):
         self.mask_preview.Enable(False)
 
         self.mask_auto_reload = mask_preview_menu.Append(const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+D", "", wx.ITEM_CHECK)
-        self.mask_auto_reload.Check(ses.Session().auto_reload_preview)
+
+        session = ses.Session()
+        auto_reload_preview = session.GetConfig('auto_reload_preview')
+
+        self.mask_auto_reload.Check(auto_reload_preview)
         self.mask_auto_reload.Enable(False)
 
         self.mask_preview_reload = mask_preview_menu.Append(const.ID_MASK_3D_RELOAD, _("Reload") + "\tCtrl+Shift+R")
@@ -1179,22 +1202,16 @@ class MenuBar(wx.MenuBar):
         evt.Skip()
 
     def SliceInterpolationStatus(self):
-        
-        status = int(ses.Session().slice_interpolation)
-        
-        if status == 0:
-            v = True
-        else:
-            v = False
+        session = ses.Session()
+        slice_interpolation = session.GetConfig('slice_interpolation')
 
-        return v
+        return slice_interpolation != 0
 
     def NavigationModeStatus(self):
-        status = int(ses.Session().mode)
-        if status == 1:
-            return True
-        else:
-            return False
+        session = ses.Session()
+        mode = session.GetConfig('mode')
+
+        return mode == 1
 
     def OnUpdateSliceInterpolation(self):
         v = self.SliceInterpolationStatus()

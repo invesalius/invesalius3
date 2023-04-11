@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import math
 import multiprocessing
 import os
 import tempfile
@@ -27,7 +26,6 @@ from concurrent import futures
 import numpy as np
 import wx
 from scipy import ndimage
-from imageio import imsave
 from scipy.ndimage import generate_binary_structure, watershed_ift
 try:
     # Skimage >= 0.19
@@ -51,7 +49,6 @@ from vtkmodules.vtkRenderingCore import (
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.data.converters as converters
 import invesalius.data.cursor_actors as ca
 import invesalius.data.geometry as geom
 import invesalius.data.transformations as transformations
@@ -68,8 +65,7 @@ from invesalius_cy import floodfill
 # For tracts
 import invesalius.data.tractography as dtr
 # import invesalius.project as prj
-import invesalius.data.slice_ as sl
-import invesalius.data.bases as bases
+
 # from time import sleep
 # ---
 
@@ -1224,6 +1220,7 @@ class EditorConfig(metaclass=utils.Singleton):
         self.operation = const.BRUSH_THRESH
         self.cursor_type = const.BRUSH_CIRCLE
         self.cursor_size = const.BRUSH_SIZE
+        self.cursor_unit = 'mm'
 
 
 class EditorInteractorStyle(DefaultInteractorStyle):
@@ -1252,6 +1249,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
 
         Publisher.subscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.subscribe(self.set_bunit, 'Set edition brush unit')
         Publisher.subscribe(self.set_bformat, 'Set brush format')
         Publisher.subscribe(self.set_boperation, 'Set edition operation')
 
@@ -1272,6 +1270,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.unsubscribe(self.set_bunit, 'Set edition brush unit')
         Publisher.unsubscribe(self.set_bformat, 'Set brush format')
         Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
 
@@ -1282,6 +1281,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
     def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
+
+    def set_bunit(self, unit):
+        self.config.cursor_unit = unit
+        self.viewer.slice_data.cursor.SetUnit(unit)
 
     def set_bformat(self, cursor_format):
         self.config.cursor_type = cursor_format
@@ -1306,6 +1309,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         cursor.SetSpacing(spacing)
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
+        cursor.SetUnit(self.config.cursor_unit)
         self.viewer.slice_data.SetCursor(cursor)
 
     def OnEnterInteractor(self, obj, evt):
@@ -1496,6 +1500,7 @@ class WatershedConfig(metaclass=utils.Singleton):
         self.operation = BRUSH_FOREGROUND
         self.cursor_type = const.BRUSH_CIRCLE
         self.cursor_size = const.BRUSH_SIZE
+        self.cursor_unit = 'mm'
 
         Publisher.subscribe(self.set_operation, 'Set watershed operation')
         Publisher.subscribe(self.set_use_ww_wl, 'Set use ww wl')
@@ -1556,13 +1561,13 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         Publisher.subscribe(self.expand_watershed, 'Expand watershed to 3D ' + self.orientation)
         Publisher.subscribe(self.set_bsize, 'Set watershed brush size')
+        Publisher.subscribe(self.set_bunit, 'Set watershed brush unit')
         Publisher.subscribe(self.set_bformat, 'Set watershed brush format')
 
         self._set_cursor()
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
-
         mask = self.viewer.slice_.current_mask.matrix
         self._create_mask()
         self.viewer.slice_.to_show_aux = 'watershed'
@@ -1622,11 +1627,16 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         cursor.SetSpacing(spacing)
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
+        cursor.SetUnit(self.config.cursor_unit)
         self.viewer.slice_data.SetCursor(cursor)
 
     def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
+
+    def set_bunit(self, unit):
+        self.config.cursor_unit = unit
+        self.viewer.slice_data.cursor.SetUnit(unit)
 
     def set_bformat(self, brush_format):
         self.config.cursor_type = brush_format

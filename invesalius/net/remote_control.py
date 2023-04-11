@@ -64,6 +64,7 @@ class RemoteControl:
         self._sio.on('to_neuronavigation', self._to_neuronavigation_wrapper)
 
         self._sio.connect(self._remote_host)
+        self._sio.emit('restart_robot_main_loop')
 
         while not self._connected:
             print("Connecting...")

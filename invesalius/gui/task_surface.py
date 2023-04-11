@@ -587,7 +587,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.combo_surface_name.SetSelection(i)
         transparency = 100*surface.transparency
         self.button_colour.SetColour(colour)
-        self.slider_transparency.SetValue(transparency)
+        self.slider_transparency.SetValue(int(transparency))
         #  Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):

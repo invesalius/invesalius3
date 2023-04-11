@@ -245,13 +245,19 @@ def apply_icp(m_img, icp):
 
     return m_img
 
-def ComputeRelativeDistanceToTarget(target_coord, m_img):
-    m_target = dco.coordinates_to_transformation_matrix(
-        position=target_coord[:3],
-        orientation=target_coord[3:],
-        axes='sxyz',
-    )
-    m_img[1, -1] = -m_img[1, -1]
+def ComputeRelativeDistanceToTarget(target_coord=None, img_coord=None, m_target=None, m_img=None):
+    if m_target is None:
+        m_target = dco.coordinates_to_transformation_matrix(
+            position=target_coord[:3],
+            orientation=target_coord[3:],
+            axes='sxyz',
+        )
+    if m_img is None:
+        m_img = dco.coordinates_to_transformation_matrix(
+            position=img_coord[:3],
+            orientation=img_coord[3:],
+            axes='sxyz',
+        )
     m_relative_target = np.linalg.inv(m_target) @ m_img
 
     # compute rotation angles
@@ -298,8 +304,6 @@ class CoordinateCorregistrate(threading.Thread):
     def run(self):
         coreg_data = self.coreg_data
         view_obj = 1
-
-        trck_init, trck_id = self.tracker.GetTrackerInfo()
 
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
@@ -375,7 +379,6 @@ class CoordinateCorregistrateNoObject(threading.Thread):
         coreg_data = self.coreg_data
         view_obj = 0
 
-        trck_init, trck_id = self.tracker.GetTrackerInfo()
         # print('CoordCoreg: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
@@ -399,10 +402,10 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                     self.efield_queue.put_nowait([m_img, coord])
                 if not self.icp_queue.empty():
                     self.icp_queue.task_done()
-                # The sleep has to be in both threads
-                sleep(self.sle)
             except queue.Full:
                 pass
+            # The sleep has to be in both threads
+            sleep(self.sle)
 
 
 # class CoregistrationStatic(threading.Thread):

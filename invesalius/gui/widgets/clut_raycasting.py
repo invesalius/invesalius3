@@ -99,8 +99,6 @@ class Button(object):
         """
         Test if the button was clicked.
         """
-        print(self.position)
-        print(self.size)
         m_x, m_y = position
         i_x, i_y = self.position
         w, h = self.size
@@ -148,7 +146,6 @@ class CLUTRaycastingWidget(wx.Panel):
         Se the range from hounsfield
         """
         self.init, self.end = range
-        print("Range", range)
         self.CalculatePixelPoints()
 
     def SetPadding(self, padding):
@@ -173,7 +170,6 @@ class CLUTRaycastingWidget(wx.Panel):
     def OnClick(self, evt):
         x, y = evt.GetPosition()
         if self.save_button.HasClicked((x, y)):
-            print("Salvando")
             filename = dialog.ShowSavePresetDialog()
             if filename:
                 Publisher.sendMessage('Save raycasting preset', preset_name=filename)
@@ -247,7 +243,6 @@ class CLUTRaycastingWidget(wx.Panel):
         point = self._has_clicked_in_a_point(evt.GetPosition())
         if point:
             i, j = point
-            print("RightClick", i, j)
             self.RemovePoint(i, j)
             self.Refresh()
             nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), i)
@@ -255,7 +250,6 @@ class CLUTRaycastingWidget(wx.Panel):
             return
         n_curve = self._has_clicked_in_selection_curve(evt.GetPosition())
         if n_curve is not None:
-            print("Removing a curve")
             self.RemoveCurve(n_curve)
             self.Refresh()
             nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), n_curve)
@@ -284,7 +278,6 @@ class CLUTRaycastingWidget(wx.Panel):
         direction = evt.GetWheelRotation() / evt.GetWheelDelta()
         init = self.init - RANGE * direction
         end = self.end + RANGE * direction
-        print(direction, init, end)
         self.SetRange((init, end))
         self.Refresh()
 
@@ -373,7 +366,6 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def _has_clicked_in_save(self, clicked_point):
         x, y = clicked_point
-        print(x, y)
         if self.padding < x < self.padding + 24 and \
            self.padding < y < self.padding + 24:
             return True
@@ -395,14 +387,12 @@ class CLUTRaycastingWidget(wx.Panel):
         if y <= self.padding:
             y = self.padding
 
-        if x < 0:
-            x = 0
+        x = max(x, 0)
 
         if x > width:
             x = width
 
-        if x < TOOLBAR_SIZE:
-            x = TOOLBAR_SIZE
+        x = max(x, TOOLBAR_SIZE)
 
         # A point must be greater than the previous one, but the first one
         if j > 0 and x <= self.curves[i].nodes[j-1].x:
@@ -563,7 +553,6 @@ class CLUTRaycastingWidget(wx.Panel):
     def _draw_histogram(self, ctx, height):
         # The histogram
         x,y = self.Histogram.points[0]
-        print("=>", x,y)
 
         ctx.SetPen(wx.Pen(HISTOGRAM_LINE_COLOUR, HISTOGRAM_LINE_WIDTH))
         ctx.SetBrush(wx.Brush(HISTOGRAM_FILL_COLOUR))
@@ -571,7 +560,6 @@ class CLUTRaycastingWidget(wx.Panel):
         path = ctx.CreatePath()
         path.MoveToPoint(x,y)
         for x,y in self.Histogram.points:
-            print(x,y)
             path.AddLineToPoint(x, y)
 
         ctx.PushState()

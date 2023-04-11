@@ -21,7 +21,6 @@ import queue
 import threading
 import time
 
-import wx
 
 from invesalius import constants
 from invesalius.pubsub import pub as Publisher
