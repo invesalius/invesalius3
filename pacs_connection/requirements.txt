@@ -1,0 +1,2 @@
+pydicom==2.3.1
+pynetdicom==2.0.2
