@@ -4,8 +4,6 @@ import wx
 import wx.grid as gridlib
 import wx.lib.agw.pybusyinfo as PBI
 import json
-import sys
-sys.path.append('D:\Opensource\Invesaliusproject\\fork\invesalius3')
 from pacs_connection.constants import INV_PORT, INV_AET, INV_HOST, CONFIG_FILE
 from pacs_connection.helpers import is_valid_ip_address, is_valid_port, json_serial
 from pacs_connection.dicom_client.cecho import CEcho

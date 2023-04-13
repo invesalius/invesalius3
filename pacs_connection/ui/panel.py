@@ -1,7 +1,6 @@
 import wx
 import sys
 import webbrowser
-sys.path.append('D:\Opensource\Invesaliusproject\\fork\invesalius3')
 from pacs_connection.ui.search_download import Browse
 from pacs_connection.ui.upload import UploadFiles
 from pacs_connection.ui.pacs_config import Configuration

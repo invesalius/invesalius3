@@ -1,6 +1,4 @@
 import wx
-import sys
-sys.path.append('D:\Opensource\Invesaliusproject\\fork\invesalius3')
 from pacs_connection.dicom_client.cstore import CStore
 from components import BasicCompo
 

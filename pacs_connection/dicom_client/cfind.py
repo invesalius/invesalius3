@@ -5,8 +5,6 @@ from pydicom.dataset import Dataset
 
 from pynetdicom import AE
 from pynetdicom.sop_class import PatientRootQueryRetrieveInformationModelFind
-import sys
-sys.path.append('D:\Opensource\Invesaliusproject\\fork\invesalius3')
 
 from pacs_connection.constants import COLS
 
