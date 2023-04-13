@@ -63,7 +63,7 @@ class CStore:
 
     def upload_full_study(self, folder_path: str) -> bool:
 
-        dummy_name = folder_path.split("/")[-1]
+        dummy_name = folder_path.split("\\")[-1]
         dummy_name = dummy_name.replace(" ", "_")
         failed = False
         with open(f'pacs_connection/upload_results/result_{dummy_name}.csv', mode='w', newline='') as csv_file:
@@ -110,6 +110,7 @@ class CStore:
         return failed
 
     def handle_failed_request(self, report_path: str) -> bool:
+        print('failed_request report_path', report_path)
         failed = False
         updated_rows = []
         with open(report_path, 'r') as csv_file:
@@ -147,7 +148,7 @@ class CStore:
 
     def upload(self, path: str, folder=True) -> bool:
         if folder:
-            dummy_name = path.split("/")[-1]
+            dummy_name = path.split("\\")[-1]
             dummy_name = dummy_name.replace(" ", "_")
             report_file = f"pacs_connection/upload_results/result_{dummy_name}.csv"
             if not self.upload_full_study(path):
