@@ -18,16 +18,16 @@
 #--------------------------------------------------------------------------
 
 from invesalius.pubsub import pub as Publisher
+from typing import Tuple
 
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkImagingCore import vtkImageBlend, vtkImageMapToColors
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
 from vtkmodules.vtkRenderingCore import vtkImageActor, vtkCellPicker, vtkImageMapper
 
-
-AXIAL = 2
-CORONAL = 1
-SAGITAL = 0
+AXIAL: int = 2
+CORONAL: int = 1
+SAGITAL: int = 0
 
 class Editor:
     """
@@ -40,77 +40,78 @@ class Editor:
     editor.Render()
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         
-        self.interactor = None
-        self.image_original = None
-        self.image_threshold = None
-        self.render = None
+        self.interactor: vtkRenderWindowInteractor = None
+        self.image_original: vtkImageData = None
+        self.image_threshold: vtkImageData = None
+        self.render: vtkRenderer = None
     
-        self.lut = vtkLookupTable()
-        self.lut_original = vtkLookupTable()
-        self.image_color = vtkImageMapToColors()
-        self.blend = blend = vtkImageBlend()
-        self.map = map = vtkImageMapper()
+        self.lut: vtkLookupTable = vtkLookupTable()
+        self.lut_original: vtkLookupTable = vtkLookupTable()
+        self.image_color: vtkImageMapToColors = vtkImageMapToColors()
+        self.blend: vtkImageBlend = vtkImageBlend()
+        self.map: vtkImageMapper = vtkImageMapper()
         
-        self.actor = actor = vtkImageActor()
-        self.actor2 = actor2 = vtkImageActor()
-        self.actor3 = actor3 = vtkImageActor()
+        self.actor: vtkImageActor = vtkImageActor()
+        self.actor2: vtkImageActor = vtkImageActor()
+        self.actor3: vtkImageActor = vtkImageActor()
         
-        self.image_color_o = vtkImageMapToColors()
+        self.image_color_o: vtkImageMapToColors = vtkImageMapToColors()
         
-        self.operation_type = 0
-        self.w = None
+        self.operation_type: int = 0
+        self.w: Tuple[int, int] = None
    
-        self.slice = 0
-        self.clicked = 0
-        self.orientation = AXIAL
+        self.slice: int = 0
+        self.clicked: int = 0
+        self.orientation: int = AXIAL
 
-        self.w = (200, 1200)
+        self.w: Tuple[int, int] = (200, 1200)
     
         #self.plane_widget_x = vtkImagePlaneWidget()
     
         #self.actor.PickableOff()
+
     
-    def SetInteractor(self, interactor):
-        
-        self.interactor = interactor
-        self.render = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
-
-        istyle = vtkInteractorStyleImage()
-        istyle.SetInteractor(interactor)
-        istyle.AutoAdjustCameraClippingRangeOn()
-        interactor.SetInteractorStyle(istyle)
-        
-        istyle.AddObserver("LeftButtonPressEvent", self.Click)
-        istyle.AddObserver("LeftButtonReleaseEvent", self.Release)
-        istyle.AddObserver("MouseMoveEvent",self.Moved)
-
-        pick = self.pick = vtkCellPicker()
-
-    def SetActor(self, actor):
+    def SetInteractor(self, interactor: vtkRenderWindowInteractor) -> None:
+            
+            self.interactor = interactor
+            self.render = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
+    
+            istyle: vtkInteractorStyleImage = vtkInteractorStyleImage()
+            istyle.SetInteractor(interactor)
+            istyle.AutoAdjustCameraClippingRangeOn()
+            interactor.SetInteractorStyle(istyle)
+            
+            istyle.AddObserver("LeftButtonPressEvent", self.Click)
+            istyle.AddObserver("LeftButtonReleaseEvent", self.Release)
+            istyle.AddObserver("MouseMoveEvent",self.Moved)
+    
+            pick = self.pick = vtkCellPicker()
+    
+    def SetActor(self, actor: vtkImageActor) -> None:
         self.actor = actor
 
-    def SetImage(self, image):
+    def SetImage(self, image: vtkImageData) -> None:
         self.image = image
 
-    def SetCursor(self, cursor):
+    def SetCursor(self, cursor: Cursor) -> None:
         self.cursor = cursor
         self.cursor.CursorCircle(self.render)
 
-    def SetOrientation(self, orientation):
+    def SetOrientation(self, orientation: int) -> None:
         self.orientation = orientation
 
-    def Click(self, obj, evt):
+    def Click(self, obj: Any, evt: Any) -> None:
         self.clicked = 1
 
-    def Release(self, obj, evt):
+    def Release(self, obj: Any, evt: Any) -> None:
         self.clicked = 0
 
-    def Moved(self, obj, evt):
-        pos = self.interactor.GetEventPosition()
-        wx = pos[0] #- last[0]
-        wy = pos[1] #- last[1]
+    def Moved(self, obj: Any, evt: Any) -> None:
+        pos: Tuple[int, int] = self.interactor.GetEventPosition()
+        wx: int = pos[0] #- last[0]
+        wy: int = pos[1] #- last[1]
         self.pick.Pick(wx, wy, 0, self.render)
         x,y,z = self.pick.GetPickPosition()
 
@@ -129,14 +130,15 @@ class Editor:
         obj.OnMouseMove()
 
         self.interactor.Render()
+    
 
-    def From3dToImagePixel(self, mPos, pPos):
+    def From3dToImagePixel(self, mPos: Tuple[int, int], pPos: Tuple[float, float, float]) -> Tuple[float, float, float]:
         """
         mPos - The mouse position in the screen position.
         pPos - the pick position in the 3d world
         """
         x, y, z = pPos
-        bounds = self.actor.GetBounds()
+        bounds: Tuple[float, float, float, float, float, float] = self.actor.GetBounds()
 
         #c = vtkCoordinate()
         #c.SetCoordinateSystemToWorld()
@@ -146,17 +148,23 @@ class Editor:
         #c.SetValue(bounds[1::2])
         #xf, yf = c.GetComputedViewportValue(self.render)
         
-        xi, xf, yi, yf, zi, zf = bounds
+        xi: float = bounds[0]
+        xf: float = bounds[1]
+        yi: float = bounds[2]
+        yf: float = bounds[3]
+        zi: float = bounds[4]
+        zf: float = bounds[5]
+
         #c.SetValue(x, y, z)
         #wx, wy = c.GetComputedViewportValue(self.render)
 
-        wx = x - xi
-        wy = y - yi
-        wz = z - zi
+        wx: float = x - xi
+        wy: float = y - yi
+        wz: float = z - zi
         
-        dx = xf - xi
-        dy = yf - yi
-        dz = zf - zi
+        dx: float = xf - xi
+        dy: float = yf - yi
+        dz: float = zf - zi
 
         try:
             wx = (wx * self.image.GetDimensions()[0]) / dx
@@ -173,53 +181,63 @@ class Editor:
         
         return wx, wy, wz
 
-    def SetInput(self, image_original, image_threshold):
+
     
+    def __init__(self):
+        self.image_original: vtkImageData = None
+        self.image_threshold: vtkImageData = None
+        self.slice: int = 0
+        self.map = None
+        self.interactor = None
+        self.image: vtkImageData = None
+        self.w: Tuple[float, float] = (0.0, 0.0)
+
+    def SetInput(self, image_original: vtkImageData, image_threshold: vtkImageData) -> None:
         self.image_original = image_original
         self.image_threshold = image_threshold
-   
-    def SetSlice(self, a):
+    
+    def SetSlice(self, a: int) -> None:
         self.slice = a
 
-    def ChangeShowSlice(self, value):
+    def ChangeShowSlice(self, value: int) -> None:
         self.map.SetZSlice(value) 
         self.interactor.Render()
 
-    def ErasePixel(self, x, y, z):
+    def ErasePixel(self, x: int, y: int, z: int) -> None:
         """
         Deletes pixel, it is necessary to pass x, y and z.
         """
         self.image.SetScalarComponentFromDouble(x, y, z, 0, 0)
         self.image.Update()
         
-    def FillPixel(self, x, y, z, colour = 3200):
+    def FillPixel(self, x: int, y: int, z: int, colour: int = 3200) -> None:
         """
         Fill pixel, it is necessary to pass x, y and z 
         """
 
         self.image.SetScalarComponentFromDouble(x, y, z, 0, colour)
         
-    def PixelThresholdLevel(self, x, y, z):
+    def PixelThresholdLevel(self, x: int, y: int, z: int) -> None:
         """
         Erase or Fill with Threshold level
         """
-        pixel_colour = self.image.GetScalarComponentAsDouble(x, y, z, 0)
+        pixel_colour: float = self.image.GetScalarComponentAsDouble(x, y, z, 0)
         
-        thres_i = self.w[0]
-        thres_f = self.w[1]
+        thres_i: float = self.w[0]
+        thres_f: float = self.w[1]
     
         if (pixel_colour >= thres_i) and (pixel_colour <= thres_f):
             
             if (pixel_colour <= 0):
                 self.FillPixel(x, y, z, 1)
             else:
-                self.FillPixel(x, y, z, pixel_colour)
+                self.FillPixel(x, y, z, int(pixel_colour))
     
         else:
             self.ErasePixel(x, y, z)
-
     
-    def DoOperation(self, xc, yc, zc):
+    
+    def DoOperation(self, xc: int, yc: int, zc: int) -> None:
         """
         This method scans the circle line by line.
         Extracted equation. 
@@ -252,10 +270,9 @@ class Editor:
         except:
             pass
         #if extent[0] <= k+xc <= extent[1] \
-                #and extent[2] <= yi+yc <=extent[3]]
+            #and extent[2] <= yi+yc <=extent[3]]
         
-    def SetOperationType(self, operation_type = 0, 
-                   w = (100,1200)):
+    def SetOperationType(self, operation_type: int = 0, w: Tuple[float, float] = (100,1200)) -> None:
         """
         Set Operation Type
         0 -> Remove

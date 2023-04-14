@@ -1,8 +1,6 @@
 import pyacvd
-# import os
 import pyvista
 import numpy as np
-# import Trekker
 from vtkmodules.vtkCommonCore import vtkFloatArray
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
@@ -43,18 +41,18 @@ from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
 
 class Brain:
-    def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
+    def __init__(self, n_peels: int, window_width: float, window_level: float, affine: np.ndarray, inv_proj: np.ndarray):
         # Create arrays to access the peel data and peel Actors
-        self.peel = []
-        self.peelActors = []
-        self.window_width = window_width
-        self.window_level = window_level
-        self.numberOfPeels = n_peels
-        self.affine = affine
-        self.inv_proj = inv_proj
+        self.peel: list = []
+        self.peelActors: list = []
+        self.window_width: float = window_width
+        self.window_level: float = window_level
+        self.numberOfPeels: int = n_peels
+        self.affine: np.ndarray = affine
+        self.inv_proj: np.ndarray = inv_proj
 
-    def from_mask(self, mask):
-        mask= np.array(mask.matrix[1:, 1:, 1:])
+    def from_mask(self, mask: np.ndarray) -> None:
+        mask = np.array(mask.matrix[1:, 1:, 1:])
         slic = sl.Slice()
         image = slic.matrix
 
@@ -78,57 +76,57 @@ class Brain:
         mask = flip.GetOutput()
 
         # Image
-        self.refImage = image
+        self.refImage: vtkDataObject = image
 
         self._do_surface_creation(mask)
 
 
-    def from_mask_file(self, mask_path):
-        slic = sl.Slice()
-        image = slic.matrix
-        image = np.flip(image, axis=1)
-        image = to_vtk(image, spacing=slic.spacing)
-
-        # Read the mask
-        mask_reader = vtkNIFTIImageReader()
-        mask_reader.SetFileName(mask_path)
-        mask_reader.Update()
-
-        mask = mask_reader.GetOutput()
-
-        mask_sFormMatrix = mask_reader.GetSFormMatrix()
-
-        # Image
-        self.refImage = image
-
-        self._do_surface_creation(mask, mask_sFormMatrix)
-
-
-    def _do_surface_creation(self, mask, mask_sFormMatrix=None):
+    def from_mask_file(self, mask_path: str) -> None:
+            slic = sl.Slice()
+            image: np.ndarray = slic.matrix
+            image = np.flip(image, axis=1)
+            image = to_vtk(image, spacing=slic.spacing)
+    
+            # Read the mask
+            mask_reader: vtkNIFTIImageReader = vtkNIFTIImageReader()
+            mask_reader.SetFileName(mask_path)
+            mask_reader.Update()
+    
+            mask: vtkImageData = mask_reader.GetOutput()
+    
+            mask_sFormMatrix: vtkMatrix4x4 = mask_reader.GetSFormMatrix()
+    
+            # Image
+            self.refImage: vtkImageData = image
+    
+            self._do_surface_creation(mask, mask_sFormMatrix)
+    
+    
+    def _do_surface_creation(self, mask: vtkImageData, mask_sFormMatrix: Optional[vtkMatrix4x4] = None) -> None:
         if mask_sFormMatrix is None:
             mask_sFormMatrix = vtkMatrix4x4()
 
-        value = np.mean(mask.GetScalarRange())
+        value: float = np.mean(mask.GetScalarRange())
 
         # Use the mask to create isosurface
-        mc = vtkContourFilter()
+        mc: vtkContourFilter = vtkContourFilter()
         mc.SetInputData(mask)
         mc.SetValue(0, value)
         mc.ComputeNormalsOn()
         mc.Update()
 
         # Mask isosurface
-        refSurface = mc.GetOutput()
+        refSurface: vtkPolyData = mc.GetOutput()
 
         # Create a uniformly meshed surface
-        tmpPeel = downsample(refSurface)
+        tmpPeel: vtkPolyData = downsample(refSurface)
         # Standard space coordinates
 
         # Apply coordinate transform to the meshed mask
-        mask_ijk2xyz = vtkTransform()
+        mask_ijk2xyz: vtkTransform = vtkTransform()
         mask_ijk2xyz.SetMatrix(mask_sFormMatrix)
 
-        mask_ijk2xyz_filter = vtkTransformPolyDataFilter()
+        mask_ijk2xyz_filter: vtkTransformPolyDataFilter = vtkTransformPolyDataFilter()
         mask_ijk2xyz_filter.SetInputData(tmpPeel)
         mask_ijk2xyz_filter.SetTransform(mask_ijk2xyz)
         mask_ijk2xyz_filter.Update()
@@ -146,87 +144,87 @@ class Brain:
         tmpPeel = fixMesh(tmpPeel)
         tmpPeel = cleanMesh(tmpPeel)
 
-        refImageSpace2_xyz_transform = vtkTransform()
+        refImageSpace2_xyz_transform: vtkTransform = vtkTransform()
         refImageSpace2_xyz_transform.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(np.linalg.inv(self.affine)))
 
-        self.refImageSpace2_xyz = vtkTransformPolyDataFilter()
+        self.refImageSpace2_xyz: vtkTransformPolyDataFilter = vtkTransformPolyDataFilter()
         self.refImageSpace2_xyz.SetTransform(refImageSpace2_xyz_transform)
 
-        xyz2_refImageSpace_transform = vtkTransform()
+        xyz2_refImageSpace_transform: vtkTransform = vtkTransform()
         xyz2_refImageSpace_transform.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(self.affine))
 
-        self.xyz2_refImageSpace = vtkTransformPolyDataFilter()
+        self.xyz2_refImageSpace: vtkTransformPolyDataFilter = vtkTransformPolyDataFilter()
         self.xyz2_refImageSpace.SetTransform(xyz2_refImageSpace_transform)
 
-        currentPeel = tmpPeel
-        self.currentPeelNo = 0
+        currentPeel: vtkPolyData = tmpPeel
+        self.currentPeelNo: int = 0
         currentPeel= self.MapImageOnCurrentPeel(currentPeel)
 
-        newPeel = vtkPolyData()
+        newPeel: vtkPolyData = vtkPolyData()
         newPeel.DeepCopy(currentPeel)
         newPeel.DeepCopy(currentPeel)
-        self.peel_normals = vtkFloatArray()
-        self.peel_centers = vtkFloatArray()
+        self.peel_normals: vtkFloatArray = vtkFloatArray()
+        self.peel_centers: vtkFloatArray = vtkFloatArray()
         self.peel.append(newPeel)
-        self.currentPeelActor = vtkActor()
+        self.currentPeelActor: vtkActor = vtkActor()
         if not np.all(np.equal(self.affine, np.eye(4))):
-            affine_vtk = self.CreateTransformedVTKAffine()
+            affine_vtk: vtkMatrix4x4 = self.CreateTransformedVTKAffine()
             self.currentPeelActor.SetUserMatrix(affine_vtk)
         self.GetCurrentPeelActor(currentPeel)
         self.peelActors.append(self.currentPeelActor)
         # locator will later find the triangle on the peel surface where the coil's normal intersect
-        self.locator = vtkCellLocator()
+        self.locator: vtkCellLocator = vtkCellLocator()
         self.PeelDown(currentPeel)
+    
 
-    def CreateTransformedVTKAffine(self):
-        affine_transformed = self.affine.copy()
-        matrix_shape = tuple(self.inv_proj.matrix_shape)
+    def CreateTransformedVTKAffine(self) -> vtkMatrix4x4:
+        affine_transformed: numpy.ndarray = self.affine.copy()
+        matrix_shape: Tuple[int, int] = tuple(self.inv_proj.matrix_shape)
         affine_transformed[1, -1] -= matrix_shape[1]
 
         return vtk_utils.numpy_to_vtkMatrix4x4(affine_transformed)
 
-    def get_actor(self, n):
+    def get_actor(self, n: int) -> Any:
         return self.GetPeelActor(n)
 
-    def SliceDown(self, currentPeel):
+    def SliceDown(self, currentPeel: vtkPolyData) -> vtkPolyData:
         # Warp using the normals
-        warp = vtkWarpVector()
+        warp: vtkWarpVector = vtkWarpVector()
         warp.SetInputData(fixMesh(downsample(currentPeel)))  # fixMesh here updates normals needed for warping
         warp.SetInputArrayToProcess(0, 0, 0, vtkDataObject().FIELD_ASSOCIATION_POINTS,
                                     vtkDataSetAttributes().NORMALS)
         warp.SetScaleFactor(-1)
         warp.Update()
 
-        out = vtkPolyData()
-        out = upsample(warp.GetPolyDataOutput())
+        out: vtkPolyData = upsample(warp.GetPolyDataOutput())
         out = smooth(out)
         out = fixMesh(out)
         out = cleanMesh(out)
 
         currentPeel = out
         return currentPeel
-    # def sliceUp(self):
-    #     # Warp using the normals
-    #     warp = vtkWarpVector()
+   
+    # def sliceUp(self) -> vtkPolyData:
+    #     warp: vtkWarpVector = vtkWarpVector()
     #     # warp.SetInputData(fixMesh(downsample(currentPeel))) # fixMesh here updates normals needed for warping
     #     warp.SetInputArrayToProcess(0, 0, 0, vtkDataObject().FIELD_ASSOCIATION_POINTS,
     #                                 vtkDataSetAttributes().NORMALS)
     #     warp.SetScaleFactor(1)
     #     warp.Update()
-    #
-    #     out = vtkPolyData()
-    #     out = upsample(warp.GetPolyDataOutput())
+
+    #     out: vtkPolyData = upsample(warp.GetPolyDataOutput())
     #     out = smooth(out)
     #     out = fixMesh(out)
     #     out = cleanMesh(out)
-    #
-    #     currentPeel = out
 
-    def MapImageOnCurrentPeel(self, currentPeel):
+    #     currentPeel: vtkPolyData = out
+    #     return currentPeel
+
+    def MapImageOnCurrentPeel(self, currentPeel: vtkPolyData) -> vtkPolyData:
         self.xyz2_refImageSpace.SetInputData(currentPeel)
         self.xyz2_refImageSpace.Update()
 
-        probe = vtkProbeFilter()
+        probe: vtkProbeFilter = vtkProbeFilter()
         probe.SetInputData(self.xyz2_refImageSpace.GetOutput())
         probe.SetSourceData(self.refImage)
         probe.Update()
@@ -237,12 +235,12 @@ class Brain:
         currentPeel = self.refImageSpace2_xyz.GetOutput()
         return currentPeel
 
-    def PeelDown(self, currentPeel):
+    def PeelDown(self, currentPeel: vtkPolyData) -> None:
         for i in range(0, self.numberOfPeels):
             currentPeel = self.SliceDown(currentPeel)
             currentPeel = self.MapImageOnCurrentPeel(currentPeel)
 
-            newPeel = vtkPolyData()
+            newPeel: vtkPolyData = vtkPolyData()
             newPeel.DeepCopy(currentPeel)
             self.peel.append(newPeel)
 
@@ -253,29 +251,29 @@ class Brain:
 
             self.currentPeelNo += 1
 
-    def TransformPeelPosition(self, p):
-        peel_transform = vtkTransform()
+    def TransformPeelPosition(self, p: int) -> vtkPolyData:
+        peel_transform: vtkTransform = vtkTransform()
         if not np.all(np.equal(self.affine, np.eye(4))):
-            affine_vtk = self.CreateTransformedVTKAffine()
+            affine_vtk: vtkMatrix4x4 = self.CreateTransformedVTKAffine()
             peel_transform.SetMatrix(affine_vtk)
-        refpeelspace = vtkTransformPolyDataFilter()
+        refpeelspace: vtkTransformPolyDataFilter = vtkTransformPolyDataFilter()
         refpeelspace.SetInputData(self.peel[p])
         refpeelspace.SetTransform(peel_transform)
         refpeelspace.Update()
-        currentPeel = refpeelspace.GetOutput()
+        currentPeel: vtkPolyData = refpeelspace.GetOutput()
         return currentPeel
 
-    def GetPeelActor(self, p):
-        lut = vtkWindowLevelLookupTable()
+    def GetPeelActor(self, p: int) -> vtkActor:
+        lut: vtkWindowLevelLookupTable = vtkWindowLevelLookupTable()
         lut.SetWindow(self.window_width)
         lut.SetLevel(self.window_level)
         lut.Build()
 
-        init = self.window_level - self.window_width / 2
-        end = self.window_level + self.window_width / 2
+        init: float = self.window_level - self.window_width / 2
+        end: float = self.window_level + self.window_width / 2
 
         # Set mapper auto
-        mapper = vtkPolyDataMapper()
+        mapper: vtkPolyDataMapper = vtkPolyDataMapper()
         mapper.SetInputData(self.peel[p])
         mapper.SetScalarRange(init, end)
         mapper.SetLookupTable(lut)
@@ -284,26 +282,26 @@ class Brain:
         # Set actor
         self.currentPeelActor.SetMapper(mapper)
 
-        currentPeel = self.TransformPeelPosition(p)
+        currentPeel: vtkPolyData = self.TransformPeelPosition(p)
 
         self.locator.SetDataSet(currentPeel)
         self.locator.BuildLocator()
-        self.peel_centers = GetCenters(currentPeel)
-        self.peel_normals = GetNormals(currentPeel)
+        self.peel_centers: np.ndarray = GetCenters(currentPeel)
+        self.peel_normals: np.ndarray = GetNormals(currentPeel)
 
         return self.currentPeelActor
 
-    def GetCurrentPeelActor(self, currentPeel):
-        lut = vtkWindowLevelLookupTable()
+    def GetCurrentPeelActor(self, currentPeel: vtkPolyData) -> vtkActor:
+        lut: vtkWindowLevelLookupTable = vtkWindowLevelLookupTable()
         lut.SetWindow(self.window_width)
         lut.SetLevel(self.window_level)
         lut.Build()
 
-        init = self.window_level - self.window_width / 2
-        end = self.window_level + self.window_width / 2
+        init: float = self.window_level - self.window_width / 2
+        end: float = self.window_level + self.window_width / 2
 
         # Set mapper auto
-        mapper = vtkPolyDataMapper()
+        mapper: vtkPolyDataMapper = vtkPolyDataMapper()
         mapper.SetInputData(currentPeel)
         mapper.SetScalarRange(init, end)
         mapper.SetLookupTable(lut)
@@ -318,67 +316,68 @@ class Brain:
         return self.currentPeelActor
 
 class E_field_brain:
-    def __init__(self, e_field_mesh):
+    def __init__(self, e_field_mesh: vtkPolyData) -> None:
         self.GetEfieldActor(e_field_mesh)
 
-    def GetEfieldActor(self, mesh):
-        self.e_field_mesh_normals = vtkFloatArray()
-        self.e_field_mesh_centers = vtkFloatArray()
+    def GetEfieldActor(self, mesh: vtkPolyData) -> vtkActor:
+        self.e_field_mesh_normals: vtkFloatArray = vtkFloatArray()
+        self.e_field_mesh_centers: vtkFloatArray = vtkFloatArray()
 
-        self.locator_efield_Cell = vtkCellLocator()
+        self.locator_efield_Cell: vtkCellLocator = vtkCellLocator()
         self.locator_efield_Cell.SetDataSet(mesh)
         self.locator_efield_Cell.BuildLocator()
 
-        self.locator_efield = vtkPointLocator()
+        self.locator_efield: vtkPointLocator = vtkPointLocator()
         self.locator_efield.SetDataSet(mesh)
         self.locator_efield.BuildLocator()
 
         self.e_field_mesh_normals = GetNormals(mesh)
         self.e_field_mesh_centers = GetCenters(mesh)
-        self.e_field_mesh = mesh
+        self.e_field_mesh: vtkPolyData = mesh
 
-        self.efield_mapper = vtkPolyDataMapper()
-        self.lut = CreateLUTTableForEfield(0, 0.001)
+        self.efield_mapper: vtkPolyDataMapper = vtkPolyDataMapper()
+        self.lut: vtkLookupTable = CreateLUTTableForEfield(0, 0.001)
 
-def GetCenters(mesh):
-        # Compute centers of triangles
-        centerComputer = vtkCellCenters()  # This computes centers of the triangles on the peel
-        centerComputer.SetInputData(mesh)
-        centerComputer.Update()
+def GetCenters(mesh: vtkPolyData) -> vtkPolyData:
+    # Compute centers of triangles
+    centerComputer: vtkCellCenters = vtkCellCenters()  # This computes centers of the triangles on the peel
+    centerComputer.SetInputData(mesh)
+    centerComputer.Update()
 
-        # This stores the centers for easy access
-        centers = centerComputer.GetOutput()
-        return centers
+    # This stores the centers for easy access
+    centers: vtkPolyData = centerComputer.GetOutput()
+    return centers
 
-def GetNormals(mesh):
-        # Compute normals of triangles
-        normalComputer = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
-        normalComputer.SetInputData(mesh)
-        normalComputer.ComputePointNormalsOff()
-        normalComputer.ComputeCellNormalsOn()
-        normalComputer.Update()
-        # This converts to the normals to an array for easy access
-        normals = normalComputer.GetOutput().GetCellData().GetNormals()
-        return normals
-def CreateLUTTableForEfield(min, max):
-        lut = vtkLookupTable()
-        lut.SetTableRange(min, max)
-        colorSeries = vtkColorSeries()
-        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
-        colorSeries.SetColorScheme(seriesEnum)
-        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
-        return lut
+def GetNormals(mesh: vtkPolyData) -> vtkFloatArray:
+    # Compute normals of triangles
+    normalComputer: vtkPolyDataNormals = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
+    normalComputer.SetInputData(mesh)
+    normalComputer.ComputePointNormalsOff()
+    normalComputer.ComputeCellNormalsOn()
+    normalComputer.Update()
+    # This converts to the normals to an array for easy access
+    normals: vtkFloatArray = normalComputer.GetOutput().GetCellData().GetNormals()
+    return normals
 
-def cleanMesh(inp):
-    cleaned = vtkCleanPolyData()
+def CreateLUTTableForEfield(min_val: float, max_val: float) -> vtkLookupTable:
+    lut: vtkLookupTable = vtkLookupTable()
+    lut.SetTableRange(min_val, max_val)
+    colorSeries: vtkColorSeries = vtkColorSeries()
+    seriesEnum: int = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+    colorSeries.SetColorScheme(seriesEnum)
+    colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+    return lut
+
+def cleanMesh(inp: vtkPolyData) -> vtkPolyData:
+    cleaned: vtkCleanPolyData = vtkCleanPolyData()
     cleaned.SetInputData(inp)
     cleaned.Update()
 
     return cleaned.GetOutput()
 
 
-def fixMesh(inp):
-    normals = vtkPolyDataNormals()
+def fixMesh(inp: vtkPolyData) -> vtkPolyData:
+    normals: vtkPolyDataNormals = vtkPolyDataNormals()
     normals.SetInputData(inp)
     normals.SetFeatureAngle(160)
     normals.SplittingOn()
@@ -389,12 +388,12 @@ def fixMesh(inp):
     return normals.GetOutput()
 
 
-def upsample(inp):
-    triangles = vtkTriangleFilter()
+def upsample(inp: vtkPolyData) -> vtkPolyData:
+    triangles: vtkTriangleFilter = vtkTriangleFilter()
     triangles.SetInputData(inp)
     triangles.Update()
 
-    subdivisionFilter = vtkLinearSubdivisionFilter()
+    subdivisionFilter: vtkLinearSubdivisionFilter = vtkLinearSubdivisionFilter()
     subdivisionFilter.SetInputData(triangles.GetOutput())
     subdivisionFilter.SetNumberOfSubdivisions(2)
     subdivisionFilter.Update()
@@ -402,8 +401,8 @@ def upsample(inp):
     return subdivisionFilter.GetOutput()
 
 
-def smooth(inp):
-    smoother = vtkWindowedSincPolyDataFilter()
+def smooth(inp: vtkPolyData) -> vtkPolyData:
+    smoother: vtkWindowedSincPolyDataFilter = vtkWindowedSincPolyDataFilter()
     smoother.SetInputData(inp)
     smoother.SetNumberOfIterations(20)
     smoother.BoundarySmoothingOn()
@@ -417,7 +416,7 @@ def smooth(inp):
     return smoother.GetOutput()
 
 
-def downsample(inp):
+def downsample(inp: vtkPolyData) -> vtkPolyData:
     # surface = vtkSurface()
     # surface.CreateFromPolyData(inp)
     #
@@ -430,14 +429,14 @@ def downsample(inp):
     #
     # clusterNumber = surfaceArea / 20
 
-    mesh = pyvista.PolyData(inp)
+    mesh: pyvista.PolyData = pyvista.PolyData(inp)
 
     # Create clustering object
-    clus = pyacvd.Clustering(mesh)
+    clus: pyacvd.Clustering = pyacvd.Clustering(mesh)
     # mesh is not dense enough for uniform remeshing
     # clus.subdivide(3)
     clus.cluster(3000)
-    Remesh = clus.create_mesh()
+    Remesh: pyvista.PolyData= clus.create_mesh()
 
     # print(Remesh)
 

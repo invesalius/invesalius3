@@ -19,7 +19,8 @@
 
 import math
 
-import numpy
+import numpy 
+from typing import Any, Tuple, Union , Optional, List
 
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkLookupTable, vtkVersion
@@ -39,7 +40,7 @@ ORIENTATION = {'AXIAL': 2,
                'CORONAL': 1,
                'SAGITAL': 0}
 
-def to_vtk(n_array, spacing, slice_number, orientation):
+def to_vtk(n_array: numpy.ndarray, spacing: Tuple[float, float, float], slice_number: int, orientation: str) -> vtkImageData:
     """
     It transforms a numpy array into a vtkImageData.
     """
@@ -79,15 +80,16 @@ def to_vtk(n_array, spacing, slice_number, orientation):
 
     return image_copy
 
+
 class CursorBase(object):
-    def __init__(self):
-        self.colour = (0.0, 0.0, 1.0)
-        self.opacity = 1
-        self.size = 15.0
-        self.unit = 'mm'
-        self.orientation = "AXIAL"
-        self.spacing = (1, 1, 1)
-        self.position = (0, 0, 0)
+    def __init__(self) -> None:
+        self.colour: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+        self.opacity: int = 1
+        self.size: float = 15.0
+        self.unit: str = 'mm'
+        self.orientation: str = "AXIAL"
+        self.spacing: Tuple[float, float, float] = (1, 1, 1)
+        self.position: Tuple[int, int, int] = (0, 0, 0)
         if vtkVersion().GetVTKVersion() > '5.8.0':
             self.mapper = vtkImageSliceMapper()
             cursor_property = vtkImageProperty()
@@ -101,26 +103,27 @@ class CursorBase(object):
         self._build_actor()
         self._calculate_area_pixels()
 
-    def SetSize(self, diameter):
+    def SetSize(self, diameter: float) -> None:
         self.radius = diameter/2.0
         self._build_actor()
         self._calculate_area_pixels()
 
-    def SetUnit(self, unit):
+    def SetUnit(self, unit: str) -> None:
         self.unit = unit
         self._build_actor()
         self._calculate_area_pixels()
 
-    def SetColour(self, colour):
+    def SetColour(self, colour: Tuple[float, float, float]) -> None:
         self.colour = colour
         self._build_actor()
 
-    def SetOrientation(self, orientation):
+    def SetOrientation(self, orientation: str) -> None:
         self.orientation = orientation
         self._build_actor()
         self._calculate_area_pixels()
 
-    def SetPosition(self, position):
+    
+    def SetPosition(self, position: Tuple[int, int, int]) -> None:
         # Overriding SetPosition method because in rectangles with odd
         # dimensions there is no half position.
         self.position = position
@@ -129,95 +132,98 @@ class CursorBase(object):
         tx = self.actor.GetXRange()[1] - self.actor.GetXRange()[0]
         ty = self.actor.GetYRange()[1] - self.actor.GetYRange()[0]
         tz = self.actor.GetZRange()[1] - self.actor.GetZRange()[0]
-
+    
         if self.orientation == 'AXIAL':
             if self.points.shape[0] % 2:
                 y = py - ty / 2.0
             else:
                 y = py - ty / 2.0 + self.spacing[1] / 2.0
-
+    
             if self.points.shape[1] % 2:
                 x = px - tx / 2.0
             else:
                 x = px - tx / 2.0 + self.spacing[0] / 2.0
             z = pz
-
+    
             if self.mapper:
                 x += sx / 2.0
                 y += sy / 2.0
-
+    
         elif self.orientation == 'CORONAL':
             if self.points.shape[0] % 2:
                 z = pz - tz / 2.0
             else:
                 z = pz - tz / 2.0 + self.spacing[2] / 2.0
-
+    
             if self.points.shape[1] % 2:
                 x = px - tx / 2.0
             else:
                 x = px - tx / 2.0 + self.spacing[0] / 2.0
             y = py
-
+    
             if self.mapper:
                 x += sx / 2.0
                 z += sz / 2.0
-
+    
         elif self.orientation == 'SAGITAL':
             # height shape is odd
             if self.points.shape[1] % 2:
                 y = py - ty / 2.0
             else:
                 y = py - ty / 2.0 + self.spacing[1] / 2.0
-
+    
             if self.points.shape[0] % 2:
                 z = pz - tz / 2.0
             else:
                 z = pz - tz / 2.0 + self.spacing[2] / 2.0
             x = px
-
+    
             if self.mapper:
                 y += sy / 2.0
                 z += sz / 2.0
-
+    
         else:
             if self.points.shape[0] % 2:
                 y = py - ty / 2.0
             else:
                 y = py - ty / 2.0 + self.spacing[1] / 2.0
-
+    
             if self.points.shape[1] % 2:
                 x = px - tx / 2.0
             else:
                 x = px - tx / 2.0 + self.spacing[0] / 2.0
             z = pz
-
+    
             if self.mapper:
                 x += sx / 2.0
                 y += sy / 2.0
-
+    
         self.actor.SetPosition(x, y, z)
+    
 
-    def SetSpacing(self, spacing):
+
+  
+    def SetSpacing(self, spacing: Tuple[float, float, float]) -> None:
         self.spacing = spacing
         self._build_actor()
         self._calculate_area_pixels()
 
-    def Show(self, value=1):
+    def Show(self, value: int = 1) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def GetPixels(self):
+    def GetPixels(self) -> List[List[int]]:
         return self.points
 
-    def _build_actor(self):
+    def _build_actor(self) -> None:
         pass
 
-    def _calculate_area_pixels(self):
+    def _calculate_area_pixels(self) -> None:
         pass
 
-    def _set_colour(self, imagedata, colour):
+    def _set_colour(self, imagedata: vtkImageData, colour: Tuple[float, float, float, float]) -> vtkImageData:
         scalar_range = int(imagedata.GetScalarRange()[1])
         r, g, b = colour[:3]
 
@@ -244,18 +250,22 @@ class CursorBase(object):
         return img_colours_mask.GetOutput()
 
 
+
 class CursorCircle(CursorBase):
-   # TODO: Think and try to change this class to an actor
+    # TODO: Think and try to change this class to an actor
    # CursorCircleActor(vtkActor)
     def __init__(self):
         self.radius = 15.0
+
+    def __init__(self) -> None:
+        self.radius: float = 15.0
         super(CursorCircle, self).__init__()
 
-    def _build_actor(self):
+    def _build_actor(self) -> None:
         """
         Function to plot the circle
         """
-        r = self.radius
+        r: float = self.radius
         if self.unit == "µm":
             r /= 1000.0
         if self.unit == "px":
@@ -263,12 +273,12 @@ class CursorCircle(CursorBase):
         else:
             sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
-            xi = math.floor(-r/sx)
-            xf = math.ceil(r/sx) + 1
-            yi = math.floor(-r/sy)
-            yf = math.ceil(r/sy) + 1
-            zi = 0
-            zf = 1
+            xi: int = math.floor(-r/sx)
+            xf: int = math.ceil(r/sx) + 1
+            yi: int = math.floor(-r/sy)
+            yf: int = math.ceil(r/sy) + 1
+            zi: int = 0
+            zf: int = 1
         elif self.orientation == 'CORONAL':
             xi = math.floor(-r/sx)
             xf = math.ceil(r/sx) + 1
@@ -286,65 +296,64 @@ class CursorCircle(CursorBase):
 
         z,y,x = numpy.ogrid[zi:zf,yi:yf, xi:xf]
 
-        circle_m = (z*sz)**2 + (y*sy)**2 + (x*sx)**2 <= r**2
-        circle_i = to_vtk(circle_m.astype('uint8'),
+        circle_m: numpy.ndarray = (z*sz)**2 + (y*sy)**2 + (x*sx)**2 <= r**2
+        circle_i: vtkImageData = to_vtk(circle_m.astype('uint8'),
                                           self.spacing, 0, self.orientation)
-        circle_ci = self._set_colour(circle_i, self.colour)
+        circle_ci: vtkImageData = self._set_colour(circle_i, self.colour)
 
         if self.mapper is None:
+            self.actor: vtkImageActor = vtkImageActor()
             self.actor.SetInputData(circle_ci)
             self.actor.InterpolateOff()
             self.actor.PickableOff()
             self.actor.SetDisplayExtent(circle_ci.GetExtent())
         else:
+            self.mapper: vtkImageSliceMapper = vtkImageSliceMapper()
             self.mapper.SetInputData(circle_ci)
             self.mapper.BorderOn()
 
             self.mapper.SetOrientation(ORIENTATION[self.orientation])
 
-    def _calculate_area_pixels(self):
+    def _calculate_area_pixels(self) -> None:
         """
         Return the cursor's pixels.
         """
-        r = self.radius
+        r: float = self.radius
         if self.unit == "µm":
             r /= 1000.0
         if self.unit == "px":
             sx, sy, sz = 1.0, 1.0, 1.0
         else:
             if self.orientation == 'AXIAL':
-                sx = self.spacing[0]
-                sy = self.spacing[1]
+                sx, sy, sz = self.spacing[0], self.spacing[1], self.spacing[2]
             elif self.orientation == 'CORONAL':
-                sx = self.spacing[0]
-                sy = self.spacing[2]
+                sx, sy, sz = self.spacing[0], self.spacing[2], self.spacing[1]
             elif self.orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
-
-        xi = math.floor(-r/sx)
-        xf = math.ceil(r/sx) + 1
-        yi = math.floor(-r/sy)
-        yf = math.ceil(r/sy) + 1
-
+                sx, sy, sz = self.spacing[1], self.spacing[2], self.spacing[0]
+    
+        xi: int = math.floor(-r/sx)
+        xf: int = math.ceil(r/sx) + 1
+        yi: int = math.floor(-r/sy)
+        yf: int = math.ceil(r/sy) + 1
+    
         y,x = numpy.ogrid[yi:yf, xi:xf]
-
-        index = (y*sy)**2 + (x*sx)**2 <= r**2
-        self.points = index
+    
+        index: numpy.ndarray = (y*sy)**2 + (x*sx)**2 <= r**2
+        self.points: numpy.ndarray = index
+    
 
 
 class CursorRectangle(CursorBase):
-    def __init__(self):
-        self.radius = 15.0
+    def __init__(self) -> None:
+        self.radius: float = 15.0
         super(CursorRectangle, self).__init__()
 
-
-    def _build_actor(self):
+    def _build_actor(self) -> None:
         """
         Function to plot the Retangle
         """
         print("Building rectangle cursor", self.orientation)
-        r = self.radius
+        r: float = self.radius
         if self.unit == "µm":
             r /= 1000.0
         if self.unit == "px":
@@ -352,9 +361,9 @@ class CursorRectangle(CursorBase):
         else:
             sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
-            x = int(math.floor(2*r/sx))
-            y = int(math.floor(2*r/sy))
-            z = 1
+            x: int = int(math.floor(2*r/sx))
+            y: int = int(math.floor(2*r/sy))
+            z: int = 1
         elif self.orientation == 'CORONAL':
             x = int(math.floor(r/sx))
             y = 1
@@ -364,9 +373,9 @@ class CursorRectangle(CursorBase):
             y = int(math.floor(r/sy))
             z = int(math.floor(r/sz))
 
-        rectangle_m = numpy.ones((z, y, x), dtype='uint8')
-        rectangle_i = to_vtk(rectangle_m, self.spacing, 0, self.orientation)
-        rectangle_ci = self._set_colour(rectangle_i, self.colour)
+        rectangle_m: numpy.ndarray = numpy.ones((z, y, x), dtype='uint8')
+        rectangle_i: vtkImageData = to_vtk(rectangle_m, self.spacing, 0, self.orientation)
+        rectangle_ci:vtkImageData = self._set_colour(rectangle_i, self.colour)
 
         if self.mapper is None:
             self.actor.SetInputData(rectangle_ci)
@@ -378,8 +387,8 @@ class CursorRectangle(CursorBase):
             self.mapper.BorderOn()
             self.mapper.SetOrientation(ORIENTATION[self.orientation])
 
-    def _calculate_area_pixels(self):
-        r = self.radius
+    def _calculate_area_pixels(self) -> None:
+        r: float = self.radius
         if self.unit == "µm":
             r /= 1000.0
         if self.unit == "px":
@@ -387,8 +396,8 @@ class CursorRectangle(CursorBase):
         else:
             sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
-            x = int(math.floor(2*r/sx))
-            y = int(math.floor(2*r/sy))
+            x: int = int(math.floor(2*r/sx))
+            y: int = int(math.floor(2*r/sy))
         elif self.orientation == 'CORONAL':
             x = int(math.floor(r/sx))
             y = int(math.floor(r/sz))
@@ -396,4 +405,5 @@ class CursorRectangle(CursorBase):
             x = int(math.floor(r/sy))
             y = int(math.floor(r/sz))
 
-        self.points = numpy.ones((y, x), dtype='bool')
+        self.points: numpy.ndarray = numpy.ones((y, x), dtype='bool')
+
