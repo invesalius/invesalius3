@@ -194,10 +194,10 @@ def corregistrate_object_dynamic(inp: Tuple[np.ndarray, np.ndarray, np.ndarray, 
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles: tuple[float, float, float] = tr.euler_from_matrix(m_img, axes='sxyz')
 
     # create output coordinate list
-    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
+    coord: tuple = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
     return coord, m_img
@@ -236,10 +236,10 @@ def corregistrate_dynamic(inp: Tuple[np.ndarray, int], coord_raw: np.ndarray, re
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles: tuple[float, float, float] = tr.euler_from_matrix(m_img, axes='sxyz')
 
     # create output coordinate list
-    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
+    coord: tuple = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
 
     return coord, m_img
@@ -270,10 +270,10 @@ def ComputeRelativeDistanceToTarget(target_coord: Optional[np.ndarray] = None, i
     m_relative_target = np.linalg.inv(m_target) @ m_img
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_relative_target, axes='sxyz')
+    angles: tuple[float, float, float] = tr.euler_from_matrix(m_relative_target, axes='sxyz')
 
     # create output coordinate list
-    distance = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
+    distance: list = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
             np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
 
     return tuple(distance)
@@ -285,23 +285,23 @@ def ComputeRelativeDistanceToTarget(target_coord: Optional[np.ndarray] = None, i
 class CoordinateCorregistrate(threading.Thread):
     def __init__(self, ref_mode_id: int, tracker: Any, coreg_data: Any, view_tracts: Any, queues: List[Any], event: threading.Event, sle: Any, tracker_id: int, target: Optional[List[float]], icp: Tuple[bool, np.ndarray], e_field_loaded: bool):
         threading.Thread.__init__(self, name='CoordCoregObject')
-        self.ref_mode_id = ref_mode_id
+        self.ref_mode_id: int = ref_mode_id
         self.tracker = tracker
         self.coreg_data = coreg_data
         self.coord_queue = queues[0]
         self.view_tracts = view_tracts
         self.coord_tracts_queue = queues[1]
         self.efield_queue = queues[4]
-        self.e_field_loaded = e_field_loaded
-        self.event = event
+        self.e_field_loaded: bool = e_field_loaded
+        self.event: Event = event
         self.sle = sle
         self.icp_queue = queues[2]
         self.object_at_target_queue = queues[3]
-        self.use_icp = icp[0]
+        self.use_icp: bool = icp[0]
         self.m_icp = icp[1]
         self.last_coord = None
-        self.tracker_id = tracker_id
-        self.target = target
+        self.tracker_id: int = tracker_id
+        self.target:Union[List[float], None] = target
         self.target_flag = False
 
         if self.target is not None:
@@ -346,7 +346,7 @@ class CoordinateCorregistrate(threading.Thread):
                         coord = self.last_coord + (self.target - self.last_coord) * 0.05
                         self.last_coord = coord
     
-                    angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
+                    angles: list = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
                     translate = coord[0:3]
                     m_img = tr.compose_matrix(angles=angles, translate=translate)
     
@@ -373,19 +373,19 @@ class CoordinateCorregistrate(threading.Thread):
 class CoordinateCorregistrateNoObject(threading.Thread):
     def __init__(self, ref_mode_id: int, tracker: Any, coreg_data: Any, view_tracts: bool, queues: List[Any], event: threading.Event, sle: float, icp: Any, e_field_loaded: bool) -> None:
         threading.Thread.__init__(self, name='CoordCoregNoObject')
-        self.ref_mode_id = ref_mode_id
+        self.ref_mode_id: int = ref_mode_id
         self.tracker = tracker
         self.coreg_data = coreg_data
         self.coord_queue = queues[0]
-        self.view_tracts = view_tracts
+        self.view_tracts: bool = view_tracts
         self.coord_tracts_queue = queues[1]
-        self.event = event
-        self.sle = sle
+        self.event: Event = event
+        self.sle: float = sle
         self.icp_queue = queues[2]
         self.use_icp = icp.use_icp
         self.m_icp = icp.m_icp
         self.efield_queue = queues[3]
-        self.e_field_loaded = e_field_loaded
+        self.e_field_loaded: bool = e_field_loaded
 
     def run(self) -> None:
         coreg_data: Any = self.coreg_data

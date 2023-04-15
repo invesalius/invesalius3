@@ -24,7 +24,7 @@ import shutil
 import tempfile
 import time
 import weakref
-from typing import Any, List, Union, Tuple, Optional, overload
+from typing import Any, List, Union, Tuple, Optional, overload, Dict, Callable, TypeVar, Generic, Type, cast, TYPE_CHECKING
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
@@ -39,10 +39,10 @@ from vtkmodules.util import numpy_support
 
 class EditionHistoryNode(object):
     def __init__(self, index: int, orientation: str, array: np.ndarray, clean: bool = False) -> None:
-        self.index = index
-        self.orientation = orientation
-        self.filename = tempfile.mktemp(suffix='.npy')
-        self.clean = clean
+        self.index: int = index
+        self.orientation: str = orientation
+        self.filename: str = tempfile.mktemp(suffix='.npy')
+        self.clean: bool = clean
 
         self._save_array(array)
 
@@ -69,7 +69,7 @@ class EditionHistoryNode(object):
 
         print("applying to", self.orientation, "at slice", self.index)
 
-    def __del__(self):
+    def __del__(self) -> None:
         print("Removing", self.filename)
         os.remove(self.filename)
 
@@ -108,7 +108,7 @@ class EditionHistory(object):
         Publisher.sendMessage("Enable redo", value=False)
 
     def undo(self, mvolume: np.ndarray, actual_slices: Optional[Dict[str, int]] = None) -> None:
-        h = self.history
+        h: List[EditionHistoryNode] = self.history
         if self.index > 0:
             #if self.index > 0 and h[self.index].clean:
                 ##self.index -= 1
@@ -138,7 +138,7 @@ class EditionHistory(object):
 
     
     def redo(self, mvolume: np.ndarray, actual_slices: Optional[Dict[str, int]] = None) -> None:
-        h = self.history
+        h: List[EditionHistoryNode] = self.history
         if self.index < len(h) - 1:
             #if self.index < len(h) - 1 and h[self.index].clean:
                 ##self.index += 1
@@ -284,9 +284,9 @@ class Mask():
     
     def SavePlist(self, dir_temp: str, filelist: Dict[str, str]) -> str:
         mask = {}
-        filename = u'mask_%d' % self.index
-        mask_filename = u'%s.dat' % filename
-        mask_filepath = os.path.join(dir_temp, mask_filename)
+        filename: str = u'mask_%d' % self.index
+        mask_filename: str = u'%s.dat' % filename
+        mask_filepath: str = os.path.join(dir_temp, mask_filename)
         filelist[self.temp_file] = mask_filename
         #self._save_mask(mask_filepath)
 
@@ -301,10 +301,10 @@ class Mask():
         mask['mask_shape'] = self.matrix.shape
         mask['edited'] = self.was_edited
 
-        plist_filename = filename + u'.plist'
+        plist_filename: str = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, plist_filename)
 
-        temp_plist = tempfile.mktemp()
+        temp_plist: str = tempfile.mktemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(mask, f)
 
@@ -328,8 +328,8 @@ class Mask():
         shape = mask['mask_shape']
         self.was_edited = mask.get('edited', False)
 
-        dirpath = os.path.abspath(os.path.split(filename)[0])
-        path = os.path.join(dirpath, mask_file)
+        dirpath: str = os.path.abspath(os.path.split(filename)[0])
+        path: str = os.path.join(dirpath, mask_file)
         self._open_mask(path, tuple(shape))
 
     def OnFlipVolume(self, axis: int) -> None:
@@ -358,7 +358,7 @@ class Mask():
 
     def _open_mask(self, filename: str, shape: Tuple[int, int, int], dtype: str = 'uint8') -> None:
         print(">>", filename, shape)
-        self.temp_file = filename
+        self.temp_file: str = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
     @classmethod
@@ -453,8 +453,8 @@ class Mask():
         self.history.clear_history()
 
     def fill_holes_auto(self, target: str, conn: int, orientation: str, index: int, size: int) -> None:
-        CON2D = {4: 1, 8: 2}
-        CON3D = {6: 1, 18: 2, 26: 3}
+        CON2D: dict[int, int] = {4: 1, 8: 2}
+        CON3D: dict[int, int] = {6: 1, 18: 2, 26: 3}
 
         if target == '3D':
             cp_mask = self.matrix.copy()

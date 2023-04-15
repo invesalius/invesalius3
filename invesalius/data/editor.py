@@ -18,12 +18,18 @@
 #--------------------------------------------------------------------------
 
 from invesalius.pubsub import pub as Publisher
-from typing import Tuple
+from typing import Tuple, Optional, Any
 
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkImagingCore import vtkImageBlend, vtkImageMapToColors
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
 from vtkmodules.vtkRenderingCore import vtkImageActor, vtkCellPicker, vtkImageMapper
+
+from vtkmodules.vtkCommonDataModel import vtkImageData
+from vtkmodules.vtkRenderingCore import vtkRenderer
+from vtkmodules.vtkRenderingCore import vtkRenderWindowInteractor
+
+
 
 AXIAL: int = 2
 CORONAL: int = 1
@@ -183,7 +189,7 @@ class Editor:
 
 
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.image_original: vtkImageData = None
         self.image_threshold: vtkImageData = None
         self.slice: int = 0
@@ -245,7 +251,7 @@ class Editor:
         """
         extent = self.image.GetWholeExtent()
         cursor = self.cursor
-        b = [0,0,0,0,0,0]
+        b: list[int] = [0,0,0,0,0,0]
         self.actor.GetDisplayBounds(b)
         xs, ys, zs = self.image.GetSpacing()
         try:

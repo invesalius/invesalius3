@@ -1,6 +1,7 @@
 import pyacvd
 import pyvista
 import numpy as np
+from typing import Tuple, List, Dict, Any, Union, Optional, overload
 from vtkmodules.vtkCommonCore import vtkFloatArray
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
@@ -35,6 +36,10 @@ from vtkmodules.vtkCommonCore import (
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
+)
+#import for vtkImageData
+from vtkmodules.vtkCommonDataModel import (
+    vtkImageData,
 )
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
@@ -178,7 +183,7 @@ class Brain:
     
 
     def CreateTransformedVTKAffine(self) -> vtkMatrix4x4:
-        affine_transformed: numpy.ndarray = self.affine.copy()
+        affine_transformed: np.ndarray = self.affine.copy()
         matrix_shape: Tuple[int, int] = tuple(self.inv_proj.matrix_shape)
         affine_transformed[1, -1] -= matrix_shape[1]
 

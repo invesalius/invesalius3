@@ -20,7 +20,7 @@
 import math
 
 import numpy 
-from typing import Any, Tuple, Union , Optional, List
+from typing import Any, Tuple, Union , Optional, List, Dict, Literal
 
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkLookupTable, vtkVersion
@@ -36,7 +36,7 @@ from vtkmodules.vtkRenderingCore import (
 import invesalius.constants as const
 
 
-ORIENTATION = {'AXIAL': 2,
+ORIENTATION: Dict[str, int] = {'AXIAL': 2,
                'CORONAL': 1,
                'SAGITAL': 0}
 
@@ -55,7 +55,7 @@ def to_vtk(n_array: numpy.ndarray, spacing: Tuple[float, float, float], slice_nu
     v_image = numpy_support.numpy_to_vtk(n_array.flat)
 
     if orientation == 'AXIAL':
-        extent = (0, dx -1, 0, dy -1, slice_number, slice_number + dz - 1)
+        extent: tuple[Literal[0], int, Literal[0], int, int, int] = (0, dx -1, 0, dy -1, slice_number, slice_number + dz - 1)
     elif orientation == 'SAGITAL':
         extent = (slice_number, slice_number + dx - 1, 0, dy - 1, 0, dz - 1)
     elif orientation == 'CORONAL':
@@ -104,7 +104,7 @@ class CursorBase(object):
         self._calculate_area_pixels()
 
     def SetSize(self, diameter: float) -> None:
-        self.radius = diameter/2.0
+        self.radius: float = diameter/2.0
         self._build_actor()
         self._calculate_area_pixels()
 
@@ -143,7 +143,7 @@ class CursorBase(object):
                 x = px - tx / 2.0
             else:
                 x = px - tx / 2.0 + self.spacing[0] / 2.0
-            z = pz
+            z: int = pz
     
             if self.mapper:
                 x += sx / 2.0
@@ -159,7 +159,7 @@ class CursorBase(object):
                 x = px - tx / 2.0
             else:
                 x = px - tx / 2.0 + self.spacing[0] / 2.0
-            y = py
+            y: int = py
     
             if self.mapper:
                 x += sx / 2.0
@@ -176,7 +176,7 @@ class CursorBase(object):
                 z = pz - tz / 2.0
             else:
                 z = pz - tz / 2.0 + self.spacing[2] / 2.0
-            x = px
+            x: int = px
     
             if self.mapper:
                 y += sy / 2.0
@@ -254,7 +254,7 @@ class CursorBase(object):
 class CursorCircle(CursorBase):
     # TODO: Think and try to change this class to an actor
    # CursorCircleActor(vtkActor)
-    def __init__(self):
+    def __init__(self) -> None:
         self.radius = 15.0
 
     def __init__(self) -> None:

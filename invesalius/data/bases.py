@@ -56,7 +56,7 @@ def base_creation_old(fiducials: np.ndarray) -> Tuple[np.matrix, np.ndarray, np.
                    [g2[0], g2[1], g2[2]],
                    [g3[0], g3[1], g3[2]]])
 
-    m_inv = m.I
+    m_inv: matrix = m.I
 
     return m, q, m_inv
 

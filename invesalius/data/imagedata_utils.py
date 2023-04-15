@@ -87,8 +87,8 @@ def ResampleImage2D(imagedata: vtkImageResample, px: float = None, py: float = N
     dimensions = imagedata.GetDimensions()
 
     if resolution_percentage:
-        factor_x = resolution_percentage
-        factor_y = resolution_percentage
+        factor_x: float = resolution_percentage
+        factor_y: float = resolution_percentage
     else:
         if abs(extent[1] - extent[3]) < abs(extent[3] - extent[5]):
             f = extent[1]
@@ -133,7 +133,7 @@ def resize_slice(im_array: numpy.ndarray, resolution_percentage: float) -> numpy
 def resize_image_array(image: np.ndarray, resolution_percentage: float, as_mmap: bool = False) -> np.ndarray:
     out = zoom(image, resolution_percentage, image.dtype, order=2)
     if as_mmap:
-        fname = tempfile.mktemp(suffix="_resized")
+        fname: str = tempfile.mktemp(suffix="_resized")
         out_mmap = np.memmap(fname, shape=out.shape, dtype=out.dtype, mode="w+")
         out_mmap[:] = out
         return out_mmap
@@ -290,7 +290,7 @@ def create_dicom_thumbnails(image: object, window: Optional[float] = None, level
             thumbnail_paths.append(thumbnail_path)
         return thumbnail_paths
     else:
-        thumbnail_path = tempfile.mktemp(prefix="thumb_", suffix=".png")
+        thumbnail_path: str = tempfile.mktemp(prefix="thumb_", suffix=".png")
         if pf.GetSamplesPerPixel() == 1:
             thumb_image = zoom(np_image, 0.25)
             thumb_image = np.array(
@@ -323,13 +323,13 @@ def bitmap2memmap(files: List[str], slice_size: Tuple[int, int], orientation: st
             len(files) - 1, dialog_type="ProgressDialog"
         )
 
-    temp_file = tempfile.mktemp()
+    temp_file: str = tempfile.mktemp()
 
     if orientation == "SAGITTAL":
         if resolution_percentage == 1.0:
-            shape = slice_size[1], slice_size[0], len(files)
+            shape: tuple[int, int, int] = slice_size[1], slice_size[0], len(files)
         else:
-            shape = (
+            shape: tuple[int, int, int] = (
                 math.ceil(slice_size[1] * resolution_percentage),
                 math.ceil(slice_size[0] * resolution_percentage),
                 len(files),
@@ -337,18 +337,18 @@ def bitmap2memmap(files: List[str], slice_size: Tuple[int, int], orientation: st
 
     elif orientation == "CORONAL":
         if resolution_percentage == 1.0:
-            shape = slice_size[1], len(files), slice_size[0]
+            shape: tuple[int, int, int] = slice_size[1], len(files), slice_size[0]
         else:
-            shape = (
+            shape: tuple[int, int, int] = (
                 math.ceil(slice_size[1] * resolution_percentage),
                 len(files),
                 math.ceil(slice_size[0] * resolution_percentage),
             )
     else:
         if resolution_percentage == 1.0:
-            shape = len(files), slice_size[1], slice_size[0]
+            shape: tuple[int, int, int] = len(files), slice_size[1], slice_size[0]
         else:
-            shape = (
+            shape: tuple[int, int, int] = (
                 len(files),
                 math.ceil(slice_size[1] * resolution_percentage),
                 math.ceil(slice_size[0] * resolution_percentage),
@@ -547,7 +547,7 @@ def img2memmap(group) -> Tuple[np.memmap, Tuple[int, int], str]:
 
 
 def get_LUT_value_255(data: np.ndarray, window: float, level: float) -> np.ndarray:
-    shape = data.shape
+    shape: Tuple[int, ...] = data.shape
     data_ = data.ravel()
     data = np.piecewise(
         data_,
@@ -562,7 +562,7 @@ def get_LUT_value_255(data: np.ndarray, window: float, level: float) -> np.ndarr
 
 
 def get_LUT_value(data: np.ndarray, window: float, level: float) -> np.ndarray:
-    shape = data.shape
+    shape: Tuple[int, ...] = data.shape
     data_ = data.ravel()
     data = np.piecewise(data_,
                         [data_ <= (level - 0.5 - (window-1)/2),
@@ -674,7 +674,7 @@ def create_grid(xy_range: Tuple[int, int], z_range: Tuple[int, int], z_offset: i
     xv, yv, zv = np.meshgrid(x, y, -z)
     coord_grid = np.array([xv, yv, zv])
     # create grid of points
-    grid_number = x.shape[0] * y.shape[0] * z.shape[0]
+    grid_number: int = x.shape[0] * y.shape[0] * z.shape[0]
     coord_grid = coord_grid.reshape([3, grid_number]).T
     # sort grid from distance to the origin/coil center
     coord_list = coord_grid[np.argsort(np.linalg.norm(coord_grid, axis=1)), :]
@@ -689,7 +689,7 @@ def create_spherical_grid(radius: int = 10, subdivision: int = 1) -> np.ndarray:
     xv, yv, zv = np.meshgrid(x, x, x)
     coord_grid = np.array([xv, yv, zv])
     # create grid of points
-    grid_number = x.shape[0] ** 3
+    grid_number: int = x.shape[0] ** 3
     coord_grid = coord_grid.reshape([3, grid_number]).T
 
     sph_grid = coord_grid[np.linalg.norm(coord_grid, axis=1) < radius, :]

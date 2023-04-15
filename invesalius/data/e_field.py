@@ -3,8 +3,13 @@ import threading
 import time
 from typing import Any, List, Union
 
+
+
+
+
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkIdList
+
 
 def Get_coil_position(m_img: np.ndarray) -> list:
     # coil position cp : the center point at the bottom of the coil casing,

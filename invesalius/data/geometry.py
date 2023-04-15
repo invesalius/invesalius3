@@ -19,7 +19,7 @@
 # --------------------------------------------------------------------------
 
 import math
-from typing import List, Tuple, Union, Optional, Dict, Any
+from typing import List, Tuple, Union, Optional, Dict, Any 
 
 import numpy as np
 from vtkmodules.vtkRenderingCore import vtkCoordinate
@@ -36,7 +36,7 @@ class Box(metaclass=utils.Singleton):
     coordinates (min and max) of box used in crop-mask.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.xi = None  # type: float
         self.xf = None  # type: float
 
@@ -585,13 +585,13 @@ class DrawCrop2DRetangle:
         A = np.array(pc) - np.array(p1)
         B = np.array(p2) - np.array(p1)
         # Calculate the size from those vectors
-        len_A = np.linalg.norm(A)
-        len_B = np.linalg.norm(B)
+        len_A: float = np.linalg.norm(A)
+        len_B: float = np.linalg.norm(B)
         # calculate the angle theta (in radians) between those vector
-        theta = math.acos(np.dot(A, B) / (len_A * len_B))
+        theta: float = math.acos(np.dot(A, B) / (len_A * len_B))
         # Using the sin from theta, calculate the adjacent leg, which is the
         # distance from the point to the line
-        distance = math.sin(theta) * len_A
+        distance: float = math.sin(theta) * len_A
         return distance
 
     def Coord3DtoDisplay(self, x: float, y: float, z: float, canvas: Any) -> Tuple[float, float]:

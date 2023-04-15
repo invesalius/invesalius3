@@ -21,7 +21,7 @@ from math import sin, cos
 import numpy as np
 import threading
 import wx
-from typing import Tuple, List , Optional
+from typing import Tuple, List , Optional, Any, Union, Dict, Callable
 
 import invesalius.data.transformations as tr
 import invesalius.constants as const
@@ -112,8 +112,8 @@ def PolarisP4Coord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[
     if probe[:7] == "MISSING":
         coord1 = np.hstack(([0, 0, 0], [0, 0, 0]))
     else:
-        q = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
-        t = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
+        q: list[float] = [int(probe[i:i + 6]) * 0.0001 for i in range(0, 24, 6)]
+        t: list[float] = [int(probe[i:i + 7]) * 0.01 for i in range(24, 45, 7)]
         angles_probe = np.degrees(tr.euler_from_quaternion(q, axes='rzyx'))
         trans_probe = np.array(t).astype(float)
         coord1 = np.hstack((trans_probe, angles_probe))
@@ -303,12 +303,12 @@ def PolhemusUSBCoord(tracker_connection, tracker_id: int, ref_mode: bool) -> Opt
     if ref_mode:
 
         data = trck.read(endpoint.bEndpointAddress, 2 * endpoint.wMaxPacketSize)
-        data = str2float(data.tostring())
+        data: List[float] = str2float(data.tostring())
 
         # six coordinates of first and second sensor: x, y, z and alfa, beta and gama
         # jump one element for reference to avoid the sensor ID returned by Polhemus
-        probe = data[0], data[1], data[2], data[3], data[4], data[5], data[6]
-        reference = data[7], data[8], data[9], data[10], data[11], data[12], data[13]
+        probe: tuple[float, float, float, float, float, float, float] = data[0], data[1], data[2], data[3], data[4], data[5], data[6]
+        reference: tuple[float, float, float, float, float, float, float] = data[7], data[8], data[9], data[10], data[11], data[12], data[13]
 
         if probe.all() and reference.all():
             coord = dynamic_reference(probe, reference)
@@ -345,14 +345,14 @@ def PolhemusSerialCoord(tracker_connection, tracker_id: int, ref_mode: bool) -> 
         data = lines[0]
         data = data.replace(str.encode('-'), str.encode(' -'))
         data = [s for s in data.split()]
-        data = [float(s) for s in data[1:len(data)]]
+        data: list[float] = [float(s) for s in data[1:len(data)]]
         probe = np.array([data[0] * scale[0], data[1] * scale[1], data[2] * scale[2], data[3], data[4], data[5]])
 
         if ref_mode:
             data2 = lines[1]
             data2 = data2.replace(str.encode('-'), str.encode(' -'))
             data2 = [s for s in data2.split()]
-            data2 = [float(s) for s in data2[1:len(data2)]]
+            data2: list[float] = [float(s) for s in data2[1:len(data2)]]
             reference = np.array(
                 [data2[0] * scale[0], data2[1] * scale[1], data2[2] * scale[2], data2[3], data2[4], data2[5]])
         else:
@@ -395,8 +395,8 @@ def DebugCoordRandom(tracker_connection, tracker_id: int, ref_mode: bool) -> Tup
     #
     # else:
 
-    dx = [-30, 30]
-    dt = [-180, 180]
+    dx: list[int] = [-30, 30]
+    dt: list[int] = [-180, 180]
 
     coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
                       uniform(*dt), uniform(*dt), uniform(*dt)])
@@ -437,7 +437,7 @@ def coordinates_to_transformation_matrix(position: List[float], orientation: Lis
     a, b, g = np.radians(orientation)
 
     r_ref =a, b, g, axes=axes
-    t_ref = (position)
+    t_ref: List[float] = (position)
 
     m_img = np.dot(t_ref, r_ref)
 
@@ -453,7 +453,7 @@ def transformation_matrix_to_coordinates(matrix: np.ndarray, axes: str = 'sxyz')
     :param axes: The order in which the rotations are done for the axes. See transformations.py for details. Defaults to 'sxyz'.
     :return: The position (a vector of length 3) and Euler angles for the orientation in degrees (a vector of length 3).
     """
-    angles = tr.euler_from_matrix(matrix, axes=axes)
+    angles: tuple[float, float, float] = tr.euler_from_matrix(matrix, axes=axes)
     angles_as_deg = np.degrees(angles)
 
     translation = tr.translation_from_matrix(matrix)
@@ -477,14 +477,14 @@ def dynamic_reference(probe: List[float], reference: List[float]) -> Tuple[float
     """
     a, b, g = np.radians(reference[3:6])
 
-    vet = np.asmatrix(probe[0:3] - reference[0:3])
+    vet: matrix = np.asmatrix(probe[0:3] - reference[0:3])
     # vet = np.mat(vet.reshape(3, 1))
 
     # Attitude matrix given by Patriot manual
     # a: rotation of plane (X, Y) around Z axis (azimuth)
     # b: rotation of plane (X', Z) around Y' axis (elevation)
     # a: rotation of plane (Y', Z') around X'' axis (roll)
-    m_rot = np.mat([[np.cos(a) * np.cos(b), np.sin(b) * np.sin(g) * np.cos(a) - np.cos(g) * np.sin(a),
+    m_rot: matrix = np.mat([[np.cos(a) * np.cos(b), np.sin(b) * np.sin(g) * np.cos(a) - np.cos(g) * np.sin(a),
                     np.cos(a) * np.sin(b) * np.cos(g) + np.sin(a) * np.sin(g)],
                    [np.cos(b) * np.sin(a), np.sin(b) * np.sin(g) * np.sin(a) + np.cos(g) * np.cos(a),
                     np.cos(g) * np.sin(b) * np.sin(a) - np.sin(g) * np.cos(a)],
@@ -592,7 +592,7 @@ def offset_coordinate(p_old: Tuple[float, float, float], norm_vec: Tuple[float, 
 
 
 class ReceiveCoordinates(threading.Thread):
-    def __init__(self, tracker_connection, tracker_id, TrackerCoordinates, event):
+    def __init__(self, tracker_connection, tracker_id, TrackerCoordinates, event) -> None:
         threading.Thread.__init__(self, name='ReceiveCoordinates')
 
         self.tracker_connection = tracker_connection
@@ -600,7 +600,7 @@ class ReceiveCoordinates(threading.Thread):
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
 
-    def run(self):
+    def run(self) -> None:
         while not self.event.is_set():
             coord_raw, markers_flag = GetCoordinatesForThread(self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE)
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)

@@ -19,7 +19,7 @@
 
 import threading
 import time
-
+from typing import Any, Optional, Tuple
 import wx
 from numpy import array, savetxt, hstack,vstack, asarray
 import invesalius.gui.dialogs as dlg
@@ -31,41 +31,42 @@ class Record(threading.Thread):
     Thread created to save obj coords with software during neuronavigation
     """
 
-    def __init__(self, nav_id, timestamp):
+    def __init__(self, nav_id: int, timestamp: float) -> None:
         threading.Thread.__init__(self)
-        self.nav_id = nav_id
-        self.coord = None
-        self.timestamp = timestamp
-        self.coord_list = array([])
+        self.nav_id: int = nav_id
+        self.coord: array = None
+        self.timestamp: float = timestamp
+        self.coord_list: array = array([])
         self.__bind_events()
-        self._pause_ = False
+        self._pause_: bool = False
         self.start()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         # Publisher.subscribe(self.UpdateCurrentCoords, 'Co-registered points')
         Publisher.subscribe(self.UpdateCurrentCoords, 'Set cross focal point')
 
-    def UpdateCurrentCoords(self, position):
-        self.coord = asarray(position)
+    def UpdateCurrentCoords(self, position: array) -> None:
+        self.coord: array = asarray(position)
 
-    def stop(self):
-        self._pause_ = True
+    def stop(self) -> None:
+        self._pause_: bool = True
         #save coords dialog
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Save coords as..."),
-                                          wildcard=_("Coordinates files (*.csv)|*.csv"),
-                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                          default_filename="coords.csv", save_ext="csv")
+        filename: str = dlg.ShowLoadSaveDialog(message=_(u"Save coords as..."),
+                 wildcard=("Coordinates files (*.csv)|*.csv"),
+                 style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                 default_filename="coords.csv", save_ext="csv")
         if filename:
             savetxt(filename, self.coord_list, delimiter=',', fmt='%.4f', header="time, x, y, z, a, b, g", comments="")
 
-    def run(self):
-        initial_time = time.time()
+    def run(self) -> None:
+        initial_time: float = time.time()
         while self.nav_id:
-            relative_time = asarray(time.time() - initial_time)
+            relative_time: float = asarray(time.time() - initial_time)
             time.sleep(self.timestamp)
             if self.coord_list.size == 0:
-                self.coord_list = hstack((relative_time, self.coord))
+                self.coord_list: array = hstack((relative_time, self.coord))
             else:
-                self.coord_list = vstack((self.coord_list, hstack((relative_time, self.coord))))
+                self.coord_list: array = vstack((self.coord_list, hstack((relative_time, self.coord))))
             if self._pause_:
                 return
+            

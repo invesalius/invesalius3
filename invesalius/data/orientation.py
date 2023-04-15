@@ -16,22 +16,24 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-AXIAL = 2
-CORONAL = 1
-SAGITAL = 0
+AXIAL: int = 2
+CORONAL: int = 1
+SAGITAL: int = 0
+
+from typing import Any, Optional, Tuple
 
 class Orientation(object):
-    def __init__(self, interactor, actor):
-        self.interactor = interactor
-        self.actor = actor
-        self.image = actor.GetInput()
-        self.ren = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
-        self.slice = 0
+    def __init__(self, interactor: object, actor: object) -> None:
+        self.interactor: object = interactor
+        self.actor: object = actor
+        self.image: object = actor.GetInput()
+        self.ren: object = interactor.GetRenderWindow().GetRenderers().GetFirstRenderer()          
+        self.slice: int = 0
 
-    def SetOrientation(self, orientation):
-        cam = self.ren.GetActiveCamera()
-        self.orientation = orientation
-        extent = self.image.GetWholeExtent()
+    def SetOrientation(self, orientation: int) -> None:
+        cam: object = self.ren.GetActiveCamera()
+        self.orientation: int = orientation
+        extent: tuple = self.image.GetWholeExtent()
 
         if orientation == AXIAL:
             cam.SetFocalPoint(0, 0, 0)
@@ -39,8 +41,8 @@ class Orientation(object):
             cam.ComputeViewPlaneNormal()
             cam.SetViewUp(0, 1, 0)
 
-            xs = extent[1] - extent[0] + 1
-            ys = extent[3] - extent[2] + 1
+            xs: int = extent[1] - extent[0] + 1
+            ys: int = extent[3] - extent[2] + 1
 
         elif orientation == CORONAL:
             cam.SetFocalPoint(0, 0, 0)
@@ -48,8 +50,8 @@ class Orientation(object):
             cam.ComputeViewPlaneNormal()
             cam.SetViewUp(0, 0, 1)
             
-            xs = extent[1] - extent[0] + 1
-            ys = extent[5] - extent[4] + 1
+            xs: int = extent[1] - extent[0] + 1
+            ys: int = extent[5] - extent[4] + 1
 
         elif orientation == SAGITAL:
             cam.SetFocalPoint(0, 0, 0)
@@ -57,14 +59,14 @@ class Orientation(object):
             cam.ComputeViewPlaneNormal()
             cam.SetViewUp(0, 0, 1)
 
-            xs = extent[3] - extent[2] + 1
-            ys = extent[5] - extent[4] + 1
+            xs: int = extent[3] - extent[2] + 1
+            ys: int = extent[5] - extent[4] + 1
 
         if xs < 150:
-            scale = 75
+            scale: int = 75
         else:
            
-            scale = (xs - 1)/2.0
+            scale: int = (xs - 1)/2.0
              
              
         cam.OrthogonalizeViewUp()
@@ -79,33 +81,33 @@ class Orientation(object):
         self.ren.Render()
         
 
-    def UpdateDisplayExtent(self):
-        extent = self.image.GetWholeExtent()
+    def UpdateDisplayExtent(self) -> None:
+        extent: list = self.image.GetWholeExtent()
         if self.orientation == AXIAL:
-            xs = extent[1] - extent[0] + 1
-            ys = extent[3] - extent[2] + 1
+            xs: int = extent[1] - extent[0] + 1
+            ys: int = extent[3] - extent[2] + 1
 
-            actor = self.actor            
+            actor: object = self.actor            
             actor.SetInput(self.image)
             actor.SetDisplayExtent(extent[0], extent[1], 
-                                   extent[2], extent[3], 
-                                   self.slice, self.slice)
+                                    extent[2], extent[3], 
+                                    self.slice, self.slice)
 
         elif self.orientation == CORONAL:
-            xs = extent[1] - extent[0] + 1
-            ys = extent[5] - extent[4] + 1
+            xs: int = extent[1] - extent[0] + 1
+            ys: int = extent[5] - extent[4] + 1
 
-            actor = self.actor            
+            actor: object = self.actor            
             actor.SetInput(self.image)
             actor.SetDisplayExtent(extent[0], extent[1],
                                     self.slice, self.slice,
                                     extent[4], extent[5])
 
         elif self.orientation == SAGITAL:
-            xs = extent[3] - extent[2] + 1
-            ys = extent[5] - extent[4] + 1
+            xs: int = extent[3] - extent[2] + 1
+            ys: int = extent[5] - extent[4] + 1
 
-            actor = self.actor            
+            actor: object = self.actor            
             actor.SetInput(self.image)
             actor.SetDisplayExtent(self.slice, self.slice, 
                                     extent[2], extent[3],
@@ -115,23 +117,24 @@ class Orientation(object):
         
         self.ren.ResetCameraClippingRange()
 
-        cam = self.ren.GetActiveCamera()
+        cam: object = self.ren.GetActiveCamera()
         
-        bounds = self.actor.GetBounds()
-        spos = bounds[self.orientation*2]
-        cpos = cam.GetPosition()[self.orientation]
-        range = abs(spos - cpos)
-        spacing = self.actor.GetInput().GetSpacing()
-        avg_spacing = sum(spacing)/3.0
+        bounds: list = self.actor.GetBounds()
+        spos: float = bounds[self.orientation*2]
+        cpos: float = cam.GetPosition()[self.orientation]
+        range: float = abs(spos - cpos)
+        spacing: list = self.actor.GetInput().GetSpacing()
+        avg_spacing: float = sum(spacing)/3.0
         cam.SetClippingRange(range - avg_spacing * 3.0, range +\
-                             avg_spacing * 3.0)
-      
+                                avg_spacing * 3.0)
+        
         self.ren.Render()
 
-    def SetSlice(self, slice):
+    def SetSlice(self, slice: int) -> None:
         self.slice = slice
         self.UpdateDisplayExtent()
         
-    def GetMaxSlice(self):
+    def GetMaxSlice(self) -> int:
         
         return self.actor.GetSliceNumberMax()
+    
