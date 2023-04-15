@@ -19,11 +19,13 @@
 
 import gdcm
 import numpy as np
-from typing import Any, List, Union, Tuple, Optional, overload
+from typing import Any, List, Union, Tuple, Optional, overload, Literal
 
 
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonDataModel import vtkImageData
+
+from vtk import vtkPoints, vtkCellArray, vtkPolyData, vtkTriangle
 
 
 def to_vtk(
@@ -48,7 +50,7 @@ def to_vtk(
     v_image = numpy_support.numpy_to_vtk(n_array.flat)
 
     if orientation == "AXIAL":
-        extent = (
+        extent: tuple[int, int, int, int, int, int] = (
             0 - px,
             dx - 1 - px,
             0 - py,
@@ -111,7 +113,7 @@ def to_vtk_mask(
     oz -= sz
 
     v_image = numpy_support.numpy_to_vtk(n_array.flat)
-    extent = (0, dx - 1, 0, dy - 1, 0, dz - 1)
+    extent: tuple[Literal[0], int, Literal[0], int, Literal[0], int] = (0, dx - 1, 0, dy - 1, 0, dz - 1)
 
     # Generating the vtkImageData
     image = vtkImageData()
@@ -140,7 +142,7 @@ def np_rgba_to_vtk(
     dy, dx, dc = n_array.shape
     v_image = numpy_support.numpy_to_vtk(n_array.reshape(dy * dx, dc))
 
-    extent = (0, dx - 1, 0, dy - 1, 0, 0)
+    extent: tuple[Literal[0], int, Literal[0], int, Literal[0], Literal[0]] = (0, dx - 1, 0, dy - 1, 0, 0)
 
     # Generating the vtkImageData
     image = vtkImageData()
@@ -207,4 +209,38 @@ def gdcm_to_numpy(
         return output
     else:
         return np_array
+
+
+
+def convert_custom_bin_to_vtk(filename: str) -> vtkPolyData:
+    numbers: np.ndarray = np.fromfile(filename, count=3, dtype=np.int32)
+    points: np.ndarray = np.fromfile(filename, dtype=np.float32)
+    elements: np.ndarray = np.fromfile(filename, dtype=np.int32)
+
+    points1: np.ndarray = points[3:(numbers[1]) * 3 + 3]*1000
+    elements1: np.ndarray = elements[numbers[1] * 3 + 3:]
+
+    points2: np.ndarray = points1.reshape(numbers[1], 3)
+    elements2: np.ndarray = elements1.reshape(numbers[2], 3)
+
+    points: vtkPoints = vtkPoints()
+    triangles: vtkCellArray = vtkCellArray()
+    polydata: vtkPolyData = vtkPolyData()
+
+    for i in range(len(points2)):
+        points.InsertNextPoint(points2[i])
+    for i in range(len(elements2)):
+        triangle: vtkTriangle = vtkTriangle()
+        triangle.GetPointIds().SetId(0, elements2[i, 0])
+        triangle.GetPointIds().SetId(1, elements2[i, 1])
+        triangle.GetPointIds().SetId(2, elements2[i, 2])
+
+        triangles.InsertNextCell(triangle)
+
+    polydata.SetPoints(points)
+    polydata.SetPolys(triangles)
+
+    return polydata
+
+
 
