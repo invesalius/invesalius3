@@ -19,6 +19,7 @@
 # --------------------------------------------------------------------------
 
 import math
+from typing import List, Tuple, Union, Optional, Dict, Any 
 
 import numpy as np
 from vtkmodules.vtkRenderingCore import vtkCoordinate
@@ -35,46 +36,46 @@ class Box(metaclass=utils.Singleton):
     coordinates (min and max) of box used in crop-mask.
     """
 
-    def __init__(self):
-        self.xi = None
-        self.xf = None
+    def __init__(self) -> None:
+        self.xi = None  # type: float
+        self.xf = None  # type: float
 
-        self.yi = None
-        self.yf = None
+        self.yi = None  # type: float
+        self.yf = None  # type: float
 
-        self.zi = None
-        self.zf = None
+        self.zi = None  # type: float
+        self.zf = None  # type: float
 
-        self.size_x = None
-        self.size_y = None
-        self.size_z = None
+        self.size_x = None  # type: float
+        self.size_y = None  # type: float
+        self.size_z = None  # type: float
 
-        self.sagital = {}
-        self.coronal = {}
-        self.axial = {}
+        self.sagital = {}  # type: dict
+        self.coronal = {}  # type: dict
+        self.axial = {}  # type: dict
 
-        self.xs = None
-        self.ys = None
-        self.zs = None
+        self.xs = None  # type: float
+        self.ys = None  # type: float
+        self.zs = None  # type: float
 
-        self.first_run = True
+        self.first_run = True  # type: bool
 
-    def SetX(self, i, f):
+    def SetX(self, i: float, f: float) -> None:
         self.xi = i
         self.xf = f
         self.size_x = f
 
-    def SetY(self, i, f):
+    def SetY(self, i: float, f: float) -> None:
         self.yi = i
         self.yf = f
         self.size_y = f
 
-    def SetZ(self, i, f):
+    def SetZ(self, i: float, f: float) -> None:
         self.zi = i
         self.zf = f
         self.size_z = f
 
-    def SetSpacing(self, x, y, z):
+    def SetSpacing(self, x: float, y: float, z: float) -> None:
         self.xs = x
         self.ys = y
         self.zs = z
@@ -95,79 +96,81 @@ class Box(metaclass=utils.Singleton):
         if self.first_run:
             self.first_run = False
 
-    def MakeMatrix(self):
+
+    def MakeMatrix(self) -> None:
         """
         Update values in a matrix to each orientation.
         """
-
+    
         self.sagital[const.SAGITAL_LEFT] = [
             [self.xi, self.yi - (self.ys / 2), self.zi],
             [self.xi, self.yi - (self.ys / 2), self.zf],
         ]
-
+    
         self.sagital[const.SAGITAL_RIGHT] = [
             [self.xi, self.yf + (self.ys / 2), self.zi],
             [self.xi, self.yf + (self.ys / 2), self.zf],
         ]
-
+    
         self.sagital[const.SAGITAL_BOTTOM] = [
             [self.xi, self.yi, self.zi - (self.zs / 2)],
             [self.xi, self.yf, self.zi - (self.zs / 2)],
         ]
-
+    
         self.sagital[const.SAGITAL_UPPER] = [
             [self.xi, self.yi, self.zf + (self.zs / 2)],
             [self.xi, self.yf, self.zf + (self.zs / 2)],
         ]
-
+    
         self.coronal[const.CORONAL_BOTTOM] = [
             [self.xi, self.yi, self.zi - (self.zs / 2)],
             [self.xf, self.yf, self.zi - (self.zs / 2)],
         ]
-
+    
         self.coronal[const.CORONAL_UPPER] = [
             [self.xi, self.yi, self.zf + (self.zs / 2)],
             [self.xf, self.yf, self.zf + (self.zs / 2)],
         ]
-
+    
         self.coronal[const.CORONAL_LEFT] = [
             [self.xi - (self.xs / 2), self.yi, self.zi],
             [self.xi - (self.xs / 2), self.yf, self.zf],
         ]
-
+    
         self.coronal[const.CORONAL_RIGHT] = [
             [self.xf + (self.xs / 2), self.yi, self.zi],
             [self.xf + (self.xs / 2), self.yf, self.zf],
         ]
-
+        
         self.axial[const.AXIAL_BOTTOM] = [
             [self.xi, self.yi - (self.ys / 2), self.zi],
             [self.xf, self.yi - (self.ys / 2), self.zf],
         ]
-
+    
         self.axial[const.AXIAL_UPPER] = [
             [self.xi, self.yf + (self.ys / 2), self.zi],
             [self.xf, self.yf + (self.ys / 2), self.zf],
         ]
-
+    
         self.axial[const.AXIAL_LEFT] = [
             [self.xi - (self.xs / 2), self.yi, self.zi],
             [self.xi - (self.xs / 2), self.yf, self.zf],
         ]
-
+    
         self.axial[const.AXIAL_RIGHT] = [
             [self.xf + (self.xs / 2), self.yi, self.zi],
             [self.xf + (self.xs / 2), self.yf, self.zf],
         ]
+    
+        Publisher.sendMessage("Update crop limits into gui", limits=self.GetLimits())  # type: ignore
+    
 
-        Publisher.sendMessage("Update crop limits into gui", limits=self.GetLimits())
-
-    def GetLimits(self):
+    def GetLimits(self) -> List[int]:
         """
         Return the bounding box limits (initial and final) in x, y and z.
         """
-
-        limits = [
+    
+        limits: List[int] = [
             int(self.xi / self.xs),
             int(self.xf / self.xs),
             int(self.yi / self.ys),
@@ -175,105 +178,110 @@ class Box(metaclass=utils.Singleton):
             int(self.zi / self.zs),
             int(self.zf / self.zs),
         ]
-
+    
         return limits
+    
 
-    def UpdatePositionBySideBox(self, pc, axis, position):
+
+    def UpdatePositionBySideBox(self, pc: List[float], axis: str, position: str) -> None:
         """
         Checks the coordinates are in any side of box and update it. 
         Is necessary to move limits of box.
         """
-
+    
         if axis == "AXIAL":
             if position == const.AXIAL_UPPER:
                 if pc[1] > self.yi and pc[1] > 0 and pc[1] <= self.size_y:
                     self.yf = pc[1]
-
+    
             if position == const.AXIAL_BOTTOM:
                 if pc[1] < self.yf and pc[1] >= 0:
                     self.yi = pc[1]
-
+    
             if position == const.AXIAL_LEFT:
                 if pc[0] < self.xf and pc[0] >= 0:
                     self.xi = pc[0]
-
+    
             if position == const.AXIAL_RIGHT:
                 if pc[0] > self.xi and pc[0] <= self.size_x:
                     self.xf = pc[0]
-
+    
         if axis == "SAGITAL":
             if position == const.SAGITAL_UPPER:
                 if pc[2] > self.zi and pc[2] > 0 and pc[2] <= self.size_z:
                     self.zf = pc[2]
-
+    
             if position == const.SAGITAL_BOTTOM:
                 if pc[2] < self.zf and pc[2] >= 0:
                     self.zi = pc[2]
-
+    
             if position == const.SAGITAL_LEFT:
                 if pc[1] < self.yf and pc[1] >= 0:
                     self.yi = pc[1]
-
+    
             if position == const.SAGITAL_RIGHT:
                 if pc[1] > self.yi and pc[1] <= self.size_y:
                     self.yf = pc[1]
-
+    
         if axis == "CORONAL":
             if position == const.CORONAL_UPPER:
                 if pc[2] > self.zi and pc[2] > 0 and pc[2] <= self.size_z:
                     self.zf = pc[2]
-
+    
             if position == const.CORONAL_BOTTOM:
                 if pc[2] < self.zf and pc[2] >= 0:
                     self.zi = pc[2]
-
+    
             if position == const.CORONAL_LEFT:
                 if pc[0] < self.xf and pc[0] >= 0:
                     self.xi = pc[0]
-
+    
             if position == const.CORONAL_RIGHT:
                 if pc[0] > self.yi and pc[0] <= self.size_y:
                     self.xf = pc[0]
-
+    
         self.MakeMatrix()
-
-    def UpdatePositionByInsideBox(self, pc, axis):
+    
+    
+    def UpdatePositionByInsideBox(self, pc: List[float], axis: str) -> None:
         """
         Checks the coordinates are inside the box and update it. 
         Is necessary to move box in pan event.
         """
-
+    
         if axis == "AXIAL":
-
+    
             if self.yf + pc[1] <= self.size_y and self.yi + pc[1] >= 0:
                 self.yf = self.yf + pc[1]
                 self.yi = self.yi + pc[1]
-
+    
             if self.xf + pc[0] <= self.size_x and self.xi + pc[0] >= 0:
                 self.xf = self.xf + pc[0]
                 self.xi = self.xi + pc[0]
-
+    
         if axis == "SAGITAL":
-
+    
             if self.yf + pc[1] <= self.size_y and self.yi + pc[1] >= 0:
                 self.yf = self.yf + pc[1]
                 self.yi = self.yi + pc[1]
-
+    
             if self.zf + pc[2] <= self.size_z and self.zi + pc[2] >= 0:
                 self.zf = self.zf + pc[2]
                 self.zi = self.zi + pc[2]
-
+    
         if axis == "CORONAL":
-
+    
             if self.xf + pc[0] <= self.size_x and self.xi + pc[0] >= 0:
                 self.xf = self.xf + pc[0]
                 self.xi = self.xi + pc[0]
-
+    
             if self.zf + pc[2] <= self.size_z and self.zi + pc[2] >= 0:
                 self.zf = self.zf + pc[2]
                 self.zi = self.zi + pc[2]
-
+    
         self.MakeMatrix()
+    
+
 
 
 class DrawCrop2DRetangle:
@@ -283,31 +291,36 @@ class DrawCrop2DRetangle:
     anatomical orientation (axial, sagital or coronal).
     """
 
-    def __init__(self):
-        self.viewer = None
-        self.points_in_display = {}
-        self.box = None
-        self.mouse_pressed = False
-        self.canvas = None
-        self.status_move = None
-        self.crop_pan = None
-        self.last_x = 0
-        self.last_y = 0
-        self.last_z = 0
-        self.layer = 0
+    def __init__(self) -> None:
+        self.viewer: Optional[Viewer] = None
+        self.points_in_display: Dict[str, List[float]] = {}
+        self.box: Optional[List[int]] = None
+        self.mouse_pressed: bool = False
+        self.canvas: Optional[Canvas] = None
+        self.status_move: Optional[str] = None
+        self.crop_pan: Optional[List[float]] = None
+        self.last_x: int = 0
+        self.last_y: int = 0
+        self.last_z: int = 0
+        self.layer: int = 0
 
-    def MouseMove(self, x, y):
+    
+
+    
+    def MouseMove(self, x: int, y: int) -> None:
 
         self.MouseInLine(x, y)
 
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
-        slice_spacing = self.viewer.slice_.spacing
+        slice_spacing: Tuple[float, float, float] = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
 
         x_pos_sl = x_pos_sl_ * xs
         y_pos_sl = y_pos_sl_ * ys
 
-        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
+        x: int
+        y: int
+        z: int = self.viewer.get_voxel_coord_by_screen_pos(x, y)
 
         if self.viewer.orientation == "AXIAL":
 
@@ -363,9 +376,9 @@ class DrawCrop2DRetangle:
                 (x * xs, y * ys, z * zs), self.viewer.orientation, self.status_move
             )
 
-        nv_x = x - self.last_x
-        nv_y = y - self.last_y
-        nv_z = z - self.last_z
+        nv_x: int = x - self.last_x
+        nv_y: int = y - self.last_y
+        nv_z: int = z - self.last_z
 
         if self.mouse_pressed and self.crop_pan:
             self.box.UpdatePositionByInsideBox(
@@ -377,28 +390,29 @@ class DrawCrop2DRetangle:
         self.last_z = z
 
         Publisher.sendMessage("Redraw canvas")
-
-    def ReleaseLeft(self):
+    
+   
+    def ReleaseLeft(self) -> None:
         self.status_move = None
 
-    def LeftPressed(self, x, y):
+    def LeftPressed(self, x: int, y: int) -> None:
         self.mouse_pressed = True
 
-    def MouseInLine(self, x, y):
+    def MouseInLine(self, x: int, y: int) -> None:
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
 
-        slice_spacing = self.viewer.slice_.spacing
+        slice_spacing: Tuple[float, float, float] = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
 
         if self.viewer.orientation == "AXIAL":
-            x_pos_sl = x_pos_sl_ * xs
-            y_pos_sl = y_pos_sl_ * ys
+            x_pos_sl: float = x_pos_sl_ * xs
+            y_pos_sl: float = y_pos_sl_ * ys
 
             for k, p in self.box.axial.items():
-                p0 = p[0]
-                p1 = p[1]
+                p0: Tuple[float, float] = p[0]
+                p1: Tuple[float, float] = p[1]
 
-                dist = self.distance_from_point_line(
+                dist: float = self.distance_from_point_line(
                     (p0[0], p0[1]), (p1[0], p1[1]), (x_pos_sl, y_pos_sl)
                 )
 
@@ -420,16 +434,17 @@ class DrawCrop2DRetangle:
 
                 if not (self.mouse_pressed) and k != self.status_move:
                     self.status_move = None
+    
 
         if self.viewer.orientation == "CORONAL":
-            x_pos_sl = x_pos_sl_ * xs
-            y_pos_sl = y_pos_sl_ * zs
+            x_pos_sl: float = x_pos_sl_ * xs
+            y_pos_sl: float = x_pos_sl_ * zs
 
             for k, p in self.box.coronal.items():
-                p0 = p[0]
-                p1 = p[1]
+                p0: Tuple[float, float, float] = p[0]
+                p1: Tuple[float, float, float] = p[1]
 
-                dist = self.distance_from_point_line(
+                dist: float = self.distance_from_point_line(
                     (p0[0], p0[2]), (p1[0], p1[2]), (x_pos_sl, y_pos_sl)
                 )
                 if dist <= 2:
@@ -452,14 +467,14 @@ class DrawCrop2DRetangle:
                     self.status_move = None
 
         if self.viewer.orientation == "SAGITAL":
-            x_pos_sl = x_pos_sl_ * ys
-            y_pos_sl = y_pos_sl_ * zs
+            x_pos_sl: float = x_pos_sl_ * ys
+            y_pos_sl: float = x_pos_sl_ * zs
 
             for k, p in self.box.sagital.items():
-                p0 = p[0]
-                p1 = p[1]
+                p0: Tuple[float, float, float] = p[0]
+                p1: Tuple[float, float, float] = p[1]
 
-                dist = self.distance_from_point_line(
+                dist: float = self.distance_from_point_line(
                     (p0[1], p0[2]), (p1[1], p1[2]), (x_pos_sl, y_pos_sl)
                 )
 
@@ -482,7 +497,8 @@ class DrawCrop2DRetangle:
                 if not (self.mouse_pressed) and k != self.status_move:
                     self.status_move = None
 
-    def draw_to_canvas(self, gc, canvas):
+
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: Any) -> None:
         """
         Draws to an wx.GraphicsContext.
 
@@ -493,7 +509,7 @@ class DrawCrop2DRetangle:
         self.canvas = canvas
         self.UpdateValues(canvas)
 
-    def point_into_box(self, p1, p2, pc, axis):
+    def point_into_box(self, p1: Tuple[float, float, float], p2: Tuple[float, float, float], pc: Tuple[float, float, float], axis: str) -> bool:
 
         if axis == "AXIAL":
             if (
@@ -527,8 +543,10 @@ class DrawCrop2DRetangle:
                 return True
             else:
                 return False
-
-    def point_between_line(self, p1, p2, pc, axis):
+    
+    
+    
+    def point_between_line(self, p1: Tuple[float, float, float], p2: Tuple[float, float, float], pc: Tuple[float, float, float], axis: str) -> bool:
         """
         Checks whether a point is in the line limits 
         """
@@ -555,7 +573,7 @@ class DrawCrop2DRetangle:
             else:
                 return False
 
-    def distance_from_point_line(self, p1, p2, pc):
+    def distance_from_point_line(self, p1: Tuple[float, float, float], p2: Tuple[float, float, float], pc: Tuple[float, float, float]) -> float:
         """
         Calculate the distance from point pc to a line formed by p1 and p2.
         """
@@ -567,24 +585,23 @@ class DrawCrop2DRetangle:
         A = np.array(pc) - np.array(p1)
         B = np.array(p2) - np.array(p1)
         # Calculate the size from those vectors
-        len_A = np.linalg.norm(A)
-        len_B = np.linalg.norm(B)
+        len_A: float = np.linalg.norm(A)
+        len_B: float = np.linalg.norm(B)
         # calculate the angle theta (in radians) between those vector
-        theta = math.acos(np.dot(A, B) / (len_A * len_B))
+        theta: float = math.acos(np.dot(A, B) / (len_A * len_B))
         # Using the sin from theta, calculate the adjacent leg, which is the
         # distance from the point to the line
-        distance = math.sin(theta) * len_A
+        distance: float = math.sin(theta) * len_A
         return distance
 
-    def Coord3DtoDisplay(self, x, y, z, canvas):
-
+    def Coord3DtoDisplay(self, x: float, y: float, z: float, canvas: Any) -> Tuple[float, float]:
         coord = vtkCoordinate()
         coord.SetValue(x, y, z)
         cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
 
         return (cx, cy)
 
-    def MakeBox(self):
+    def MakeBox(self) -> None:
 
         slice_size = self.viewer.slice_.matrix.shape
         zf, yf, xf = slice_size[0] - 1, slice_size[1] - 1, slice_size[2] - 1
@@ -600,8 +617,8 @@ class DrawCrop2DRetangle:
             box.SetZ(0, zf)
             box.SetSpacing(xs, ys, zs)
             box.MakeMatrix()
-
-    def UpdateValues(self, canvas):
+    
+    def UpdateValues(self, canvas: Any) -> None:
 
         box = self.box
         slice_number = self.viewer.slice_data.number
@@ -653,6 +670,7 @@ class DrawCrop2DRetangle:
                         (s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255)
                     )
 
-    def SetViewer(self, viewer):
+    def SetViewer(self, viewer: Any) -> None:
         self.viewer = viewer
         self.MakeBox()
+        

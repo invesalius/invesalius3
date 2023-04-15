@@ -6,13 +6,13 @@ class Singleton(type):
     # This is a Gary Robinson implementation:
     # http://www.garyrobinson.net/2004/03/python_singleto.html
     
-    def __init__(cls,name,bases,dic):
-        super(Singleton,cls).__init__(name,bases,dic)
-        cls.instance=None
-        
-    def __call__(cls,*args,**kw):
+    def __init__(cls, name: str, bases: tuple, dic: dict):
+        super(Singleton, cls).__init__(name, bases, dic)
+        cls.instance = None
+
+    def __call__(cls, *args, **kw):
         if cls.instance is None:
-            cls.instance=super(Singleton,cls).__call__(*args,**kw)
+            cls.instance = super(Singleton, cls).__call__(*args, **kw)
         return cls.instance
 
 class Pizza(object):
@@ -21,42 +21,41 @@ class Pizza(object):
     __metaclass__= Singleton
     
     def __init__(self):
-        self.npieces = 8
+        self.npieces: int = 8
         self.__bind_events()
         
     def __bind_events(self):
-        ps.Publisher().subscribe(self.RemovePiece,
-                                 'Eat piece of pizza')
+        Publisher.subscribe(self.RemovePiece, 'Eat piece of pizza')
         
-    def RemovePiece(self, pubsub_evt):
-        person = pubsub_evt.data
+    def RemovePiece(self, pubsub_evt: Publisher):
+        person: Person = pubsub_evt.data
         if self.npieces:
             self.npieces -= 1
-            print "%s ate pizza!"%(person.name)
+            print(f"{person.name} ate pizza!")
         else:
-            print "%s is hungry!"%(person.name)
+            print(f"{person.name} is hungry!")
+
 
 class Person():
-    def __init__(self, name):
-        self.name = name
-        self.pizza = Pizza()
+    def __init__(self, name: str):
+        self.name: str = name
+        self.pizza: Pizza = Pizza()
         
     def EatPieceOfPizza(self):
-        ps.Publisher.sendMessage('Eat piece of pizza',(self))
-        
+        Publisher.sendMessage('Eat piece of pizza', (self,))
 
-print "Initial state:"
-p1 = Person("Paulo ") 
-p2 = Person("Thiago")
-p3 = Person("Andre ")
-people = [p1, p2, p3]
 
-print "Everyone eats 2 pieces:"
+print("Initial state:")
+p1: Person = Person("Paulo ")
+p2: Person = Person("Thiago")
+p3: Person = Person("Andre ")
+people: list = [p1, p2, p3]
+
+print("Everyone eats 2 pieces:")
 for i in range(2):
     for person in people:
         person.EatPieceOfPizza()
     
-print "Everyone tries to eat another piece:"
+print("Everyone tries to eat another piece:")
 for person in people:
     person.EatPieceOfPizza()
-
