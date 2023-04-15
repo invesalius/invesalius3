@@ -66,7 +66,7 @@ class TrackerCoordinates():
         return self.coord, self.markers_flag
 
 
-def GetCoordinatesForThread(tracker_connection: TrackerConnection, tracker_id: Optional[str], ref_mode: str) -> Tuple[Optional[np.ndarray], Optional[List[bool]]]:
+def GetCoordinatesForThread(tracker_connection, tracker_id: Optional[str], ref_mode: str) -> Tuple[Optional[np.ndarray], Optional[List[bool]]]:
     """
     Read coordinates from spatial tracking devices using
 
@@ -97,7 +97,7 @@ def GetCoordinatesForThread(tracker_connection: TrackerConnection, tracker_id: O
     return coord, markers_flag
 
 
-def PolarisP4Coord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
+def PolarisP4Coord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -142,7 +142,7 @@ def PolarisP4Coord(tracker_connection: TrackerConnection, tracker_id: str, ref_m
 
 
 
-def OptitrackCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
+def OptitrackCoord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
     """
 
     Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
@@ -183,7 +183,7 @@ def OptitrackCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_m
     return coord, [trck.probeID, trck.HeadID, trck.coilID]
 
 
-def PolarisCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
+def PolarisCoord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -207,13 +207,13 @@ def PolarisCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mod
     return coord, [trck.probeID, trck.refID, trck.objID]
 
 
-def CameraCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
+def CameraCoord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
     trck = tracker_connection.GetConnection()
     coord, probeID, refID, coilID = trck.Run()
 
     return coord, [probeID, refID, coilID]
 
-def ClaronCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
+def ClaronCoord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[np.ndarray, List[str]]:
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -237,7 +237,7 @@ def ClaronCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode
 
 
 
-def PolhemusCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mode: str) -> Tuple[any, List[bool]]:
+def PolhemusCoord(tracker_connection, tracker_id: str, ref_mode: str) -> Tuple[any, List[bool]]:
     lib_mode: str = tracker_connection.GetLibMode()
 
     coord: any = None
@@ -256,7 +256,7 @@ def PolhemusCoord(tracker_connection: TrackerConnection, tracker_id: str, ref_mo
 
 
 
-def PolhemusWrapperCoord(tracker_connection: TrackerConnection, tracker_id: int, ref_mode: str) -> np.ndarray:
+def PolhemusWrapperCoord(tracker_connection, tracker_id: int, ref_mode: str) -> np.ndarray:
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -287,7 +287,7 @@ def PolhemusWrapperCoord(tracker_connection: TrackerConnection, tracker_id: int,
 
 
 
-def PolhemusUSBCoord(tracker_connection: TrackerConnection, tracker_id: int, ref_mode: bool) -> Optional[Tuple[float, float, float, float, float, float]]:
+def PolhemusUSBCoord(tracker_connection, tracker_id: int, ref_mode: bool) -> Optional[Tuple[float, float, float, float, float, float]]:
     trck = tracker_connection.GetConnection()
 
     endpoint = trck[0][(0, 0)][0]
@@ -327,7 +327,7 @@ def PolhemusUSBCoord(tracker_connection: TrackerConnection, tracker_id: int, ref
 
 
 
-def PolhemusSerialCoord(tracker_connection: TrackerConnection, tracker_id: int, ref_mode: bool) -> Optional[np.ndarray]:
+def PolhemusSerialCoord(tracker_connection, tracker_id: int, ref_mode: bool) -> Optional[np.ndarray]:
     trck = tracker_connection.GetConnection()
 
     # mudanca para fastrak - ref 1 tem somente x, y, z
@@ -362,7 +362,7 @@ def PolhemusSerialCoord(tracker_connection: TrackerConnection, tracker_id: int, 
 
     return coord
 
-def RobotCoord(tracker_connection: TrackerConnection, tracker_id: int, ref_mode: bool) -> Tuple[np.ndarray, bool]:
+def RobotCoord(tracker_connection, tracker_id: int, ref_mode: bool) -> Tuple[np.ndarray, bool]:
     tracker_id = tracker_connection.GetTrackerId()
 
     coord_tracker, markers_flag = GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode)
@@ -370,7 +370,7 @@ def RobotCoord(tracker_connection: TrackerConnection, tracker_id: int, ref_mode:
     return np.vstack([coord_tracker[0], coord_tracker[1], coord_tracker[2]]), markers_flag
 
 
-def DebugCoordRandom(tracker_connection: TrackerConnection, tracker_id: int, ref_mode: bool) -> Tuple[np.ndarray, List[int]]:
+def DebugCoordRandom(tracker_connection, tracker_id: int, ref_mode: bool) -> Tuple[np.ndarray, List[int]]:
     """
     Method to simulate a tracking device for debug and error check. Generate a random
     x, y, z, alfa, beta and gama coordinates in interval [1, 200[
@@ -436,8 +436,8 @@ def coordinates_to_transformation_matrix(position: List[float], orientation: Lis
     """
     a, b, g = np.radians(orientation)
 
-    r_ref = euler_matrix(a, b, g, axes=axes)
-    t_ref = translation_matrix(position)
+    r_ref =a, b, g, axes=axes
+    t_ref = (position)
 
     m_img = np.dot(t_ref, r_ref)
 

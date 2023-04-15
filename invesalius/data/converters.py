@@ -19,7 +19,7 @@
 
 import gdcm
 import numpy as np
-from typing import Any, List, Union
+from typing import Any, List, Union, Tuple, Optional, overload
 
 
 from vtkmodules.util import numpy_support
@@ -28,11 +28,11 @@ from vtkmodules.vtkCommonDataModel import vtkImageData
 
 def to_vtk(
     n_array: np.ndarray,
-    spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0),
     slice_number: int = 0,
     orientation: str = "AXIAL",
-    origin: tuple[int, int, int] = (0, 0, 0),
-    padding: tuple[int, int, int] = (0, 0, 0),
+    origin: Tuple[int, int, int] = (0, 0, 0),
+    padding: Tuple[int, int, int] = (0, 0, 0),
 ) -> vtkImageData:
     if orientation == "SAGITTAL":
         orientation = "SAGITAL"
@@ -99,8 +99,8 @@ def to_vtk(
 
 def to_vtk_mask(
     n_array: np.ndarray,
-    spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
-    origin: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+    origin: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 ) -> vtkImageData:
     dz, dy, dx = n_array.shape
     ox, oy, oz = origin
@@ -135,7 +135,7 @@ def to_vtk_mask(
 
 def np_rgba_to_vtk(
     n_array: np.ndarray,
-    spacing: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)
 ) -> vtkImageData:
     dy, dx, dc = n_array.shape
     v_image = numpy_support.numpy_to_vtk(n_array.reshape(dy * dx, dc))

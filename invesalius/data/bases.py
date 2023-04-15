@@ -2,6 +2,7 @@ import numpy as np
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 import invesalius.data.coregistration as dcr
+from typing import Tuple, Any, Union, List, Optional, overload
 
 def angle_calculation(ap_axis: np.ndarray, coil_axis: np.ndarray) -> float:
     """
@@ -20,7 +21,7 @@ def angle_calculation(ap_axis: np.ndarray, coil_axis: np.ndarray) -> float:
     return float(angle)
 
 
-def base_creation_old(fiducials: np.ndarray) -> tuple[np.matrix, np.ndarray, np.matrix]:
+def base_creation_old(fiducials: np.ndarray) -> Tuple[np.matrix, np.ndarray, np.matrix]:
     """
     Calculate the origin and matrix for coordinate system transformation.
     q: origin of coordinate system
@@ -34,8 +35,8 @@ def base_creation_old(fiducials: np.ndarray) -> tuple[np.matrix, np.ndarray, np.
     p2 = fiducials[1, :]
     p3 = fiducials[2, :]
 
-    sub1: ndarray[Any, dtype] = p2 - p1
-    sub2: ndarray[Any, dtype] = p3 - p1
+    sub1: np.ndarray[Any, dtype] = p2 - p1
+    sub2: np.ndarray[Any, dtype] = p3 - p1
     lamb = (sub1[0]*sub2[0]+sub1[1]*sub2[1]+sub1[2]*sub2[2])/np.dot(sub1, sub1)
 
     q = p1 + lamb*sub1
@@ -45,7 +46,7 @@ def base_creation_old(fiducials: np.ndarray) -> tuple[np.matrix, np.ndarray, np.
     if not g1.any():
         g1 = p2 - q
 
-    g3: ndarray[Any, dtype] = np.cross(g2, g1)
+    g3: np.ndarray[Any, dtype] = np.cross(g2, g1)
 
     g1 = g1/np.sqrt(np.dot(g1, g1))
     g2 = g2/np.sqrt(np.dot(g2, g2))
@@ -64,7 +65,7 @@ def base_creation_old(fiducials: np.ndarray) -> tuple[np.matrix, np.ndarray, np.
 
 import numpy as np
 
-def base_creation(fiducials: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def base_creation(fiducials: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the origin and matrix for coordinate system
     transformation.
@@ -104,7 +105,7 @@ def base_creation(fiducials: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return m, q
 
 
-def calculate_fre(fiducials_raw: np.ndarray, fiducials: np.ndarray, ref_mode_id: int, m_change: np.ndarray, m_icp: list[int, np.ndarray] = None) -> float:
+def calculate_fre(fiducials_raw: np.ndarray, fiducials: np.ndarray, ref_mode_id: int, m_change: np.ndarray, m_icp: List[int, np.ndarray] = None) -> float:
     """
     Calculate the Fiducial Registration Error for neuronavigation.
 
@@ -183,9 +184,9 @@ def object_registration(fiducials: np.ndarray, orients: np.ndarray, coord_raw: n
 
     coords = np.hstack((fiducials, orients))
 
-    fids_dyn: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([4, 6])
-    fids_img: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([4, 6])
-    fids_raw: ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([3, 3])
+    fids_img: np.ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([4, 6])
+    fids_dyn: np.ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([4, 6])
+    fids_raw: np.ndarray[Any, dtype[floating[_64Bit]]] = np.zeros([3, 3])
 
     # compute fiducials of object with reference to the fixed probe in source frame
     for ic in range(0, 3):

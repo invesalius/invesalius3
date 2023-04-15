@@ -667,7 +667,7 @@ def convert_invesalius_to_world(position: np.ndarray, orientation: np.ndarray) -
 
 
 
-def create_grid(xy_range: tuple[int, int], z_range: tuple[int, int], z_offset: int, spacing: int) -> np.ndarray:
+def create_grid(xy_range: Tuple[int, int], z_range: Tuple[int, int], z_offset: int, spacing: int) -> np.ndarray:
     x = np.arange(xy_range[0], xy_range[1] + 1, spacing)
     y = np.arange(xy_range[0], xy_range[1] + 1, spacing)
     z = z_offset + np.arange(z_range[0], z_range[1] + 1, spacing)
