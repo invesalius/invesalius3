@@ -25,8 +25,19 @@ from typing import Any, List, Union, Tuple, Optional, overload, Literal
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonDataModel import vtkImageData
 
+
 from vtk import vtkPoints, vtkCellArray, vtkPolyData, vtkTriangle
 
+
+=======
+from vtkmodules.vtkCommonCore import (
+    vtkPoints,
+)
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+    vtkTriangle
+)
 
 def to_vtk(
     n_array: np.ndarray,
@@ -212,6 +223,7 @@ def gdcm_to_numpy(
 
 
 
+
 def convert_custom_bin_to_vtk(filename: str) -> vtkPolyData:
     numbers: np.ndarray = np.fromfile(filename, count=3, dtype=np.int32)
     points: np.ndarray = np.fromfile(filename, dtype=np.float32)
@@ -227,10 +239,14 @@ def convert_custom_bin_to_vtk(filename: str) -> vtkPolyData:
     triangles: vtkCellArray = vtkCellArray()
     polydata: vtkPolyData = vtkPolyData()
 
+
+
     for i in range(len(points2)):
         points.InsertNextPoint(points2[i])
     for i in range(len(elements2)):
+
         triangle: vtkTriangle = vtkTriangle()
+
         triangle.GetPointIds().SetId(0, elements2[i, 0])
         triangle.GetPointIds().SetId(1, elements2[i, 1])
         triangle.GetPointIds().SetId(2, elements2[i, 2])
@@ -241,6 +257,4 @@ def convert_custom_bin_to_vtk(filename: str) -> vtkPolyData:
     polydata.SetPolys(triangles)
 
     return polydata
-
-
 

@@ -70,8 +70,9 @@ from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.image import Image
 from invesalius.navigation.tracker import Tracker
+
 from invesalius.navigation.robot import Robot
-from invesalius.data.converters import to_vtk
+from invesalius.data.converters import to_vtk, convert_custom_bin_to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 
@@ -2671,6 +2672,12 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
+        tooltip = wx.ToolTip(_("Load Brain Meshes"))
+        btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
+        btn_act.SetToolTip(tooltip)
+        btn_act.Enable(1)
+        btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
+
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
         spin_sleep.Enable(1)
@@ -2683,27 +2690,38 @@ class E_fieldPanel(wx.Panel):
         line_sleep = wx.BoxSizer(wx.VERTICAL)
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
+        line_btns = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
         # Add line sizers into main sizer
         border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Select:'))
+        txt_surface = wx.StaticText(self, -1, _('Select brain mesh:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
         # combo_surface_name.SetSelection(0)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboNameClic)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.combo_surface_name.Insert('Select',0)
+        self.combo_surface_name.Insert('Select brain mesh:',0)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
+
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
+    def OnAddMeshes(self, evt):
+        filename = dlg.ShowImportMeshFilesDialog()
+        if filename:
+            convert_to_inv = dlg.ImportMeshCoordSystem()
+            Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
+        Publisher.sendMessage('Import bin file', filename=filename)
 
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
@@ -2727,6 +2745,12 @@ class E_fieldPanel(wx.Panel):
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
+                                              wildcard=_("Registration files (*.bin)|*.bin"),
+                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                              default_filename="my_binfile", save_ext="bin")
+            print('filename:',filename)
+            Publisher.sendMessage('Write bin file', polydata = self.e_field_mesh, filename=filename)
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(False)
