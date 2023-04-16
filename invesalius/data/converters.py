@@ -29,7 +29,7 @@ from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtk import vtkPoints, vtkCellArray, vtkPolyData, vtkTriangle
 
 
-=======
+
 from vtkmodules.vtkCommonCore import (
     vtkPoints,
 )
