@@ -20,47 +20,50 @@ import wx
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
+from typing import Any, Optional, Tuple
+BORDER_UP: int = 1
+BORDER_DOWN: int = 2
+BORDER_LEFT: int = 4
+BORDER_RIGHT: int = 8
+BORDER_ALL: int = BORDER_UP | BORDER_DOWN | BORDER_LEFT | BORDER_RIGHT
+BORDER_NONE: int = 0
 
-BORDER_UP = 1
-BORDER_DOWN = 2
-BORDER_LEFT = 4
-BORDER_RIGHT = 8
-BORDER_ALL = BORDER_UP | BORDER_DOWN | BORDER_LEFT | BORDER_RIGHT
-BORDER_NONE = 0
 
 
-class SliceData(object):
-    def __init__(self):
-        self.actor = None
-        self.cursor = None
-        self.text = None
-        self.layer = 99
-        self.number = 0
-        self.orientation = 'AXIAL'
-        self.renderer = None
-        self.canvas_renderer = None
-        self.overlay_renderer = None
+
+
+class SliceData(object()):
+    def __init__(self) -> None:
+        self.actor: Any = None
+        self.cursor: Any = None
+        self.text: Any = None
+        self.layer: int = 99
+        self.number: int = 0
+        self.orientation: str = 'AXIAL'
+        self.renderer: Any = None
+        self.canvas_renderer: Any = None
+        self.overlay_renderer: Any = None
         self.__create_text()
 
-    def __create_text(self):
-        colour = const.ORIENTATION_COLOUR[self.orientation]
+    def __create_text(self) -> None:
+        colour: Tuple[int, int, int] = const.ORIENTATION_COLOUR[self.orientation]
 
-        text = vu.TextZero()
+        text: Any = vu.TextZero()
         text.SetColour(colour)
         text.SetSize(const.TEXT_SIZE_LARGE)
         text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
         text.SetSymbolicSize(wx.FONTSIZE_LARGE)
-        #text.SetVerticalJustificationToBottom()
+        # text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
         self.text = text
 
-    def SetCursor(self, cursor):
+    def SetCursor(self, cursor: Any) -> None:
         if self.cursor:
             self.overlay_renderer.RemoveActor(self.cursor.actor)
         self.overlay_renderer.AddActor(cursor.actor)
         self.cursor = cursor
 
-    def SetNumber(self, init, end=None):
+    def SetNumber(self, init: int, end: Optional[int] = None) -> None:
         if end is None:
             self.number = init
             self.text.SetValue("%d" % self.number)
@@ -69,19 +72,20 @@ class SliceData(object):
             self.text.SetValue("%d - %d" % (init, end))
         self.text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
 
-    def SetOrientation(self, orientation):
+    def SetOrientation(self, orientation: str) -> None:
         self.orientation = orientation
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.overlay_renderer.RemoveActor(self.actor)
         self.renderer.RemoveActor(self.text.actor)
 
-    def Show(self):
+    def Show(self) -> None:
         self.renderer.AddActor(self.actor)
         self.renderer.AddActor(self.text.actor)
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: Any, canvas: Any) -> None:
         w, h = self.renderer.GetSize()
-        colour = const.ORIENTATION_COLOUR[self.orientation]
+        colour: Tuple[int, int, int] = const.ORIENTATION_COLOUR[self.orientation]
         canvas.draw_rectangle((0, 0), w, h, line_colour=[255*i for i in colour] + [255], line_width=2)
         self.text.draw_to_canvas(gc, canvas)
+  
