@@ -47,7 +47,8 @@ class Visualize_E_field_Thread(threading.Thread):
         self.ID_list = vtkIdList()
         self.coord_old = []
         sucess = self.neuronavigation_api.init_efield(
-            name="/app/ros2_ws/src/targeting/efield/efield_libraries/data/example-cortex.bin"
+            cortexfile="/app/ros2_ws/src/targeting/efield/efield_libraries/data/headmodels/invesalius/lh_scaled_up_inv_exp.bin",
+            meshfile= "/app/ros2_ws/src/targeting/efield/efield_libraries/data/headmodels/invesalius/is_scaled_up_inv_exp.bin"
         )
         if sucess:
             print("SUCESS FILE")
@@ -83,6 +84,9 @@ class Visualize_E_field_Thread(threading.Thread):
                                 enorm = self.enorm_debug
                             else:
                                 enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                                print("enorm: ", max(enorm))
+                                print("enormmin: ", min(enorm))
+
                             try:
                                 self.e_field_norms_queue.put_nowait((enorm))
                             except queue.Full:
