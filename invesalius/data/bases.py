@@ -156,8 +156,7 @@ def calculate_fre(fiducials_raw: np.ndarray, fiducials: np.ndarray, ref_mode_id:
 #
 #     return point_rot
 
-import numpy as np
-import transformations as tr
+
 
 def transform_icp(m_img: np.ndarray, m_icp: np.ndarray) -> np.ndarray:
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
