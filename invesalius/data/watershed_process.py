@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Tuple
 from scipy import ndimage
 from scipy.ndimage import watershed_ift, generate_binary_structure
 try:
@@ -6,8 +7,8 @@ try:
 except ImportError:
     from skimage.morphology import watershed
 
-def get_LUT_value(data, window, level):
-    shape = data.shape
+def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
+    shape: Tuple[int, ...] = data.shape
     data_ = data.ravel()
     data = np.piecewise(data_,
                         [data_ <= (level - 0.5 - (window-1)/2),
@@ -17,7 +18,7 @@ def get_LUT_value(data, window, level):
     return data
 
 
-def do_watershed(image, markers,  tfile, shape, bstruct, algorithm, mg_size, use_ww_wl, wl, ww, q):
+def do_watershed(image: np.ndarray, markers: np.ndarray,  tfile: str, shape: tuple, bstruct: np.ndarray, algorithm: str, mg_size: int, use_ww_wl: bool, wl: int, ww: int, q: queue.Queue) -> None:
     mask = np.memmap(tfile, shape=shape, dtype='uint8', mode='r+')
                 
     if use_ww_wl:
@@ -45,3 +46,4 @@ def do_watershed(image, markers,  tfile, shape, bstruct, algorithm, mg_size, use
     mask[:] = tmp_mask
     mask.flush()
     q.put(1)
+    
