@@ -22,8 +22,11 @@ from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
 
 
-AXIAL, SAGITAL, CORONAL =  0, 1, 2
-PLANE_DATA = {AXIAL: ["z",(0,0,1)],
+
+AXIAL: int = 0
+SAGITAL: int = 1
+CORONAL: int = 2
+PLANE_DATA: dict = {AXIAL: ["z",(0,0,1)],
               SAGITAL: ["x", (1,0,0)],
               CORONAL: ["y", (0,1,0)]}
 
@@ -41,25 +44,25 @@ class Plane():
     axial_plane.Show()
     axial_plane.Update()
     """
-    def __init__(self):
-        self.orientation = AXIAL
+    def __init__(self) -> None:
+        self.orientation: int = AXIAL
         self.render = None
         self.iren = None
-        self.index = 0
+        self.index: int = 0
         self.source = None
         self.widget = None
         self.actor = None
 
-    def SetOrientation(self, orientation=AXIAL):
+    def SetOrientation(self, orientation: int = AXIAL) -> None:
         self.orientation = orientation
 
-    def SetRender(self, render=None):
+    def SetRender(self, render=None) -> None:
         self.render = render
 
-    def SetInteractor(self, iren=None):
+    def SetInteractor(self, iren=None) -> None:
         self.iren = iren
 
-    def SetSliceIndex(self, index):
+    def SetSliceIndex(self, index: int) -> None:
         self.index = 0
         try:
             self.widget.SetSliceIndex(int(index))
@@ -71,9 +74,9 @@ class Plane():
                 print("send signal - update slice info in panel and in 2d")
                 
 
-    def SetInput(self, imagedata):
-        axes = PLANE_DATA[self.orientation][0] # "x", "y" or "z"
-        colour = PLANE_DATA[self.orientation][1]
+    def SetInput(self, imagedata) -> None:
+        axes: str = PLANE_DATA[self.orientation][0] # "x", "y" or "z"
+        colour: tuple = PLANE_DATA[self.orientation][1]
         
         #if self.orientation == SAGITAL:
         #    spacing = min(imagedata.GetSpacing())
@@ -85,13 +88,13 @@ class Plane():
 
         # Picker for enabling plane motion.
         # Allows selection of a cell by shooting a ray into graphics window
-        picker = vtkCellPicker()
+        picker: vtkCellPicker = vtkCellPicker()
         picker.SetTolerance(0.005)
         picker.PickFromListOn()
 
         # 3D widget for reslicing image data.
         # This 3D widget defines a plane that can be interactively placed in an image volume.
-        widget = vtkImagePlaneWidget()
+        widget: vtkImagePlaneWidget = vtkImagePlaneWidget()
         widget.SetInput(imagedata)
         widget.SetSliceIndex(self.index)
         widget.SetPicker(picker)
@@ -108,17 +111,17 @@ class Plane():
         prop.SetColor(colour)
 
         # Syncronize coloured outline with texture appropriately
-        source = vtkPlaneSource()
+        source: vtkPlaneSource = vtkPlaneSource()
         source.SetOrigin(widget.GetOrigin())
         source.SetPoint1(widget.GetPoint1())
         source.SetPoint2(widget.GetPoint2())
         source.SetNormal(widget.GetNormal())
         self.source = source
         
-        mapper = vtkPolyDataMapper()
+        mapper: vtkPolyDataMapper = vtkPolyDataMapper()
         mapper.SetInput(source.GetOutput())
 
-        actor = vtkActor()
+        actor: vtkActor = vtkActor()
         actor.SetMapper(mapper)
         actor.SetTexture(widget.GetTexture())
         actor.VisibilityOff()
@@ -126,18 +129,18 @@ class Plane():
 
         self.render.AddActor(actor)
 
-    def Update(self, x=None, y=None):
-        source = self.source
-        widget = self.widget
+    def Update(self, x=None, y=None) -> None:
+        source: vtkPlaneSource = self.source
+        widget: vtkImagePlaneWidget = self.widget
 
         source.SetOrigin(widget.GetOrigin())
         source.SetPoint1(widget.GetPoint1())
         source.SetPoint2(widget.GetPoint2())
         source.SetNormal(widget.GetNormal())
 
-    def Show(self, show=1):
-        actor = self.actor
-        widget = self.widget
+    def Show(self, show: int =1) -> None:
+        actor: vtkActor = self.actor
+        widget: vtkImagePlaneWidget = self.widget
         
         if show:
             actor.VisibilityOn()
@@ -145,3 +148,4 @@ class Plane():
         else:
             actor.VisibilityOff()
             widget.Off()
+            
