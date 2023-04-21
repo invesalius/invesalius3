@@ -47,8 +47,8 @@ class Visualize_E_field_Thread(threading.Thread):
         self.ID_list = vtkIdList()
         self.coord_old = []
         sucess = self.neuronavigation_api.init_efield(
-            cortexfile="/app/ros2_ws/src/targeting/efield/efield_libraries/data/headmodels/invesalius/lh_scaled_up_inv_exp.bin",
-            meshfile= "/app/ros2_ws/src/targeting/efield/efield_libraries/data/headmodels/invesalius/is_scaled_up_inv_exp.bin"
+            cortexfile="/app/data/neuronavigation/efield/lh_scaled_up_inv_exp.bin",
+            meshfile= "/app/data/neuronavigation/efield/is_scaled_up_inv_exp.bin"
         )
         if sucess:
             print("SUCESS FILE")
