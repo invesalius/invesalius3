@@ -24,15 +24,16 @@ import locale
 import math
 import traceback
 import collections.abc
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from setuptools.extern.packaging.version import Version
 from functools import wraps
 
 import numpy as np
 
-def format_time(value):
-    sp1 = value.split(".")
-    sp2 = value.split(":")
+def format_time(value: str) -> str:
+    sp1: list[str] = value.split(".")
+    sp2: list[str] = value.split(":")
 
     if (len(sp1) ==  2) and (len(sp2) == 3):
         new_value = str(sp2[0]+sp2[1]+
@@ -52,9 +53,9 @@ def format_time(value):
             return value
     return time.strftime("%H:%M:%S",data)
 
-def format_date(value):
+def format_date(value: str) -> str:
 
-    sp1 = value.split(".")
+    sp1: list[str] = value.split(".")
     try:
 
         if (len(sp1) >  1):
@@ -71,7 +72,7 @@ def format_date(value):
     except(ValueError):
             return ""
 
-def debug(error_str):
+def debug(error_str: str) -> None:
     """
     Redirects output to file, or to the terminal
     This should be used in the place of "print"
@@ -81,7 +82,7 @@ def debug(error_str):
     #if session.GetConfig('debug'):
     print(error_str)
 
-def next_copy_name(original_name, names_list):
+def next_copy_name(original_name: str, names_list: 'list[str]') -> str:
     """
     Given original_name of an item and a list of existing names,
     builds up the name of a copy, keeping the pattern:
@@ -91,15 +92,15 @@ def next_copy_name(original_name, names_list):
     """
     # is there only one copy, unnumbered?
     if original_name.endswith(" copy"):
-        first_copy = original_name
+        first_copy: str = original_name
         last_index = -1
     else:
-        parts = original_name.rpartition(" copy#")
+        parts: tuple[str, str, str] = original_name.rpartition(" copy#")
         # is there any copy, might be numbered?
         if parts[0] and parts[-1]: 
             # yes, lets check if it ends with a number
             if isinstance(eval(parts[-1]), int):
-                last_index = int(parts[-1]) - 1 
+                last_index: int = int(parts[-1]) - 1 
                 first_copy="%s copy"%parts[0]
             # no... well, so will build the copy name from zero
             else:
@@ -123,22 +124,22 @@ def next_copy_name(original_name, names_list):
     got_new_name = False
     while not got_new_name:
         last_index += 1
-        next_copy = "%s#%d"%(first_copy, last_index+1)
+        next_copy: str = "%s#%d"%(first_copy, last_index+1)
         if not (next_copy in names_list):
             got_new_name = True
             return next_copy
 
 
-def new_name_by_pattern(pattern):
+def new_name_by_pattern(pattern: str) -> str:
     from invesalius.project import Project
     proj = Project()
-    mask_dict = proj.mask_dict
+    mask_dict: TwoWaysDictionary = proj.mask_dict
     names_list = [i.name for i in mask_dict.values() if i.name.startswith(pattern + "_")]
-    count = len(names_list) + 1
+    count: int = len(names_list) + 1
     return "{}_{}".format(pattern, count)
 
 
-def VerifyInvalidPListCharacter(text):
+def VerifyInvalidPListCharacter(text: str) -> bool:
     #print text
     #text = unicode(text)
     
@@ -156,12 +157,13 @@ def VerifyInvalidPListCharacter(text):
 #http://www.garyrobinson.net/2004/03/python_singleto.html
 # Gary Robinson
 class Singleton(type):
-    def __init__(cls,name,bases,dic):
-        super(Singleton,cls).__init__(name,bases,dic)
-        cls.instance=None
-    def __call__(cls,*args,**kw):
+    def __init__(cls: type, name: str, bases: tuple, dic: dict) -> None:
+        super().__init__(name, bases, dic)
+        cls.instance = None
+
+    def __call__(cls: type, *args: tuple, **kw: dict) -> type:
         if cls.instance is None:
-            cls.instance=super(Singleton,cls).__call__(*args,**kw)
+            cls.instance = super().__call__(*args, **kw)
         return cls.instance
 
 # Another possible implementation
@@ -176,46 +178,48 @@ class TwoWaysDictionary(dict):
     Dictionary that can be searched based on a key or on a item.
     The idea is to be able to search for the key given the item it maps.
     """
-    def __init__(self, items=[]):
-        dict.__init__(self, items)
 
-    def get_key(self, value):
+    def __init__(self, items: list = []) -> None:
+        super().__init__(items)
+
+    def get_key(self, value: any) -> any:
         """
         Find the key (first) with the given value
         """
         return self.get_keys(value)[0]
 
-    def get_keys(self, value):
+    def get_keys(self, value: any) -> list:
         """
         Find the key(s) as a list given a value.
         """
         return [item[0] for item in self.items() if item[1] == value]
 
-    def remove(self, key):
+    def remove(self, key: any) -> None:
         try:
             self.pop(key)
         except TypeError:
             debug("TwoWaysDictionary: no item")
 
-    def get_value(self, key):
+    def get_value(self, key: any) -> any:
         """
         Find the value given a key.
         """
         return self[key]
 
-def frange(start, end=None, inc=None):
+
+def frange(start: float, end: float = None, inc: float = None) -> list:
     "A range function, that accepts float increments."
 
-    if end == None:
+    if end is None:
         end = start + 0.0
         start = 0.0
 
-    if (inc == None) or (inc == 0):
+    if (inc is None) or (inc == 0):
         inc = 1.0
 
     L = []
-    while 1:
-        next = start + len(L) * inc
+    while True:
+        next: float = start + len(L) * inc
         if inc > 0 and next >= end:
             break
         elif inc < 0 and next <= end:
@@ -224,9 +228,7 @@ def frange(start, end=None, inc=None):
 
     return L
 
-
-
-def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
+def calculate_resizing_tofitmemory(x_size: int, y_size: int, n_slices: int, byte: int) -> float:
     """
     Predicts the percentage (between 0 and 1) to resize the image to fit the memory, 
     giving the following information:
@@ -249,9 +251,9 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
 
     try:
         if (psutil.version_info>=(0,6,0)):
-            ram_free = psutil.virtual_memory().available
-            ram_total = psutil.virtual_memory().total
-            swap_free = psutil.swap_memory().free
+            ram_free: int = psutil.virtual_memory().available
+            ram_total: int = psutil.virtual_memory().total
+            swap_free: int = psutil.swap_memory().free
         else:
             ram_free = psutil.phymem_usage().free + psutil.cached_phymem() + psutil.phymem_buffers()
             ram_total = psutil.phymem_usage().total
@@ -282,13 +284,13 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
     if (swap_free>ram_total):
         swap_free=ram_total
     resize = (float((ram_free+0.5*swap_free)/imagesize))      
-    resize=math.sqrt(resize)  # this gives the "resize" for each axis x and y
+    resize: float=math.sqrt(resize)  # this gives the "resize" for each axis x and y
     if (resize>1): 
         resize=1
     return round(resize,2)
 
 
-def predict_memory(nfiles, x, y, p):
+def predict_memory(nfiles: int, x: int, y: int, p: int) -> 'tuple[int, int]':
     """
     Predict how much memory will be used, giving the following
     information:
@@ -296,9 +298,9 @@ def predict_memory(nfiles, x, y, p):
         x, y: dicom image size
         p: bits allocated for each pixel sample
     """
-    m = nfiles * (x * y * p)
+    m: int = nfiles * (x * y * p)
     #physical_memory in Byte
-    physical_memory = get_physical_memory()
+    physical_memory: int = get_physical_memory()
 
     if (sys.platform == 'win32'):
 
@@ -308,7 +310,7 @@ def predict_memory(nfiles, x, y, p):
             #case occupy more than 300 MB image is reduced to 1.5,
             #and 25 MB each image is resized 0.04.
             if (m >= 314859200):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
+                porcent: float = 1.5 + (m - 314859200) / 26999999 * 0.04
             else:
                 return (x, y)
         else: #64 bits architecture
@@ -369,7 +371,7 @@ def predict_memory(nfiles, x, y, p):
 #        return str(bytes) + ' bytes'
 
 
-def get_physical_memory():
+def get_physical_memory() -> int:
     """
     Return physical memory in bytes
     """
@@ -378,17 +380,13 @@ def get_physical_memory():
     sg.close()
     return int(mem.total())
 
-
-
-def get_system_encoding():
+def get_system_encoding() -> str:
     if (sys.platform == 'win32'):
         return locale.getdefaultlocale()[1]
     else:
         return 'utf-8'
 
-
-
-def UpdateCheck():
+def UpdateCheck() -> None:
     try:
         from urllib.parse import urlencode
         from urllib.request import urlopen, Request
@@ -398,7 +396,7 @@ def UpdateCheck():
 
     import wx
     import invesalius.session as ses
-    def _show_update_info():
+    def _show_update_info(url: str) -> None:
         from invesalius.gui import dialogs
         msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
         title=_("Invesalius Update")
@@ -420,8 +418,8 @@ def UpdateCheck():
         # Fetch update data from server
         import invesalius.constants as const
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
-        headers = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
-        data = {'update_protocol_version' : '1', 
+        headers: Dict[str, str] = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
+        data: Dict[str, Union[str, int]] = {'update_protocol_version' : '1', 
                 'invesalius_version' : const.INVESALIUS_VERSION,
                 'platform' : sys.platform,
                 'architecture' : platform.architecture()[0],
@@ -447,7 +445,7 @@ def UpdateCheck():
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
-def vtkarray_to_numpy(m):
+def vtkarray_to_numpy(m: Any) -> np.ndarray:
     nm = np.zeros((4, 4))
     for i in range(4):
         for j in range(4):
@@ -455,48 +453,47 @@ def vtkarray_to_numpy(m):
     return nm
 
 
-def touch(fname):
+def touch(fname: str) -> None:
     with open(fname, 'a'):
         pass
 
 
-def decode(text, encoding, *args):
+def decode(text: bytes, encoding: str, *args: Any) -> str:
     try:
         return text.decode(encoding, *args)
     except AttributeError:
         return text
 
 
-def encode(text, encoding, *args):
+def encode(text: str, encoding: str, *args: Any) -> bytes:
     try:
         return text.encode(encoding, *args)
     except AttributeError:
         return text
 
 
-def timing(f):
+def timing(f: Any) -> Any:
     @wraps(f)
-    def wrapper(*args, **kwargs):
-        start = time.time()
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        start: float = time.time()
         result = f(*args, **kwargs)
-        end = time.time()
+        end: float = time.time()
         print('{} elapsed time: {}'.format(f.__name__, end-start))
         return result
     return wrapper
 
 
-def log_traceback(ex):
+def log_traceback(ex: Exception) -> str:
     if hasattr(ex, '__traceback__'):
         ex_traceback = ex.__traceback__
     else:
         _, _, ex_traceback = sys.exc_info()
-    tb_lines = [line.rstrip('\n') for line in
+    tb_lines: list[str] = [line.rstrip('\n') for line in
         traceback.format_exception(ex.__class__, ex, ex_traceback)]
     return ''.join(tb_lines)
 
 
-
-def deep_merge_dict(d, u):
+def deep_merge_dict(d: Dict[str, Any], u: Dict[str, Any]) -> Dict[str, Any]:
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
             d[k] = deep_merge_dict(d.get(k, {}), v)

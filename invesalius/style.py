@@ -70,52 +70,50 @@ class StyleStateManager(object):
 # don't need to be singleton, only needs to be instantiated inside
 # (Controller) self.slice_mode = SliceMode()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.stack = {}
 
         # push default value to stack
-        self.stack[const.STYLE_LEVEL[const.STATE_DEFAULT]] = \
+        self.stack[const.STYLE_LEVEL[const.STATE_DEFAULT]]:str = \
                     const.STATE_DEFAULT
 
-    def AddState(self, state):
+    def AddState(self, state: str) -> str:
 
-        level = const.STYLE_LEVEL[state]
-        max_level = max(self.stack.keys())
+        level: int = const.STYLE_LEVEL[state]
+        max_level: int = max(self.stack.keys())
 
         # Insert new state into stack
         self.stack[level] = state
 
 
-        new_max_level =  max(self.stack.keys())
+        new_max_level: int =  max(self.stack.keys())
         return self.stack[new_max_level]
 
-    def RemoveState(self, state):
-        level = const.STYLE_LEVEL[state]
+    def RemoveState(self, state: str) -> str:
+        level: int = const.STYLE_LEVEL[state]
         if level in self.stack.keys():
-            max_level = max(self.stack.keys())
+            max_level: int = max(self.stack.keys())
 
             # Remove item from stack
             self.stack.pop(level)
 
             # New max level
-            new_max_level =  max(self.stack.keys())
+            new_max_level: int =  max(self.stack.keys())
 
             # Only will affect InVesalius behaviour if the highest
             # level in stack has been removed
             if level == max_level:
-                new_state = self.stack[new_max_level]
-
+                new_state: str = self.stack[new_max_level]
             return self.stack[new_max_level]
-
-        max_level = max(self.stack.keys())
+        max_level: int = max(self.stack.keys())
         return self.stack[max_level]
 
-    def GetActualState(self):
-        max_level = max(self.stack.keys())
-        state = self.stack[max_level]
+    def GetActualState(self) -> str:
+        max_level: int = max(self.stack.keys())
+        state: str = self.stack[max_level]
         return state
 
-    def Reset(self):
-        self.stack = {}
-        self.stack[const.STYLE_LEVEL[const.STATE_DEFAULT]] = \
-                    const.STATE_DEFAULT
+    def Reset(self) -> None:
+        self.stack: dict = {}
+        self.stack[const.STYLE_LEVEL[const.STATE_DEFAULT]] = const.STATE_DEFAULT
+
