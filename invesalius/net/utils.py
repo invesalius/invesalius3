@@ -6,12 +6,12 @@ import hashlib
 import os
 import shutil
 
-def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback: typing.Callable[[float], None] = None):
-    file_size = None
-    total_downloaded = 0
+def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback: typing.Callable[[float], None] = None) -> None:
+    file_size: typing.Optional[int] = None
+    total_downloaded: int = 0
     if hash is not None:
-        calc_hash = hashlib.sha256()
-    req = Request(url)
+        calc_hash: hashlib.sha256 = hashlib.sha256()
+    req: Request = Request(url)
     response =  urlopen(req)
     meta = response.info()
     if hasattr(meta, "getheaders"):
@@ -22,10 +22,10 @@ def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback
     if content_length is not None and len(content_length) > 0:
         file_size = int(content_length[0])
     dst.parent.mkdir(parents=True, exist_ok=True)
-    f = tempfile.NamedTemporaryFile(delete=False, dir=dst.parent)
+    f: tempfile.NamedTemporaryFile = tempfile.NamedTemporaryFile(delete=False, dir=dst.parent)
     try:
         while True:
-            buffer = response.read(8192)
+            buffer: bytes = response.read(8192)
             if len(buffer) == 0:
                 break
             total_downloaded += len(buffer)
@@ -36,7 +36,7 @@ def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback
                 callback(100 * total_downloaded/file_size)
         f.close()
         if hash is not None:
-            digest = calc_hash.hexdigest()
+            digest: str = calc_hash.hexdigest()
             if digest != hash:
                 raise RuntimeError(f'Invalid hash value (expected "{hash}", got "{digest}")')
         shutil.move(f.name, dst)
@@ -44,3 +44,4 @@ def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback
         f.close()
         if os.path.exists(f.name):
             os.remove(f.name)
+

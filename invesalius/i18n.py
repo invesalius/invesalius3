@@ -31,7 +31,7 @@ import sys
  
 import invesalius.utils as utl
  
-def GetLocales(): 
+def GetLocales() -> dict: 
     """Return a dictionary which defines supported languages""" 
     d = utl.TwoWaysDictionary ({'zh_TW': u'中文', 
                                 'en': u'English', 
@@ -52,7 +52,7 @@ def GetLocales():
                                 'be': u'Беларуская',}) 
     return d 
  
-def GetLocaleOS(): 
+def GetLocaleOS() -> str: 
         """Return language of the operating system.""" 
         if sys.platform == 'darwin': 
             #The app can't get the location then it has to set
@@ -63,7 +63,7 @@ def GetLocaleOS():
  
         return locale.getdefaultlocale()[0] 
  
-def InstallLanguage(language):
+def InstallLanguage(language: str) -> callable:
     file_path = os.path.split(__file__)[0]
 
     abs_file_path = os.path.abspath(file_path + os.sep + "..")
@@ -87,3 +87,4 @@ def InstallLanguage(language):
     except TypeError:
         lang.install()
         return lang.gettext
+
