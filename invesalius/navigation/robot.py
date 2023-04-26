@@ -21,6 +21,7 @@ import threading
 
 import numpy as np
 import wx
+from typing import Any, Dict, List, Optional
 
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
@@ -33,32 +34,32 @@ from invesalius.pubsub import pub as Publisher
 #   functionality should be gathered here.
 
 class Robot():
-    def __init__(self, tracker):
+    def __init__(self, tracker: Any) -> None:
         self.tracker = tracker
 
-        self.matrix_tracker_to_robot = None
+        self.matrix_tracker_to_robot: Optional[np.ndarray] = None
 
-        success = self.LoadState()
+        success: bool = self.LoadState()
         if success:
             self.InitializeRobot()
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
 
-    def SaveState(self):
-        matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
+    def SaveState(self) -> None:
+        matrix_tracker_to_robot: List[List[float]] = self.matrix_tracker_to_robot.tolist()
 
-        state = {
+        state: Dict[str, List[List[float]]] = {
             'tracker_to_robot': matrix_tracker_to_robot,
         }
-        session = ses.Session()
+        session: ses.Session = ses.Session()
         session.SetState('robot', state)
 
-    def LoadState(self):
-        session = ses.Session()
-        state = session.GetState('robot')
+    def LoadState(self) -> bool:
+        session: ses.Session = ses.Session()
+        state: Optional[Dict[str, List[List[float]]]] = session.GetState('robot')
 
         if state is None:
             return False
@@ -66,12 +67,12 @@ class Robot():
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
         return True
 
-    def ConfigureRobot(self):
-        self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self.tracker)
+    def ConfigureRobot(self) -> bool:
+        self.robot_coregistration_dialog: dlg.RobotCoregistrationDialog = dlg.RobotCoregistrationDialog(self.tracker)
 
         # Show dialog and store relevant output values.
-        status = self.robot_coregistration_dialog.ShowModal()
-        matrix_tracker_to_robot = self.robot_coregistration_dialog.GetValue()
+        status: int = self.robot_coregistration_dialog.ShowModal()
+        matrix_tracker_to_robot: Optional[np.ndarray] = self.robot_coregistration_dialog.GetValue()
 
         # Destroy the dialog.
         self.robot_coregistration_dialog.Destroy()
@@ -86,13 +87,13 @@ class Robot():
 
         return True
 
-    def AbortRobotConfiguration(self):
+    def AbortRobotConfiguration(self) -> None:
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
-    def InitializeRobot(self):
+    def InitializeRobot(self) -> None:
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
-    def DisconnectRobot(self):
+    def DisconnectRobot(self) -> None:
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)

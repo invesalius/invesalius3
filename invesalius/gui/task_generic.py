@@ -23,12 +23,13 @@ import sys
 import wx
 import wx.lib.hyperlink as hl
 
+
 class TaskPanel(wx.Panel):
     """
     This panel works as a "frame", drawing a white margin arround 
     the panel that really matters (InnerTaskPanel).
     """
-    def __init__(self, parent):
+    def __init__(self, parent: wx.Window) -> None:
         # note: don't change this class!!!
         wx.Panel.__init__(self, parent)
 
@@ -43,13 +44,14 @@ class TaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+
 class InnerTaskPanel(wx.Panel):
 
-    def __init__(self, parent):
+    def __init__(self, parent: wx.Window) -> None:
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        self.SetBackgroundColour(wx.Colour(255, 255, 255))
         self.SetAutoLayout(1)
-        
+
         # Build GUI
         self.__init_gui()
 
@@ -57,41 +59,42 @@ class InnerTaskPanel(wx.Panel):
         self.__bind_events()
         self.__bind_wx_events()
 
-    def __init_gui(self):
+    def __init_gui(self) -> None:
         """
         Build widgets in current panel
         """
         # Create widgets to be inserted in this panel
-        link_test = hl.HyperLinkCtrl(self, -1, _("Testing..."))
+        link_test: hl.HyperLinkCtrl = hl.HyperLinkCtrl(self, -1, _("Testing..."))
         link_test.SetUnderlines(False, False, False)
         link_test.SetColours("BLACK", "BLACK", "BLACK")
         link_test.AutoBrowse(False)
         link_test.UpdateLink()
-        self.link_test = link_test
+        self.link_test: hl.HyperLinkCtrl = link_test
 
         # Add line sizers into main sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(link_test, 0, wx.GROW|wx.EXPAND)
+        sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(link_test, 0, wx.GROW | wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         """
         Bind pubsub events
         """
         # Example: ps.Publisher().subscribe("Test")
         pass
 
-    def __bind_wx_events(self):
+    def __bind_wx_events(self) -> None:
         """
         Bind wx general events
         """
         # Example: self.Bind(wx.EVT_BUTTON, self.OnButton)
         self.link_test.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTest)
-    
-    def OnTest(self, event):
+
+    def OnTest(self, event: wx.CommandEvent) -> None:
         """
         Describe what this method does
         """
         event.Skip()
+
 

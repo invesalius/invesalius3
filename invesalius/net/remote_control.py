@@ -22,6 +22,7 @@ import time
 
 import socketio
 import wx
+from typing import Optional
 
 from invesalius.pubsub import pub as Publisher
 
@@ -29,7 +30,7 @@ class RemoteControl:
     def __init__(self, remote_host: str) -> None:
         self._remote_host: str = remote_host
         self._connected: bool = False
-        self._sio: typing.Optional[socketio.Client] = None
+        self._sio: Optional[socketio.Client] = None
 
     def _on_connect(self) -> None:
         print("Connected to {}".format(self._remote_host))
