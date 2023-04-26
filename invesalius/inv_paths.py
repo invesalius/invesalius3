@@ -21,41 +21,42 @@ import pathlib
 import shutil
 import sys
 import tempfile
+from typing import List
 
-HOME_DIR = pathlib.Path().home()
-CONF_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", HOME_DIR.joinpath(".config")))
-USER_INV_DIR = CONF_DIR.joinpath("invesalius")
-USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")
-USER_LOG_DIR = USER_INV_DIR.joinpath("logs")
-USER_DL_WEIGHTS = USER_INV_DIR.joinpath("deep_learning/weights/")
-USER_RAYCASTING_PRESETS_DIRECTORY = USER_PRESET_DIR.joinpath("raycasting")
-TEMP_DIR = tempfile.gettempdir()
+HOME_DIR: pathlib.Path = pathlib.Path().home()
+CONF_DIR: pathlib.Path = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", HOME_DIR.joinpath(".config")))
+USER_INV_DIR: pathlib.Path = CONF_DIR.joinpath("invesalius")
+USER_PRESET_DIR: pathlib.Path = USER_INV_DIR.joinpath("presets")
+USER_LOG_DIR: pathlib.Path = USER_INV_DIR.joinpath("logs")
+USER_DL_WEIGHTS: pathlib.Path = USER_INV_DIR.joinpath("deep_learning/weights/")
+USER_RAYCASTING_PRESETS_DIRECTORY: pathlib.Path = USER_PRESET_DIR.joinpath("raycasting")
+TEMP_DIR: str = tempfile.gettempdir()
 
-USER_PLUGINS_DIRECTORY = USER_INV_DIR.joinpath("plugins")
+USER_PLUGINS_DIRECTORY: pathlib.Path = USER_INV_DIR.joinpath("plugins")
 
-OLD_USER_INV_DIR = HOME_DIR.joinpath(".invesalius")
-OLD_USER_PRESET_DIR = OLD_USER_INV_DIR.joinpath("presets")
-OLD_USER_LOG_DIR = OLD_USER_INV_DIR.joinpath("logs")
+OLD_USER_INV_DIR: pathlib.Path = HOME_DIR.joinpath(".invesalius")
+OLD_USER_PRESET_DIR: pathlib.Path = OLD_USER_INV_DIR.joinpath("presets")
+OLD_USER_LOG_DIR: pathlib.Path = OLD_USER_INV_DIR.joinpath("logs")
 
-INV_TOP_DIR = pathlib.Path(__file__).parent.parent.resolve()
+INV_TOP_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent.resolve()
 
-PLUGIN_DIRECTORY = INV_TOP_DIR.joinpath("plugins") 
+PLUGIN_DIRECTORY: pathlib.Path = INV_TOP_DIR.joinpath("plugins") 
 
-ICON_DIR = INV_TOP_DIR.joinpath("icons")
-SAMPLE_DIR = INV_TOP_DIR.joinpath("samples")
-DOC_DIR = INV_TOP_DIR.joinpath("docs")
-RAYCASTING_PRESETS_DIRECTORY = INV_TOP_DIR.joinpath("presets", "raycasting")
-RAYCASTING_PRESETS_COLOR_DIRECTORY = INV_TOP_DIR.joinpath(
+ICON_DIR: pathlib.Path = INV_TOP_DIR.joinpath("icons")
+SAMPLE_DIR: pathlib.Path = INV_TOP_DIR.joinpath("samples")
+DOC_DIR: pathlib.Path = INV_TOP_DIR.joinpath("docs")
+RAYCASTING_PRESETS_DIRECTORY: pathlib.Path = INV_TOP_DIR.joinpath("presets", "raycasting")
+RAYCASTING_PRESETS_COLOR_DIRECTORY: pathlib.Path = INV_TOP_DIR.joinpath(
     "presets", "raycasting", "color_list"
 )
 
-MODELS_DIR = INV_TOP_DIR.joinpath("ai")
+MODELS_DIR: pathlib.Path = INV_TOP_DIR.joinpath("ai")
 
 # Inside the windows executable
 if hasattr(sys, "frozen") and (
     sys.frozen == "windows_exe" or sys.frozen == "console_exe"
 ):
-    abs_path = INV_TOP_DIR.parent.resolve()
+    abs_path: pathlib.Path = INV_TOP_DIR.parent.resolve()
     ICON_DIR = abs_path.joinpath("icons")
     SAMPLE_DIR = INV_TOP_DIR.joinpath("samples")
     DOC_DIR = INV_TOP_DIR.joinpath("docs")
@@ -76,17 +77,17 @@ else:
     )
 
 # Navigation paths
-OBJ_DIR = str(INV_TOP_DIR.joinpath("navigation", "objects"))
+OBJ_DIR: str = str(INV_TOP_DIR.joinpath("navigation", "objects"))
 
-MTC_CAL_DIR = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "CalibrationFiles"))
-MTC_MAR_DIR = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "Markers"))
+MTC_CAL_DIR: str = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "CalibrationFiles"))
+MTC_MAR_DIR: str = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "Markers"))
 
-NDI_MAR_DIR_PROBE = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700340.rom"))
-NDI_MAR_DIR_REF = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700339.rom"))
-NDI_MAR_DIR_OBJ = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700338.rom"))
+NDI_MAR_DIR_PROBE: str = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700340.rom"))
+NDI_MAR_DIR_REF: str = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700339.rom"))
+NDI_MAR_DIR_OBJ: str = str(INV_TOP_DIR.joinpath("navigation", "ndi_files", "Markers", "8700338.rom"))
 
-OPTITRACK_CAL_DIR = str(INV_TOP_DIR.joinpath("navigation", "optitrack_files", "Calibration.cal"))
-OPTITRACK_USERPROFILE_DIR = str(INV_TOP_DIR.joinpath("navigation", "optitrack_files", "UserProfile.motive"))
+OPTITRACK_CAL_DIR: str = str(INV_TOP_DIR.joinpath("navigation", "optitrack_files", "Calibration.cal"))
+OPTITRACK_USERPROFILE_DIR: str = str(INV_TOP_DIR.joinpath("navigation", "optitrack_files", "UserProfile.motive"))
 # MAC App
 if not os.path.exists(ICON_DIR):
     ICON_DIR = INV_TOP_DIR.parent.parent.joinpath("icons").resolve()
@@ -94,7 +95,7 @@ if not os.path.exists(ICON_DIR):
     DOC_DIR = INV_TOP_DIR.parent.parent.joinpath("docs").resolve()
 
 
-def create_conf_folders():
+def create_conf_folders() -> None:
     USER_INV_DIR.mkdir(parents=True, exist_ok=True)
     USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
     USER_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -102,10 +103,11 @@ def create_conf_folders():
     USER_PLUGINS_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
-def copy_old_files():
+def copy_old_files() -> List[str]:
+    copied_files: List[str] = []
     for f in OLD_USER_INV_DIR.glob("*"):
         if f.is_file():
-            print(
+            copied_files.append(
                 shutil.copy(
                     f,
                     USER_INV_DIR.joinpath(

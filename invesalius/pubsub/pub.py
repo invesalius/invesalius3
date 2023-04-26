@@ -17,12 +17,12 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from typing import Callable
+from typing import Callable, Any, Tuple
 
 from pubsub import pub as Publisher
 from pubsub.core.listener import UserListener
 
-__all__ = [
+__all__: Tuple[str, ...] = (
     # subscribing
     'subscribe',
     'unsubscribe',
@@ -33,13 +33,12 @@ __all__ = [
 
     # adding hooks
     'add_sendMessage_hook'
-]
+)
 
-Hook = Callable[[str, dict], None]
-
+Hook: Callable[[str, dict], None]
 sendMessage_hook: Hook = None
 
-def add_sendMessage_hook(hook: Hook):
+def add_sendMessage_hook(hook: Hook) -> None:
     """Add a hook for sending messages. The hook is a function that takes the topic
     name as the first parameter and the message dict as the second parameter, and
     returns None.
@@ -49,7 +48,7 @@ def add_sendMessage_hook(hook: Hook):
     global sendMessage_hook
     sendMessage_hook = hook
 
-def subscribe(listener: UserListener, topicName: str, **curriedArgs):
+def subscribe(listener: UserListener, topicName: str, **curriedArgs: Any) -> Tuple[UserListener, bool]:
     """Subscribe to a topic.
 
     :param listener:
@@ -59,13 +58,13 @@ def subscribe(listener: UserListener, topicName: str, **curriedArgs):
     subscribedListener, success = Publisher.subscribe(listener, topicName, **curriedArgs)
     return subscribedListener, success
 
-def unsubscribe(*args, **kwargs):
+def unsubscribe(*args: Any, **kwargs: Any) -> None:
     """Unsubscribe from a topic.
 
     """
     Publisher.unsubscribe(*args, **kwargs)
 
-def sendMessage(topicName: str, **msgdata):
+def sendMessage(topicName: str, **msgdata: Any) -> None:
     """Send a message in a given topic.
 
     :param topicName:
@@ -75,7 +74,7 @@ def sendMessage(topicName: str, **msgdata):
     if sendMessage_hook is not None:
         sendMessage_hook(topicName, msgdata)
 
-def sendMessage_no_hook(topicName: str, **msgdata):
+def sendMessage_no_hook(topicName: str, **msgdata: Any) -> None:
     """Send a message in a given topic, but do not call the hook.
 
     :param topicName:
@@ -83,5 +82,6 @@ def sendMessage_no_hook(topicName: str, **msgdata):
     """
     Publisher.sendMessage(topicName, **msgdata)
 
-AUTO_TOPIC = Publisher.AUTO_TOPIC
-ALL_TOPICS = Publisher.ALL_TOPICS
+AUTO_TOPIC: str = Publisher.AUTO_TOPIC
+ALL_TOPICS: str = Publisher.ALL_TOPICS
+
