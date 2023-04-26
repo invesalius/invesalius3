@@ -423,7 +423,7 @@ class SurfaceManager():
             bmeshes_save_file = config_dict['path_meshes'] + 'export_inv/' + elements['file']
             polydata = proj.surface_dict[surface_index_bmesh].polydata
             self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
-
+        Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file= bmeshes_save_file)
 
     def OnImportSurfaceFile(self, filename):
         """

@@ -2662,6 +2662,8 @@ class E_fieldPanel(wx.Panel):
         self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
+        self.cortex_file = None
+        self.meshes_file = None
         self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
         self.session = ses.Session()
@@ -2723,6 +2725,7 @@ class E_fieldPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
+        Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
@@ -2730,7 +2733,7 @@ class E_fieldPanel(wx.Panel):
         if filename:
             convert_to_inv = dlg.ImportMeshCoordSystem()
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
-            Publisher.sendMessage("Read json config file for efield", filename= filename, convert_to_inv=convert_to_inv)
+            Publisher.sendMessage('Read json config file for efield', filename= filename, convert_to_inv=convert_to_inv)
 
     def OnAddMeshes(self, evt):
         dialog = dlg.EfieldConfiguration()
@@ -2772,6 +2775,10 @@ class E_fieldPanel(wx.Panel):
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
+            self.navigation.neuronavigation_api.init_efield(
+                cortexfile=self.cortex_file,
+                meshfile=self.meshes_file
+            )
             # filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
             #                                   wildcard=_("Registration files (*.bin)|*.bin"),
             #                                   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
@@ -2816,7 +2823,9 @@ class E_fieldPanel(wx.Panel):
         self.surface_index= surface_index_cortex
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-
+    def OnGetEfieldPaths(self, cortex_file, meshes_file):
+        self.cortex_file = cortex_file
+        self.meshes_file = meshes_file
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):
