@@ -3,68 +3,67 @@ import invesalius.utils as utils
 
 class DicomNet:
     
-    def __init__(self):
-        self.address = ''
-        self.port = ''
-        self.aetitle_call = ''
-        self.aetitle = ''
-        self.search_word = ''
-        self.search_type = 'patient'
+    def __init__(self) -> None:
+        self.address: str = ''
+        self.port: str = ''
+        self.aetitle_call: str = ''
+        self.aetitle: str = ''
+        self.search_word: str = ''
+        self.search_type: str = 'patient'
 
-    def __call__(self):
+    def __call__(self) -> "DicomNet":
         return self
    
-    def SetHost(self, address):
+    def SetHost(self, address: str) -> None:
         self.address = address
 
-    def SetPort(self, port):
+    def SetPort(self, port: str) -> None:
         self.port = port
 
-    def SetAETitleCall(self, name):
+    def SetAETitleCall(self, name: str) -> None:
         self.aetitle_call = name
 
-    def SetAETitle(self, ae_title):
+    def SetAETitle(self, ae_title: str) -> None:
         self.aetitle = ae_title
 
-    def SetSearchWord(self, word):
+    def SetSearchWord(self, word: str) -> None:
         self.search_word = word
 
-    def SetSearchType(self, stype):
+    def SetSearchType(self, stype: str) -> None:
         self.search_type = stype
 
-    def GetValueFromDICOM(self, ret, tag):
-        value = str(ret.GetDataElement(gdcm.Tag(tag[0],\
+    def GetValueFromDICOM(self, ret: gdcm.DataSet, tag: 'tuple[int, int]') -> str:
+        value: str = str(ret.GetDataElement(gdcm.Tag(tag[0],\
                                         tag[1])).GetValue())
         if value == 'None' and tag != (0x0008,0x103E):
             value = ''
         return value
 
 
-    def RunCEcho(self):
-        cnf = gdcm.CompositeNetworkFunctions()
+    def RunCEcho(self) -> bool:
+        cnf: gdcm.CompositeNetworkFunctions = gdcm.CompositeNetworkFunctions()
         return cnf.CEcho(self.address, int(self.port),\
                          self.aetitle, self.aetitle_call)
 
-    def RunCFind(self):
-
-        tags = [(0x0010, 0x0010), (0x0010, 0x1010), (0x0010,0x0040), (0x0008,0x1030),\
+    def RunCFind(self) -> 'dict[str, dict[str, dict[str, str]]]':
+        tags: list[tuple[int, int]] = [(0x0010, 0x0010), (0x0010, 0x1010), (0x0010,0x0040), (0x0008,0x1030),\
                 (0x0008,0x0060), (0x0008,0x0022), (0x0008,0x0080), (0x0010,0x0030),\
                 (0x0008,0x0050), (0x0008,0x0090), (0x0008,0x103E), (0x0008,0x0033),\
                 (0x0008,0x0032), (0x0020,0x000d)]
 
 
-        ds = gdcm.DataSet()
+        ds: gdcm.DataSet = gdcm.DataSet()
 
         for tag in tags:
 
 
-            tg = gdcm.Tag(tag[0], tag[1])
+            tg: gdcm.Tag = gdcm.Tag(tag[0], tag[1])
 
-            de = gdcm.DataElement(tg)
+            de: gdcm.DataElement = gdcm.DataElement(tg)
 
             if self.search_type == 'patient' and tag == (0x0010, 0x0010):
 
-                bit_size = len(self.search_word) + 1
+                bit_size: int = len(self.search_word) + 1
                 de.SetByteValue(str(self.search_word + '*'), gdcm.VL(bit_size))
             else:
                 de.SetByteValue('*', gdcm.VL(1))
@@ -72,20 +71,20 @@ class DicomNet:
             ds.Insert(de)
 
 
-        cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
-        ret = gdcm.DataSetArrayType()
+        cnf: gdcm.CompositeNetworkFunctions = gdcm.CompositeNetworkFunctions()
+        theQuery: gdcm.BaseRootQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
+        ret: gdcm.DataSetArrayType = gdcm.DataSetArrayType()
 
         cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\
                   self.aetitle_call)
 
-        patients = {}
+        patients: dict[str, dict[str, dict[str, str]]] = {}
 
-        exist_images = False
-        c = 0
+        exist_images: bool = False
+        c: int = 0
         for i in range(0,ret.size()):
-            patient_id = str(ret[i].GetDataElement(gdcm.Tag(0x0010, 0x0020)).GetValue())
-            serie_id = str(ret[i].GetDataElement(gdcm.Tag(0x0020, 0x000e)).GetValue())
+            patient_id: str = str(ret[i].GetDataElement(gdcm.Tag(0x0010, 0x0020)).GetValue())
+            serie_id: str = str(ret[i].GetDataElement(gdcm.Tag(0x0020, 0x000e)).GetValue())
 
             if not(patient_id in patients.keys()):
                 patients[patient_id] = {}
@@ -93,22 +92,22 @@ class DicomNet:
                 
             if not(serie_id in patients[patient_id]):
         
-                rt = ret[i]
+                rt: gdcm.DataSet = ret[i]
 
-                name = self.GetValueFromDICOM(rt, (0x0010, 0x0010))
-                age = self.GetValueFromDICOM(rt, (0x0010, 0x1010))
-                gender = self.GetValueFromDICOM(rt, (0x0010,0x0040))
-                study_description = self.GetValueFromDICOM(rt, (0x0008,0x1030))
-                modality = self.GetValueFromDICOM(rt, (0x0008,0x0060))
-                institution = self.GetValueFromDICOM(rt, (0x0008,0x0080))
-                date_of_birth = utils.format_date(self.GetValueFromDICOM(rt, (0x0010,0x0030)))
-                acession_number = self.GetValueFromDICOM(rt, (0x0008,0x0050))
-                ref_physician = self.GetValueFromDICOM(rt, (0x0008,0x0090))
-                serie_description = self.GetValueFromDICOM(rt, (0x0008,0x103E))
-                acquisition_time = utils.format_time(self.GetValueFromDICOM(rt, (0x0008,0x0032)))
-                acquisition_date = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
+                name: str = self.GetValueFromDICOM(rt, (0x0010, 0x0010))
+                age: str = self.GetValueFromDICOM(rt, (0x0010, 0x1010))
+                gender: str = self.GetValueFromDICOM(rt, (0x0010,0x0040))
+                study_description: str = self.GetValueFromDICOM(rt, (0x0008,0x1030))
+                modality: str = self.GetValueFromDICOM(rt, (0x0008,0x0060))
+                institution: str = self.GetValueFromDICOM(rt, (0x0008,0x0080))
+                date_of_birth: str = utils.format_date(self.GetValueFromDICOM(rt, (0x0010,0x0030)))
+                acession_number: str = self.GetValueFromDICOM(rt, (0x0008,0x0050))
+                ref_physician: str = self.GetValueFromDICOM(rt, (0x0008,0x0090))
+                serie_description: str = self.GetValueFromDICOM(rt, (0x0008,0x103E))
+                acquisition_time: str = utils.format_time(self.GetValueFromDICOM(rt, (0x0008,0x0032)))
+                acquisition_date: str = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
 
-                teste = self.GetValueFromDICOM(rt, (0x0020,0x000d))
+                teste: str = self.GetValueFromDICOM(rt, (0x0020,0x000d))
 
                 patients[patient_id][serie_id] = {'name':name, 'age':age, 'gender':gender,\
                                                   'study_description':study_description,\
@@ -128,21 +127,19 @@ class DicomNet:
         return patients 
 
 
-    def RunCMove(self, values):
+    def RunCMove(self, values: 'list[str]') -> None:
 
-        ds = gdcm.DataSet()
-
+        ds: gdcm.DataSet = gdcm.DataSet()
         #for v in values:
 
+        tg_patient: gdcm.Tag = gdcm.Tag(0x0010, 0x0020)
+        tg_serie: gdcm.Tag = gdcm.Tag(0x0020, 0x000e)
 
-        tg_patient = gdcm.Tag(0x0010, 0x0020)
-        tg_serie = gdcm.Tag(0x0020, 0x000e)
+        de_patient: gdcm.DataElement = gdcm.DataElement(tg_patient)
+        de_serie: gdcm.DataElement = gdcm.DataElement(tg_serie)
 
-        de_patient = gdcm.DataElement(tg_patient)
-        de_serie = gdcm.DataElement(tg_serie)
-
-        patient_id = str(values[0])        
-        serie_id = str(values[1])
+        patient_id: str = str(values[0])        
+        serie_id: str = str(values[1])
 
         de_patient.SetByteValue(patient_id,  gdcm.VL(len(patient_id)))
         de_serie.SetByteValue(serie_id, gdcm.VL(len(serie_id)))
@@ -151,8 +148,8 @@ class DicomNet:
         ds.Insert(de_serie)
 
 
-        cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
+        cnf: gdcm.CompositeNetworkFunctions = gdcm.CompositeNetworkFunctions()
+        theQuery: gdcm.BaseRootQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
         #ret = gdcm.DataSetArrayType()
 
         """

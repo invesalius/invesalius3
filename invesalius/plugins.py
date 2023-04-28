@@ -23,13 +23,14 @@ import json
 import pathlib
 import sys
 from itertools import chain
+from typing import Dict, Any
 
 from invesalius.pubsub import pub as Publisher
 
 from invesalius import inv_paths
 
 
-def import_source(module_name, module_file_path):
+def import_source(module_name: str, module_file_path: str) -> Any:
     module_spec = importlib.util.spec_from_file_location(module_name, module_file_path)
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
@@ -37,14 +38,14 @@ def import_source(module_name, module_file_path):
 
 
 class PluginManager:
-    def __init__(self):
-        self.plugins = {}
+    def __init__(self) -> None:
+        self.plugins: Dict[str, Any] = {}
         self.__bind_pubsub_evt()
 
-    def __bind_pubsub_evt(self):
+    def __bind_pubsub_evt(self) -> None:
         Publisher.subscribe(self.load_plugin, "Load plugin")
 
-    def find_plugins(self):
+    def find_plugins(self) -> None:
         self.plugins = {}
         for p in chain(
                 glob.glob(str(inv_paths.PLUGIN_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
@@ -69,7 +70,7 @@ class PluginManager:
 
         Publisher.sendMessage("Add plugins menu items", items=self.plugins)
 
-    def load_plugin(self, plugin_name):
+    def load_plugin(self, plugin_name: str) -> None:
         if plugin_name in self.plugins:
             plugin_module = import_source(
                 plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")

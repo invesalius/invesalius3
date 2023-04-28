@@ -4,6 +4,7 @@
 # http://wiki.wxpython.org/ModelViewController
 # http://wiki.wxpython.org/PubSub
 from invesalius.pubsub import pub as Publisher
+from typing import Dict, Any
 
 # The maintainer of Pubsub module is Oliver Schoenborn.
 # Since the end of 2006 Pubsub is now maintained separately on SourceForge at:
@@ -11,7 +12,7 @@ from invesalius.pubsub import pub as Publisher
 
 
 class Student:
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
         self.mood = ":|"
         self.__bind_events()
@@ -20,39 +21,39 @@ class Student:
         Publisher.subscribe(self.ReceiveProject, "Set Student Project")
         Publisher.subscribe(self.ReceiveGrade, "Set Student Grade")
 
-    def ReceiveProject(self, pubsub_evt):
-        projects_dict = pubsub_evt.data
+    def ReceiveProject(self, pubsub_evt: Any):
+        projects_dict: Dict[str, str] = pubsub_evt.data
         self.project = projects_dict[self.name]
-        print "%s: I've received the project %s" % (self.name, self.project)
+        print(f"{self.name}: I've received the project {self.project}")
 
-    def ReceiveGrade(self, pubsub_evt):
-        grades_dict = pubsub_evt.data
+    def ReceiveGrade(self, pubsub_evt: Any):
+        grades_dict: Dict[str, float] = pubsub_evt.data
         self.grade = grades_dict[self.name]
         if self.grade > 6:
             self.mood = ":)"
         else:
             self.mood = ":("
-        print "%s: I've received the grade %d %s" % (self.name, self.grade, self.mood)
+        print(f"{self.name}: I've received the grade {self.grade} {self.mood}")
 
 
 class Teacher:
-    def __init__(self, name, course):
+    def __init__(self, name: str, course: Any):
         self.name = name
         self.course = course
 
     def SendMessage(self):
-        print "%s: Telling students the projects" % (self.name)
+        print(f"{self.name}: Telling students the projects")
         Publisher.sendMessage("Set Student Project", self.course.projects_dict)
 
-        print "\n%s: Telling students the grades" % (self.name)
+        print(f"\n{self.name}: Telling students the grades")
         Publisher.sendMessage("Set Student Grade", self.course.grades_dict)
 
 
 class Course:
-    def __init__(self, subject):
+    def __init__(self, subject: str):
         self.subject = subject
-        self.grades_dict = {}
-        self.projects_dict = {}
+        self.grades_dict: Dict[str, float] = {}
+        self.projects_dict: Dict[str, str] = {}
 
 
 # Create students:

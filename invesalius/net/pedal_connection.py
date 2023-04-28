@@ -19,11 +19,13 @@
 
 import time
 from threading import Thread
+from typing import List, Dict, Any, Union, Optional, Callable
 
 import mido
 
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
 
 class PedalConnection(Thread, metaclass=Singleton):
     """
@@ -32,26 +34,27 @@ class PedalConnection(Thread, metaclass=Singleton):
 
     Started by calling PedalConnection().start()
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         Thread.__init__(self)
         self.daemon = True
 
-        self.in_use = False
+        self.in_use: bool = False
 
-        self._midi_in = None
-        self._active_inputs = None
-        self._callback_infos = []
+        self._midi_in: Optional[mido.MidiFile] = None
+        self._active_inputs: Optional[str] = None
+        self._callback_infos: List[Dict[str, Any]] = []
 
-    def _midi_to_pedal(self, msg):
+    def _midi_to_pedal(self, msg: mido.Message) -> None:
         # TODO: At this stage, interpret all note_on messages as the pedal being pressed,
         #       and note_off messages as the pedal being released. Later, use the correct
         #       message types and be more stringent about the messages.
         #
         if msg.type == 'note_on':
-            state = True
+            state: bool = True
 
         elif msg.type == 'note_off':
-            state = False
+            state: bool = False
 
         else:
             print("Unknown message type received from MIDI device")
@@ -59,16 +62,16 @@ class PedalConnection(Thread, metaclass=Singleton):
 
         Publisher.sendMessage('Pedal state changed', state=state)
         for callback_info in self._callback_infos:
-            callback = callback_info['callback']
+            callback: Callable[[bool], None] = callback_info['callback']
             callback(state)
 
         if not state:
             self._callback_infos = [callback_info for callback_info in self._callback_infos if not callback_info['remove_when_released']]
 
-    def _connect_if_disconnected(self):
+    def _connect_if_disconnected(self) -> None:
         if self._midi_in is None and len(self._midi_inputs) > 0:
-            self._active_input = self._midi_inputs[0]
-            self._midi_in = mido.open_input(self._active_input)
+            self._active_input: str = self._midi_inputs[0]
+            self._midi_in: mido.MidiFile = mido.open_input(self._active_input)
             self._midi_in._rt.ignore_types(False, False, False)
             self._midi_in.callback = self._midi_to_pedal
 
@@ -76,7 +79,7 @@ class PedalConnection(Thread, metaclass=Singleton):
 
             print("Connected to MIDI device")
 
-    def _check_disconnected(self):
+    def _check_disconnected(self) -> None:
         if self._midi_in is not None:
             if self._active_input not in self._midi_inputs:
                 self._midi_in = None
@@ -85,26 +88,27 @@ class PedalConnection(Thread, metaclass=Singleton):
 
                 print("Disconnected from MIDI device")
 
-    def _update_midi_inputs(self):
-        self._midi_inputs = mido.get_input_names()
+    def _update_midi_inputs(self) -> None:
+        self._midi_inputs: List[str] = mido.get_input_names()
 
-    def is_connected(self):
+    def is_connected(self) -> bool:
         return self._midi_in is not None
 
-    def add_callback(self, name, callback, remove_when_released=False):
+    def add_callback(self, name: str, callback: Callable[[bool], None], remove_when_released: Optional[bool] = False) -> None:
         self._callback_infos.append({
             'name': name,
             'callback': callback,
             'remove_when_released': remove_when_released,
         })
 
-    def remove_callback(self, name):
+    def remove_callback(self, name: str) -> None:
         self._callback_infos = [callback_info for callback_info in self._callback_infos if callback_info['name'] != name]
 
-    def run(self):
-        self.in_use = True
+    def run(self) -> None:
+        self.in_use: bool = True
         while True:
             self._update_midi_inputs()
             self._check_disconnected()
             self._connect_if_disconnected()
             time.sleep(1.0)
+

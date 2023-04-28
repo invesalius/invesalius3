@@ -1,30 +1,31 @@
 import os
 import pathlib
 import sys
+from typing import Dict, Union
 
-def prepare_plaidml():
+def prepare_plaidml() -> None:
     # Linux if installed plaidml with pip3 install --user
     if sys.platform.startswith("linux"):
-        local_user_plaidml = pathlib.Path("~/.local/share/plaidml/").expanduser().absolute()
+        local_user_plaidml: pathlib.Path = pathlib.Path("~/.local/share/plaidml/").expanduser().absolute()
         if local_user_plaidml.exists():
             os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
             os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("~/.local/lib/libplaidml.so").expanduser().absolute())
     # Mac if using python3 from homebrew
     elif sys.platform == "darwin":
-        local_user_plaidml = pathlib.Path("/usr/local/share/plaidml")
+        local_user_plaidml: pathlib.Path = pathlib.Path("/usr/local/share/plaidml")
         if local_user_plaidml.exists():
             os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
             os.environ["PLAIDML_NATIVE_PATH"] = str(pathlib.Path("/usr/local/lib/libplaidml.dylib").expanduser().absolute())
     elif sys.platform == "win32":
         if 'VIRTUAL_ENV' in os.environ:
-            local_user_plaidml = pathlib.Path(os.environ["VIRTUAL_ENV"]).joinpath("share/plaidml")
-            plaidml_dll = pathlib.Path(os.environ["VIRTUAL_ENV"]).joinpath("library/bin/plaidml.dll")
+            local_user_plaidml: pathlib.Path = pathlib.Path(os.environ["VIRTUAL_ENV"]).joinpath("share/plaidml")
+            plaidml_dll: pathlib.Path = pathlib.Path(os.environ["VIRTUAL_ENV"]).joinpath("library/bin/plaidml.dll")
             if local_user_plaidml.exists():
                 os.environ["RUNFILES_DIR"] = str(local_user_plaidml)
             if plaidml_dll.exists():
                 os.environ["PLAIDML_NATIVE_PATH"] = str(plaidml_dll)
 
-def prepare_ambient(backend, device_id, use_gpu):
+def prepare_ambient(backend: str, device_id: str, use_gpu: bool) -> None:
     if backend.lower() == 'plaidml':
         os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
         os.environ["PLAIDML_DEVICE_IDS"] = device_id
@@ -39,14 +40,12 @@ def prepare_ambient(backend, device_id, use_gpu):
     else:
         raise TypeError("Wrong backend")
 
-
-
-def get_plaidml_devices(gpu=False):
+def get_plaidml_devices(gpu: bool = False) -> Dict[str, str]:
     prepare_plaidml()
 
     import plaidml
 
-    ctx = plaidml.Context()
+    ctx: Context = plaidml.Context()
     plaidml.settings._setup_for_test(plaidml.settings.user_settings)
     plaidml.settings.experimental = True
     devices, _ = plaidml.devices(ctx, limit=100, return_all=True)

@@ -19,6 +19,7 @@
 import glob
 import os
 import plistlib
+from typing import Dict, List, Tuple
 
 import invesalius.constants as const
 
@@ -30,8 +31,8 @@ from invesalius.utils import TwoWaysDictionary
 
 class Presets():
 
-    def __init__(self):
-        self.thresh_ct = TwoWaysDictionary({
+    def __init__(self) -> None:
+        self.thresh_ct: TwoWaysDictionary = TwoWaysDictionary({
             _("Bone"):(226,3071),
             _("Soft Tissue"):(-700,225),
             _("Enamel (Adult)"):(1553,2850),
@@ -49,7 +50,7 @@ class Presets():
             _("Custom"):(0, 0)
         })
 
-        self.thresh_mri = TwoWaysDictionary({
+        self.thresh_mri: TwoWaysDictionary = TwoWaysDictionary({
             _("Bone"):(1250,4095),
             _("Soft Tissue"):(324,1249),
             _("Enamel (Adult)"):(2577,3874),
@@ -68,13 +69,13 @@ class Presets():
         })
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.UpdateThresholdModes,
                             'Update threshold limits list')
 
-    def UpdateThresholdModes(self, threshold_range):
+    def UpdateThresholdModes(self, threshold_range: Tuple[int, int]) -> None:
         thresh_min, thresh_max = threshold_range
-        presets_list = (self.thresh_ct, self.thresh_mri)
+        presets_list: tuple[TwoWaysDictionary, TwoWaysDictionary] = (self.thresh_ct, self.thresh_mri)
 
         for presets in presets_list:
             for key in presets:
@@ -83,8 +84,8 @@ class Presets():
                 print(key, t_min, t_max)
 
                 if (t_min is None) or (t_max is None): # setting custom preset
-                    t_min = thresh_min
-                    t_max = thresh_max
+                    t_min: int = thresh_min
+                    t_max: int = thresh_max
                 t_min = max(t_min, thresh_min)
                 t_max = min(t_max, thresh_max)
 
@@ -100,11 +101,11 @@ class Presets():
         Publisher.sendMessage('Update threshold limits',
                               threshold_range=(thresh_min, thresh_max))
 
-    def SavePlist(self, filename):
+    def SavePlist(self, filename: str) -> str:
         filename = "%s$%s" % (filename, 'presets.plist')
-        preset = {}
+        preset: Dict[str, TwoWaysDictionary] = {}
         
-        translate_to_en = {_("Bone"):"Bone",
+        translate_to_en: Dict[str, str] = {_("Bone"):"Bone",
                 _("Soft Tissue"):"Soft Tissue",
                 _("Enamel (Adult)"):"Enamel (Adult)",
                 _("Enamel (Child)"): "Enamel (Child)",
@@ -120,11 +121,11 @@ class Presets():
                 _("Skin Tissue (Child)"):"Skin Tissue (Child)", 
                 _("Custom"):"Custom"}
 
-        thresh_mri_new = {}
+        thresh_mri_new: Dict[str, Tuple[int, int]] = {}
         for name in self.thresh_mri.keys():
             thresh_mri_new[translate_to_en[name]] = self.thresh_mri[name]
 
-        thresh_ct_new = {}
+        thresh_ct_new: Dict[str, Tuple[int, int]] = {}
         for name in self.thresh_ct.keys():
             thresh_ct_new[translate_to_en[name]] = self.thresh_ct[name]
 
@@ -134,9 +135,9 @@ class Presets():
             plistlib.dump(preset, f)
         return os.path.split(filename)[1]
 
-    def OpenPlist(self, filename):
+    def OpenPlist(self, filename: str) -> None:
 
-        translate_to_x = {"Bone":_("Bone"),
+        translate_to_x: Dict[str, str] = {"Bone":_("Bone"),
                 "Soft Tissue":_("Soft Tissue"),
                 "Enamel (Adult)":_("Enamel (Adult)"),
                 "Enamel (Child)": _("Enamel (Child)"),
@@ -158,11 +159,11 @@ class Presets():
         thresh_mri = p['thresh_mri'].copy()
         thresh_ct = p['thresh_ct'].copy()
 
-        thresh_ct_new = {}
+        thresh_ct_new: Dict[str, Tuple[int, int]] = {}
         for name in thresh_ct.keys(): 
             thresh_ct_new[translate_to_x[name]] = thresh_ct[name]
 
-        thresh_mri_new = {}
+        thresh_mri_new: Dict[str, Tuple[int, int]] = {}
         for name in thresh_mri.keys(): 
             thresh_mri_new[translate_to_x[name]] = thresh_mri[name]    
 
@@ -170,17 +171,16 @@ class Presets():
         self.thresh_ct = TwoWaysDictionary(thresh_ct_new)
 
 
-
-def get_wwwl_presets():
-    files = glob.glob(os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
-    presets = {}
+def get_wwwl_presets() -> Dict[str, str]:
+    files: List[str] = glob.glob(os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
+    presets: Dict[str, str] = {}
     for f in files:
         p = os.path.splitext(os.path.basename(f))[0]
         presets[p] = f
     return presets
 
 
-def get_wwwl_preset_colours(pfile):
+def get_wwwl_preset_colours(pfile: str) -> List[Tuple[int, int, int]]:
     with open(pfile, 'rb') as f:
         preset = plistlib.load(f, fmt=plistlib.FMT_XML)
     ncolours = len(preset['Blue'])

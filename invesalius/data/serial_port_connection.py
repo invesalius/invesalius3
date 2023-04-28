@@ -21,28 +21,28 @@ import queue
 import threading
 import time
 
-
+from typing import Any, Optional, Tuple
 from invesalius import constants
 from invesalius.pubsub import pub as Publisher
 
 
 class SerialPortConnection(threading.Thread):
-    def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav):
+    def __init__(self, com_port: Optional[str], baud_rate: int, serial_port_queue: queue.Queue, event: threading.Event, sleep_nav: float) -> None:
         """
         Thread created to communicate using the serial port to interact with software during neuronavigation.
         """
         threading.Thread.__init__(self, name='Serial port')
 
-        self.connection = None
-        self.stylusplh = False
+        self.connection: Optional[Any] = None
+        self.stylusplh: bool = False
 
-        self.com_port = com_port
-        self.baud_rate = baud_rate
-        self.serial_port_queue = serial_port_queue
-        self.event = event
-        self.sleep_nav = sleep_nav
+        self.com_port: Optional[str] = com_port
+        self.baud_rate: int = baud_rate
+        self.serial_port_queue: queue.Queue = serial_port_queue
+        self.event: threading.Event = event
+        self.sleep_nav: float = sleep_nav
 
-    def Connect(self):
+    def Connect(self) -> None:
         if self.com_port is None:
             print("Serial port init error: COM port is unset.")
             return
@@ -55,25 +55,25 @@ class SerialPortConnection(threading.Thread):
         except:
             print("Serial port init error: Connecting to port {} failed.".format(self.com_port))
 
-    def Disconnect(self):
+    def Disconnect(self) -> None:
         if self.connection:
             self.connection.close()
             print("Connection to port {} closed.".format(self.com_port))
 
             Publisher.sendMessage('Serial port connection', state=False)
 
-    def SendPulse(self):
+    def SendPulse(self) -> None:
         try:
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
             Publisher.sendMessage('Serial port pulse triggered')
         except:
             print("Error: Serial port could not be written into.")
 
-    def run(self):
+    def run(self) -> None:
         while not self.event.is_set():
-            trigger_on = False
+            trigger_on: bool = False
             try:
-                lines = self.connection.readlines()
+                lines: bytes = self.connection.readlines()
                 if lines:
                     trigger_on = True
             except:
@@ -103,3 +103,4 @@ class SerialPortConnection(threading.Thread):
             time.sleep(0.3)
         else:
             self.Disconnect()
+    

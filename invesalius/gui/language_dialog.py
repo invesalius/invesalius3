@@ -28,56 +28,58 @@ except ImportError:
 
 import invesalius.i18n as i18n
 
-file_path = os.path.split(__file__)[0]
+from typing import List, Tuple, Union, Optional
+
+file_path: str = os.path.split(__file__)[0]
 
 if hasattr(sys, "frozen") and (
     sys.frozen == "windows_exe" or sys.frozen == "console_exe"
 ):
-    abs_file_path = os.path.abspath(
+    abs_file_path: str = os.path.abspath(
         file_path + os.sep + ".." + os.sep + ".." + os.sep + ".." + os.sep + ".."
     )
-    ICON_DIR = os.path.abspath(os.path.join(abs_file_path, "icons"))
+    ICON_DIR: str = os.path.abspath(os.path.join(abs_file_path, "icons"))
 else:
-    ICON_DIR = os.path.abspath(os.path.join(file_path, "..", "..", "icons"))
+    ICON_DIR: str = os.path.abspath(os.path.join(file_path, "..", "..", "icons"))
 
 # MAC App
 if not os.path.exists(ICON_DIR):
-    ICON_DIR = os.path.abspath(
+    ICON_DIR: str = os.path.abspath(
         os.path.join(file_path, "..", "..", "..", "..", "..", "icons")
     )
 
 
 class ComboBoxLanguage:
-    def __init__(self, parent):
+    def __init__(self, parent: wx.Window) -> None:
         """Initialize combobox bitmap"""
 
         # Retrieve locales dictionary
-        dict_locales = i18n.GetLocales()
+        dict_locales: dict = i18n.GetLocales()
 
         # Retrieve locales names and sort them
-        self.locales = dict_locales.values()
-        self.locales = sorted(self.locales)
+        self.locales: List[str] = list(dict_locales.values())
+        self.locales.sort()
 
         # Retrieve locales keys (eg: pt_BR for Portuguese(Brazilian))
-        self.locales_key = [dict_locales.get_key(value) for value in self.locales]
+        self.locales_key: List[str] = [dict_locales.get_key(value)[0] for value in self.locales]
 
         # Find out OS locale
-        self.os_locale = i18n.GetLocaleOS()
+        self.os_locale: str = i18n.GetLocaleOS()
 
         try:
-            os_lang = self.os_locale[0:2]
+            os_lang: str = self.os_locale[0:2]
         except TypeError:
-            os_lang = None
+            os_lang: str = None
 
         # Default selection will be English
-        selection = self.locales_key.index("en")
+        selection: int = self.locales_key.index("en")
 
         # Create bitmap combo
         self.bitmapCmb = bitmapCmb = BitmapComboBox(parent, style=wx.CB_READONLY)
         for key in self.locales_key:
             # Based on composed flag filename, get bitmap
-            filepath = os.path.join(ICON_DIR, "%s.png" % (key))
-            bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_PNG)
+            filepath: str = os.path.join(ICON_DIR, "%s.png" % (key))
+            bmp: wx.Bitmap = wx.Bitmap(filepath, wx.BITMAP_TYPE_PNG)
             # Add bitmap and info to Combo
             bitmapCmb.Append(dict_locales[key], bmp, key)
             # Set default combo item if available on the list
@@ -85,10 +87,10 @@ class ComboBoxLanguage:
                 selection = self.locales_key.index(key)
                 bitmapCmb.SetSelection(selection)
 
-    def GetComboBox(self):
+    def GetComboBox(self) -> wx.BitmapComboBox:
         return self.bitmapCmb
 
-    def GetLocalesKey(self):
+    def GetLocalesKey(self) -> List[str]:
         return self.locales_key
 
 
@@ -97,7 +99,7 @@ class LanguageDialog(wx.Dialog):
     exist chcLanguage that list language EN and PT. The language
     selected is writing in the config.ini"""
 
-    def __init__(self, parent=None, startApp=None):
+    def __init__(self, parent: wx.Window = None, startApp: bool = None) -> None:
         super(LanguageDialog, self).__init__(parent, title="")
         self.__TranslateMessage__()
         self.SetTitle(_("Language selection"))
@@ -138,27 +140,27 @@ class LanguageDialog(wx.Dialog):
     #            selection = self.locales_key.index(key)
     #            bitmapCmb.SetSelection(selection)
 
-    def GetComboBox(self):
+    def GetComboBox(self) -> wx.BitmapComboBox:
         return self.bitmapCmb
 
-    def __init_gui(self):
-        self.txtMsg = wx.StaticText(self, -1, label=_("Choose user interface language"))
+    def __init_gui(self) -> None:
+        self.txtMsg: wx.StaticText = wx.StaticText(self, -1, label=_("Choose user interface language"))
 
-        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer: wx.StdDialogButtonSizer = wx.StdDialogButtonSizer()
 
-        btn = wx.Button(self, wx.ID_OK)
+        btn: wx.Button = wx.Button(self, wx.ID_OK)
         btn.SetDefault()
         btnsizer.AddButton(btn)
 
-        btn = wx.Button(self, wx.ID_CANCEL)
+        btn: wx.Button = wx.Button(self, wx.ID_CANCEL)
         btnsizer.AddButton(btn)
         btnsizer.Realize()
 
         # self.__init_combobox_bitmap__()
-        self.cmb = ComboBoxLanguage(self)
-        self.bitmapCmb = self.cmb.GetComboBox()
+        self.cmb: ComboBoxLanguage = ComboBoxLanguage(self)
+        self.bitmapCmb: wx.BitmapComboBox = self.cmb.GetComboBox()
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer: wx.BoxSizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.txtMsg, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.bitmapCmb, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALL, 5)
@@ -169,14 +171,14 @@ class LanguageDialog(wx.Dialog):
         self.Update()
         self.SetAutoLayout(1)
 
-    def GetSelectedLanguage(self):
+    def GetSelectedLanguage(self) -> str:
         """Return String with Selected Language"""
-        self.locales_key = self.cmb.GetLocalesKey()
+        self.locales_key: List[str] = self.cmb.GetLocalesKey()
         return self.locales_key[self.bitmapCmb.GetSelection()]
 
-    def __TranslateMessage__(self):
+    def __TranslateMessage__(self) -> None:
         """Translate Messages of the Window"""
-        os_language = i18n.GetLocaleOS()
+        os_language: str = i18n.GetLocaleOS()
 
         if os_language[0:2] == "pt":
             _ = i18n.InstallLanguage("pt_BR")
@@ -185,7 +187,7 @@ class LanguageDialog(wx.Dialog):
         else:
             _ = i18n.InstallLanguage("en")
 
-    def Cancel(self, event):
+    def Cancel(self, event: wx.Event) -> None:
         """Close Frm_Language"""
         self.Close()
         event.Skip()
