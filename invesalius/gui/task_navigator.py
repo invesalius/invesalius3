@@ -2662,6 +2662,8 @@ class E_fieldPanel(wx.Panel):
         self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
+        self.cortex_file = None
+        self.meshes_file = None
         self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
         self.session = ses.Session()
@@ -2673,10 +2675,16 @@ class E_fieldPanel(wx.Panel):
         self.enable_efield = enable_efield
 
         tooltip = wx.ToolTip(_("Load Brain Meshes"))
-        btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
+        btn_act = wx.Button(self, -1, _("Load Meshes"), size=wx.Size(100, 23))
         btn_act.SetToolTip(tooltip)
         btn_act.Enable(1)
         btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
+
+        tooltip2 = wx.ToolTip(_("Load Brain Json config"))
+        btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
+        btn_act2.SetToolTip(tooltip2)
+        btn_act2.Enable(1)
+        btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
@@ -2692,6 +2700,7 @@ class E_fieldPanel(wx.Panel):
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
@@ -2715,13 +2724,34 @@ class E_fieldPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
+        Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
 
-    def OnAddMeshes(self, evt):
-        filename = dlg.ShowImportMeshFilesDialog()
+    def OnAddConfig(self, evt):
+        filename = dlg.LoadConfigEfield()
+        convert_flag = False
         if filename:
             convert_to_inv = dlg.ImportMeshCoordSystem()
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
-        Publisher.sendMessage('Import bin file', filename=filename)
+            Publisher.sendMessage('Read json config file for efield', filename= filename, convert_to_inv=convert_to_inv)
+
+    def OnAddMeshes(self, evt):
+        dialog = dlg.EfieldConfiguration()
+        dialog.Show()
+        if dialog.Show() == wx.ID_OK or dialog.Show() == wx.ID_CANCEL:
+            dialog.Destroy()
+
+        # if dialog.Show() == wx.ID_OK:
+        #     surface = dialog.OnComboNameBrainSurface()
+        #     print(surface)
+        #     dialog.Destroy()
+        # if dialog.Show() == wx.ID_CANCEL:
+        #     dialog.Destroy()
+        # filename = dlg.ShowImportMeshFilesDialog()
+        # if filename:
+        #     convert_to_inv = dlg.ImportMeshCoordSystem()
+        #     Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
+        # Publisher.sendMessage('Import bin file', filename=filename)
 
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
@@ -2745,12 +2775,16 @@ class E_fieldPanel(wx.Panel):
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
-            filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
-                                              wildcard=_("Registration files (*.bin)|*.bin"),
-                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                              default_filename="my_binfile", save_ext="bin")
-            print('filename:',filename)
-            Publisher.sendMessage('Write bin file', polydata = self.e_field_mesh, filename=filename)
+            self.navigation.neuronavigation_api.init_efield(
+                cortexfile=self.cortex_file,
+                meshfile=self.meshes_file
+            )
+            # filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
+            #                                   wildcard=_("Registration files (*.bin)|*.bin"),
+            #                                   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            #                                   default_filename="my_binfile", save_ext="bin")
+            # print('filename:',filename)
+            # Publisher.sendMessage('Write bin file', polydata = self.e_field_mesh, filename=filename)
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(False)
@@ -2784,6 +2818,14 @@ class E_fieldPanel(wx.Panel):
         # self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
+    def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
+        self.e_field_mesh = efield_actor
+        self.surface_index= surface_index_cortex
+        Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+
+    def OnGetEfieldPaths(self, cortex_file, meshes_file):
+        self.cortex_file = cortex_file
+        self.meshes_file = meshes_file
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):

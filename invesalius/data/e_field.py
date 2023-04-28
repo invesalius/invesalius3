@@ -46,13 +46,6 @@ class Visualize_E_field_Thread(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.ID_list = vtkIdList()
         self.coord_old = []
-        sucess = self.neuronavigation_api.init_efield(
-            cortexfile="/app/data/neuronavigation/efield/lh_scaled_up_inv_exp.bin",
-            meshfile= "/app/data/neuronavigation/efield/is_scaled_up_inv_exp.bin"
-        )
-        if sucess:
-            print("SUCESS FILE")
-
         if isinstance(debug_efield_enorm, np.ndarray):
             self.enorm_debug = debug_efield_enorm
             self.debug = True

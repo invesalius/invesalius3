@@ -230,6 +230,7 @@ class SurfaceManager():
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
         Publisher.subscribe(self.OnImportCustomBinFile, 'Import bin file')
         Publisher.subscribe(self.OnWriteCustomBinFile, 'Write bin file')
+        Publisher.subscribe(self.OnImportJsonConfig, "Read json config file for efield")
 
         Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
@@ -343,9 +344,11 @@ class SurfaceManager():
 
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+            return
         else:
             name = os.path.splitext(os.path.split(filename)[-1])[0]
-            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+            surface_index = self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+            return surface_index
 
     def CoverttoMetersPolydata(self, polydata):
         idlist = vtkIdList()
@@ -399,6 +402,28 @@ class SurfaceManager():
             np.array(noe, dtype=np.int32).tofile(f)
             np.array(data['p'], dtype=np.float32).tofile(f)
             np.array(data['e'], dtype=np.int32).tofile(f)
+
+    def OnImportJsonConfig(self, filename, convert_to_inv):
+        import json
+        with open(filename, 'r') as config_file:
+            config_dict = json.load(config_file)
+        cortex =config_dict['path_meshes']+config_dict['cortex']
+        bmeshes = config_dict['bmeshes']
+
+        surface_index_cortex = self.OnImportCustomBinFile(cortex)
+        proj = prj.Project()
+        cortex_save_file = config_dict['path_meshes']+'export_inv/'+config_dict['cortex']
+        polydata = proj.surface_dict[surface_index_cortex].polydata
+        self.OnWriteCustomBinFile(polydata,cortex_save_file)
+        Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
+        for elements in bmeshes:
+            self.convert_to_inv = convert_to_inv
+            file = config_dict['path_meshes']+elements['file']
+            surface_index_bmesh = self.OnImportCustomBinFile(file)
+            bmeshes_save_file = config_dict['path_meshes'] + 'export_inv/' + elements['file']
+            polydata = proj.surface_dict[surface_index_bmesh].polydata
+            self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
+        Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file= bmeshes_save_file)
 
     def OnImportSurfaceFile(self, filename):
         """
