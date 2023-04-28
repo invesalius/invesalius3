@@ -409,7 +409,6 @@ class SurfaceManager():
             config_dict = json.load(config_file)
         cortex =config_dict['path_meshes']+config_dict['cortex']
         bmeshes = config_dict['bmeshes']
-
         surface_index_cortex = self.OnImportCustomBinFile(cortex)
         proj = prj.Project()
         cortex_save_file = config_dict['path_meshes']+'export_inv/'+config_dict['cortex']
@@ -419,11 +418,13 @@ class SurfaceManager():
         for elements in bmeshes:
             self.convert_to_inv = convert_to_inv
             file = config_dict['path_meshes']+elements['file']
+            ci = elements['ci']
+            co = elements['co']
             surface_index_bmesh = self.OnImportCustomBinFile(file)
             bmeshes_save_file = config_dict['path_meshes'] + 'export_inv/' + elements['file']
             polydata = proj.surface_dict[surface_index_bmesh].polydata
             self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
-        Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file= bmeshes_save_file)
+        Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file= bmeshes_save_file, ci = ci, co = co)
 
     def OnImportSurfaceFile(self, filename):
         """

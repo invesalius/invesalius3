@@ -2664,6 +2664,8 @@ class E_fieldPanel(wx.Panel):
         self.e_field_mesh = None
         self.cortex_file = None
         self.meshes_file = None
+        self.ci = None
+        self.co = None
         self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
         self.session = ses.Session()
@@ -2777,7 +2779,10 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
             self.navigation.neuronavigation_api.init_efield(
                 cortexfile=self.cortex_file,
-                meshfile=self.meshes_file
+                meshfile=self.meshes_file,
+                coilfile= '/app/ros2_ws/src/targeting/efield/efield_libraries/data/coilmodels/magstim70/magstim70_42.bin',
+                ci = self.ci,
+                co = self.co,
             )
             # filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
             #                                   wildcard=_("Registration files (*.bin)|*.bin"),
@@ -2823,9 +2828,11 @@ class E_fieldPanel(wx.Panel):
         self.surface_index= surface_index_cortex
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnGetEfieldPaths(self, cortex_file, meshes_file):
+    def OnGetEfieldPaths(self, cortex_file, meshes_file, ci, co):
         self.cortex_file = cortex_file
         self.meshes_file = meshes_file
+        self.ci = ci
+        self.co = co
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):
