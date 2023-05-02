@@ -409,12 +409,23 @@ class SurfaceManager():
             config_dict = json.load(config_file)
         cortex =config_dict['path_meshes']+config_dict['cortex']
         bmeshes = config_dict['bmeshes']
+        coil = config_dict['coil']
+        if 'multilocus_coils' in config_dict:
+            multilocus_coil = config_dict['multilocus_coils']
+            multilocus_coil_list = []
+            for elements in multilocus_coil:
+                file = config_dict['coils_path'] + elements['file']
+                multilocus_coil_list.append(file)
+            Publisher.sendMessage('Get multilocus paths from json', multilocus_coil_list= multilocus_coil_list)
         surface_index_cortex = self.OnImportCustomBinFile(cortex)
         proj = prj.Project()
         cortex_save_file = config_dict['path_meshes']+'export_inv/'+config_dict['cortex']
         polydata = proj.surface_dict[surface_index_cortex].polydata
         self.OnWriteCustomBinFile(polydata,cortex_save_file)
         Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
+        bmeshes_list = []
+        ci_list = []
+        co_list = []
         for elements in bmeshes:
             self.convert_to_inv = convert_to_inv
             file = config_dict['path_meshes']+elements['file']
@@ -424,7 +435,10 @@ class SurfaceManager():
             bmeshes_save_file = config_dict['path_meshes'] + 'export_inv/' + elements['file']
             polydata = proj.surface_dict[surface_index_bmesh].polydata
             self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
-        Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file= bmeshes_save_file, ci = ci, co = co)
+            bmeshes_list.append(bmeshes_save_file)
+            ci_list.append(ci)
+            co_list.append(co)
+        Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list)
 
     def OnImportSurfaceFile(self, filename):
         """

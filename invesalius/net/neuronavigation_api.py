@@ -135,10 +135,10 @@ class NeuronavigationApi(metaclass=Singleton):
         if self.connection is not None:
             return self.connection.init_efield(
                 cortexfile=cortexfile,
-                meshfile= [meshfile],
+                meshfile= meshfile,
                 coilfile =coilfile,
-                ci = [ci],
-                co = [co],
+                ci = ci,
+                co = co,
             )
         return None
 
