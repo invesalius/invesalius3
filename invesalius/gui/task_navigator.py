@@ -2725,7 +2725,6 @@ class E_fieldPanel(wx.Panel):
         Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
-        convert_flag = False
         if filename:
             convert_to_inv = dlg.ImportMeshCoordSystem()
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
