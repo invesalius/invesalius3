@@ -2732,6 +2732,7 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Read json config file for efield', filename= filename, convert_to_inv=convert_to_inv)
             self.Init_efield()
+            
     def Init_efield(self):
             self.navigation.neuronavigation_api.init_efield(
                 cortexfile=self.cortex_file,
