@@ -230,6 +230,7 @@ class SurfaceManager():
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
         Publisher.subscribe(self.OnImportCustomBinFile, 'Import bin file')
         Publisher.subscribe(self.OnWriteCustomBinFile, 'Write bin file')
+        Publisher.subscribe(self.OnImportJsonConfig, "Read json config file for efield")
 
         Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
@@ -326,26 +327,33 @@ class SurfaceManager():
         Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
 
     def OnImportCustomBinFile(self, filename):
-        scalar = True
-        if filename.lower().endswith('.bin'):
-            polydata = convert_custom_bin_to_vtk(filename)
-        elif filename.lower().endswith('.stl'):
-            scalar = False
-            reader = vtkSTLReader()
+        import os
+        if os.path.exists(filename):
+            scalar = True
+            if filename.lower().endswith('.bin'):
+                polydata = convert_custom_bin_to_vtk(filename)
+            elif filename.lower().endswith('.stl'):
+                scalar = False
+                reader = vtkSTLReader()
 
-            if _has_win32api:
-                reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+                if _has_win32api:
+                    reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+                else:
+                    reader.SetFileName(filename.encode(const.FS_ENCODE))
+                reader.Update()
+                polydata = reader.GetOutput()
+                polydata= self.CoverttoMetersPolydata(polydata)
+
+            if polydata.GetNumberOfPoints() == 0:
+                wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+                return
             else:
-                reader.SetFileName(filename.encode(const.FS_ENCODE))
-            reader.Update()
-            polydata = reader.GetOutput()
-            polydata= self.CoverttoMetersPolydata(polydata)
-
-        if polydata.GetNumberOfPoints() == 0:
-            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+                name = os.path.splitext(os.path.split(filename)[-1])[0]
+                surface_index = self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+                return surface_index
         else:
-            name = os.path.splitext(os.path.split(filename)[-1])[0]
-            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+            print("File does not exists")
+            return
 
     def CoverttoMetersPolydata(self, polydata):
         idlist = vtkIdList()
@@ -399,6 +407,45 @@ class SurfaceManager():
             np.array(noe, dtype=np.int32).tofile(f)
             np.array(data['p'], dtype=np.float32).tofile(f)
             np.array(data['e'], dtype=np.int32).tofile(f)
+
+    def OnImportJsonConfig(self, filename, convert_to_inv):
+        import json
+        with open(filename, 'r') as config_file:
+            config_dict = json.load(config_file)
+        cortex =config_dict['path_meshes']+config_dict['cortex']
+        bmeshes = config_dict['bmeshes']
+        coil = config_dict['coil']
+        if 'multilocus_coils' in config_dict:
+            multilocus_coil = config_dict['multilocus_coils']
+            multilocus_coil_list = []
+            for elements in multilocus_coil:
+                file = config_dict['coils_path'] + elements['file']
+                multilocus_coil_list.append(file)
+            Publisher.sendMessage('Get multilocus paths from json', multilocus_coil_list= multilocus_coil_list)
+        surface_index_cortex = self.OnImportCustomBinFile(cortex)
+        if surface_index_cortex is not None:
+            proj = prj.Project()
+            cortex_save_file = config_dict['path_meshes']+'export_inv/'+config_dict['cortex']
+            polydata = proj.surface_dict[surface_index_cortex].polydata
+            self.OnWriteCustomBinFile(polydata,cortex_save_file)
+            Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
+            bmeshes_list = []
+            ci_list = []
+            co_list = []
+            for elements in bmeshes:
+                self.convert_to_inv = convert_to_inv
+                file = config_dict['path_meshes']+elements['file']
+                ci = elements['ci']
+                co = elements['co']
+                surface_index_bmesh = self.OnImportCustomBinFile(file)
+                if surface_index_bmesh is not None:
+                    bmeshes_save_file = config_dict['path_meshes'] + 'export_inv/' + elements['file']
+                    polydata = proj.surface_dict[surface_index_bmesh].polydata
+                    self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
+                    bmeshes_list.append(bmeshes_save_file)
+                    ci_list.append(ci)
+                    co_list.append(co)
+                Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list)
 
     def OnImportSurfaceFile(self, filename):
         """

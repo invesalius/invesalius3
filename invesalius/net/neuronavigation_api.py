@@ -131,6 +131,30 @@ class NeuronavigationApi(metaclass=Singleton):
                 state=state
             )
 
+    def init_efield(self, cortexfile, meshfile, coilfile, ci, co):
+        if self.connection is not None:
+            return self.connection.init_efield(
+                cortexfile=cortexfile,
+                meshfile= meshfile,
+                coilfile =coilfile,
+                ci = ci,
+                co = co,
+            )
+        return None
+
+    def init_efield_config_file(self, config_file):
+        if self.connection is not None:
+            return self.connection.init_efield_json(
+                config_file=config_file
+            )
+        return None
+
+    def efield_coil(self, coilfile):
+        if self.connection is not None:
+            return self.connection.efield_coil(
+                coilfile= coilfile
+            )
+
     def update_efield(self, position, orientation, T_rot):
         if self.connection is not None:
             return self.connection.update_efield(

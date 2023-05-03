@@ -200,32 +200,37 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
         return np_array
 
 def convert_custom_bin_to_vtk(filename):
-    numbers = np.fromfile(filename, count=3, dtype=np.int32)
-    points = np.fromfile(filename, dtype=np.float32)
-    elements = np.fromfile(filename, dtype=np.int32)
+    import os
+    if os.path.exists(filename):
+        numbers = np.fromfile(filename, count=3, dtype=np.int32)
+        points = np.fromfile(filename, dtype=np.float32)
+        elements = np.fromfile(filename, dtype=np.int32)
 
-    points1 = points[3:(numbers[1]) * 3 + 3]*1000
-    elements1 = elements[numbers[1] * 3 + 3:]
+        points1 = points[3:(numbers[1]) * 3 + 3]*1000
+        elements1 = elements[numbers[1] * 3 + 3:]
 
-    points2 = points1.reshape(numbers[1], 3)
-    elements2 = elements1.reshape(numbers[2], 3)
+        points2 = points1.reshape(numbers[1], 3)
+        elements2 = elements1.reshape(numbers[2], 3)
 
-    points = vtkPoints()
-    triangles = vtkCellArray()
-    polydata = vtkPolyData()
+        points = vtkPoints()
+        triangles = vtkCellArray()
+        polydata = vtkPolyData()
 
-    for i in range(len(points2)):
-        points.InsertNextPoint(points2[i])
-    for i in range(len(elements2)):
-        triangle = vtkTriangle()
-        triangle.GetPointIds().SetId(0, elements2[i, 0])
-        triangle.GetPointIds().SetId(1, elements2[i, 1])
-        triangle.GetPointIds().SetId(2, elements2[i, 2])
+        for i in range(len(points2)):
+            points.InsertNextPoint(points2[i])
+        for i in range(len(elements2)):
+            triangle = vtkTriangle()
+            triangle.GetPointIds().SetId(0, elements2[i, 0])
+            triangle.GetPointIds().SetId(1, elements2[i, 1])
+            triangle.GetPointIds().SetId(2, elements2[i, 2])
 
-        triangles.InsertNextCell(triangle)
+            triangles.InsertNextCell(triangle)
 
-    polydata.SetPoints(points)
-    polydata.SetPolys(triangles)
+        polydata.SetPoints(points)
+        polydata.SetPolys(triangles)
 
-    return polydata
+        return polydata
+    else:
+        print("File does not exists")
+        return
 
