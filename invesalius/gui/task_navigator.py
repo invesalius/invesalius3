@@ -2729,18 +2729,21 @@ class E_fieldPanel(wx.Panel):
         filename = dlg.LoadConfigEfield()
         if filename:
             convert_to_inv = dlg.ImportMeshCoordSystem()
+            Publisher.sendMessage('Update status in GUI', value=50, label="Loading E-field...")
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
-            Publisher.sendMessage('Read json config file for efield', filename= filename, convert_to_inv=convert_to_inv)
+            Publisher.sendMessage('Read json config file for efield', filename=filename, convert_to_inv=convert_to_inv)
             self.Init_efield()
-            
+
     def Init_efield(self):
-            self.navigation.neuronavigation_api.init_efield(
-                cortexfile=self.cortex_file,
-                meshfile=self.meshes_file,
-                coilfile= self.coil,
-                ci = self.ci,
-                co = self.co,
-            )
+        self.navigation.neuronavigation_api.init_efield(
+            cortexfile=self.cortex_file,
+            meshfile=self.meshes_file,
+            coilfile=self.coil,
+            ci=self.ci,
+            co=self.co,
+        )
+        Publisher.sendMessage('Update status in GUI', value=0, label="Ready")
+
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
         if efield_enabled:
@@ -2780,7 +2783,7 @@ class E_fieldPanel(wx.Panel):
         for n in range(len(self.proj.surface_dict)):
             self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
-    def OnComboCoilNameClic(self,evt):
+    def OnComboCoilNameClic(self, evt):
         self.combo_surface_name.Clear()
         if self.multilocus_coil is not None:
             for elements in range(len(self.multilocus_coil)):
@@ -2795,8 +2798,9 @@ class E_fieldPanel(wx.Panel):
 
     def OnChangeCoil(self, coil_name):
         self.navigation.neuronavigation_api.efield_coil(
-            coilfile = coil_name,
+            coilfile=coil_name,
         )
+
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
             self.enable_efield.Enable(False)
