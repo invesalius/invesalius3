@@ -52,7 +52,6 @@ class Visualize_E_field_Thread(threading.Thread):
         else:
             self.debug = False
 
-
     def run(self):
         while not self.event.is_set():
 

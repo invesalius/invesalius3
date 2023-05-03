@@ -2708,6 +2708,7 @@ class E_fieldPanel(wx.Panel):
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboCoilNameClic)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboCoil)
         self.combo_surface_name.Insert('Select coil:',0)
+        self.combo_surface_name.Enable(False)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
@@ -2723,13 +2724,22 @@ class E_fieldPanel(wx.Panel):
         Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
         Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
         Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
+
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
         if filename:
             convert_to_inv = dlg.ImportMeshCoordSystem()
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Read json config file for efield', filename= filename, convert_to_inv=convert_to_inv)
-
+            self.Init_efield()
+    def Init_efield(self):
+            self.navigation.neuronavigation_api.init_efield(
+                cortexfile=self.cortex_file,
+                meshfile=self.meshes_file,
+                coilfile= self.coil,
+                ci = self.ci,
+                co = self.co,
+            )
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
         if efield_enabled:
@@ -2752,16 +2762,10 @@ class E_fieldPanel(wx.Panel):
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
-            self.navigation.neuronavigation_api.init_efield(
-                cortexfile=self.cortex_file,
-                meshfile=self.meshes_file,
-                coilfile= self.coil,
-                ci = self.ci,
-                co = self.co,
-            )
+
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
-            #self.combo_surface_name.Enable(False)
+            self.combo_surface_name.Enable(True)
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
@@ -2774,6 +2778,7 @@ class E_fieldPanel(wx.Panel):
         self.combo_surface_name.Clear()
         for n in range(len(self.proj.surface_dict)):
             self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
     def OnComboCoilNameClic(self,evt):
         self.combo_surface_name.Clear()
         if self.multilocus_coil is not None:
