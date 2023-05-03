@@ -422,3 +422,15 @@ class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
             has_theano=False,
             segmenter = segment.TracheaSegmentProcess,
         )
+
+
+class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent):
+        super().__init__(
+            parent=parent,
+            title=_("Mandible segmentation (CT)"),
+            has_torch=True,
+            has_plaidml=False,
+            has_theano=False,
+            segmenter = segment.MandibleCTSegmentProcess,
+        )

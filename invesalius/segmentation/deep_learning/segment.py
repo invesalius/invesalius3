@@ -22,7 +22,6 @@ SIZE = 48
 
 def gen_patches(image, patch_size, overlap):
     overlap = int(patch_size * overlap / 100)
-    print(f"{overlap=}")
     sz, sy, sx = image.shape
     i_cuts = list(
         itertools.product(
@@ -129,7 +128,38 @@ def segment_torch(
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
-        print(sub_mask.shape)
+        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
+        sums[iz:ez, iy:ey, ix:ex] += 1
+
+    probability_array /= sums
+    comm_array[0] = np.Inf
+
+
+def segment_torch_jit(
+    image, weights_file, overlap, device_id, probability_array, comm_array, patch_size
+):
+    import torch
+
+    from .model import WrapModel
+
+    print(f"\n\n\n\n{weights_file=}\n\n\n\n\n\n")
+    print(f"\n\n\n\n{image.min()=}, {image.max()=}, {image.dtype=}\n\n\n\n\n\n")
+
+    device = torch.device(device_id)
+    if weights_file.exists():
+        jit_model = torch.jit.load(weights_file)
+    else:
+        raise FileNotFoundError("Weights file not found")
+    model = WrapModel(jit_model)
+    model.to(device)
+    model.eval()
+
+    sums = np.zeros_like(image)
+    # segmenting by patches
+    for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
+        comm_array[0] = completion
+        (iz, ez), (iy, ey), (ix, ex) = patch
+        sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
         probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
         sums[iz:ez, iy:ey, ix:ex] += 1
 
@@ -368,3 +398,101 @@ class TracheaSegmentProcess(SegmentProcess):
         self.torch_weights_hash = (
             "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
         )
+
+
+class MandibleCTSegmentProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=255,
+        window_level=127,
+        patch_size=48,
+        threshold=200,
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size
+        )
+
+        self.threshold = threshold
+
+        self.torch_weights_file_name = 'mandible_jit_ct.pt'
+        self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
+        self.torch_weights_hash = (
+            "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
+        )
+
+    def _run_segmentation(self):
+        image = np.memmap(
+            self._image_filename,
+            dtype=self._image_dtype,
+            shape=self._image_shape,
+            mode="r",
+        )
+
+        if self.apply_wwwl:
+            image = imagedata_utils.get_LUT_value(
+                image, self.window_width, self.window_level
+            )
+
+        image = ((image >= self.threshold) * 1.0).astype(np.float32)
+
+        probability_array = np.memmap(
+            self._prob_array_filename,
+            dtype=np.float32,
+            shape=self._image_shape,
+            mode="r+",
+        )
+        comm_array = np.memmap(
+            self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+        )
+
+        if self.backend.lower() == "pytorch":
+            if not self.torch_weights_file_name:
+                raise FileNotFoundError("Weights file not specified.")
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
+                self.torch_weights_file_name
+            )
+            if user_state_dict_file.exists():
+                weights_file = user_state_dict_file
+            else:
+                download_url_to_file(
+                    self.torch_weights_url,
+                    user_state_dict_file,
+                    self.torch_weights_hash,
+                    download_callback(comm_array),
+                )
+                weights_file = user_state_dict_file
+            segment_torch_jit(
+                image,
+                weights_file,
+                self.overlap,
+                self.device_id,
+                probability_array,
+                comm_array,
+                self.patch_size
+            )
+        else:
+            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
+            segment_keras(
+                image,
+                self.keras_weight_file,
+                self.overlap,
+                probability_array,
+                comm_array,
+                self.patch_size
+            )
