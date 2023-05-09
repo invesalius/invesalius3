@@ -14,6 +14,9 @@ from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 from invesalius.net.utils import download_url_to_file
 from invesalius.utils import new_name_by_pattern
+from invesalius.data.converters import to_vtk
+
+from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
 
 from . import utils
 
@@ -69,9 +72,9 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
             .cpu()
             .numpy()
         )
-        return sub_mask.reshape(patch_size, patch_size, patch_size)[
-            0 : ez - iz, 0 : ey - iy, 0 : ex - ix
-        ]
+    return sub_mask.reshape(patch_size, patch_size, patch_size)[
+        0 : ez - iz, 0 : ey - iy, 0 : ex - ix
+    ]
 
 
 def segment_keras(image, weights_file, overlap, probability_array, comm_array, patch_size):
@@ -124,12 +127,13 @@ def segment_torch(
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
-        comm_array[0] = completion
-        (iz, ez), (iy, ey), (ix, ex) = patch
-        sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
-        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
-        sums[iz:ez, iy:ey, ix:ex] += 1
+    with torch.no_grad():
+        for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
+            comm_array[0] = completion
+            (iz, ez), (iy, ey), (ix, ex) = patch
+            sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
+            probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
+            sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
     comm_array[0] = np.Inf
@@ -140,31 +144,45 @@ def segment_torch_jit(
 ):
     import torch
 
-    from .model import WrapModel
+    # old_shape = image.shape
+    # new_shape = [round(i * j/0.5) for (i, j) in zip(old_shape, slc.Slice().spacing)]
 
-    print(f"\n\n\n\n{weights_file=}\n\n\n\n\n\n")
-    print(f"\n\n\n\n{image.min()=}, {image.max()=}, {image.dtype=}\n\n\n\n\n\n")
+    # image = resize(image, output_shape=new_shape, preserve_range=True)
+    # original_probability_array = probability_array
+    # probability_array = np.zeros_like(image)
+
+    print(f'\n\n{image.min()=}, {image.max()=}, {image.dtype=}\n\n')
+    print(f'\n\n{patch_size=}, {overlap=}\n\n')
+    print(f'\n\n{weights_file=}\n\n')
+
+    from .model import WrapModel
 
     device = torch.device(device_id)
     if weights_file.exists():
-        jit_model = torch.jit.load(weights_file)
+        jit_model = torch.jit.load(weights_file, map_location=torch.device('cpu'))
     else:
         raise FileNotFoundError("Weights file not found")
     model = WrapModel(jit_model)
     model.to(device)
     model.eval()
 
+    image = np.fliplr(image)
+
     sums = np.zeros_like(image)
     # segmenting by patches
+
     for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
         comm_array[0] = completion
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
-        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
+        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask.squeeze()
         sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
+    probability_array[:] = np.fliplr(probability_array)
+
     comm_array[0] = np.Inf
+
 
 
 ctx = multiprocessing.get_context("spawn")
@@ -433,7 +451,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
         self.torch_weights_file_name = 'mandible_jit_ct.pt'
         self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
         self.torch_weights_hash = (
-            "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
+            "7f2c43bbcaf3d9521800b6fcb1d1a984ae621c408cfcc74859118b8a23c8ac37"
         )
 
     def _run_segmentation(self):
@@ -449,7 +467,9 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 image, self.window_width, self.window_level
             )
 
-        image = ((image >= self.threshold) * 1.0).astype(np.float32)
+        image = (image >= self.threshold).astype(np.float32)
+
+        print(f"\n\n\n{self.threshold=}, {self.patch_size=}\n\n\n")
 
         probability_array = np.memmap(
             self._prob_array_filename,

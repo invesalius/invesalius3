@@ -130,7 +130,7 @@ class Unet3D(nn.Module):
         )
 
 
-class WrapModel(nn.Module):
+class WrapModel(torch.nn.Module):
     def __init__(self, model):
         super().__init__()
         self.model = model

@@ -393,7 +393,6 @@ class Mask():
 
         self.modified_time = time.monotonic()
         callbacks = []
-        print(self._modified_callbacks)
         for callback in self._modified_callbacks:
             if callback() is not None:
                 callback()()
