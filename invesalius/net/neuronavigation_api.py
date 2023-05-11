@@ -151,8 +151,8 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def efield_coil(self, coil_model_path):
         if self.connection is not None:
-            return self.connection.efield_coil(
-                coil_model_path= coil_model_path
+            return self.connection.set_coil(
+                coil_model_path=coil_model_path
             )
 
     def update_efield(self, position, orientation, T_rot):

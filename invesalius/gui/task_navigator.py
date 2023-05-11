@@ -2796,7 +2796,7 @@ class E_fieldPanel(wx.Panel):
         #self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         #Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnChangeCoil(self, coil_name):
+    def OnChangeCoil(self, coil_model_path):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path,
         )
