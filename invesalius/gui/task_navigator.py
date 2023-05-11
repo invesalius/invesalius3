@@ -2735,12 +2735,12 @@ class E_fieldPanel(wx.Panel):
             self.Init_efield()
 
     def Init_efield(self):
-        self.navigation.neuronavigation_api.init_efield(
-            cortexfile=self.cortex_file,
-            meshfile=self.meshes_file,
-            coilfile=self.coil,
-            ci=self.ci,
-            co=self.co,
+        self.navigation.neuronavigation_api.initialize_efield(
+            cortex_model_path=self.cortex_file,
+            mesh_models_paths=self.meshes_file,
+            coil_model_path=self.coil,
+            conductivities_inside=self.ci,
+            conductivities_outside=self.co,
         )
         Publisher.sendMessage('Update status in GUI', value=0, label="Ready")
 
@@ -2796,9 +2796,9 @@ class E_fieldPanel(wx.Panel):
         #self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         #Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnChangeCoil(self, coil_name):
+    def OnChangeCoil(self, coil_model_path):
         self.navigation.neuronavigation_api.efield_coil(
-            coilfile=coil_name,
+            coil_model_path=coil_model_path,
         )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
