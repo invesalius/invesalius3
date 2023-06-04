@@ -32,6 +32,7 @@ import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_panel as imp
 import invesalius.gui.preferences as preferences
+import invesalius.gui.dicom_server as dicom_server
 #  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
@@ -460,6 +461,8 @@ class Frame(wx.Frame):
             self.ShowGettingStarted()
         elif id == const.ID_PREFERENCES:
             self.ShowPreferences()
+        elif id == const.ID_DICOM_SERVER:
+            self.showDicomServer()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
@@ -615,6 +618,18 @@ class Frame(wx.Frame):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
+
+    def showDicomServer(self):
+        """ Show dicom server dialog. """
+
+        dicom_server_dialog = dicom_server.DicomServer(self)
+        if dicom_server_dialog.ShowModal() == wx.ID_OK:
+
+            dicom_server_dialog.Destroy()
+
+            session = ses.Session()
+            session.SetConfig('server_aetitle', dicom_server_dialog.ae_title)
+            session.SetConfig('server_port', dicom_server_dialog.port)
 
     def ShowPreferences(self):
         preferences_dialog = preferences.Preferences(self)
@@ -1143,6 +1158,12 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         #tools_menu = wx.Menu()
 
+        # NETWORK
+        network_settings_menu = wx.Menu()
+        network_settings_menu.Append(const.ID_DICOM_SERVER, _("Dicom Server"))
+        #network_settings_menu.Append(const.ID_DICOM_NODE, _("Node"))
+        #network_settings_menu.Append(const.ID_DICOM_QUERY, _("Query"))
+
         # OPTIONS
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences..."))
@@ -1185,6 +1206,7 @@ class MenuBar(wx.MenuBar):
         self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
+        self.Append(network_settings_menu, _("Network Settings"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 

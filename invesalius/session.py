@@ -83,6 +83,8 @@ class Session(metaclass=Singleton):
             'auto_reload_preview': False,
             'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             'last_dicom_folder': '',
+            'server_aetitle': 'INVESALIUS',
+            'server_port': '5000',
         }
         self.WriteConfigFile()
 
@@ -225,6 +227,8 @@ class Session(metaclass=Singleton):
         slice_interpolation = config.getint('session', 'slice_interpolation')
         rendering = config.getint('session', 'rendering')
         random_id = config.getint('session','random_id')
+        server_aetitle = config.get('session','server_aetitle')
+        server_port = config.get('session','server_port')
 
         recent_projects = eval(config.get('project','recent_projects'))
         recent_projects = [list(rp) for rp in recent_projects]
@@ -239,6 +243,8 @@ class Session(metaclass=Singleton):
         self.SetConfig('rendering', rendering)
         self.SetConfig('random_id', random_id)
         self.SetConfig('recent_projects', recent_projects)
+        self.SetConfig('server_aetitle', server_aetitle)
+        self.SetConfig('server_port', server_port)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
