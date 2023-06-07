@@ -5967,7 +5967,8 @@ class SetNDIconfigs(wx.Dialog):
         com_ports.Append(const.NDI_IP)
         if port_selec:
             com_ports.SetSelection(port_selec[0])
-
+        else:
+            com_ports.SetSelection(0)
         self.com_ports = com_ports
 
         session = ses.Session()
@@ -6004,8 +6005,6 @@ class SetNDIconfigs(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
-        if not port_selec:
-            btn_ok.Enable(False)
         self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
@@ -6049,7 +6048,7 @@ class SetNDIconfigs(wx.Dialog):
             session.SetConfig('last_ndi_ref_marker', self.dir_ref.GetPath())
             session.SetConfig('last_ndi_obj_marker', self.dir_obj.GetPath())
 
-        com_port = self.com_ports.GetString(self.com_ports.GetSelection())
+        com_port = self.com_ports.GetValue()
 
         return com_port, fn_probe, fn_ref, fn_obj
 
