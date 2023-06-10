@@ -703,15 +703,12 @@ class EditionTools(wx.Panel):
         menu = wx.Menu()
 
         CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
-        item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
+        item = menu.Append(MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
         SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
-        item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
+        item2 = menu.Append(MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
-
-        menu.Append(item)
-        menu.Append(item2)
 
         bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
                             const.BRUSH_SQUARE: SQUARE_BMP}
@@ -902,15 +899,12 @@ class WatershedTool(EditionTools):
         menu = wx.Menu()
 
         CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
-        item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
+        item = menu.Append(MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
         SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
-        item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
+        item2 = menu.Append(MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
-
-        menu.Append(item)
-        menu.Append(item2)
 
         bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
                             const.BRUSH_SQUARE: SQUARE_BMP}

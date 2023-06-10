@@ -55,24 +55,18 @@ class SliceMenu(wx.Menu):
 
         #Window and level from DICOM
         new_id = self.id_wl_first = wx.NewId()
-        wl_item = wx.MenuItem(submenu_wl, new_id,\
-                            _('Default'), kind=wx.ITEM_RADIO)
-        submenu_wl.Append(wl_item)
+        wl_item = submenu_wl.Append(new_id, _('Default'), kind=wx.ITEM_RADIO)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         #Case the user change window and level
         new_id = self.other_wl_id = wx.NewId()
-        wl_item = wx.MenuItem(submenu_wl, new_id,\
-                            _('Manual'), kind=wx.ITEM_RADIO)
-        submenu_wl.Append(wl_item)
+        wl_item = submenu_wl.Append(new_id, _('Manual'), kind=wx.ITEM_RADIO)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         for name in const.WINDOW_LEVEL:
             if not(name == _('Default') or name == _('Manual')):
                 new_id = wx.NewId()
-                wl_item = wx.MenuItem(submenu_wl, new_id,\
-                                    name, kind=wx.ITEM_RADIO)
-                submenu_wl.Append(wl_item)
+                wl_item = submenu_wl.Append(new_id, name, kind=wx.ITEM_RADIO)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         #----------- Sub menu of the save and load options ---------
@@ -98,9 +92,7 @@ class SliceMenu(wx.Menu):
         submenu_pseudo_colours = wx.Menu()
         self.pseudo_color_items = {}
         new_id = self.id_pseudo_first = wx.NewId()
-        color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
-                            _("Default "), kind=mkind)
-        submenu_pseudo_colours.Append(color_item)
+        color_item = submenu_pseudo_colours.Append(new_id, _("Default "), kind=mkind)
         color_item.Check(1)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
@@ -108,25 +100,19 @@ class SliceMenu(wx.Menu):
         for name in sorted(const.SLICE_COLOR_TABLE):
             if not(name == _("Default ")):
                 new_id = wx.NewId()
-                color_item = wx.MenuItem(submenu_wl, new_id,\
-                                    name, kind=mkind)
-                submenu_pseudo_colours.Append(color_item)
+                color_item = submenu_pseudo_colours.Append(new_id, name, kind=mkind)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
                 self.pseudo_color_items[new_id] = color_item
 
         self.plist_presets = presets.get_wwwl_presets()
         for name in sorted(self.plist_presets):
             new_id = wx.NewId()
-            color_item = wx.MenuItem(submenu_wl, new_id, name,
-                                     kind=mkind)
-            submenu_pseudo_colours.Append(color_item)
+            color_item = submenu_pseudo_colours.Append(new_id, name, kind=mkind)
             self.ID_TO_TOOL_ITEM[new_id] = color_item
             self.pseudo_color_items[new_id] = color_item
 
         new_id = wx.NewId()
-        color_item = wx.MenuItem(submenu_wl, new_id, _('Custom'),
-                                 kind=mkind)
-        submenu_pseudo_colours.Append(color_item)
+        color_item = submenu_pseudo_colours.Append(new_id, _('Custom'), kind=mkind)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
 
@@ -135,22 +121,18 @@ class SliceMenu(wx.Menu):
         submenu_projection = wx.Menu()
         for name in PROJECTIONS_ID:
             new_id = wx.NewId()
-            projection_item = wx.MenuItem(submenu_projection, new_id, name,
-                                          kind=wx.ITEM_RADIO)
-            submenu_projection.Append(projection_item)
+            projection_item = submenu_projection.Append(new_id, name, kind=wx.ITEM_RADIO)
             self.ID_TO_TOOL_ITEM[new_id] = projection_item
             self.projection_items[PROJECTIONS_ID[name]] = projection_item
-        
+
         flag_tiling = False
         #------------ Sub menu of the image tiling ---------------
         submenu_image_tiling = wx.Menu()
         for name in sorted(const.IMAGE_TILING):
             new_id = wx.NewId()
-            image_tiling_item = wx.MenuItem(submenu_image_tiling, new_id,\
-                                name, kind=wx.ITEM_RADIO)
-            submenu_image_tiling.Append(image_tiling_item)
+            image_tiling_item = submenu_image_tiling.Append(new_id, name, kind=wx.ITEM_RADIO)
             self.ID_TO_TOOL_ITEM[new_id] = image_tiling_item
-            
+
             #Save first id item
             if not(flag_tiling):
                 self.id_tiling_first = new_id
