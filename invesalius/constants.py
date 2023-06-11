@@ -689,7 +689,7 @@ DEBUGTRACKAPPROACH = 11
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
-NDI_IP = ['169.254.145.124']
+NDI_IP = ['P9-13715.local', 'P9-13719.local']
 
 TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
