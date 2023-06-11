@@ -623,11 +623,15 @@ class Frame(wx.Frame):
         self.mw.SetPosition(pos)
 
     def ShowDicomNodes(self):
+        """ Show dicom nodes dialog. """
 
         dicom_nodes_dialog = dicom_nodes.DicomNodes(self)
         if dicom_nodes_dialog.ShowModal() == wx.ID_OK:
 
             dicom_nodes_dialog.Destroy()
+
+            session = ses.Session()
+            session.SetConfig('nodes', dicom_nodes_dialog.nodes)
 
     def showDicomServer(self):
         """ Show dicom server dialog. """

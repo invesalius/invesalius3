@@ -16,30 +16,24 @@ class DicomServer(wx.Dialog):
     ):
         super().__init__(parent, id_, title, style=style)
 
-        # Main panel
-        panel = wx.Panel(self)
+        # Create the input fields
+        self.__ae_input = wx.TextCtrl(self)
+        self.__port_input = wx.TextCtrl(self)
 
-        # Create controls
-        self.__ae_label = wx.StaticText(panel, label="AE Title")
-        self.__ae_input = wx.TextCtrl(panel)
-
-        self.__port_label = wx.StaticText(panel, label="PORT")
-        self.__port_input = wx.TextCtrl(panel)
-
-        self.__buttons_sizer = self._create_buttons_box_sizer(panel)
+        self.__buttons_sizer = self._create_buttons_box_sizer()
 
         # Load values from config file
         self._load_values()
 
         # Create the controls static box sizer
-        static_box_sizer = self._create_static_box_sizer(panel)
+        static_box_sizer = self._create_static_box_sizer()
 
         # Adds controls static sizer to main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(static_box_sizer, proportion=1, flag=wx.EXPAND|wx.ALL, border=10)
         
         # Set the main sizer
-        panel.SetSizer(sizer)
+        self.SetSizer(sizer)
         
         # Set the size of the dialog and center it
         self.SetSize(300, 250)
@@ -69,16 +63,16 @@ class DicomServer(wx.Dialog):
         self.__ae_input.SetValue(ae_title)
         self.__port_input.SetValue(port)
 
-    def _create_buttons_box_sizer(self, panel):
+    def _create_buttons_box_sizer(self):
         """ Create the buttons. """
 
         # Create the sizer
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Save and cancel buttons
-        save_button = wx.Button(panel, wx.ID_OK)
+        save_button = wx.Button(self, wx.ID_OK)
         save_button.SetDefault()
-        cancel_button = wx.Button(panel, wx.ID_CANCEL)
+        cancel_button = wx.Button(self, wx.ID_CANCEL)
 
         # Add buttons to sizer
         button_sizer.Add(cancel_button, 0, wx.ALL, 5)
@@ -86,16 +80,16 @@ class DicomServer(wx.Dialog):
 
         return button_sizer
 
-    def _create_static_box_sizer(self, panel):
+    def _create_static_box_sizer(self):
         """ Creates a static box sizer with the controls. """
 
-        static_box = wx.StaticBox(panel, label="Form")
+        static_box = wx.StaticBox(self, label="Form")
 
         static_box_sizer = wx.StaticBoxSizer(static_box, wx.VERTICAL)
 
-        static_box_sizer.Add(self.__ae_label, flag=wx.ALL, border=5)
+        static_box_sizer.Add(wx.StaticText(self, label="AE Title"), flag=wx.ALL, border=5)
         static_box_sizer.Add(self.__ae_input, flag=wx.EXPAND|wx.ALL, border=5)
-        static_box_sizer.Add(self.__port_label, flag=wx.ALL, border=5)
+        static_box_sizer.Add(wx.StaticText(self, label="PORT"), flag=wx.ALL, border=5)
         static_box_sizer.Add(self.__port_input, flag=wx.EXPAND|wx.ALL, border=5)
         static_box_sizer.Add(self.__buttons_sizer, flag=wx.ALIGN_RIGHT|wx.ALL, border=5)
 
