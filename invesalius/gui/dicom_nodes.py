@@ -22,10 +22,16 @@ class DicomNodes(wx.Dialog):
         # Create the main vertical box sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        buttons_sizer = self._create_buttons_box_sizer()
+        main_sizer.Add(buttons_sizer, 0, wx.ALIGN_RIGHT)
+
         self.__grid = self._create_grid_table()
 
         # grid column size event handler
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_SIZE, self._on_size)
+
+        # Load values from config file
+        self._load_values()
         
         # Add the grid table to the main sizer
         main_sizer.Add(self.__grid, 1, wx.EXPAND | wx.ALL, 5)
@@ -52,6 +58,11 @@ class DicomNodes(wx.Dialog):
         
         self.__nodes.append(node)
 
+    def _remove_node(self, idx):
+        """ Remove a node from the nodes list. """
+
+        del self.__nodes[idx]
+
     @property
     def nodes(self):
         """ Return the nodes list. """
@@ -67,7 +78,37 @@ class DicomNodes(wx.Dialog):
             if session.GetConfig('nodes') \
             else []
 
-        for node in nodes: self._add_row_to_grid(node)
+        for node in nodes:
+            
+            # Add node row to the grid
+            self._add_row_to_grid(node)
+
+            # Add node row to the nodes list
+            self._add_node(node)
+
+    def _create_buttons_box_sizer(self):
+        """ Create the buttons. """
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        add_button = wx.Button(self, label="New")
+        add_button.Bind(wx.EVT_BUTTON, self._on_add_button)
+
+        remove_button = wx.Button(self, label="Remove")
+        remove_button.Bind(wx.EVT_BUTTON, self._on_remove_button)
+
+        save_button = wx.Button(self, wx.ID_OK)
+        save_button.SetDefault()
+        
+        cancel_button = wx.Button(self, wx.ID_CANCEL)
+
+        # Add buttons to sizer
+        button_sizer.Add(add_button, 0, wx.ALL, 5)
+        button_sizer.Add(remove_button, 0, wx.ALL, 5)
+        button_sizer.Add(cancel_button, 0, wx.ALL, 5)
+        button_sizer.Add(save_button, 0, wx.ALL, 5)
+
+        return button_sizer
 
     def _create_form_sizer(self):
         """ Create the form sizer. """
@@ -94,13 +135,6 @@ class DicomNodes(wx.Dialog):
         form_sizer.Add(sizer2, 0, wx.ALL, 5)
         form_sizer.Add(sizer3, 0, wx.ALL, 5)
         form_sizer.Add(sizer4, 0, wx.ALL, 5)
-        
-        # Create the "Add" button
-        add_button = wx.Button(self, label="Add")
-        add_button.Bind(wx.EVT_BUTTON, self._on_add_button)
-        
-        # Add the button to the form sizer
-        form_sizer.Add(add_button, 0, wx.ALL | wx.ALIGN_CENTER, 5)
 
         return form_sizer
 
@@ -121,7 +155,7 @@ class DicomNodes(wx.Dialog):
 
         return grid
 
-    def set_grid_column_sizes(self):
+    def _set_grid_column_size(self):
         """ Set the column sizes based on the grid width. """
 
         width = self.__grid.GetClientSize()[0]  # Get grid width
@@ -131,10 +165,10 @@ class DicomNodes(wx.Dialog):
         for col in range(col_count):
             self.__grid.SetColSize(col, col_width)
     
-    def on_size(self, event):
+    def _on_size(self, event):
         """ Handler for the wx.EVT_SIZE event. """
 
-        self.set_grid_column_sizes()
+        self._set_grid_column_size()
         event.Skip()
 
     def _on_add_button(self, event):
@@ -163,6 +197,22 @@ class DicomNodes(wx.Dialog):
         self.__port_input.Clear()
         self.__aetitle_input.Clear()
         self.__description_input.Clear()
+
+    def _on_remove_button(self, event):
+        """ Handler for the "Remove" button. """
+        
+        selected_rows = self.__grid.GetSelectedRows()
+
+        # removes in reverse order to avoid index errors
+        for row in reversed(selected_rows):
+
+            # remove node row from the grid
+            self.__grid.DeleteRows(row)
+
+            # remove node row from the nodes list
+            self._remove_node(row)
+        
+        self.__grid.ClearSelection()
 
     def _add_row_to_grid(self, node):
         """ Add a row to the grid. """
