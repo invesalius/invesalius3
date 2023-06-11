@@ -26,13 +26,13 @@ class DicomServer(wx.Dialog):
         self.__port_label = wx.StaticText(panel, label="PORT")
         self.__port_input = wx.TextCtrl(panel)
 
-        self.__buttons_sizer = self._CreateButtonsBoxSizer(panel)
+        self.__buttons_sizer = self._create_buttons_box_sizer(panel)
 
         # Load values from config file
-        self._LoadValues()
+        self._load_values()
 
         # Create the controls static box sizer
-        static_box_sizer = self._CreateStaticBoxSizer(panel)
+        static_box_sizer = self._create_static_box_sizer(panel)
 
         # Adds controls static sizer to main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -53,7 +53,7 @@ class DicomServer(wx.Dialog):
     def port(self):
         return self.__port_input.GetValue()
 
-    def _LoadValues(self):
+    def _load_values(self):
         """ Load the values from the config file. """
 
         session = ses.Session()
@@ -69,7 +69,7 @@ class DicomServer(wx.Dialog):
         self.__ae_input.SetValue(ae_title)
         self.__port_input.SetValue(port)
 
-    def _CreateButtonsBoxSizer(self, panel):
+    def _create_buttons_box_sizer(self, panel):
         """ Create the buttons. """
 
         # Create the sizer
@@ -86,7 +86,7 @@ class DicomServer(wx.Dialog):
 
         return button_sizer
 
-    def _CreateStaticBoxSizer(self, panel):
+    def _create_static_box_sizer(self, panel):
         """ Creates a static box sizer with the controls. """
 
         static_box = wx.StaticBox(panel, label="Form")
