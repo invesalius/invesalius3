@@ -704,7 +704,7 @@ class NodesPanel(wx.Panel):
         sizer_btn.Add((90, 0), 0, wx.EXPAND|wx.HORIZONTAL)
         sizer_btn.Add(self.btn_add, 10)
         sizer_btn.Add(self.btn_remove, 10)
-        sizer_btn.Add(self.btn_check, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        sizer_btn.Add(self.btn_check, 0, wx.ALIGN_CENTER)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.tree_node, 85, wx.GROW|wx.EXPAND)
