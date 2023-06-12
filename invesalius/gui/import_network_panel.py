@@ -27,6 +27,7 @@ import invesalius.gui.dialogs as dlg
 #import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
 import invesalius.net.dicom as dcm_net
+import invesalius.session as ses
 
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
 #from dicionario import musicdata
@@ -647,8 +648,6 @@ class NodesPanel(wx.Panel):
         self.Bind(wx.EVT_COMMAND_RIGHT_CLICK, self.RightButton, self.tree_node)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.tree_node)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected, self.tree_node)
-        self.Bind(wx.EVT_BUTTON, self.OnButtonAdd, self.btn_add)
-        self.Bind(wx.EVT_BUTTON, self.OnButtonRemove, self.btn_remove)
         self.Bind(wx.EVT_BUTTON, self.OnButtonCheck, self.btn_check)
 
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.EndEdition, self.tree_node)
@@ -657,53 +656,46 @@ class NodesPanel(wx.Panel):
         Publisher.subscribe(self.GetHostsList, "Get NodesPanel host list")
         #Publisher.subscribe(self.UnCheckItemDict, "Uncheck item dict")
 
+    def _add_node_to_tree(self, node):
+        """ Add a node to the tree. """
+
+        try:
+
+            index = self.tree_node.InsertItem(sys.maxsize, "")
+        
+        except (OverflowError, AssertionError):
+            
+            index = self.tree_node.InsertItem(sys.maxint, "")
+
+        self.tree_node.SetItem(index, 1, node["ipaddress"])
+        self.tree_node.SetItem(index, 2, node["port"])
+        self.tree_node.SetItem(index, 3, node["aetitle"])
+        self.tree_node.SetItem(index, 4, node["description"])
+        self.tree_node.SetItemBackgroundColour(index, wx.Colour(245,245,245))
 
     def __init_gui(self):
+
         self.tree_node = NodesTree(self)
 
         self.tree_node.InsertColumn(0, _("Active"))
-        self.tree_node.InsertColumn(1, _("Host"))
+        self.tree_node.InsertColumn(1, _("IP Address"))
         self.tree_node.InsertColumn(2, _("Port"))
-        self.tree_node.InsertColumn(3, _("AETitle"))
-        self.tree_node.InsertColumn(4, _("Status"))
+        self.tree_node.InsertColumn(3, _("AE Title"))
+        self.tree_node.InsertColumn(4, _("Description"))
+        self.tree_node.InsertColumn(5, _("Status"))
 
-        self.tree_node.SetColumnWidth(0,50)
-        self.tree_node.SetColumnWidth(1, 150)
-        self.tree_node.SetColumnWidth(2, 50)
-        self.tree_node.SetColumnWidth(3, 150)
-        self.tree_node.SetColumnWidth(4, 80)
+        session = ses.Session()
+        nodes = session.GetConfig('nodes') \
+            if session.GetConfig('nodes') \
+            else []
 
-        self.hosts[0] = [True, "localhost", "", "invesalius"]
-        try:
-            index = self.tree_node.InsertItem(sys.maxsize, "")
-        except (OverflowError, AssertionError):
-            index = self.tree_node.InsertItem(sys.maxint, "")
-        self.tree_node.SetItem(index, 1, "localhost")
-        self.tree_node.SetItem(index, 2, "")
-        self.tree_node.SetItem(index, 3, "invesalius")
-        self.tree_node.SetItem(index, 4, "ok")
-        self.tree_node.CheckItem(index)
-        self.tree_node.SetItemBackgroundColour(index, wx.Colour(245,245,245))
-        #print ">>>>>>>>>>>>>>>>>>>>>", sys.maxint
-        #index = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
-        #self.tree_node.SetItem(index, 1, "200.144.114.19")
-        #self.tree_node.SetItem(index, 2, "80")
-        #self.tree_node.SetItemData(index, 0)      
+        for node in nodes:
 
-        #index2 = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
-        #self.tree_node.SetItem(index2, 1, "200.144.114.19")
-        #self.tree_node.SetItem(index2, 2, "80")
-        #self.tree_node.SetItemData(index2, 0)      
+            self._add_node_to_tree(node)    
 
-        self.btn_add = wx.Button(self, -1, _("Add"))
-        self.btn_remove = wx.Button(self, -1, _("Remove"))
-        self.btn_check = wx.Button(self, -1, _("Check status"))
-
+        self.btn_check = wx.Button(self, label="Check status")
 
         sizer_btn = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_btn.Add((90, 0), 0, wx.EXPAND|wx.HORIZONTAL)
-        sizer_btn.Add(self.btn_add, 10)
-        sizer_btn.Add(self.btn_remove, 10)
         sizer_btn.Add(self.btn_check, 0, wx.ALIGN_CENTER)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -730,35 +722,9 @@ class NodesPanel(wx.Panel):
         values[col] = str(txt)
         self.hosts[index] = values
 
-    def OnButtonAdd(self, evt):
-        #adiciona vazio a coluna de check
-        index = self.tree_node.InsertItem(sys.maxsize, "")
-
-        self.hosts[index] = [True, "localhost", "80", ""]
-        self.tree_node.SetItem(index, 1, "localhost")
-        self.tree_node.SetItem(index, 2, "80")
-        self.tree_node.SetItem(index, 3, "")
-        self.tree_node.CheckItem(index)
-
     def OnLeftDown(self, evt):
         evt.Skip()
 
-    def OnButtonRemove(self, evt):
-        if self.selected_item != None and self.selected_item != 0:
-            self.tree_node.DeleteItem(self.selected_item)
-            self.hosts.pop(self.selected_item)
-            self.selected_item = None
-            
-            k = self.hosts.keys()
-            tmp_cont = 0
-
-            tmp_host = {}
-            for x in k:
-                tmp_host[tmp_cont] = self.hosts[x]
-                tmp_cont += 1
-            self.hosts = tmp_host
-
-            
 
     def OnButtonCheck(self, evt):
         for key in self.hosts.keys():
