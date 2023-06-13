@@ -259,8 +259,7 @@ class InnerTaskPanel(wx.Panel):
                            const.VOLUME:_("Volume")}
 
         for id in self.id_to_name:
-            item = wx.MenuItem(menu, id, self.id_to_name[id])
-            menu.Append(item)
+            item = menu.Append(id, self.id_to_name[id])
 
         self.menu_picture = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuPicture)

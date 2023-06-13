@@ -193,12 +193,8 @@ class MeasureButtonControlPanel(wx.Panel):
         self.Fit()
 
         menu = wx.Menu()
-        item = wx.MenuItem(menu, const.MEASURE_LINEAR,
-                            _("Measure distance"))
-        menu.Append(item)
-        item = wx.MenuItem(menu, const.MEASURE_ANGULAR,
-                            _("Measure angle"))
-        menu.Append(item)
+        item = menu.Append(const.MEASURE_LINEAR, _("Measure distance"))
+        item = menu.Append(const.MEASURE_ANGULAR, _("Measure angle"))
         menu.Bind(wx.EVT_MENU, self.OnMenu)
         self.menu = menu
 
