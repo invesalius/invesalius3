@@ -322,6 +322,8 @@ class ComputeTractsThread(threading.Thread):
                 else:
                     bundle = None
 
+                coord_offset_w = np.linalg.inv(affine) @ coord_offset_w
+                coord_offset_w = np.squeeze(coord_offset_w.T[:, :3])
                 # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
                 # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
