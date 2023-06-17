@@ -1,5 +1,6 @@
 import gdcm
 import invesalius.utils as utils
+import pynetdicom
 
 class DicomNet:
     
@@ -41,9 +42,24 @@ class DicomNet:
 
 
     def RunCEcho(self):
-        cnf = gdcm.CompositeNetworkFunctions()
-        return cnf.CEcho(self.address, int(self.port),\
-                         self.aetitle, self.aetitle_call)
+        """ run CEcho to check if the server is alive. """
+
+        try:
+
+            ae = pynetdicom.AE()
+            ae.add_requested_context('1.2.840.10008.1.1')
+            assoc = ae.associate(self.address, int(self.port))
+            if assoc.is_established:
+
+                assoc.release()
+                return True
+
+            return False
+
+        except Exception as e:
+
+            print ("Unexpected error:", e)
+            return False
 
     def RunCFind(self):
 
@@ -141,7 +157,7 @@ class DicomNet:
         de_patient = gdcm.DataElement(tg_patient)
         de_serie = gdcm.DataElement(tg_serie)
 
-        patient_id = str(values[0])        
+        patient_id = str(values[0])
         serie_id = str(values[1])
 
         de_patient.SetByteValue(patient_id,  gdcm.VL(len(patient_id)))
@@ -186,3 +202,8 @@ class DicomNet:
         #for r in ret:
         #    print r
         #    print "\n"
+
+    def __str__(self):
+
+        return "Address: %s\nPort: %s\nAETitle: %s\nAETitleCall: %s\nSearchWord: %s\nSearchType: %s\n" %\
+               (self.address, self.port, self.aetitle, self.aetitle_call, self.search_word, self.search_type)

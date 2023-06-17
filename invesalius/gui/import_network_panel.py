@@ -689,6 +689,10 @@ class NodesPanel(wx.Panel):
             if session.GetConfig('nodes') \
             else []
 
+        self.__aetitle_call = session.GetConfig('server_aetitle')
+
+        self.hosts = nodes[0]
+
         for node in nodes:
 
             self._add_node_to_tree(node)    
@@ -727,18 +731,14 @@ class NodesPanel(wx.Panel):
 
 
     def OnButtonCheck(self, evt):
-        for key in self.hosts.keys():
-            if key != 0:
-                dn = dcm_net.DicomNet()
-                dn.SetHost(self.hosts[key][1])
-                dn.SetPort(self.hosts[key][2])
-                dn.SetAETitleCall(self.hosts[key][3])
-                dn.SetAETitle(self.hosts[0][3])
+        dn = dcm_net.DicomNet()
+        dn.SetHost(self.hosts['ipaddress'])
+        dn.SetPort(self.hosts['port'])
+        dn.SetAETitle(self.hosts['aetitle'])
+        dn.SetAETitleCall(self.__aetitle_call)
 
-                if dn.RunCEcho():
-                    self.tree_node.SetItem(key, 4, _("ok"))
-                else:
-                    self.tree_node.SetItem(key, 4, _("error"))
+        ok = dn.RunCEcho()
+        self.tree_node.SetItem(0, 5, _("ok")) if ok else self.tree_node.SetItem(0, 5, _("error"))
 
     def RightButton(self,evt):
         event.Skip()
