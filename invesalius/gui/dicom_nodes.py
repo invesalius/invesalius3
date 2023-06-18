@@ -8,6 +8,8 @@ from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.pubsub import pub as Publisher
 
 class DicomNodes(wx.Dialog):
+    """ Dicom Nodes Dialog. """
+
     def __init__(
         self,
         parent,
