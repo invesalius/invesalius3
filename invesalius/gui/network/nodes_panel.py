@@ -9,6 +9,8 @@ class NodesPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent, -1)
 
+        self.__session = ses.Session()
+
         self.__selected_index = None
 
         self.__list_ctrl = self._create_list_ctrl()
@@ -21,6 +23,8 @@ class NodesPanel(wx.Panel):
         for node in nodes: self._add_node_to_list(node)
 
         self.__nodes = nodes
+
+        self._load_values()
 
         self.__btn_check = wx.Button(self, label="Check status")
 
@@ -35,6 +39,20 @@ class NodesPanel(wx.Panel):
         self.SetSizer(sizer)
 
         self._bind_evt()
+    
+    def _load_values(self):
+        """ Load the values from the config file. """
+
+        selected_node = self.__session.GetConfig('selected_node') \
+            if self.__session.GetConfig('selected_node') \
+            else None
+
+        self.__selected_index = self.__nodes.index(selected_node) \
+            if selected_node \
+            else None
+
+        if self.__selected_index is not None:
+            self.__list_ctrl.CheckItem(self.__selected_index, True)
 
     def _create_list_ctrl(self):
 
@@ -95,6 +113,8 @@ class NodesPanel(wx.Panel):
     def _on_item_deselected(self, evt):
         """ unchecked item handler """
 
+        self.__session.SetConfig('selected_node', {})
+
         self.__selected_index = None
 
     def _on_item_selected(self, evt):
@@ -106,5 +126,7 @@ class NodesPanel(wx.Panel):
             is_checked = self.__list_ctrl.IsItemChecked(index)
             if index != idx and is_checked:
                 self.__list_ctrl.CheckItem(index, False)
+
+        self.__session.SetConfig('selected_node', self.__nodes[idx])
 
         self.__selected_index = idx

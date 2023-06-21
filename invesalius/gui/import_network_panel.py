@@ -538,18 +538,15 @@ class FindPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButtonFind, self.btn_find)
 
     def OnButtonFind(self, evt):
-        hosts = self.GetHostList()
+        pass
+        # dn = dcm_net.DicomNet()
+        # dn.SetHost(self.hosts[key][1])
+        # dn.SetPort(self.hosts[key][2])
+        # dn.SetAETitleCall(self.hosts[key][3])
+        # dn.SetAETitle(self.hosts[0][3])
+        # dn.SetSearchWord(self.find_txt.GetValue())
 
-        for key in hosts.keys():
-            if key != 0:
-                dn = dcm_net.DicomNet()
-                dn.SetHost(self.hosts[key][1])
-                dn.SetPort(self.hosts[key][2])
-                dn.SetAETitleCall(self.hosts[key][3])
-                dn.SetAETitle(self.hosts[0][3])
-                dn.SetSearchWord(self.find_txt.GetValue())
-
-                Publisher.sendMessage('Populate tree', dn.RunCFind())
+        # Publisher.sendMessage('Populate tree', dn.RunCFind())
 
 
     def SetHostsList(self, evt_pub):

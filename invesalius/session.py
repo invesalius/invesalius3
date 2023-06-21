@@ -86,6 +86,7 @@ class Session(metaclass=Singleton):
             'server_aetitle': 'INVESALIUS',
             'server_port': '5000',
             'nodes': [],
+            'selected_node': {},
         }
         self.WriteConfigFile()
 
@@ -231,6 +232,7 @@ class Session(metaclass=Singleton):
         server_aetitle = config.get('session','server_aetitle')
         server_port = config.get('session','server_port')
         nodes = config.get('session','nodes')
+        selected_node = config.get('session','selected_node')
 
         recent_projects = eval(config.get('project','recent_projects'))
         recent_projects = [list(rp) for rp in recent_projects]
@@ -248,6 +250,7 @@ class Session(metaclass=Singleton):
         self.SetConfig('server_aetitle', server_aetitle)
         self.SetConfig('server_port', server_port)
         self.SetConfig('nodes', nodes)
+        self.SetConfig('selected_node', selected_node)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
