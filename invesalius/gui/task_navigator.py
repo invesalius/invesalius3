@@ -2685,9 +2685,9 @@ class E_fieldPanel(wx.Panel):
         btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
         tooltip = wx.ToolTip(_("Save Efield"))
-        btn_save = wx.ToggleButton(self, -1, _("Save Efield"), size=wx.Size(80, -1))
+        btn_save = wx.Button(self, -1, _("Save Efield"), size=wx.Size(80, -1))
         btn_save.SetToolTip(tooltip)
-        btn_save.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnSaveEfield, ctrl=btn_save))
+        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
@@ -2836,17 +2836,25 @@ class E_fieldPanel(wx.Panel):
     def OnGetMultilocusCoils(self, multilocus_coil_list):
         self.multilocus_coil = multilocus_coil_list
 
-    def OnSaveEfield(self, ctrl):
+    def OnSaveEfield(self, evt):
         import invesalius.project as prj
         proj = prj.Project()
         timestamp = time.localtime(time.time())
         stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
         stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
         sep = '-'
-        parts = [stamp_date, stamp_time, proj.name, 'Efield']
+        parts = ['/app/data/neuronavigation/sub-c2b006/',stamp_date, stamp_time, proj.name, 'Efield']
         default_filename = sep.join(parts) + '.txt'
 
-        Publisher.sendMessage('Save Efield data', filename = default_filename)
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                          wildcard=const.WILDCARD_MARKER_FILES,
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename=default_filename)
+
+        if not filename:
+            return
+
+        Publisher.sendMessage('Save Efield data', filename = filename)
         print('save')
 
 class SessionPanel(wx.Panel):

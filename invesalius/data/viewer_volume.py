@@ -1741,12 +1741,10 @@ class Viewer(wx.Panel):
         #self.GetEfieldMaxMin(enorm)
 
     def SaveEfieldData(self, filename):
-
         with open(filename, 'wb') as f:
-            np.array(self.coil_position_Trot, dtype=np.int32).tofile(f)
-            np.array(self.coil_position, dtype=np.int32).tofile(f)
-            np.array(self.e_field_norms, dtype=np.int32).tofile(f)
-
+            np.savetxt(f, self.coil_position_Trot)
+            np.savetxt(f, self.coil_position)
+            np.savetxt(f, self.e_field_norms)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
