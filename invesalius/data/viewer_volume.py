@@ -1734,16 +1734,26 @@ class Viewer(wx.Panel):
             pass
 
     def GetEnorm(self, enorm_data):
-        self.e_field_norms = enorm_data[2]
+        self.e_field_norms = enorm_data[3]
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
+        self.efield_coords = enorm_data[2]
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         #self.GetEfieldMaxMin(enorm)
 
     def SaveEfieldData(self, filename):
+        import invesalius.data.imagedata_utils as imagedata_utils
+
+        position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position=[self.efield_coords[0], self.efield_coords[1],self.efield_coords[2]],
+            orientation=[self.efield_coords[3], self.efield_coords[4],self.efield_coords[5]],
+        )
+        efield_coords_position = [position_world, orientation_world]
         with open(filename, 'wb') as f:
             np.savetxt(f, self.coil_position_Trot)
             np.savetxt(f, self.coil_position)
+            np.savetxt(f, self.efield_coords)
+            np.savetxt(f, efield_coords_position)
             np.savetxt(f, self.e_field_norms)
 
     def GetCellIntersection(self, p1, p2, locator):
