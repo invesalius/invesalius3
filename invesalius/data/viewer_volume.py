@@ -393,6 +393,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
         Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
+        Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -1732,10 +1733,20 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def GetEnorm(self, enorm):
-        self.e_field_norms = enorm
+    def GetEnorm(self, enorm_data):
+        self.e_field_norms = enorm_data[2]
+        self.coil_position_Trot = enorm_data[0]
+        self.coil_position = enorm_data[1]
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         #self.GetEfieldMaxMin(enorm)
+
+    def SaveEfieldData(self, filename):
+
+        with open(filename, 'wb') as f:
+            np.array(self.coil_position_Trot, dtype=np.int32).tofile(f)
+            np.array(self.coil_position, dtype=np.int32).tofile(f)
+            np.array(self.e_field_norms, dtype=np.int32).tofile(f)
+
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()

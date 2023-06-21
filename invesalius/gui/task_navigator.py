@@ -2684,6 +2684,11 @@ class E_fieldPanel(wx.Panel):
         btn_act2.Enable(1)
         btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
+        tooltip = wx.ToolTip(_("Save Efield"))
+        btn_save = wx.ToggleButton(self, -1, _("Save Efield"), size=wx.Size(80, -1))
+        btn_save.SetToolTip(tooltip)
+        btn_save.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnSaveEfield, ctrl=btn_save))
+
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
         spin_sleep.Enable(1)
@@ -2698,6 +2703,9 @@ class E_fieldPanel(wx.Panel):
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
+        line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns_save.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
@@ -2715,6 +2723,7 @@ class E_fieldPanel(wx.Panel):
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
 
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
@@ -2778,10 +2787,10 @@ class E_fieldPanel(wx.Panel):
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
-        self.proj = prj.Project()
+        proj = prj.Project()
         self.combo_surface_name.Clear()
-        for n in range(len(self.proj.surface_dict)):
-            self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for n in range(len(proj.surface_dict)):
+            self.combo_surface_name.Insert(str(proj.surface_dict[n].name), n)
 
     def OnComboCoilNameClic(self, evt):
         self.combo_surface_name.Clear()
@@ -2826,6 +2835,19 @@ class E_fieldPanel(wx.Panel):
 
     def OnGetMultilocusCoils(self, multilocus_coil_list):
         self.multilocus_coil = multilocus_coil_list
+
+    def OnSaveEfield(self, ctrl):
+        import invesalius.project as prj
+        proj = prj.Project()
+        timestamp = time.localtime(time.time())
+        stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+        stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+        sep = '-'
+        parts = [stamp_date, stamp_time, proj.name, 'Efield']
+        default_filename = sep.join(parts) + '.txt'
+
+        Publisher.sendMessage('Save Efield data', filename = default_filename)
+        print('save')
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):
