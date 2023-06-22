@@ -2847,7 +2847,7 @@ class E_fieldPanel(wx.Panel):
         default_filename = sep.join(parts) + '.txt'
 
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
-                                          wildcard=const.WILDCARD_MARKER_FILES,
+                                          wildcard='(*.txt)|*.txt',
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename=default_filename)
 
