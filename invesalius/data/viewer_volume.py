@@ -1638,7 +1638,8 @@ class Viewer(wx.Panel):
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
         self.min = min
-        self.max = max
+        self.max = max*0.75
+        print('self max', self.max)
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
@@ -1675,7 +1676,7 @@ class Viewer(wx.Panel):
         self.efield_mapper.ScalarVisibilityOn()
         self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
-        self.efield_lut = e_field_brain.lut
+        #self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
@@ -1697,7 +1698,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            #lut = self.CreateLUTtableforefield(self.min, self.max)
+            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
 
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
@@ -1739,7 +1740,7 @@ class Viewer(wx.Panel):
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
-        #self.GetEfieldMaxMin(enorm)
+        self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
