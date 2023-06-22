@@ -386,27 +386,31 @@ class SurfaceManager():
         return polydata
 
     def OnWriteCustomBinFile(self, polydata, filename):
-        idlist = vtkIdList()
-        points = np.zeros((polydata.GetNumberOfPoints(), 3))
-        elements = np.zeros((polydata.GetNumberOfCells(), 3))
-        id = 0
-        nop = polydata.GetNumberOfPoints()
-        noe = polydata.GetNumberOfCells()
-        for i in range(polydata.GetNumberOfPoints()):
-            x = polydata.GetPoint(i)
-            points[i] = [j / 1000 for j in x]
-        for i in range(polydata.GetNumberOfCells()):
-            polydata.GetCellPoints(i, idlist)
-            elements[i, 0] = idlist.GetId(0)
-            elements[i, 1] = idlist.GetId(1)
-            elements[i, 2] = idlist.GetId(2)
-        data = {'p': points, 'e': elements}
-        with open(filename, 'wb') as f:
-            np.array(id, dtype=np.int32).tofile(f)
-            np.array(nop, dtype=np.int32).tofile(f)
-            np.array(noe, dtype=np.int32).tofile(f)
-            np.array(data['p'], dtype=np.float32).tofile(f)
-            np.array(data['e'], dtype=np.int32).tofile(f)
+        import os
+        if os.path.exists(filename) and os.path.isdir(filename):
+            idlist = vtkIdList()
+            points = np.zeros((polydata.GetNumberOfPoints(), 3))
+            elements = np.zeros((polydata.GetNumberOfCells(), 3))
+            id = 0
+            nop = polydata.GetNumberOfPoints()
+            noe = polydata.GetNumberOfCells()
+            for i in range(polydata.GetNumberOfPoints()):
+                x = polydata.GetPoint(i)
+                points[i] = [j / 1000 for j in x]
+            for i in range(polydata.GetNumberOfCells()):
+                polydata.GetCellPoints(i, idlist)
+                elements[i, 0] = idlist.GetId(0)
+                elements[i, 1] = idlist.GetId(1)
+                elements[i, 2] = idlist.GetId(2)
+            data = {'p': points, 'e': elements}
+            with open(filename, 'wb') as f:
+                np.array(id, dtype=np.int32).tofile(f)
+                np.array(nop, dtype=np.int32).tofile(f)
+                np.array(noe, dtype=np.int32).tofile(f)
+                np.array(data['p'], dtype=np.float32).tofile(f)
+                np.array(data['e'], dtype=np.int32).tofile(f)
+        else:
+            return
 
     def OnImportJsonConfig(self, filename, convert_to_inv):
         import json
@@ -415,6 +419,10 @@ class SurfaceManager():
         cortex =config_dict['path_meshes']+config_dict['cortex']
         bmeshes = config_dict['bmeshes']
         coil = config_dict['coil']
+        if config_dict['path_meshes_second_computer'] !='':
+            path_meshes = config_dict['path_meshes_second_computer']
+        else:
+            path_meshes = config_dict['path_meshes']
         if 'multilocus_coils' in config_dict:
             multilocus_coil = config_dict['multilocus_coils']
             multilocus_coil_list = []
@@ -425,7 +433,7 @@ class SurfaceManager():
         surface_index_cortex = self.OnImportCustomBinFile(cortex)
         if surface_index_cortex is not None:
             proj = prj.Project()
-            cortex_save_file = config_dict['path_meshes']+'export_inv/'+config_dict['cortex']
+            cortex_save_file = path_meshes +'export_inv/'+config_dict['cortex']
             polydata = proj.surface_dict[surface_index_cortex].polydata
             self.OnWriteCustomBinFile(polydata,cortex_save_file)
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
@@ -439,7 +447,7 @@ class SurfaceManager():
                 co = elements['co']
                 surface_index_bmesh = self.OnImportCustomBinFile(file)
                 if surface_index_bmesh is not None:
-                    bmeshes_save_file = config_dict['path_meshes'] + 'export_inv/' + elements['file']
+                    bmeshes_save_file = path_meshes + 'export_inv/' + elements['file']
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
                     self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
                     bmeshes_list.append(bmeshes_save_file)
