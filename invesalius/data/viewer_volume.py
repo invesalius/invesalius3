@@ -1638,7 +1638,7 @@ class Viewer(wx.Panel):
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
         self.min = min
-        self.max = max*0.75
+        self.max = max*const.EFIELD_MAX_RANGE_SCALE
         print('self max', self.max)
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
@@ -1745,16 +1745,17 @@ class Viewer(wx.Panel):
     def SaveEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
 
-        position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-            position=[self.efield_coords[0], self.efield_coords[1],self.efield_coords[2]],
-            orientation=[self.efield_coords[3], self.efield_coords[4],self.efield_coords[5]],
-        )
-        efield_coords_position = [position_world, orientation_world]
         with open(filename, 'wb') as f:
             np.savetxt(f, self.coil_position_Trot)
             np.savetxt(f, self.coil_position)
-            np.savetxt(f, self.efield_coords)
-            np.savetxt(f, efield_coords_position)
+            if self.efield_coords is not None:
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+                    orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+                )
+                efield_coords_position = [position_world, orientation_world]
+                np.savetxt(f, self.efield_coords)
+                np.savetxt(f, efield_coords_position)
             np.savetxt(f, self.e_field_norms)
 
     def GetCellIntersection(self, p1, p2, locator):
