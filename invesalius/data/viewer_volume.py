@@ -1639,7 +1639,6 @@ class Viewer(wx.Panel):
         min = np.amin(self.e_field_norms)
         self.min = min
         self.max = max*const.EFIELD_MAX_RANGE_SCALE
-        print('self max', self.max)
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
