@@ -2826,7 +2826,8 @@ class E_fieldPanel(wx.Panel):
         self.surface_index= surface_index_cortex
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnGetEfieldPaths(self, cortex_file, meshes_file, coil, ci, co):
+    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
+        self.path_meshes = path_meshes
         self.cortex_file = cortex_file
         self.meshes_file = meshes_file
         self.ci = ci
@@ -2838,12 +2839,18 @@ class E_fieldPanel(wx.Panel):
 
     def OnSaveEfield(self, evt):
         import invesalius.project as prj
+
         proj = prj.Project()
         timestamp = time.localtime(time.time())
         stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
         stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
         sep = '-'
-        parts = ['/app/data/neuronavigation/sub-c2b006/',stamp_date, stamp_time, proj.name, 'Efield']
+        if self.path_meshes is None:
+            import os
+            current_folder_path = os.getcwd()
+        else:
+            current_folder_path = self.path_meshes
+        parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
         default_filename = sep.join(parts) + '.txt'
 
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
@@ -2855,7 +2862,6 @@ class E_fieldPanel(wx.Panel):
             return
 
         Publisher.sendMessage('Save Efield data', filename = filename)
-        print('save')
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):

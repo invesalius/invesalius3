@@ -231,7 +231,6 @@ class SurfaceManager():
         Publisher.subscribe(self.OnImportCustomBinFile, 'Import bin file')
         Publisher.subscribe(self.OnWriteCustomBinFile, 'Write bin file')
         Publisher.subscribe(self.OnImportJsonConfig, "Read json config file for efield")
-
         Publisher.subscribe(self.UpdateConvertToInvFlag, 'Update convert_to_inv flag')
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, 'Create surface from polydata')
@@ -453,7 +452,7 @@ class SurfaceManager():
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
                     co_list.append(co)
-                Publisher.sendMessage('Get Efield paths', cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list)
+                Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list)
 
     def OnImportSurfaceFile(self, filename):
         """
