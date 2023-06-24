@@ -2685,9 +2685,10 @@ class E_fieldPanel(wx.Panel):
         btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
         tooltip = wx.ToolTip(_("Save Efield"))
-        btn_save = wx.Button(self, -1, _("Save Efield"), size=wx.Size(80, -1))
-        btn_save.SetToolTip(tooltip)
-        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
+        self.btn_save = wx.Button(self, -1, _("Save Efield"), size=wx.Size(80, -1))
+        self.btn_save.SetToolTip(tooltip)
+        self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
+        self.btn_save.Enable(False)
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
@@ -2705,7 +2706,7 @@ class E_fieldPanel(wx.Panel):
         line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns_save.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
@@ -2779,6 +2780,7 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(True)
+            self.btn_save.Enable(True)
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
