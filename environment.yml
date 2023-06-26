@@ -2,38 +2,33 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.8
-  - cython==0.29.28
-  - pillow==9.3.0
+  - python=3.11
+  - cython==0.29.33
+  - pillow==9.4.0
   - pypubsub==4.0.3
-  - configparser==5.0.1
-  - h5py==2.10.0
-  - imageio==2.9.0
-  - mido==1.2.10
-  - nest-asyncio==1.5.1
-  - nibabel==3.2.1
-  - numpy==1.22.1
-  - psutil==5.8.0
+  - h5py==3.8.0
+  - imageio==2.26.0
+  - nibabel==5.0.1
+  - numpy==1.24.3
+  - psutil==5.9.4
   - pyserial==3.5
-  - requests==2.26.0
-  - scikit-image==0.19.1
-  - scipy==1.7.3
-  - vtk==9.1.0
-  - wxpython==4.1.1
+  - scikit-image==0.20.0
+  - scipy==1.10.1
+  - vtk==9.2.6
+  - wxpython==4.2.0
+  - mido==1.2.10
+  - nest-asyncio==1.5.6
   - pip
   - pip:
-    - aioconsole==0.3.2
-    - opencv-python==4.5.3.56
-    - plaidml-keras==0.7.0
-    - python-gdcm==3.0.12
+    - aioconsole==0.6.1
+    - opencv-python==4.7.0.72
+    - python-gdcm==3.0.22
     - python-rtmidi==1.4.9
-    - python-socketio[client]==5.3.0
-    - pyacvd==0.2.7
+    - python-socketio[client]==5.8.0
+    - pyacvd==0.2.9
     - pyclaron
     - polhemusFT
     - polhemus
     - pypolaris
-    - theano==1.0.5
-    - torch==1.13.1
-    - uvicorn[standard]==0.15.0
-    - https://github.com/baranaydogan/trekker/raw/master/binaries/Trekker-0.9-cp38-cp38-win_amd64.whl
+    - Trekker
+    - uvicorn[standard]==0.22.0
