@@ -3,19 +3,19 @@ channels:
   - bioconda
 dependencies:
   - python=3.11
-  - cython==0.29.33
+  - cython==0.29.35
   - pillow==9.4.0
   - pypubsub==4.0.3
   - h5py==3.8.0
-  - imageio==2.26.0
-  - nibabel==5.0.1
+  - imageio==2.31.1
+  - nibabel==5.1.0
   - numpy==1.24.3
   - psutil==5.9.4
   - pyserial==3.5
-  - scikit-image==0.20.0
+  - pytorch==2.0.1
+  - requests==2.31.0
   - scipy==1.10.1
   - vtk==9.2.6
-  - wxpython==4.2.0
   - mido==1.2.10
   - nest-asyncio==1.5.6
   - pip
@@ -26,9 +26,11 @@ dependencies:
     - python-rtmidi==1.4.9
     - python-socketio[client]==5.8.0
     - pyacvd==0.2.9
-    - pyclaron
-    - polhemusFT
-    - polhemus
-    - pypolaris
-    - Trekker
+    - pyclaron==0.0.4
+    - polhemusFT==0.0.3
+    - polhemus==0.0.3
+    - pypolaris==0.0.7
+    - scikit-image==0.21.0
+    - Trekker==0.9
     - uvicorn[standard]==0.22.0
+    - wxPython==4.2.1
