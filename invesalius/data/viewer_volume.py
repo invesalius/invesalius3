@@ -503,11 +503,13 @@ class Viewer(wx.Panel):
                 self.ball_actor = None
 
             self.UpdateRender()
-
+    
+    
     def OnSensors(self, markers_flag):
         probe_id, ref_id, obj_id = markers_flag
 
         if not self.probe:
+            self.probe = True
             self.CreateSensorID()
 
         if probe_id:
