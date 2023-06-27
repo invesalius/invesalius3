@@ -37,6 +37,7 @@ from vtkmodules.vtkCommonCore import (
     vtkPoints,
     vtkUnsignedCharArray
 )
+
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
@@ -58,6 +59,8 @@ from vtkmodules.vtkInteractionWidgets import (
     vtkImagePlaneWidget,
     vtkOrientationMarkerWidget,
 )
+from vtkmodules.vtkFiltersCore import vtkCenterOfMass
+
 from vtkmodules.vtkIOExport import (
     vtkIVExporter,
     vtkOBJExporter,
@@ -1294,22 +1297,22 @@ class Viewer(wx.Panel):
         return actor_arrow
 
     def CenterOfMass(self):
-        barycenter = [0.0, 0.0, 0.0]
+
         proj = prj.Project()
         try:
             surface = proj.surface_dict[0].polydata
         except KeyError:
             print("There is not any surface created")
-            return barycenter
-        n = surface.GetNumberOfPoints()
-        for i in range(n):
-            point = surface.GetPoint(i)
-            barycenter[0] += point[0]
-            barycenter[1] += point[1]
-            barycenter[2] += point[2]
-        barycenter[0] /= n
-        barycenter[1] /= n
-        barycenter[2] /= n
+
+        polydata = surface
+
+        centerOfMass = vtkCenterOfMass()
+        centerOfMass.SetInputData(polydata)
+        centerOfMass.SetUseScalarsAsWeights(False)
+        centerOfMass.Update()
+
+        barycenter = centerOfMass.GetCenter()
+
 
         return barycenter
 
