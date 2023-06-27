@@ -2669,6 +2669,12 @@ class E_fieldPanel(wx.Panel):
         btn_act2.Enable(1)
         btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
+        tooltip = wx.ToolTip(_("Save Efield"))
+        self.btn_save = wx.Button(self, -1, _("Save Efield"), size=wx.Size(80, -1))
+        self.btn_save.SetToolTip(tooltip)
+        self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
+        self.btn_save.Enable(False)
+
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
         spin_sleep.Enable(1)
@@ -2683,6 +2689,9 @@ class E_fieldPanel(wx.Panel):
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
+        line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
@@ -2700,6 +2709,7 @@ class E_fieldPanel(wx.Panel):
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
 
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
@@ -2755,6 +2765,7 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(True)
+            self.btn_save.Enable(True)
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
@@ -2763,10 +2774,10 @@ class E_fieldPanel(wx.Panel):
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
-        self.proj = prj.Project()
+        proj = prj.Project()
         self.combo_surface_name.Clear()
-        for n in range(len(self.proj.surface_dict)):
-            self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for n in range(len(proj.surface_dict)):
+            self.combo_surface_name.Insert(str(proj.surface_dict[n].name), n)
 
     def OnComboCoilNameClic(self, evt):
         self.combo_surface_name.Clear()
@@ -2802,7 +2813,8 @@ class E_fieldPanel(wx.Panel):
         self.surface_index= surface_index_cortex
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnGetEfieldPaths(self, cortex_file, meshes_file, coil, ci, co):
+    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
+        self.path_meshes = path_meshes
         self.cortex_file = cortex_file
         self.meshes_file = meshes_file
         self.ci = ci
@@ -2811,6 +2823,32 @@ class E_fieldPanel(wx.Panel):
 
     def OnGetMultilocusCoils(self, multilocus_coil_list):
         self.multilocus_coil = multilocus_coil_list
+
+    def OnSaveEfield(self, evt):
+        import invesalius.project as prj
+
+        proj = prj.Project()
+        timestamp = time.localtime(time.time())
+        stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+        stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+        sep = '-'
+        if self.path_meshes is None:
+            import os
+            current_folder_path = os.getcwd()
+        else:
+            current_folder_path = self.path_meshes
+        parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
+        default_filename = sep.join(parts) + '.txt'
+
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                          wildcard='(*.txt)|*.txt',
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename=default_filename)
+
+        if not filename:
+            return
+
+        Publisher.sendMessage('Save Efield data', filename = filename)
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):

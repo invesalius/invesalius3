@@ -127,8 +127,8 @@ class UpdateNavigationScene(threading.Thread):
                                  coord=coord, queue_IDs=self.e_field_IDs_queue)
                     if not self.e_field_norms_queue.empty():
                         try:
-                            enorm = self.e_field_norms_queue.get_nowait()
-                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm=enorm)
+                            enorm_data = self.e_field_norms_queue.get_nowait()
+                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm_data=enorm_data)
                         finally:
                             self.e_field_norms_queue.task_done()
 
