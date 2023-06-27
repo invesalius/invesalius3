@@ -61,8 +61,6 @@ from vtkmodules.vtkInteractionWidgets import (
     vtkImagePlaneWidget,
     vtkOrientationMarkerWidget,
 )
-
-
 from vtkmodules.vtkIOExport import (
     vtkIVExporter,
     vtkOBJExporter,
@@ -1306,7 +1304,6 @@ class Viewer(wx.Panel):
         except KeyError:
             print("There is not any surface created")
             return barycenter
-
 
         polydata = surface
 
