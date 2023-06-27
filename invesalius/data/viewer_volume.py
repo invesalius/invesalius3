@@ -1305,6 +1305,8 @@ class Viewer(wx.Panel):
             surface = proj.surface_dict[0].polydata
         except KeyError:
             print("There is not any surface created")
+            return barycenter
+
 
         polydata = surface
 
