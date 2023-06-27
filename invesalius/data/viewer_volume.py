@@ -43,7 +43,10 @@ from vtkmodules.vtkCommonColor import (
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersCore import (
+    vtkPolyDataNormals,
+    vtkCenterOfMass,
+)
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersSources import (
@@ -1302,15 +1305,15 @@ class Viewer(wx.Panel):
         except KeyError:
             print("There is not any surface created")
             return barycenter
-        n = surface.GetNumberOfPoints()
-        for i in range(n):
-            point = surface.GetPoint(i)
-            barycenter[0] += point[0]
-            barycenter[1] += point[1]
-            barycenter[2] += point[2]
-        barycenter[0] /= n
-        barycenter[1] /= n
-        barycenter[2] /= n
+
+        polydata = surface
+
+        centerOfMass = vtkCenterOfMass()
+        centerOfMass.SetInputData(polydata)
+        centerOfMass.SetUseScalarsAsWeights(False)
+        centerOfMass.Update()
+
+        barycenter = centerOfMass.GetCenter()
 
         return barycenter
 
