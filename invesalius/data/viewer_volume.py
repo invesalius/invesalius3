@@ -37,14 +37,16 @@ from vtkmodules.vtkCommonCore import (
     vtkPoints,
     vtkUnsignedCharArray
 )
-
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersCore import (
+    vtkPolyDataNormals,
+    vtkCenterOfMass,
+)
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersSources import (
@@ -59,7 +61,7 @@ from vtkmodules.vtkInteractionWidgets import (
     vtkImagePlaneWidget,
     vtkOrientationMarkerWidget,
 )
-from vtkmodules.vtkFiltersCore import vtkCenterOfMass
+
 
 from vtkmodules.vtkIOExport import (
     vtkIVExporter,
@@ -1297,7 +1299,7 @@ class Viewer(wx.Panel):
         return actor_arrow
 
     def CenterOfMass(self):
-
+        barycenter = [0.0, 0.0, 0.0]
         proj = prj.Project()
         try:
             surface = proj.surface_dict[0].polydata
@@ -1312,7 +1314,6 @@ class Viewer(wx.Panel):
         centerOfMass.Update()
 
         barycenter = centerOfMass.GetCenter()
-
 
         return barycenter
 
