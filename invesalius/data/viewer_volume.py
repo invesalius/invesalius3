@@ -22,7 +22,7 @@
 # from math import cos, sin
 import os
 import sys
-import time
+
 import numpy as np
 from numpy.core.umath_tests import inner1d
 import wx
@@ -1297,7 +1297,6 @@ class Viewer(wx.Panel):
         return actor_arrow
 
     def CenterOfMass(self):
-        st = time.time()
 
         proj = prj.Project()
         try:
@@ -1313,9 +1312,7 @@ class Viewer(wx.Panel):
         centerOfMass.Update()
 
         barycenter = centerOfMass.GetCenter()
-        et = time.time()
-        elapsed_time = et - st
-        print('Execution time:', elapsed_time, 'seconds')
+
 
         return barycenter
 
