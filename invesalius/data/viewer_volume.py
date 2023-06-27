@@ -1675,6 +1675,10 @@ class Viewer(wx.Panel):
         self.efield_mapper.ScalarVisibilityOn()
         self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
+        self.efield_coords = None
+        self.coil_position = None
+        self.coil_position_Trot = None
+        self.efield_norms = None
         #self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
