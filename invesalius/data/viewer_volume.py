@@ -59,7 +59,7 @@ from vtkmodules.vtkInteractionWidgets import (
     vtkImagePlaneWidget,
     vtkOrientationMarkerWidget,
 )
-from vtkmodules.all import vtkCenterOfMass
+from vtkmodules.vtkFiltersCore import vtkCenterOfMass
 
 from vtkmodules.vtkIOExport import (
     vtkIVExporter,
