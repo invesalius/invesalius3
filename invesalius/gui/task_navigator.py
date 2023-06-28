@@ -1754,6 +1754,10 @@ class MarkersPanel(wx.Panel):
             send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
 
+        efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+
+
         menu_id.AppendSeparator()
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
@@ -1806,6 +1810,12 @@ class MarkersPanel(wx.Panel):
         self.__set_marker_as_target(idx)
 
         self.SaveState()
+
+    def OnMenuSaveEfieldTargetData(self,evt):
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        position = self.markers[list_index].position
+        orientation = self.markers[list_index].orientation
+        Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation)
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()

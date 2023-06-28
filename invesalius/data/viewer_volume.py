@@ -397,7 +397,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
         Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
-
+        Publisher.subscribe(self.SaveEfieldTargetData, 'Save target data')
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
@@ -1620,6 +1620,14 @@ class Viewer(wx.Panel):
         self.max_efield_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
         self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
 
+    def SaveEfieldTargetData(self, target_list_index, position, orientation):
+        index_ids = []
+        for h in range(self.radius_list.GetNumberOfIds()):
+            index_ids.append(self.radius_list.GetId(h))
+
+        self.target_radius_list.append([target_list_index, index_ids,self.e_field_norms[index_ids], position, orientation])
+        print('target list', self.target_radius_list)
+
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
@@ -1687,9 +1695,10 @@ class Viewer(wx.Panel):
         self.efield_coords = None
         self.coil_position = None
         self.coil_position_Trot = None
-        self.efield_norms = None
+        self.e_field_norms = None
         self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 0.], size=2)
         self.ren.AddActor(self.max_efield_actor)
+        self.target_radius_list=[]
 
         #self.efield_lut = e_field_brain.lut
 
