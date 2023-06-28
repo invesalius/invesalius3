@@ -2031,7 +2031,6 @@ class MarkersPanel(wx.Panel):
         else:
             Publisher.sendMessage('Show all markers',  indexes=self.marker_list_ctrl.GetItemCount())
             ctrl.SetLabel('Hide')
-        self.mTMS.SaveSequence()
 
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()

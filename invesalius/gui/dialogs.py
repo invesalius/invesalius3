@@ -3986,7 +3986,7 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.SetProgress(0)
 
     def SetProgress(self, progress):
-        self.progress.SetValue(progress * 100)
+        self.progress.SetValue(int(progress * 100))
         self.interactor.Render()
 
     def vtkmatrix_to_numpy(self, matrix):
