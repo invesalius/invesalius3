@@ -5790,7 +5790,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         main_sizer.Add(txt_pose, 0,  wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, border)
         main_sizer.Add(apply_reset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT , border_last)
         main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
-        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border/2)
+        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, int(border / 2))
         main_sizer.Add(save_load, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
         main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
         main_sizer.Add(btnsizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
