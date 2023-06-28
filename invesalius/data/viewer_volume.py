@@ -1625,8 +1625,21 @@ class Viewer(wx.Panel):
         for h in range(self.radius_list.GetNumberOfIds()):
             index_ids.append(self.radius_list.GetId(h))
 
-        self.target_radius_list.append([target_list_index, index_ids,self.e_field_norms[index_ids], position, orientation])
-        print('target list', self.target_radius_list)
+        self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms[index_ids], self.Idmax, position, orientation])
+
+    def GetTargetSavedEfieldData(self):
+        saved_target_data = self.target_radius_list[index]
+        location_previous_max = saved_target_data[3]
+        saved_efield_data = saved_target_data[2]
+
+    def OnUpdateObjectTargetGuideEfield(self, saved_efield_data, current_enorm,location_previous_max):
+        #compare current efield norms with previous saved
+        error = Cal_error(saved_efield_data, current_enorm)
+        self.previous_max_efield_actor.Get
+        return current_error
+    def Cal_error(self, ref, data):
+        error = ((ref - data) / ref)*100
+        return error
 
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
