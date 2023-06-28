@@ -1753,9 +1753,9 @@ class MarkersPanel(wx.Panel):
         if is_brain_target and has_mTMS:
             send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
-
-        efield_menu = menu_id.Append(8, _('Save Efield target Data'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+        if self.nav_status:
+            efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
 
         menu_id.AppendSeparator()
