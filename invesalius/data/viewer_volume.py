@@ -1615,6 +1615,11 @@ class Viewer(wx.Panel):
     def RecolorEfieldActor(self):
         self.efield_mesh_normals_viewer.Modified()
 
+    def MaxEfieldActor(self):
+        vtk_colors = vtkNamedColors()
+        self.max_efield_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
+        self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
+
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
@@ -1642,6 +1647,7 @@ class Viewer(wx.Panel):
         min = np.amin(self.e_field_norms)
         self.min = min
         self.max = max*const.EFIELD_MAX_RANGE_SCALE
+        self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
@@ -1682,6 +1688,9 @@ class Viewer(wx.Panel):
         self.coil_position = None
         self.coil_position_Trot = None
         self.efield_norms = None
+        self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 0.], size=2)
+        self.ren.AddActor(self.max_efield_actor)
+
         #self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
@@ -1719,6 +1728,7 @@ class Viewer(wx.Panel):
                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             self.RecolorEfieldActor()
+            self.MaxEfieldActor()
         else:
             wx.CallAfter(Publisher.sendMessage,'Recolor again')
 
