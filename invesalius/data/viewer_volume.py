@@ -534,7 +534,7 @@ class Viewer(wx.Panel):
         self.ren_probe.SetLayer(1)
 
         self.interactor.GetRenderWindow().AddRenderer(self.ren_probe)
-        self.ren_probe.SetViewport(0.01, 0.79, 0.15, 0.99)
+        self.ren_probe.SetViewport(0.01, 0.79, 0.15, 0.97)
         filename = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
 
         reader = vtkSTLReader()
@@ -555,7 +555,7 @@ class Viewer(wx.Panel):
         self.ren_ref.SetLayer(1)
 
         self.interactor.GetRenderWindow().AddRenderer(self.ren_ref)
-        self.ren_ref.SetViewport(0.01, 0.59, 0.15, 0.79)
+        self.ren_ref.SetViewport(0.01, 0.57, 0.15, 0.79)
         filename = os.path.join(inv_paths.OBJ_DIR, "head.stl")
 
         reader = vtkSTLReader()
@@ -576,20 +576,13 @@ class Viewer(wx.Panel):
         self.ren_obj.SetLayer(1)
 
         self.interactor.GetRenderWindow().AddRenderer(self.ren_obj)
-        self.ren_obj.SetViewport(0.01, 0.39, 0.15, 0.59)
-        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+        self.ren_obj.SetViewport(0.01, 0.40, 0.15, 0.57)
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
 
         reader = vtkSTLReader()
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
-        transform = vtkTransform()
-        transform.RotateZ(180)
-        transformPD = vtkTransformPolyDataFilter()
-        transformPD.SetTransform(transform)
-        transformPD.SetInputConnection(reader.GetOutputPort())
-        transformPD.Update()
-        mapper.SetInputConnection(transformPD.GetOutputPort())
 
         dummy_obj_actor = vtkActor()
         dummy_obj_actor.SetMapper(mapper)
