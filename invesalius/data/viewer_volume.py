@@ -1640,16 +1640,16 @@ class Viewer(wx.Panel):
                     self.saved_target_data = self.target_radius_list[target_index]
                     break
 
-        location_previous_max = self.saved_target_data[3]
-        saved_efield_data = self.saved_target_data[2]
+        #location_previous_max = self.saved_target_data[3]
+        #saved_efield_data = self.saved_target_data[2]
 
     def CheckStatusSavedEfieldData(self):
+        indexes_saved_list = []
         if len(self.target_radius_list)>0:
             efield_data_loaded= True
-            indexes_saved_list = self.target_radius_list[len(self.target_radius_list)-1][0]
+            indexes_saved_list = np.array(self.target_radius_list[:][0])
         else:
             efield_data_loaded = False
-            indexes_saved_list = []
         Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded, indexes_saved_list= indexes_saved_list )
 
     def OnUpdateObjectTargetGuideEfield(self, saved_efield_data, current_enorm,location_previous_max):

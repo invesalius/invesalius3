@@ -1759,20 +1759,21 @@ class MarkersPanel(wx.Panel):
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
 
         if self.nav_status and self.navigation.e_field_loaded:
-            efield_menu = menu_id.Append(8, _('Save Efield target Data'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+            Publisher.sendMessage('Check efield data')
+            if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
+                efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
         if self.navigation.e_field_loaded:
             Publisher.sendMessage('Check efield data')
             if self.efield_data_loaded:
-                self.indexes_saved_lists.index(marker_list_ctrl.GetFocusedItem(), start, end)
-
-                if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
-                    efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
-                    menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
-                else:
-                    efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
-                    menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
+                if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
+                    if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
+                        efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
+                        menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
+                    else:
+                        efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
+                        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         menu_id.AppendSeparator()
 
@@ -1828,8 +1829,9 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
+        self.indexes_saved_lists= []
         self.efield_data_loaded = efield_data_loaded
-        self.indexes_savd_lists = indexes_saved_list
+        self.indexes_saved_lists = indexes_saved_list
 
     def OnMenuSetEfieldTarget(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
