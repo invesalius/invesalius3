@@ -446,9 +446,9 @@ class MandibleCTSegmentProcess(SegmentProcess):
         self.resize_by_spacing = resize_by_spacing
 
         self.torch_weights_file_name = 'mandible_jit_ct.pt'
-        self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
+        self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
         self.torch_weights_hash = (
-            "7f2c43bbcaf3d9521800b6fcb1d1a984ae621c408cfcc74859118b8a23c8ac37"
+            "1ce5dd7c889dd5f2c29fc000bf16ebef3e134e29670e0fed75afa39d66541f5b"
         )
 
     def _run_segmentation(self):
