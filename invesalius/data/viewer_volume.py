@@ -398,6 +398,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
         Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
         Publisher.subscribe(self.SaveEfieldTargetData, 'Save target data')
+        Publisher.subscribe(self.GetTargetSavedEfieldData, 'Get target index efield')
+        Publisher.subscribe(self.CheckStatusSavedEfieldData, 'Check efield data')
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
@@ -1627,16 +1629,31 @@ class Viewer(wx.Panel):
 
         self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms[index_ids], self.Idmax, position, orientation])
 
-    def GetTargetSavedEfieldData(self):
-        saved_target_data = self.target_radius_list[index]
-        location_previous_max = saved_target_data[3]
-        saved_efield_data = saved_target_data[2]
+    def GetTargetSavedEfieldData(self, target_index_list):
+        if len(self.target_radius_list)>0:
+            target_index = 0
+            for i in range(len(self.target_radius_list)):
+                if target_index_list == self.target_radius_list[i][0]:
+                    target_index= i
+                    self.saved_target_data = self.target_radius_list[target_index]
+                    break
+
+        location_previous_max = self.saved_target_data[3]
+        saved_efield_data = self.saved_target_data[2]
+
+    def CheckStatusSavedEfieldData(self):
+        if len(self.target_radius_list)>0:
+            efield_data_loaded= True
+        else:
+            efield_data_loaded = False
+        Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded )
 
     def OnUpdateObjectTargetGuideEfield(self, saved_efield_data, current_enorm,location_previous_max):
         #compare current efield norms with previous saved
-        error = Cal_error(saved_efield_data, current_enorm)
+        current_error = self.Cal_error(saved_efield_data, current_enorm)
         self.previous_max_efield_actor.Get
         return current_error
+
     def Cal_error(self, ref, data):
         error = ((ref - data) / ref)*100
         return error

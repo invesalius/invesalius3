@@ -1459,6 +1459,8 @@ class MarkersPanel(wx.Panel):
 
         self.markers = []
         self.nav_status = False
+        self.efield_loaded = False
+        self.efield_data_loaded = False
         self.target_mode = False
 
         self.marker_colour = const.MARKER_COLOUR
@@ -1567,6 +1569,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
+        Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
 
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
@@ -1753,10 +1756,14 @@ class MarkersPanel(wx.Panel):
         if is_brain_target and has_mTMS:
             send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
-        if self.nav_status:
+        if self.nav_status and self.navigation.e_field_loaded:
             efield_menu = menu_id.Append(8, _('Save Efield target Data'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
-
+        if self.navigation.e_field_loaded:
+            Publisher.sendMessage('Check efield data')
+            if self.efield_data_loaded:
+                efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         menu_id.AppendSeparator()
 
@@ -1810,6 +1817,17 @@ class MarkersPanel(wx.Panel):
         self.__set_marker_as_target(idx)
 
         self.SaveState()
+
+    def GetEfieldDataStatus(self, efield_data_loaded):
+        self.efield_data_loaded = efield_data_loaded
+
+    def OnMenuSetEfieldTarget(self,evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        if idx == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        self.__set_marker_as_target(idx)
+        Publisher.sendMessage('Get target index efield', target_index_list = idx )
 
     def OnMenuSaveEfieldTargetData(self,evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
