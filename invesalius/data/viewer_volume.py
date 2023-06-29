@@ -1623,11 +1623,11 @@ class Viewer(wx.Panel):
         self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
 
     def SaveEfieldTargetData(self, target_list_index, position, orientation):
-        index_ids = []
-        for h in range(self.radius_list.GetNumberOfIds()):
-            index_ids.append(self.radius_list.GetId(h))
-
-        self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms[index_ids], self.Idmax, position, orientation])
+        if self.radius_list.GetNumberOfIds()>0:
+            index_ids = []
+            for h in range(self.radius_list.GetNumberOfIds()):
+                index_ids.append(self.radius_list.GetId(h))
+            self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms, self.Idmax, position, orientation])
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list)>0:
@@ -1651,7 +1651,7 @@ class Viewer(wx.Panel):
     def OnUpdateObjectTargetGuideEfield(self, saved_efield_data, current_enorm,location_previous_max):
         #compare current efield norms with previous saved
         current_error = self.Cal_error(saved_efield_data, current_enorm)
-        self.previous_max_efield_actor.Get
+        ##self.previous_max_efield_actor.
         return current_error
 
     def Cal_error(self, ref, data):
