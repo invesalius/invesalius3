@@ -1461,6 +1461,7 @@ class MarkersPanel(wx.Panel):
         self.nav_status = False
         self.efield_loaded = False
         self.efield_data_loaded = False
+        self.efield_target_idx = None
         self.target_mode = False
 
         self.marker_colour = const.MARKER_COLOUR
@@ -1756,14 +1757,22 @@ class MarkersPanel(wx.Panel):
         if is_brain_target and has_mTMS:
             send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
+
         if self.nav_status and self.navigation.e_field_loaded:
             efield_menu = menu_id.Append(8, _('Save Efield target Data'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+
         if self.navigation.e_field_loaded:
             Publisher.sendMessage('Check efield data')
             if self.efield_data_loaded:
-                efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
-                menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
+                self.indexes_saved_lists.index(marker_list_ctrl.GetFocusedItem(), start, end)
+
+                if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
+                    efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
+                    menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
+                else:
+                    efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
+                    menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         menu_id.AppendSeparator()
 
@@ -1818,8 +1827,9 @@ class MarkersPanel(wx.Panel):
 
         self.SaveState()
 
-    def GetEfieldDataStatus(self, efield_data_loaded):
+    def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.efield_data_loaded = efield_data_loaded
+        self.indexes_savd_lists = indexes_saved_list
 
     def OnMenuSetEfieldTarget(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -1827,6 +1837,7 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
         self.__set_marker_as_target(idx)
+        self.efield_target_idx = idx
         Publisher.sendMessage('Get target index efield', target_index_list = idx )
 
     def OnMenuSaveEfieldTargetData(self,evt):
@@ -1849,6 +1860,18 @@ class MarkersPanel(wx.Panel):
         dialog.Destroy()
 
         self.SaveState()
+
+    def OnMenuRemoveEfieldTarget(self,evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        self.markers[idx].is_target = False
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
+        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
+        Publisher.sendMessage('Disable or enable coil tracker', status=False)
+        Publisher.sendMessage('Update target', coord=None)
+        self.efield_target_idx = None
+        #self.__delete_all_brain_targets()
+        wx.MessageBox(_("Efield target removed."), _("InVesalius 3"))
 
     def OnMenuRemoveTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()

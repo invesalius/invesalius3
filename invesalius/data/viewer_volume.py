@@ -1619,8 +1619,10 @@ class Viewer(wx.Panel):
 
     def MaxEfieldActor(self):
         vtk_colors = vtkNamedColors()
+        self.ren.RemoveActor(self.max_efield_actor)
         self.max_efield_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
         self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
+        self.ren.AddActor(self.max_efield_actor)
 
     def SaveEfieldTargetData(self, target_list_index, position, orientation):
         if self.radius_list.GetNumberOfIds()>0:
@@ -1644,9 +1646,11 @@ class Viewer(wx.Panel):
     def CheckStatusSavedEfieldData(self):
         if len(self.target_radius_list)>0:
             efield_data_loaded= True
+            indexes_saved_list = self.target_radius_list[len(self.target_radius_list)-1][0]
         else:
             efield_data_loaded = False
-        Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded )
+            indexes_saved_list = []
+        Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded, indexes_saved_list= indexes_saved_list )
 
     def OnUpdateObjectTargetGuideEfield(self, saved_efield_data, current_enorm,location_previous_max):
         #compare current efield norms with previous saved
