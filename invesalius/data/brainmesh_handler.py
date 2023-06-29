@@ -338,7 +338,7 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
         self.efield_mapper = vtkPolyDataMapper()
-        self.lut = CreateLUTTableForEfield(0, 0.001)
+        #self.lut = CreateLUTTableForEfield(0, 0.005)
 
 def GetCenters(mesh):
         # Compute centers of triangles

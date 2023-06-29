@@ -43,7 +43,10 @@ from vtkmodules.vtkCommonColor import (
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersCore import (
+    vtkPolyDataNormals,
+    vtkCenterOfMass,
+)
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersSources import (
@@ -393,6 +396,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
         Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
+        Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -1301,15 +1305,15 @@ class Viewer(wx.Panel):
         except KeyError:
             print("There is not any surface created")
             return barycenter
-        n = surface.GetNumberOfPoints()
-        for i in range(n):
-            point = surface.GetPoint(i)
-            barycenter[0] += point[0]
-            barycenter[1] += point[1]
-            barycenter[2] += point[2]
-        barycenter[0] /= n
-        barycenter[1] /= n
-        barycenter[2] /= n
+
+        polydata = surface
+
+        centerOfMass = vtkCenterOfMass()
+        centerOfMass.SetInputData(polydata)
+        centerOfMass.SetUseScalarsAsWeights(False)
+        centerOfMass.Update()
+
+        barycenter = centerOfMass.GetCenter()
 
         return barycenter
 
@@ -1637,7 +1641,7 @@ class Viewer(wx.Panel):
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
         self.min = min
-        self.max = max
+        self.max = max*const.EFIELD_MAX_RANGE_SCALE
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
@@ -1674,7 +1678,11 @@ class Viewer(wx.Panel):
         self.efield_mapper.ScalarVisibilityOn()
         self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
-        self.efield_lut = e_field_brain.lut
+        self.efield_coords = None
+        self.coil_position = None
+        self.coil_position_Trot = None
+        self.efield_norms = None
+        #self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
@@ -1696,7 +1704,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            #lut = self.CreateLUTtableforefield(self.min, self.max)
+            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
 
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
@@ -1732,10 +1740,29 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def GetEnorm(self, enorm):
-        self.e_field_norms = enorm
+    def GetEnorm(self, enorm_data):
+        self.e_field_norms = enorm_data[3]
+        self.coil_position_Trot = enorm_data[0]
+        self.coil_position = enorm_data[1]
+        self.efield_coords = enorm_data[2]
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
-        #self.GetEfieldMaxMin(enorm)
+        self.GetEfieldMaxMin(self.e_field_norms)
+
+    def SaveEfieldData(self, filename):
+        import invesalius.data.imagedata_utils as imagedata_utils
+
+        with open(filename, 'wb') as f:
+            np.savetxt(f, self.coil_position_Trot)
+            np.savetxt(f, self.coil_position)
+            if self.efield_coords is not None:
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+                    orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+                )
+                efield_coords_position = [position_world, orientation_world]
+                np.savetxt(f, self.efield_coords)
+                np.savetxt(f, efield_coords_position)
+            np.savetxt(f, self.e_field_norms)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()

@@ -2,36 +2,35 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.8
-  - cython==0.29.24
-  - pillow==8.3.2
+  - python=3.11
+  - cython==0.29.35
+  - pillow==9.4.0
   - pypubsub==4.0.3
-  - configparser==5.0.1
-  - h5py==2.10.0
-  - imageio==2.9.0
-  - nibabel==3.2.1
-  - numpy==1.21.2
-  - psutil==5.8.0
+  - h5py==3.8.0
+  - imageio==2.31.1
+  - nibabel==5.1.0
+  - numpy==1.24.3
+  - psutil==5.9.4
   - pyserial==3.5
-  - scikit-image==0.18.3
-  - scipy==1.7.1
-  - vtk==9.0.3
-  - wxpython==4.1.1
+  - pytorch==2.0.1
+  - requests==2.31.0
+  - scipy==1.10.1
+  - vtk==9.2.6
   - mido==1.2.10
-  - nest-asyncio==1.5.1
+  - nest-asyncio==1.5.6
   - pip
   - pip:
-    - aioconsole==0.3.2
-    - opencv-python==4.5.3.56
-    - plaidml-keras==0.7.0
-    - python-gdcm==3.0.9.1
+    - aioconsole==0.6.1
+    - opencv-python==4.7.0.72
+    - python-gdcm==3.0.22
     - python-rtmidi==1.4.9
-    - python-socketio[client]==5.3.0
-    - pyacvd==0.2.7
-    - pyclaron
-    - polhemusFT
-    - polhemus
-    - pypolaris
-    - theano==1.0.5
-    - uvicorn[standard]==0.15.0
-    - https://github.com/baranaydogan/trekker/raw/master/binaries/Trekker-0.9-cp38-cp38-win_amd64.whl
+    - python-socketio[client]==5.8.0
+    - pyacvd==0.2.9
+    - pyclaron==0.0.4
+    - polhemusFT==0.0.3
+    - polhemus==0.0.3
+    - pypolaris==0.0.7
+    - scikit-image==0.21.0
+    - Trekker==0.9
+    - uvicorn[standard]==0.22.0
+    - wxPython==4.2.1

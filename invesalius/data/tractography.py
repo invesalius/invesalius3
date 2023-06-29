@@ -283,6 +283,7 @@ class ComputeTractsThread(threading.Thread):
                 # print("p_new_shape", coord_offset.shape)
                 # print("m_img_flip_shape", m_img_flip.shape)
                 seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
+                coord_offset_w = np.hstack((coord_offset, 1.0)).reshape([4, 1])
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
@@ -321,12 +322,14 @@ class ComputeTractsThread(threading.Thread):
                 else:
                     bundle = None
 
+                coord_offset_w = np.linalg.inv(affine) @ coord_offset_w
+                coord_offset_w = np.squeeze(coord_offset_w.T[:, :3])
                 # rethink if this should be inside the if condition, it may lock the thread if no tracts are found
                 # use no wait to ensure maximum speed and avoid visualizing old tracts in the queue, this might
                 # be more evident in slow computer or for heavier tract computations, it is better slow update
                 # than visualizing old data
                 # self.visualization_queue.put_nowait([coord, m_img, bundle])
-                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset))
+                self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset, coord_offset_w))
                 # print('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_tracts_queue.task_done()

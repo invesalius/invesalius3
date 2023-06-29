@@ -690,7 +690,7 @@ DEBUGTRACKAPPROACH = 11
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
-NDI_IP = ['169.254.145.124']
+NDI_IP = ['P9-13715.local', 'P9-13719.local']
 
 TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
@@ -823,8 +823,11 @@ MAX_PEEL_DEPTH = 40
 SEED_OFFSET = 30
 SEED_RADIUS = 1.5
 
+#Efield Visualization
+EFIELD_MAX_RANGE_SCALE = 0.75
+
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.2
+SLEEP_NAVIGATION = 0.1
 SLEEP_COORDINATES = 0.1
 
 BRAIN_OPACITY = 0.6

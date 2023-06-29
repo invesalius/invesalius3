@@ -1758,18 +1758,12 @@ class MarkersPanel(wx.Panel):
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
         if self.tracker.tracker_id == const.ROBOT:
-            send_target_to_robot_compensation = menu_id.Append(7, _('Sets target to robot head move compensation'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetRobotCompensation, send_target_to_robot_compensation)
-
-            send_target_to_robot = menu_id.Append(8, _('Send InVesalius target to robot'))
-
+            send_target_to_robot = menu_id.Append(7, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
-            send_target_to_robot_compensation.Enable(False)
             send_target_to_robot.Enable(False)
 
             if self.nav_status and self.target_mode and (self.marker_list_ctrl.GetFocusedItem() == self.__find_target_marker()):
-                send_target_to_robot_compensation.Enable(True)
                 send_target_to_robot.Enable(True)
 
         is_target_orientation_set = all([elem is not None for elem in self.markers[self.marker_list_ctrl.GetFocusedItem()].orientation])
@@ -1806,6 +1800,9 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
+        if self.tracker.tracker_id == const.ROBOT:
+            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                  target_index=None, target=None)
         self.__set_marker_as_target(idx)
 
         self.SaveState()
@@ -1864,16 +1861,6 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set new color', index=index, color=color_new)
 
         self.SaveState()
-
-    def OnMenuSetRobotCompensation(self, evt):
-        if isinstance(evt, int):
-           self.marker_list_ctrl.Focus(evt)
-
-        Publisher.sendMessage('Reset robot process', data=None)
-        matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
-        Publisher.sendMessage('Update tracker fiducials matrix',
-                              matrix_tracker_fiducials=matrix_tracker_fiducials)
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.marker_list_ctrl.GetFocusedItem(), target=None)
 
     def OnMenuSendTargetToRobot(self, evt):
         if isinstance(evt, int):
@@ -2044,7 +2031,6 @@ class MarkersPanel(wx.Panel):
         else:
             Publisher.sendMessage('Show all markers',  indexes=self.marker_list_ctrl.GetItemCount())
             ctrl.SetLabel('Hide')
-        self.mTMS.SaveSequence()
 
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
@@ -2139,8 +2125,6 @@ class MarkersPanel(wx.Panel):
             current_head_robot_target_status = True
         else:
             current_head_robot_target_status = False
-
-        Publisher.sendMessage('Add marker to robot control', data=current_head_robot_target_status)
 
         if all([elem is not None for elem in new_marker.orientation]):
             arrow_flag = True
@@ -2662,6 +2646,12 @@ class E_fieldPanel(wx.Panel):
         self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
+        self.cortex_file = None
+        self.meshes_file = None
+        self.multilocus_coil = None
+        self.coil = None
+        self.ci = None
+        self.co = None
         self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
         self.session = ses.Session()
@@ -2672,11 +2662,17 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
-        tooltip = wx.ToolTip(_("Load Brain Meshes"))
-        btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
-        btn_act.SetToolTip(tooltip)
-        btn_act.Enable(1)
-        btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
+        tooltip2 = wx.ToolTip(_("Load Brain Json config"))
+        btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
+        btn_act2.SetToolTip(tooltip2)
+        btn_act2.Enable(1)
+        btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
+
+        tooltip = wx.ToolTip(_("Save Efield"))
+        self.btn_save = wx.Button(self, -1, _("Save Efield"), size=wx.Size(80, -1))
+        self.btn_save.SetToolTip(tooltip)
+        self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
+        self.btn_save.Enable(False)
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
@@ -2691,37 +2687,56 @@ class E_fieldPanel(wx.Panel):
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
+        line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Select brain mesh:'))
-        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 25),
+        txt_surface = wx.StaticText(self, -1, _('Change coil:'), pos=(0,100))
+        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 50),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
-
         # combo_surface_name.SetSelection(0)
-        self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboNameClic)
-        self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.combo_surface_name.Insert('Select brain mesh:',0)
+        self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboCoilNameClic)
+        self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboCoil)
+        self.combo_surface_name.Insert('Select coil:',0)
+        self.combo_surface_name.Enable(False)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
         main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
+        main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
 
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
+        Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
+        Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
 
-    def OnAddMeshes(self, evt):
-        filename = dlg.ShowImportMeshFilesDialog()
+    def OnAddConfig(self, evt):
+        filename = dlg.LoadConfigEfield()
         if filename:
             convert_to_inv = dlg.ImportMeshCoordSystem()
+            Publisher.sendMessage('Update status in GUI', value=50, label="Loading E-field...")
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
-        Publisher.sendMessage('Import bin file', filename=filename)
+            Publisher.sendMessage('Read json config file for efield', filename=filename, convert_to_inv=convert_to_inv)
+            self.Init_efield()
+
+    def Init_efield(self):
+        self.navigation.neuronavigation_api.initialize_efield(
+            cortex_model_path=self.cortex_file,
+            mesh_models_paths=self.meshes_file,
+            coil_model_path=self.coil,
+            conductivities_inside=self.ci,
+            conductivities_outside=self.co,
+        )
+        Publisher.sendMessage('Update status in GUI', value=0, label="Ready")
 
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
@@ -2739,39 +2754,47 @@ class E_fieldPanel(wx.Panel):
             else:
                 if not self.navigation.neuronavigation_api.connection:
                     dlg.Efield_connection_warning()
-                    self.combo_surface_name.Enable(False)
+                    #self.combo_surface_name.Enable(False)
                     self.enable_efield.Enable(False)
                     self.e_field_loaded = False
                     return
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
-            filename = dlg.ShowLoadSaveDialog(message=_(u"Save binfile..."),
-                                              wildcard=_("Registration files (*.bin)|*.bin"),
-                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                                              default_filename="my_binfile", save_ext="bin")
-            print('filename:',filename)
-            Publisher.sendMessage('Write bin file', polydata = self.e_field_mesh, filename=filename)
+
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
-            self.combo_surface_name.Enable(False)
+            self.combo_surface_name.Enable(True)
+            self.btn_save.Enable(True)
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
-            self.combo_surface_name.Enable(True)
+            #self.combo_surface_name.Enable(True)
         self.navigation.e_field_loaded = self.e_field_loaded
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
-        self.proj = prj.Project()
+        proj = prj.Project()
         self.combo_surface_name.Clear()
-        for n in range(len(self.proj.surface_dict)):
-            self.combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for n in range(len(proj.surface_dict)):
+            self.combo_surface_name.Insert(str(proj.surface_dict[n].name), n)
 
-    def OnComboName(self, evt):
-        surface_name = evt.GetString()
-        self.surface_index = evt.GetSelection()
-        self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
-        Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+    def OnComboCoilNameClic(self, evt):
+        self.combo_surface_name.Clear()
+        if self.multilocus_coil is not None:
+            for elements in range(len(self.multilocus_coil)):
+                self.combo_surface_name.Insert(self.multilocus_coil[elements], elements)
+
+    def OnComboCoil(self, evt):
+        coil_name = evt.GetString()
+        coil_index = evt.GetSelection()
+        self.OnChangeCoil(self.multilocus_coil[coil_index])
+        #self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
+        #Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+
+    def OnChangeCoil(self, coil_model_path):
+        self.navigation.neuronavigation_api.efield_coil(
+            coil_model_path=coil_model_path,
+        )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
@@ -2784,6 +2807,47 @@ class E_fieldPanel(wx.Panel):
         # self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
+    def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
+        self.e_field_mesh = efield_actor
+        self.surface_index= surface_index_cortex
+        Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+
+    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
+        self.path_meshes = path_meshes
+        self.cortex_file = cortex_file
+        self.meshes_file = meshes_file
+        self.ci = ci
+        self.co = co
+        self.coil = coil
+
+    def OnGetMultilocusCoils(self, multilocus_coil_list):
+        self.multilocus_coil = multilocus_coil_list
+
+    def OnSaveEfield(self, evt):
+        import invesalius.project as prj
+
+        proj = prj.Project()
+        timestamp = time.localtime(time.time())
+        stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+        stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+        sep = '-'
+        if self.path_meshes is None:
+            import os
+            current_folder_path = os.getcwd()
+        else:
+            current_folder_path = self.path_meshes
+        parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
+        default_filename = sep.join(parts) + '.txt'
+
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                          wildcard='(*.txt)|*.txt',
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename=default_filename)
+
+        if not filename:
+            return
+
+        Publisher.sendMessage('Save Efield data', filename = filename)
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):

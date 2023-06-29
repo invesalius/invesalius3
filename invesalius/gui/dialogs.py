@@ -251,7 +251,8 @@ WILDCARD_MESH_FILES = "STL File format (*.stl)|*.stl|" \
                       "Alias Wavefront Object (*.obj)|*.obj|" \
                       "VTK Polydata File Format (*.vtp)|*.vtp|" \
                       "All files (*.*)|*.*"
-
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|"\
+                      "All files (*.*)|*.*"
 
 def ShowOpenProjectDialog():
     # Default system path
@@ -580,6 +581,40 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
 
     return filepath
 
+def LoadConfigEfield():
+    # Default system path
+    current_dir = os.path.abspath(".")
+
+    session = ses.Session()
+    last_directory = session.GetConfig('last_directory_surface_import', '')
+
+    dlg = wx.FileDialog(None, message=_("Import json file"),
+                        defaultDir=last_directory,
+                        wildcard=WILDCARD_JSON_FILES,
+                        style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
+
+    # stl filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filename = dlg.GetPath()
+
+    if filename:
+        session.SetConfig('last_directory_surface_import', os.path.split(filename)[0])
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filename
 
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
@@ -3951,7 +3986,7 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.SetProgress(0)
 
     def SetProgress(self, progress):
-        self.progress.SetValue(progress * 100)
+        self.progress.SetValue(int(progress * 100))
         self.interactor.Render()
 
     def vtkmatrix_to_numpy(self, matrix):
@@ -4191,6 +4226,98 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def GetValue(self):
         return self.m_icp, self.point_coord, self.actors_transformed_points, self.prev_error, self.final_error
+
+class EfieldConfiguration(wx.Dialog):
+
+    def __init__(self):
+        import invesalius.project as prj
+        self.polydata = None
+
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Set Efield Configuration"), size=(380, 440),
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        self.proj = prj.Project()
+        self._init_gui()
+        self.brain_surface = None
+        self.scalp_surface= None
+    def _init_gui(self):
+
+        tooltip = wx.ToolTip(_("Load Brain Meshes"))
+        btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
+        btn_act.SetToolTip(tooltip)
+        btn_act.Enable(1)
+        btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
+
+        txt_brain_surface = wx.StaticText(self, -1, _('Select the brain surface:'))
+
+        combo_brain_surface_name = wx.ComboBox(self, -1, size=(210, 23),
+                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        txt_scalp_surface = wx.StaticText(self, -1, _('Select the scalp surface:'))
+        combo_brain_scalp_name = wx.ComboBox(self, -1, size=(210, 23),
+                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_brain_scalp_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_brain_scalp_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_scalp_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        tooltip1 = wx.ToolTip(_(u"Target orientation done"))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
+        btn_ok.SetToolTip(tooltip1)
+        self.btn_ok = btn_ok
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+        btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
+        btn_ok_sizer.AddMany([btn_ok, btn_cancel])
+
+        btn_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=50, vgap=20)
+        btn_sizer.AddMany([(btn_ok_sizer, 1, wx.ALIGN_RIGHT)])
+
+        line_btns = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
+        top_sizer = wx.FlexGridSizer(rows=3, cols=3, hgap=50, vgap=5)
+        top_sizer.AddMany([
+                           txt_brain_surface,
+                           txt_scalp_surface,
+                           (wx.StaticText(self, -1, ''), 0, wx.EXPAND),
+                           combo_brain_surface_name,
+                           combo_brain_scalp_name,
+                          (wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+                           ])
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(line_btns, 0, wx.TOP | wx.ALIGN_LEFT)
+        main_sizer.Add(top_sizer, 0, wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
+        main_sizer.Add(btn_sizer, 0,
+                       wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def OnComboNameBrainSurface(self, evt):
+        surface_index = evt.GetSelection()
+        self.brain_surface = self.proj.surface_dict[surface_index].polydata
+        return self.brain_surface
+
+    def OnComboNameScalpSurface(self, evt):
+        surface_index = evt.GetSelection()
+        self.scalp_surface = self.proj.surface_dict[surface_index].polydata
+        return self.scalp_surface
+
+    def OnAddMeshes(self, evt):
+         filename = ShowImportMeshFilesDialog()
+         if filename:
+             convert_to_inv = ImportMeshCoordSystem()
+             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
+         Publisher.sendMessage('Import bin file', filename=filename)
 
 
 class SetCoilOrientationDialog(wx.Dialog):
@@ -5663,7 +5790,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         main_sizer.Add(txt_pose, 0,  wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, border)
         main_sizer.Add(apply_reset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT , border_last)
         main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
-        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border/2)
+        main_sizer.Add(txt_file, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, int(border / 2))
         main_sizer.Add(save_load, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
         main_sizer.Add(wx.StaticLine(self, -1), 0, wx.EXPAND | wx.TOP | wx.BOTTOM, border)
         main_sizer.Add(btnsizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border)
@@ -5840,7 +5967,8 @@ class SetNDIconfigs(wx.Dialog):
         com_ports.Append(const.NDI_IP)
         if port_selec:
             com_ports.SetSelection(port_selec[0])
-
+        else:
+            com_ports.SetSelection(0)
         self.com_ports = com_ports
 
         session = ses.Session()
@@ -5877,8 +6005,6 @@ class SetNDIconfigs(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
-        if not port_selec:
-            btn_ok.Enable(False)
         self.btn_ok = btn_ok
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
@@ -5922,7 +6048,7 @@ class SetNDIconfigs(wx.Dialog):
             session.SetConfig('last_ndi_ref_marker', self.dir_ref.GetPath())
             session.SetConfig('last_ndi_obj_marker', self.dir_obj.GetPath())
 
-        com_port = self.com_ports.GetString(self.com_ports.GetSelection())
+        com_port = self.com_ports.GetValue()
 
         return com_port, fn_probe, fn_ref, fn_obj
 
