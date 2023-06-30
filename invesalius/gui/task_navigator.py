@@ -2772,6 +2772,7 @@ class E_fieldPanel(wx.Panel):
         Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
         Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
         Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
+        Publisher.subscribe(self.SendNeuronavigationApi, 'Send Neuronavigation Api')
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
@@ -2902,6 +2903,9 @@ class E_fieldPanel(wx.Panel):
             return
 
         Publisher.sendMessage('Save Efield data', filename = filename)
+
+    def SendNeuronavigationApi(self):
+        Publisher.sendMessage('Get Neuronavigation Api', neuronavigation_api = self.navigation.neuronavigation_api)
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):

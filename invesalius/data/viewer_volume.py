@@ -400,6 +400,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SaveEfieldTargetData, 'Save target data')
         Publisher.subscribe(self.GetTargetSavedEfieldData, 'Get target index efield')
         Publisher.subscribe(self.CheckStatusSavedEfieldData, 'Check efield data')
+        Publisher.subscribe(self.GetNeuronavigationApi, 'Get Neuronavigation Api')
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
@@ -1730,11 +1731,35 @@ class Viewer(wx.Panel):
         self.coil_position = None
         self.coil_position_Trot = None
         self.e_field_norms = None
-        self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 0.], size=2)
+        self.GetEfieldRange()
+        self.max_efield_actor = self.CreateActorBall(self.efield_actor.GetCenter(), colour=[0., 0., 1.], size=2)
         self.ren.AddActor(self.max_efield_actor)
         self.target_radius_list=[]
-
         #self.efield_lut = e_field_brain.lut
+
+    def GetEfieldRange(self):
+        import invesalius.data.brainmesh_handler as brain
+
+        scalp_actor = self.ren.GetActors().GetLastActor()
+        scalp_mesh = scalp_actor.GetMapper().GetInput()
+        scalp = brain.Scalp(scalp_mesh)
+        vtk_colors = vtkNamedColors()
+        p1 = self.efield_actor.GetCenter()
+        p2 = (-p1[0]+75, p1[1], p1[2])
+        self.x_actor.SetVisibility(1)
+        self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
+        self.ren.AddActor(self.x_actor)
+        intersectingCellIds = self.GetCellIntersection(p1, p2, scalp.locator_Cell)
+        cellId = intersectingCellIds.GetId(0)
+        point = scalp.mesh_centers.GetPoint(cellId)
+        self.test_actor = self.CreateActorBall(point, colour=[1,0,0], size=2)
+        self.ren.AddActor(self.test_actor)
+        Publisher.sendMessage('Send Neuronavigation Api')
+        initial_enorm = self.neuronavigation_api.update_efield(position = point, orientation=[0.,0.,0.], T_rot=[0.698830, 0.0, 0.715288, 0.118700, 0.986135, -0.115969, -0.705370, 0.165947, 0.689140])
+        print('Max enorm', np.amax(initial_enorm))
+
+    def GetNeuronavigationApi(self, neuronavigation_api):
+        self.neuronavigation_api = neuronavigation_api
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
