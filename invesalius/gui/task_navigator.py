@@ -976,7 +976,6 @@ class ObjectRegistrationPanel(wx.Panel):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.nav_prop = None
         self.obj_fiducials = None
         self.obj_orients = None
         self.obj_ref_mode = None
@@ -1298,7 +1297,6 @@ class ObjectRegistrationPanel(wx.Panel):
         self.checkbox_track_object.SetValue(False)
         self.checkbox_track_object.Enable(0)
 
-        self.nav_prop = None
         self.obj_fiducials = None
         self.obj_orients = None
         self.obj_ref_mode = None
