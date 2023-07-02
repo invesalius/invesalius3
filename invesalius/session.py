@@ -62,6 +62,10 @@ class Session(metaclass=Singleton):
             'auto_reload_preview': False,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self._Exit, 'Exit session')
 
     def CreateConfig(self):
         import invesalius.constants as const
@@ -277,3 +281,7 @@ class Session(metaclass=Singleton):
             self._state = {}
 
         return success
+    
+    def _Exit(self):
+        self.CloseProject()
+        self.DeleteStateFile()

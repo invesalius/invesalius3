@@ -422,21 +422,27 @@ class Frame(wx.Frame):
             dialog.ShowCheckBox("Store session", True)
 
         answer = dialog.ShowModal()
-        
-        if not dialog.IsCheckBoxChecked() and answer == wx.ID_YES:
-            session = ses.Session()
-            self.CloseProject()
-            session.DeleteStateFile()
+        save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
-        return answer == wx.ID_YES
+
+        if not save and answer == wx.ID_YES:
+            return 1  # Exit and delete session
+        elif save and answer == wx.ID_YES:
+            return 2  # Exit without deleting session
+        else:
+            return 0  # Don't Exit
     
     def OnExit(self, evt):
         """
         Exit InVesalius: disconnect tracker and send 'Exit' message.
         """
-        if self.ExitDialog():
+        status = self.ExitDialog()
+        if status:
             Publisher.sendMessage('Disconnect tracker')
             Publisher.sendMessage('Exit')
+            if status == 1:
+                Publisher.sendMessage('Exit session')
+
 
     def OnMenuClick(self, evt):
         """
