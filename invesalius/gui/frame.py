@@ -412,12 +412,37 @@ class Frame(wx.Frame):
     def CloseProject(self):
         Publisher.sendMessage('Close Project')
 
+    def ExitDialog(self):
+        msg = _("Are you sure you want to exit?")
+        if sys.platform == 'darwin':
+            dialog = wx.RichMessageDialog(None, "", msg, wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT)
+            dialog.ShowCheckBox("Store session", True)
+        else:
+            dialog = wx.RichMessageDialog(None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT)
+            dialog.ShowCheckBox("Store session", True)
+
+        answer = dialog.ShowModal()
+        save = dialog.IsCheckBoxChecked()
+        dialog.Destroy()
+
+        if not save and answer == wx.ID_YES:
+            return 1  # Exit and delete session
+        elif save and answer == wx.ID_YES:
+            return 2  # Exit without deleting session
+        else:
+            return 0  # Don't Exit
+    
     def OnExit(self, evt):
         """
         Exit InVesalius: disconnect tracker and send 'Exit' message.
         """
-        Publisher.sendMessage('Disconnect tracker')
-        Publisher.sendMessage('Exit')
+        status = self.ExitDialog()
+        if status:
+            Publisher.sendMessage('Disconnect tracker')
+            Publisher.sendMessage('Exit')
+            if status == 1:
+                Publisher.sendMessage('Exit session')
+
 
     def OnMenuClick(self, evt):
         """
