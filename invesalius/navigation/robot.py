@@ -37,6 +37,7 @@ class Robot():
         self.tracker = tracker
 
         self.matrix_tracker_to_robot = None
+        self.robot_coregistration_dialog = None
 
         success = self.LoadState()
         if success:

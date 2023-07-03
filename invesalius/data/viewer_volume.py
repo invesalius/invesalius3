@@ -43,7 +43,10 @@ from vtkmodules.vtkCommonColor import (
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkFiltersCore import (
+    vtkPolyDataNormals,
+    vtkCenterOfMass,
+)
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersSources import (
@@ -255,6 +258,9 @@ class Viewer(wx.Panel):
         self.aim_actor = None
         self.dummy_coil_actor = None
         self.dummy_robot_actor = None
+        self.dummy_probe_actor = None
+        self.dummy_ref_actor = None
+        self.dummy_obj_actor = None
         self.target_mode = False
         self.polydata = None
         self.use_default_object = True
@@ -393,6 +399,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.remove_mask_preview, 'Remove mask preview')
         Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
+        Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
 
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
@@ -500,11 +507,13 @@ class Viewer(wx.Panel):
                 self.ball_actor = None
 
             self.UpdateRender()
-
+    
+    
     def OnSensors(self, markers_flag):
         probe_id, ref_id, obj_id = markers_flag
 
         if not self.probe:
+            self.probe = True
             self.CreateSensorID()
 
         if probe_id:
@@ -520,41 +529,82 @@ class Viewer(wx.Panel):
         else:
             colour3 = (1, 0, 0)
 
-        self.probe.SetColour(colour1)
-        self.ref.SetColour(colour2)
-        self.obj.SetColour(colour3)
+        self.dummy_probe_actor.GetProperty().SetColor(colour1)
+        self.dummy_ref_actor.GetProperty().SetColor(colour2)
+        self.dummy_obj_actor.GetProperty().SetColor(colour3)
 
     def CreateSensorID(self):
-        probe = vtku.Text()
-        probe.SetSize(const.TEXT_SIZE_LARGE)
-        probe.SetPosition((const.X, const.Y))
-        probe.ShadowOff()
-        probe.SetValue("P")
-        self.probe = probe
-        self.ren.AddActor(probe.actor)
+        self.ren_probe = vtkRenderer()
+        self.ren_probe.SetLayer(1)
 
-        ref = vtku.Text()
-        ref.SetSize(const.TEXT_SIZE_LARGE)
-        ref.SetPosition((const.X+0.04, const.Y))
-        ref.ShadowOff()
-        ref.SetValue("R")
-        self.ref = ref
-        self.ren.AddActor(ref.actor)
+        self.interactor.GetRenderWindow().AddRenderer(self.ren_probe)
+        self.ren_probe.SetViewport(0.01, 0.79, 0.15, 0.97)
+        filename = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
 
-        obj = vtku.Text()
-        obj.SetSize(const.TEXT_SIZE_LARGE)
-        obj.SetPosition((const.X+0.08, const.Y))
-        obj.ShadowOff()
-        obj.SetValue("O")
-        self.obj = obj
-        self.ren.AddActor(obj.actor)
-        self.UpdateRender()
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        dummy_probe_actor = vtkActor()
+        dummy_probe_actor.SetMapper(mapper)
+        dummy_probe_actor.GetProperty().SetColor(1, 1, 1)
+        dummy_probe_actor.GetProperty().SetOpacity(1.)
+        self.dummy_probe_actor = dummy_probe_actor
+
+        self.ren_probe.AddActor(dummy_probe_actor)
+        self.ren_probe.InteractiveOff()
+
+        self.ren_ref = vtkRenderer()
+        self.ren_ref.SetLayer(1)
+
+        self.interactor.GetRenderWindow().AddRenderer(self.ren_ref)
+        self.ren_ref.SetViewport(0.01, 0.57, 0.15, 0.79)
+        filename = os.path.join(inv_paths.OBJ_DIR, "head.stl")
+
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        dummy_ref_actor = vtkActor()
+        dummy_ref_actor.SetMapper(mapper)
+        dummy_ref_actor.GetProperty().SetColor(1, 1, 1)
+        dummy_ref_actor.GetProperty().SetOpacity(1.)
+        self.dummy_ref_actor = dummy_ref_actor
+
+        self.ren_ref.AddActor(dummy_ref_actor)
+        self.ren_ref.InteractiveOff()
+
+        self.ren_obj = vtkRenderer()
+        self.ren_obj.SetLayer(1)
+
+        self.interactor.GetRenderWindow().AddRenderer(self.ren_obj)
+        self.ren_obj.SetViewport(0.01, 0.40, 0.15, 0.57)
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
+
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        dummy_obj_actor = vtkActor()
+        dummy_obj_actor.SetMapper(mapper)
+        dummy_obj_actor.GetProperty().SetColor(1, 1, 1)
+        dummy_obj_actor.GetProperty().SetOpacity(1.)
+        self.dummy_obj_actor = dummy_obj_actor
+
+        self.ren_obj.AddActor(dummy_obj_actor)
+        self.ren_obj.InteractiveOff()
 
     def OnRemoveSensorsID(self):
         if self.probe:
-            self.ren.RemoveActor(self.probe.actor)
-            self.ren.RemoveActor(self.ref.actor)
-            self.ren.RemoveActor(self.obj.actor)
+            self.ren_probe.RemoveActor(self.dummy_probe_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_probe)
+            self.ren_ref.RemoveActor(self.dummy_ref_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_ref)
+            self.ren_obj.RemoveActor(self.dummy_obj_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_obj)
             self.probe = self.ref = self.obj = False
             self.UpdateRender()
 
@@ -1301,15 +1351,15 @@ class Viewer(wx.Panel):
         except KeyError:
             print("There is not any surface created")
             return barycenter
-        n = surface.GetNumberOfPoints()
-        for i in range(n):
-            point = surface.GetPoint(i)
-            barycenter[0] += point[0]
-            barycenter[1] += point[1]
-            barycenter[2] += point[2]
-        barycenter[0] /= n
-        barycenter[1] /= n
-        barycenter[2] /= n
+
+        polydata = surface
+
+        centerOfMass = vtkCenterOfMass()
+        centerOfMass.SetInputData(polydata)
+        centerOfMass.SetUseScalarsAsWeights(False)
+        centerOfMass.Update()
+
+        barycenter = centerOfMass.GetCenter()
 
         return barycenter
 
@@ -1637,7 +1687,7 @@ class Viewer(wx.Panel):
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
         self.min = min
-        self.max = max
+        self.max = max*const.EFIELD_MAX_RANGE_SCALE
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
@@ -1674,7 +1724,11 @@ class Viewer(wx.Panel):
         self.efield_mapper.ScalarVisibilityOn()
         self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
-        self.efield_lut = e_field_brain.lut
+        self.efield_coords = None
+        self.coil_position = None
+        self.coil_position_Trot = None
+        self.efield_norms = None
+        #self.efield_lut = e_field_brain.lut
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
@@ -1696,7 +1750,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            #lut = self.CreateLUTtableforefield(self.min, self.max)
+            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
 
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
@@ -1732,10 +1786,29 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def GetEnorm(self, enorm):
-        self.e_field_norms = enorm
+    def GetEnorm(self, enorm_data):
+        self.e_field_norms = enorm_data[3]
+        self.coil_position_Trot = enorm_data[0]
+        self.coil_position = enorm_data[1]
+        self.efield_coords = enorm_data[2]
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
-        #self.GetEfieldMaxMin(enorm)
+        self.GetEfieldMaxMin(self.e_field_norms)
+
+    def SaveEfieldData(self, filename):
+        import invesalius.data.imagedata_utils as imagedata_utils
+
+        with open(filename, 'wb') as f:
+            np.savetxt(f, self.coil_position_Trot)
+            np.savetxt(f, self.coil_position)
+            if self.efield_coords is not None:
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+                    orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+                )
+                efield_coords_position = [position_world, orientation_world]
+                np.savetxt(f, self.efield_coords)
+                np.savetxt(f, efield_coords_position)
+            np.savetxt(f, self.e_field_norms)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
@@ -1939,7 +2012,7 @@ class Viewer(wx.Panel):
             self.ren_robot.SetLayer(1)
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren_robot)
-            self.ren_robot.SetViewport(0.02, 0.82, 0.08, 0.92)
+            self.ren_robot.SetViewport(0.01, 0.19, 0.15, 0.39)
             filename = os.path.join(inv_paths.OBJ_DIR, "robot.stl")
 
             reader = vtkSTLReader()
