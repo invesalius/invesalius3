@@ -33,6 +33,7 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
+import invesalius.gui.task_imports as imports
 
 FPB_DEFAULT_STYLE = 2621440
 
@@ -106,10 +107,11 @@ class Panel(wx.Panel):
         #sizer = wx.BoxSizer(wx.VERTICAL)
         gbs = wx.GridBagSizer(5,5)
         #sizer.Add(UpperTaskPanel(self), 5, wx.EXPAND|wx.GROW)
-        gbs.Add(UpperTaskPanel(self), (0, 0), flag=wx.EXPAND)
-
+        self.uppertaskpanel = UpperTaskPanel(self)
+        gbs.Add(self.uppertaskpanel, (0, 0), flag=wx.EXPAND)
+        self.lowertaskpanel = LowerTaskPanel(self)
         #sizer.Add(LowerTaskPanel(self), 3, wx.EXPAND|wx.GROW)
-        gbs.Add(LowerTaskPanel(self), (1, 0), flag=wx.EXPAND | wx.ALIGN_BOTTOM)
+        gbs.Add(self.lowertaskpanel, (1, 0), flag=wx.EXPAND | wx.ALIGN_BOTTOM)
 
         gbs.AddGrowableCol(0)
 
@@ -124,6 +126,30 @@ class Panel(wx.Panel):
         #self.SetSizerAndFit(sizer)
         self.SetSizer(sizer)
         self.Layout()
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
+    
+    def SetNavigationMode(self, status):
+        self.navigation_mode_status = status
+        session = ses.Session()
+        if status:
+            session.SetConfig('mode', const.MODE_NAVIGATOR)
+        else:
+            Publisher.sendMessage('Hide target button')
+            session.SetConfig('mode', const.MODE_RP)
+        self.gbs.Hide(self.uppertaskpanel)
+        self.uppertaskpanel.Destroy()
+        self.uppertaskpanel = UpperTaskPanel(self)
+        self.gbs.Add(self.uppertaskpanel, (0, 0), flag=wx.EXPAND)
+        self.Layout()
+        self.Refresh()
+        project_status = session.GetConfig('project_status')
+        if project_status != const.PROJECT_STATUS_CLOSED:
+            Publisher.sendMessage('Load project data')
+            Publisher.sendMessage("Enable state project", state=True)
+
 
 
 # Lower fold panel
@@ -224,7 +250,6 @@ class LowerTaskPanel(wx.Panel):
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
-
 # Upper fold panel
 class UpperTaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -254,19 +279,21 @@ class UpperTaskPanel(wx.Panel):
                     ]
 
         elif mode == const.MODE_NAVIGATOR:
-            tasks = [(_("Load data"), importer.TaskPanel),
-                     (_("Select region of interest"), slice_.TaskPanel),
-                     (_("Configure 3D surface"), surface.TaskPanel),
-                     (_("Export data"), exporter.TaskPanel),
+            tasks = [(_("Imports Section"), imports.TaskPanel),
                      (_("Navigation system"), navigator.TaskPanel)]
 
         for i in range(len(tasks)):
             (name, panel) = tasks[i]
 
             # Create panel
-            item = fold_panel.AddFoldPanel("%d. %s"%(i+1, name),
-                                            collapsed=True,
-                                            foldIcons=image_list)
+            if mode == const.MODE_RP:
+                item = fold_panel.AddFoldPanel("%d. %s"%(i+1, name),
+                                                collapsed=True,
+                                                foldIcons=image_list)
+            else:
+                item = fold_panel.AddFoldPanel("%s"%name,
+                                                collapsed=True,
+                                                foldIcons=image_list)
             style = fold_panel.GetCaptionStyle(item)
             col = style.GetFirstColour()
 
@@ -285,10 +312,11 @@ class UpperTaskPanel(wx.Panel):
             # If it is related to mask, this value should be kept
             # It is used as reference to set mouse cursor related to
             # slice editor.
-            if name == _("Select region of interest"):
-                self.__id_slice = item.GetId()
-            elif name == _("Configure 3D surface"):
-                self.__id_surface = item.GetId()
+            if mode == const.MODE_RP:
+                if name == _("Select region of interest"):
+                    self.__id_slice = item.GetId()
+                elif name == _("Configure 3D surface"):
+                    self.__id_surface = item.GetId()
 
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
@@ -298,17 +326,18 @@ class UpperTaskPanel(wx.Panel):
         sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
         self.sizer = sizer
         self.SetSizerAndFit(sizer)
-
-        self.SetStateProjectClose()
         self.__bind_events()
 
     def __bind_events(self):
-        self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
-        Publisher.subscribe(self.OnEnableState, "Enable state project")
-        Publisher.subscribe(self.OnOverwrite, 'Create surface from index')
-        Publisher.subscribe(self.OnFoldSurface, 'Fold surface task')
-        Publisher.subscribe(self.OnFoldExport, 'Fold export task')
-        Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
+        session = ses.Session()
+        mode = session.GetConfig('mode')
+        if mode == const.MODE_RP:
+            self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+            Publisher.subscribe(self.OnEnableState, "Enable state project")
+            Publisher.subscribe(self.OnOverwrite, 'Create surface from index')
+            Publisher.subscribe(self.OnFoldSurface, 'Fold surface task')
+            Publisher.subscribe(self.OnFoldExport, 'Fold export task')
+        # Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters['options']['overwrite']
@@ -325,45 +354,6 @@ class UpperTaskPanel(wx.Panel):
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
-
-    def SetNavigationMode(self, status):
-        self.navigation_mode_status = status
-        name = _("Navigation system")
-        panel = navigator.TaskPanel
-        session = ses.Session()
-        if status and (self.fold_panel.GetCount()<=4):
-            # Create panel
-            item = self.fold_panel.AddFoldPanel("%d. %s"%(5, name),
-                                                collapsed=True,
-                                                foldIcons=self.image_list)
-            style = self.fold_panel.GetCaptionStyle(item)
-            col = style.GetFirstColour()
-
-            # Add panel to FoldPanel
-            self.fold_panel.AddFoldPanelWindow(item,
-                                               panel(item),
-                                               #Spacing=0,
-                                               leftSpacing=0,
-                                               rightSpacing=0)
-            self.enable_items.append(item)
-            if not self.fold_panel.GetFoldPanel(2).IsEnabled():
-                item.Disable()
-
-            session.SetConfig('mode', const.MODE_NAVIGATOR)
-
-        elif status and (self.fold_panel.GetCount() > 4):
-            self.fold_panel.GetFoldPanel(4).Show()
-
-            session.SetConfig('mode', const.MODE_NAVIGATOR)
-        else:
-            Publisher.sendMessage('Hide target button')
-            self.fold_panel.GetFoldPanel(4).Hide()
-
-            # Setting mode to MODE_RP (default)
-            session.SetConfig('mode', const.MODE_RP)
-
-        self.sizer.Layout()
-
 
     def SetStateProjectClose(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
