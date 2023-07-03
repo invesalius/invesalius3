@@ -1158,6 +1158,8 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def EnableTrackObjectCheckbox(self, enabled):
         self.checkbox_track_object.Enable(enabled)
+        if enabled:
+            self.OnTrackObjectCheckbox()
 
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.SetValue(checked)
