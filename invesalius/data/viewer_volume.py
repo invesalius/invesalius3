@@ -1760,9 +1760,39 @@ class Viewer(wx.Panel):
         self.test_actor = self.CreateActorBall(point, colour=[1,0,0], size=2)
         self.ren.AddActor(self.test_actor)
         Publisher.sendMessage('Send Neuronavigation Api')
-        initial_enorm = self.neuronavigation_api.update_efield(position = point, orientation=[0.,0.,0.], T_rot=[0.698830, 0.0, 0.715288, 0.118700, 0.986135, -0.115969, -0.705370, 0.165947, 0.689140])
+        #coord_flip = list(point)
+        #coord_flip[1] = coord_flip
+        [T_rot, cp] = self.SetInitialCoilOrientation(point)
+        initial_enorm = self.neuronavigation_api.update_efield(position = cp, orientation=[0.,0.,0.], T_rot=T_rot)
+        arrow_test_actor = self.CreateActorArrow(direction=point, orientation=[0.,0.,0.], colour=[1.0, 0.0, 1.0], size = 5)
+        self.ren.AddActor(arrow_test_actor)
         Efield_max_Range = np.amax(initial_enorm)
-        return Efield_max_Range
+        return Efield_max_Range*0.70
+
+    def SetInitialCoilOrientation(self, point):
+        import invesalius.data.transformations as tr
+
+        angles = [0,np.radians(90),0]
+        translate = list(point)
+        m_img = tr.compose_matrix(angles = angles, translate = translate)
+        img_vtk = self.CreateVTKObjectMatrix(direction = point, orientation=[0,90,0])
+        self.dummy_coil_actor.SetUserMatrix(img_vtk)
+        self.ren.AddActor(self.dummy_coil_actor)
+        m_img_flip = m_img.copy()
+        m_img_flip[1,-1] = -m_img_flip[1,-1]
+        cp = m_img_flip[:-1, -1]  # coil center
+        cp = cp * 0.001  # convert to meters
+        cp = cp.tolist()
+
+        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
+        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
+        coil_dir = m_img_flip[:-1, 0]
+        coil_face = m_img_flip[:-1, 1]
+        cn = np.cross(coil_dir, coil_face)
+        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+        T_rot = T_rot.tolist()  # to list
+        return [T_rot, cp]
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
