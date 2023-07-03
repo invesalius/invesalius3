@@ -1731,7 +1731,12 @@ class Viewer(wx.Panel):
         self.coil_position = None
         self.coil_position_Trot = None
         self.e_field_norms = None
-        self.GetEfieldRange()
+        session = ses.Session()
+        if session.GetConfig('debug_efield'):
+            Efield_max_range=0.005
+        else:
+            Efield_max_range = self.GetEfieldRange()
+        self.efield_lut = self.CreateLUTTableForEfield(0, Efield_max_range)
         self.max_efield_actor = self.CreateActorBall(self.efield_actor.GetCenter(), colour=[0., 0., 1.], size=2)
         self.ren.AddActor(self.max_efield_actor)
         self.target_radius_list=[]
@@ -1756,7 +1761,8 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.test_actor)
         Publisher.sendMessage('Send Neuronavigation Api')
         initial_enorm = self.neuronavigation_api.update_efield(position = point, orientation=[0.,0.,0.], T_rot=[0.698830, 0.0, 0.715288, 0.118700, 0.986135, -0.115969, -0.705370, 0.165947, 0.689140])
-        print('Max enorm', np.amax(initial_enorm))
+        Efield_max_Range = np.amax(initial_enorm)
+        return Efield_max_Range
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
@@ -1781,8 +1787,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
-
+            #self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
 
@@ -1823,8 +1828,10 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
+        self.Idmax = np.array(self.e_field_norms).argmax()
+
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
-        self.GetEfieldMaxMin(self.e_field_norms)
+        #self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
