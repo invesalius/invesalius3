@@ -1131,8 +1131,8 @@ class ObjectRegistrationPanel(wx.Panel):
             self.btn_load.Enable(1)
 
         # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
-        obj_fiducials = self.navigation.GetObjectRegistration()[0]
-        enable_track_object = obj_fiducials is not None and not nav_status
+        obj_registration = self.navigation.GetObjectRegistration()
+        enable_track_object = obj_registration is not None and obj_registration[0] is not None and not nav_status
         Publisher.sendMessage('Enable track-object checkbox', enabled=enable_track_object)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
