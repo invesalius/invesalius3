@@ -1737,7 +1737,7 @@ class Viewer(wx.Panel):
         else:
             Efield_max_range = self.GetEfieldRange()
         self.efield_lut = self.CreateLUTTableForEfield(0, Efield_max_range)
-        self.max_efield_actor = self.CreateActorBall(self.efield_actor.GetCenter(), colour=[0., 0., 1.], size=2)
+        self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 1.], size=2)
         self.ren.AddActor(self.max_efield_actor)
         self.target_radius_list=[]
         #self.efield_lut = e_field_brain.lut
