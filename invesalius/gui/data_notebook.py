@@ -578,8 +578,9 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def AddMask(self, mask):
         image_index = len(self.mask_list_index)
-        self.mask_list_index[image_index] = mask.index
-        self.InsertNewItem(image_index, mask.name, str(mask.threshold_range), mask.colour)
+        if mask.index not in self.mask_list_index:
+            self.mask_list_index[image_index] = mask.index
+            self.InsertNewItem(image_index, mask.name, str(mask.threshold_range), mask.colour)
 
     def EditMaskThreshold(self, index, threshold_range):
         self.SetItem(index, 2, str(threshold_range))
