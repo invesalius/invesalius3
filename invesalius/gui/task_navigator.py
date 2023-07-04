@@ -1759,10 +1759,10 @@ class MarkersPanel(wx.Panel):
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
 
         if self.nav_status and self.navigation.e_field_loaded:
-            Publisher.sendMessage('Check efield data')
-            if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
-                efield_menu = menu_id.Append(8, _('Save Efield target Data'))
-                menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+            #Publisher.sendMessage('Check efield data')
+            #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
+            efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
         if self.navigation.e_field_loaded:
             Publisher.sendMessage('Check efield data')
