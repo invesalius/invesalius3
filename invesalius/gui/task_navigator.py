@@ -1761,8 +1761,9 @@ class MarkersPanel(wx.Panel):
         if self.nav_status and self.navigation.e_field_loaded:
             #Publisher.sendMessage('Check efield data')
             #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
-            efield_menu = menu_id.Append(8, _('Save Efield target Data'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+            if self.__find_target_marker()  == self.marker_list_ctrl.GetFocusedItem():
+                efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
         if self.navigation.e_field_loaded:
             Publisher.sendMessage('Check efield data')
@@ -2727,6 +2728,12 @@ class E_fieldPanel(wx.Panel):
         self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
         self.btn_save.Enable(False)
 
+        tooltip3 = wx.ToolTip(_("Save All Efield"))
+        self.btn_all_save = wx.Button(self, -1, _("Save All Efield"), size=wx.Size(80, -1))
+        self.btn_all_save.SetToolTip(tooltip3)
+        self.btn_all_save.Bind(wx.EVT_BUTTON, self.OnSaveAllDataEfield)
+        self.btn_all_save.Enable(False)
+
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
         spin_sleep.Enable(1)
@@ -2744,6 +2751,7 @@ class E_fieldPanel(wx.Panel):
 
         line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
         line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(self.btn_all_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
@@ -2819,6 +2827,8 @@ class E_fieldPanel(wx.Panel):
             self.e_field_loaded = True
             self.combo_surface_name.Enable(True)
             self.btn_save.Enable(True)
+            self.btn_all_save.Enable(True)
+
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
@@ -2902,6 +2912,32 @@ class E_fieldPanel(wx.Panel):
             return
 
         Publisher.sendMessage('Save Efield data', filename = filename)
+
+    def OnSaveAllDataEfield(self, evt):
+        import invesalius.project as prj
+
+        proj = prj.Project()
+        timestamp = time.localtime(time.time())
+        stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+        stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+        sep = '-'
+        if self.path_meshes is None:
+            import os
+            current_folder_path = os.getcwd()
+        else:
+            current_folder_path = self.path_meshes
+        parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
+        default_filename = sep.join(parts) + '.txt'
+
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                          wildcard='(*.txt)|*.txt',
+                                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                          default_filename=default_filename)
+
+        if not filename:
+            return
+
+        Publisher.sendMessage('Save all Efield data', filename = filename)
 
     def SendNeuronavigationApi(self):
         Publisher.sendMessage('Get Neuronavigation Api', neuronavigation_api = self.navigation.neuronavigation_api)

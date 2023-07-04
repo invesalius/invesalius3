@@ -400,6 +400,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
         Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
+        Publisher.subscribe(self.SavedAllEfieldData, 'Save all Efield data')
         Publisher.subscribe(self.SaveEfieldTargetData, 'Save target data')
         Publisher.subscribe(self.GetTargetSavedEfieldData, 'Get target index efield')
         Publisher.subscribe(self.CheckStatusSavedEfieldData, 'Check efield data')
@@ -1778,6 +1779,8 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.target_radius_list=[]
+        self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 1.], size=2)
+        self.ren.AddActor(self.max_efield_actor)
         #self.efield_lut = e_field_brain.lut
 
     def GetEfieldRange(self):
@@ -1913,6 +1916,11 @@ class Viewer(wx.Panel):
                 np.savetxt(f, self.efield_coords)
                 np.savetxt(f, efield_coords_position)
             np.savetxt(f, self.e_field_norms)
+
+    def SavedAllEfieldData(self, filename):
+        import invesalius.data.imagedata_utils as imagedata_utils
+        with open(filename, 'wb') as f:
+            np.savetxt(f,np.array(self.target_radius_list), fmt='%.18g')
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
