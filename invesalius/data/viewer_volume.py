@@ -1677,7 +1677,7 @@ class Viewer(wx.Panel):
             index_ids = []
             for h in range(self.radius_list.GetNumberOfIds()):
                 index_ids.append(self.radius_list.GetId(h))
-            self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms, self.Idmax, position, orientation])
+            self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms, self.Idmax, position, orientation, self.coil_position_Trot])
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list)>0:
@@ -1919,8 +1919,10 @@ class Viewer(wx.Panel):
 
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
-        with open(filename, 'wb') as f:
-            np.savetxt(f,np.array(self.target_radius_list), fmt='%.18g')
+        import csv
+        with open(filename, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(self.target_radius_list)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()

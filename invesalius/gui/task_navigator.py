@@ -2927,10 +2927,10 @@ class E_fieldPanel(wx.Panel):
         else:
             current_folder_path = self.path_meshes
         parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
-        default_filename = sep.join(parts) + '.txt'
+        default_filename = sep.join(parts) + '.csv'
 
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
-                                          wildcard='(*.txt)|*.txt',
+                                          wildcard='(*.csv)|*.csv',
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename=default_filename)
 
