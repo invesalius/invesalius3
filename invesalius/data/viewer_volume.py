@@ -1777,14 +1777,6 @@ class Viewer(wx.Panel):
         self.coil_position = None
         self.coil_position_Trot = None
         self.e_field_norms = None
-        session = ses.Session()
-        if session.GetConfig('debug_efield'):
-            Efield_max_range=0.005
-        else:
-            Efield_max_range = self.GetEfieldRange()
-        self.efield_lut = self.CreateLUTTableForEfield(0, Efield_max_range)
-        self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 1.], size=2)
-        self.ren.AddActor(self.max_efield_actor)
         self.target_radius_list=[]
         #self.efield_lut = e_field_brain.lut
 
@@ -1861,7 +1853,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            #self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
+            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
 
@@ -1903,9 +1895,8 @@ class Viewer(wx.Panel):
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
         self.Idmax = np.array(self.e_field_norms).argmax()
-
-        wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
-        #self.GetEfieldMaxMin(self.e_field_norms)
+        #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
+        self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
