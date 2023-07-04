@@ -1806,8 +1806,6 @@ class Viewer(wx.Panel):
         self.test_actor = self.CreateActorBall(point, colour=[1,0,0], size=2)
         self.ren.AddActor(self.test_actor)
         Publisher.sendMessage('Send Neuronavigation Api')
-        #coord_flip = list(point)
-        #coord_flip[1] = coord_flip
         [T_rot, cp] = self.SetInitialCoilOrientation(point)
         initial_enorm = self.neuronavigation_api.update_efield(position = cp, orientation=[0.,0.,0.], T_rot=T_rot)
         arrow_test_actor = self.CreateActorArrow(direction=point, orientation=[0.,0.,0.], colour=[1.0, 0.0, 1.0], size = 5)
