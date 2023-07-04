@@ -1903,19 +1903,30 @@ class Viewer(wx.Panel):
 
     def SaveEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
-
-        with open(filename, 'wb') as f:
-            np.savetxt(f, self.coil_position_Trot)
-            np.savetxt(f, self.coil_position)
-            if self.efield_coords is not None:
-                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                    position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
-                    orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
-                )
-                efield_coords_position = [position_world, orientation_world]
-                np.savetxt(f, self.efield_coords)
-                np.savetxt(f, efield_coords_position)
-            np.savetxt(f, self.e_field_norms)
+        import csv
+        all_data=[]
+        if self.efield_coords is not None:
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+            orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+                 )
+            efield_coords_position = [position_world, orientation_world]
+        all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, self.e_field_norms])
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(all_data)
+        # with open(filename, 'wb') as f:
+        #     np.savetxt(f, self.coil_position_Trot)
+        #     np.savetxt(f, self.coil_position)
+        #     if self.efield_coords is not None:
+        #         position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+        #             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+        #             orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+        #         )
+        #         efield_coords_position = [position_world, orientation_world]
+        #         np.savetxt(f, self.efield_coords)
+        #         np.savetxt(f, efield_coords_position)
+        #     np.savetxt(f, self.e_field_norms)
 
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
