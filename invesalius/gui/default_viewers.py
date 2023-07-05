@@ -358,15 +358,20 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_MASK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(self, -1,"", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_raycasting.SetToolTip("Raycasting view")
         self.button_stereo = pbtn.PlateButton(self, -1,"", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_stereo.SetToolTip("Real 3D")
         self.button_slice_plane = pbtn.PlateButton(self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_slice_plane.SetToolTip("Slices into 3D")
         self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
+        self.button_target.SetToolTip("Target Mode")
         self.button_target.Enable(0)
         #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
         self.button_view = pbtn.PlateButton(self, -1, "", BMP_FRONT, size=(32,32), style=pbtn.PB_STYLE_SQUARE)
+        self.button_view.SetToolTip("View plane")
 
         # VOLUME COLOUR BUTTON
         if sys.platform.startswith('linux'):
@@ -377,6 +382,7 @@ class VolumeToolPanel(wx.Panel):
             sp = 5
 
         self.button_colour= csel.ColourSelect(self, -1, colour=(0,0,0), size=size)
+        self.button_colour.SetToolTip("Background Colour")
 
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
