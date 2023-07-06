@@ -1460,7 +1460,7 @@ class MarkersPanel(wx.Panel):
         self.markers = []
         self.nav_status = False
         self.efield_loaded = False
-        self.efield_data_loaded = False
+        self.efield_data_saved = False
         self.efield_target_idx = None
         self.target_mode = False
 
@@ -1767,7 +1767,7 @@ class MarkersPanel(wx.Panel):
 
         if self.navigation.e_field_loaded:
             Publisher.sendMessage('Check efield data')
-            if self.efield_data_loaded:
+            if self.efield_data_saved:
                 if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
                     if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
                         efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
@@ -1831,7 +1831,7 @@ class MarkersPanel(wx.Panel):
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.indexes_saved_lists= []
-        self.efield_data_loaded = efield_data_loaded
+        self.efield_data_saved = efield_data_loaded
         self.indexes_saved_lists = indexes_saved_list
 
     def OnMenuSetEfieldTarget(self,evt):
