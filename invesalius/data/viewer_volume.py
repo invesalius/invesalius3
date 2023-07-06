@@ -1677,7 +1677,8 @@ class Viewer(wx.Panel):
             index_ids = []
             for h in range(self.radius_list.GetNumberOfIds()):
                 index_ids.append(self.radius_list.GetId(h))
-            self.target_radius_list.append([target_list_index, index_ids, self.e_field_norms, self.Idmax, position, orientation, self.coil_position_Trot])
+                enorms_list = list(self.e_field_norms)
+            self.target_radius_list.append([target_list_index, index_ids, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list)>0:
@@ -1911,33 +1912,22 @@ class Viewer(wx.Panel):
             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
             orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
                  )
-            efield_coords_position = [position_world, orientation_world]
-        all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, self.e_field_norms])
+            efield_coords_position = [list(position_world), list(orientation_world)]
+        all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
         with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(header)
             writer.writerows(all_data)
-        # with open(filename, 'wb') as f:
-        #     np.savetxt(f, self.coil_position_Trot)
-        #     np.savetxt(f, self.coil_position)
-        #     if self.efield_coords is not None:
-        #         position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-        #             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
-        #             orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
-        #         )
-        #         efield_coords_position = [position_world, orientation_world]
-        #         np.savetxt(f, self.efield_coords)
-        #         np.savetxt(f, efield_coords_position)
-        #     np.savetxt(f, self.e_field_norms)
 
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
         header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot']
+        all_data = list(self.target_radius_list)
         with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(header)
-            writer.writerows(self.target_radius_list)
+            writer.writerows(all_data)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
