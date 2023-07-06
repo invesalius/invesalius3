@@ -242,7 +242,7 @@ class Viewer(wx.Panel):
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
-
+        self.vectorfield_actor = None
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
@@ -1668,9 +1668,34 @@ class Viewer(wx.Panel):
     def MaxEfieldActor(self):
         vtk_colors = vtkNamedColors()
         self.ren.RemoveActor(self.max_efield_actor)
-        self.max_efield_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
-        self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
-        self.ren.AddActor(self.max_efield_actor)
+        # self.max_efield_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
+        # self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
+        # self.ren.AddActor(self.max_efield_actor)
+        self.ren.RemoveActor(self.arrow_test_actor)
+        self.arrow_test_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
+        direction = np.array([self.e_field_col1[self.Idmax], self.e_field_col2[self.Idmax], self.e_field_col3[self.Idmax]])
+        direction /= np.linalg.norm(direction)
+        pitch = np.degrees(np.arcsin(direction[2]))
+        yaw = np.degrees(np.arctan2(direction[1], direction[0]))
+        roll = 0.0  # No roll for the arrow
+        self.arrow_test_actor.SetOrientation(pitch, yaw, roll)
+        self.arrow_test_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
+        self.ren.AddActor(self.arrow_test_actor)
+        
+    def EfieldVectors(self):
+        for actor in self.vectorfield_actor:
+            self.ren.RemoveActor(actor)
+        self.vectorfield_actor = []
+        for i in range(self.radius_list.GetNumberOfIds()):
+            direction = np.array([self.e_field_col1[self.radius_list.GetId(i)], self.e_field_col2[self.radius_list.GetId(i)], self.e_field_col3[self.radius_list.GetId(i)]])
+            direction /= np.linalg.norm(direction)
+            pitch = np.degrees(np.arcsin(direction[2]))
+            yaw = np.degrees(np.arctan2(direction[1], direction[0]))
+            point = self.efield_mesh.GetPoint(self.radius_list.GetId(i))
+            actor = self.CreateActorArrow(direction=point, orientation=[pitch,yaw,0.], colour=[1.0, 0.0, 1.0], size = 5)
+            self.vectorfield_actor.append(actor)
+        for actor in self.vectorfield_actor:
+            self.ren.AddActor(actor)
 
     def SaveEfieldTargetData(self, target_list_index, position, orientation):
         if self.radius_list.GetNumberOfIds()>0:
@@ -1738,7 +1763,7 @@ class Viewer(wx.Panel):
     def FindPointsAroundRadiusEfield(self, cellId):
         #radius = vtk.mutable(50)
         #self.radius_list = vtk.vtkIdList()
-        self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
+        self.locator_efield.FindPointsWithinRadius(5, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
@@ -1771,7 +1796,17 @@ class Viewer(wx.Panel):
         self.e_field_norms = None
         self.target_radius_list=[]
         self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 1.], size=2)
+        self.arrow_test_actor = self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[1.0, 0.0, 1.0],
+                                                 size=5)
+        self.vectorfield_actor =[]
+        self.vectorfield_actor.append(self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[1.0, 0.0, 1.0],
+                                                 size=5))
+        for actor in self.vectorfield_actor:
+            self.ren.AddActor(actor)
+        self.ren.AddActor(self.arrow_test_actor)
         self.ren.AddActor(self.max_efield_actor)
+
+
         #self.efield_lut = e_field_brain.lut
 
     def GetNeuronavigationApi(self, neuronavigation_api):
@@ -1812,6 +1847,7 @@ class Viewer(wx.Panel):
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             self.RecolorEfieldActor()
             self.MaxEfieldActor()
+            self.EfieldVectors()
         else:
             wx.CallAfter(Publisher.sendMessage,'Recolor again')
 
@@ -1834,12 +1870,20 @@ class Viewer(wx.Panel):
             pass
 
     def GetEnorm(self, enorm_data):
-        self.e_field_norms = enorm_data[3]
+        plot_vector = True
+        if plot_vector:
+            self.e_field_norms = enorm_data[3].enorm
+            self.e_field_col1 = enorm_data[3].column1
+            self.e_field_col2 = enorm_data[3].column2
+            self.e_field_col3 = enorm_data[3].column3
+        else:
+            self.e_field_norms = enorm_data[3]
+
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
         self.Idmax = np.array(self.e_field_norms).argmax()
-        #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
+            #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename):

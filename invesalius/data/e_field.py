@@ -51,6 +51,7 @@ class Visualize_E_field_Thread(threading.Thread):
             self.debug = True
         else:
             self.debug = False
+        self.plot_vectors = True
 
     def run(self):
         while not self.event.is_set():
@@ -75,7 +76,13 @@ class Visualize_E_field_Thread(threading.Thread):
                             if self.debug:
                                 enorm = self.enorm_debug
                             else:
-                                enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                                if self.plot_vectors:
+                                    enorm = self.neuronavigation_api.update_efield_vector(position=cp,
+                                                                                           orientation=coord[3:],
+                                                                                           T_rot=T_rot)
+                                else:
+                                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                                #print('VECTOR:', enorm[0])
                             try:
                                 self.e_field_norms_queue.put_nowait(([T_rot, cp, coord, enorm]))
                             except queue.Full:
