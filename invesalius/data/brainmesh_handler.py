@@ -340,23 +340,6 @@ class E_field_brain:
         self.efield_mapper = vtkPolyDataMapper()
         #self.lut = CreateLUTTableForEfield(0, 0.005)
 
-class Scalp:
-    def __init__(self, mesh):
-        self.mesh_normals = vtkFloatArray()
-        self.mesh_centers = vtkFloatArray()
-
-        self.locator_Cell = vtkCellLocator()
-        self.locator_Cell.SetDataSet(mesh)
-        self.locator_Cell.BuildLocator()
-
-        self.locator = vtkPointLocator()
-        self.locator.SetDataSet(mesh)
-        self.locator.BuildLocator()
-
-        self.mesh_normals = GetNormals(mesh)
-        self.mesh_centers = GetCenters(mesh)
-
-
 def GetCenters(mesh):
         # Compute centers of triangles
         centerComputer = vtkCellCenters()  # This computes centers of the triangles on the peel

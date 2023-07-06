@@ -1701,16 +1701,6 @@ class Viewer(wx.Panel):
             efield_data_loaded = False
         Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded, indexes_saved_list= indexes_saved_list )
 
-    def OnUpdateObjectTargetGuideEfield(self, saved_efield_data, current_enorm,location_previous_max):
-        #compare current efield norms with previous saved
-        current_error = self.Cal_error(saved_efield_data, current_enorm)
-        ##self.previous_max_efield_actor.
-        return current_error
-
-    def Cal_error(self, ref, data):
-        error = ((ref - data) / ref)*100
-        return error
-
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
@@ -1783,56 +1773,6 @@ class Viewer(wx.Panel):
         self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 1.], size=2)
         self.ren.AddActor(self.max_efield_actor)
         #self.efield_lut = e_field_brain.lut
-
-    def GetEfieldRange(self):
-        import invesalius.data.brainmesh_handler as brain
-
-        scalp_actor = self.ren.GetActors().GetLastActor()
-        scalp_mesh = scalp_actor.GetMapper().GetInput()
-        scalp = brain.Scalp(scalp_mesh)
-        vtk_colors = vtkNamedColors()
-        p1 = self.efield_actor.GetCenter()
-        p2 = (-p1[0]+75, p1[1], p1[2])
-        self.x_actor.SetVisibility(1)
-        self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-        self.ren.AddActor(self.x_actor)
-        intersectingCellIds = self.GetCellIntersection(p1, p2, scalp.locator_Cell)
-        cellId = intersectingCellIds.GetId(0)
-        point = scalp.mesh_centers.GetPoint(cellId)
-        self.test_actor = self.CreateActorBall(point, colour=[1,0,0], size=2)
-        self.ren.AddActor(self.test_actor)
-        Publisher.sendMessage('Send Neuronavigation Api')
-        [T_rot, cp] = self.SetInitialCoilOrientation(point)
-        initial_enorm = self.neuronavigation_api.update_efield(position = cp, orientation=[0.,0.,0.], T_rot=T_rot)
-        arrow_test_actor = self.CreateActorArrow(direction=point, orientation=[0.,0.,0.], colour=[1.0, 0.0, 1.0], size = 5)
-        self.ren.AddActor(arrow_test_actor)
-        Efield_max_Range = np.amax(initial_enorm)
-        return Efield_max_Range*0.70
-
-    def SetInitialCoilOrientation(self, point):
-        import invesalius.data.transformations as tr
-
-        angles = [0,np.radians(90),0]
-        translate = list(point)
-        m_img = tr.compose_matrix(angles = angles, translate = translate)
-        img_vtk = self.CreateVTKObjectMatrix(direction = point, orientation=[0,90,0])
-        self.dummy_coil_actor.SetUserMatrix(img_vtk)
-        self.ren.AddActor(self.dummy_coil_actor)
-        m_img_flip = m_img.copy()
-        m_img_flip[1,-1] = -m_img_flip[1,-1]
-        cp = m_img_flip[:-1, -1]  # coil center
-        cp = cp * 0.001  # convert to meters
-        cp = cp.tolist()
-
-        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
-        cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
-        T_rot = T_rot.tolist()  # to list
-        return [T_rot, cp]
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
