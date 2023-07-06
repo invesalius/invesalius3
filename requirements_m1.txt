@@ -9,7 +9,7 @@ psutil==5.9.4
 pyserial==3.5
 python-gdcm==3.0.22
 scikit-image==0.21.0
-scipy==1.10.1
+scipy==1.10.0
 vtk==9.2.6
 wxPython==4.2.1
 torch==2.0.1

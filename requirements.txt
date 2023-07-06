@@ -11,7 +11,7 @@ psutil==5.8.0
 pyserial==3.5
 python-gdcm==3.0.12
 scikit-image==0.19.1
-scipy==1.7.3
+scipy==1.10.0
 vtk==9.1.0
 wxPython==4.1.1
 Theano==1.0.5
