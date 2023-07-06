@@ -82,7 +82,6 @@ class Visualize_E_field_Thread(threading.Thread):
                                                                                            T_rot=T_rot)
                                 else:
                                     enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
-                                #print('VECTOR:', enorm[0])
                             try:
                                 self.e_field_norms_queue.put_nowait(([T_rot, cp, coord, enorm]))
                             except queue.Full:

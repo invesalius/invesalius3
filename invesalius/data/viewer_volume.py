@@ -1934,7 +1934,6 @@ class Viewer(wx.Panel):
                 point = np.array(self.peel_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
 
-                #print('distance:', distance, point - p1)
                 self.ren.RemoveActor(self.y_actor)
 
                 if distance < closestDist:
