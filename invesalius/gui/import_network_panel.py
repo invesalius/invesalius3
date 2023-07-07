@@ -33,6 +33,7 @@ from wx.lib.mixins.listctrl import CheckListCtrlMixin
 #from dicionario import musicdata
 import wx.lib.mixins.listctrl as listmix
 from invesalius.gui.network.nodes_panel import NodesPanel
+from invesalius.gui.network.find_panel import FindPanel
 
 
 myEVT_SELECT_SERIE = wx.NewEventType()
@@ -271,25 +272,16 @@ class TextPanel(wx.Panel):
     def SelectSeries(self, group_index):
         pass
 
-    def Populate(self, pubsub_evt):
+    def Populate(self, patients):
+
         tree = self.tree
-        #print ">>>>>>>>>>>>>>>>>>>>>>>>>>", dir(tree.GetRootItem())
-        #print ">>>>>>>>>>>>",dir(self.tree)
-        patients = pubsub_evt.data
 
         first = 0
         self.idserie_treeitem = {}
 
         for patient in patients.keys():
-
-
-            #ngroups = patient.ngroups
-            #dicom = patient.GetDicomSample()
-            #title = dicom.patient.name + " (%d series)"%(ngroups)
-            #date_time = "%s %s"%(dicom.acquisition.date,
-            #                     dicom.acquisition.time)
             
-            first_serie = patients[patient].keys()[0]
+            first_serie = list(patients[patient].keys())[0]
             title = patients[patient][first_serie]['name']
             p = patients[patient][first_serie]
 
@@ -305,7 +297,7 @@ class TextPanel(wx.Panel):
             acession_number = p['acession_number']
             physician = p['ref_physician']
 
-            parent = tree.AppendItem(self.root, title)
+            parent = tree.AppendItem(self.root, str(title))
 
             n_amount_images = 0 
             for se in patients[patient]:
@@ -313,19 +305,18 @@ class TextPanel(wx.Panel):
  
 
             tree.SetItemPyData(parent, patient)
-            tree.SetItemText(parent, "%s" % p_id, 1)
-            tree.SetItemText(parent, "%s" % age, 2)
-            tree.SetItemText(parent, "%s" % gender, 3)
-            tree.SetItemText(parent, "%s" % study_description, 4)
-            tree.SetItemText(parent, "%s" % "", 5)
-            tree.SetItemText(parent, "%s" % date + " " + time, 6)
-            tree.SetItemText(parent, "%s" % str(n_amount_images), 7)
-            tree.SetItemText(parent, "%s" % institution, 8)
-            tree.SetItemText(parent, "%s" % birthdate, 9)
-            tree.SetItemText(parent, "%s" % acession_number, 10)
-            tree.SetItemText(parent, "%s" % physician, 11)
+            tree.SetItemText(parent, p_id, 1)
+            tree.SetItemText(parent, age, 2)
+            tree.SetItemText(parent, gender, 3)
+            tree.SetItemText(parent, study_description, 4)
+            tree.SetItemText(parent, "", 5)
+            tree.SetItemText(parent, date + " " + time, 6)
+            tree.SetItemText(parent, str(n_amount_images), 7)
+            tree.SetItemText(parent, institution, 8)
+            tree.SetItemText(parent, birthdate, 9)
+            tree.SetItemText(parent, acession_number, 10)
+            tree.SetItemText(parent, '', 11)
 
-       
 
             for series in patients[patient].keys():
                                 
@@ -338,70 +329,16 @@ class TextPanel(wx.Panel):
                 child = tree.AppendItem(parent, series)
                 tree.SetItemPyData(child, series)
 
-                tree.SetItemText(child, "%s" % serie_description, 0)
-                #tree.SetItemText(child, "%s" % dicom.acquisition.protocol_name, 4)
-                tree.SetItemText(child, "%s" % modality, 5)
-                tree.SetItemText(child, "%s" % date + " " + time, 6)
-                tree.SetItemText(child, "%s" % n_images , 7)
-
+                tree.SetItemText(child, serie_description, 0)
+                #tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
+                tree.SetItemText(child, modality, 5)
+                tree.SetItemText(child, date + " " + time, 6)
+                tree.SetItemText(child, str(n_images) , 7)
                 self.idserie_treeitem[(patient, series)] = child
 
 
         tree.Expand(self.root)
-        #tree.SelectItem(parent_select)
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
-        #tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
-
-        """
-
-        for patient in patient_list:
-            if not isinstance(patient, dcm.PatientGroup):
-                return None
-            ngroups = patient.ngroups
-            dicom = patient.GetDicomSample()
-            title = dicom.patient.name + " (%d series)"%(ngroups)
-            date_time = "%s %s"%(dicom.acquisition.date,
-                                 dicom.acquisition.time)
-
-            parent = tree.AppendItem(self.root, title)
-
-            if not first:
-                parent_select = parent
-                first += 1
-
-            tree.SetItemPyData(parent, patient)
-            tree.SetItemText(parent, "%s" % dicom.patient.id, 1)
-            tree.SetItemText(parent, "%s" % dicom.patient.age, 2)
-            tree.SetItemText(parent, "%s" % dicom.patient.gender, 3)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.study_description, 4)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.modality, 5)
-            tree.SetItemText(parent, "%s" % date_time, 6)
-            tree.SetItemText(parent, "%s" % patient.nslices, 7)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.institution, 8)
-            tree.SetItemText(parent, "%s" % dicom.patient.birthdate, 9)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.accession_number, 10)
-            tree.SetItemText(parent, "%s" % dicom.patient.physician, 11)
-
-            group_list = patient.GetGroups()
-            for n, group in enumerate(group_list):
-                dicom = group.GetDicomSample()
-
-                child = tree.AppendItem(parent, group.title)
-                tree.SetItemPyData(child, group)
-
-                tree.SetItemText(child, "%s" % group.title, 0)
-                tree.SetItemText(child, "%s" % dicom.acquisition.protocol_name, 4)
-                tree.SetItemText(child, "%s" % dicom.acquisition.modality, 5)
-                tree.SetItemText(child, "%s" % date_time, 6)
-                tree.SetItemText(child, "%s" % group.nslices, 7)
-
-                self.idserie_treeitem[(dicom.patient.id,
-                                       dicom.acquisition.serie_number)] = child
-
-        tree.Expand(self.root)
-        tree.SelectItem(parent_select)
-        tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
-        tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)"""
 
     def SetHostsList(self, evt_pub):
         self.hosts = evt_pub.data
@@ -476,85 +413,6 @@ class TextPanel(wx.Panel):
         item = self.tree.GetSelection()
         group = self.tree.GetItemPyData(item)
         return group
-
-
-
-
-
-
-
-
-
-
-
-
-class FindPanel(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-
-        sizer_word_label = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_word_label.Add((5, 0), 0, wx.EXPAND|wx.HORIZONTAL)
-        find_label = wx.StaticText(self, -1, _("Word"))
-        sizer_word_label.Add(find_label)
-        
-        sizer_txt_find = wx.BoxSizer(wx.HORIZONTAL) 
-        sizer_txt_find.Add((5, 0), 0, wx.EXPAND|wx.HORIZONTAL)
-        self.find_txt = wx.TextCtrl(self, -1,size=(225, -1))
-
-        self.btn_find = wx.Button(self, -1, _("Search"))
-        
-        sizer_txt_find.Add(self.find_txt) 
-        sizer_txt_find.Add(self.btn_find)
-
-        self.sizer.Add((0, 5), 0, wx.EXPAND|wx.HORIZONTAL)
-        self.sizer.Add(sizer_word_label)
-        self.sizer.Add(sizer_txt_find)
-
-        #self.sizer.Add(self.serie_preview, 1, wx.EXPAND | wx.ALL, 5)
-        #self.sizer.Add(self.dicom_preview, 1, wx.EXPAND | wx.ALL, 5)
-        self.sizer.Fit(self)
-
-        self.SetSizer(self.sizer)
-
-        self.Layout()
-        self.Update()
-        self.SetAutoLayout(1)
-
-        self.__bind_evt()
-        self._bind_gui_evt()
-
-    def __bind_evt(self):
-        Publisher.subscribe(self.SetHostsList, 'Set FindPanel hosts list')
-        #Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
-        #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
-        #Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
-        pass
-
-    def _bind_gui_evt(self):
-        #self.serie_preview.Bind(dpp.EVT_CLICK_SERIE, self.OnSelectSerie)
-        #self.dicom_preview.Bind(dpp.EVT_CLICK_SLICE, self.OnSelectSlice)
-        self.Bind(wx.EVT_BUTTON, self.OnButtonFind, self.btn_find)
-
-    def OnButtonFind(self, evt):
-        pass
-        # dn = dcm_net.DicomNet()
-        # dn.SetHost(self.hosts[key][1])
-        # dn.SetPort(self.hosts[key][2])
-        # dn.SetAETitleCall(self.hosts[key][3])
-        # dn.SetAETitle(self.hosts[0][3])
-        # dn.SetSearchWord(self.find_txt.GetValue())
-
-        # Publisher.sendMessage('Populate tree', dn.RunCFind())
-
-
-    def SetHostsList(self, evt_pub):
-        self.hosts = evt_pub.data
-
-    def GetHostList(self):
-        Publisher.sendMessage('Get NodesPanel host list') 
-        return self.hosts 
 
 class HostFindPanel(wx.Panel):
     def __init__(self, parent):

@@ -14,3 +14,4 @@ vtk==9.2.6
 wxPython==4.2.1
 torch==2.0.1
 pyacvd==0.2.9
+pynetdicom==2.0.2
