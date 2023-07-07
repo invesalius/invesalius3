@@ -1572,6 +1572,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
         Publisher.subscribe(self.GetIdList, 'Get ID list')
+        Publisher.subscribe(self.GetRotationPosition, 'Send coil position and rotation')
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
 
@@ -1845,33 +1846,24 @@ class MarkersPanel(wx.Panel):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = np.radians(self.markers[list_index].orientation)
-        m_img = tr.compose_matrix(angles=orientation, translate=position)
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-        cp = m_img_flip[:-1, -1]  # coil center
-        cp = cp * 0.001  # convert to meters
-        cp = cp.tolist()
-
-        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
-        cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
-        T_rot = T_rot.tolist()  # to list
+        Publisher.sendMessage('Calculate position and rotation', position=position, orientation=orientation)
         coord = [position, orientation]
         coord = np.array(coord).flatten()
 
         #Check here, it resets the radious list
-        Publisher.sendMessage('Update interseccion offline', m_img = m_img, coord = coord)
+        Publisher.sendMessage('Update interseccion offline', m_img =self.m_img_offline, coord = coord)
 
-        enorm = self.navigation.neuronavigation_api.update_efield_vectorROI(position=cp,
+        enorm = self.navigation.neuronavigation_api.update_efield_vectorROI(position=self.cp,
                                                                   orientation=orientation,
-                                                                  T_rot=T_rot,
+                                                                  T_rot=self.T_rot,
                                                                   id_list=self.ID_list)
-        enorm_data = [T_rot, cp, coord, enorm, self.ID_list]
+        enorm_data = [self.T_rot, self.cp, coord, enorm, self.ID_list]
         Publisher.sendMessage('Get enorm', enorm_data = enorm_data , plot_vector = True)
+
+    def GetRotationPosition(self, T_rot, cp, m_img):
+        self.T_rot = T_rot
+        self.cp = cp
+        self.m_img_offline = m_img
 
     def GetIdList(self, ID_list):
         self.ID_list = ID_list
