@@ -1571,7 +1571,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
-
+        Publisher.subscribe(self.GetIdList, 'Get ID list')
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
 
@@ -1776,6 +1776,12 @@ class MarkersPanel(wx.Panel):
                         efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
                         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
+        if self.navigation.e_field_loaded and not self.nav_status:
+            if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
+                efield_vector_plot_menu = menu_id.Append(10,_('Show vector field'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu)
+
+
         menu_id.AppendSeparator()
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
@@ -1833,6 +1839,42 @@ class MarkersPanel(wx.Panel):
         self.indexes_saved_lists= []
         self.efield_data_saved = efield_data_loaded
         self.indexes_saved_lists = indexes_saved_list
+
+    def OnMenuShowVectorField(self, evt):
+        import invesalius.data.transformations as tr
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        position = self.markers[list_index].position
+        orientation = np.radians(self.markers[list_index].orientation)
+        m_img = tr.compose_matrix(angles=orientation, translate=position)
+        m_img_flip = m_img.copy()
+        m_img_flip[1, -1] = -m_img_flip[1, -1]
+        cp = m_img_flip[:-1, -1]  # coil center
+        cp = cp * 0.001  # convert to meters
+        cp = cp.tolist()
+
+        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
+        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
+        coil_dir = m_img_flip[:-1, 0]
+        coil_face = m_img_flip[:-1, 1]
+        cn = np.cross(coil_dir, coil_face)
+        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+        T_rot = T_rot.tolist()  # to list
+        coord = [position, orientation]
+        coord = np.array(coord).flatten()
+
+        #Check here, it resets the radious list
+        Publisher.sendMessage('Update interseccion offline', m_img = m_img, coord = coord)
+
+        enorm = self.navigation.neuronavigation_api.update_efield_vectorROI(position=cp,
+                                                                  orientation=orientation,
+                                                                  T_rot=T_rot,
+                                                                  id_list=self.ID_list)
+        enorm_data = [T_rot, cp, coord, enorm, self.ID_list]
+        Publisher.sendMessage('Get enorm', enorm_data = enorm_data , plot_vector = True)
+
+    def GetIdList(self, ID_list):
+        self.ID_list = ID_list
 
     def OnMenuSetEfieldTarget(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()

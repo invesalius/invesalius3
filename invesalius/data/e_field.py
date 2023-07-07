@@ -60,6 +60,9 @@ class Visualize_E_field_Thread(threading.Thread):
                 try:
                     self.ID_list = self.e_field_IDs_queue.get_nowait()
                     self.e_field_IDs_queue.task_done()
+                    id_list = []
+                    for h in range(self.ID_list.GetNumberOfIds()):
+                        id_list.append(self.ID_list.GetId(h))
                 except queue.Full:
                     self.e_field_IDs_queue.task_done()
 
@@ -77,16 +80,19 @@ class Visualize_E_field_Thread(threading.Thread):
                                 enorm = self.enorm_debug
                             else:
                                 if self.plot_vectors:
-                                    enorm = self.neuronavigation_api.update_efield_vector(position=cp,
+                                    enorm = self.neuronavigation_api.update_efield_vectorROI(position=cp,
                                                                                            orientation=coord[3:],
-                                                                                           T_rot=T_rot)
+                                                                                           T_rot=T_rot,
+                                                                                           id_list=id_list,
+                                                                                             )
                                 else:
                                     enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
                             try:
-                                self.e_field_norms_queue.put_nowait(([T_rot, cp, coord, enorm]))
+                                self.e_field_norms_queue.put_nowait(([T_rot, cp, coord, enorm, id_list]))
+
                             except queue.Full:
                                 pass
 
-                        self.coord_old = coord
+                            self.coord_old = coord
 
             time.sleep(self.sle)

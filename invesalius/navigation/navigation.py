@@ -128,7 +128,7 @@ class UpdateNavigationScene(threading.Thread):
                     if not self.e_field_norms_queue.empty():
                         try:
                             enorm_data = self.e_field_norms_queue.get_nowait()
-                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm_data=enorm_data)
+                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm_data=enorm_data, plot_vector = True)
                         finally:
                             self.e_field_norms_queue.task_done()
 
