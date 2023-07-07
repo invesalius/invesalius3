@@ -102,7 +102,7 @@ def GetExpandedIconImage():
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
-                          size=wx.Size(280, 656))
+                          size=wx.Size(300, 656))
 
         #sizer = wx.BoxSizer(wx.VERTICAL)
         gbs = wx.GridBagSizer(5,5)
@@ -178,7 +178,7 @@ class LowerTaskPanel(wx.Panel):
         image_list.Add(GetCollapsedIconBitmap())
 
         # Fold 1 - Data
-        item = fold_panel.AddFoldPanel(_("Data"), collapsed=False,
+        item = fold_panel.AddFoldPanel(_("Data"), collapsed=True,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -280,7 +280,7 @@ class UpperTaskPanel(wx.Panel):
 
         elif mode == const.MODE_NAVIGATOR:
             tasks = [(_("Imports Section"), imports.TaskPanel),
-                     (_("Navigation system"), navigator.TaskPanel)]
+                     (_("Navigation Section"), navigator.TaskPanel)]
 
         for i in range(len(tasks)):
             (name, panel) = tasks[i]
