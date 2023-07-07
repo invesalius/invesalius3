@@ -40,6 +40,7 @@ except:
     has_mTMS = False
 
 import wx
+import sys
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -86,6 +87,11 @@ from invesalius import inv_paths
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
+        
+def getBitMapForBackground():
+    image_file = os.path.join('head.png')
+    bmp = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath(image_file)), wx.BITMAP_TYPE_PNG)
+    return bmp
 
 
 class TaskPanel(wx.Panel):
@@ -111,21 +117,12 @@ class InnerTaskPanel(wx.Panel):
         background_colour = wx.Colour(255,255,255)
         self.SetBackgroundColour(background_colour)
 
-        txt_nav = wx.StaticText(self, -1, _('Select fiducials and navigate'),
-                                size=wx.Size(90, 20))
-        txt_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-
-        # Create horizontal sizer to represent lines in the panel
-        txt_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        txt_sizer.Add(txt_nav, 1, wx.EXPAND|wx.GROW, 5)
-
         # Fold panel which contains navigation configurations
         fold_panel = FoldPanel(self)
         fold_panel.SetBackgroundColour(default_colour)
 
         # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(txt_sizer, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.AddSpacer(5)
         main_sizer.Fit(self)
@@ -135,7 +132,6 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
         self.sizer = main_sizer
-
 
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
@@ -150,7 +146,6 @@ class FoldPanel(wx.Panel):
         self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
-
 
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
@@ -170,8 +165,10 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 330), 0, fpb.FPB_SINGLE_FOLD)
-
+                                      (10, 600), 0, fpb.FPB_SINGLE_FOLD)
+        gbs = wx.GridBagSizer(5,5)
+        gbs.AddGrowableCol(0, 1)
+        self.gbs = gbs
         # Initialize Navigation, Tracker, Robot, Image, and PedalConnection objects here to make them
         # available to several panels.
         #
@@ -228,6 +225,40 @@ class InnerFoldPanel(wx.Panel):
         style.SetFirstColour(default_colour)
         style.SetSecondColour(default_colour)
 
+        item = fold_panel.AddFoldPanel(_("Coregistration"), collapsed=True)
+        ntw = CoregistrationPanel(
+            parent=item,
+            navigation=navigation,
+            tracker=tracker,
+            robot=robot,
+            icp=icp,
+            image=image,
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
+        self.fold_panel = fold_panel
+        self.__calc_best_size(ntw)
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
+                                      leftSpacing=0, rightSpacing=0)
+        fold_panel.Expand(fold_panel.GetFoldPanel(0))
+
+        item = fold_panel.AddFoldPanel(_("Navigation"), collapsed=True)
+        ntw = NavigationPanel(
+            parent=item,
+            navigation=navigation,
+            tracker=tracker,
+            robot=robot,
+            icp=icp,
+            image=image,
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
+
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
+                                      leftSpacing=0, rightSpacing=0)
+        
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
         ntw = NeuronavigationPanel(
@@ -307,17 +338,22 @@ class InnerFoldPanel(wx.Panel):
         line_sizer.Add(checkobj, 0, wx.RIGHT | wx.LEFT, 5)
         line_sizer.Fit(self)
 
-        # Panel sizer to expand fold panel
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fold_panel, 0, wx.GROW|wx.EXPAND)
-        sizer.Add(line_sizer, 1, wx.GROW | wx.EXPAND)
+        sizer.Add(gbs, 1, wx.GROW|wx.EXPAND)
+        self.SetSizer(sizer)
+        # Panel sizer to expand fold panel
+        #sizer = wx.BoxSizer(wx.VERTICAL)
+
         sizer.Fit(self)
 
         self.track_obj = False
-
-        self.SetSizer(sizer)
-        self.Update()
-        self.SetAutoLayout(1)
+        gbs.Add(fold_panel, (0, 0), flag=wx.EXPAND)
+        gbs.Add(line_sizer, (1, 0), flag=wx.EXPAND)
+        gbs.Layout()
+        sizer.Fit(self)
+        self.Fit()
+        
+        self.__bind_events()
         
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
@@ -330,6 +366,30 @@ class InnerFoldPanel(wx.Panel):
 
         Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
         Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
+    
+    def __calc_best_size(self, panel):
+        parent = panel.GetParent()
+        panel.Reparent(self)
+
+        gbs = self.gbs
+        fold_panel = self.fold_panel
+
+        # Calculating the size
+        gbs.AddGrowableRow(1, 1)
+        #gbs.AddGrowableRow(0, 1)
+        gbs.Add(fold_panel, (0, 0), flag=wx.EXPAND)
+        gbs.Add(panel, (1, 0), flag=wx.EXPAND)
+        gbs.Layout()
+        self.Fit()
+        size = panel.GetSize()
+
+        gbs.Remove(1)
+        gbs.Remove(0)
+        gbs.RemoveGrowableRow(1)
+
+        panel.Reparent(parent)
+        panel.SetInitialSize(size)
+        self.SetInitialSize(self.GetSize())
 
     def OnShowDbs(self):
         self.dbs_item.Show()
@@ -388,6 +448,928 @@ class InnerFoldPanel(wx.Panel):
 
     def EnableVolumeCameraCheckbox(self, enabled):
         self.checkcamera.Enable(enabled)
+
+class CoregistrationPanel(wx.Panel):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+
+        book = wx.Notebook(self, -1,style= wx.BK_DEFAULT)
+        book.Bind(wx.EVT_BOOKCTRL_PAGE_CHANGING, self.OnPageChanging)
+        book.Bind(wx.EVT_BOOKCTRL_PAGE_CHANGED, self.OnPageChanged)
+        if sys.platform != 'win32':
+            book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        self.navigation = navigation
+        self.tracker = tracker
+        self.robot = robot
+        self.icp = icp
+        self.image = image
+        self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
+
+        book.AddPage(ImagePage(book, self.image), _("Image"))
+        book.AddPage(TrackerPage(book, self.icp, self.tracker, self.navigation, self.pedal_connection, self.neuronavigation_api), _("Tracker"))
+        book.AddPage(RefinePage(book, self.icp, self.tracker, self.image, self.navigation), _("Refine"))
+        book.AddPage(StimulatorPage(book), _("Stimulator"))
+
+        book.SetSelection(0)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(book, 0, wx.EXPAND)
+        self.SetSizer(sizer)
+
+        book.Refresh()
+        self.book = book
+        self.__bind_events()
+    
+    def __bind_events(self):
+        Publisher.subscribe(self._FoldTracker,
+                                 'Next to tracker fiducials')
+        Publisher.subscribe(self._FoldRefine,
+                                 'Next to refine fiducials')
+        Publisher.subscribe(self._FoldStimulator,
+                                 'Next to stimulator fiducials')
+        Publisher.subscribe(self._FoldImage,
+                                 'Back to image fiducials')
+        
+
+    def OnPageChanging(self, evt):
+        page = evt.GetOldSelection()
+    
+    def OnPageChanged(self, evt):
+        old_page = evt.GetOldSelection()
+        new_page = evt.GetSelection()
+
+        # old page validations
+        if old_page == 0:
+            # Do not allow user to move to other (forward) tabs if image fiducials not done.
+            if not self.image.AreImageFiducialsSet():
+                self.book.SetSelection(0)
+                wx.MessageBox(_("Select image fiducials first"), _("InVesalius 3"))
+        if old_page != 2:
+            # Load data into refine tab
+            Publisher.sendMessage("Update UI for refine tab")
+        
+        # new page validations
+        if (old_page == 1) and (new_page == 2 or new_page == 3):
+            # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
+            if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
+                self.book.SetSelection(1)
+                wx.MessageBox(_("Select tracker fiducials first"), _("InVesalius 3"))
+
+    def _FoldImage(self):
+        """
+        Fold image notebook page.
+        """
+        self.book.SetSelection(0)
+
+    def _FoldTracker(self):
+        """
+        Fold tracker notebook page.
+        """
+        Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
+        self.book.SetSelection(1)
+
+    def _FoldRefine(self):
+        """
+        Fold refine notebook page.
+        """
+        self.book.SetSelection(2)
+
+    def _FoldStimulator(self):
+        """
+        Fold mask notebook page.
+        """
+        self.book.SetSelection(3)
+
+class ImagePage(wx.Panel):
+    def __init__(self, parent, image):
+        wx.Panel.__init__(self, parent)
+
+        self.image = image
+        self.btns_set_fiducial = [None, None, None]
+        self.numctrls_fiducial = [[], [], []]
+        self.current_coord = 0, 0, 0, None, None, None
+
+        self.bg_bmp = getBitMapForBackground()
+        # Toggle buttons for image fiducials
+        background = wx.StaticBitmap(self, -1, self.bg_bmp, (0, 0))
+        for n, fiducial in enumerate(const.IMAGE_FIDUCIALS):
+            button_id = fiducial['button_id']
+            label = fiducial['label']
+            tip = fiducial['tip']
+
+            ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
+            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
+            ctrl.SetValue(self.image.IsImageFiducialSet(n))
+            ctrl.Disable()
+
+            self.btns_set_fiducial[n] = ctrl
+
+        for m in range(len(self.btns_set_fiducial)):
+            for n in range(3):
+                value = self.image.GetImageFiducialForUI(m, n)
+                self.numctrls_fiducial[m].append(
+                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1, value=value, )
+                    )
+                self.numctrls_fiducial[m][n].Hide()
+        
+        start_button = wx.ToggleButton(self, label="Start Registration")
+        start_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStartRegistration, ctrl=start_button))
+        self.start_button = start_button
+
+        next_button = wx.Button(self, label="Next")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+        if not self.image.AreImageFiducialsSet():
+            next_button.Disable()
+        self.next_button = next_button
+
+        top_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        top_sizer.Add(start_button)
+
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(next_button)
+
+        sizer = wx.GridBagSizer(5, 5)
+        sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.btns_set_fiducial[2], wx.GBPosition(0, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_HORIZONTAL)
+        sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(background, wx.GBPosition(1, 2))
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([
+            (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10), 
+            (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5), 
+            (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 30)])
+        self.sizer = main_sizer
+        self.SetSizerAndFit(main_sizer)
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
+        Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
+        Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
+        Publisher.subscribe(self.OnNextEnable, "Next enable for image fiducials")
+        Publisher.subscribe(self.OnNextDisable, "Next disable for image fiducials")
+
+    def LoadImageFiducials(self, label, position):
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
+
+        fiducial_index = fiducial['fiducial_index']
+        fiducial_name = fiducial['fiducial_name']
+
+        if self.btns_set_fiducial[fiducial_index].GetValue():
+            print("Fiducial {} already set, not resetting".format(label))
+            return
+
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
+
+        self.btns_set_fiducial[fiducial_index].SetValue(True)
+        for m in [0, 1, 2]:
+            self.numctrls_fiducial[fiducial_index][m].SetValue(position[m])
+        
+        if self.image.AreImageFiducialsSet():
+            self.OnNextEnable()
+        else:
+            self.OnNextDisable()
+
+    def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
+        found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
+
+        assert len(found) != 0, "No fiducial found for which {} = {}".format(attribute_name, attribute_value)
+        return found[0]
+
+    def SetImageFiducial(self, fiducial_name, position):
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
+
+        self.image.SetImageFiducial(fiducial_index, position)
+        if self.image.AreImageFiducialsSet():
+            self.OnNextEnable()
+        else:
+            self.OnNextDisable()
+
+    def UpdateImageCoordinates(self, position):
+        self.current_coord = position
+
+        for m in [0, 1, 2]:
+            if not self.btns_set_fiducial[m].GetValue():
+                for n in [0, 1, 2]:
+                    self.numctrls_fiducial[m][n].SetValue(float(position[n]))
+
+    def OnImageFiducials(self, n, evt):
+        fiducial_name = const.IMAGE_FIDUCIALS[n]['fiducial_name']
+
+        # XXX: This is still a bit hard to read, could be cleaned up.
+        label = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
+
+        if self.btns_set_fiducial[n].GetValue():
+            position = self.numctrls_fiducial[n][0].GetValue(),\
+                    self.numctrls_fiducial[n][1].GetValue(),\
+                    self.numctrls_fiducial[n][2].GetValue()
+            orientation = None, None, None
+
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
+
+            colour = (0., 1., 0.)
+            size = 2
+            seed = 3 * [0.]
+
+            Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
+                                   label=label, seed=seed)
+        else:
+            for m in [0, 1, 2]:
+                self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
+            print(self.numctrls_fiducial)
+            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=np.nan)
+            Publisher.sendMessage('Delete fiducial marker', label=label)
+
+    def OnNext(self, evt):
+        Publisher.sendMessage("Next to tracker fiducials")
+
+    def OnNextEnable(self):
+        self.next_button.Enable()
+
+    def OnNextDisable(self):
+        self.next_button.Disable()
+
+    def OnStartRegistration(self, evt, ctrl):
+        value = ctrl.GetValue()
+        if value:
+            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            for button in self.btns_set_fiducial:
+                button.Enable()
+            self.start_button.SetLabel("Stop registration")
+        else:
+            self.start_button.SetLabel("Start registration")
+            Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
+
+class TrackerPage(wx.Panel):
+    def __init__(self, parent, icp, tracker, navigation, pedal_connection, neuronavigation_api):
+        wx.Panel.__init__(self, parent)
+
+        self.icp = icp
+        self.tracker = tracker
+        self.navigation = navigation
+        self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
+
+        self.btns_set_fiducial = [None, None, None]
+        self.numctrls_fiducial = [[], [], []]
+        self.current_coord = 0, 0, 0, None, None, None
+        self.tracker_fiducial_being_set = None
+        for n in [0, 1, 2]:
+            if not self.tracker.IsTrackerFiducialSet(n):
+                self.tracker_fiducial_being_set = n
+                break
+            
+
+        self.bg_bmp = getBitMapForBackground()
+        # Toggle buttons for image fiducials
+        background = wx.StaticBitmap(self, -1, self.bg_bmp, (0, 0))
+        for n, fiducial in enumerate(const.TRACKER_FIDUCIALS):
+            button_id = fiducial['button_id']
+            label = fiducial['label']
+            tip = fiducial['tip']
+
+            ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
+            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
+            ctrl.SetValue(self.tracker.IsTrackerFiducialSet(n))
+            ctrl.Disable()
+
+            self.btns_set_fiducial[n] = ctrl
+
+        for m in range(len(self.btns_set_fiducial)):
+            for n in range(3):
+                value = self.tracker.GetTrackerFiducialForUI(m, n)
+                self.numctrls_fiducial[m].append(
+                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1, value=value, )
+                    )
+                self.numctrls_fiducial[m][n].Hide()
+        
+        start_button = wx.ToggleButton(self, label="Start Patient Registration")
+        start_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStartRegistration, ctrl=start_button))
+        self.start_button = start_button
+
+        reset_button = wx.Button(self, label="Reset", style=wx.BU_EXACTFIT)
+        reset_button.Bind(wx.EVT_BUTTON, partial(self.OnReset, ctrl=reset_button))
+        self.reset_button = reset_button
+
+        next_button = wx.Button(self, label="Next")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+        if not self.tracker.AreTrackerFiducialsSet():
+            next_button.Disable()
+        self.next_button = next_button
+
+        top_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        top_sizer.AddMany([
+            (start_button),
+            (reset_button)
+            ])
+
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(next_button)
+
+        sizer = wx.GridBagSizer(5, 5)
+        sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.btns_set_fiducial[2], wx.GBPosition(0, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_HORIZONTAL)
+        sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(background, wx.GBPosition(1, 2))
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([
+            (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10), 
+            (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5), 
+            (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 30)])
+        self.sizer = main_sizer
+        self.SetSizerAndFit(main_sizer)
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
+        Publisher.subscribe(self.OnNextEnable, "Next enable for tracker fiducials")
+        Publisher.subscribe(self.OnNextDisable, "Next disable for tracker fiducials")
+
+    def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
+        found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
+
+        assert len(found) != 0, "No fiducial found for which {} = {}".format(attribute_name, attribute_value)
+        return found[0]
+
+    def SetTrackerFiducial(self, fiducial_name):
+        # if not self.tracker.IsTrackerInitialized():
+        #     dlg.ShowNavigationTrackerWarning(0, 'choose')
+        #     return
+
+        fiducial = self.GetFiducialByAttribute(const.TRACKER_FIDUCIALS, 'fiducial_name', fiducial_name)
+        fiducial_index = fiducial['fiducial_index']
+
+        # XXX: The reference mode is fetched from navigation object, however it seems like not quite
+        #      navigation-related attribute here, as the reference mode used during the fiducial registration
+        #      is more concerned with the calibration than the navigation.
+        #
+        ref_mode_id = self.navigation.GetReferenceMode()
+        self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+
+        self.ResetICP()
+        if self.tracker.AreTrackerFiducialsSet():
+            self.OnNextEnable()
+        else:
+            self.OnNextDisable()
+        #self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial, self.txtctrl_fre)
+
+    def set_fiducial_callback(self, state, index=None):
+        if state:
+            if index is None:
+                fiducial_name = const.TRACKER_FIDUCIALS[self.tracker_fiducial_being_set]['fiducial_name']
+                Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
+            else:
+                fiducial_name = const.TRACKER_FIDUCIALS[index]['fiducial_name']
+                Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
+
+        if self.tracker.AreTrackerFiducialsSet():
+            if self.pedal_connection is not None:
+                self.pedal_connection.remove_callback(name='fiducial')
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
+        else:
+            for n in [0, 1, 2]:
+                if not self.tracker.IsTrackerFiducialSet(n):
+                    self.tracker_fiducial_being_set = n
+                    break
+
+    def OnTrackerFiducials(self, evt, i, ctrl):
+        value = ctrl.GetValue()
+        self.set_fiducial_callback(True, index=i)
+        self.btns_set_fiducial[i].SetValue(self.tracker.IsTrackerFiducialSet(i))
+
+    def ResetICP(self):
+        self.icp.ResetICP()
+        #self.checkbox_icp.Enable(False)
+        #self.checkbox_icp.SetValue(False)
+
+    def OnReset(self, evt, ctrl):
+        self.tracker.ResetTrackerFiducials()
+        for button in self.btns_set_fiducial:
+                button.SetValue(False)
+        self.start_button.SetValue(False)
+        self.OnStartRegistration(self.start_button, self.start_button)
+
+    def OnNext(self, evt):
+        Publisher.sendMessage("Next to refine fiducials")
+
+    def OnNextEnable(self):
+        self.next_button.Enable()
+
+    def OnNextDisable(self):
+        self.next_button.Disable()
+
+    def OnStartRegistration(self, evt, ctrl):
+        value = ctrl.GetValue()
+        if not value:
+            for button in self.btns_set_fiducial:
+                button.Disable()
+        else:
+            if not self.tracker.IsTrackerInitialized():
+                self.start_button.SetValue(False)
+                dlg.ShowNavigationTrackerWarning(0, 'choose')
+            else:
+                if self.pedal_connection is not None:
+                    self.pedal_connection.add_callback(
+                        name='fiducial',
+                        callback=self.set_fiducial_callback,
+                        remove_when_released=True,
+                    )
+
+                if self.neuronavigation_api is not None:
+                    self.neuronavigation_api.add_pedal_callback(
+                        name='fiducial',
+                        callback=self.set_fiducial_callback,
+                        remove_when_released=True,
+                    )
+                for button in self.btns_set_fiducial:
+                    button.Enable()
+
+class RefinePage(wx.Panel):
+    def __init__(self, parent, icp, tracker, image, navigation):
+
+        wx.Panel.__init__(self, parent)
+        self.icp = icp
+        self.tracker = tracker
+        self.image = image
+        self.navigation = navigation
+
+        self.numctrls_fiducial = [[], [], [], [], [], []]
+        const_labels = [label for label in const.FIDUCIAL_LABELS]
+        labels = const_labels + const_labels # duplicate labels for image and tracker
+        self.labels = [wx.StaticText(self, -1, _(label)) for label in labels]
+
+        for m in range(6):
+            for n in range(3):
+                if m <= 2:
+                    value = self.image.GetImageFiducialForUI(m, n)
+                else:
+                    value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
+
+                self.numctrls_fiducial[m].append(
+                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1, value=value))
+        
+        txt_label_image = wx.StaticText(self, -1, _("Image Fiducials:"))
+        txt_label_image.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        coord_sizer = wx.GridBagSizer(hgap=5, vgap=0)
+
+        for m in range(3):
+            coord_sizer.Add(self.labels[m], pos=wx.GBPosition(m, 0))
+            for n in range(3):
+                coord_sizer.Add(self.numctrls_fiducial[m][n], pos=wx.GBPosition(m, n+1))
+                if m in range(1, 6):
+                    self.numctrls_fiducial[m][n].SetEditable(False)
+        
+        txt_label_track = wx.StaticText(self, -1, _("Tracker Fiducials:"))
+        txt_label_track.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        coord_sizer_track = wx.GridBagSizer(hgap=5, vgap=0)
+
+        for m in range(3, 6):
+            coord_sizer_track.Add(self.labels[m], pos=wx.GBPosition(m-3, 0))
+            for n in range(3):
+                coord_sizer_track.Add(self.numctrls_fiducial[m][n], pos=wx.GBPosition(m-3, n+1))
+                if m in range(1, 6):
+                    self.numctrls_fiducial[m][n].SetEditable(False)
+
+        txt_fre = wx.StaticText(self, -1, _('FRE:'))
+        tooltip = wx.ToolTip(_("Fiducial registration error"))
+        txt_fre.SetToolTip(tooltip)
+
+        value = self.icp.GetFreForUI()
+        txtctrl_fre = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        txtctrl_fre.SetBackgroundColour('WHITE')
+        txtctrl_fre.SetEditable(0)
+        txtctrl_fre.SetToolTip(tooltip)
+        self.txtctrl_fre = txtctrl_fre
+
+        self.OnUpdateUI()
+
+        fre_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        fre_sizer.AddMany([
+            (txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+            (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)
+                           
+        ])
+        
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
+        self.back_button = back_button
+
+        refine_button = wx.Button(self, label="Refine")
+        refine_button.Bind(wx.EVT_BUTTON, partial(self.OnRefine))
+        self.refine_button = refine_button
+
+        next_button = wx.Button(self, label="Next")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+        self.next_button = next_button
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_sizer.AddMany([
+            (back_button, 0, wx.EXPAND),
+            (refine_button, 0, wx.EXPAND),
+            (next_button, 0, wx.EXPAND)
+        ])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([
+            (txt_label_image, 0, wx.EXPAND | wx.ALL, 10),
+            (coord_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+            (txt_label_track, 0, wx.EXPAND | wx.ALL, 10),
+            (coord_sizer_track, 0, wx.ALIGN_CENTER_HORIZONTAL),
+            (10, 10, 0),
+            (fre_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+            (button_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 20),
+            (10, 10, 0)
+        ])
+        self.sizer = main_sizer
+        self.SetSizerAndFit(main_sizer)
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnUpdateUI, "Update UI for refine tab")
+    
+    def OnUpdateUI(self):
+        if self.tracker.AreTrackerFiducialsSet() and self.image.AreImageFiducialsSet():
+            for m in range(6):
+                for n in range(3):
+                    if m <= 2:
+                        value = self.image.GetImageFiducialForUI(m, n)
+                    else:
+                        value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
+
+                    self.numctrls_fiducial[m][n].SetValue(value)
+        
+
+            self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
+            self.navigation.UpdateFiducialRegistrationError(self.tracker, self.image)
+            fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
+
+            self.txtctrl_fre.SetValue(str(round(fre, 2)))
+            if fre_ok:
+                self.txtctrl_fre.SetBackgroundColour('GREEN')
+            else:
+                self.txtctrl_fre.SetBackgroundColour('RED')
+
+    def OnBack(self, evt):
+        Publisher.sendMessage('Back to image fiducials')
+    
+    def OnNext(self, evt):
+        Publisher.sendMessage('Next to stimulator fiducials')
+
+    def OnRefine(self, evt):
+        self.icp.RegisterICP(self.navigation, self.tracker)
+        if self.icp.use_icp:
+            self.UpdateUI()
+
+class StimulatorPage(wx.Panel):
+    def __init__(self, parent):
+
+        wx.Panel.__init__(self, parent)
+
+        lbl_inter = wx.StaticText(self, -1, _("Stimulator Registration "))
+
+        border = wx.BoxSizer(wx.VERTICAL)
+        border.Add(lbl_inter, 1, wx.EXPAND | wx.ALL, 10)
+        self.SetSizerAndFit(border)
+        self.Layout()
+
+class NavigationPanel(wx.Panel):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
+        wx.Panel.__init__(self, parent)
+
+        self.navigation = navigation
+        self.tracker = tracker
+        self.robot = robot
+        self.icp = icp
+        self.image = image
+        self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
+
+        top_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        top_sizer.Add(MarkersPanel(self, self.navigation, self.tracker, self.icp), 0, wx.GROW | wx.EXPAND )
+
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connection, self.neuronavigation_api), 0, wx.EXPAND | wx.TOP, 20)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([(top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)
+                            ])
+        self.sizer = main_sizer
+        self.SetSizerAndFit(main_sizer)
+        self.Update()
+
+class ControlPanel(wx.Panel):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
+
+        wx.Panel.__init__(self, parent)
+        
+        # Initialize global variables
+        self.navigation = navigation
+        self.tracker = tracker
+        self.robot = robot
+        self.icp = icp
+        self.image = image
+        self.pedal_connection = pedal_connection
+        self.neuronavigation_api = neuronavigation_api
+
+        # Toggle button for neuronavigation
+        tooltip = wx.ToolTip(_("Start navigation"))
+        btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, -1))
+        btn_nav.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        btn_nav.SetToolTip(tooltip)
+        self.btn_nav = btn_nav
+        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=btn_nav))
+    
+        # Toggle button for robot
+        tooltip = wx.ToolTip(_("Stop robot"))
+        btn_robot = wx.ToggleButton(self, -1, _("Stop Robot"), size=wx.Size(80, -1))
+        btn_robot.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        btn_robot.SetToolTip(tooltip)
+        self.btn_robot = btn_robot
+        btn_robot.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStopRobot, btn_nav=btn_robot))
+
+        # Label and Checkbox for Tractography
+        tooltip = wx.ToolTip(_(u"Control Tractography"))
+        tractography_checkbox = wx.CheckBox(self, -1, _('Enable / Disable Tractography '))
+        tractography_checkbox.SetValue(False)
+        tractography_checkbox.Enable(False)
+        tractography_checkbox.Bind(wx.EVT_CHECKBOX, partial(self.OnTractographyCheckbox, ctrl=tractography_checkbox))
+        tractography_checkbox.SetToolTip(tooltip)
+        self.tractography_checkbox = tractography_checkbox
+
+        # Check box to track object or simply the stylus
+        checkbox_track_object = wx.CheckBox(self, -1, _('Track object'))
+        checkbox_track_object.SetValue(False)
+        checkbox_track_object.Enable(0)
+        checkbox_track_object.Bind(wx.EVT_CHECKBOX, partial(self.OnTrackObjectCheckbox, ctrl=checkbox_track_object))
+        self.checkbox_track_object = checkbox_track_object
+
+        # Label and Checkbox for Lock to Target
+        tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
+        lock_to_target_checkbox = wx.CheckBox(self, -1, _('Lock to target:'))
+        lock_to_target_checkbox.SetValue(False)
+        lock_to_target_checkbox.Enable(False)
+        lock_to_target_checkbox.Bind(wx.EVT_CHECKBOX, partial(self.OnLockToTargetCheckbox, ctrl=lock_to_target_checkbox))
+        lock_to_target_checkbox.SetToolTip(tooltip)
+        self.lock_to_target_checkbox = lock_to_target_checkbox
+    
+        # Checkbox for object position and orientation update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Show and track TMS coil"))
+        checkobj = wx.CheckBox(self, -1, _('Show coil'))
+        checkobj.SetToolTip(tooltip)
+        checkobj.SetValue(False)
+        checkobj.Disable()
+        checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowCoil)
+        self.checkobj = checkobj
+    
+        # Checkbox for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Update camera in volume"))
+        checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
+        checkcamera.SetToolTip(tooltip)
+        checkcamera.SetValue(const.CAM_MODE)
+        checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCameraCheckbox)
+        self.checkcamera = checkcamera
+    
+        # Checkbox to use serial port to trigger pulse signal and create markers
+        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
+        checkbox_serial_port = wx.CheckBox(self, -1, _('Serial port'))
+        checkbox_serial_port.SetToolTip(tooltip)
+        checkbox_serial_port.SetValue(False)
+        checkbox_serial_port.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port))
+        self.checkbox_serial_port = checkbox_serial_port
+    
+        #Checkbox for Force Sensor
+        tooltip = wx.ToolTip(_(u"Control Force Sensor"))
+        force_checkbox = wx.CheckBox(self, -1, _('Enable / Disable Force Sensor '))
+        force_checkbox.SetValue(False)
+        force_checkbox.Enable(False)
+        force_checkbox.Bind(wx.EVT_CHECKBOX, partial(self.OnForceSensorCheckbox, ctrl=force_checkbox))
+        force_checkbox.SetToolTip(tooltip)
+        self.force_checkbox = force_checkbox
+
+
+        button_sizer = wx.BoxSizer(wx.VERTICAL)
+        button_sizer.AddMany([
+            (btn_nav, 0, wx.EXPAND | wx.GROW),
+            (btn_robot, 0, wx.EXPAND | wx.GROW)
+        ])
+
+        checkbox_sizer = wx.BoxSizer(wx.VERTICAL)
+        checkbox_sizer.AddMany([
+            (tractography_checkbox),
+            (checkbox_track_object),
+            (lock_to_target_checkbox),
+            (checkobj),
+            (checkcamera),
+            (checkbox_serial_port),
+            (force_checkbox)
+        ])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([
+            (button_sizer, 0, wx.EXPAND | wx.ALL, 10),
+            (checkbox_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM , 20)
+        ])
+
+        self.sizer = main_sizer
+        self.SetSizerAndFit(main_sizer)
+
+        self.__bind_events()
+        self.Update()
+        self.LoadState()
+
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
+        Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
+        Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
+        Publisher.subscribe(self.UpdateTarget, 'Update target')
+        # Externally check/uncheck and enable/disable checkboxes.
+        Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
+        Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
+
+        Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
+        Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
+
+    def SaveState(self):
+        track_object = self.checkbox_track_object
+        state = {
+            'track_object': {
+                'checked': track_object.IsChecked(),
+                'enabled': track_object.IsEnabled(),
+            }
+        }
+
+        session = ses.Session()
+        session.SetState('object_registration_panel', state)
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetState('object_registration_panel')
+
+        if state is None:
+            return
+
+        track_object = state['track_object']
+
+        self.EnableTrackObjectCheckbox(track_object['enabled'])
+        self.CheckTrackObjectCheckbox(track_object['checked'])
+
+
+    # Navigation 
+    def OnStartNavigation(self):
+        if not self.tracker.AreTrackerFiducialsSet() or not self.image.AreImageFiducialsSet():
+            wx.MessageBox(_("Invalid fiducials, select all coordinates."), _("InVesalius 3"))
+
+        elif not self.tracker.IsTrackerInitialized():
+            dlg.ShowNavigationTrackerWarning(0, 'choose')
+            errors = True
+
+        else:
+            # Prepare GUI for navigation.
+            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Hide current mask")
+
+            self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
+            self.navigation.StartNavigation(self.tracker, self.icp)
+
+    def OnNavigate(self, evt, btn_nav):
+        nav_id = btn_nav.GetValue()
+        if not nav_id:
+            wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
+
+            tooltip = wx.ToolTip(_("Start neuronavigation"))
+            btn_nav.SetToolTip(tooltip)
+        else:
+            Publisher.sendMessage("Start navigation")
+
+            if self.nav_status:
+                tooltip = wx.ToolTip(_("Stop neuronavigation"))
+                btn_nav.SetToolTip(tooltip)
+            else:
+                btn_nav.SetValue(False)
+    
+    def OnStopNavigation(self):
+        self.navigation.StopNavigation()
+        if self.tracker.tracker_id == const.ROBOT:
+            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
+                                  target_index=None, target=None)
+
+    def UpdateTarget(self, coord):
+        self.navigation.target = coord
+
+        if coord is not None:
+            self.lock_to_target_checkbox.Enable(True)
+            self.lock_to_target_checkbox.SetValue(True)
+            self.navigation.SetLockToTarget(True)
+
+
+    # 'Robot'
+    def OnStopRobot(self, evt):
+        pass
+
+
+    # 'Tracktography'
+    def OnTractographyCheckbox(self, evt):
+        pass
+
+
+    # 'Track object' checkbox
+    def EnableTrackObjectCheckbox(self, enabled):
+        self.checkbox_track_object.Enable(enabled)
+
+    def CheckTrackObjectCheckbox(self, checked):
+        self.checkbox_track_object.SetValue(checked)
+        self.OnTrackObjectCheckbox()
+
+    def OnTrackObjectCheckbox(self, evt=None, ctrl=None):
+        checked = self.checkbox_track_object.IsChecked()
+        Publisher.sendMessage('Track object', enabled=checked)
+
+        # Disable or enable 'Show coil' checkbox, based on if 'Track object' checkbox is checked.
+        Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
+
+        # Also, automatically check or uncheck 'Show coil' checkbox.
+        Publisher.sendMessage('Check show-coil checkbox', checked=checked)
+
+        self.SaveState()
+
+
+    # 'Lock to Target' checkbox        
+    def OnLockToTargetCheckbox(self, evt, ctrl):
+        value = ctrl.GetValue()
+        self.navigation.SetLockToTarget(value)
+
+    # 'Show coil' checkbox
+    def CheckShowCoil(self, checked=False):
+        self.checkobj.SetValue(checked)
+        self.track_obj = checked
+        self.OnShowCoil()
+
+    def EnableShowCoil(self, enabled=False):
+        self.checkobj.Enable(enabled)
+
+    def OnShowCoil(self, evt=None):
+        checked = self.checkobj.GetValue()
+        Publisher.sendMessage('Show-coil checked', checked=checked)    
+
+
+    # 'Volume camera' checkbox
+    def CheckVolumeCameraCheckbox(self, checked):
+        self.checkcamera.SetValue(checked)
+        self.OnVolumeCameraCheckbox()
+
+    def OnVolumeCameraCheckbox(self, evt=None, status=None):
+        Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
+
+    def EnableVolumeCameraCheckbox(self, enabled):
+        self.checkcamera.Enable(enabled)
+    
+
+    # 'Serial Port Com'
+    def OnCheckStatus(self, nav_status, vis_status):
+        if nav_status:
+            self.checkbox_serial_port.Enable(False)
+            self.checkobj.Enable(False)
+        else:
+            self.checkbox_serial_port.Enable(True)
+            # if self.track_obj:
+            #     self.checkobj.Enable(True)
+
+    def OnEnableSerialPort(self, evt, ctrl):
+        if ctrl.GetValue():
+            from wx import ID_OK
+            dlg_port = dlg.SetCOMPort(select_baud_rate=False)
+
+            if dlg_port.ShowModal() != ID_OK:
+                ctrl.SetValue(False)
+                return
+
+            com_port = dlg_port.GetCOMPort()
+            baud_rate = 115200
+
+            Publisher.sendMessage('Update serial port', serial_port_in_use=True, com_port=com_port, baud_rate=baud_rate)
+        else:
+            Publisher.sendMessage('Update serial port', serial_port_in_use=False)
+    
+    # 'Force Sensor'
+    def OnForceSensorCheckbox(self):
+        pass
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
@@ -960,7 +1942,6 @@ class NeuronavigationPanel(wx.Panel):
         self.tracker.__init__()
         self.icp.__init__()
 
-
 class ObjectRegistrationPanel(wx.Panel):
     def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
@@ -1305,7 +2286,6 @@ class ObjectRegistrationPanel(wx.Panel):
         self.obj_name = None
         self.timestamp = const.TIMESTAMP
 
-
 class MarkersPanel(wx.Panel):
     @dataclasses.dataclass
     class Marker:
@@ -1467,22 +2447,24 @@ class MarkersPanel(wx.Panel):
         self.current_session = 1
 
         self.brain_actor = None
-        # Change marker size
-        spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
-        spin_size.SetRange(1, 99)
-        spin_size.SetValue(self.marker_size)
-        spin_size.Bind(wx.EVT_TEXT, partial(self.OnSelectSize, ctrl=spin_size))
-        spin_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSize, ctrl=spin_size))
+        # Change session
+        spin_session = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_session.SetRange(1, 99)
+        spin_session.SetValue(self.current_session)
+        spin_session.SetToolTip("Set session")
+        spin_session.Bind(wx.EVT_TEXT, partial(self.OnSessionChanged, ctrl=spin_session))
+        spin_session.Bind(wx.EVT_SPINCTRL, partial(self.OnSessionChanged, ctrl=spin_session))
 
         # Marker colour select
         select_colour = csel.ColourSelect(self, -1, colour=[255*s for s in self.marker_colour], size=wx.Size(20, 23))
+        select_colour.SetToolTip("Set colour")
         select_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=select_colour))
 
         btn_create = wx.Button(self, -1, label=_('Create marker'), size=wx.Size(135, 23))
         btn_create.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
 
         sizer_create = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        sizer_create.AddMany([(spin_size, 1),
+        sizer_create.AddMany([(spin_session, 1),
                               (select_colour, 0),
                               (btn_create, 0)])
 
@@ -1920,7 +2902,11 @@ class MarkersPanel(wx.Panel):
                 print("The coil is not at the target")
         else:
             print("Target not set")
-
+    
+    def OnSessionChanged(self, evt, ctrl):
+        value = ctrl.GetValue()
+        Publisher.sendMessage('Current session changed', new_session_id=value)
+        
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
             result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
@@ -2162,7 +3148,6 @@ class MarkersPanel(wx.Panel):
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
-
 class DbsPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -2170,7 +3155,6 @@ class DbsPanel(wx.Panel):
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-
 
 class TractographyPanel(wx.Panel):
 
@@ -2872,7 +3856,6 @@ class SessionPanel(wx.Panel):
     def OnSessionChanged(self, evt):
         Publisher.sendMessage('Current session changed', new_session_id=self.__spin_session.GetValue())
         
-
 class InputAttributes(object):
     # taken from https://stackoverflow.com/questions/2466191/set-attributes-from-dictionary-in-python
     def __init__(self, *initial_data, **kwargs):
