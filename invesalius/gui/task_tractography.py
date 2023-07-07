@@ -429,7 +429,6 @@ class InnerTaskPanel(wx.Panel):
 
         if filename:
             Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
-            sp = dlg.TractographyProgressWindow()
             try:
                 self.trekker = Trekker.initialize(filename.encode('utf-8'))
                 self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
@@ -444,7 +443,6 @@ class InnerTaskPanel(wx.Panel):
                 Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
                 # except:
                 #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
-                sp.Close()
             except:
                 Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialization failed."))
                 wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
