@@ -32,6 +32,9 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
+import invesalius.gui.task_tractography as tractography
+import invesalius.gui.task_efield as efield
+
 
 
 def GetCollapsedIconData():
@@ -181,7 +184,9 @@ class InnerFoldPanel(wx.Panel):
         tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
                      (_("Configure 3D surface"), surface.TaskPanel),
-                     (_("Export data"), exporter.TaskPanel)]
+                     (_("Export data"), exporter.TaskPanel),
+                     (_("Tractography"), tractography.TaskPanel),
+                     (_("E-Field"), efield.TaskPanel)]
         
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
