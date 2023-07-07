@@ -716,24 +716,25 @@ TR2 = wx.NewId()
 TR3 = wx.NewId()
 SET = wx.NewId()
 
+FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
 IMAGE_FIDUCIALS = [
     {
         'button_id': IR1,
-        'label': 'LEI',
+        'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
         'tip': _("Select left ear in image"),
     },
     {
         'button_id': IR2,
-        'label': 'REI',
+        'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
         'tip': _("Select right ear in image"),
     },
     {
         'button_id': IR3,
-        'label': 'NAI',
+        'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
         'tip': _("Select nasion in image"),
@@ -743,21 +744,21 @@ IMAGE_FIDUCIALS = [
 TRACKER_FIDUCIALS = [
     {
         'button_id': TR1,
-        'label': 'LET',
+        'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
         'tip': _("Select left ear with spatial tracker"),
     },
     {
         'button_id': TR2,
-        'label': 'RET',
+        'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
         'tip': _("Select right ear with spatial tracker"),
     },
     {
         'button_id': TR3,
-        'label': 'NAT',
+        'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
         'tip': _("Select nasion with spatial tracker"),
