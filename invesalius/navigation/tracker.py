@@ -157,7 +157,10 @@ class Tracker():
 
     def IsTrackerInitialized(self):
         return self.tracker_connection and self.tracker_id and self.tracker_connected
-
+   
+    def IsTrackerFiducialSet(self, fiducial_index):
+        return not np.isnan(self.tracker_fiducials)[fiducial_index].any()
+    
     def AreTrackerFiducialsSet(self):
         return not np.isnan(self.tracker_fiducials).any()
 
