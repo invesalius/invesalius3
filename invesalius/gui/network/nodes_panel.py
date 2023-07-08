@@ -20,8 +20,18 @@ class NodesPanel(wx.Panel):
         # Create the main vertical box sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self.__find_input = wx.TextCtrl(self, size=(225, -1))
+        find_sizer = self._create_find_box_sizer()
+
         buttons_sizer = self._create_buttons_box_sizer()
-        main_sizer.Add(buttons_sizer, 0, wx.ALIGN_RIGHT)
+
+        hor = wx.BoxSizer(wx.HORIZONTAL)
+
+        hor.Add(find_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        hor.AddStretchSpacer()
+        hor.Add(buttons_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        main_sizer.Add(hor, 0, wx.EXPAND)
 
         #self.__grid = self._create_grid_table()
         self.__list_ctrl = self._create_list_ctrl()
@@ -30,13 +40,13 @@ class NodesPanel(wx.Panel):
         self._load_values()
         
         # Add the grid table to the main sizer
-        main_sizer.Add(self.__list_ctrl, 85, wx.GROW|wx.EXPAND)
+        main_sizer.Add(self.__list_ctrl, 85, wx.GROW | wx.EXPAND)
         
         # Create the input fields
-        self.__ipaddress_input = wx.TextCtrl(self)
-        self.__port_input = wx.TextCtrl(self)
-        self.__aetitle_input = wx.TextCtrl(self)
-        self.__description_input = wx.TextCtrl(self)
+        self.__ipaddress_input = wx.TextCtrl(self, size=(225, -1))
+        self.__port_input = wx.TextCtrl(self, size=(225, -1))
+        self.__aetitle_input = wx.TextCtrl(self, size=(225, -1))
+        self.__description_input = wx.TextCtrl(self, size=(225, -1))
 
         form_sizer = self._create_form_sizer()
         
@@ -47,6 +57,21 @@ class NodesPanel(wx.Panel):
         self.SetSizer(main_sizer)
 
         self._bind_evt()
+
+    def _on_button_find(self, evt):
+        """ Find button event. """
+
+        selected = self.__nodes[self.__selected_index]
+        if selected is None:
+            
+            wx.MessageBox(_("Please, select a node."), _("Error"), wx.OK | wx.ICON_ERROR)
+            return
+
+        dn = dcm_net.DicomNet()
+        dn.SetHost(selected['ipaddress'])
+        dn.SetPort(selected['port'])
+        dn.SetSearchWord(self.__find_input.GetValue())
+        Publisher.sendMessage('Populate tree', patients=dn.RunCFind())
 
     def _add_node(self, node):
         """ Add a node to the nodes list. """
@@ -83,6 +108,19 @@ class NodesPanel(wx.Panel):
 
         if self.__selected_index is not None:
             self.__list_ctrl.CheckItem(self.__selected_index, True)
+
+    def _create_find_box_sizer(self):
+        """ Create the find box sizer. """
+
+        find_sizer = wx.BoxSizer(wx.HORIZONTAL) 
+
+        btn_find = wx.Button(self, label="Search")
+        btn_find.Bind(wx.EVT_BUTTON, self._on_button_find)
+        
+        find_sizer.Add(self.__find_input, 0, wx.ALL, 5) 
+        find_sizer.Add(btn_find, 0, wx.ALL, 5)
+
+        return find_sizer
 
     def _create_buttons_box_sizer(self):
         """ Create the buttons. """

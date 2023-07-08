@@ -1,5 +1,4 @@
 from invesalius.gui.network.nodes_panel import NodesPanel
-from invesalius.gui.network.find_panel import FindPanel
 import wx.lib.splitter as spl
 import wx
 
@@ -33,10 +32,6 @@ class HostFindPanel(wx.Panel):
         self.__image_panel = NodesPanel(splitter)
         splitter.AppendWindow(self.__image_panel, 500)
 
-        self.__text_panel = FindPanel(splitter)
-        splitter.AppendWindow(self.__text_panel, 750)
-
-        self.SetSizer(sizer)
         sizer.Fit(self)
 
         self.Layout()
@@ -45,18 +40,14 @@ class HostFindPanel(wx.Panel):
 
     def _bind_events(self):
 
-        self.__text_panel.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
-        self.__text_panel.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
+        self.__image_panel.Bind(EVT_SELECT_SERIE, self._on_select_serie)
+        #self.__image_panel.Bind(EVT_SELECT_SLICE, self._on_select_slice)
 
-    def OnSelectSerie(self, evt):
+    def _on_select_serie(self, evt):
 
         evt.Skip()
 
-    def OnSelectSlice(self, evt):
+    def _on_select_slice(self, evt):
 
         self.__image_panel.dicom_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
-
-    def SetSerie(self, serie):
-
-        self.__image_panel.dicom_preview.SetDicomGroup(serie)
