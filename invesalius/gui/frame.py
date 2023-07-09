@@ -32,7 +32,6 @@ import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_panel as imp
 import invesalius.gui.preferences as preferences
-import invesalius.gui.dicom_server as dicom_server
 import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
@@ -486,8 +485,6 @@ class Frame(wx.Frame):
             self.ShowGettingStarted()
         elif id == const.ID_PREFERENCES:
             self.ShowPreferences()
-        elif id == const.ID_DICOM_SERVER:
-            self.showDicomServer()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
@@ -646,18 +643,6 @@ class Frame(wx.Frame):
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
 
-    def showDicomServer(self):
-        """ Show dicom server dialog. """
-
-        dicom_server_dialog = dicom_server.DicomServer(self)
-        if dicom_server_dialog.ShowModal() == wx.ID_OK:
-
-            dicom_server_dialog.Destroy()
-
-            session = ses.Session()
-            session.SetConfig('server_aetitle', dicom_server_dialog.ae_title)
-            session.SetConfig('server_port', dicom_server_dialog.port)
-
     def ShowPreferences(self):
         preferences_dialog = preferences.Preferences(self)
         preferences_dialog.LoadPreferences()
@@ -673,11 +658,15 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
+            server_aetitle = values[const.SERVER_AETITLE]
+            server_port = values[const.SERVER_PORT]
 
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
             session.SetConfig('language', language)
             session.SetConfig('slice_interpolation', slice_interpolation)
+            session.SetConfig('server_aetitle', server_aetitle)
+            session.SetConfig('server_port', server_port)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
@@ -1200,10 +1189,6 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         #tools_menu = wx.Menu()
 
-        # NETWORK
-        network_settings_menu = wx.Menu()
-        network_settings_menu.Append(const.ID_DICOM_SERVER, _("Dicom Server"))
-
         # OPTIONS
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences..."))
@@ -1246,7 +1231,6 @@ class MenuBar(wx.MenuBar):
         self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
-        self.Append(network_settings_menu, _("Network Settings"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 

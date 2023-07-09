@@ -5,6 +5,7 @@ import invesalius.session as ses
 import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.pubsub import pub as Publisher
+from invesalius.gui.network.dicom_server_panel import DicomServerPanel
 
 
 class Preferences(wx.Dialog):
@@ -22,11 +23,13 @@ class Preferences(wx.Dialog):
         self.pnl_viewer3d = Viewer3D(self.book)
         #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self.book)
+        self.network = DicomServerPanel(self.book)
 
         self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("3D Visualization"))
         #  self.book.AddPage(self.pnl_surface, _("Surface creation"))
         self.book.AddPage(self.pnl_language, _("Language"))
+        self.book.AddPage(self.network, _("Network"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
 
@@ -50,9 +53,11 @@ class Preferences(wx.Dialog):
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
         viewer2d = self.pnl_viewer2d.GetSelection()
+        network = self.network.as_dict()
         values.update(lang)
         values.update(viewer)
         values.update(viewer2d)
+        values.update(network)
 
         return values
 
