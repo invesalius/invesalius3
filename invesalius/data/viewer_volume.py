@@ -1915,7 +1915,8 @@ class Viewer(wx.Panel):
         self.efield_coords = enorm_data[2]
         self.Id_list = enorm_data[4]
         if self.plot_vector:
-            if self.enorm_debug:
+            session = ses.Session()
+            if session.GetConfig('debug_efield'):
                 self.e_field_norms = enorm_data[3][:,0]
                 self.e_field_col1 = enorm_data[3][:,1]
                 self.e_field_col2 = enorm_data[3][:,2]
