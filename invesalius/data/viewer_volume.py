@@ -1703,13 +1703,14 @@ class Viewer(wx.Panel):
         for actor in self.vectorfield_actor:
             self.ren.AddActor(actor)
 
-    def SaveEfieldTargetData(self, target_list_index, position, orientation):
-        if self.radius_list.GetNumberOfIds()>0:
-            index_ids = []
-            for h in range(self.radius_list.GetNumberOfIds()):
-                index_ids.append(self.radius_list.GetId(h))
-                enorms_list = list(self.e_field_norms)
-            self.target_radius_list.append([target_list_index, index_ids, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
+    def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
+        if len(self.Id_list)>0:
+            enorms_list = list(self.e_field_norms)
+            if plot_efield_vectors:
+                e_field_vectors =[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
+            else:
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list)>0:
@@ -1914,11 +1915,17 @@ class Viewer(wx.Panel):
         self.efield_coords = enorm_data[2]
         self.Id_list = enorm_data[4]
         if self.plot_vector:
-            self.e_field_norms = enorm_data[3].enorm
-            self.e_field_col1 = enorm_data[3].column1
-            self.e_field_col2 = enorm_data[3].column2
-            self.e_field_col3 = enorm_data[3].column3
-            self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+            if self.enorm_debug:
+                self.e_field_norms = enorm_data[3][:,0]
+                self.e_field_col1 = enorm_data[3][:,1]
+                self.e_field_col2 = enorm_data[3][:,2]
+                self.e_field_col3 = enorm_data[3][:,3]
+            else:
+                self.e_field_norms = enorm_data[3].enorm
+                self.e_field_col1 = enorm_data[3].column1
+                self.e_field_col2 = enorm_data[3].column2
+                self.e_field_col3 = enorm_data[3].column3
+                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
         else:
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
@@ -1927,18 +1934,24 @@ class Viewer(wx.Panel):
             #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         self.GetEfieldMaxMin(self.e_field_norms)
 
-    def SaveEfieldData(self, filename):
+    def SaveEfieldData(self, filename, plot_efield_vectors):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
         all_data=[]
-        header = ['T_rot','coil position','coords position', 'coords', 'Enorm']
+        header = ['T_rot','coil position','coords position', 'coords', 'Enorm', 'efield vectors']
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
             orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
                  )
             efield_coords_position = [list(position_world), list(orientation_world)]
-        all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
+        if plot_efield_vectors:
+            e_field_vectors = [list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors])
+
+        else:
+            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
+
         with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(header)
@@ -1947,7 +1960,7 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
-        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot']
+        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors']
         all_data = list(self.target_radius_list)
         with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)

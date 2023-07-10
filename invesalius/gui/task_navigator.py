@@ -1881,7 +1881,8 @@ class MarkersPanel(wx.Panel):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation)
+        plot_efield_vectors = self.navigation.plot_efield_vectors
+        Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation, plot_efield_vectors= plot_efield_vectors)
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -2956,8 +2957,8 @@ class E_fieldPanel(wx.Panel):
 
         if not filename:
             return
-
-        Publisher.sendMessage('Save Efield data', filename = filename)
+        plot_efield_vectors = self.navigation.plot_efield_vectors
+        Publisher.sendMessage('Save Efield data', filename = filename, plot_efield_vectors= plot_efield_vectors)
 
     def OnSaveAllDataEfield(self, evt):
         Publisher.sendMessage('Check efield data')
