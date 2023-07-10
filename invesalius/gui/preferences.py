@@ -18,13 +18,13 @@ class Preferences(wx.Dialog):
         super().__init__(parent, id_, title, style=style)
 
         self.book = wx.Notebook(self, -1)
-        self.pnl_viewer2d = Viewer2D(self.book)
+        #self.pnl_viewer2d = Viewer2D(self.book)
         self.pnl_viewer3d = Viewer3D(self.book)
         #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self.book)
 
-        self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
-        self.book.AddPage(self.pnl_viewer3d, _("3D Visualization"))
+        #self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
+        self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         #  self.book.AddPage(self.pnl_surface, _("Surface creation"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
@@ -49,10 +49,9 @@ class Preferences(wx.Dialog):
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
-        viewer2d = self.pnl_viewer2d.GetSelection()
+        #viewer2d = self.pnl_viewer2d.GetSelection()
         values.update(lang)
         values.update(viewer)
-        values.update(viewer2d)
 
         return values
 
@@ -71,7 +70,7 @@ class Preferences(wx.Dialog):
             const.SLICE_INTERPOLATION: slice_interpolation,
         }
 
-        self.pnl_viewer2d.LoadSelection(values)
+        #self.pnl_viewer2d.LoadSelection(values)
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
 
@@ -81,8 +80,8 @@ class Viewer3D(wx.Panel):
 
         wx.Panel.__init__(self, parent)
 
-        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Surface"))
-        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Interpolation "))
+        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
+        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
         rb_inter = self.rb_inter = wx.RadioBox(
             bsizer.GetStaticBox(),
             -1,
@@ -95,23 +94,34 @@ class Viewer3D(wx.Panel):
         bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT, 10)
         bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT, 0)
 
-        #  box_rendering = wx.StaticBox(self, -1, _("Volume rendering"))
-        bsizer_ren = wx.StaticBoxSizer(wx.VERTICAL, self, _("Volume rendering"))
-        lbl_rendering = wx.StaticText(bsizer_ren.GetStaticBox(), -1, _("Rendering"))
+        lbl_rendering = wx.StaticText(bsizer.GetStaticBox(), -1, _("Volume Rendering"))
         rb_rendering = self.rb_rendering = wx.RadioBox(
-            bsizer_ren.GetStaticBox(),
+            bsizer.GetStaticBox(),
             -1,
             choices=["CPU", _(u"GPU (NVidia video cards only)")],
             majorDimension=2,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
+        bsizer.Add(lbl_rendering, 0, wx.TOP | wx.LEFT, 10)
+        bsizer.Add(rb_rendering, 0, wx.TOP | wx.LEFT, 0)
 
-        bsizer_ren.Add(lbl_rendering, 0, wx.TOP | wx.LEFT, 10)
-        bsizer_ren.Add(rb_rendering, 0, wx.TOP | wx.LEFT, 0)
+        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("2D Visualization"))
+        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Slice Interpolation "))
+        rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
+            bsizer_slices.GetStaticBox(),
+            -1,
+            choices=[_("Yes"), _("No")],
+            majorDimension=3,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+
+        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT, 10)
+        bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT, 0)
 
         border = wx.BoxSizer(wx.VERTICAL)
+        border.Add(bsizer_slices, 1, wx.EXPAND | wx.ALL, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL, 10)
-        border.Add(bsizer_ren, 1, wx.EXPAND | wx.ALL, 10)
+        
         self.SetSizerAndFit(border)
         self.Layout()
 
@@ -120,6 +130,7 @@ class Viewer3D(wx.Panel):
         options = {
             const.RENDERING: self.rb_rendering.GetSelection(),
             const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
+            const.SLICE_INTERPOLATION: self.rb_inter_sl.GetSelection()
         }
 
         return options
@@ -127,9 +138,11 @@ class Viewer3D(wx.Panel):
     def LoadSelection(self, values):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
+        slice_interpolation = values[const.SLICE_INTERPOLATION]
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
+        self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
 
 class Viewer2D(wx.Panel):
