@@ -1842,7 +1842,7 @@ class MarkersPanel(wx.Panel):
         self.indexes_saved_lists = indexes_saved_list
 
     def OnMenuShowVectorField(self, evt):
-        import invesalius.data.transformations as tr
+        session = ses.Session()
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = np.radians(self.markers[list_index].orientation)
@@ -1853,10 +1853,13 @@ class MarkersPanel(wx.Panel):
         #Check here, it resets the radious list
         Publisher.sendMessage('Update interseccion offline', m_img =self.m_img_offline, coord = coord)
 
-        enorm = self.navigation.neuronavigation_api.update_efield_vectorROI(position=self.cp,
-                                                                  orientation=orientation,
-                                                                  T_rot=self.T_rot,
-                                                                  id_list=self.ID_list)
+        if session.GetConfig('debug_efield'):
+            enorm = self.navigation.debug_efield_enorm
+        else:
+            enorm = self.navigation.neuronavigation_api.update_efield_vectorROI(position=self.cp,
+                                                                      orientation=orientation,
+                                                                      T_rot=self.T_rot,
+                                                                      id_list=self.ID_list)
         enorm_data = [self.T_rot, self.cp, coord, enorm, self.ID_list]
         Publisher.sendMessage('Get enorm', enorm_data = enorm_data , plot_vector = True)
 

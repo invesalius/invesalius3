@@ -1688,8 +1688,6 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.arrow_test_actor)
         
     def EfieldVectors(self):
-        for actor in self.vectorfield_actor:
-            self.ren.RemoveActor(actor)
         self.vectorfield_actor = []
         for i in range(self.radius_list.GetNumberOfIds()):
             #direction = np.array([self.e_field_col1[self.radius_list.GetId(i)], self.e_field_col2[self.radius_list.GetId(i)], self.e_field_col3[self.radius_list.GetId(i)]])
@@ -1728,7 +1726,9 @@ class Viewer(wx.Panel):
         indexes_saved_list = []
         if len(self.target_radius_list)>0:
             efield_data_loaded= True
-            indexes_saved_list = np.array(self.target_radius_list[:][0])
+            for i in range(len(self.target_radius_list)):
+                indexes_saved_list.append(self.target_radius_list[i][0])
+            indexes_saved_list= np.array(indexes_saved_list)
         else:
             efield_data_loaded = False
         Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded, indexes_saved_list= indexes_saved_list )
@@ -1856,9 +1856,13 @@ class Viewer(wx.Panel):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         self.RecolorEfieldActor()
         if self.plot_vector:
+            for actor in self.vectorfield_actor:
+                self.ren.RemoveActor(actor)
             wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
             if self.plot_no_connection:
                 wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
+                self.plot_vector= False
+                self.plot_no_connection = False
         else:
             wx.CallAfter(Publisher.sendMessage,'Recolor again')
 
@@ -1909,18 +1913,19 @@ class Viewer(wx.Panel):
 
 
     def GetEnorm(self, enorm_data, plot_vector):
+        session = ses.Session()
         self.plot_vector = plot_vector
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
         self.Id_list = enorm_data[4]
         if self.plot_vector:
-            session = ses.Session()
             if session.GetConfig('debug_efield'):
                 self.e_field_norms = enorm_data[3][:,0]
                 self.e_field_col1 = enorm_data[3][:,1]
                 self.e_field_col2 = enorm_data[3][:,2]
                 self.e_field_col3 = enorm_data[3][:,3]
+                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms[self.Id_list]).argmax()])
             else:
                 self.e_field_norms = enorm_data[3].enorm
                 self.e_field_col1 = enorm_data[3].column1
