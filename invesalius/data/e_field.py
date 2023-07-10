@@ -33,7 +33,7 @@ def Get_coil_position(m_img):
     return [T_rot,cp]
 
 class Visualize_E_field_Thread(threading.Thread):
-    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm):
+    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm, plot_vectors):
         threading.Thread.__init__(self, name='Visualize_E_field_Thread')
         #self.inp = inp #list of inputs
         self.efield_queue = queues[0]
@@ -51,7 +51,7 @@ class Visualize_E_field_Thread(threading.Thread):
             self.debug = True
         else:
             self.debug = False
-        self.plot_vectors = True
+        self.plot_vectors = plot_vectors
 
     def run(self):
         while not self.event.is_set():

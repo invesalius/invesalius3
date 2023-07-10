@@ -961,6 +961,17 @@ def Efield_connection_warning():
     dlg.ShowModal()
     dlg.Destroy()
 
+def Efield_no_data_to_save_warning():
+    msg = _('No Efield data to save')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def Efield_debug_Enorm_warning():
     msg = _('The CSV Enorm file is not loaded.')
     if sys.platform == 'darwin':

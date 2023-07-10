@@ -1930,6 +1930,7 @@ class Viewer(wx.Panel):
     def SaveEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
+        all_data=[]
         header = ['T_rot','coil position','coords position', 'coords', 'Enorm']
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
