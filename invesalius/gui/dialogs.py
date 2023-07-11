@@ -4020,7 +4020,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
+        v1 = cam_focus - self.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
@@ -5203,7 +5203,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
+        v1 = cam_focus - self.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:

@@ -1409,7 +1409,7 @@ class Viewer(wx.Panel):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus[0] - cam_focus0[0], cam_focus[1] - cam_focus0[1], cam_focus[2] - cam_focus0[2])
+        v1 = np.array([cam_focus[0] - cam_focus0[0], cam_focus[1] - cam_focus0[1], cam_focus[2] - cam_focus0[2]])
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
             v1n = 1.0
@@ -2114,9 +2114,9 @@ class Viewer(wx.Panel):
             v0n = np.sqrt(inner1d(v0, v0))
 
             if self.show_object:
-                v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
+                v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])
             else:
-                v1 = (cam_focus - self.initial_focus)
+                v1 = cam_focus - self.initial_focus
 
             v1n = np.sqrt(inner1d(v1, v1))
             if not v1n:
