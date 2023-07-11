@@ -147,6 +147,7 @@ class Frame(wx.Frame):
         sub(self._HideContentPanel, 'Hide content panel')
         sub(self._HideImportPanel, 'Hide import panel')
         sub(self._HideTask, 'Hide task panel')
+        sub(self._HideImportNetwork, 'Hide import network panel')
         sub(self._SetProjectName, 'Set project name')
         sub(self._ShowContentPanel, 'Show content panel')
         sub(self._ShowImportPanel, 'Show import panel in frame')
@@ -307,6 +308,15 @@ class Frame(wx.Frame):
         Hide data and tasks panels.
         """
         aui_manager = self.aui_manager
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(1)
+        aui_manager.Update()
+
+    def _HideImportNetwork(self):
+        """ Hide import network panel. """
+
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Retrieve").Show(0)
         aui_manager.GetPane("Data").Show(0)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()

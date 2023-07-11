@@ -210,6 +210,7 @@ class Controller():
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
+            Publisher.sendMessage("Hide import network panel")
             self.StartImportPanel(dirpath)
 
     def ShowDialogImportOtherFiles(self, id_type):
