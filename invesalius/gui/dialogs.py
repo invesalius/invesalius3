@@ -101,9 +101,9 @@ import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
-from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
+from invesalius.math_utils import inner1d
 
 
 class MaskEvent(wx.PyCommandEvent):
@@ -4031,7 +4031,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
+        v1 = cam_focus - self.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
@@ -5214,7 +5214,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
+        v1 = cam_focus - self.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
