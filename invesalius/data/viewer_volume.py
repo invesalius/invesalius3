@@ -1672,20 +1672,16 @@ class Viewer(wx.Panel):
 
     def MaxEfieldActor(self):
         vtk_colors = vtkNamedColors()
-        self.ren.RemoveActor(self.max_efield_actor)
-        # self.max_efield_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
-        # self.max_efield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
-        # self.ren.AddActor(self.max_efield_actor)
-        self.ren.RemoveActor(self.arrow_test_actor)
-        self.arrow_test_actor.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
+        self.ren.RemoveActor(self.max_efield_vector)
+        self.max_efield_vector.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
         direction = np.array([self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()]])
         direction /= np.linalg.norm(direction)
         pitch = np.degrees(np.arcsin(direction[2]))
         yaw = np.degrees(np.arctan2(direction[1], direction[0]))
         roll = 0.0  # No roll for the arrow
-        self.arrow_test_actor.SetOrientation(pitch, yaw, roll)
-        self.arrow_test_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
-        self.ren.AddActor(self.arrow_test_actor)
+        self.max_efield_vector.SetOrientation(pitch, yaw, roll)
+        self.max_efield_vector.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
+        self.ren.AddActor(self.max_efield_vector)
         
     def EfieldVectors(self):
         self.vectorfield_actor = []
@@ -1802,18 +1798,14 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.target_radius_list=[]
-        self.max_efield_actor = self.CreateActorBall([0., 0., 0.], colour=[0., 0., 1.], size=2)
-        self.arrow_test_actor = self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[0, 0.0, 1.0],
-                                                 size=15)
+        self.max_efield_vector = self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[0, 0.0, 1.0],
+                                                       size=15)
         self.vectorfield_actor =[]
         self.vectorfield_actor.append(self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[1.0, 0.0, 1.0],
                                                  size=5))
         for actor in self.vectorfield_actor:
             self.ren.AddActor(actor)
-        self.ren.AddActor(self.arrow_test_actor)
-        self.ren.AddActor(self.max_efield_actor)
-
-
+        self.ren.AddActor(self.max_efield_vector)
         #self.efield_lut = e_field_brain.lut
 
     def GetNeuronavigationApi(self, neuronavigation_api):
