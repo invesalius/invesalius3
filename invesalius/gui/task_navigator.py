@@ -250,6 +250,7 @@ class InnerFoldPanel(wx.Panel):
         item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
         otw = ObjectRegistrationPanel(
             parent=item,
+            navigation=navigation,
             tracker=tracker,
             pedal_connection=pedal_connection,
             neuronavigation_api=neuronavigation_api,
@@ -962,7 +963,7 @@ class NeuronavigationPanel(wx.Panel):
 
 
 class ObjectRegistrationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -972,15 +973,11 @@ class ObjectRegistrationPanel(wx.Panel):
 
         self.coil_list = const.COIL
 
+        self.navigation = navigation
         self.tracker = tracker
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.nav_prop = None
-        self.obj_fiducials = None
-        self.obj_orients = None
-        self.obj_ref_mode = None
-        self.obj_name = None
         self.timestamp = const.TIMESTAMP
 
         self.SetAutoLayout(1)
@@ -1122,7 +1119,6 @@ class ObjectRegistrationPanel(wx.Panel):
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
             self.checkrecordcoords.Enable(1)
-            self.checkbox_track_object.Enable(0)
             self.btn_save.Enable(0)
             self.btn_new.Enable(0)
             self.btn_load.Enable(0)
@@ -1133,9 +1129,11 @@ class ObjectRegistrationPanel(wx.Panel):
             self.btn_save.Enable(1)
             self.btn_new.Enable(1)
             self.btn_load.Enable(1)
-            if self.obj_fiducials is not None:
-                self.checkbox_track_object.Enable(1)
-                #Publisher.sendMessage('Enable target button', True)
+
+        # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
+        obj_registration = self.navigation.GetObjectRegistration()
+        enable_track_object = obj_registration is not None and obj_registration[0] is not None and not nav_status
+        Publisher.sendMessage('Enable track-object checkbox', enabled=enable_track_object)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
@@ -1160,6 +1158,9 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def EnableTrackObjectCheckbox(self, enabled):
         self.checkbox_track_object.Enable(enabled)
+        if enabled:
+            checked = self.checkbox_track_object.IsChecked()
+            Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
 
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.SetValue(checked)
@@ -1187,18 +1188,18 @@ class ObjectRegistrationPanel(wx.Panel):
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
+                    obj_fiducials, obj_orients, obj_ref_mode, obj_name, polydata, use_default_object = dialog.GetValue()
 
                     self.neuronavigation_api.update_coil_mesh(polydata)
 
-                    if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                    if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         Publisher.sendMessage('Update object registration',
-                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                              data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
                         Publisher.sendMessage('Update status text in GUI',
                                               label=_("Ready"))
                         Publisher.sendMessage(
                             'Configure object',
-                            obj_name=self.obj_name,
+                            obj_name=obj_name,
                             polydata=polydata,
                             use_default_object=use_default_object,
                         )
@@ -1229,33 +1230,33 @@ class ObjectRegistrationPanel(wx.Panel):
                     data = [s.split('\t') for s in text_file.readlines()]
 
                 registration_coordinates = np.array(data[1:]).astype(np.float32)
-                self.obj_fiducials = registration_coordinates[:, :3]
-                self.obj_orients = registration_coordinates[:, 3:]
+                obj_fiducials = registration_coordinates[:, :3]
+                obj_orients = registration_coordinates[:, 3:]
 
-                self.obj_name = data[0][1].encode(const.FS_ENCODE)
-                self.obj_ref_mode = int(data[0][-1])
+                obj_name = data[0][1].encode(const.FS_ENCODE)
+                obj_ref_mode = int(data[0][-1])
 
-                if not os.path.exists(self.obj_name):
-                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                if not os.path.exists(obj_name):
+                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                polydata = vtk_utils.CreateObjectPolyData(obj_name)
                 if polydata:
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
-                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
+                if os.path.basename(obj_name) == "magstim_fig8_coil.stl":
                     use_default_object = True
                 else:
                     use_default_object = False
 
                 Publisher.sendMessage('Update object registration',
-                                      data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                      data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage(
                     'Configure object',
-                    obj_name=self.obj_name,
+                    obj_name=obj_name,
                     polydata=polydata,
                     use_default_object=use_default_object
                 )
@@ -1276,7 +1277,8 @@ class ObjectRegistrationPanel(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnSaveCoil(self, evt):
-        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
+        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.navigation.GetObjectRegistration()
+        if np.isnan(obj_fiducials).any() or np.isnan(obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
             filename = dlg.ShowLoadSaveDialog(message=_(u"Save object registration as..."),
@@ -1284,8 +1286,8 @@ class ObjectRegistrationPanel(wx.Panel):
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename="object_registration.obr", save_ext="obr")
             if filename:
-                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
-                data = np.hstack([self.obj_fiducials, self.obj_orients])
+                hdr = 'Object' + "\t" + utils.decode(obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
+                data = np.hstack([obj_fiducials, obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
@@ -1298,11 +1300,6 @@ class ObjectRegistrationPanel(wx.Panel):
         self.checkbox_track_object.SetValue(False)
         self.checkbox_track_object.Enable(0)
 
-        self.nav_prop = None
-        self.obj_fiducials = None
-        self.obj_orients = None
-        self.obj_ref_mode = None
-        self.obj_name = None
         self.timestamp = const.TIMESTAMP
 
 
