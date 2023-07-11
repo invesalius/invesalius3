@@ -1159,7 +1159,8 @@ class ObjectRegistrationPanel(wx.Panel):
     def EnableTrackObjectCheckbox(self, enabled):
         self.checkbox_track_object.Enable(enabled)
         if enabled:
-            self.OnTrackObjectCheckbox()
+            checked = self.checkbox_track_object.IsChecked()
+            Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
 
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.SetValue(checked)
