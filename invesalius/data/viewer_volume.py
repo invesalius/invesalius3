@@ -1842,27 +1842,27 @@ class Viewer(wx.Panel):
             self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
-        for h in range(len(self.Id_list)):
-             dcolor = 3 * [0.0]
-             index_id = self.Id_list[h]
-             if self.plot_vector:
-                self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
-             else:
-                self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
-             color = 3 * [0.0]
-             for j in range(0, 3):
-                 color[j] = int(255.0 * dcolor[j])
-             self.colors_init.InsertTuple(index_id, color)
-        self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-        self.RecolorEfieldActor()
-        if self.plot_vector:
-            for actor in self.vectorfield_actor:
-                self.ren.RemoveActor(actor)
-            wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
-            if self.plot_no_connection:
-                wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
-                self.plot_vector= False
-                self.plot_no_connection = False
+            for h in range(len(self.Id_list)):
+                 dcolor = 3 * [0.0]
+                 index_id = self.Id_list[h]
+                 if self.plot_vector:
+                    self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
+                 else:
+                    self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
+                 color = 3 * [0.0]
+                 for j in range(0, 3):
+                     color[j] = int(255.0 * dcolor[j])
+                 self.colors_init.InsertTuple(index_id, color)
+            self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+            self.RecolorEfieldActor()
+            if self.plot_vector:
+                for actor in self.vectorfield_actor:
+                    self.ren.RemoveActor(actor)
+                wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
+                if self.plot_no_connection:
+                    wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
+                    self.plot_vector= False
+                    self.plot_no_connection = False
         else:
             wx.CallAfter(Publisher.sendMessage,'Recolor again')
 
