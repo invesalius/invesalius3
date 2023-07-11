@@ -19,6 +19,7 @@
 
 import threading
 
+from wx import ID_OK
 import numpy as np
 import wx
 
@@ -36,6 +37,7 @@ class Robot():
     def __init__(self, tracker):
         self.tracker = tracker
 
+        self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
 
@@ -68,30 +70,55 @@ class Robot():
         return True
 
     def ConfigureRobot(self):
-        self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self.tracker)
 
-        # Show dialog and store relevant output values.
-        status = self.robot_coregistration_dialog.ShowModal()
-        matrix_tracker_to_robot = self.robot_coregistration_dialog.GetValue()
+        if self.tracker.tracker_connection and self.tracker.tracker_connection.IsConnected():
+            select_ip_dialog = dlg.SetRobotIP()
+            status = select_ip_dialog.ShowModal()
 
-        # Destroy the dialog.
-        self.robot_coregistration_dialog.Destroy()
+            if status == ID_OK:
+                robot_ip = select_ip_dialog.GetValue()
+                self.robot_ip = robot_ip
+                self.configuration = {
+                    'tracker_id': self.tracker.GetTrackerId(),
+                    'robot_ip': robot_ip,
+                    'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
+                }
 
-        if status != wx.ID_OK:
-            wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
+                self.connection = self.tracker.tracker_connection
+                select_ip_dialog.Destroy()
+            else:
+                select_ip_dialog.Destroy()
+                return False
+
+            self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self.tracker)
+
+            # Show dialog and store relevant output values.
+            status = self.robot_coregistration_dialog.ShowModal()
+            matrix_tracker_to_robot = self.robot_coregistration_dialog.GetValue()
+
+            # Destroy the dialog.
+            self.robot_coregistration_dialog.Destroy()
+
+            if status != wx.ID_OK:
+                wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
+                return False
+
+            self.matrix_tracker_to_robot = matrix_tracker_to_robot
+
+            self.SaveState()
+            return True
+        
+        else:
+            wx.MessageBox(_("Select Tracker first"), _("InVesalius 3"))
             return False
 
-        self.matrix_tracker_to_robot = matrix_tracker_to_robot
-
-        self.SaveState()
-
-        return True
 
     def AbortRobotConfiguration(self):
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
     def InitializeRobot(self):
+        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
