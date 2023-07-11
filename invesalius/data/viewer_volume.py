@@ -24,7 +24,6 @@ import os
 import sys
 
 import numpy as np
-from numpy.core.umath_tests import inner1d
 import wx
 import queue
 
@@ -110,6 +109,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+from invesalius.math_utils import inner1d
 
 if sys.platform == 'win32':
     try:

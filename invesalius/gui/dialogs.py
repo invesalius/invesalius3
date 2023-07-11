@@ -101,9 +101,9 @@ import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
-from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
+from invesalius.math_utils import inner1d
 
 
 class MaskEvent(wx.PyCommandEvent):
