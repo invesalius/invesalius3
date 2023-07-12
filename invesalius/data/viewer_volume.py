@@ -1443,13 +1443,14 @@ class Viewer(wx.Panel):
 
     def UpdateCameraBallPosition(self, position):
         #if not self.actor_peel:
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-        self.ball_actor.SetPosition(coord_flip)
-        if self.set_camera_position:
-            self.SetVolumeCamera(coord_flip)
-        if not self.nav_status:
-            self.UpdateRender()
+        if self.ball_actor is not None:
+            coord_flip = list(position[:3])
+            coord_flip[1] = -coord_flip[1]
+            self.ball_actor.SetPosition(coord_flip)
+            if self.set_camera_position:
+                self.SetVolumeCamera(coord_flip)
+            if not self.nav_status:
+                self.UpdateRender()
 
     def AddObjectActor(self, obj_name):
         """
