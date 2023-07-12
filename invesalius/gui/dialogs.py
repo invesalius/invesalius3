@@ -5695,7 +5695,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class RobotCoregistrationDialog(wx.Dialog):
-    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
+    def __init__(self, robot, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -5705,8 +5705,8 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.matrix_tracker_to_robot = []
         self.robot_status = False
 
+        self.robot = robot
         self.tracker = tracker
-
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
@@ -5745,8 +5745,12 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
-        btn_load.Enable(False)
         self.btn_load = btn_load
+        if not self.robot.robot_status:
+            btn_load.Enable(False)
+        else:
+            self.UpdateRobotConnectionStatus(True)
+        
 
         # Create a horizontal sizers
         border = 1

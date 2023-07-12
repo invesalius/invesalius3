@@ -20,15 +20,15 @@ class Preferences(wx.Dialog):
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
     ):
         super().__init__(parent, id_, title, style=style)
-        self.tracker = Tracker()
-        self.robot = Robot(
-            tracker=self.tracker
+        tracker = Tracker()
+        robot = Robot(
+            tracker=tracker
         )
 
         self.book = wx.Notebook(self, -1)
         #self.pnl_viewer2d = Viewer2D(self.book)
         self.pnl_viewer3d = Viewer3D(self.book)
-        self.pnl_tracker = TrackerPage(self.book, self.tracker, self.robot)
+        self.pnl_tracker = TrackerPage(self.book, tracker, robot)
         #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self.book)
 
@@ -205,10 +205,17 @@ class TrackerPage(wx.Panel):
         btn_rob.Bind(wx.EVT_BUTTON, self.OnRobot)
         self.btn_rob = btn_rob
 
-        rob_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        btn_rob_con = wx.Button(self, -1, _("Register"))
+        btn_rob_con.SetToolTip("register robot tracking")
+        btn_rob_con.Enable(1)
+        btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotCon)
+        self.btn_rob_con = btn_rob_con
+
+        rob_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
         rob_sizer.AddMany([
             (lbl_rob, 0, wx.LEFT),
-            (btn_rob, 0, wx.RIGHT)
+            (btn_rob, 0, wx.RIGHT),
+            (btn_rob_con, 0, wx.RIGHT)
         ])
 
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
@@ -223,7 +230,7 @@ class TrackerPage(wx.Panel):
         self.Layout()
 
     def __bind_events(self):
-        pass
+        Publisher.subscribe(self.ShowParent, "Show preferences dialog")
 
     def OnChooseTracker(self, evt, ctrl):
         self.HideParent()
@@ -235,10 +242,11 @@ class TrackerPage(wx.Panel):
         else:
             choice = None
 
-        #self.DisconnectTracker()
+        self.tracker.DisconnectTracker()
+        self.robot.DisconnectRobot()
         self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice)
-       
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         self.ShowParent()
     
     def OnChooseReferenceMode(self, evt, ctrl):
@@ -252,16 +260,15 @@ class TrackerPage(wx.Panel):
 
     def OnRobot(self, evt):
         self.HideParent()
-
-        success = self.robot.ConfigureRobot()
-        if success:
-            self.robot.InitializeRobot()
+        if self.robot.ConfigureRobot():
+            self.ShowParent()
         else:
-            #self.DisconnectTracker()
-            pass
-        
-        self.ShowParent()
+            self.ShowParent()
 
+    def OnRobotCon(self, evt):
+        self.HideParent()
+        self.robot.RegisterRobot()
+        self.ShowParent()
 
 class Language(wx.Panel):
     def __init__(self, parent):

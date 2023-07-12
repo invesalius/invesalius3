@@ -472,9 +472,9 @@ class CoregistrationPanel(wx.Panel):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        book.AddPage(ImagePage(book, self.image), _("Image"))
-        book.AddPage(TrackerPage(book, self.icp, self.tracker, self.navigation, self.pedal_connection, self.neuronavigation_api), _("Tracker"))
-        book.AddPage(RefinePage(book, self.icp, self.tracker, self.image, self.navigation), _("Refine"))
+        book.AddPage(ImagePage(book, image), _("Image"))
+        book.AddPage(TrackerPage(book, icp, tracker, navigation, pedal_connection, neuronavigation_api), _("Tracker"))
+        book.AddPage(RefinePage(book, icp, tracker, image, navigation), _("Refine"))
         book.AddPage(StimulatorPage(book), _("Stimulator"))
 
         book.SetSelection(0)
@@ -879,6 +879,7 @@ class TrackerPage(wx.Panel):
                 button.Disable()
         else:
             if not self.tracker.IsTrackerInitialized():
+                print(self.tracker.tracker_connection, self.tracker.tracker_id)
                 self.start_button.SetValue(False)
                 dlg.ShowNavigationTrackerWarning(0, 'choose')
             else:
@@ -1086,6 +1087,8 @@ class ControlPanel(wx.Panel):
         self.image = image
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
+        self.nav_status = False
+        self.target_mode = False
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
