@@ -885,9 +885,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateWindowLevelText,
                             'Update window level text')
 
-        Publisher.subscribe(self._set_cross_visibility,
-                                 'Set cross visibility')
-
         Publisher.subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 

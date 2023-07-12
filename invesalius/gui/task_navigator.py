@@ -949,7 +949,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Delete all markers')
         Publisher.sendMessage("Update marker offset state", create=False)
         Publisher.sendMessage("Remove tracts")
-        Publisher.sendMessage("Set cross visibility", visibility=0)
+        Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
         self.navigation.StopNavigation()
