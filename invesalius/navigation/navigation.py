@@ -84,7 +84,7 @@ class UpdateNavigationScene(threading.Thread):
         """
 
         threading.Thread.__init__(self, name='UpdateScene')
-        self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded = vis_components
+        self.serial_port_enabled, self.view_tracts, self.peel_loaded, self.e_field_loaded, self.plot_efield_vectors  = vis_components
         self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue = vis_queues
         self.sle = sle
         self.event = event
@@ -128,7 +128,7 @@ class UpdateNavigationScene(threading.Thread):
                     if not self.e_field_norms_queue.empty():
                         try:
                             enorm_data = self.e_field_norms_queue.get_nowait()
-                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm_data=enorm_data)
+                            wx.CallAfter(Publisher.sendMessage, 'Get enorm', enorm_data=enorm_data, plot_vector = self.plot_efield_vectors)
                         finally:
                             self.e_field_norms_queue.task_done()
 
@@ -176,6 +176,7 @@ class Navigation(metaclass=Singleton):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.e_field_loaded = False
+        self.plot_efield_vectors = False
         self.debug_efield_enorm = None
 
         # Tractography parameters
@@ -260,6 +261,9 @@ class Navigation(metaclass=Singleton):
 
         self.SaveState()
 
+    def GetObjectRegistration(self):
+        return self.object_registration
+
     def TrackObject(self, enabled=False):
         self.track_obj = enabled
 
@@ -310,7 +314,7 @@ class Navigation(metaclass=Singleton):
         if self.event.is_set():
             self.event.clear()
 
-        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts, self.peel_loaded, self.e_field_loaded, self.plot_efield_vectors]
         vis_queues = [self.coord_queue, self.serial_port_queue, self.tracts_queue, self.icp_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
@@ -390,7 +394,7 @@ class Navigation(metaclass=Singleton):
             if self.e_field_loaded:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
                 jobs_list.append(e_field.Visualize_E_field_Thread(queues, self.event, 2*self.sleep_nav,
-                                                                  self.neuronavigation_api, self.debug_efield_enorm))
+                                                                  self.neuronavigation_api, self.debug_efield_enorm, self.plot_efield_vectors))
 
 
             jobs_list.append(
@@ -451,5 +455,5 @@ class Navigation(metaclass=Singleton):
             self.e_field_IDs_queue.join()
 
 
-        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded, self.e_field_loaded]
+        vis_components = [self.serial_port_in_use, self.view_tracts,  self.peel_loaded, self.e_field_loaded, self.plot_efield_vectors ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)

@@ -24,7 +24,6 @@ import os
 import sys
 
 import numpy as np
-from numpy.core.umath_tests import inner1d
 import wx
 import queue
 
@@ -110,6 +109,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+from invesalius.math_utils import inner1d
 
 if sys.platform == 'win32':
     try:
@@ -242,7 +242,7 @@ class Viewer(wx.Panel):
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
-
+        self.vectorfield_actor = None
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
@@ -273,6 +273,7 @@ class Viewer(wx.Panel):
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
         self.colors_init = vtkUnsignedCharArray()
+        self.plot_no_connection = False
 
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
@@ -400,10 +401,18 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetEfieldActor, 'Send Actor')
         Publisher.subscribe(self.ReturnToDefaultColorActor, 'Recolor again')
         Publisher.subscribe(self.SaveEfieldData, 'Save Efield data')
-
+        Publisher.subscribe(self.SavedAllEfieldData, 'Save all Efield data')
+        Publisher.subscribe(self.SaveEfieldTargetData, 'Save target data')
+        Publisher.subscribe(self.GetTargetSavedEfieldData, 'Get target index efield')
+        Publisher.subscribe(self.CheckStatusSavedEfieldData, 'Check efield data')
+        Publisher.subscribe(self.GetNeuronavigationApi, 'Get Neuronavigation Api')
+        Publisher.subscribe(self.UpdateEfieldPointLocationOffline,'Update interseccion offline')
+        Publisher.subscribe(self.MaxEfieldActor, 'Show max Efield actor')
+        Publisher.subscribe(self.EfieldVectors, 'Show Efield vectors')
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
+        Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
 
     def SaveState(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1409,7 +1418,7 @@ class Viewer(wx.Panel):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus[0] - cam_focus0[0], cam_focus[1] - cam_focus0[1], cam_focus[2] - cam_focus0[2])
+        v1 = np.array([cam_focus[0] - cam_focus0[0], cam_focus[1] - cam_focus0[1], cam_focus[2] - cam_focus0[2]])
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
             v1n = 1.0
@@ -1661,6 +1670,65 @@ class Viewer(wx.Panel):
     def RecolorEfieldActor(self):
         self.efield_mesh_normals_viewer.Modified()
 
+    def MaxEfieldActor(self):
+        vtk_colors = vtkNamedColors()
+        self.ren.RemoveActor(self.max_efield_vector)
+        self.max_efield_vector.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
+        direction = np.array([self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()]])
+        direction /= np.linalg.norm(direction)
+        pitch = np.degrees(np.arcsin(direction[2]))
+        yaw = np.degrees(np.arctan2(direction[1], direction[0]))
+        roll = 0.0  # No roll for the arrow
+        self.max_efield_vector.SetOrientation(pitch, yaw, roll)
+        self.max_efield_vector.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
+        self.ren.AddActor(self.max_efield_vector)
+        
+    def EfieldVectors(self):
+        self.vectorfield_actor = []
+        for i in range(self.radius_list.GetNumberOfIds()):
+            #direction = np.array([self.e_field_col1[self.radius_list.GetId(i)], self.e_field_col2[self.radius_list.GetId(i)], self.e_field_col3[self.radius_list.GetId(i)]])
+            direction = np.array([self.e_field_col1[i], self.e_field_col2[i], self.e_field_col3[i]])
+            direction /= np.linalg.norm(direction)
+            pitch = np.degrees(np.arcsin(direction[2]))
+            yaw = np.degrees(np.arctan2(direction[1], direction[0]))
+            point = self.efield_mesh.GetPoint(self.radius_list.GetId(i))
+            actor = self.CreateActorArrow(direction=point, orientation=[pitch,yaw,0.], colour=[1.0, 0.0, 1.0], size = 5)
+            self.vectorfield_actor.append(actor)
+        for actor in self.vectorfield_actor:
+            self.ren.AddActor(actor)
+
+    def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
+        if len(self.Id_list)>0:
+            enorms_list = list(self.e_field_norms)
+            if plot_efield_vectors:
+                e_field_vectors =[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
+            else:
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
+
+    def GetTargetSavedEfieldData(self, target_index_list):
+        if len(self.target_radius_list)>0:
+            target_index = 0
+            for i in range(len(self.target_radius_list)):
+                if target_index_list == self.target_radius_list[i][0]:
+                    target_index= i
+                    self.saved_target_data = self.target_radius_list[target_index]
+                    break
+
+        #location_previous_max = self.saved_target_data[3]
+        #saved_efield_data = self.saved_target_data[2]
+
+    def CheckStatusSavedEfieldData(self):
+        indexes_saved_list = []
+        if len(self.target_radius_list)>0:
+            efield_data_loaded= True
+            for i in range(len(self.target_radius_list)):
+                indexes_saved_list.append(self.target_radius_list[i][0])
+            indexes_saved_list= np.array(indexes_saved_list)
+        else:
+            efield_data_loaded = False
+        Publisher.sendMessage('Get status of Efield saved data', efield_data_loaded=efield_data_loaded, indexes_saved_list= indexes_saved_list )
+
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
@@ -1688,6 +1756,7 @@ class Viewer(wx.Panel):
         min = np.amin(self.e_field_norms)
         self.min = min
         self.max = max*const.EFIELD_MAX_RANGE_SCALE
+        #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
 
@@ -1697,7 +1766,7 @@ class Viewer(wx.Panel):
     def FindPointsAroundRadiusEfield(self, cellId):
         #radius = vtk.mutable(50)
         #self.radius_list = vtk.vtkIdList()
-        self.locator_efield.FindPointsWithinRadius(30, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
+        self.locator_efield.FindPointsWithinRadius(20, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     def GetCellIDsfromlistPoints(self, vlist, mesh):
         cell_ids_array = []
@@ -1727,8 +1796,20 @@ class Viewer(wx.Panel):
         self.efield_coords = None
         self.coil_position = None
         self.coil_position_Trot = None
-        self.efield_norms = None
+        self.e_field_norms = None
+        self.target_radius_list=[]
+        self.max_efield_vector = self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[0, 0.0, 1.0],
+                                                       size=15)
+        self.vectorfield_actor =[]
+        self.vectorfield_actor.append(self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[1.0, 0.0, 1.0],
+                                                 size=5))
+        for actor in self.vectorfield_actor:
+            self.ren.AddActor(actor)
+        self.ren.AddActor(self.max_efield_vector)
         #self.efield_lut = e_field_brain.lut
+
+    def GetNeuronavigationApi(self, neuronavigation_api):
+        self.neuronavigation_api = neuronavigation_api
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
@@ -1749,25 +1830,33 @@ class Viewer(wx.Panel):
             self.radius_list.Reset()
 
     def OnUpdateEfieldvis(self):
-        if self.radius_list.GetNumberOfIds() != 0:
+        if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
-
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
-
-            for h in range(self.radius_list.GetNumberOfIds()):
-                dcolor = 3 * [0.0]
-                index_id = self.radius_list.GetId(h)
-                self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
-                color = 3 * [0.0]
-                for j in range(0, 3):
-                    color[j] = int(255.0 * dcolor[j])
-                self.colors_init.InsertTuple(index_id, color)
+            for h in range(len(self.Id_list)):
+                 dcolor = 3 * [0.0]
+                 index_id = self.Id_list[h]
+                 if self.plot_vector:
+                    self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
+                 else:
+                    self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
+                 color = 3 * [0.0]
+                 for j in range(0, 3):
+                     color[j] = int(255.0 * dcolor[j])
+                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             self.RecolorEfieldActor()
+            if self.plot_vector:
+                for actor in self.vectorfield_actor:
+                    self.ren.RemoveActor(actor)
+                wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
+                if self.plot_no_connection:
+                    wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
+                    self.plot_vector= False
+                    self.plot_no_connection = False
         else:
             wx.CallAfter(Publisher.sendMessage,'Recolor again')
-
 
     def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
         #TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
@@ -1786,29 +1875,95 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def GetEnorm(self, enorm_data):
-        self.e_field_norms = enorm_data[3]
+    def UpdateEfieldPointLocationOffline(self, m_img, coord):
+        [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
+        intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
+        self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
+        id_list = []
+        for h in range(self.radius_list.GetNumberOfIds()):
+            id_list.append(self.radius_list.GetId(h))
+        Publisher.sendMessage('Get ID list', ID_list = id_list)
+        self.plot_no_connection = True
+
+    def GetCoilPosition(self, position, orientation):
+        m_img = tr.compose_matrix(angles=orientation, translate=position)
+        m_img_flip = m_img.copy()
+        m_img_flip[1, -1] = -m_img_flip[1, -1]
+        cp = m_img_flip[:-1, -1]  # coil center
+        cp = cp * 0.001  # convert to meters
+        cp = cp.tolist()
+
+        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
+        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
+        coil_dir = m_img_flip[:-1, 0]
+        coil_face = m_img_flip[:-1, 1]
+        cn = np.cross(coil_dir, coil_face)
+        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+        T_rot = T_rot.tolist()  # to list
+        Publisher.sendMessage('Send coil position and rotation', T_rot=T_rot, cp=cp, m_img=m_img)
+
+
+    def GetEnorm(self, enorm_data, plot_vector):
+        session = ses.Session()
+        self.plot_vector = plot_vector
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
-        wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
+        self.Id_list = enorm_data[4]
+        if self.plot_vector:
+            if session.GetConfig('debug_efield'):
+                self.e_field_norms = enorm_data[3][:,0]
+                self.e_field_col1 = enorm_data[3][:,1]
+                self.e_field_col2 = enorm_data[3][:,2]
+                self.e_field_col3 = enorm_data[3][:,3]
+                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms[self.Id_list]).argmax()])
+            else:
+                self.e_field_norms = enorm_data[3].enorm
+                self.e_field_col1 = enorm_data[3].column1
+                self.e_field_col2 = enorm_data[3].column2
+                self.e_field_col3 = enorm_data[3].column3
+                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+        else:
+            self.e_field_norms = enorm_data[3]
+            self.Idmax = np.array(self.e_field_norms).argmax()
+
+        #self.Idmax = np.array(self.e_field_norms).argmax()
+            #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         self.GetEfieldMaxMin(self.e_field_norms)
 
-    def SaveEfieldData(self, filename):
+    def SaveEfieldData(self, filename, plot_efield_vectors):
         import invesalius.data.imagedata_utils as imagedata_utils
+        import csv
+        all_data=[]
+        header = ['T_rot','coil position','coords position', 'coords', 'Enorm', 'efield vectors']
+        if self.efield_coords is not None:
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+            orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+                 )
+            efield_coords_position = [list(position_world), list(orientation_world)]
+        if plot_efield_vectors:
+            e_field_vectors = [list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors])
 
-        with open(filename, 'wb') as f:
-            np.savetxt(f, self.coil_position_Trot)
-            np.savetxt(f, self.coil_position)
-            if self.efield_coords is not None:
-                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                    position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
-                    orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
-                )
-                efield_coords_position = [position_world, orientation_world]
-                np.savetxt(f, self.efield_coords)
-                np.savetxt(f, efield_coords_position)
-            np.savetxt(f, self.e_field_norms)
+        else:
+            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
+
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+            writer.writerows(all_data)
+
+    def SavedAllEfieldData(self, filename):
+        import invesalius.data.imagedata_utils as imagedata_utils
+        import csv
+        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors']
+        all_data = list(self.target_radius_list)
+        with open(filename, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            writer.writerows(all_data)
 
     def GetCellIntersection(self, p1, p2, locator):
         vtk_colors = vtkNamedColors()
@@ -1831,7 +1986,6 @@ class Viewer(wx.Panel):
                 point = np.array(self.peel_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
 
-                #print('distance:', distance, point - p1)
                 self.ren.RemoveActor(self.y_actor)
 
                 if distance < closestDist:
@@ -2114,9 +2268,9 @@ class Viewer(wx.Panel):
             v0n = np.sqrt(inner1d(v0, v0))
 
             if self.show_object:
-                v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
+                v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])
             else:
-                v1 = (cam_focus - self.initial_focus)
+                v1 = cam_focus - self.initial_focus
 
             v1n = np.sqrt(inner1d(v1, v1))
             if not v1n:
