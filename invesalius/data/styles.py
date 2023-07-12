@@ -498,7 +498,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         self.viewer.set_cross_visibility(0)
-        Publisher.sendMessage('Remove tracts')
         Publisher.sendMessage('Toggle toolbar item',
                               _id=self.state_code, value=False)
 
