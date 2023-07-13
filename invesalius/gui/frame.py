@@ -556,6 +556,8 @@ class Frame(wx.Frame):
             self.OnBrainSegmentation()
         elif id == const.ID_SEGMENTATION_TRACHEA:
             self.OnTracheSegmentation()
+        elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
+            self.OnMandibleCTSegmentation()
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
@@ -864,6 +866,20 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
+    def OnMandibleCTSegmentation(self):
+        from invesalius.gui import deep_learning_seg_dialog
+        if deep_learning_seg_dialog.HAS_TORCH:
+            dlg = deep_learning_seg_dialog.MandibleSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(self,
+                                   _("It's not possible to run mandible segmenter because your system doesn't have the following modules installed:") \
+                                   + " Torch" ,
+                                   "InVesalius 3 - Trachea segmenter",
+                                   wx.ICON_INFORMATION | wx.OK)
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)
 
@@ -933,6 +949,7 @@ class MenuBar(wx.MenuBar):
                              const.ID_FLOODFILL_SEGMENTATION,
                              const.ID_SEGMENTATION_BRAIN,
                              const.ID_SEGMENTATION_TRACHEA,
+                             const.ID_SEGMENTATION_MANDIBLE_CT,
                              const.ID_MASK_DENSITY_MEASURE,
                              const.ID_CREATE_SURFACE,
                              const.ID_CREATE_MASK,
@@ -1096,6 +1113,7 @@ class MenuBar(wx.MenuBar):
         segmentation_menu.AppendSeparator()
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
+        segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
 
         # Surface Menu
         surface_menu = wx.Menu()

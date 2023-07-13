@@ -164,6 +164,24 @@ class NeuronavigationApi(metaclass=Singleton):
             )
         return None
 
+    def update_efield_vector(self, position, orientation, T_rot):
+        if self.connection is not None:
+            return self.connection.update_efield_vector(
+                position=position,
+                orientation=orientation,
+                T_rot=T_rot,
+            )
+        return None
+
+    def update_efield_vectorROI(self, position, orientation, T_rot, id_list):
+        if self.connection is not None:
+            return self.connection.update_efield_vectorROI(
+                position=position,
+                orientation=orientation,
+                T_rot=T_rot,
+                id_list=id_list
+            )
+        return None
     # Functions for InVesalius to receive updates via callbacks.
 
     def __set_callbacks(self, connection):

@@ -250,6 +250,7 @@ class InnerFoldPanel(wx.Panel):
         item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
         otw = ObjectRegistrationPanel(
             parent=item,
+            navigation=navigation,
             tracker=tracker,
             pedal_connection=pedal_connection,
             neuronavigation_api=neuronavigation_api,
@@ -962,7 +963,7 @@ class NeuronavigationPanel(wx.Panel):
 
 
 class ObjectRegistrationPanel(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -972,15 +973,11 @@ class ObjectRegistrationPanel(wx.Panel):
 
         self.coil_list = const.COIL
 
+        self.navigation = navigation
         self.tracker = tracker
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
-        self.nav_prop = None
-        self.obj_fiducials = None
-        self.obj_orients = None
-        self.obj_ref_mode = None
-        self.obj_name = None
         self.timestamp = const.TIMESTAMP
 
         self.SetAutoLayout(1)
@@ -1122,7 +1119,6 @@ class ObjectRegistrationPanel(wx.Panel):
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
             self.checkrecordcoords.Enable(1)
-            self.checkbox_track_object.Enable(0)
             self.btn_save.Enable(0)
             self.btn_new.Enable(0)
             self.btn_load.Enable(0)
@@ -1133,9 +1129,11 @@ class ObjectRegistrationPanel(wx.Panel):
             self.btn_save.Enable(1)
             self.btn_new.Enable(1)
             self.btn_load.Enable(1)
-            if self.obj_fiducials is not None:
-                self.checkbox_track_object.Enable(1)
-                #Publisher.sendMessage('Enable target button', True)
+
+        # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
+        obj_registration = self.navigation.GetObjectRegistration()
+        enable_track_object = obj_registration is not None and obj_registration[0] is not None and not nav_status
+        Publisher.sendMessage('Enable track-object checkbox', enabled=enable_track_object)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
@@ -1160,6 +1158,9 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def EnableTrackObjectCheckbox(self, enabled):
         self.checkbox_track_object.Enable(enabled)
+        if enabled:
+            checked = self.checkbox_track_object.IsChecked()
+            Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
 
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.SetValue(checked)
@@ -1187,18 +1188,18 @@ class ObjectRegistrationPanel(wx.Panel):
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
+                    obj_fiducials, obj_orients, obj_ref_mode, obj_name, polydata, use_default_object = dialog.GetValue()
 
                     self.neuronavigation_api.update_coil_mesh(polydata)
 
-                    if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                    if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         Publisher.sendMessage('Update object registration',
-                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                              data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
                         Publisher.sendMessage('Update status text in GUI',
                                               label=_("Ready"))
                         Publisher.sendMessage(
                             'Configure object',
-                            obj_name=self.obj_name,
+                            obj_name=obj_name,
                             polydata=polydata,
                             use_default_object=use_default_object,
                         )
@@ -1229,33 +1230,33 @@ class ObjectRegistrationPanel(wx.Panel):
                     data = [s.split('\t') for s in text_file.readlines()]
 
                 registration_coordinates = np.array(data[1:]).astype(np.float32)
-                self.obj_fiducials = registration_coordinates[:, :3]
-                self.obj_orients = registration_coordinates[:, 3:]
+                obj_fiducials = registration_coordinates[:, :3]
+                obj_orients = registration_coordinates[:, 3:]
 
-                self.obj_name = data[0][1].encode(const.FS_ENCODE)
-                self.obj_ref_mode = int(data[0][-1])
+                obj_name = data[0][1].encode(const.FS_ENCODE)
+                obj_ref_mode = int(data[0][-1])
 
-                if not os.path.exists(self.obj_name):
-                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                if not os.path.exists(obj_name):
+                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                polydata = vtk_utils.CreateObjectPolyData(obj_name)
                 if polydata:
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
-                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
+                if os.path.basename(obj_name) == "magstim_fig8_coil.stl":
                     use_default_object = True
                 else:
                     use_default_object = False
 
                 Publisher.sendMessage('Update object registration',
-                                      data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                      data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage(
                     'Configure object',
-                    obj_name=self.obj_name,
+                    obj_name=obj_name,
                     polydata=polydata,
                     use_default_object=use_default_object
                 )
@@ -1276,7 +1277,8 @@ class ObjectRegistrationPanel(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnSaveCoil(self, evt):
-        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
+        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.navigation.GetObjectRegistration()
+        if np.isnan(obj_fiducials).any() or np.isnan(obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
             filename = dlg.ShowLoadSaveDialog(message=_(u"Save object registration as..."),
@@ -1284,8 +1286,8 @@ class ObjectRegistrationPanel(wx.Panel):
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename="object_registration.obr", save_ext="obr")
             if filename:
-                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
-                data = np.hstack([self.obj_fiducials, self.obj_orients])
+                hdr = 'Object' + "\t" + utils.decode(obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
+                data = np.hstack([obj_fiducials, obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
@@ -1298,11 +1300,6 @@ class ObjectRegistrationPanel(wx.Panel):
         self.checkbox_track_object.SetValue(False)
         self.checkbox_track_object.Enable(0)
 
-        self.nav_prop = None
-        self.obj_fiducials = None
-        self.obj_orients = None
-        self.obj_ref_mode = None
-        self.obj_name = None
         self.timestamp = const.TIMESTAMP
 
 
@@ -1459,6 +1456,9 @@ class MarkersPanel(wx.Panel):
 
         self.markers = []
         self.nav_status = False
+        self.efield_loaded = False
+        self.efield_data_saved = False
+        self.efield_target_idx = None
         self.target_mode = False
 
         self.marker_colour = const.MARKER_COLOUR
@@ -1567,7 +1567,9 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
-
+        Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
+        Publisher.subscribe(self.GetIdList, 'Get ID list')
+        Publisher.subscribe(self.GetRotationPosition, 'Send coil position and rotation')
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
 
@@ -1754,6 +1756,30 @@ class MarkersPanel(wx.Panel):
             send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
 
+        if self.nav_status and self.navigation.e_field_loaded:
+            #Publisher.sendMessage('Check efield data')
+            #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
+            if self.__find_target_marker()  == self.marker_list_ctrl.GetFocusedItem():
+                efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
+
+        if self.navigation.e_field_loaded:
+            Publisher.sendMessage('Check efield data')
+            if self.efield_data_saved:
+                if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
+                    if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
+                        efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
+                        menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
+                    else:
+                        efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
+                        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
+
+        if self.navigation.e_field_loaded and not self.nav_status:
+            if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
+                efield_vector_plot_menu = menu_id.Append(10,_('Show vector field'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu)
+
+
         menu_id.AppendSeparator()
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
@@ -1807,6 +1833,57 @@ class MarkersPanel(wx.Panel):
 
         self.SaveState()
 
+    def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
+        self.indexes_saved_lists= []
+        self.efield_data_saved = efield_data_loaded
+        self.indexes_saved_lists = indexes_saved_list
+
+    def OnMenuShowVectorField(self, evt):
+        session = ses.Session()
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        position = self.markers[list_index].position
+        orientation = np.radians(self.markers[list_index].orientation)
+        Publisher.sendMessage('Calculate position and rotation', position=position, orientation=orientation)
+        coord = [position, orientation]
+        coord = np.array(coord).flatten()
+
+        #Check here, it resets the radious list
+        Publisher.sendMessage('Update interseccion offline', m_img =self.m_img_offline, coord = coord)
+
+        if session.GetConfig('debug_efield'):
+            enorm = self.navigation.debug_efield_enorm
+        else:
+            enorm = self.navigation.neuronavigation_api.update_efield_vectorROI(position=self.cp,
+                                                                      orientation=orientation,
+                                                                      T_rot=self.T_rot,
+                                                                      id_list=self.ID_list)
+        enorm_data = [self.T_rot, self.cp, coord, enorm, self.ID_list]
+        Publisher.sendMessage('Get enorm', enorm_data = enorm_data , plot_vector = True)
+
+    def GetRotationPosition(self, T_rot, cp, m_img):
+        self.T_rot = T_rot
+        self.cp = cp
+        self.m_img_offline = m_img
+
+    def GetIdList(self, ID_list):
+        self.ID_list = ID_list
+
+    def OnMenuSetEfieldTarget(self,evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        if idx == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        self.__set_marker_as_target(idx)
+        self.efield_target_idx = idx
+        Publisher.sendMessage('Get target index efield', target_index_list = idx )
+
+    def OnMenuSaveEfieldTargetData(self,evt):
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        position = self.markers[list_index].position
+        orientation = self.markers[list_index].orientation
+        plot_efield_vectors = self.navigation.plot_efield_vectors
+        Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation, plot_efield_vectors= plot_efield_vectors)
+
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
@@ -1821,6 +1898,18 @@ class MarkersPanel(wx.Panel):
         dialog.Destroy()
 
         self.SaveState()
+
+    def OnMenuRemoveEfieldTarget(self,evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        self.markers[idx].is_target = False
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
+        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
+        Publisher.sendMessage('Disable or enable coil tracker', status=False)
+        Publisher.sendMessage('Update target', coord=None)
+        self.efield_target_idx = None
+        #self.__delete_all_brain_targets()
+        wx.MessageBox(_("Efield target removed."), _("InVesalius 3"))
 
     def OnMenuRemoveTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2662,6 +2751,11 @@ class E_fieldPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
+        plot_vectors = wx.CheckBox(self, -1, _('Plot Efield vectors'))
+        plot_vectors.SetValue(False)
+        plot_vectors.Enable(1)
+        plot_vectors.Bind(wx.EVT_CHECKBOX, partial(self.OnEnablePlotVectors, ctrl=plot_vectors))
+
         tooltip2 = wx.ToolTip(_("Load Brain Json config"))
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
@@ -2673,6 +2767,12 @@ class E_fieldPanel(wx.Panel):
         self.btn_save.SetToolTip(tooltip)
         self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
         self.btn_save.Enable(False)
+
+        tooltip3 = wx.ToolTip(_("Save All Efield"))
+        self.btn_all_save = wx.Button(self, -1, _("Save All Efield"), size=wx.Size(80, -1))
+        self.btn_all_save.SetToolTip(tooltip3)
+        self.btn_all_save.Bind(wx.EVT_BUTTON, self.OnSaveAllDataEfield)
+        self.btn_all_save.Enable(False)
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
@@ -2691,11 +2791,12 @@ class E_fieldPanel(wx.Panel):
 
         line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
         line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(self.btn_all_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Change coil:'), pos=(0,100))
-        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 50),
+        txt_surface = wx.StaticText(self, -1, _('Change coil:'), pos=(20,100))
+        self.combo_surface_name = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboCoilNameClic)
@@ -2706,8 +2807,9 @@ class E_fieldPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
-        main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
-        main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(plot_vectors, 1, wx.LEFT | wx.RIGHT, 2)
+        main_sizer.Add(self.combo_surface_name, 1, wx.ALIGN_CENTER_HORIZONTAL,2)
+        main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
 
         main_sizer.SetSizeHints(self)
@@ -2718,6 +2820,8 @@ class E_fieldPanel(wx.Panel):
         Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
         Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
         Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
+        Publisher.subscribe(self.SendNeuronavigationApi, 'Send Neuronavigation Api')
+        Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
@@ -2764,12 +2868,17 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(True)
-            self.btn_save.Enable(True)
+            self.btn_all_save.Enable(True)
+
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
             #self.combo_surface_name.Enable(True)
         self.navigation.e_field_loaded = self.e_field_loaded
+
+    def OnEnablePlotVectors(self, evt, ctrl):
+        self.plot_efield_vectors = ctrl.GetValue()
+        self.navigation.plot_efield_vectors = self.plot_efield_vectors
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
@@ -2799,8 +2908,10 @@ class E_fieldPanel(wx.Panel):
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
             self.enable_efield.Enable(False)
+            self.btn_save.Enable(True)
         else:
             self.enable_efield.Enable(True)
+            self.btn_save.Enable(False)
 
     def OnSelectSleep(self, evt, ctrl):
         self.sleep_nav = ctrl.GetValue()
@@ -2837,17 +2948,52 @@ class E_fieldPanel(wx.Panel):
         else:
             current_folder_path = self.path_meshes
         parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
-        default_filename = sep.join(parts) + '.txt'
+        default_filename = sep.join(parts) + '.csv'
 
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
-                                          wildcard='(*.txt)|*.txt',
+                                          wildcard='(*.csv)|*.csv',
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename=default_filename)
 
         if not filename:
             return
+        plot_efield_vectors = self.navigation.plot_efield_vectors
+        Publisher.sendMessage('Save Efield data', filename = filename, plot_efield_vectors= plot_efield_vectors)
 
-        Publisher.sendMessage('Save Efield data', filename = filename)
+    def OnSaveAllDataEfield(self, evt):
+        Publisher.sendMessage('Check efield data')
+        if self.efield_data_saved:
+            import invesalius.project as prj
+            proj = prj.Project()
+            timestamp = time.localtime(time.time())
+            stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+            stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+            sep = '-'
+            if self.path_meshes is None:
+                import os
+                current_folder_path = os.getcwd()
+            else:
+                current_folder_path = self.path_meshes
+            parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
+            default_filename = sep.join(parts) + '.csv'
+
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                              wildcard='(*.csv)|*.csv',
+                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                              default_filename=default_filename)
+
+            if not filename:
+                return
+
+            Publisher.sendMessage('Save all Efield data', filename = filename)
+        else:
+            dlg.Efield_no_data_to_save_warning()
+
+    def SendNeuronavigationApi(self):
+        Publisher.sendMessage('Get Neuronavigation Api', neuronavigation_api = self.navigation.neuronavigation_api)
+
+    def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
+        self.efield_data_saved = efield_data_loaded
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):
