@@ -62,11 +62,10 @@ class Session(metaclass=Singleton):
             'auto_reload_preview': False,
         }
         self._exited_successfully_last_time = not self._ReadState()
-
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self._Exit, 'Exit')
+        Publisher.subscribe(self._Exit, 'Exit session')
 
     def CreateConfig(self):
         import invesalius.constants as const
@@ -282,24 +281,7 @@ class Session(metaclass=Singleton):
             self._state = {}
 
         return success
-
-    # Exit-related functions
-
-    def StoreSessionDialog(self):
-        msg = _("Would you like to store the session?")
-        if sys.platform == 'darwin':
-            dialog = wx.MessageDialog(None, "", msg,
-                                      wx.ICON_QUESTION | wx.YES_NO)
-        else:
-            dialog = wx.MessageDialog(None, msg, "InVesalius 3",
-                                      wx.ICON_QUESTION | wx.YES_NO)
-
-        answer = dialog.ShowModal()
-        dialog.Destroy()
-
-        return answer == wx.ID_YES
-
+    
     def _Exit(self):
-        if not self.StoreSessionDialog():
-            self.CloseProject()
-            self.DeleteStateFile()
+        self.CloseProject()
+        self.DeleteStateFile()

@@ -258,6 +258,9 @@ class Viewer(wx.Panel):
         self.aim_actor = None
         self.dummy_coil_actor = None
         self.dummy_robot_actor = None
+        self.dummy_probe_actor = None
+        self.dummy_ref_actor = None
+        self.dummy_obj_actor = None
         self.target_mode = False
         self.polydata = None
         self.use_default_object = True
@@ -504,11 +507,13 @@ class Viewer(wx.Panel):
                 self.ball_actor = None
 
             self.UpdateRender()
-
+    
+    
     def OnSensors(self, markers_flag):
         probe_id, ref_id, obj_id = markers_flag
 
         if not self.probe:
+            self.probe = True
             self.CreateSensorID()
 
         if probe_id:
@@ -524,41 +529,82 @@ class Viewer(wx.Panel):
         else:
             colour3 = (1, 0, 0)
 
-        self.probe.SetColour(colour1)
-        self.ref.SetColour(colour2)
-        self.obj.SetColour(colour3)
+        self.dummy_probe_actor.GetProperty().SetColor(colour1)
+        self.dummy_ref_actor.GetProperty().SetColor(colour2)
+        self.dummy_obj_actor.GetProperty().SetColor(colour3)
 
     def CreateSensorID(self):
-        probe = vtku.Text()
-        probe.SetSize(const.TEXT_SIZE_LARGE)
-        probe.SetPosition((const.X, const.Y))
-        probe.ShadowOff()
-        probe.SetValue("P")
-        self.probe = probe
-        self.ren.AddActor(probe.actor)
+        self.ren_probe = vtkRenderer()
+        self.ren_probe.SetLayer(1)
 
-        ref = vtku.Text()
-        ref.SetSize(const.TEXT_SIZE_LARGE)
-        ref.SetPosition((const.X+0.04, const.Y))
-        ref.ShadowOff()
-        ref.SetValue("R")
-        self.ref = ref
-        self.ren.AddActor(ref.actor)
+        self.interactor.GetRenderWindow().AddRenderer(self.ren_probe)
+        self.ren_probe.SetViewport(0.01, 0.79, 0.15, 0.97)
+        filename = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
 
-        obj = vtku.Text()
-        obj.SetSize(const.TEXT_SIZE_LARGE)
-        obj.SetPosition((const.X+0.08, const.Y))
-        obj.ShadowOff()
-        obj.SetValue("O")
-        self.obj = obj
-        self.ren.AddActor(obj.actor)
-        self.UpdateRender()
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        dummy_probe_actor = vtkActor()
+        dummy_probe_actor.SetMapper(mapper)
+        dummy_probe_actor.GetProperty().SetColor(1, 1, 1)
+        dummy_probe_actor.GetProperty().SetOpacity(1.)
+        self.dummy_probe_actor = dummy_probe_actor
+
+        self.ren_probe.AddActor(dummy_probe_actor)
+        self.ren_probe.InteractiveOff()
+
+        self.ren_ref = vtkRenderer()
+        self.ren_ref.SetLayer(1)
+
+        self.interactor.GetRenderWindow().AddRenderer(self.ren_ref)
+        self.ren_ref.SetViewport(0.01, 0.57, 0.15, 0.79)
+        filename = os.path.join(inv_paths.OBJ_DIR, "head.stl")
+
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        dummy_ref_actor = vtkActor()
+        dummy_ref_actor.SetMapper(mapper)
+        dummy_ref_actor.GetProperty().SetColor(1, 1, 1)
+        dummy_ref_actor.GetProperty().SetOpacity(1.)
+        self.dummy_ref_actor = dummy_ref_actor
+
+        self.ren_ref.AddActor(dummy_ref_actor)
+        self.ren_ref.InteractiveOff()
+
+        self.ren_obj = vtkRenderer()
+        self.ren_obj.SetLayer(1)
+
+        self.interactor.GetRenderWindow().AddRenderer(self.ren_obj)
+        self.ren_obj.SetViewport(0.01, 0.40, 0.15, 0.57)
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
+
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        dummy_obj_actor = vtkActor()
+        dummy_obj_actor.SetMapper(mapper)
+        dummy_obj_actor.GetProperty().SetColor(1, 1, 1)
+        dummy_obj_actor.GetProperty().SetOpacity(1.)
+        self.dummy_obj_actor = dummy_obj_actor
+
+        self.ren_obj.AddActor(dummy_obj_actor)
+        self.ren_obj.InteractiveOff()
 
     def OnRemoveSensorsID(self):
         if self.probe:
-            self.ren.RemoveActor(self.probe.actor)
-            self.ren.RemoveActor(self.ref.actor)
-            self.ren.RemoveActor(self.obj.actor)
+            self.ren_probe.RemoveActor(self.dummy_probe_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_probe)
+            self.ren_ref.RemoveActor(self.dummy_ref_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_ref)
+            self.ren_obj.RemoveActor(self.dummy_obj_actor)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_obj)
             self.probe = self.ref = self.obj = False
             self.UpdateRender()
 
@@ -1966,7 +2012,7 @@ class Viewer(wx.Panel):
             self.ren_robot.SetLayer(1)
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren_robot)
-            self.ren_robot.SetViewport(0.02, 0.82, 0.08, 0.92)
+            self.ren_robot.SetViewport(0.01, 0.19, 0.15, 0.39)
             filename = os.path.join(inv_paths.OBJ_DIR, "robot.stl")
 
             reader = vtkSTLReader()
