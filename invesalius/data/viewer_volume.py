@@ -415,11 +415,11 @@ class Viewer(wx.Panel):
         }
 
         session = ses.Session()
-        session.SetState('viewer', state)
+        session.SetConfig('viewer', state)
 
     def LoadState(self):
         session = ses.Session()
-        state = session.GetState('viewer')
+        state = session.GetConfig('viewer')
 
         if state is None:
             return

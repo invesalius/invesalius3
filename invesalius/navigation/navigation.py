@@ -227,11 +227,11 @@ class Navigation(metaclass=Singleton):
         }
 
         session = ses.Session()
-        session.SetState('navigation', state)
+        session.SetConfig('navigation', state)
 
     def LoadState(self):
         session = ses.Session()
-        state = session.GetState('navigation')
+        state = session.GetConfig('navigation')
 
         if state is None:
             return
