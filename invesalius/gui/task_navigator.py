@@ -1093,7 +1093,7 @@ class ControlPanel(wx.Panel):
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
         btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, -1))
-        btn_nav.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
         self.btn_nav = btn_nav
         self.btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=self.btn_nav))
@@ -1101,10 +1101,10 @@ class ControlPanel(wx.Panel):
         # Toggle button for robot
         tooltip = wx.ToolTip(_("Stop robot"))
         btn_robot = wx.ToggleButton(self, -1, _("Stop Robot"), size=wx.Size(80, -1))
-        btn_robot.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        btn_robot.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_robot.SetToolTip(tooltip)
         self.btn_robot = btn_robot
-        btn_robot.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStopRobot, btn_nav=btn_robot))
+        btn_robot.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStopRobot, ctrl=btn_robot))
 
         # Label and Checkbox for Tractography
         tooltip = wx.ToolTip(_(u"Control Tractography"))
@@ -1124,7 +1124,7 @@ class ControlPanel(wx.Panel):
 
         # Label and Checkbox for Lock to Target
         tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
-        lock_to_target_checkbox = wx.CheckBox(self, -1, _('Lock to target:'))
+        lock_to_target_checkbox = wx.CheckBox(self, -1, _('Lock to target'))
         lock_to_target_checkbox.SetValue(False)
         lock_to_target_checkbox.Enable(False)
         lock_to_target_checkbox.Bind(wx.EVT_CHECKBOX, partial(self.OnLockToTargetCheckbox, ctrl=lock_to_target_checkbox))
