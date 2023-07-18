@@ -53,7 +53,7 @@ class Preferences(wx.Dialog):
         #self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         self.book.AddPage(self.pnl_tracker, _("Tracker"))
-        self.book.AddPage(self.pnl_object, _("Object"))
+        self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
@@ -90,6 +90,7 @@ class Preferences(wx.Dialog):
         surface_interpolation = session.GetConfig('surface_interpolation')
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
+        self.pnl_object.LoadState()
 
         values = {
             const.RENDERING: rendering,
@@ -175,6 +176,7 @@ class Viewer3D(wx.Panel):
 class ObjectPage(wx.Panel):
     def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
+
         self.coil_list = const.COIL
         
         self.tracker = tracker
@@ -187,37 +189,70 @@ class ObjectPage(wx.Panel):
         self.obj_ref_mode = None
         self.obj_name = None
         self.timestamp = const.TIMESTAMP
+        self.state = self.LoadState()
 
-        # Button for creating new coil
-        tooltip = wx.ToolTip(_("Create new coil"))
+        # Button for creating new stimulator
+        tooltip = wx.ToolTip(_("Create new stimulator"))
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
         self.btn_new = btn_new
 
-        # Button for loading coil config file
-        tooltip = wx.ToolTip(_("Load coil configuration file"))
+        # Button for loading stimulator config file
+        tooltip = wx.ToolTip(_("Load stimulator configuration file"))
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoil)
         self.btn_load = btn_load
 
-        # Save button for saving coil config file
-        tooltip = wx.ToolTip(_(u"Save coil configuration file"))
+        # Save button for saving stimulator config file
+        tooltip = wx.ToolTip(_(u"Save stimulator configuration file"))
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveCoil)
         self.btn_save = btn_save
         
-        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Object registration"))
-        load_sizer.AddMany([
-            (btn_new, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4),
-            (btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4),
-            (btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
-        ])
+        if self.state:
+            lbl = wx.StaticText(self, -1, _("Current Configuration:"))
+            lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+            config_txt = wx.StaticText(self, -1, os.path.basename(self.obj_name))
+
+            lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
+            lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
+            lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
+
+            load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
+            inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
+            inner_load_sizer.AddMany([
+                (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (config_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (lbl_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            ])
+            load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        else:
+            lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
+            lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
+            lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
+
+            load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
+            inner_load_sizer = wx.FlexGridSizer(2, 3, 5)
+            inner_load_sizer.AddMany([
+                (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (lbl_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            ])
+            load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
@@ -264,7 +299,7 @@ class ObjectPage(wx.Panel):
             ])
 
         # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Object configuration"))
+        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator configuration"))
         conf_sizer.AddMany([
             (line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
             (line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
@@ -282,6 +317,21 @@ class ObjectPage(wx.Panel):
 
     def __bind_events(self):
         pass
+
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetConfig('navigation')
+
+        if state is None:
+            return False
+
+        object_fiducials = np.array(state['object_fiducials'])
+        object_orientations = np.array(state['object_orientations'])
+        object_reference_mode = state['object_reference_mode']
+        object_name = state['object_name'].encode(const.FS_ENCODE)
+
+        self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = object_fiducials, object_orientations, object_reference_mode, object_name
+        return True
     
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
@@ -420,7 +470,7 @@ class TrackerPage(wx.Panel):
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
-        choice_ref = wx.ComboBox(self, -1, "",
+        choice_ref = wx.ComboBox(self, -1, "", size=(145, -1),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
         choice_ref.SetToolTip(tooltip)
@@ -441,7 +491,7 @@ class TrackerPage(wx.Panel):
         sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
-        lbl_rob = wx.StaticText(self, -1, _("Robot tracking device :"))
+        lbl_rob = wx.StaticText(self, -1, _("Robot tracking device: "))
         btn_rob = wx.Button(self, -1, _("Setup"))
         btn_rob.SetToolTip("Setup robot tracking")
         btn_rob.Enable(1)
@@ -449,7 +499,7 @@ class TrackerPage(wx.Panel):
         self.btn_rob = btn_rob
 
         btn_rob_con = wx.Button(self, -1, _("Register"))
-        btn_rob_con.SetToolTip("register robot tracking")
+        btn_rob_con.SetToolTip("Register robot tracking")
         btn_rob_con.Enable(1)
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotCon)
         self.btn_rob_con = btn_rob_con
