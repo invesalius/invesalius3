@@ -64,11 +64,11 @@ class Tracker(metaclass=Singleton):
             'configuration': configuration,
         }
         session = ses.Session()
-        session.SetState('tracker', state)
+        session.SetConfig('tracker', state)
 
     def LoadState(self):
         session = ses.Session()
-        state = session.GetState('tracker')
+        state = session.GetConfig('tracker')
 
         if state is None:
             return
