@@ -1096,7 +1096,7 @@ class ControlPanel(wx.Panel):
         btn_nav.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
         self.btn_nav = btn_nav
-        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=btn_nav))
+        self.btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=self.btn_nav))
     
         # Toggle button for robot
         tooltip = wx.ToolTip(_("Stop robot"))
@@ -1202,6 +1202,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateTarget, 'Update target')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
         Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
@@ -1258,12 +1259,13 @@ class ControlPanel(wx.Panel):
 
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
+            btn_nav.SetLabelText(_("Start neuronavigation"))
         else:
             Publisher.sendMessage("Start navigation")
-
             if self.nav_status:
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
                 btn_nav.SetToolTip(tooltip)
+                btn_nav.SetLabelText(_("Stop neuronavigation"))
             else:
                 btn_nav.SetValue(False)
     
@@ -1281,9 +1283,15 @@ class ControlPanel(wx.Panel):
             self.lock_to_target_checkbox.SetValue(True)
             self.navigation.SetLockToTarget(True)
 
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        if not nav_status:
+            self.nav_status = False
+            self.current_orientation = None, None, None
+        else:
+            self.nav_status = True
 
     # 'Robot'
-    def OnStopRobot(self, evt):
+    def OnStopRobot(self, evt, ctrl):
         pass
 
 
@@ -1599,7 +1607,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateTarget, 'Update target')
-        Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
+        #Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
 
     def LoadImageFiducials(self, label, position):
