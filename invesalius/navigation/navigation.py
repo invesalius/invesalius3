@@ -240,7 +240,6 @@ class Navigation(metaclass=Singleton):
         object_orientations = np.array(state['object_orientations'])
         object_reference_mode = state['object_reference_mode']
         object_name = state['object_name'].encode(const.FS_ENCODE)
-
         self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
     def CoilAtTarget(self, state):

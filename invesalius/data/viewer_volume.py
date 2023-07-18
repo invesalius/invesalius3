@@ -429,7 +429,12 @@ class Viewer(wx.Panel):
 
         self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
         self.use_default_object = use_default_object
+        # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
+        Publisher.sendMessage('Enable track-object checkbox', enabled=True)
+        Publisher.sendMessage('Check track-object checkbox', checked=True)
+        Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
+        Publisher.sendMessage('Disable target mode')
         self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
 
     def get_vtk_mouse_position(self):

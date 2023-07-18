@@ -1089,6 +1089,7 @@ class ControlPanel(wx.Panel):
         self.neuronavigation_api = neuronavigation_api
         self.nav_status = False
         self.target_mode = False
+        self.track_obj = False
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
@@ -1210,6 +1211,10 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
         Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
 
+        # Externally check/uncheck and enable/disable checkboxes.
+        Publisher.subscribe(self.CheckTrackObjectCheckbox, 'Check track-object checkbox')
+        Publisher.subscribe(self.EnableTrackObjectCheckbox, 'Enable track-object checkbox')
+
     def SaveState(self):
         track_object = self.checkbox_track_object
         state = {
@@ -1220,11 +1225,11 @@ class ControlPanel(wx.Panel):
         }
 
         session = ses.Session()
-        session.SetState('object_registration_panel', state)
+        session.SetConfig('object_registration_panel', state)
 
     def LoadState(self):
         session = ses.Session()
-        state = session.GetState('object_registration_panel')
+        state = session.GetConfig('object_registration_panel')
 
         if state is None:
             return
@@ -1234,6 +1239,15 @@ class ControlPanel(wx.Panel):
         self.EnableTrackObjectCheckbox(track_object['enabled'])
         self.CheckTrackObjectCheckbox(track_object['checked'])
 
+    def OnCheckStatus(self, nav_status, vis_status):
+        if nav_status:
+            self.checkbox_serial_port.Enable(False)
+            self.checkobj.Enable(False)
+        else:
+            self.checkbox_serial_port.Enable(True)
+            self.checkbox_track_object.Enable(True)
+            if self.track_obj:
+                self.checkobj.Enable(True)
 
     # Navigation 
     def OnStartNavigation(self):
@@ -1353,15 +1367,6 @@ class ControlPanel(wx.Panel):
     
 
     # 'Serial Port Com'
-    def OnCheckStatus(self, nav_status, vis_status):
-        if nav_status:
-            self.checkbox_serial_port.Enable(False)
-            self.checkobj.Enable(False)
-        else:
-            self.checkbox_serial_port.Enable(True)
-            # if self.track_obj:
-            #     self.checkobj.Enable(True)
-
     def OnEnableSerialPort(self, evt, ctrl):
         if ctrl.GetValue():
             from wx import ID_OK
