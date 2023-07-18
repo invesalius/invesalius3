@@ -27,9 +27,10 @@ import invesalius.data.tracker_connection as tc
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 
-class Tracker():
+class Tracker(metaclass=Singleton):
     def __init__(self):
         self.tracker_connection = None
         self.tracker_id = const.DEFAULT_TRACKER

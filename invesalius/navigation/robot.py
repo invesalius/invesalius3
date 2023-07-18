@@ -27,13 +27,14 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 
 # XXX: First steps towards decoupling robot and tracker, which were previously
 #   tightly coupled; not fully finished, but whenever possible, robot-related
 #   functionality should be gathered here.
 
-class Robot():
+class Robot(metaclass=Singleton):
     def __init__(self, tracker):
         self.tracker = tracker
 
