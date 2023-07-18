@@ -185,6 +185,11 @@ class InnerFoldPanel(wx.Panel):
             neuronavigation_api=neuronavigation_api,
         )
 
+        self.tracker = tracker
+        self.robot = robot
+        self.image = image
+        self.navigation = navigation
+
         # TODO: Initialize checkboxes before panels: they are updated by ObjectRegistrationPanel when loading its state.
         #   A better solution would be to have these checkboxes save their own state, independent of the panels, but that's
         #   not implemented yet.
@@ -244,6 +249,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         item = fold_panel.AddFoldPanel(_("Navigation"), collapsed=True)
+        self.__id_nav = item.GetId()
         ntw = NavigationPanel(
             parent=item,
             navigation=navigation,
@@ -331,6 +337,8 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
                                         leftSpacing=0, rightSpacing=0)
 
+        self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+        
         # Panel sizer for checkboxes
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
@@ -366,6 +374,8 @@ class InnerFoldPanel(wx.Panel):
 
         Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
         Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
+
+        Publisher.subscribe(self.OpenNavigation, 'Open navigation menu')
     
     def __calc_best_size(self, panel):
         parent = panel.GetParent()
@@ -448,7 +458,33 @@ class InnerFoldPanel(wx.Panel):
 
     def EnableVolumeCameraCheckbox(self, enabled):
         self.checkcamera.Enable(enabled)
+    
+    def OnFoldPressCaption(self, evt):
+        id = evt.GetTag().GetId()
+        expanded = evt.GetFoldStatus()
 
+        if id == self.__id_nav:
+            status = self.CheckRegistration()
+            if not status:
+                self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
+                wx.MessageBox(_("Complete coregistration first!"), _("InVesalius 3"))
+                return
+        if not expanded:
+            self.fold_panel.Expand(evt.GetTag())
+        else:
+            self.fold_panel.Collapse(evt.GetTag())
+
+    def ResizeFPB(self):
+        sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
+        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
+        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
+
+    def CheckRegistration(self):
+        return self.tracker.AreTrackerFiducialsSet() and self.image.AreImageFiducialsSet() and self.navigation.GetObjectRegistration() is not None
+
+    def OpenNavigation(self):
+        self.fold_panel.Expand(self.fold_panel.GetFoldPanel(1))
+    
 class CoregistrationPanel(wx.Panel):
     def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
@@ -475,7 +511,7 @@ class CoregistrationPanel(wx.Panel):
         book.AddPage(ImagePage(book, image), _("Image"))
         book.AddPage(TrackerPage(book, icp, tracker, navigation, pedal_connection, neuronavigation_api), _("Tracker"))
         book.AddPage(RefinePage(book, icp, tracker, image, navigation), _("Refine"))
-        book.AddPage(StimulatorPage(book), _("Stimulator"))
+        book.AddPage(StimulatorPage(book, navigation), _("Stimulator"))
 
         book.SetSelection(0)
 
@@ -1037,16 +1073,74 @@ class RefinePage(wx.Panel):
             self.UpdateUI()
 
 class StimulatorPage(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, navigation):
 
         wx.Panel.__init__(self, parent)
+        self.navigation = navigation
 
-        lbl_inter = wx.StaticText(self, -1, _("Stimulator Registration "))
+        border = wx.FlexGridSizer(2, 3, 5)
+        object_reg = self.navigation.GetObjectRegistration()
+        self.object_reg = object_reg
+        
+        lbl = wx.StaticText(self, -1, _("No stimulator selected!"))
+        lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.lbl = lbl
 
-        border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(lbl_inter, 1, wx.EXPAND | wx.ALL, 10)
-        self.SetSizerAndFit(border)
+        config_txt = wx.StaticText(self, -1, "")
+        self.config_txt = config_txt
+        self.config_txt.Hide()
+
+        lbl_edit = wx.StaticText(self, -1, _("Edit Configuration:"))
+        btn_edit = wx.Button(self, -1, _("Preferences"))
+        btn_edit.SetToolTip("Open preferences menu")
+        btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
+
+        border.AddMany([
+            (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
+            (0, 0),
+            (config_txt, 1, wx.EXPAND | wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 10),
+            (0, 0),
+            (lbl_edit, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
+            (btn_edit, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 10)
+        ])
+
+        next_button = wx.Button(self, label="Proceed to navigation")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+        if self.object_reg is None:
+            next_button.Disable()
+        self.next_button = next_button
+
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(next_button)
+
+        if self.object_reg is not None:
+            self.OnObjectUpdate()
+        
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([
+            (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
+            (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
+        ])
+        
+        self.SetSizerAndFit(main_sizer)
         self.Layout()
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
+    
+    def OnObjectUpdate(self, data=None):
+        self.object_reg = self.navigation.GetObjectRegistration()
+        self.lbl.SetLabel("Current Configuration:")
+        self.config_txt.SetLabelText(os.path.basename(self.object_reg[-1]))
+        self.lbl.Show()
+        self.config_txt.Show()
+    
+    def OnEditPreferences(self, evt):
+        Publisher.sendMessage('Open preferences menu')
+    
+    def OnNext(self, evt):
+        Publisher.sendMessage('Open navigation menu')
 
 class NavigationPanel(wx.Panel):
     def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):

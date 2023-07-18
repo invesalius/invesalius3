@@ -259,6 +259,9 @@ class Navigation(metaclass=Singleton):
 
         self.SaveState()
 
+    def GetObjectRegistration(self):
+        return self.object_registration
+    
     def TrackObject(self, enabled=False):
         self.track_obj = enabled
 
