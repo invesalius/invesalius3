@@ -429,18 +429,36 @@ class InnerTaskPanel(wx.Panel):
 
         if filename:
             Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
+            t_init = time.time()
             try:
-                self.trekker = Trekker.initialize(filename.encode('utf-8'))
-                self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
+                import concurrent.futures as mp
+                from concurrent.futures import ThreadPoolExecutor
+                import multiprocessing
+                import functools
+                import wx.lib.agw.genericmessagedialog as GMD
+                self.tp = dlg.FODProgressWindow()
 
-                self.checktracts.Enable(1)
-                self.checktracts.SetValue(True)
-                self.view_tracts = True
+                self.trekker = None
+                file = filename.encode('utf-8')
+                
+                with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as exec:
+                    future2 = exec.submit(self.UpdateDialog)
+                    future1 = exec.submit(Trekker.initialize, file)
+                    future1.add_done_callback(self.TrekkerCallback)
+                    future2.add_done_callback(print)
+                
+                t_end = time.time()
+                print("Elapsed time - {}".format(t_end-t_init))
+                self.tp.running = False
+                self.tp.Close()
+                if self.tp.error:
+                    dlgg = GMD.GenericMessageDialog(None, self.tp.error,
+                                                "Exception!",
+                                                wx.OK|wx.ICON_ERROR)
+                    dlgg.ShowModal()
+                del self.tp
+                wx.MessageBox(_("FOD Import successful"), _("InVesalius 3"))
 
-                Publisher.sendMessage('Update Trekker object', data=self.trekker)
-                Publisher.sendMessage('Update number of threads', data=n_threads)
-                Publisher.sendMessage('Update tracts visualization', data=1)
-                Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
                 # except:
                 #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
             except:
@@ -448,6 +466,33 @@ class InnerTaskPanel(wx.Panel):
                 wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
+
+    def UpdateDialog(self):
+        while self.tp.running:
+            self.tp.dlg.Pulse("Setting up FOD ... ")
+            wx.Yield()
+
+    def _on_callback_error(self, e, dialog=None):
+        import invesalius.utils as utl
+        dialog.running = False
+        msg = utl.log_traceback(e)
+        dialog.error = msg
+
+    def TrekkerCallback(self, trekker):
+        print("Import Complete")
+        if trekker != None:
+            self.trekker = trekker.result()
+            self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
+
+            self.checktracts.Enable(1)
+            self.checktracts.SetValue(True)
+            self.view_tracts = True
+
+            Publisher.sendMessage('Update Trekker object', data=self.trekker)
+            Publisher.sendMessage('Update number of threads', data=n_threads)
+            Publisher.sendMessage('Update tracts visualization', data=1)
+            Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialized"))
+            self.tp.running = False
 
     def OnLoadACT(self, event=None):
         if self.trekker:
