@@ -26,7 +26,6 @@ import sys
 import numpy as np
 import wx
 import queue
-import vtk
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
@@ -41,6 +40,8 @@ from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
 )
+from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkFiltersCore import vtkGlyph3D
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
@@ -1675,7 +1676,6 @@ class Viewer(wx.Panel):
         vtk_colors = vtkNamedColors()
         if self.max_efield_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
-        #self.max_efield_vector.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
 
         points = vtkPoints()
         vectors = vtkDoubleArray()
@@ -1684,13 +1684,13 @@ class Viewer(wx.Panel):
         points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
         vectors.InsertNextTuple3(self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()])
 
-        dataset = vtk.vtkPolyData()
+        dataset = vtkPolyData()
         dataset.SetPoints(points)
         dataset.GetPointData().SetVectors(vectors)
 
         arrowSource = vtkArrowSource()
 
-        glyphFilter = vtk.vtkGlyph3D()
+        glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
         glyphFilter.SetScaleFactor(10)
@@ -1718,13 +1718,13 @@ class Viewer(wx.Panel):
             points.InsertNextPoint(point)
             vectors.InsertNextTuple3(self.e_field_col1[i], self.e_field_col2[i], self.e_field_col3[i])
 
-        dataset = vtk.vtkPolyData()
+        dataset = vtkPolyData()
         dataset.SetPoints(points)
         dataset.GetPointData().SetVectors(vectors)
 
         arrowSource= vtkArrowSource()
 
-        glyphFilter = vtk.vtkGlyph3D()
+        glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
         glyphFilter.SetScaleFactor(1)
