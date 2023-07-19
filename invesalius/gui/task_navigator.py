@@ -109,7 +109,6 @@ class TaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -264,7 +263,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
                                       leftSpacing=0, rightSpacing=0)
-        
+        '''
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
         ntw = NeuronavigationPanel(
@@ -336,7 +335,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, etw, spacing=0,
                                         leftSpacing=0, rightSpacing=0)
-
+'''
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
         
         # Panel sizer for checkboxes
@@ -812,6 +811,22 @@ class TrackerPage(wx.Panel):
             next_button.Disable()
         self.next_button = next_button
 
+        tracker_status = self.tracker.IsTrackerInitialized()
+        current_label = wx.StaticText(self, -1, _("Current tracker: "))
+        current_label.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        main_label = wx.StaticText(self, -1, _("No tracker selected!"))
+
+        if tracker_status:
+            main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
+        
+        self.main_label = main_label
+
+        middle_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        middle_sizer.AddMany([
+            (current_label),
+            (main_label)
+        ])
+
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         top_sizer.AddMany([
             (start_button),
@@ -834,7 +849,8 @@ class TrackerPage(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
             (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10), 
-            (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5), 
+            (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5),
+            (middle_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5),
             (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 20)])
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
@@ -844,6 +860,7 @@ class TrackerPage(wx.Panel):
         Publisher.subscribe(self.SetTrackerFiducial, 'Set tracker fiducial')
         Publisher.subscribe(self.OnNextEnable, "Next enable for tracker fiducials")
         Publisher.subscribe(self.OnNextDisable, "Next disable for tracker fiducials")
+        Publisher.subscribe(self.OnTrackerChanged, "Tracker changed")
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -952,6 +969,12 @@ class TrackerPage(wx.Panel):
                     )
                 for button in self.btns_set_fiducial:
                     button.Enable()
+    
+    def OnTrackerChanged(self):
+        if self.tracker.GetTrackerId() != const.DEFAULT_TRACKER:
+            self.main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
+        else:
+            self.main_label.SetLabel(_("No tracker selected!"))
 
 class RefinePage(wx.Panel):
     def __init__(self, parent, icp, tracker, image, navigation):

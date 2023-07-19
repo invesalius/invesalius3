@@ -52,8 +52,11 @@ class Preferences(wx.Dialog):
 
         #self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
-        self.book.AddPage(self.pnl_tracker, _("Tracker"))
-        self.book.AddPage(self.pnl_object, _("Stimulator"))
+        session = ses.Session()
+        mode = session.GetConfig('mode')
+        if mode == const.MODE_NAVIGATOR:
+            self.book.AddPage(self.pnl_tracker, _("Tracker"))
+            self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
@@ -540,6 +543,7 @@ class TrackerPage(wx.Panel):
         self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice)
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
+        Publisher.sendMessage("Tracker changed")
         self.ShowParent()
     
     def OnChooseReferenceMode(self, evt, ctrl):
