@@ -479,6 +479,7 @@ class InnerTaskPanel(wx.Panel):
         dialog.error = msg
 
     def TrekkerCallback(self, trekker):
+        self.tp.running = False
         print("Import Complete")
         if trekker != None:
             self.trekker = trekker.result()
