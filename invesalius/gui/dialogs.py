@@ -5326,6 +5326,31 @@ class SetCoilOrientationDialog(wx.Dialog):
             brain_target_orientation.append(orientation)
         return brain_target_position, brain_target_orientation
 
+class FODProgressWindow(object):
+    def __init__(self):
+        self.title = "InVesalius 3"
+        self.msg = _("Setting up FOD ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent=None,
+                                     style=self.style)
+        self.running = True
+        self.error = None
+        self.dlg.Show()
+
+    def WasCancelled(self):
+        #  print("Cancelled?", self.dlg.WasCancelled())
+        return self.dlg.WasCancelled()
+
+    def Update(self, msg=None, value=None):
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
+    def Close(self):
+        self.dlg.Destroy()
 
 class SurfaceProgressWindow(object):
     def __init__(self):
