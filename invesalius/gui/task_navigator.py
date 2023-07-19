@@ -798,6 +798,14 @@ class TrackerPage(wx.Panel):
         reset_button.Bind(wx.EVT_BUTTON, partial(self.OnReset, ctrl=reset_button))
         self.reset_button = reset_button
 
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
+        self.back_button = back_button
+
+        preferences_button = wx.Button(self, label="Change tracker")
+        preferences_button.Bind(wx.EVT_BUTTON, partial(self.OnPreferences))
+        self.preferences_button = preferences_button
+
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
         if not self.tracker.AreTrackerFiducialsSet():
@@ -811,7 +819,11 @@ class TrackerPage(wx.Panel):
             ])
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(next_button)
+        bottom_sizer.AddMany([
+            (back_button, 0, wx.EXPAND),
+            (preferences_button, 0, wx.EXPAND),
+            (next_button, 0, wx.EXPAND)
+        ])
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
@@ -823,7 +835,7 @@ class TrackerPage(wx.Panel):
         main_sizer.AddMany([
             (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10), 
             (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5), 
-            (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 30)])
+            (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 20)])
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
         self.__bind_events()
@@ -901,6 +913,12 @@ class TrackerPage(wx.Panel):
 
     def OnNext(self, evt):
         Publisher.sendMessage("Next to refine fiducials")
+    
+    def OnBack(self, evt):
+        Publisher.sendMessage('Back to image fiducials')
+    
+    def OnPreferences(self, evt):
+        Publisher.sendMessage("Open preferences menu")
 
     def OnNextEnable(self):
         self.next_button.Enable()
@@ -1155,13 +1173,13 @@ class NavigationPanel(wx.Panel):
         self.neuronavigation_api = neuronavigation_api
 
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        top_sizer.Add(MarkersPanel(self, self.navigation, self.tracker, self.icp), 0, wx.GROW | wx.EXPAND )
+        top_sizer.Add(MarkersPanel(self, self.navigation, self.tracker, self.icp), 1, wx.GROW | wx.EXPAND )
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sizer.Add(ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connection, self.neuronavigation_api), 0, wx.EXPAND | wx.TOP, 20)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.AddMany([(top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+        main_sizer.AddMany([(top_sizer, 1, wx.EXPAND | wx.GROW),
                             (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)
                             ])
         self.sizer = main_sizer
@@ -2639,7 +2657,7 @@ class MarkersPanel(wx.Panel):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        group_sizer.Add(marker_list_ctrl, 1, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
         self.SetSizer(group_sizer)
