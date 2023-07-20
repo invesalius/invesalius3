@@ -895,6 +895,7 @@ class TrackerPage(wx.Panel):
             if index is None:
                 fiducial_name = const.TRACKER_FIDUCIALS[self.tracker_fiducial_being_set]['fiducial_name']
                 Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
+                self.btns_set_fiducial[self.tracker_fiducial_being_set].SetValue(self.tracker.IsTrackerFiducialSet(self.tracker_fiducial_being_set))
             else:
                 fiducial_name = const.TRACKER_FIDUCIALS[index]['fiducial_name']
                 Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
@@ -923,6 +924,8 @@ class TrackerPage(wx.Panel):
 
     def OnReset(self, evt, ctrl):
         self.tracker.ResetTrackerFiducials()
+        self.tracker_fiducial_being_set = 0
+        self.OnNextDisable()
         for button in self.btns_set_fiducial:
                 button.SetValue(False)
         self.start_button.SetValue(False)
@@ -959,6 +962,7 @@ class TrackerPage(wx.Panel):
                         name='fiducial',
                         callback=self.set_fiducial_callback,
                         remove_when_released=True,
+                        remove_when_released=False,
                     )
 
                 if self.neuronavigation_api is not None:
@@ -966,6 +970,7 @@ class TrackerPage(wx.Panel):
                         name='fiducial',
                         callback=self.set_fiducial_callback,
                         remove_when_released=True,
+                        remove_when_released=False,
                     )
                 for button in self.btns_set_fiducial:
                     button.Enable()
