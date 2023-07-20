@@ -1342,6 +1342,9 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateTarget, 'Update target')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+
+        Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
+
         # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
         Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
@@ -1448,9 +1451,16 @@ class ControlPanel(wx.Panel):
 
 
     # 'Tracktography'
-    def OnTractographyCheckbox(self, evt):
-        pass
+    def OnTractographyCheckbox(self, evt, ctrl):
+        self.view_tracts = ctrl.GetValue()
+        Publisher.sendMessage('Update tracts visualization', data=self.view_tracts)
+        if not self.view_tracts:
+            Publisher.sendMessage('Remove tracts')
+            Publisher.sendMessage("Update marker offset state", create=False)
 
+    def UpdateTractsVisualization(self, data):
+        self.tractography_checkbox.Enable()
+        self.tractography_checkbox.SetValue(1)
 
     # 'Track object' checkbox
     def EnableTrackObjectCheckbox(self, enabled):

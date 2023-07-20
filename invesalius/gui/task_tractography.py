@@ -432,6 +432,8 @@ class InnerTaskPanel(wx.Panel):
             t_init = time.time()
             try:
                 import concurrent.futures as mp
+                from concurrent.futures import wait
+                from concurrent.futures import FIRST_COMPLETED
                 from concurrent.futures import ThreadPoolExecutor
                 import multiprocessing
                 import functools
@@ -442,11 +444,11 @@ class InnerTaskPanel(wx.Panel):
                 file = filename.encode('utf-8')
                 
                 with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as exec:
-                    future2 = exec.submit(self.UpdateDialog)
-                    future1 = exec.submit(Trekker.initialize, file)
-                    future1.add_done_callback(self.TrekkerCallback)
-                    future2.add_done_callback(print)
-                
+                    futures = [exec.submit(self.UpdateDialog), exec.submit(Trekker.initialize, file)]
+                    done, not_done = wait(futures, return_when=FIRST_COMPLETED)
+                    completed_future = done.pop()
+                    self.TrekkerCallback(completed_future)
+                    
                 t_end = time.time()
                 print("Elapsed time - {}".format(t_end-t_init))
                 self.tp.running = False
@@ -458,7 +460,7 @@ class InnerTaskPanel(wx.Panel):
                     dlgg.ShowModal()
                 del self.tp
                 wx.MessageBox(_("FOD Import successful"), _("InVesalius 3"))
-
+                Publisher.sendMessage('End busy cursor')
                 # except:
                 #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
             except:
@@ -470,6 +472,8 @@ class InnerTaskPanel(wx.Panel):
     def UpdateDialog(self):
         while self.tp.running:
             self.tp.dlg.Pulse("Setting up FOD ... ")
+            if not self.tp.running:
+                break
             wx.Yield()
 
     def _on_callback_error(self, e, dialog=None):
