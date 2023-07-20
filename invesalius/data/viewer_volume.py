@@ -41,12 +41,12 @@ from vtkmodules.vtkCommonColor import (
     vtkNamedColors
 )
 from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkFiltersCore import vtkGlyph3D
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkPolyDataNormals,
     vtkCenterOfMass,
+    vtkGlyph3D
 )
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
@@ -1703,8 +1703,7 @@ class Viewer(wx.Panel):
         self.max_efield_vector.SetMapper(mapper)
         self.max_efield_vector.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
         self.ren.AddActor(self.max_efield_vector)
-        self.interactor.Update()
-        
+
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
         if self.vectorfield_actor is not None:
