@@ -961,7 +961,6 @@ class TrackerPage(wx.Panel):
                     self.pedal_connection.add_callback(
                         name='fiducial',
                         callback=self.set_fiducial_callback,
-                        remove_when_released=True,
                         remove_when_released=False,
                     )
 
@@ -969,7 +968,6 @@ class TrackerPage(wx.Panel):
                     self.neuronavigation_api.add_pedal_callback(
                         name='fiducial',
                         callback=self.set_fiducial_callback,
-                        remove_when_released=True,
                         remove_when_released=False,
                     )
                 for button in self.btns_set_fiducial:
