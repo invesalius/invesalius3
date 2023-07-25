@@ -349,8 +349,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
         Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
-        Publisher.subscribe(self._check_ball_reference, 'Enable style')
-        Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
@@ -492,32 +490,30 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def _check_ball_reference(self, style):
-        if style == const.SLICE_STATE_CROSS:
-            self._mode_cross = True
-            # self._check_and_set_ball_visibility()
-            #if not self.actor_peel:
-            self._ball_ref_visibility = True
-            #else:
-            #    self._ball_ref_visibility = False
-            # if self._to_show_ball:
-            if not self.ball_actor: #and not self.actor_peel:
-                self.CreateBallReference()
-                #self.ball_actor.SetVisibility(1)
-            #else:
-             #   self.ball_actor.SetVisibility(0)
-            self.UpdateRender()
+    def check_ball_reference(self):
+        self._mode_cross = True
+        # self._check_and_set_ball_visibility()
+        #if not self.actor_peel:
+        self._ball_ref_visibility = True
+        #else:
+        #    self._ball_ref_visibility = False
+        # if self._to_show_ball:
+        if not self.ball_actor: #and not self.actor_peel:
+            self.CreateBallReference()
+            #self.ball_actor.SetVisibility(1)
+        #else:
+         #   self.ball_actor.SetVisibility(0)
+        self.UpdateRender()
 
-    def _uncheck_ball_reference(self, style):
-        if style == const.SLICE_STATE_CROSS:
-            self._mode_cross = False
-            # self.RemoveBallReference()
-            self._ball_ref_visibility = True
-            if self.ball_actor:
-                self.ren.RemoveActor(self.ball_actor)
-                self.ball_actor = None
+    def uncheck_ball_reference(self):
+        self._mode_cross = False
+        # self.RemoveBallReference()
+        self._ball_ref_visibility = True
+        if self.ball_actor:
+            self.ren.RemoveActor(self.ball_actor)
+            self.ball_actor = None
 
-            self.UpdateRender()
+        self.UpdateRender()
     
     
     def OnSensors(self, markers_flag):
@@ -1458,13 +1454,14 @@ class Viewer(wx.Panel):
 
     def UpdateCameraBallPosition(self, position):
         #if not self.actor_peel:
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-        self.ball_actor.SetPosition(coord_flip)
-        if self.set_camera_position:
-            self.SetVolumeCamera(coord_flip)
-        if not self.nav_status:
-            self.UpdateRender()
+        if self.ball_actor is not None:
+            coord_flip = list(position[:3])
+            coord_flip[1] = -coord_flip[1]
+            self.ball_actor.SetPosition(coord_flip)
+            if self.set_camera_position:
+                self.SetVolumeCamera(coord_flip)
+            if not self.nav_status:
+                self.UpdateRender()
 
     def AddObjectActor(self, obj_name):
         """
