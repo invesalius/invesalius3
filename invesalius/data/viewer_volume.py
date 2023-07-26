@@ -26,7 +26,6 @@ import sys
 import numpy as np
 import wx
 import queue
-
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
@@ -34,17 +33,20 @@ from vtkmodules.vtkCommonCore import (
     vtkMath,
     vtkLookupTable,
     vtkPoints,
-    vtkUnsignedCharArray
+    vtkUnsignedCharArray,
+    vtkDoubleArray
 )
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
 )
+from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkPolyDataNormals,
     vtkCenterOfMass,
+    vtkGlyph3D
 )
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
@@ -242,7 +244,6 @@ class Viewer(wx.Panel):
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
-        self.vectorfield_actor = None
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
@@ -348,8 +349,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
         Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
-        Publisher.subscribe(self._check_ball_reference, 'Enable style')
-        Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
@@ -409,6 +408,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldPointLocationOffline,'Update interseccion offline')
         Publisher.subscribe(self.MaxEfieldActor, 'Show max Efield actor')
         Publisher.subscribe(self.EfieldVectors, 'Show Efield vectors')
+        Publisher.subscribe(self.RecolorEfieldActor, 'Recolor efield actor')
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
@@ -490,32 +490,30 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def _check_ball_reference(self, style):
-        if style == const.SLICE_STATE_CROSS:
-            self._mode_cross = True
-            # self._check_and_set_ball_visibility()
-            #if not self.actor_peel:
-            self._ball_ref_visibility = True
-            #else:
-            #    self._ball_ref_visibility = False
-            # if self._to_show_ball:
-            if not self.ball_actor: #and not self.actor_peel:
-                self.CreateBallReference()
-                #self.ball_actor.SetVisibility(1)
-            #else:
-             #   self.ball_actor.SetVisibility(0)
-            self.UpdateRender()
+    def check_ball_reference(self):
+        self._mode_cross = True
+        # self._check_and_set_ball_visibility()
+        #if not self.actor_peel:
+        self._ball_ref_visibility = True
+        #else:
+        #    self._ball_ref_visibility = False
+        # if self._to_show_ball:
+        if not self.ball_actor: #and not self.actor_peel:
+            self.CreateBallReference()
+            #self.ball_actor.SetVisibility(1)
+        #else:
+         #   self.ball_actor.SetVisibility(0)
+        self.UpdateRender()
 
-    def _uncheck_ball_reference(self, style):
-        if style == const.SLICE_STATE_CROSS:
-            self._mode_cross = False
-            # self.RemoveBallReference()
-            self._ball_ref_visibility = True
-            if self.ball_actor:
-                self.ren.RemoveActor(self.ball_actor)
-                self.ball_actor = None
+    def uncheck_ball_reference(self):
+        self._mode_cross = False
+        # self.RemoveBallReference()
+        self._ball_ref_visibility = True
+        if self.ball_actor:
+            self.ren.RemoveActor(self.ball_actor)
+            self.ball_actor = None
 
-            self.UpdateRender()
+        self.UpdateRender()
     
     
     def OnSensors(self, markers_flag):
@@ -1456,13 +1454,14 @@ class Viewer(wx.Panel):
 
     def UpdateCameraBallPosition(self, position):
         #if not self.actor_peel:
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-        self.ball_actor.SetPosition(coord_flip)
-        if self.set_camera_position:
-            self.SetVolumeCamera(coord_flip)
-        if not self.nav_status:
-            self.UpdateRender()
+        if self.ball_actor is not None:
+            coord_flip = list(position[:3])
+            coord_flip[1] = -coord_flip[1]
+            self.ball_actor.SetPosition(coord_flip)
+            if self.set_camera_position:
+                self.SetVolumeCamera(coord_flip)
+            if not self.nav_status:
+                self.UpdateRender()
 
     def AddObjectActor(self, obj_name):
         """
@@ -1672,30 +1671,70 @@ class Viewer(wx.Panel):
 
     def MaxEfieldActor(self):
         vtk_colors = vtkNamedColors()
-        self.ren.RemoveActor(self.max_efield_vector)
-        self.max_efield_vector.SetPosition(self.efield_mesh.GetPoint(self.Idmax))
-        direction = np.array([self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()]])
-        direction /= np.linalg.norm(direction)
-        pitch = np.degrees(np.arcsin(direction[2]))
-        yaw = np.degrees(np.arctan2(direction[1], direction[0]))
-        roll = 0.0  # No roll for the arrow
-        self.max_efield_vector.SetOrientation(pitch, yaw, roll)
+        if self.max_efield_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+
+        points = vtkPoints()
+        vectors = vtkDoubleArray()
+        vectors.SetNumberOfComponents(3)
+
+        points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
+        vectors.InsertNextTuple3(self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()])
+
+        dataset = vtkPolyData()
+        dataset.SetPoints(points)
+        dataset.GetPointData().SetVectors(vectors)
+
+        arrowSource = vtkArrowSource()
+
+        glyphFilter = vtkGlyph3D()
+        glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
+        glyphFilter.SetInputData(dataset)
+        glyphFilter.SetScaleFactor(10)
+        glyphFilter.Update()
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(glyphFilter.GetOutput())
+
+        self.max_efield_vector = vtkActor()
+        self.max_efield_vector.SetMapper(mapper)
         self.max_efield_vector.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
         self.ren.AddActor(self.max_efield_vector)
-        
+
     def EfieldVectors(self):
-        self.vectorfield_actor = []
+        vtk_colors = vtkNamedColors()
+        if self.vectorfield_actor is not None:
+            self.ren.RemoveActor(self.vectorfield_actor)
+        points = vtkPoints()
+        vectors = vtkDoubleArray()
+        vectors.SetNumberOfComponents(3)
+
         for i in range(self.radius_list.GetNumberOfIds()):
-            #direction = np.array([self.e_field_col1[self.radius_list.GetId(i)], self.e_field_col2[self.radius_list.GetId(i)], self.e_field_col3[self.radius_list.GetId(i)]])
-            direction = np.array([self.e_field_col1[i], self.e_field_col2[i], self.e_field_col3[i]])
-            direction /= np.linalg.norm(direction)
-            pitch = np.degrees(np.arcsin(direction[2]))
-            yaw = np.degrees(np.arctan2(direction[1], direction[0]))
             point = self.efield_mesh.GetPoint(self.radius_list.GetId(i))
-            actor = self.CreateActorArrow(direction=point, orientation=[pitch,yaw,0.], colour=[1.0, 0.0, 1.0], size = 5)
-            self.vectorfield_actor.append(actor)
-        for actor in self.vectorfield_actor:
-            self.ren.AddActor(actor)
+            points.InsertNextPoint(point)
+            vectors.InsertNextTuple3(self.e_field_col1[i], self.e_field_col2[i], self.e_field_col3[i])
+
+        dataset = vtkPolyData()
+        dataset.SetPoints(points)
+        dataset.GetPointData().SetVectors(vectors)
+
+        arrowSource= vtkArrowSource()
+
+        glyphFilter = vtkGlyph3D()
+        glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
+        glyphFilter.SetInputData(dataset)
+        glyphFilter.SetScaleFactor(1)
+        glyphFilter.Update()
+
+        mapper =vtkPolyDataMapper()
+        mapper.SetInputData(glyphFilter.GetOutput())
+
+        self.vectorfield_actor = vtkActor()
+        self.vectorfield_actor.SetMapper(mapper)
+        self.vectorfield_actor.GetProperty().SetColor(vtk_colors.GetColor3d('Blue'))
+
+        self.ren.AddActor(self.vectorfield_actor)
+        self.interactor.Update()
 
     def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
         if len(self.Id_list)>0:
@@ -1739,7 +1778,7 @@ class Viewer(wx.Panel):
     def ReturnToDefaultColorActor(self):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
-        self.RecolorEfieldActor()
+        wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
 
     def CreateLUTTableForEfield(self, min, max):
         lut = vtkLookupTable()
@@ -1798,14 +1837,8 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.target_radius_list=[]
-        self.max_efield_vector = self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[0, 0.0, 1.0],
-                                                       size=15)
-        self.vectorfield_actor =[]
-        self.vectorfield_actor.append(self.CreateActorArrow(direction=[0., 0., 0.], orientation=[0., 0., 0.], colour=[1.0, 0.0, 1.0],
-                                                 size=5))
-        for actor in self.vectorfield_actor:
-            self.ren.AddActor(actor)
-        self.ren.AddActor(self.max_efield_vector)
+        self.max_efield_vector = None
+        self.vectorfield_actor =None
         #self.efield_lut = e_field_brain.lut
 
     def GetNeuronavigationApi(self, neuronavigation_api):
@@ -1846,10 +1879,10 @@ class Viewer(wx.Panel):
                      color[j] = int(255.0 * dcolor[j])
                  self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-            self.RecolorEfieldActor()
+            wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
+            if self.vectorfield_actor is not None:
+                self.ren.RemoveActor(self.vectorfield_actor)
             if self.plot_vector:
-                for actor in self.vectorfield_actor:
-                    self.ren.RemoveActor(actor)
                 wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')

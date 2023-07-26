@@ -885,9 +885,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateWindowLevelText,
                             'Update window level text')
 
-        Publisher.subscribe(self._set_cross_visibility,
-                                 'Set cross visibility')
-
         Publisher.subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 
@@ -1192,7 +1189,7 @@ class Viewer(wx.Panel):
     #     # self.cross.SetFocalPoint(position[:3])
     #     self.UpdateSlicesPosition(None, position)
 
-    def _set_cross_visibility(self, visibility):
+    def set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
 
     def _set_editor_cursor_visibility(self, visibility):
