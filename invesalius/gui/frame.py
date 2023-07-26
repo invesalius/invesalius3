@@ -670,6 +670,7 @@ class Frame(wx.Frame):
             slice_interpolation = values[const.SLICE_INTERPOLATION]
             server_aetitle = values[const.SERVER_AETITLE]
             server_port = values[const.SERVER_PORT]
+            store_path = values[const.STORE_PATH]
 
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
@@ -677,6 +678,7 @@ class Frame(wx.Frame):
             session.SetConfig('slice_interpolation', slice_interpolation)
             session.SetConfig('server_aetitle', server_aetitle)
             session.SetConfig('server_port', server_port)
+            session.SetConfig('store_path', store_path)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')

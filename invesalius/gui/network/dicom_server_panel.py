@@ -12,6 +12,11 @@ class DicomServerPanel(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
 
         # Create the input fields
+        self.__path = wx.DirPickerCtrl(self,
+            wx.ID_ANY,
+            path="",
+            message="Select a folder",
+            style=wx.DIRP_USE_TEXTCTRL)
         self.__ae_input = wx.TextCtrl(self)
         self.__port_input = wx.TextCtrl(self)
 
@@ -19,11 +24,13 @@ class DicomServerPanel(wx.Panel):
         self._load_values()
 
         # Create the controls static box sizer
-        static_box_sizer = self._create_static_box_sizer()
+        server_sizer = self._create_server_sizer()
+        picker_sizer = self._create_picker_sizer()
 
         # Adds controls static sizer to main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(static_box_sizer, proportion=1, flag=wx.EXPAND|wx.ALL, border=10)
+        sizer.Add(server_sizer, proportion=1, flag=wx.EXPAND|wx.ALL, border=10)
+        sizer.Add(picker_sizer, flag=wx.EXPAND|wx.ALL, border=10)
         
         # Set the main sizer
         self.SetSizer(sizer)
@@ -37,7 +44,8 @@ class DicomServerPanel(wx.Panel):
 
         return {
             const.SERVER_AETITLE: self.__ae_input.GetValue(),
-            const.SERVER_PORT: self.__port_input.GetValue()
+            const.SERVER_PORT: self.__port_input.GetValue(),
+            const.STORE_PATH: self.__path.GetPath()
         }
 
     def _load_values(self):
@@ -53,13 +61,28 @@ class DicomServerPanel(wx.Panel):
             if session.GetConfig('server_port') \
             else '5000'
 
+        path = session.GetConfig('store_path') \
+            if session.GetConfig('store_path') \
+            else ''
+
         self.__ae_input.SetValue(ae_title)
         self.__port_input.SetValue(port)
+        self.__path.SetPath(path)
 
-    def _create_static_box_sizer(self):
+    def _create_picker_sizer(self):
+
+        static_box = wx.StaticBox(self, label="Path")
+
+        static_box_sizer = wx.StaticBoxSizer(static_box, wx.VERTICAL)
+
+        static_box_sizer.Add(self.__path, flag=wx.EXPAND|wx.ALL, border=5)
+
+        return static_box_sizer
+
+    def _create_server_sizer(self):
         """ Creates a static box sizer with the controls. """
 
-        static_box = wx.StaticBox(self, label="Network")
+        static_box = wx.StaticBox(self, label="Server")
 
         static_box_sizer = wx.StaticBoxSizer(static_box, wx.VERTICAL)
 

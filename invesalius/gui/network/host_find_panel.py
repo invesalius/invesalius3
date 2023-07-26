@@ -26,11 +26,11 @@ class HostFindPanel(wx.Panel):
         #  splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
+        sizer.Add(splitter, 1, wx.EXPAND | wx.ALL, 10)
         self.SetSizer(sizer)
 
         self.__image_panel = NodesPanel(splitter)
-        splitter.AppendWindow(self.__image_panel, 500)
+        splitter.AppendWindow(self.__image_panel)
 
         sizer.Fit(self)
 

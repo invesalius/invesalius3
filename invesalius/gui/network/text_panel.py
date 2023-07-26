@@ -1,4 +1,6 @@
 from invesalius.pubsub import pub as Publisher
+import invesalius.net.dicom as dcm_net
+import invesalius.session as ses
 import wx.gizmos as gizmos
 import wx
 
@@ -14,6 +16,23 @@ class TextPanel(wx.Panel):
         self.__selected_by_user = True
         self.__idserie_treeitem = {}
         self.__idpatient_treeitem = {}
+
+        session = ses.Session()
+        self.__selected = session.GetConfig('selected_node') \
+            if session.GetConfig('selected_node') \
+            else None
+
+        self.__server_aetitle = session.GetConfig('server_aetitle') \
+            if session.GetConfig('server_aetitle') \
+            else None
+
+        self.__server_port = session.GetConfig('server_port') \
+            if session.GetConfig('server_port') \
+            else None
+
+        self.__store_path = session.GetConfig('store_path') \
+            if session.GetConfig('store_path') \
+            else None
 
         self.__tree = self._init_gui()
         self.__root = self.__tree.AddRoot(_("InVesalius Database"))
@@ -123,7 +142,7 @@ class TextPanel(wx.Panel):
                     if (patient, series) in self.__idserie_treeitem \
                     else self.__tree.AppendItem(parent, series)
 
-                self.__tree.SetItemPyData(child, series)
+                self.__tree.SetItemPyData(child, (patient, series))
 
                 self.__tree.SetItemText(child, serie_description, 0)
                 self.__tree.SetItemText(child, modality, 5)
@@ -139,23 +158,25 @@ class TextPanel(wx.Panel):
     def _on_activate(self, evt):
 
         item = evt.GetItem()
-        item_parent = self.__tree.GetItemParent(item)
         
-        patient_id = self.__tree.GetItemPyData(item_parent)
-        serie_id  = self.__tree.GetItemPyData(item)
+        series_data = self.__tree.GetItemPyData(item)
+        if series_data:
 
-        hosts = {}
+            patient_id, series_id = series_data
 
-        for key in hosts.keys():
+            if self.__selected is None:
 
-            if key != 0:
+                wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
+                return
 
-                dn = dcm_net.DicomNet()
-                dn.SetHost(self.hosts[key][1])
-                dn.SetPort(self.hosts[key][2])
-                dn.SetAETitleCall(self.hosts[key][3])
-                dn.SetAETitle(self.hosts[0][3])
-                dn.RunCMove((patient_id, serie_id))
+            dn = dcm_net.DicomNet()
+            dn.SetHost(self.__selected['ipaddress'])
+            dn.SetPort(self.__selected['port'])
+            dn.SetAETitle(self.__selected['aetitle'])
+            dn.SetAETitleCall(self.__server_aetitle)
+            dn.SetPortCall(self.__server_port)
+            dn.SetStorePath(self.__store_path)
+            dn.RunCMove({'patient_id': patient_id, 'serie_id': series_id})
 
     def _on_size(self, evt):
 

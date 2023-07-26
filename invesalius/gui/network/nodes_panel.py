@@ -13,14 +13,18 @@ class NodesPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
         
-        self.__session = ses.Session()
         self.__nodes = []
         self.__selected_index = None
+        self.__selected_node = None
+
+        self.__session = ses.Session()
 
         # Create the main vertical box sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.__find_input = wx.TextCtrl(self, size=(225, -1))
+        self.__find_input.SetHint(_("Enter patient name"))
+        
         find_sizer = self._create_find_box_sizer()
 
         buttons_sizer = self._create_buttons_box_sizer()
@@ -33,20 +37,23 @@ class NodesPanel(wx.Panel):
 
         main_sizer.Add(hor, 0, wx.EXPAND)
 
-        #self.__grid = self._create_grid_table()
         self.__list_ctrl = self._create_list_ctrl()
 
         # Load values from config file
         self._load_values()
         
         # Add the grid table to the main sizer
-        main_sizer.Add(self.__list_ctrl, 85, wx.GROW | wx.EXPAND)
+        main_sizer.Add(self.__list_ctrl, 1, wx.GROW | wx.EXPAND)
         
         # Create the input fields
         self.__ipaddress_input = wx.TextCtrl(self, size=(225, -1))
+        self.__ipaddress_input.SetHint(_("127.0.0.1"))
         self.__port_input = wx.TextCtrl(self, size=(225, -1))
+        self.__port_input.SetHint(_("4242"))
         self.__aetitle_input = wx.TextCtrl(self, size=(225, -1))
+        self.__aetitle_input.SetHint(_("ORTHANC"))
         self.__description_input = wx.TextCtrl(self, size=(225, -1))
+        self.__description_input.SetHint(_("My local server"))
 
         form_sizer = self._create_form_sizer()
         
@@ -61,15 +68,14 @@ class NodesPanel(wx.Panel):
     def _on_button_find(self, evt):
         """ Find button event. """
 
-        selected = self.__nodes[self.__selected_index]
-        if selected is None:
+        if self.__selected_node is None:
             
             wx.MessageBox(_("Please, select a node."), _("Error"), wx.OK | wx.ICON_ERROR)
             return
 
         dn = dcm_net.DicomNet()
-        dn.SetHost(selected['ipaddress'])
-        dn.SetPort(selected['port'])
+        dn.SetHost(self.__selected_node['ipaddress'])
+        dn.SetPort(self.__selected_node['port'])
         dn.SetSearchWord(self.__find_input.GetValue())
         Publisher.sendMessage('Populate tree', patients=dn.RunCFind())
 
@@ -98,12 +104,12 @@ class NodesPanel(wx.Panel):
             # Add node row to the nodes list
             self._add_node(node)
 
-        selected_node = self.__session.GetConfig('selected_node') \
+        self.__selected_node = self.__session.GetConfig('selected_node') \
             if self.__session.GetConfig('selected_node') \
             else None
 
-        self.__selected_index = self.__nodes.index(selected_node) \
-            if selected_node \
+        self.__selected_index = self.__nodes.index(self.__selected_node) \
+            if self.__selected_node \
             else None
 
         if self.__selected_index is not None:
@@ -184,19 +190,18 @@ class NodesPanel(wx.Panel):
     def _on_button_check(self, evt):
         """ check status button handler """
 
-        if self.__selected_index is None:
+        if self.__selected_node is None:
 
             wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
             return
 
-        selected = self.__nodes[self.__selected_index]
-
         dn = dcm_net.DicomNet()
-        dn.SetHost(selected['ipaddress'])
-        dn.SetPort(selected['port'])
+        dn.SetHost(self.__selected_node['ipaddress'])
+        dn.SetPort(self.__selected_node['port'])
 
         ok = dn.RunCEcho()
-        self.__list_ctrl.SetItem(self.__selected_index, 5, _("ok")) if ok else self.__list_ctrl.SetItem(self.__selected_index, 5, _("error"))
+        self.__list_ctrl.SetItem(self.__selected_index, 5, _("ok")) if ok\
+            else self.__list_ctrl.SetItem(self.__selected_index, 5, _("error"))
 
     def _on_item_deselected(self, evt):
         """ unchecked item handler """
@@ -204,6 +209,7 @@ class NodesPanel(wx.Panel):
         self.__session.SetConfig('selected_node', {})
 
         self.__selected_index = None
+        self.__selected_node = None
 
     def _on_item_selected(self, evt):
         """ checked item handler """
@@ -218,6 +224,7 @@ class NodesPanel(wx.Panel):
         self.__session.SetConfig('selected_node', self.__nodes[idx])
 
         self.__selected_index = idx
+        self.__selected_node = self.__nodes[idx]
 
     def _create_form_sizer(self):
         """ Create the form sizer. """
@@ -292,6 +299,7 @@ class NodesPanel(wx.Panel):
         self._remove_node(self.__selected_index)
 
         self.__selected_index = None
+        self.__selected_node = None
 
         # Updates nodes list and selected node in the config file
         self.__session.SetConfig('selected_node', {})

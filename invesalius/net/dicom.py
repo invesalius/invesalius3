@@ -1,4 +1,5 @@
-from pynetdicom.sop_class import PatientRootQueryRetrieveInformationModelFind
+from pynetdicom.sop_class import (PatientRootQueryRetrieveInformationModelFind,
+    PatientRootQueryRetrieveInformationModelMove)
 from pydicom.dataset import Dataset
 import invesalius.utils as utils
 import pynetdicom
@@ -10,8 +11,10 @@ class DicomNet:
         self.address = ''
         self.port = ''
         self.aetitle_call = ''
+        self.port_call = ''
         self.aetitle = ''
         self.search_word = ''
+        self.store_path = ''
         self.search_type = 'patient'
 
     def __call__(self):
@@ -22,6 +25,9 @@ class DicomNet:
 
     def SetPort(self, port):
         self.port = port
+
+    def SetPortCall(self, port):
+        self.port_call = port
 
     def SetAETitleCall(self, name):
         self.aetitle_call = name
@@ -34,6 +40,9 @@ class DicomNet:
 
     def SetSearchType(self, stype):
         self.search_type = stype
+
+    def SetStorePath(self, path):
+        self.store_path = path
 
     def GetValueFromDICOM(self, ret, tag):
         """ Get value from DICOM tag. """
@@ -141,63 +150,51 @@ class DicomNet:
 
 
     def RunCMove(self, values):
+        """ Run CMove to download the DICOM files. """
 
-        ds = gdcm.DataSet()
+        def handle_store(event):
+            """Handle a C-STORE request event."""
 
-        #for v in values:
+            ds = event.dataset
+            ds.file_meta = event.file_meta
 
+            ds.save_as(f"{self.store_path}/{ds.SOPInstanceUID}.dcm", write_like_original=False)
 
-        tg_patient = gdcm.Tag(0x0010, 0x0020)
-        tg_serie = gdcm.Tag(0x0020, 0x000e)
+            return 0x0000
 
-        de_patient = gdcm.DataElement(tg_patient)
-        de_serie = gdcm.DataElement(tg_serie)
+        ae = pynetdicom.AE()
+        ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
+        ae.supported_contexts = pynetdicom.StoragePresentationContexts
 
-        patient_id = str(values[0])
-        serie_id = str(values[1])
+        handlers = [(pynetdicom.evt.EVT_C_STORE, handle_store)]
 
-        de_patient.SetByteValue(patient_id,  gdcm.VL(len(patient_id)))
-        de_serie.SetByteValue(serie_id, gdcm.VL(len(serie_id)))
+        ds = Dataset()
+        ds.QueryRetrieveLevel = 'SERIES'
+        ds.PatientID = values['patient_id']
+        ds.SeriesInstanceUID = values['serie_id']
 
-        ds.Insert(de_patient)
-        ds.Insert(de_serie)
+        assoc = ae.associate(self.address, int(self.port), ae_title=self.aetitle)
+        if assoc.is_established:
 
+            scp = ae.start_server(("127.0.0.1", int(self.port_call)), block=False, evt_handlers=handlers)
 
-        cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
-        #ret = gdcm.DataSetArrayType()
+            responses = assoc.send_c_move(ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
+            for (status, identifier) in responses:
 
-        """
-        CMove (const char *remote, 
-        uint16_t portno, 
-        const BaseRootQuery *query, 
+                if status:
 
-        uint16_t portscp, 
-        const char *aetitle=NULL, 
-        const char *call=NULL, 
-        const char *outputdir=NULL)"""
+                    print('C-MOVE query status: 0x{0:04x}'.format(status.Status))
 
-        print(">>>>>", self.address, int(self.port), theQuery, 11112, self.aetitle,
-                  self.aetitle_call, "/home/phamorim/Desktop/output/")
+                else:
 
+                    print('Connection timed out, was aborted or received invalid response')
 
-        cnf.CMove(self.address, int(self.port), theQuery, 11112, self.aetitle,\
-                  self.aetitle_call, "/home/phamorim/Desktop/")
+            assoc.release()
+            scp.shutdown()
 
-        print("BAIXOUUUUUUUU")
-        #ret = gdcm.DataSetArrayType()
+            return True
 
-        #cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\
-        #          self.aetitle_call)
-
-        #print "aetitle",self.aetitle
-        #print "call",self.aetitle_call
-        #print "Baixados..........."
-
-
-        #for r in ret:
-        #    print r
-        #    print "\n"
+        return False
 
     def __str__(self):
 
