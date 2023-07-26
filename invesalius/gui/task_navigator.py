@@ -47,6 +47,9 @@ try:
 except ImportError:
     import wx.lib.foldpanelbar as fpb
 
+import wx.lib.buttons as btn
+import wx.lib.platebtn as pbtn
+
 import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
 from invesalius.pubsub import pub as Publisher
@@ -192,7 +195,7 @@ class InnerFoldPanel(wx.Panel):
         # TODO: Initialize checkboxes before panels: they are updated by ObjectRegistrationPanel when loading its state.
         #   A better solution would be to have these checkboxes save their own state, independent of the panels, but that's
         #   not implemented yet.
-
+        '''
         # Checkbox for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
         checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
@@ -217,11 +220,13 @@ class InnerFoldPanel(wx.Panel):
         checkobj.Disable()
         checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowCoil)
         self.checkobj = checkobj
-
+        
+        
         #  if sys.platform != 'win32':
         self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         checkbox_serial_port.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        '''
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -338,12 +343,14 @@ class InnerFoldPanel(wx.Panel):
 '''
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
         
+        '''
         # Panel sizer for checkboxes
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Add(checkbox_serial_port, 0, wx.ALIGN_CENTER)
         line_sizer.Add(checkobj, 0, wx.RIGHT | wx.LEFT, 5)
         line_sizer.Fit(self)
+        '''
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(gbs, 1, wx.GROW|wx.EXPAND)
@@ -355,7 +362,7 @@ class InnerFoldPanel(wx.Panel):
 
         self.track_obj = False
         gbs.Add(fold_panel, (0, 0), flag=wx.EXPAND)
-        gbs.Add(line_sizer, (1, 0), flag=wx.EXPAND)
+        #gbs.Add(line_sizer, (1, 0), flag=wx.EXPAND)
         gbs.Layout()
         sizer.Fit(self)
         self.Fit()
@@ -363,17 +370,18 @@ class InnerFoldPanel(wx.Panel):
         self.__bind_events()
         
     def __bind_events(self):
-        Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
+        #Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowDbs, "Show dbs folder")
         Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
 
+        '''
         # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
         Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
 
         Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
         Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
-
+        '''
         Publisher.subscribe(self.OpenNavigation, 'Open navigation menu')
     
     def __calc_best_size(self, panel):
@@ -861,6 +869,7 @@ class TrackerPage(wx.Panel):
         Publisher.subscribe(self.OnNextEnable, "Next enable for tracker fiducials")
         Publisher.subscribe(self.OnNextDisable, "Next disable for tracker fiducials")
         Publisher.subscribe(self.OnTrackerChanged, "Tracker changed")
+        Publisher.subscribe(self.OnResetTrackerFiducials, "Reset tracker fiducials")
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -924,6 +933,8 @@ class TrackerPage(wx.Panel):
 
     def OnReset(self, evt, ctrl):
         self.tracker.ResetTrackerFiducials()
+
+    def OnResetTrackerFiducials(self):
         self.tracker_fiducial_being_set = 0
         self.OnNextDisable()
         for button in self.btns_set_fiducial:
@@ -1082,6 +1093,7 @@ class RefinePage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnUpdateUI, "Update UI for refine tab")
+        Publisher.subscribe(self.OnResetTrackerFiducials, "Reset tracker fiducials")
     
     def OnUpdateUI(self):
         if self.tracker.AreTrackerFiducialsSet() and self.image.AreImageFiducialsSet():
@@ -1104,6 +1116,12 @@ class RefinePage(wx.Panel):
                 self.txtctrl_fre.SetBackgroundColour('GREEN')
             else:
                 self.txtctrl_fre.SetBackgroundColour('RED')
+    
+    def OnResetTrackerFiducials(self):
+        for m in range(3):
+            for n in range(3):
+                value = self.tracker.GetTrackerFiducialForUI(m, n)
+                self.numctrls_fiducial[m][n].SetValue(value)
 
     def OnBack(self, evt):
         Publisher.sendMessage('Back to image fiducials')
@@ -1199,7 +1217,7 @@ class NavigationPanel(wx.Panel):
         self.neuronavigation_api = neuronavigation_api
 
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        top_sizer.Add(MarkersPanel(self, self.navigation, self.tracker, self.icp), 1, wx.GROW | wx.EXPAND )
+        top_sizer.Add(MarkersPanel(self, self.navigation, self.tracker, self.robot, self.icp), 1, wx.GROW | wx.EXPAND )
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sizer.Add(ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connection, self.neuronavigation_api), 0, wx.EXPAND | wx.TOP, 20)
@@ -1244,7 +1262,7 @@ class ControlPanel(wx.Panel):
         btn_robot.SetToolTip(tooltip)
         self.btn_robot = btn_robot
         btn_robot.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStopRobot, ctrl=btn_robot))
-
+        '''
         # Label and Checkbox for Tractography
         tooltip = wx.ToolTip(_(u"Control Tractography"))
         tractography_checkbox = wx.CheckBox(self, -1, _('Enable / Disable Tractography '))
@@ -1303,14 +1321,110 @@ class ControlPanel(wx.Panel):
         force_checkbox.Bind(wx.EVT_CHECKBOX, partial(self.OnForceSensorCheckbox, ctrl=force_checkbox))
         force_checkbox.SetToolTip(tooltip)
         self.force_checkbox = force_checkbox
+        '''
 
+        # Constants for bitmap parent toggle button
+        ICON_SIZE = (48, 48)
+        RED_COLOR = (255, 82, 82)
+        self.RED_COLOR = RED_COLOR
+        GREEN_COLOR = (118, 255, 3)
+        self.GREEN_COLOR = GREEN_COLOR
+        GREY_COLOR = (217, 217, 217)
+        self.GREY_COLOR = GREY_COLOR
 
+        # Toggle Button for Tractography
+        tooltip = wx.ToolTip(_(u"Control Tractography"))
+        BMP_TRACT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("tract.png")), wx.BITMAP_TYPE_PNG)
+        tractography_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        tractography_checkbox.SetBackgroundColour(GREY_COLOR)
+        tractography_checkbox.SetBitmap(BMP_TRACT)
+        tractography_checkbox.SetValue(False)
+        tractography_checkbox.Enable(False)
+        tractography_checkbox.SetToolTip(tooltip)
+        tractography_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTractographyCheckbox, ctrl=tractography_checkbox))
+        self.tractography_checkbox = tractography_checkbox
+
+        # Toggle Button to track object or simply the stylus
+        tooltip = wx.ToolTip(_(u"Track the object"))
+        BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("track.png")), wx.BITMAP_TYPE_PNG)
+        checkbox_track_object = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        checkbox_track_object.SetBackgroundColour(GREY_COLOR)
+        checkbox_track_object.SetBitmap(BMP_TRACK)
+        checkbox_track_object.SetValue(False)
+        checkbox_track_object.Enable(False)
+        checkbox_track_object.SetToolTip(tooltip)
+        checkbox_track_object.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectCheckbox, ctrl=checkbox_track_object))
+        self.checkbox_track_object = checkbox_track_object
+
+        # Toggle Button for Lock to Target
+        tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
+        BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock.png")), wx.BITMAP_TYPE_PNG)
+        lock_to_target_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        lock_to_target_checkbox.SetBackgroundColour(GREY_COLOR)
+        lock_to_target_checkbox.SetBitmap(BMP_LOCK)
+        lock_to_target_checkbox.SetValue(False)
+        lock_to_target_checkbox.Enable(False)
+        lock_to_target_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnLockToTargetCheckbox, ctrl=lock_to_target_checkbox))
+        lock_to_target_checkbox.SetToolTip(tooltip)
+        self.lock_to_target_checkbox = lock_to_target_checkbox
+
+        # Toggle Button for object position and orientation update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Show and track TMS coil"))
+        BMP_SHOW = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
+        checkobj = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        checkobj.SetBackgroundColour(GREY_COLOR)
+        checkobj.SetBitmap(BMP_SHOW)
+        checkobj.SetToolTip(tooltip)
+        checkobj.SetValue(False)
+        checkobj.Enable(False)
+        checkobj.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
+        self.checkobj = checkobj
+    
+        # Toggle Button for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Update camera in volume"))
+        BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("camera.png")), wx.BITMAP_TYPE_PNG)
+        checkcamera =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        checkcamera.SetBitmap(BMP_UPDATE)
+        checkcamera.SetToolTip(tooltip)
+        checkcamera.SetValue(const.CAM_MODE)
+        if checkcamera.IsEnabled():
+            checkcamera.SetBackgroundColour(GREEN_COLOR)
+        else:
+            checkcamera.SetBackgroundColour(RED_COLOR)
+        checkcamera.Bind(wx.EVT_TOGGLEBUTTON, self.OnVolumeCameraCheckbox)
+        self.checkcamera = checkcamera
+
+        # Toggle Button to use serial port to trigger pulse signal and create markers
+        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
+        BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("port.png")), wx.BITMAP_TYPE_PNG)
+        checkbox_serial_port = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        checkbox_serial_port.SetBackgroundColour(RED_COLOR)
+        checkbox_serial_port.SetBitmap(BMP_PORT)
+        checkbox_serial_port.SetToolTip(tooltip)
+        checkbox_serial_port.SetValue(False)
+        checkbox_serial_port.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port))
+        self.checkbox_serial_port = checkbox_serial_port
+
+        #Toggle Button for Efield
+        tooltip = wx.ToolTip(_(u"Control E-Field"))
+        BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("efield.png")), wx.BITMAP_TYPE_PNG)
+        efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        efield_checkbox.SetBackgroundColour(GREY_COLOR)
+        efield_checkbox.SetBitmap(BMP_FIELD)
+        efield_checkbox.SetValue(False)
+        efield_checkbox.Enable(False)
+        efield_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=efield_checkbox))
+        efield_checkbox.SetToolTip(tooltip)
+        self.efield_checkbox = efield_checkbox
+
+        #Sizers
         button_sizer = wx.BoxSizer(wx.VERTICAL)
         button_sizer.AddMany([
             (btn_nav, 0, wx.EXPAND | wx.GROW),
             (btn_robot, 0, wx.EXPAND | wx.GROW)
         ])
 
+        '''
         checkbox_sizer = wx.BoxSizer(wx.VERTICAL)
         checkbox_sizer.AddMany([
             (tractography_checkbox),
@@ -1319,7 +1433,18 @@ class ControlPanel(wx.Panel):
             (checkobj),
             (checkcamera),
             (checkbox_serial_port),
-            (force_checkbox)
+            (efield_checkbox)
+        ])
+        '''
+        checkbox_sizer = wx.FlexGridSizer(4, 5, 5)
+        checkbox_sizer.AddMany([
+            (tractography_checkbox),
+            (checkbox_track_object),
+            (lock_to_target_checkbox),
+            (checkobj),
+            (checkcamera),
+            (checkbox_serial_port),
+            (efield_checkbox)
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1360,7 +1485,7 @@ class ControlPanel(wx.Panel):
         track_object = self.checkbox_track_object
         state = {
             'track_object': {
-                'checked': track_object.IsChecked(),
+                'checked': track_object.GetValue(),
                 'enabled': track_object.IsEnabled(),
             }
         }
@@ -1380,15 +1505,37 @@ class ControlPanel(wx.Panel):
         self.EnableTrackObjectCheckbox(track_object['enabled'])
         self.CheckTrackObjectCheckbox(track_object['checked'])
 
+    def UpdateToggleButton(self, ctrl, state=None):
+        # Changes background colour based on current state of toggle button if state is not set,
+        # otherwise, uses state to set value.
+        if state is None:
+            state = ctrl.GetValue()
+
+        ctrl.SetValue(state)
+
+        if state:
+            ctrl.SetBackgroundColour(self.GREEN_COLOR)
+        else:
+            ctrl.SetBackgroundColour(self.RED_COLOR)
+    
+    def EnableToggleButton(self, ctrl, state):
+        ctrl.Enable(state)
+        ctrl.SetBackgroundColour(self.GREY_COLOR)
+
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
-            self.checkbox_serial_port.Enable(False)
-            self.checkobj.Enable(False)
+            self.EnableToggleButton(self.checkbox_serial_port, 0)
+            self.UpdateToggleButton(self.checkbox_serial_port)
+            self.EnableToggleButton(self.checkobj, 0)
+            self.UpdateToggleButton(self.checkobj)
         else:
-            self.checkbox_serial_port.Enable(True)
-            self.checkbox_track_object.Enable(True)
+            self.EnableToggleButton(self.checkbox_serial_port, 1)
+            self.UpdateToggleButton(self.checkbox_serial_port)
+            self.EnableToggleButton(self.checkbox_track_object, 1)
+            self.UpdateToggleButton(self.checkbox_track_object)
             if self.track_obj:
-                self.checkobj.Enable(True)
+                self.EnableToggleButton(self.checkobj, 1)
+                self.UpdateToggleButton(self.checkobj)
 
     # Navigation 
     def OnStartNavigation(self):
@@ -1426,7 +1573,7 @@ class ControlPanel(wx.Panel):
     
     def OnStopNavigation(self):
         self.navigation.StopNavigation()
-        if self.tracker.tracker_id == const.ROBOT:
+        if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
 
@@ -1434,8 +1581,8 @@ class ControlPanel(wx.Panel):
         self.navigation.target = coord
 
         if coord is not None:
-            self.lock_to_target_checkbox.Enable(True)
-            self.lock_to_target_checkbox.SetValue(True)
+            self.EnableToggleButton(self.lock_to_target_checkbox, 1)
+            self.UpdateToggleButton(self.lock_to_target_checkbox, True)
             self.navigation.SetLockToTarget(True)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -1453,25 +1600,29 @@ class ControlPanel(wx.Panel):
     # 'Tracktography'
     def OnTractographyCheckbox(self, evt, ctrl):
         self.view_tracts = ctrl.GetValue()
+        self.UpdateToggleButton(ctrl)
         Publisher.sendMessage('Update tracts visualization', data=self.view_tracts)
         if not self.view_tracts:
             Publisher.sendMessage('Remove tracts')
             Publisher.sendMessage("Update marker offset state", create=False)
 
     def UpdateTractsVisualization(self, data):
-        self.tractography_checkbox.Enable()
-        self.tractography_checkbox.SetValue(1)
+        self.EnableToggleButton(self.tractography_checkbox, 1)
+        self.UpdateToggleButton(self.tractography_checkbox, data)
 
     # 'Track object' checkbox
     def EnableTrackObjectCheckbox(self, enabled):
-        self.checkbox_track_object.Enable(enabled)
+        self.EnableToggleButton(self.checkbox_track_object, enabled)
+        self.UpdateToggleButton(self.checkbox_track_object)
 
     def CheckTrackObjectCheckbox(self, checked):
-        self.checkbox_track_object.SetValue(checked)
+        self.UpdateToggleButton(self.checkbox_track_object, checked)
         self.OnTrackObjectCheckbox()
 
     def OnTrackObjectCheckbox(self, evt=None, ctrl=None):
-        checked = self.checkbox_track_object.IsChecked()
+        if ctrl is not None:
+            self.UpdateToggleButton(ctrl)
+        checked = self.checkbox_track_object.GetValue()
         Publisher.sendMessage('Track object', enabled=checked)
 
         # Disable or enable 'Show coil' checkbox, based on if 'Track object' checkbox is checked.
@@ -1485,43 +1636,49 @@ class ControlPanel(wx.Panel):
 
     # 'Lock to Target' checkbox        
     def OnLockToTargetCheckbox(self, evt, ctrl):
+        self.UpdateToggleButton(ctrl)
         value = ctrl.GetValue()
         self.navigation.SetLockToTarget(value)
 
     # 'Show coil' checkbox
     def CheckShowCoil(self, checked=False):
-        self.checkobj.SetValue(checked)
+        self.UpdateToggleButton(self.checkobj, checked)
         self.track_obj = checked
         self.OnShowCoil()
 
     def EnableShowCoil(self, enabled=False):
-        self.checkobj.Enable(enabled)
+        self.EnableToggleButton(self.checkobj, enabled)
+        self.UpdateToggleButton(self.checkobj)
 
     def OnShowCoil(self, evt=None):
+        self.UpdateToggleButton(self.checkobj)
         checked = self.checkobj.GetValue()
         Publisher.sendMessage('Show-coil checked', checked=checked)    
 
 
     # 'Volume camera' checkbox
     def CheckVolumeCameraCheckbox(self, checked):
-        self.checkcamera.SetValue(checked)
+        self.UpdateToggleButton(self.checkcamera, checked)
         self.OnVolumeCameraCheckbox()
 
     def OnVolumeCameraCheckbox(self, evt=None, status=None):
+        self.UpdateToggleButton(self.checkcamera)
         Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
 
     def EnableVolumeCameraCheckbox(self, enabled):
-        self.checkcamera.Enable(enabled)
+        self.EnableToggleButton(self.checkcamera, enabled)
+        self.UpdateToggleButton(self.checkcamera)
     
 
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
+        self.UpdateToggleButton(ctrl)
         if ctrl.GetValue():
             from wx import ID_OK
             dlg_port = dlg.SetCOMPort(select_baud_rate=False)
 
             if dlg_port.ShowModal() != ID_OK:
-                ctrl.SetValue(False)
+                self.UpdateToggleButton(ctrl, False)
                 return
 
             com_port = dlg_port.GetCOMPort()
@@ -1531,9 +1688,9 @@ class ControlPanel(wx.Panel):
         else:
             Publisher.sendMessage('Update serial port', serial_port_in_use=False)
     
-    # 'Force Sensor'
-    def OnForceSensorCheckbox(self):
-        pass
+    # 'E Field'
+    def OnEfieldCheckbox(self, evt, ctrl):
+        self.UpdateToggleButton(ctrl)
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
@@ -2575,7 +2732,7 @@ class MarkersPanel(wx.Panel):
             }
 
 
-    def __init__(self, parent, navigation, tracker, icp):
+    def __init__(self, parent, navigation, tracker, robot, icp):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -2587,6 +2744,7 @@ class MarkersPanel(wx.Panel):
 
         self.navigation = navigation
         self.tracker = tracker
+        self.robot = robot
         self.icp = icp
         if has_mTMS:
             self.mTMS = mTMS()
@@ -2693,7 +2851,7 @@ class MarkersPanel(wx.Panel):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(marker_list_ctrl, 1, wx.EXPAND | wx.ALL, 5)
+        group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
         self.SetSizer(group_sizer)
@@ -2903,7 +3061,7 @@ class MarkersPanel(wx.Panel):
         menu_id.AppendSeparator()
 
         # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
-        if self.tracker.tracker_id == const.ROBOT:
+        if self.robot.IsConnected():
             send_target_to_robot = menu_id.Append(7, _('Send InVesalius target to robot'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
 
@@ -2946,7 +3104,7 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
-        if self.tracker.tracker_id == const.ROBOT:
+        if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
         self.__set_marker_as_target(idx)
@@ -2976,7 +3134,7 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
         Publisher.sendMessage('Update target', coord=None)
-        if self.tracker.tracker_id == const.ROBOT:
+        if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
         #self.__delete_all_brain_targets()
@@ -3081,7 +3239,7 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             if evt is not None:
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
-            if self.tracker.tracker_id == const.ROBOT:
+            if self.robot.IsConnected():
                 Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                       target_index=None, target=None)
 
@@ -3120,7 +3278,7 @@ class MarkersPanel(wx.Panel):
         if self.__find_target_marker() in indexes:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             Publisher.sendMessage('Update target', coord=None)
-            if self.tracker.tracker_id == const.ROBOT:
+            if self.robot.IsConnected():
                 Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                         target_index=None, target=None)
             wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
@@ -3271,7 +3429,7 @@ class MarkersPanel(wx.Panel):
         new_marker.session_id = session_id or self.current_session
         new_marker.is_brain_target = is_brain_target
 
-        if self.tracker.tracker_id == const.ROBOT and self.nav_status:
+        if self.robot.IsConnected() and self.nav_status:
             current_head_robot_target_status = True
         else:
             current_head_robot_target_status = False
