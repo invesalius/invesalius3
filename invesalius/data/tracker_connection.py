@@ -636,7 +636,6 @@ TRACKER_CONNECTION_CLASSES = {
     const.POLARIS: PolarisTrackerConnection,
     const.POLARISP4: PolarisP4TrackerConnection,
     const.OPTITRACK: OptitrackTrackerConnection,
-    const.ROBOT: RobotTrackerConnection,
     const.DEBUGTRACKRANDOM: DebugTrackerRandomConnection,
     const.DEBUGTRACKAPPROACH: DebugTrackerApproachConnection,
 }

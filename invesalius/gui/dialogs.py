@@ -927,7 +927,6 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
-            const.ROBOT: 'Robotic navigation',
             const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
             const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 

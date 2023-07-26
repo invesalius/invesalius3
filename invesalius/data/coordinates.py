@@ -85,7 +85,6 @@ def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode):
                     const.POLARIS: PolarisCoord,
                     const.POLARISP4: PolarisP4Coord,
                     const.OPTITRACK: OptitrackCoord,
-                    const.ROBOT: RobotCoord,
                     const.DEBUGTRACKRANDOM: DebugCoordRandom,
                     const.DEBUGTRACKAPPROACH: DebugCoordRandom}
         coord, markers_flag = getcoord[tracker_id](tracker_connection, tracker_id, ref_mode)
