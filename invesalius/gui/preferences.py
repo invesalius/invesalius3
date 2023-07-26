@@ -457,6 +457,7 @@ class TrackerPage(wx.Panel):
 
         self.tracker = tracker
         self.robot = robot
+        self.robot_IP = None
 
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select")] + self.tracker.get_trackers()
@@ -493,12 +494,24 @@ class TrackerPage(wx.Panel):
 
         sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
+        
+        lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
 
-        lbl_rob = wx.StaticText(self, -1, _("Robot tracking device: "))
-        btn_rob = wx.Button(self, -1, _("Setup"))
-        btn_rob.SetToolTip("Setup robot tracking")
+        # ComboBox for spatial tracker device selection
+        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        choice_IP = wx.ComboBox(self, -1, "",
+                                  choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        choice_IP.SetToolTip(tooltip)
+        choice_IP.SetSelection(const.DEFAULT_TRACKER)
+        choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
+        choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
+        self.choice_IP = choice_IP
+
+        btn_rob = wx.Button(self, -1, _("Connect"))
+        btn_rob.SetToolTip("Connect to IP")
         btn_rob.Enable(1)
-        btn_rob.Bind(wx.EVT_BUTTON, self.OnRobot)
+        btn_rob.Bind(wx.EVT_BUTTON, self.OnRobotConnect)
         self.btn_rob = btn_rob
 
         btn_rob_con = wx.Button(self, -1, _("Register"))
@@ -507,10 +520,11 @@ class TrackerPage(wx.Panel):
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotCon)
         self.btn_rob_con = btn_rob_con
 
-        rob_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        rob_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=5, vgap=5)
         rob_sizer.AddMany([
             (lbl_rob, 0, wx.LEFT),
-            (btn_rob, 0, wx.RIGHT),
+            (choice_IP, 1, wx.EXPAND),
+            (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (btn_rob_con, 0, wx.RIGHT)
         ])
 
@@ -554,6 +568,22 @@ class TrackerPage(wx.Panel):
     
     def ShowParent(self):  # show preferences dialog box
         self.GetGrandParent().Show()
+
+    def OnTxt_Ent(self, evt, ctrl):
+        self.robot_ip = str(ctrl.GetValue())
+
+    def OnChoiceIP(self, evt, ctrl):
+        self.robot_ip = ctrl.GetStringSelection()
+    
+    def OnRobotConnect(self, evt):
+        if self.robot_ip is not None:
+            self.configuration = {
+                'tracker_id': self.tracker.GetTrackerId(),
+                'robot_ip': self.robot_ip,
+                'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
+            }
+            self.connection = self.tracker.tracker_connection
+            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobot(self, evt):
         self.HideParent()

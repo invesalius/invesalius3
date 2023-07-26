@@ -126,6 +126,9 @@ class Robot(metaclass=Singleton):
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
+    def IsConnected(self):
+        return self.robot_status
+    
     def InitializeRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
