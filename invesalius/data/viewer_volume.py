@@ -232,7 +232,7 @@ class Viewer(wx.Panel):
         self.obj_actor = None
         self.obj_axes = None
         self.obj_name = False
-        self.show_object = None
+        self.show_object = False
         self.obj_actor_list = None
         self.arrow_actor_list = None
         self.pTarget = [0., 0., 0.]
@@ -1262,7 +1262,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
-        self.dummy_coil_actor.SetVisibility(1)
+        self.dummy_coil_actor.SetVisibility(self.show_object)
         self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)
@@ -2161,6 +2161,8 @@ class Viewer(wx.Panel):
 
     def ShowObject(self, checked):
         self.show_object = checked
+        if self.dummy_coil_actor is not None:
+            self.dummy_coil_actor.SetVisibility(self.show_object)
 
         if self.obj_actor and not self.show_object:
             self.obj_actor.SetVisibility(self.show_object)
