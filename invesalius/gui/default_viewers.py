@@ -391,7 +391,6 @@ class VolumeToolPanel(wx.Panel):
         self.navigation_status = False
 
         self.target_selected = False
-        self.show_coil_checked = False
 
         sizer.Fit(self)
 
@@ -415,7 +414,6 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
 
         # Conditions for enabling target button:
-        Publisher.subscribe(self.ShowCoilChecked, 'Show-coil checked')
         Publisher.subscribe(self.TargetSelected, 'Target selected')
 
     def DisablePreset(self):
@@ -443,10 +441,6 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
-    def ShowCoilChecked(self, checked):
-        self.show_coil_checked = checked
-        self.UpdateTargetButton()
-
     def TargetSelected(self, status):
         self.target_selected = status
         self.UpdateTargetButton()
@@ -462,7 +456,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_target._SetState(0)
 
     def UpdateTargetButton(self):
-        if self.target_selected and self.show_coil_checked:
+        if self.target_selected:
             self.button_target.Enable(1)
         else:
             self.DisableTargetMode()
