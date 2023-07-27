@@ -1524,10 +1524,12 @@ class ControlPanel(wx.Panel):
 
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
-            self.EnableToggleButton(self.checkbox_serial_port, 0)
             self.UpdateToggleButton(self.checkbox_serial_port)
-            self.EnableToggleButton(self.checkobj, 0)
+            self.EnableToggleButton(self.checkbox_serial_port, 0)
             self.UpdateToggleButton(self.checkobj)
+            self.EnableToggleButton(self.checkobj, 0)
+            self.UpdateToggleButton(self.checkbox_track_object)
+            self.EnableToggleButton(self.checkbox_track_object, 0)
         else:
             self.EnableToggleButton(self.checkbox_serial_port, 1)
             self.UpdateToggleButton(self.checkbox_serial_port)
