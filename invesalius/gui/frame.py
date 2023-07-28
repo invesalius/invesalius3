@@ -671,6 +671,7 @@ class Frame(wx.Frame):
             server_aetitle = values[const.SERVER_AETITLE]
             server_port = values[const.SERVER_PORT]
             store_path = values[const.STORE_PATH]
+            server_ip = values[const.SERVER_IP]
 
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
@@ -679,6 +680,7 @@ class Frame(wx.Frame):
             session.SetConfig('server_aetitle', server_aetitle)
             session.SetConfig('server_port', server_port)
             session.SetConfig('store_path', store_path)
+            session.SetConfig('server_ip', server_ip)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')

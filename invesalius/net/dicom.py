@@ -10,11 +10,11 @@ class DicomNet:
     def __init__(self):
         self.address = ''
         self.port = ''
+        self.ip_call = ''
         self.aetitle_call = ''
         self.port_call = ''
         self.aetitle = ''
         self.search_word = ''
-        self.store_path = ''
         self.search_type = 'patient'
 
     def __call__(self):
@@ -35,14 +35,14 @@ class DicomNet:
     def SetAETitle(self, ae_title):
         self.aetitle = ae_title
 
+    def SetIPCall(self, ip):
+        self.ip_call = ip
+
     def SetSearchWord(self, word):
         self.search_word = word
 
     def SetSearchType(self, stype):
         self.search_type = stype
-
-    def SetStorePath(self, path):
-        self.store_path = path
 
     def GetValueFromDICOM(self, ret, tag):
         """ Get value from DICOM tag. """
@@ -153,12 +153,13 @@ class DicomNet:
         """ Run CMove to download the DICOM files. """
 
         def handle_store(event):
-            """Handle a C-STORE request event."""
+            """Handle a C-MOVE request event."""
 
             ds = event.dataset
             ds.file_meta = event.file_meta
 
-            ds.save_as(f"{self.store_path}/{ds.SOPInstanceUID}.dcm", write_like_original=False)
+            dest = f"{self.values['destination']}/{ds.SOPInstanceUID}.dcm"
+            ds.save_as(dest, write_like_original=False)
 
             return 0x0000
 
@@ -176,7 +177,7 @@ class DicomNet:
         assoc = ae.associate(self.address, int(self.port), ae_title=self.aetitle)
         if assoc.is_established:
 
-            scp = ae.start_server(("127.0.0.1", int(self.port_call)), block=False, evt_handlers=handlers)
+            scp = ae.start_server((self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
 
             responses = assoc.send_c_move(ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
             for (status, identifier) in responses:
@@ -187,14 +188,12 @@ class DicomNet:
 
                 else:
 
-                    print('Connection timed out, was aborted or received invalid response')
+                    raise RuntimeError('C-MOVE request failed')
 
             assoc.release()
             scp.shutdown()
 
-            return True
-
-        return False
+        raise RuntimeError('Association rejected, aborted or never connected')
 
     def __str__(self):
 

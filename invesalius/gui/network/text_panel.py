@@ -3,6 +3,7 @@ import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
 import wx.gizmos as gizmos
 import wx
+import os
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
@@ -20,6 +21,10 @@ class TextPanel(wx.Panel):
         session = ses.Session()
         self.__selected = session.GetConfig('selected_node') \
             if session.GetConfig('selected_node') \
+            else None
+
+        self.__server_ip = session.GetConfig('server_ip') \
+            if session.GetConfig('server_ip') \
             else None
 
         self.__server_aetitle = session.GetConfig('server_aetitle') \
@@ -169,14 +174,37 @@ class TextPanel(wx.Panel):
                 wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
                 return
 
-            dn = dcm_net.DicomNet()
-            dn.SetHost(self.__selected['ipaddress'])
-            dn.SetPort(self.__selected['port'])
-            dn.SetAETitle(self.__selected['aetitle'])
-            dn.SetAETitleCall(self.__server_aetitle)
-            dn.SetPortCall(self.__server_port)
-            dn.SetStorePath(self.__store_path)
-            dn.RunCMove({'patient_id': patient_id, 'serie_id': series_id})
+            if self.__server_aetitle is None or \
+                self.__server_port is None or \
+                self.__server_ip is None:
+
+                wx.MessageBox(_("Please configure the server"), _("Error"), wx.OK | wx.ICON_ERROR)
+                return
+
+            dest = f"{self.__store_path}/{patient_id}/{series_id}"
+            if not(os.path.exists(dest)):
+
+                os.makedirs(dest)
+
+                dn = dcm_net.DicomNet()
+                dn.SetHost(self.__selected['ipaddress'])
+                dn.SetPort(self.__selected['port'])
+                dn.SetAETitle(self.__selected['aetitle'])
+                dn.SetAETitleCall(self.__server_aetitle)
+                dn.SetPortCall(self.__server_port)
+                dn.SetIPCall(self.__server_ip)
+
+                try:
+
+                    dn.RunCMove({'patient_id': patient_id, 'serie_id': series_id, 'destination': dest})
+                
+                except Exception as e:
+                        
+                    wx.MessageBox(str(e), _("Error"), wx.OK | wx.ICON_ERROR)
+                    return
+
+            Publisher.sendMessage("Hide import network panel")
+            Publisher.sendMessage('Import directory', directory=dest, use_gui=False)
 
     def _on_size(self, evt):
 
