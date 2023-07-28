@@ -1679,7 +1679,7 @@ class Viewer(wx.Panel):
         vectors.SetNumberOfComponents(3)
 
         points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
-        vectors.InsertNextTuple3(self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()])
+        vectors.InsertNextTuple3(self.e_field_col1[0], self.e_field_col2[0], self.e_field_col3[0])
 
         dataset = vtkPolyData()
         dataset.SetPoints(points)
@@ -1956,7 +1956,7 @@ class Viewer(wx.Panel):
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
-                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+                self.Idmax = self.Id_list[enorm_data[3].maxindex]
         else:
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
