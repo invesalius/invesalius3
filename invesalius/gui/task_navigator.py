@@ -2837,6 +2837,7 @@ class E_fieldPanel(wx.Panel):
             cortex_model_path=self.cortex_file,
             mesh_models_paths=self.meshes_file,
             coil_model_path=self.coil,
+            coil_set = False,
             conductivities_inside=self.ci,
             conductivities_outside=self.co,
         )
@@ -2896,13 +2897,18 @@ class E_fieldPanel(wx.Panel):
     def OnComboCoil(self, evt):
         coil_name = evt.GetString()
         coil_index = evt.GetSelection()
-        self.OnChangeCoil(self.multilocus_coil[coil_index])
+        if coil_index==5:
+            coil_set  = True
+        else:
+            coil_set = False
+        self.OnChangeCoil(self.multilocus_coil[coil_index], coil_set)
         #self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         #Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnChangeCoil(self, coil_model_path):
+    def OnChangeCoil(self, coil_model_path, coil_set):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path,
+            coil_set= coil_set
         )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):

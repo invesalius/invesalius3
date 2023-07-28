@@ -1679,7 +1679,7 @@ class Viewer(wx.Panel):
         vectors.SetNumberOfComponents(3)
 
         points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
-        vectors.InsertNextTuple3(self.e_field_col1[0], self.e_field_col2[0], self.e_field_col3[0])
+        vectors.InsertNextTuple3(self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2])
 
         dataset = vtkPolyData()
         dataset.SetPoints(points)
@@ -1883,7 +1883,7 @@ class Viewer(wx.Panel):
             if self.vectorfield_actor is not None:
                 self.ren.RemoveActor(self.vectorfield_actor)
             if self.plot_vector:
-                wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
+                wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
                     self.plot_vector= False
@@ -1938,6 +1938,9 @@ class Viewer(wx.Panel):
 
 
     def GetEnorm(self, enorm_data, plot_vector):
+        self.e_field_col1=[]
+        self.e_field_col2=[]
+        self.e_field_col3=[]
         session = ses.Session()
         self.plot_vector = plot_vector
         self.coil_position_Trot = enorm_data[0]
@@ -1956,6 +1959,7 @@ class Viewer(wx.Panel):
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
+                self.max_efield_array = enorm_data[3].mvector
                 self.Idmax = self.Id_list[enorm_data[3].maxindex]
         else:
             self.e_field_norms = enorm_data[3]
