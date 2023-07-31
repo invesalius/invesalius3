@@ -314,8 +314,6 @@ class InnerFoldPanel(wx.Panel):
         sizer.Add(line_sizer, 1, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
 
-        self.track_obj = False
-
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
@@ -341,11 +339,8 @@ class InnerFoldPanel(wx.Panel):
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
             self.checkbox_serial_port.Enable(False)
-            self.checkobj.Enable(False)
         else:
             self.checkbox_serial_port.Enable(True)
-            if self.track_obj:
-                self.checkobj.Enable(True)
 
     def OnEnableSerialPort(self, evt, ctrl):
         if ctrl.GetValue():
@@ -367,7 +362,6 @@ class InnerFoldPanel(wx.Panel):
 
     def CheckShowCoil(self, checked=False):
         self.checkobj.SetValue(checked)
-        self.track_obj = checked
 
         self.OnShowCoil()
 
@@ -1158,9 +1152,6 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def EnableTrackObjectCheckbox(self, enabled):
         self.checkbox_track_object.Enable(enabled)
-        if enabled:
-            checked = self.checkbox_track_object.IsChecked()
-            Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
 
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.SetValue(checked)

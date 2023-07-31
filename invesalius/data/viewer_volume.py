@@ -2164,7 +2164,7 @@ class Viewer(wx.Panel):
         if self.dummy_coil_actor is not None:
             self.dummy_coil_actor.SetVisibility(self.show_object)
 
-        if self.obj_actor and not self.show_object:
+        if self.obj_actor:
             self.obj_actor.SetVisibility(self.show_object)
             self.x_actor.SetVisibility(self.show_object)
             self.y_actor.SetVisibility(self.show_object)
