@@ -2897,7 +2897,7 @@ class E_fieldPanel(wx.Panel):
     def OnComboCoil(self, evt):
         coil_name = evt.GetString()
         coil_index = evt.GetSelection()
-        if coil_index==5:
+        if coil_index==6:
             coil_set  = True
         else:
             coil_set = False
