@@ -1793,8 +1793,8 @@ class Viewer(wx.Panel):
         self.e_field_norms = e_field_norms
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
-        self.min = min
-        self.max = max*const.EFIELD_MAX_RANGE_SCALE
+        self.efield_min = min
+        self.efield_max = max*const.EFIELD_MAX_RANGE_SCALE
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
@@ -1864,7 +1864,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if len(self.Id_list) !=0:
-            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
+            self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
             for h in range(len(self.Id_list)):
