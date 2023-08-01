@@ -435,8 +435,8 @@ class MandibleCTSegmentProcess(SegmentProcess):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
-        patch_size=48,
-        threshold=200,
+        patch_size=96,
+        threshold=150,
         resize_by_spacing=True,
         image_spacing=(1.0, 1.0, 1.0),
     ):
@@ -461,7 +461,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
         self.torch_weights_file_name = 'mandible_jit_ct.pt'
         self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
         self.torch_weights_hash = (
-            "1ce5dd7c889dd5f2c29fc000bf16ebef3e134e29670e0fed75afa39d66541f5b"
+            "a9988c64b5f04dfbb6d058b95b737ed801f1a89d1cc828cd3e5d76d81979a724"
         )
 
     def _run_segmentation(self):
