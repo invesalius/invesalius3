@@ -317,9 +317,27 @@ class Brain:
 
         return self.currentPeelActor
 
-class E_field_brain:
-    def __init__(self, e_field_mesh):
-        self.GetEfieldActor(e_field_mesh)
+from invesalius.utils import Singleton
+class E_field_brain(metaclass=Singleton):
+    def __init__(self):
+        self.path_meshes = None
+        self.cortex_file = None
+        self.meshes_file = None
+        self.ci = None
+        self.co = None
+        self.coil = None
+        self.e_field_mesh_normals = None
+        self.e_field_mesh_centers = None
+
+        self.locator_efield_Cell = None
+        self.locator_efield = None
+
+        self.e_field_mesh = None
+
+        self.efield_mapper = None
+    def __bind_events(self):
+        Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
+        Publisher.subscribe(self.GetEfieldActor, 'Send Efield Actor')
 
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtkFloatArray()
@@ -339,6 +357,16 @@ class E_field_brain:
 
         self.efield_mapper = vtkPolyDataMapper()
         #self.lut = CreateLUTTableForEfield(0, 0.005)
+
+    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
+        self.path_meshes = path_meshes
+        self.cortex_file = cortex_file
+        self.meshes_file = meshes_file
+        self.ci = ci
+        self.co = co
+        self.coil = coil
+
+
 
 def GetCenters(mesh):
         # Compute centers of triangles

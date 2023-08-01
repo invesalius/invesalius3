@@ -2818,7 +2818,7 @@ class E_fieldPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
-        Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
+        #Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
         Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
         Publisher.subscribe(self.SendNeuronavigationApi, 'Send Neuronavigation Api')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
@@ -2829,8 +2829,20 @@ class E_fieldPanel(wx.Panel):
             convert_to_inv = dlg.ImportMeshCoordSystem()
             Publisher.sendMessage('Update status in GUI', value=50, label="Loading E-field...")
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
+            self.e_field_brain = brain.E_field_brain()
             Publisher.sendMessage('Read json config file for efield', filename=filename, convert_to_inv=convert_to_inv)
+            Publisher.sendMessage('Send Efield Actor', mesh = self.e_field_mesh)
+            self.path_meshes = self.e_field_brain.path_meshes
+            self.cortex_file = self.e_field_brain.cortex_file
+            self.meshes_file = self.e_field_brain.meshes_file
+            self.ci = self.e_field_brain.ci
+            self.co = self.e_field_brain.co
+            self.coil =self.e_field_brain.coil
+            print(self.path_meshes)
+            print(self.e_field_brain.path_meshes)
+
             self.Init_efield()
+
 
     def Init_efield(self):
         self.navigation.neuronavigation_api.initialize_efield(
@@ -2863,7 +2875,6 @@ class E_fieldPanel(wx.Panel):
                     self.enable_efield.Enable(False)
                     self.e_field_loaded = False
                     return
-            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
 
             Publisher.sendMessage('Initialize color array')
@@ -2929,13 +2940,13 @@ class E_fieldPanel(wx.Panel):
         self.surface_index= surface_index_cortex
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
-        self.path_meshes = path_meshes
-        self.cortex_file = cortex_file
-        self.meshes_file = meshes_file
-        self.ci = ci
-        self.co = co
-        self.coil = coil
+    # def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
+    #     self.path_meshes = path_meshes
+    #     self.cortex_file = cortex_file
+    #     self.meshes_file = meshes_file
+    #     self.ci = ci
+    #     self.co = co
+    #     self.coil = coil
 
     def OnGetMultilocusCoils(self, multilocus_coil_list):
         self.multilocus_coil = multilocus_coil_list
