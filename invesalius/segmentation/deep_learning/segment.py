@@ -147,7 +147,8 @@ def segment_torch_jit(
     comm_array,
     patch_size,
     resize_by_spacing=True,
-    image_spacing=(1.0, 1.0, 1.0)
+    image_spacing=(1.0, 1.0, 1.0),
+    needed_spacing=(0.5, 0.5, 0.5)
 ):
     import torch
     from .model import WrapModel
@@ -156,7 +157,7 @@ def segment_torch_jit(
 
     if resize_by_spacing:
         old_shape = image.shape
-        new_shape = [round(i * j/0.5) for (i, j) in zip(old_shape, image_spacing)]
+        new_shape = [round(i * j/k) for (i, j, k) in zip(old_shape, image_spacing[::-1], needed_spacing[::-1])]
 
         image = resize(image, output_shape=new_shape, order=0, preserve_range=True)
         original_probability_array = probability_array
@@ -437,7 +438,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
         patch_size=48,
         threshold=200,
         resize_by_spacing=True,
-        image_spacing=(1.0, 1.0, 1.0)
+        image_spacing=(1.0, 1.0, 1.0),
     ):
         super().__init__(
             image,
@@ -455,6 +456,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
         self.threshold = threshold
         self.resize_by_spacing = resize_by_spacing
         self.image_spacing = image_spacing
+        self.needed_spacing = (0.5, 0.5, 0.5)
 
         self.torch_weights_file_name = 'mandible_jit_ct.pt'
         self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
@@ -519,6 +521,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 self.patch_size,
                 resize_by_spacing=self.resize_by_spacing,
                 image_spacing=self.image_spacing,
+                needed_spacing=self.needed_spacing
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
