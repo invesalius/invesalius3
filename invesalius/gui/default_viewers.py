@@ -390,7 +390,9 @@ class VolumeToolPanel(wx.Panel):
 
         self.navigation_status = False
 
+        # Conditions for enabling Target button:
         self.target_selected = False
+        self.track_obj = False
 
         sizer.Fit(self)
 
@@ -415,6 +417,7 @@ class VolumeToolPanel(wx.Panel):
 
         # Conditions for enabling target button:
         Publisher.subscribe(self.TargetSelected, 'Target selected')
+        Publisher.subscribe(self.TrackObject, 'Track object')
 
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -445,6 +448,10 @@ class VolumeToolPanel(wx.Panel):
         self.target_selected = status
         self.UpdateTargetButton()
 
+    def TrackObject(self, enabled):
+        self.track_obj = enabled
+        self.UpdateTargetButton()
+
     def ShowTargetButton(self):
         self.button_target.Show()
 
@@ -456,7 +463,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_target._SetState(0)
 
     def UpdateTargetButton(self):
-        if self.target_selected:
+        if self.target_selected and self.track_obj:
             self.button_target.Enable(1)
         else:
             self.DisableTargetMode()
