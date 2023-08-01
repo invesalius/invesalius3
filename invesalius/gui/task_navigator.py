@@ -774,6 +774,16 @@ class TrackerPage(wx.Panel):
             
 
         self.bg_bmp = getBitMapForBackground()
+        RED_COLOR = (255, 82, 82)
+        self.RED_COLOR = RED_COLOR
+        GREEN_COLOR = (118, 255, 3)
+        self.GREEN_COLOR = GREEN_COLOR
+        YELLOW_COLOR = (255, 196, 0)
+        self.YELLOW_COLOR = YELLOW_COLOR
+
+        TEXT_COLOR = (250, 250, 250)
+        self.TEXT_COLOR = TEXT_COLOR
+
         # Toggle buttons for image fiducials
         background = wx.StaticBitmap(self, -1, self.bg_bmp, (0, 0))
         for n, fiducial in enumerate(const.TRACKER_FIDUCIALS):
@@ -781,11 +791,21 @@ class TrackerPage(wx.Panel):
             label = fiducial['label']
             tip = fiducial['tip']
 
-            ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
+            # ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
+            # ctrl.SetToolTip(wx.ToolTip(tip))
+            # ctrl.SetBackgroundColour((255, 0, 0))
+            # ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
+            # ctrl.SetValue(self.tracker.IsTrackerFiducialSet(n))
+            # ctrl.Disable()
+            w, h = wx.ScreenDC().GetTextExtent("M"*len(label))
+            ctrl = wx.StaticText(self, button_id, label=label, style=wx.TE_READONLY | wx.BORDER_NONE | wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL, size=(55, h+5))
             ctrl.SetToolTip(wx.ToolTip(tip))
-            ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
-            ctrl.SetValue(self.tracker.IsTrackerFiducialSet(n))
-            ctrl.Disable()
+            if self.tracker.IsTrackerFiducialSet(n):
+                ctrl.SetBackgroundColour(GREEN_COLOR)
+            else:
+                ctrl.SetBackgroundColour(RED_COLOR)
+            #ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
+
 
             self.btns_set_fiducial[n] = ctrl
 
@@ -797,6 +817,11 @@ class TrackerPage(wx.Panel):
                     )
                 self.numctrls_fiducial[m][n].Hide()
         
+        register_button = wx.Button(self, label="Record Fiducial")
+        register_button.Bind(wx.EVT_BUTTON, partial(self.OnRegister, ctrl=register_button))
+        register_button.Disable()
+        self.register_button = register_button
+
         start_button = wx.ToggleButton(self, label="Start Patient Registration")
         start_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStartRegistration, ctrl=start_button))
         self.start_button = start_button
@@ -829,18 +854,18 @@ class TrackerPage(wx.Panel):
         
         self.main_label = main_label
 
-        middle_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        middle_sizer.AddMany([
-            (current_label),
-            (main_label)
-        ])
-
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         top_sizer.AddMany([
             (start_button),
             (reset_button)
             ])
 
+        middle_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        middle_sizer.AddMany([
+            (current_label),
+            (main_label)
+        ])
+        
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sizer.AddMany([
             (back_button, 0, wx.EXPAND),
@@ -853,15 +878,19 @@ class TrackerPage(wx.Panel):
         sizer.Add(self.btns_set_fiducial[2], wx.GBPosition(0, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_HORIZONTAL)
         sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add(background, wx.GBPosition(1, 2))
+        sizer.Add(register_button, wx.GBPosition(2, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
             (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10), 
             (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5),
-            (middle_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5),
-            (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 20)])
+            (middle_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP, 20),
+            (5, 5),
+            (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 20)])
+        
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
+        self.Layout()
         self.__bind_events()
 
     def __bind_events(self):
@@ -870,6 +899,16 @@ class TrackerPage(wx.Panel):
         Publisher.subscribe(self.OnNextDisable, "Next disable for tracker fiducials")
         Publisher.subscribe(self.OnTrackerChanged, "Tracker changed")
         Publisher.subscribe(self.OnResetTrackerFiducials, "Reset tracker fiducials")
+
+    def LabelHandler(self, ctrl, n=None):
+        if self.tracker.IsTrackerFiducialSet(n):
+            ctrl.SetBackgroundColour(self.GREEN_COLOR)
+        elif n == self.tracker_fiducial_being_set:
+            ctrl.SetBackgroundColour(self.YELLOW_COLOR)
+        else:
+            ctrl.SetBackgroundColour(self.RED_COLOR)
+
+        ctrl.Refresh()
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -895,16 +934,19 @@ class TrackerPage(wx.Panel):
         self.ResetICP()
         if self.tracker.AreTrackerFiducialsSet():
             self.OnNextEnable()
+            self.OnRegisterDisable()
         else:
             self.OnNextDisable()
+            self.OnRegisterEnable()
         #self.tracker.UpdateUI(self.select_tracker_elem, self.numctrls_fiducial, self.txtctrl_fre)
 
     def set_fiducial_callback(self, state, index=None):
         if state:
             if index is None:
-                fiducial_name = const.TRACKER_FIDUCIALS[self.tracker_fiducial_being_set]['fiducial_name']
+                index = self.tracker_fiducial_being_set
+                fiducial_name = const.TRACKER_FIDUCIALS[index]['fiducial_name']
                 Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
-                self.btns_set_fiducial[self.tracker_fiducial_being_set].SetValue(self.tracker.IsTrackerFiducialSet(self.tracker_fiducial_being_set))
+                self.LabelHandler(self.btns_set_fiducial[index], index)                    
             else:
                 fiducial_name = const.TRACKER_FIDUCIALS[index]['fiducial_name']
                 Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
@@ -915,16 +957,31 @@ class TrackerPage(wx.Panel):
 
             if self.neuronavigation_api is not None:
                 self.neuronavigation_api.remove_pedal_callback(name='fiducial')
+            
+            self.tracker_fiducial_being_set = None
         else:
             for n in [0, 1, 2]:
                 if not self.tracker.IsTrackerFiducialSet(n):
                     self.tracker_fiducial_being_set = n
+                    self.LabelHandler(self.btns_set_fiducial[n], n)
                     break
+            else:
+                self.tracker_fiducial_being_set = None
 
     def OnTrackerFiducials(self, evt, i, ctrl):
         value = ctrl.GetValue()
         self.set_fiducial_callback(True, index=i)
         self.btns_set_fiducial[i].SetValue(self.tracker.IsTrackerFiducialSet(i))
+        if self.tracker.AreTrackerFiducialsSet():
+            if self.start_button.GetValue():
+                self.start_button.SetValue(False)
+                self.OnStartRegistration(self.start_button, self.start_button)
+
+    def OnRegister(self, evt, ctrl):
+        self.set_fiducial_callback(True)
+        if self.tracker.AreTrackerFiducialsSet():
+            if self.start_button.GetValue():
+                self.start_button.SetValue(False)
 
     def ResetICP(self):
         self.icp.ResetICP()
@@ -933,12 +990,14 @@ class TrackerPage(wx.Panel):
 
     def OnReset(self, evt, ctrl):
         self.tracker.ResetTrackerFiducials()
+        self.OnResetTrackerFiducials()
 
     def OnResetTrackerFiducials(self):
-        self.tracker_fiducial_being_set = 0
+        self.tracker_fiducial_being_set = None
         self.OnNextDisable()
-        for button in self.btns_set_fiducial:
-                button.SetValue(False)
+        self.OnRegisterDisable()
+        for i, button in enumerate(self.btns_set_fiducial):
+            self.LabelHandler(button, i)
         self.start_button.SetValue(False)
         self.OnStartRegistration(self.start_button, self.start_button)
 
@@ -951,6 +1010,12 @@ class TrackerPage(wx.Panel):
     def OnPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu")
 
+    def OnRegisterEnable(self):
+        self.register_button.Enable()
+
+    def OnRegisterDisable(self):
+        self.register_button.Disable()
+
     def OnNextEnable(self):
         self.next_button.Enable()
 
@@ -959,10 +1024,11 @@ class TrackerPage(wx.Panel):
 
     def OnStartRegistration(self, evt, ctrl):
         value = ctrl.GetValue()
-        if not value:
-            for button in self.btns_set_fiducial:
-                button.Disable()
-        else:
+        for n in [0, 1, 2]:
+            if not self.tracker.IsTrackerFiducialSet(n):
+                self.tracker_fiducial_being_set = n
+                break
+        if value:
             if not self.tracker.IsTrackerInitialized():
                 print(self.tracker.tracker_connection, self.tracker.tracker_id)
                 self.start_button.SetValue(False)
@@ -981,9 +1047,13 @@ class TrackerPage(wx.Panel):
                         callback=self.set_fiducial_callback,
                         remove_when_released=False,
                     )
-                for button in self.btns_set_fiducial:
-                    button.Enable()
-    
+                # for button in self.btns_set_fiducial:
+                #     button.Enable()
+                if self.tracker_fiducial_being_set < 3:
+                    self.LabelHandler(self.btns_set_fiducial[self.tracker_fiducial_being_set], self.tracker_fiducial_being_set)
+                if not self.tracker.AreTrackerFiducialsSet():
+                    self.OnRegisterEnable()
+
     def OnTrackerChanged(self):
         if self.tracker.GetTrackerId() != const.DEFAULT_TRACKER:
             self.main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
