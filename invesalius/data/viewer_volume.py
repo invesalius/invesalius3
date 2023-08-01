@@ -1740,7 +1740,7 @@ class Viewer(wx.Panel):
         if len(self.Id_list)>0:
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
-                e_field_vectors =[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+                e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
             else:
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
@@ -1794,7 +1794,7 @@ class Viewer(wx.Panel):
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
         self.efield_min = min
-        self.efield_max = max*const.EFIELD_MAX_RANGE_SCALE
+        self.efield_max = max
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
@@ -1981,7 +1981,7 @@ class Viewer(wx.Panel):
                  )
             efield_coords_position = [list(position_world), list(orientation_world)]
         if plot_efield_vectors:
-            e_field_vectors = [list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+            e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
             all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors])
 
         else:
