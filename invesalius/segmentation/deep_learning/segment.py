@@ -283,7 +283,7 @@ class SegmentProcess(ctx.Process):
             folder = inv_paths.MODELS_DIR.joinpath(
                 self.torch_weights_file_name.split(".")[0]
             )
-            system_state_dict_file = folder.joinpath("brain_mri_t1.pt")
+            system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
             user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
                 self.torch_weights_file_name
             )
@@ -490,10 +490,16 @@ class MandibleCTSegmentProcess(SegmentProcess):
         if self.backend.lower() == "pytorch":
             if not self.torch_weights_file_name:
                 raise FileNotFoundError("Weights file not specified.")
+            folder = inv_paths.MODELS_DIR.joinpath(
+                self.torch_weights_file_name.split(".")[0]
+            )
+            system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
             user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
                 self.torch_weights_file_name
             )
-            if user_state_dict_file.exists():
+            if system_state_dict_file.exists():
+                weights_file = system_state_dict_file
+            elif user_state_dict_file.exists():
                 weights_file = user_state_dict_file
             else:
                 download_url_to_file(
