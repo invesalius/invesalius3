@@ -322,6 +322,7 @@ class E_field_brain(metaclass=Singleton):
     def __init__(self, mesh,path_meshes, cortex_file, meshes_file, coil, ci, co):
         self.GetEfieldActor(mesh)
         self.OnGetEfieldPaths(path_meshes, cortex_file, meshes_file, coil, ci, co)
+
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtkFloatArray()
         self.e_field_mesh_centers = vtkFloatArray()
