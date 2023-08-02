@@ -148,7 +148,8 @@ def segment_torch_jit(
     patch_size,
     resize_by_spacing=True,
     image_spacing=(1.0, 1.0, 1.0),
-    needed_spacing=(0.5, 0.5, 0.5)
+    needed_spacing=(0.5, 0.5, 0.5),
+    flipped=False,
 ):
     import torch
     from .model import WrapModel
@@ -186,9 +187,13 @@ def segment_torch_jit(
         sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
+    
+    #FIX: to remove
+    if flipped:
+        probability_array = np.flip(probability_array,2)
+
     if resize_by_spacing:
         original_probability_array[:] = resize(probability_array, output_shape=old_shape, preserve_range=True)
-
     comm_array[0] = np.Inf
 
 
@@ -593,6 +598,11 @@ class ImplantCTSegmentProcess(SegmentProcess):
         #    self.window_width = 4000
         #    image = imagedata_utils.get_LUT_value(image, self.window_width,\
         #        self.window_level)
+
+        #FIX: to remove
+        image = np.flip(image,2)
+
+        #FIX: To improve
         image = imagedata_utils.get_LUT_value_normalized(image, 700, 4000)
 
         probability_array = np.memmap(
@@ -637,7 +647,8 @@ class ImplantCTSegmentProcess(SegmentProcess):
                 self.patch_size,
                 resize_by_spacing=self.resize_by_spacing,
                 image_spacing=self.image_spacing,
-                needed_spacing=self.needed_spacing
+                needed_spacing=self.needed_spacing,
+                flipped=True,
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)

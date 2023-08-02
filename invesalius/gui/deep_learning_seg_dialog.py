@@ -535,12 +535,22 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         self.chk_apply_resize_by_spacing = wx.CheckBox(self, wx.ID_ANY, _("Resize by spacing"))
         self.chk_apply_resize_by_spacing.SetValue(True)
 
+        self.patch_txt = wx.StaticText(self,label="Patch size:")
+
+        patch_size = ["96", "160", "192", "240"] 
+        self.patch_cmb = wx.ComboBox(self, choices=patch_size,value="192",style=wx.CB_READONLY) 
+
+        self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5) 
+        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5) 
+
         self.Layout()
         self.Centre()
 
     def _do_layout(self):
         super()._do_layout()
         self.main_sizer.Insert(8, self.chk_apply_resize_by_spacing, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Insert(9, self.path_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
     def OnSegment(self, evt):
         self.ShowProgress()
@@ -575,6 +585,8 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
 
         overlap = self.overlap_options[self.overlap.GetSelection()]
 
+        patch_size = int(self.patch_cmb.GetValue())
+
         try:
             self.ps = self.segmenter(
                 image,
@@ -586,6 +598,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
                 apply_wwwl,
                 window_width,
                 window_level,
+                patch_size=patch_size,
                 resize_by_spacing=resize_by_spacing,
                 image_spacing=slc.Slice().spacing
             )
