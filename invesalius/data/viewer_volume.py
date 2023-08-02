@@ -225,6 +225,7 @@ class Viewer(wx.Panel):
         self.added_actor = 0
 
         self.camera_state = const.CAM_MODE
+        self.camera_show_object = None
 
         self.nav_status = False
 
@@ -232,7 +233,7 @@ class Viewer(wx.Panel):
         self.obj_actor = None
         self.obj_axes = None
         self.obj_name = False
-        self.show_object = None
+        self.show_object = False
         self.obj_actor_list = None
         self.arrow_actor_list = None
         self.pTarget = [0., 0., 0.]
@@ -1027,6 +1028,7 @@ class Viewer(wx.Panel):
 
         else:
             self.DisableCoilTracker()
+            self.camera_show_object = None
             if self.actor_peel:
                 if self.object_orientation_torus_actor:
                     self.object_orientation_torus_actor.SetVisibility(1)
@@ -1262,7 +1264,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
-        self.dummy_coil_actor.SetVisibility(1)
+        self.dummy_coil_actor.SetVisibility(self.show_object)
         self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)
@@ -2074,6 +2076,7 @@ class Viewer(wx.Panel):
                 #self.z_actor.SetVisibility(self.show_object)
                 #self.object_orientation_torus_actor.SetVisibility(self.show_object)
                 #self.obj_projection_arrow_actor.SetVisibility(self.show_object)
+        self.camera_show_object = None
         self.UpdateRender()
 
     def UpdateSeedOffset(self, data):
@@ -2161,8 +2164,10 @@ class Viewer(wx.Panel):
 
     def ShowObject(self, checked):
         self.show_object = checked
+        if self.dummy_coil_actor is not None:
+            self.dummy_coil_actor.SetVisibility(self.show_object)
 
-        if self.obj_actor and not self.show_object:
+        if self.obj_actor:
             self.obj_actor.SetVisibility(self.show_object)
             self.x_actor.SetVisibility(self.show_object)
             self.y_actor.SetVisibility(self.show_object)
@@ -2283,6 +2288,7 @@ class Viewer(wx.Panel):
 
     def SetVolumeCameraState(self, camera_state):
         self.camera_state = camera_state
+        self.camera_show_object = None
 
     # def SetVolumeCamera(self, arg, position):
     def SetVolumeCamera(self, cam_focus):
@@ -2300,7 +2306,10 @@ class Viewer(wx.Panel):
             v0 = cam_pos0 - cam_focus0
             v0n = np.sqrt(inner1d(v0, v0))
 
-            if self.show_object:
+            if self.camera_show_object is None:
+                self.camera_show_object = self.show_object
+
+            if self.camera_show_object:
                 v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])
             else:
                 v1 = cam_focus - self.initial_focus
