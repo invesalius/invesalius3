@@ -1954,6 +1954,7 @@ class Viewer(wx.Panel):
                 self.e_field_col2 = enorm_data[3][:,2]
                 self.e_field_col3 = enorm_data[3][:,3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms[self.Id_list]).argmax()])
+                self.max_efield_array = [self.e_field_col1[self.Idmax],self.e_field_col2[self.Idmax],self.e_field_col3[self.Idmax] ]
             else:
                 self.e_field_norms = enorm_data[3].enorm
                 self.e_field_col1 = enorm_data[3].column1
