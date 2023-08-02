@@ -153,12 +153,15 @@ def segment_torch_jit(
     import torch
     from .model import WrapModel
 
-    print(f'\n\n\n{image_spacing}\n\n\n')
+    print(image.shape)
+    print(image_spacing[::-1])
+    print(needed_spacing)
+    print("PATCH_SZIE",patch_size)
 
     if resize_by_spacing:
         old_shape = image.shape
         new_shape = [round(i * j/k) for (i, j, k) in zip(old_shape, image_spacing[::-1], needed_spacing[::-1])]
-
+        print(new_shape)
         image = resize(image, output_shape=new_shape, order=0, preserve_range=True)
         original_probability_array = probability_array
         probability_array = np.zeros_like(image)
@@ -533,3 +536,117 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 comm_array,
                 self.patch_size
             )
+
+class ImplantCTSegmentProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=4000,
+        window_level=700,
+        patch_size=192,
+        threshold=150,
+        resize_by_spacing=True,
+        image_spacing=(1.0, 1.0, 1.0),
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size
+        )
+
+        self.threshold = threshold
+        self.resize_by_spacing = resize_by_spacing
+        self.image_spacing = image_spacing
+        self.needed_spacing = (1.0, 1.0, 1.0)
+
+        self.torch_weights_file_name = 'implant_jit_ct.pt'
+        self.torch_weights_url = ""
+        self.torch_weights_hash = (
+            ""
+        )
+
+    def _run_segmentation(self):
+        image = np.memmap(
+            self._image_filename,
+            dtype=self._image_dtype,
+            shape=self._image_shape,
+            mode="r",
+        )
+
+        #if self.apply_wwwl:
+        #    print("Vai aplicar......................")
+        #    print(self.window_level, self.window_width)
+        #    self.window_level = 700
+        #    self.window_width = 4000
+        #    image = imagedata_utils.get_LUT_value(image, self.window_width,\
+        #        self.window_level)
+        image = imagedata_utils.get_LUT_value_normalized(image, 700, 4000)
+
+        probability_array = np.memmap(
+            self._prob_array_filename,
+            dtype=np.float32,
+            shape=self._image_shape,
+            mode="r+",
+        )
+        comm_array = np.memmap(
+            self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+        )
+
+        if self.backend.lower() == "pytorch":
+            if not self.torch_weights_file_name:
+                raise FileNotFoundError("Weights file not specified.")
+            folder = inv_paths.MODELS_DIR.joinpath(
+                self.torch_weights_file_name.split(".")[0]
+            )
+            system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
+                self.torch_weights_file_name
+            )
+            if system_state_dict_file.exists():
+                weights_file = system_state_dict_file
+            elif user_state_dict_file.exists():
+                weights_file = user_state_dict_file
+            else:
+                download_url_to_file(
+                    self.torch_weights_url,
+                    user_state_dict_file,
+                    self.torch_weights_hash,
+                    download_callback(comm_array),
+                )
+                weights_file = user_state_dict_file
+            segment_torch_jit(
+                image,
+                weights_file,
+                self.overlap,
+                self.device_id,
+                probability_array,
+                comm_array,
+                self.patch_size,
+                resize_by_spacing=self.resize_by_spacing,
+                image_spacing=self.image_spacing,
+                needed_spacing=self.needed_spacing
+            )
+        else:
+            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
+            segment_keras(
+                image,
+                self.keras_weight_file,
+                self.overlap,
+                probability_array,
+                comm_array,
+                self.patch_size
+            )
+

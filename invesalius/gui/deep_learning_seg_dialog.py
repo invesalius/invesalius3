@@ -516,3 +516,93 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
     def OnStop(self, evt):
         super().OnStop(evt)
         self.chk_apply_resize_by_spacing.Enable()
+
+
+class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent):
+        super().__init__(
+            parent=parent,
+            title=_("Implant prediction (CT)"),
+            has_torch=True,
+            has_plaidml=False,
+            has_theano=False,
+            segmenter = segment.ImplantCTSegmentProcess,
+        )
+
+    def _init_gui(self):
+        super()._init_gui()
+
+        self.chk_apply_resize_by_spacing = wx.CheckBox(self, wx.ID_ANY, _("Resize by spacing"))
+        self.chk_apply_resize_by_spacing.SetValue(True)
+
+        self.Layout()
+        self.Centre()
+
+    def _do_layout(self):
+        super()._do_layout()
+        self.main_sizer.Insert(8, self.chk_apply_resize_by_spacing, 0, wx.EXPAND | wx.ALL, 5)
+
+    def OnSegment(self, evt):
+        self.ShowProgress()
+        self.t0 = time.time()
+        self.elapsed_time_timer.Start(1000)
+        image = slc.Slice().matrix
+        backend = self.cb_backends.GetValue()
+        if backend.lower() == "pytorch":
+            try:
+                device_id = self.torch_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+        else:
+            try:
+                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "llvm_cpu.0"
+        apply_wwwl = self.chk_apply_wwwl.GetValue()
+        create_new_mask = self.chk_new_mask.GetValue()
+        use_gpu = self.chk_use_gpu.GetValue()
+        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        resize_by_spacing = self.chk_apply_resize_by_spacing.GetValue()
+
+        self.btn_close.Disable()
+        self.btn_stop.Enable()
+        self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
+        self.chk_apply_resize_by_spacing.Disable()
+
+        window_width = slc.Slice().window_width
+        window_level = slc.Slice().window_level
+
+        overlap = self.overlap_options[self.overlap.GetSelection()]
+
+        try:
+            self.ps = self.segmenter(
+                image,
+                create_new_mask,
+                backend,
+                device_id,
+                use_gpu,
+                overlap,
+                apply_wwwl,
+                window_width,
+                window_level,
+                resize_by_spacing=resize_by_spacing,
+                image_spacing=slc.Slice().spacing
+            )
+            self.ps.start()
+        except (multiprocessing.ProcessError, OSError, ValueError) as err:
+            self.OnStop(None)
+            self.HideProgress()
+            dlg = dialogs.ErrorMessageBox(
+                None,
+                "It was not possible to start brain segmentation because:"
+                + "\n"
+                + str(err),
+                "Brain segmentation error",
+                #  wx.ICON_ERROR | wx.OK,
+            )
+            dlg.ShowModal()
+
+    def OnStop(self, evt):
+        super().OnStop(evt)
+        self.chk_apply_resize_by_spacing.Enable()
