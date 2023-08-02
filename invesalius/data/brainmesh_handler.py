@@ -345,9 +345,9 @@ class E_field_brain(metaclass=Singleton):
         self.path_meshes = path_meshes
         self.cortex_file = cortex_file
         self.meshes_file = meshes_file
+        self.coil = coil
         self.ci = ci
         self.co = co
-        self.coil = coil
 
 
 

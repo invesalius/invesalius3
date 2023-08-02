@@ -2830,9 +2830,7 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Update status in GUI', value=50, label="Loading E-field...")
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Read json config file for efield', filename=filename, convert_to_inv=convert_to_inv)
-            self.e_field_brain = brain.E_field_brain(self.e_field_mesh,self.path_meshes, self.cortex_file,self.meshes_file, self.ci, self.co, self.coil)
-            print(self.path_meshes)
-            print(self.e_field_brain.path_meshes)
+            self.e_field_brain = brain.E_field_brain(self.e_field_mesh, self.path_meshes, self.cortex_file, self.meshes_file, self.coil, self.ci, self.co)
             self.Init_efield()
 
 
