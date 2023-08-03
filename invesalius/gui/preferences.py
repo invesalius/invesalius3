@@ -503,7 +503,10 @@ class TrackerPage(wx.Panel):
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
-        choice_IP.SetSelection(const.DEFAULT_TRACKER)
+        if self.robot.robot_ip is not None:
+            choice_IP.SetSelection(robot_ip_options.index(self.robot.robot_ip))
+        else:
+            choice_IP.SetSelection(0)
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
         self.choice_IP = choice_IP

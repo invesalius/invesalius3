@@ -60,11 +60,11 @@ class Robot(metaclass=Singleton):
             'tracker_to_robot': matrix_tracker_to_robot,
         }
         session = ses.Session()
-        session.SetState('robot', state)
+        session.SetConfig('robot', state)
 
     def LoadState(self):
         session = ses.Session()
-        state = session.GetState('robot')
+        state = session.GetConfig('robot')
 
         if state is None:
             return False
