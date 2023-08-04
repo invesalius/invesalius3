@@ -45,6 +45,7 @@ class Robot(metaclass=Singleton):
 
         success = self.LoadState()
         if success:
+            self.ConnectToRobot()
             self.InitializeRobot()
 
         self.__bind_events()
@@ -57,7 +58,8 @@ class Robot(metaclass=Singleton):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
 
         state = {
-            'tracker_to_robot': matrix_tracker_to_robot,
+            'robot_ip': self.robot_ip,
+            'tracker_to_robot': matrix_tracker_to_robot
         }
         session = ses.Session()
         session.SetConfig('robot', state)
@@ -69,7 +71,9 @@ class Robot(metaclass=Singleton):
         if state is None:
             return False
 
+        self.robot_ip = state['robot_ip']
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
+
         return True
 
     def ConfigureRobot(self):
@@ -129,9 +133,13 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.robot_status
     
+    def ConnectToRobot(self):
+        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+
     def InitializeRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+        wx.MessageBox(_("Connected to Robot!"), _("InVesalius 3"))
 
     def DisconnectRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)
