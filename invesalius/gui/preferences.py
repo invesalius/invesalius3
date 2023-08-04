@@ -45,8 +45,6 @@ class Preferences(wx.Dialog):
         self.book = wx.Notebook(self, -1)
         #self.pnl_viewer2d = Viewer2D(self.book)
         self.pnl_viewer3d = Viewer3D(self.book)
-        self.pnl_tracker = TrackerPage(self.book, tracker, robot)
-        self.pnl_object = ObjectPage(self.book, tracker, pedal_connection, neuronavigation_api)
         #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self.book)
 
@@ -55,6 +53,8 @@ class Preferences(wx.Dialog):
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
+            self.pnl_tracker = TrackerPage(self.book, tracker, robot)
+            self.pnl_object = ObjectPage(self.book, tracker, pedal_connection, neuronavigation_api)
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
@@ -93,7 +93,10 @@ class Preferences(wx.Dialog):
         surface_interpolation = session.GetConfig('surface_interpolation')
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
-        self.pnl_object.LoadState()
+        session = ses.Session()
+        mode = session.GetConfig('mode')
+        if mode == const.MODE_NAVIGATOR:
+            self.pnl_object.LoadState()
 
         values = {
             const.RENDERING: rendering,
@@ -457,7 +460,9 @@ class TrackerPage(wx.Panel):
 
         self.tracker = tracker
         self.robot = robot
-        self.robot_IP = None
+        self.robot_ip = None
+        self.matrix_tracker_to_robot = None
+        self.state = self.LoadState()
 
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select")] + self.tracker.get_trackers()
@@ -517,17 +522,36 @@ class TrackerPage(wx.Panel):
         btn_rob.Bind(wx.EVT_BUTTON, self.OnRobotConnect)
         self.btn_rob = btn_rob
 
+        status_text = wx.StaticText(self, -1, "Status")
+        if self.robot.IsConnected():
+            status_text.SetLabelText("Robot is connected!")
+        else:
+            status_text.SetLabelText("Robot is not connected!")
+        self.status_text = status_text
+
         btn_rob_con = wx.Button(self, -1, _("Register"))
         btn_rob_con.SetToolTip("Register robot tracking")
         btn_rob_con.Enable(1)
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotCon)
+        if self.robot.IsConnected():
+            if self.matrix_tracker_to_robot is None:
+                btn_rob_con.Show()
+            else:
+                btn_rob_con.SetLabel("Register Again")
+                btn_rob_con.Show()
+        else:
+            btn_rob_con.Hide()
         self.btn_rob_con = btn_rob_con
+
+
 
         rob_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=5, vgap=5)
         rob_sizer.AddMany([
             (lbl_rob, 0, wx.LEFT),
             (choice_IP, 1, wx.EXPAND),
             (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
+            (status_text),
+            (0, 0),
             (btn_rob_con, 0, wx.RIGHT)
         ])
 
@@ -544,6 +568,20 @@ class TrackerPage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
+        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
+        Publisher.subscribe(self.OnTransformationMatrix, "Load robot transformation matrix")
+    
+    def LoadState(self):
+        session = ses.Session()
+        state = session.GetConfig('robot')
+
+        if state is None:
+            return False
+
+        self.robot_ip = state['robot_ip']
+        self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
+
+        return True
 
     def OnChooseTracker(self, evt, ctrl):
         self.HideParent()
@@ -564,6 +602,9 @@ class TrackerPage(wx.Panel):
         self.ShowParent()
     
     def OnChooseReferenceMode(self, evt, ctrl):
+        # Probably need to refactor object registration as a whole to use the 
+        # OnChooseReferenceMode function which was used earlier. It can be found in
+        # the deprecated code in ObjectRegistrationPanel in task_navigator.py.
         pass
 
     def HideParent(self):  # hide preferences dialog box
@@ -580,12 +621,12 @@ class TrackerPage(wx.Panel):
     
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None:
-            self.configuration = {
-                'tracker_id': self.tracker.GetTrackerId(),
-                'robot_ip': self.robot_ip,
-                'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
-            }
-            self.connection = self.tracker.tracker_connection
+            # self.configuration = {
+            #     'tracker_id': self.tracker.GetTrackerId(),
+            #     'robot_ip': self.robot_ip,
+            #     'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
+            # }
+            # self.connection = self.tracker.tracker_connection
             Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobot(self, evt):
@@ -599,6 +640,17 @@ class TrackerPage(wx.Panel):
         self.HideParent()
         self.robot.RegisterRobot()
         self.ShowParent()
+    
+    def OnRobotStatus(self, data):
+        if data:
+            self.status_text.SetLabelText("Setup robot transformation matrix:")
+            self.btn_rob_con.Show()
+
+    def OnTransformationMatrix(self, data):
+        if data:
+            self.status_text.SetLabelText("Robot is fully setup!")
+            self.btn_rob_con.SetLabel("Register Again")
+            self.btn_rob_con.Show()
 
 class Language(wx.Panel):
     def __init__(self, parent):
