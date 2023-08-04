@@ -90,6 +90,7 @@ class Tracker(metaclass=Singleton):
         )
 
     def SetTracker(self, tracker_id, configuration=None):
+        Publisher.sendMessage('Begin busy cursor')
         if tracker_id:
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
 
@@ -128,6 +129,8 @@ class Tracker(metaclass=Singleton):
                 self.thread_coord.start()
 
             self.SaveState()
+        Publisher.sendMessage('End busy cursor')
+        
 
     def DisconnectTracker(self):
         if self.tracker_connected:
