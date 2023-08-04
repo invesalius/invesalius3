@@ -601,6 +601,7 @@ class TrackerPage(wx.Panel):
         self.tracker.SetTracker(choice)
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
+        ctrl.SetSelection(self.tracker.tracker_id)
         self.ShowParent()
     
     def OnChooseReferenceMode(self, evt, ctrl):
