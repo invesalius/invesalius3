@@ -133,6 +133,10 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.robot_status
     
+    def SetRobotIP(self, data):
+        if data is not None:
+            self.robot_ip = data
+
     def ConnectToRobot(self):
         Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
 
