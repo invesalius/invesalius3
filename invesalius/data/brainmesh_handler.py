@@ -317,11 +317,9 @@ class Brain:
 
         return self.currentPeelActor
 
-from invesalius.utils import Singleton
-class E_field_brain(metaclass=Singleton):
-    def __init__(self, mesh,path_meshes, cortex_file, meshes_file, coil, ci, co):
+class E_field_brain:
+    def __init__(self, mesh):
         self.GetEfieldActor(mesh)
-        self.OnGetEfieldPaths(path_meshes, cortex_file, meshes_file, coil, ci, co)
 
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtkFloatArray()
@@ -341,15 +339,6 @@ class E_field_brain(metaclass=Singleton):
 
         self.efield_mapper = vtkPolyDataMapper()
         #self.lut = CreateLUTTableForEfield(0, 0.005)
-
-    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
-        self.path_meshes = path_meshes
-        self.cortex_file = cortex_file
-        self.meshes_file = meshes_file
-        self.coil = coil
-        self.ci = ci
-        self.co = co
-
 
 
 def GetCenters(mesh):
