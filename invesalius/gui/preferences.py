@@ -525,6 +525,8 @@ class TrackerPage(wx.Panel):
         status_text = wx.StaticText(self, -1, "Status")
         if self.robot.IsConnected():
             status_text.SetLabelText("Robot is connected!")
+            if self.robot.matrix_tracker_to_robot is not None:
+                status_text.SetLabelText("Robot is fully setup!")
         else:
             status_text.SetLabelText("Robot is not connected!")
         self.status_text = status_text
@@ -550,7 +552,7 @@ class TrackerPage(wx.Panel):
             (lbl_rob, 0, wx.LEFT),
             (choice_IP, 1, wx.EXPAND),
             (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
-            (status_text),
+            (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (0, 0),
             (btn_rob_con, 0, wx.RIGHT)
         ])
@@ -627,6 +629,7 @@ class TrackerPage(wx.Panel):
             #     'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
             # }
             # self.connection = self.tracker.tracker_connection
+            self.robot.SetRobotIP(self.robot_ip)
             Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobot(self, evt):
@@ -651,6 +654,7 @@ class TrackerPage(wx.Panel):
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")
             self.btn_rob_con.Show()
+            self.btn_rob_con.Layout()
 
 class Language(wx.Panel):
     def __init__(self, parent):
