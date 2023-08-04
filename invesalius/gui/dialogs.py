@@ -5769,11 +5769,14 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
-        self.btn_load = btn_load
+        
         if not self.robot.robot_status:
             btn_load.Enable(False)
         else:
-            self.UpdateRobotConnectionStatus(True)
+            self.btn_load.Enable(True)
+            if self.GetAcquiredPoints() >= 3:
+                self.btn_apply_reg.Enable(True)
+        self.btn_load = btn_load
         
 
         # Create a horizontal sizers
