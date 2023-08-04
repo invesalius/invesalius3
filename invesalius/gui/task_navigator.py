@@ -1267,6 +1267,7 @@ class StimulatorPage(wx.Panel):
         self.config_txt.SetLabelText(os.path.basename(self.object_reg[-1]))
         self.lbl.Show()
         self.config_txt.Show()
+        self.next_button.Enable()
     
     def OnEditPreferences(self, evt):
         Publisher.sendMessage('Open preferences menu')
