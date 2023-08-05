@@ -318,8 +318,8 @@ class Brain:
         return self.currentPeelActor
 
 class E_field_brain:
-    def __init__(self, e_field_mesh):
-        self.GetEfieldActor(e_field_mesh)
+    def __init__(self, mesh):
+        self.GetEfieldActor(mesh)
 
     def GetEfieldActor(self, mesh):
         self.e_field_mesh_normals = vtkFloatArray()
@@ -339,6 +339,7 @@ class E_field_brain:
 
         self.efield_mapper = vtkPolyDataMapper()
         #self.lut = CreateLUTTableForEfield(0, 0.005)
+
 
 def GetCenters(mesh):
         # Compute centers of triangles
