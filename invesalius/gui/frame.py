@@ -362,10 +362,11 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def _ShowImportNetwork(self):
-        """
-        Show viewers and task, hide import panel.
-        """
+        """ Show viewers and task, hide import panel. """
+
+        Publisher.sendMessage("Close Project")
         Publisher.sendMessage("Set layout button full")
+
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(1)
         aui_manager.GetPane("Data").Show(0)
