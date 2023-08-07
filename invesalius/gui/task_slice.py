@@ -44,6 +44,7 @@ from invesalius import inv_paths
 
 from invesalius.project import Project
 import invesalius.session as ses
+from invesalius.i18n import tr as _
 
 BTN_NEW = wx.NewId()
 

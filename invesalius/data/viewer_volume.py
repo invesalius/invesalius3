@@ -112,6 +112,7 @@ import invesalius.utils as utils
 
 from invesalius import inv_paths
 from invesalius.math_utils import inner1d
+from invesalius.i18n import tr as _
 
 if sys.platform == 'win32':
     try:

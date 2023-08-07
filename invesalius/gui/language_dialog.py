@@ -27,6 +27,7 @@ except ImportError:
     from wx.combo import BitmapComboBox
 
 import invesalius.i18n as i18n
+from invesalius.i18n import tr as _
 
 file_path = os.path.split(__file__)[0]
 

@@ -33,6 +33,7 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
+from invesalius.i18n import tr as _
 
 FPB_DEFAULT_STYLE = 2621440
 

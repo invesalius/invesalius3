@@ -61,6 +61,7 @@ from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
 
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius_cy import floodfill
+from invesalius.i18n import tr as _
 
 # For tracts
 import invesalius.data.tractography as dtr

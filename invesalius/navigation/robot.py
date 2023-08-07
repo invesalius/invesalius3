@@ -26,6 +26,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 
 # XXX: First steps towards decoupling robot and tracker, which were previously

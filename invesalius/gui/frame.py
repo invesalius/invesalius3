@@ -43,6 +43,7 @@ from invesalius import inv_paths
 from invesalius.gui import project_properties
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon

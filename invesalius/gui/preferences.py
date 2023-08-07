@@ -5,6 +5,7 @@ import invesalius.session as ses
 import wx
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 
 class Preferences(wx.Dialog):

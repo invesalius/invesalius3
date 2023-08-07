@@ -41,6 +41,7 @@ import invesalius.utils as utl
 
 from invesalius import inv_paths
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
+from invesalius.i18n import tr as _
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0

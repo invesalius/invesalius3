@@ -40,8 +40,8 @@ import invesalius.gui.dialogs as dlg
 import wx.lib.mixins.listctrl as listmix
 
 from invesalius import project
-
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
 
 
 BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in range(4)]

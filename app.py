@@ -95,7 +95,6 @@ if session.ReadConfig():
     lang = session.GetConfig('language')
     if lang:
         try:
-            _ = i18n.InstallLanguage(lang)
             LANG = lang
         except FileNotFoundError:
             pass
@@ -151,7 +150,6 @@ class Inv3SplashScreen(SplashScreen):
 
         install_lang = False
         if lang:
-            _ = i18n.InstallLanguage(lang)
             install_lang = True
 
         # If no language is set into session file, show dialog so
@@ -169,7 +167,7 @@ class Inv3SplashScreen(SplashScreen):
                 if ok:
                     lang = dialog.GetSelectedLanguage()
                     session.SetConfig('language', lang)
-                    _ = i18n.InstallLanguage(lang)
+                    i18n.tr.reset()
                 else:
                     homedir = os.path.expanduser('~')
                     config_dir = os.path.join(homedir, ".invesalius")

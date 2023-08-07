@@ -39,6 +39,7 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
 from invesalius.utils import touch
+from invesalius.i18n import tr as _
 
 
 if sys.platform == 'win32':

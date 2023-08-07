@@ -37,6 +37,7 @@ import invesalius.constants as const
 import invesalius.utils as utils
 
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
 
 
 class ProgressDialog(object):
