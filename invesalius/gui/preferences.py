@@ -35,20 +35,16 @@ class Preferences(wx.Dialog):
     ):
         super().__init__(parent, id_, title, style=style)
         tracker = Tracker()
-        robot = Robot(
-            tracker=tracker
-        )
+        robot = Robot()
 
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         neuronavigation_api = NeuronavigationApi()
 
         self.book = wx.Notebook(self, -1)
-        #self.pnl_viewer2d = Viewer2D(self.book)
+
         self.pnl_viewer3d = Viewer3D(self.book)
-        #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self.book)
 
-        #self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
         mode = session.GetConfig('mode')
@@ -80,7 +76,6 @@ class Preferences(wx.Dialog):
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
-        #viewer2d = self.pnl_viewer2d.GetSelection()
         values.update(lang)
         values.update(viewer)
 
@@ -96,7 +91,7 @@ class Preferences(wx.Dialog):
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
-            self.pnl_object.LoadState()
+            self.pnl_object.LoadConfig()
 
         values = {
             const.RENDERING: rendering,
@@ -105,10 +100,8 @@ class Preferences(wx.Dialog):
             const.SLICE_INTERPOLATION: slice_interpolation,
         }
 
-        #self.pnl_viewer2d.LoadSelection(values)
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
-
 
 class Viewer3D(wx.Panel):
     def __init__(self, parent):
@@ -195,7 +188,7 @@ class ObjectPage(wx.Panel):
         self.obj_ref_mode = None
         self.obj_name = None
         self.timestamp = const.TIMESTAMP
-        self.state = self.LoadState()
+        self.state = self.LoadConfig()
 
         # Button for creating new stimulator
         tooltip = wx.ToolTip(_("Create new stimulator"))
@@ -324,7 +317,7 @@ class ObjectPage(wx.Panel):
     def __bind_events(self):
         pass
 
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig('navigation')
 
@@ -462,7 +455,7 @@ class TrackerPage(wx.Panel):
         self.robot = robot
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
-        self.state = self.LoadState()
+        self.state = self.LoadConfig()
 
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select")] + self.tracker.get_trackers()
@@ -475,7 +468,6 @@ class TrackerPage(wx.Panel):
         self.select_tracker_elem = select_tracker_elem
 
         select_tracker_label = wx.StaticText(self, -1, _('Choose the tracking device: '))
-
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
@@ -534,7 +526,7 @@ class TrackerPage(wx.Panel):
         btn_rob_con = wx.Button(self, -1, _("Register"))
         btn_rob_con.SetToolTip("Register robot tracking")
         btn_rob_con.Enable(1)
-        btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotCon)
+        btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotRegister)
         if self.robot.IsConnected():
             if self.matrix_tracker_to_robot is None:
                 btn_rob_con.Show()
@@ -544,8 +536,6 @@ class TrackerPage(wx.Panel):
         else:
             btn_rob_con.Hide()
         self.btn_rob_con = btn_rob_con
-
-
 
         rob_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=5, vgap=5)
         rob_sizer.AddMany([
@@ -573,7 +563,7 @@ class TrackerPage(wx.Panel):
         Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
         Publisher.subscribe(self.OnTransformationMatrix, "Load robot transformation matrix")
     
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig('robot')
 
@@ -624,23 +614,10 @@ class TrackerPage(wx.Panel):
     
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None:
-            # self.configuration = {
-            #     'tracker_id': self.tracker.GetTrackerId(),
-            #     'robot_ip': self.robot_ip,
-            #     'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
-            # }
-            # self.connection = self.tracker.tracker_connection
             self.robot.SetRobotIP(self.robot_ip)
             Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
 
-    def OnRobot(self, evt):
-        self.HideParent()
-        if self.robot.ConfigureRobot():
-            self.ShowParent()
-        else:
-            self.ShowParent()
-
-    def OnRobotCon(self, evt):
+    def OnRobotRegister(self, evt):
         self.HideParent()
         self.robot.RegisterRobot()
         self.ShowParent()
@@ -691,8 +668,9 @@ class Language(wx.Panel):
         self.cmb_lang.SetSelection(int(selection))
 
 
+'''
+Deprecated code
 
-# Deprecated code
 class SurfaceCreation(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -748,3 +726,4 @@ class Viewer2D(wx.Panel):
         value = values[const.SLICE_INTERPOLATION]
         self.rb_inter.SetSelection(int(value))
 
+'''
