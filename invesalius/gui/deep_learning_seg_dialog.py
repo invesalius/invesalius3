@@ -540,7 +540,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         patch_size = ["48", "96", "160", "192", "240", "288",\
                       "320", "336", "384", "432", "480", "528"] 
         
-        self.patch_cmb = wx.ComboBox(self, choices=patch_size,value="192",style=wx.CB_READONLY) 
+        self.patch_cmb = wx.ComboBox(self, choices=patch_size,value="192") 
 
         self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5) 
