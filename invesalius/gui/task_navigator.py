@@ -314,8 +314,6 @@ class InnerFoldPanel(wx.Panel):
         sizer.Add(line_sizer, 1, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
 
-        self.track_obj = False
-
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
@@ -341,11 +339,8 @@ class InnerFoldPanel(wx.Panel):
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
             self.checkbox_serial_port.Enable(False)
-            self.checkobj.Enable(False)
         else:
             self.checkbox_serial_port.Enable(True)
-            if self.track_obj:
-                self.checkobj.Enable(True)
 
     def OnEnableSerialPort(self, evt, ctrl):
         if ctrl.GetValue():
@@ -367,7 +362,6 @@ class InnerFoldPanel(wx.Panel):
 
     def CheckShowCoil(self, checked=False):
         self.checkobj.SetValue(checked)
-        self.track_obj = checked
 
         self.OnShowCoil()
 
@@ -1158,9 +1152,6 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def EnableTrackObjectCheckbox(self, enabled):
         self.checkbox_track_object.Enable(enabled)
-        if enabled:
-            checked = self.checkbox_track_object.IsChecked()
-            Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
 
     def CheckTrackObjectCheckbox(self, checked):
         self.checkbox_track_object.SetValue(checked)
@@ -2830,13 +2821,16 @@ class E_fieldPanel(wx.Panel):
             Publisher.sendMessage('Update status in GUI', value=50, label="Loading E-field...")
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Read json config file for efield', filename=filename, convert_to_inv=convert_to_inv)
+            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             self.Init_efield()
+
 
     def Init_efield(self):
         self.navigation.neuronavigation_api.initialize_efield(
             cortex_model_path=self.cortex_file,
             mesh_models_paths=self.meshes_file,
             coil_model_path=self.coil,
+            coil_set = False,
             conductivities_inside=self.ci,
             conductivities_outside=self.co,
         )
@@ -2862,7 +2856,6 @@ class E_fieldPanel(wx.Panel):
                     self.enable_efield.Enable(False)
                     self.e_field_loaded = False
                     return
-            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
 
             Publisher.sendMessage('Initialize color array')
@@ -2896,13 +2889,18 @@ class E_fieldPanel(wx.Panel):
     def OnComboCoil(self, evt):
         coil_name = evt.GetString()
         coil_index = evt.GetSelection()
-        self.OnChangeCoil(self.multilocus_coil[coil_index])
+        if coil_index==6:
+            coil_set  = True
+        else:
+            coil_set = False
+        self.OnChangeCoil(self.multilocus_coil[coil_index], coil_set)
         #self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         #Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnChangeCoil(self, coil_model_path):
+    def OnChangeCoil(self, coil_model_path, coil_set):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path,
+            coil_set= coil_set
         )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):

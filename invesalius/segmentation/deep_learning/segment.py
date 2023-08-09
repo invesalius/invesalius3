@@ -140,14 +140,24 @@ def segment_torch(
 
 
 def segment_torch_jit(
-    image, weights_file, overlap, device_id, probability_array, comm_array, patch_size, resize_by_spacing=True
+    image, weights_file,
+    overlap,
+    device_id,
+    probability_array,
+    comm_array,
+    patch_size,
+    resize_by_spacing=True,
+    image_spacing=(1.0, 1.0, 1.0),
+    needed_spacing=(0.5, 0.5, 0.5)
 ):
     import torch
     from .model import WrapModel
 
+    print(f'\n\n\n{image_spacing}\n\n\n')
+
     if resize_by_spacing:
         old_shape = image.shape
-        new_shape = [round(i * j/0.5) for (i, j) in zip(old_shape, slc.Slice().spacing)]
+        new_shape = [round(i * j/k) for (i, j, k) in zip(old_shape, image_spacing[::-1], needed_spacing[::-1])]
 
         image = resize(image, output_shape=new_shape, order=0, preserve_range=True)
         original_probability_array = probability_array
@@ -274,7 +284,7 @@ class SegmentProcess(ctx.Process):
             folder = inv_paths.MODELS_DIR.joinpath(
                 self.torch_weights_file_name.split(".")[0]
             )
-            system_state_dict_file = folder.joinpath("brain_mri_t1.pt")
+            system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
             user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
                 self.torch_weights_file_name
             )
@@ -425,9 +435,10 @@ class MandibleCTSegmentProcess(SegmentProcess):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
-        patch_size=48,
-        threshold=200,
-        resize_by_spacing=True
+        patch_size=96,
+        threshold=150,
+        resize_by_spacing=True,
+        image_spacing=(1.0, 1.0, 1.0),
     ):
         super().__init__(
             image,
@@ -444,11 +455,13 @@ class MandibleCTSegmentProcess(SegmentProcess):
 
         self.threshold = threshold
         self.resize_by_spacing = resize_by_spacing
+        self.image_spacing = image_spacing
+        self.needed_spacing = (0.5, 0.5, 0.5)
 
         self.torch_weights_file_name = 'mandible_jit_ct.pt'
         self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
         self.torch_weights_hash = (
-            "1ce5dd7c889dd5f2c29fc000bf16ebef3e134e29670e0fed75afa39d66541f5b"
+            "a9988c64b5f04dfbb6d058b95b737ed801f1a89d1cc828cd3e5d76d81979a724"
         )
 
     def _run_segmentation(self):
@@ -479,10 +492,16 @@ class MandibleCTSegmentProcess(SegmentProcess):
         if self.backend.lower() == "pytorch":
             if not self.torch_weights_file_name:
                 raise FileNotFoundError("Weights file not specified.")
+            folder = inv_paths.MODELS_DIR.joinpath(
+                self.torch_weights_file_name.split(".")[0]
+            )
+            system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
             user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
                 self.torch_weights_file_name
             )
-            if user_state_dict_file.exists():
+            if system_state_dict_file.exists():
+                weights_file = system_state_dict_file
+            elif user_state_dict_file.exists():
                 weights_file = user_state_dict_file
             else:
                 download_url_to_file(
@@ -500,7 +519,9 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 probability_array,
                 comm_array,
                 self.patch_size,
-                resize_by_spacing=self.resize_by_spacing
+                resize_by_spacing=self.resize_by_spacing,
+                image_spacing=self.image_spacing,
+                needed_spacing=self.needed_spacing
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
