@@ -28,22 +28,20 @@ import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+from invesalius.navigation.tracker import Tracker
 
-
-# XXX: First steps towards decoupling robot and tracker, which were previously
-#   tightly coupled; not fully finished, but whenever possible, robot-related
-#   functionality should be gathered here.
-
+# Only one robot will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
 class Robot(metaclass=Singleton):
-    def __init__(self, tracker):
-        self.tracker = tracker
+    def __init__(self):
+        self.tracker = Tracker()
 
         self.robot_status = None
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
 
-        success = self.LoadState()
+        success = self.LoadConfig()
         if success:
             self.ConnectToRobot()
             self.InitializeRobot()
@@ -54,7 +52,7 @@ class Robot(metaclass=Singleton):
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
         Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
 
-    def SaveState(self):
+    def SaveConfig(self):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
 
         state = {
@@ -64,7 +62,7 @@ class Robot(metaclass=Singleton):
         session = ses.Session()
         session.SetConfig('robot', state)
 
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig('robot')
 
@@ -75,30 +73,6 @@ class Robot(metaclass=Singleton):
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
 
         return True
-
-    def ConfigureRobot(self):
-        if self.tracker.tracker_connection and self.tracker.tracker_connection.IsConnected():
-            select_ip_dialog = dlg.SetRobotIP()
-            status = select_ip_dialog.ShowModal()
-
-            if status == ID_OK:
-                robot_ip = select_ip_dialog.GetValue()
-                self.robot_ip = robot_ip
-                self.configuration = {
-                    'tracker_id': self.tracker.GetTrackerId(),
-                    'robot_ip': robot_ip,
-                    'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
-                }
-                self.connection = self.tracker.tracker_connection
-                Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
-                select_ip_dialog.Destroy()
-                return True
-            else:
-                select_ip_dialog.Destroy()
-                return False
-        else:
-            wx.MessageBox(_("Select Tracker first"), _("InVesalius 3"))
-            return False
         
     def OnRobotStatus(self, data):
         if data:
@@ -123,7 +97,7 @@ class Robot(metaclass=Singleton):
             return False
 
         self.matrix_tracker_to_robot = matrix_tracker_to_robot
-        self.SaveState()
+        self.SaveConfig()
         self.InitializeRobot()
 
     def AbortRobotConfiguration(self):
@@ -139,11 +113,41 @@ class Robot(metaclass=Singleton):
 
     def ConnectToRobot(self):
         Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+        wx.MessageBox(_("Connected to Robot!"), _("InVesalius 3"))
 
     def InitializeRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
-        wx.MessageBox(_("Connected to Robot!"), _("InVesalius 3"))
+        wx.MessageBox(_("Robot Initialized!"), _("InVesalius 3"))
 
     def DisconnectRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)
+
+
+'''
+Deprecated Code
+
+    def ConfigureRobot(self):
+        if self.tracker.tracker_connection and self.tracker.tracker_connection.IsConnected():
+            select_ip_dialog = dlg.SetRobotIP()
+            status = select_ip_dialog.ShowModal()
+
+            if status == ID_OK:
+                robot_ip = select_ip_dialog.GetValue()
+                self.robot_ip = robot_ip
+                self.configuration = {
+                    'tracker_id': self.tracker.GetTrackerId(),
+                    'robot_ip': robot_ip,
+                    'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
+                }
+                self.connection = self.tracker.tracker_connection
+                Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+                select_ip_dialog.Destroy()
+                return True
+            else:
+                select_ip_dialog.Destroy()
+                return False
+        else:
+            wx.MessageBox(_("Select Tracker first"), _("InVesalius 3"))
+            return False
+'''
