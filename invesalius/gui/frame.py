@@ -1987,8 +1987,8 @@ class SliceToolBar(AuiToolBar):
             if state:
                 self.ToggleTool(id, False)
                 if id == const.SLICE_STATE_CROSS:
-                    msg = 'Set cross visibility'
-                    Publisher.sendMessage(msg, visibility=0)
+                    msg = 'Disable style'
+                    Publisher.sendMessage(msg, style=const.SLICE_STATE_CROSS)
         self.Refresh()
 
     def OnToggle(self, evt=None, id=None):

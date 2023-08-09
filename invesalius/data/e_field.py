@@ -80,7 +80,7 @@ class Visualize_E_field_Thread(threading.Thread):
                                 enorm = self.enorm_debug
                             else:
                                 if self.plot_vectors:
-                                    enorm = self.neuronavigation_api.update_efield_vectorROI(position=cp,
+                                    enorm = self.neuronavigation_api.update_efield_vectorROIMax(position=cp,
                                                                                            orientation=coord[3:],
                                                                                            T_rot=T_rot,
                                                                                            id_list=id_list,

@@ -225,6 +225,7 @@ class Viewer(wx.Panel):
         self.added_actor = 0
 
         self.camera_state = const.CAM_MODE
+        self.camera_show_object = None
 
         self.nav_status = False
 
@@ -232,7 +233,7 @@ class Viewer(wx.Panel):
         self.obj_actor = None
         self.obj_axes = None
         self.obj_name = False
-        self.show_object = None
+        self.show_object = False
         self.obj_actor_list = None
         self.arrow_actor_list = None
         self.pTarget = [0., 0., 0.]
@@ -349,8 +350,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
         Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
-        Publisher.subscribe(self._check_ball_reference, 'Enable style')
-        Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
@@ -492,32 +491,30 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def _check_ball_reference(self, style):
-        if style == const.SLICE_STATE_CROSS:
-            self._mode_cross = True
-            # self._check_and_set_ball_visibility()
-            #if not self.actor_peel:
-            self._ball_ref_visibility = True
-            #else:
-            #    self._ball_ref_visibility = False
-            # if self._to_show_ball:
-            if not self.ball_actor: #and not self.actor_peel:
-                self.CreateBallReference()
-                #self.ball_actor.SetVisibility(1)
-            #else:
-             #   self.ball_actor.SetVisibility(0)
-            self.UpdateRender()
+    def check_ball_reference(self):
+        self._mode_cross = True
+        # self._check_and_set_ball_visibility()
+        #if not self.actor_peel:
+        self._ball_ref_visibility = True
+        #else:
+        #    self._ball_ref_visibility = False
+        # if self._to_show_ball:
+        if not self.ball_actor: #and not self.actor_peel:
+            self.CreateBallReference()
+            #self.ball_actor.SetVisibility(1)
+        #else:
+         #   self.ball_actor.SetVisibility(0)
+        self.UpdateRender()
 
-    def _uncheck_ball_reference(self, style):
-        if style == const.SLICE_STATE_CROSS:
-            self._mode_cross = False
-            # self.RemoveBallReference()
-            self._ball_ref_visibility = True
-            if self.ball_actor:
-                self.ren.RemoveActor(self.ball_actor)
-                self.ball_actor = None
+    def uncheck_ball_reference(self):
+        self._mode_cross = False
+        # self.RemoveBallReference()
+        self._ball_ref_visibility = True
+        if self.ball_actor:
+            self.ren.RemoveActor(self.ball_actor)
+            self.ball_actor = None
 
-            self.UpdateRender()
+        self.UpdateRender()
     
     
     def OnSensors(self, markers_flag):
@@ -1031,6 +1028,7 @@ class Viewer(wx.Panel):
 
         else:
             self.DisableCoilTracker()
+            self.camera_show_object = None
             if self.actor_peel:
                 if self.object_orientation_torus_actor:
                     self.object_orientation_torus_actor.SetVisibility(1)
@@ -1266,7 +1264,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.GetProperty().SetSpecular(0.5)
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
-        self.dummy_coil_actor.SetVisibility(1)
+        self.dummy_coil_actor.SetVisibility(self.show_object)
         self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)
@@ -1458,13 +1456,14 @@ class Viewer(wx.Panel):
 
     def UpdateCameraBallPosition(self, position):
         #if not self.actor_peel:
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-        self.ball_actor.SetPosition(coord_flip)
-        if self.set_camera_position:
-            self.SetVolumeCamera(coord_flip)
-        if not self.nav_status:
-            self.UpdateRender()
+        if self.ball_actor is not None:
+            coord_flip = list(position[:3])
+            coord_flip[1] = -coord_flip[1]
+            self.ball_actor.SetPosition(coord_flip)
+            if self.set_camera_position:
+                self.SetVolumeCamera(coord_flip)
+            if not self.nav_status:
+                self.UpdateRender()
 
     def AddObjectActor(self, obj_name):
         """
@@ -1682,7 +1681,7 @@ class Viewer(wx.Panel):
         vectors.SetNumberOfComponents(3)
 
         points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
-        vectors.InsertNextTuple3(self.e_field_col1[np.array(self.e_field_norms).argmax()], self.e_field_col2[np.array(self.e_field_norms).argmax()], self.e_field_col3[np.array(self.e_field_norms).argmax()])
+        vectors.InsertNextTuple3(self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2])
 
         dataset = vtkPolyData()
         dataset.SetPoints(points)
@@ -1743,7 +1742,7 @@ class Viewer(wx.Panel):
         if len(self.Id_list)>0:
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
-                e_field_vectors =[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+                e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
             else:
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
@@ -1796,8 +1795,8 @@ class Viewer(wx.Panel):
         self.e_field_norms = e_field_norms
         max = np.amax(self.e_field_norms)
         min = np.amin(self.e_field_norms)
-        self.min = min
-        self.max = max*const.EFIELD_MAX_RANGE_SCALE
+        self.efield_min = min
+        self.efield_max = max
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
@@ -1867,7 +1866,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if len(self.Id_list) !=0:
-            self.efield_lut = self.CreateLUTTableForEfield(self.min, self.max)
+            self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
             for h in range(len(self.Id_list)):
@@ -1886,7 +1885,7 @@ class Viewer(wx.Panel):
             if self.vectorfield_actor is not None:
                 self.ren.RemoveActor(self.vectorfield_actor)
             if self.plot_vector:
-                wx.CallAfter(Publisher.sendMessage,'Show max Efield actor')
+                wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
                     self.plot_vector= False
@@ -1941,6 +1940,9 @@ class Viewer(wx.Panel):
 
 
     def GetEnorm(self, enorm_data, plot_vector):
+        self.e_field_col1=[]
+        self.e_field_col2=[]
+        self.e_field_col3=[]
         session = ses.Session()
         self.plot_vector = plot_vector
         self.coil_position_Trot = enorm_data[0]
@@ -1954,12 +1956,14 @@ class Viewer(wx.Panel):
                 self.e_field_col2 = enorm_data[3][:,2]
                 self.e_field_col3 = enorm_data[3][:,3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms[self.Id_list]).argmax()])
+                self.max_efield_array = [self.e_field_col1[self.Idmax],self.e_field_col2[self.Idmax],self.e_field_col3[self.Idmax] ]
             else:
                 self.e_field_norms = enorm_data[3].enorm
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
-                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+                self.max_efield_array = enorm_data[3].mvector
+                self.Idmax = self.Id_list[enorm_data[3].maxindex]
         else:
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
@@ -1980,7 +1984,7 @@ class Viewer(wx.Panel):
                  )
             efield_coords_position = [list(position_world), list(orientation_world)]
         if plot_efield_vectors:
-            e_field_vectors = [list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+            e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
             all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors])
 
         else:
@@ -2077,6 +2081,7 @@ class Viewer(wx.Panel):
                 #self.z_actor.SetVisibility(self.show_object)
                 #self.object_orientation_torus_actor.SetVisibility(self.show_object)
                 #self.obj_projection_arrow_actor.SetVisibility(self.show_object)
+        self.camera_show_object = None
         self.UpdateRender()
 
     def UpdateSeedOffset(self, data):
@@ -2164,8 +2169,10 @@ class Viewer(wx.Panel):
 
     def ShowObject(self, checked):
         self.show_object = checked
+        if self.dummy_coil_actor is not None:
+            self.dummy_coil_actor.SetVisibility(self.show_object)
 
-        if self.obj_actor and not self.show_object:
+        if self.obj_actor:
             self.obj_actor.SetVisibility(self.show_object)
             self.x_actor.SetVisibility(self.show_object)
             self.y_actor.SetVisibility(self.show_object)
@@ -2286,6 +2293,7 @@ class Viewer(wx.Panel):
 
     def SetVolumeCameraState(self, camera_state):
         self.camera_state = camera_state
+        self.camera_show_object = None
 
     # def SetVolumeCamera(self, arg, position):
     def SetVolumeCamera(self, cam_focus):
@@ -2303,7 +2311,10 @@ class Viewer(wx.Panel):
             v0 = cam_pos0 - cam_focus0
             v0n = np.sqrt(inner1d(v0, v0))
 
-            if self.show_object:
+            if self.camera_show_object is None:
+                self.camera_show_object = self.show_object
+
+            if self.camera_show_object:
                 v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])
             else:
                 v1 = cam_focus - self.initial_focus

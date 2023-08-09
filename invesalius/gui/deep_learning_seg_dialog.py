@@ -496,7 +496,8 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
                 apply_wwwl,
                 window_width,
                 window_level,
-                resize_by_spacing=resize_by_spacing
+                resize_by_spacing=resize_by_spacing,
+                image_spacing=slc.Slice().spacing
             )
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
