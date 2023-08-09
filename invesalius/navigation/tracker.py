@@ -29,7 +29,8 @@ import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
-
+# Only one tracker will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
 class Tracker(metaclass=Singleton):
     def __init__(self):
         self.tracker_connection = None
@@ -47,9 +48,9 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-        self.LoadState()
+        self.LoadConfig()
 
-    def SaveState(self):
+    def SaveConfig(self):
         tracker_id = self.tracker_id
         tracker_fiducials = self.tracker_fiducials.tolist()
         tracker_fiducials_raw = self.tracker_fiducials_raw.tolist()
@@ -66,7 +67,7 @@ class Tracker(metaclass=Singleton):
         session = ses.Session()
         session.SetConfig('tracker', state)
 
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig('tracker')
 
@@ -128,7 +129,7 @@ class Tracker(metaclass=Singleton):
                                        self.event_coord)
                 self.thread_coord.start()
 
-            self.SaveState()
+            self.SaveConfig()
         Publisher.sendMessage('End busy cursor')
         
 
@@ -208,14 +209,14 @@ class Tracker(metaclass=Singleton):
 
         print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
 
-        self.SaveState()
+        self.SaveConfig()
 
     def ResetTrackerFiducials(self):
         Publisher.sendMessage("Reset tracker fiducials")
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
 
-        self.SaveState()
+        self.SaveConfig()
 
     def GetTrackerFiducials(self):
         return self.tracker_fiducials, self.tracker_fiducials_raw
@@ -237,6 +238,13 @@ class Tracker(metaclass=Singleton):
     def GetTrackerId(self):
         return self.tracker_id
 
+    def get_trackers(self):
+        return const.TRACKERS
+
+
+'''
+Deprecated Code
+
     def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
         if self.tracker_connected:
             selection_ctrl.SetSelection(self.tracker_id)
@@ -253,5 +261,4 @@ class Tracker(metaclass=Singleton):
         txtctrl_fre.SetValue('')
         txtctrl_fre.SetBackgroundColour('WHITE')
 
-    def get_trackers(self):
-        return const.TRACKERS
+'''
