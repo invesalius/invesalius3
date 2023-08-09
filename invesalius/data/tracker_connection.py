@@ -502,6 +502,88 @@ class PolarisP4TrackerConnection(TrackerConnection):
         super().Disconnect()
 
 
+class DebugTrackerRandomConnection(TrackerConnection):
+    def __init__(self, model=None):
+        super().__init__(model)
+
+    def Configure(self):
+        return True
+
+    def Connect(self):
+        self.connection = True
+        self.lib_mode = 'debug'
+        print('Debug device (random) started.')
+
+    def Disconnect(self):
+        self.connection = False
+        self.lib_mode = 'debug'
+        print('Debug tracker (random) disconnected.')
+
+
+class DebugTrackerApproachConnection(TrackerConnection):
+    def __init__(self, model=None):
+        super().__init__(model)
+
+    def Configure(self):
+        return True
+
+    def Connect(self):
+        self.connection = True
+        self.lib_mode = 'debug'
+        print('Debug device (approach) started.')
+
+    def Disconnect(self):
+        self.connection = False
+        self.lib_mode = 'debug'
+        print('Debug tracker (approach) disconnected.')
+
+
+TRACKER_CONNECTION_CLASSES = {
+    const.MTC: ClaronTrackerConnection,
+    const.FASTRAK: PolhemusTrackerConnection,
+    const.ISOTRAKII: PolhemusTrackerConnection,
+    const.PATRIOT: PolhemusTrackerConnection,
+    const.CAMERA: CameraTrackerConnection,
+    const.POLARIS: PolarisTrackerConnection,
+    const.POLARISP4: PolarisP4TrackerConnection,
+    const.OPTITRACK: OptitrackTrackerConnection,
+    const.DEBUGTRACKRANDOM: DebugTrackerRandomConnection,
+    const.DEBUGTRACKAPPROACH: DebugTrackerApproachConnection,
+}
+
+
+def CreateTrackerConnection(tracker_id):
+    """
+    Initialize spatial tracker connection for coordinate detection during navigation.
+
+    :param tracker_id: ID of tracking device.
+    :return spatial tracker connection instance or None if could not open device.
+    """
+    tracker_connection_class = TRACKER_CONNECTION_CLASSES[tracker_id]
+
+    # XXX: A better solution than to pass a 'model' parameter to the constructor of tracker
+    #   connection would be to have separate class for each model, possibly inheriting
+    #   the same base class, e.g., in this case, PolhemusTrackerConnection base class, which
+    #   would be inherited by FastrakTrackerConnection class, etc.
+    if tracker_id == const.FASTRAK:
+        model = 'fastrak'
+    elif tracker_id == const.ISOTRAKII:
+        model = 'isotrak'
+    elif tracker_id == const.PATRIOT:
+        model = 'patriot'
+    else:
+        model = None
+
+    tracker_connection = tracker_connection_class(
+        model=model
+    )
+    return tracker_connection
+
+
+
+'''
+Deprecated Code
+
 class RobotTrackerConnection(TrackerConnection):
     def __init__(self, model=None):
         super().__init__(model)
@@ -590,80 +672,4 @@ class RobotTrackerConnection(TrackerConnection):
         self.configuration = configuration
         return True
 
-
-class DebugTrackerRandomConnection(TrackerConnection):
-    def __init__(self, model=None):
-        super().__init__(model)
-
-    def Configure(self):
-        return True
-
-    def Connect(self):
-        self.connection = True
-        self.lib_mode = 'debug'
-        print('Debug device (random) started.')
-
-    def Disconnect(self):
-        self.connection = False
-        self.lib_mode = 'debug'
-        print('Debug tracker (random) disconnected.')
-
-
-class DebugTrackerApproachConnection(TrackerConnection):
-    def __init__(self, model=None):
-        super().__init__(model)
-
-    def Configure(self):
-        return True
-
-    def Connect(self):
-        self.connection = True
-        self.lib_mode = 'debug'
-        print('Debug device (approach) started.')
-
-    def Disconnect(self):
-        self.connection = False
-        self.lib_mode = 'debug'
-        print('Debug tracker (approach) disconnected.')
-
-
-TRACKER_CONNECTION_CLASSES = {
-    const.MTC: ClaronTrackerConnection,
-    const.FASTRAK: PolhemusTrackerConnection,
-    const.ISOTRAKII: PolhemusTrackerConnection,
-    const.PATRIOT: PolhemusTrackerConnection,
-    const.CAMERA: CameraTrackerConnection,
-    const.POLARIS: PolarisTrackerConnection,
-    const.POLARISP4: PolarisP4TrackerConnection,
-    const.OPTITRACK: OptitrackTrackerConnection,
-    const.DEBUGTRACKRANDOM: DebugTrackerRandomConnection,
-    const.DEBUGTRACKAPPROACH: DebugTrackerApproachConnection,
-}
-
-
-def CreateTrackerConnection(tracker_id):
-    """
-    Initialize spatial tracker connection for coordinate detection during navigation.
-
-    :param tracker_id: ID of tracking device.
-    :return spatial tracker connection instance or None if could not open device.
-    """
-    tracker_connection_class = TRACKER_CONNECTION_CLASSES[tracker_id]
-
-    # XXX: A better solution than to pass a 'model' parameter to the constructor of tracker
-    #   connection would be to have separate class for each model, possibly inheriting
-    #   the same base class, e.g., in this case, PolhemusTrackerConnection base class, which
-    #   would be inherited by FastrakTrackerConnection class, etc.
-    if tracker_id == const.FASTRAK:
-        model = 'fastrak'
-    elif tracker_id == const.ISOTRAKII:
-        model = 'isotrak'
-    elif tracker_id == const.PATRIOT:
-        model = 'patriot'
-    else:
-        model = None
-
-    tracker_connection = tracker_connection_class(
-        model=model
-    )
-    return tracker_connection
+'''
