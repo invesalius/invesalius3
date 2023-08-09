@@ -277,7 +277,7 @@ class Viewer(wx.Panel):
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
 
-        self.LoadState()
+        self.LoadConfig()
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -405,7 +405,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
 
-    def SaveState(self):
+    def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
         use_default_object = self.use_default_object
 
@@ -417,7 +417,7 @@ class Viewer(wx.Panel):
         session = ses.Session()
         session.SetConfig('viewer', state)
 
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig('viewer')
 
@@ -1963,7 +1963,7 @@ class Viewer(wx.Panel):
         self.polydata = polydata
         self.use_default_object = use_default_object
 
-        self.SaveState()
+        self.SaveConfig()
 
     def TrackObject(self, enabled):
         if enabled:
