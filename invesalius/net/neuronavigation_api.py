@@ -131,12 +131,13 @@ class NeuronavigationApi(metaclass=Singleton):
                 state=state
             )
 
-    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, conductivities_inside, conductivities_outside):
+    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, coil_set, conductivities_inside, conductivities_outside):
         if self.connection is not None:
             return self.connection.initialize_efield(
                 cortex_model_path=cortex_model_path,
                 mesh_models_paths= mesh_models_paths,
                 coil_model_path =coil_model_path,
+                coil_set = coil_set,
                 conductivities_inside= conductivities_inside,
                 conductivities_outside = conductivities_outside,
             )
@@ -149,10 +150,11 @@ class NeuronavigationApi(metaclass=Singleton):
             )
         return None
 
-    def efield_coil(self, coil_model_path):
+    def efield_coil(self, coil_model_path, coil_set):
         if self.connection is not None:
             return self.connection.set_coil(
-                coil_model_path=coil_model_path
+                coil_model_path=coil_model_path,
+                coil_set = coil_set
             )
 
     def update_efield(self, position, orientation, T_rot):
@@ -176,6 +178,16 @@ class NeuronavigationApi(metaclass=Singleton):
     def update_efield_vectorROI(self, position, orientation, T_rot, id_list):
         if self.connection is not None:
             return self.connection.update_efield_vectorROI(
+                position=position,
+                orientation=orientation,
+                T_rot=T_rot,
+                id_list=id_list
+            )
+        return None
+
+    def update_efield_vectorROIMax(self, position, orientation, T_rot, id_list):
+        if self.connection is not None:
+            return self.connection.update_efield_vectorROIMax(
                 position=position,
                 orientation=orientation,
                 T_rot=T_rot,
