@@ -1,6 +1,7 @@
 from invesalius.pubsub import pub as Publisher
 import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
+from invesalius import inv_paths
 import wx.gizmos as gizmos
 import wx
 import os
@@ -37,7 +38,7 @@ class TextPanel(wx.Panel):
 
         self.__store_path = session.GetConfig('store_path') \
             if session.GetConfig('store_path') \
-            else None
+            else str(inv_paths.USER_DICOM_DIR)
 
         self.__tree = self._init_gui()
         self.__root = self.__tree.AddRoot(_("InVesalius Database"))

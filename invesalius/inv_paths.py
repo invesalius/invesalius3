@@ -23,6 +23,7 @@ import sys
 import tempfile
 
 HOME_DIR = pathlib.Path().home()
+USER_DICOM_DIR = HOME_DIR.joinpath("dicom-files")
 CONF_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", HOME_DIR.joinpath(".config")))
 USER_INV_DIR = CONF_DIR.joinpath("invesalius")
 USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")

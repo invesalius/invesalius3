@@ -86,6 +86,8 @@ class Session(metaclass=Singleton):
             'server_port': '5000',
             'nodes': [],
             'selected_node': {},
+            'store_path': str(inv_paths.USER_DICOM_DIR),
+            'server_ip': ""
         }
         self.WriteConfigFile()
 
