@@ -460,9 +460,6 @@ class InnerTaskPanel(wx.Panel):
                     dlgg.ShowModal()
                 del self.tp
                 wx.MessageBox(_("FOD Import successful"), _("InVesalius 3"))
-                Publisher.sendMessage('End busy cursor')
-                # except:
-                #     wx.MessageBox(_("Unable to initialize Trekker, check FOD and config files."), _("InVesalius 3"))
             except:
                 Publisher.sendMessage('Update status text in GUI', label=_("Trekker initialization failed."))
                 wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
@@ -475,12 +472,6 @@ class InnerTaskPanel(wx.Panel):
             if not self.tp.running:
                 break
             wx.Yield()
-
-    def _on_callback_error(self, e, dialog=None):
-        import invesalius.utils as utl
-        dialog.running = False
-        msg = utl.log_traceback(e)
-        dialog.error = msg
 
     def TrekkerCallback(self, trekker):
         self.tp.running = False
