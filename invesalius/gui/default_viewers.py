@@ -360,8 +360,8 @@ class VolumeToolPanel(wx.Panel):
         self.button_raycasting = pbtn.PlateButton(self, -1,"", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         self.button_stereo = pbtn.PlateButton(self, -1,"", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         self.button_slice_plane = pbtn.PlateButton(self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
-        self.button_target.Enable(0)
+        #self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
+        #self.button_target.Enable(0)
         #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
@@ -385,7 +385,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(self.button_view, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(self.button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(self.button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
-        sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
+        #sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
         #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
         self.navigation_status = False
@@ -409,7 +409,7 @@ class VolumeToolPanel(wx.Panel):
                                  'Change volume viewer gui colour')
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
-        Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
+        '''
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
         Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
@@ -417,6 +417,7 @@ class VolumeToolPanel(wx.Panel):
         # Conditions for enabling target button:
         Publisher.subscribe(self.ShowCoilChecked, 'Show-coil checked')
         Publisher.subscribe(self.TargetSelected, 'Target selected')
+        '''
 
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -428,7 +429,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
-        self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
+        #self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
@@ -443,6 +444,7 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
+    '''
     def ShowCoilChecked(self, checked):
         self.show_coil_checked = checked
         self.UpdateTargetButton()
@@ -481,7 +483,7 @@ class VolumeToolPanel(wx.Panel):
             Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
-
+    '''
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
         if d.ShowModal() == wx.ID_OK:
