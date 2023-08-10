@@ -1240,7 +1240,8 @@ class ControlPanel(wx.Panel):
         checkbox_track_object.SetBackgroundColour(GREY_COLOR)
         checkbox_track_object.SetBitmap(BMP_TRACK)
         checkbox_track_object.SetValue(False)
-        checkbox_track_object.Enable(False)
+        if not self.track_obj:
+            checkbox_track_object.Enable(False)
         checkbox_track_object.SetToolTip(tooltip)
         checkbox_track_object.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectCheckbox, ctrl=checkbox_track_object))
         self.checkbox_track_object = checkbox_track_object
