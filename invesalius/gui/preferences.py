@@ -544,7 +544,7 @@ class TrackerPage(wx.Panel):
             (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (0, 0),
-            (btn_rob_con, 0, wx.RIGHT)
+            (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15)
         ])
 
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
@@ -577,7 +577,7 @@ class TrackerPage(wx.Panel):
 
     def OnChooseTracker(self, evt, ctrl):
         self.HideParent()
-
+        Publisher.sendMessage('Begin busy cursor')
         Publisher.sendMessage('Update status text in GUI',
                               label=_("Configuring tracker ..."))
         if hasattr(evt, 'GetSelection'):
@@ -593,7 +593,8 @@ class TrackerPage(wx.Panel):
         Publisher.sendMessage("Tracker changed")
         ctrl.SetSelection(self.tracker.tracker_id)
         self.ShowParent()
-    
+        Publisher.sendMessage('End busy cursor')
+
     def OnChooseReferenceMode(self, evt, ctrl):
         # Probably need to refactor object registration as a whole to use the 
         # OnChooseReferenceMode function which was used earlier. It can be found in
@@ -614,6 +615,9 @@ class TrackerPage(wx.Panel):
     
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None:
+            self.robot.DisconnectRobot()
+            self.status_text.SetLabelText("Trying to connect to robot...")
+            self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
             Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
 
@@ -628,11 +632,12 @@ class TrackerPage(wx.Panel):
             self.btn_rob_con.Show()
 
     def OnTransformationMatrix(self, data):
-        if data:
+        if self.robot.matrix_tracker_to_robot is not None:
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")
             self.btn_rob_con.Show()
             self.btn_rob_con.Layout()
+            self.Parent.Update()
 
 class Language(wx.Panel):
     def __init__(self, parent):
