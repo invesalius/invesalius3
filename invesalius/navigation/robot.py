@@ -113,12 +113,12 @@ class Robot(metaclass=Singleton):
 
     def ConnectToRobot(self):
         Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
-        wx.MessageBox(_("Connected to Robot!"), _("InVesalius 3"))
+        print("Connected to Robot!")
 
     def InitializeRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
-        wx.MessageBox(_("Robot Initialized!"), _("InVesalius 3"))
+        print("Robot Initialized!")
 
     def DisconnectRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)
