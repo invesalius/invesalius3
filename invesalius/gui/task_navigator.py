@@ -1155,11 +1155,14 @@ class NavigationPanel(wx.Panel):
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
+        self.control_panel = ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connection, self.neuronavigation_api)
+        self.marker_panel = MarkersPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.control_panel)
+
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        top_sizer.Add(MarkersPanel(self, self.navigation, self.tracker, self.robot, self.icp), 1, wx.GROW | wx.EXPAND )
+        top_sizer.Add(self.marker_panel, 1, wx.GROW | wx.EXPAND )
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connection, self.neuronavigation_api), 0, wx.EXPAND | wx.TOP, 20)
+        bottom_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.TOP, 20)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([(top_sizer, 1, wx.EXPAND | wx.GROW),
@@ -1318,6 +1321,7 @@ class ControlPanel(wx.Panel):
         target_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetCheckbox, ctrl=target_checkbox))
         target_checkbox.SetToolTip(tooltip)
         self.target_checkbox = target_checkbox
+        self.UpdateTargetButton()
 
         #Sizers
         button_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1446,7 +1450,6 @@ class ControlPanel(wx.Panel):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
-            Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             btn_nav.SetToolTip(tooltip)
             btn_nav.SetLabelText(_("Start neuronavigation"))
@@ -1472,6 +1475,8 @@ class ControlPanel(wx.Panel):
             self.EnableToggleButton(self.lock_to_target_checkbox, 1)
             self.UpdateToggleButton(self.lock_to_target_checkbox, True)
             self.navigation.SetLockToTarget(True)
+            self.target_selected = True
+            self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
@@ -1501,6 +1506,7 @@ class ControlPanel(wx.Panel):
     def OnRobotStatus(self, data):
         if data:
             self.btn_robot.Show()
+            self.Layout()
             
     def OnStopRobot(self, evt, ctrl):
         Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
@@ -1564,6 +1570,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.checkobj)
         checked = self.checkobj.GetValue()
         Publisher.sendMessage('Show-coil checked', checked=checked)    
+        self.show_coil_checked = checked
 
 
     # 'Volume camera' checkbox
@@ -1610,8 +1617,9 @@ class ControlPanel(wx.Panel):
         self.UpdateTargetButton()
     
     def TargetSelected(self, status):
-        self.target_selected = status
-        self.UpdateTargetButton()
+        if status is not None:
+            self.target_selected = status
+            self.UpdateTargetButton()
 
     def ShowTargetButton(self):
         self.target_checkbox.Show()
@@ -1620,24 +1628,24 @@ class ControlPanel(wx.Panel):
         self.target_checkbox.Hide()
 
     def DisableTargetMode(self):
-        self.OnTargetCheckbox(False)
         self.UpdateToggleButton(self.target_checkbox, False)
+        self.OnTargetCheckbox(False)
 
     def UpdateTargetButton(self):
         if self.target_selected and self.show_coil_checked:
             self.EnableToggleButton(self.target_checkbox, True)
+            self.UpdateToggleButton(self.target_checkbox, False)
         else:
             self.DisableTargetMode()
             self.EnableToggleButton(self.target_checkbox, False)
 
     def OnTargetCheckbox(self, evt):
-        if not self.target_checkbox.GetValue() and evt is not False:
+        if self.target_checkbox.GetValue():
             self.UpdateToggleButton(self.target_checkbox, True)
             Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
             Publisher.sendMessage('Check volume camera checkbox', checked=False)
             Publisher.sendMessage('Enable volume camera checkbox', enabled=False)
-
-        elif self.target_checkbox.GetValue() or evt is False:
+        else:
             self.UpdateToggleButton(self.target_checkbox, False)
             Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
             Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
@@ -1769,7 +1777,7 @@ class MarkersPanel(wx.Panel):
             }
 
 
-    def __init__(self, parent, navigation, tracker, robot, icp):
+    def __init__(self, parent, navigation, tracker, robot, icp, control):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1783,6 +1791,7 @@ class MarkersPanel(wx.Panel):
         self.tracker = tracker
         self.robot = robot
         self.icp = icp
+        self.control = control
         if has_mTMS:
             self.mTMS = mTMS()
         else:
@@ -2040,6 +2049,7 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
         Publisher.sendMessage('Update target', coord=self.markers[idx].position+self.markers[idx].orientation)
+        self.control.target_selected = True
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
         #self.__delete_all_brain_targets()
         if display_messagebox:
