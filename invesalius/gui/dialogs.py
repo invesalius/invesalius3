@@ -5773,7 +5773,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         if not self.robot.robot_status:
             btn_load.Enable(False)
         else:
-            self.btn_load.Enable(True)
+            btn_load.Enable(True)
             if self.GetAcquiredPoints() >= 3:
                 self.btn_apply_reg.Enable(True)
         self.btn_load = btn_load
@@ -5948,7 +5948,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
         # Enable 'Ok' button if connection to robot is ok.
-        if self.robot_status:
+        if self.robot.robot_status:
             self.btn_ok.Enable(True)
 
     def GetValue(self):
