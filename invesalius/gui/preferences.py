@@ -18,6 +18,7 @@ from invesalius.pubsub import pub as Publisher
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
 from invesalius.net.neuronavigation_api import NeuronavigationApi
+from invesalius.navigation.navigation import Navigation
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -36,9 +37,12 @@ class Preferences(wx.Dialog):
         super().__init__(parent, id_, title, style=style)
         tracker = Tracker()
         robot = Robot()
-
         pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         neuronavigation_api = NeuronavigationApi()
+        navigation = Navigation(
+            pedal_connection=pedal_connection,
+            neuronavigation_api=neuronavigation_api,
+        )
 
         self.book = wx.Notebook(self, -1)
 
@@ -50,7 +54,7 @@ class Preferences(wx.Dialog):
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
-            self.pnl_object = ObjectPage(self.book, tracker, pedal_connection, neuronavigation_api)
+            self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connection, neuronavigation_api)
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
@@ -173,7 +177,7 @@ class Viewer3D(wx.Panel):
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
 class ObjectPage(wx.Panel):
-    def __init__(self, parent, tracker, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
 
         self.coil_list = const.COIL
@@ -181,12 +185,12 @@ class ObjectPage(wx.Panel):
         self.tracker = tracker
         self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
-
-        self.__bind_events()
+        self.navigation = navigation
         self.obj_fiducials = None
         self.obj_orients = None
         self.obj_ref_mode = None
         self.obj_name = None
+        self.__bind_events()
         self.timestamp = const.TIMESTAMP
         self.state = self.LoadConfig()
 
@@ -331,24 +335,24 @@ class ObjectPage(wx.Panel):
 
         self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = object_fiducials, object_orientations, object_reference_mode, object_name
         return True
-    
+
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name, polydata, use_default_object = dialog.GetValue()
+                    obj_fiducials, obj_orients, obj_ref_mode, obj_name, polydata, use_default_object = dialog.GetValue()
 
                     self.neuronavigation_api.update_coil_mesh(polydata)
 
-                    if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                    if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         Publisher.sendMessage('Update object registration',
-                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                              data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
                         Publisher.sendMessage('Update status text in GUI',
                                               label=_("Ready"))
                         Publisher.sendMessage(
                             'Configure object',
-                            obj_name=self.obj_name,
+                            obj_name=obj_name,
                             polydata=polydata,
                             use_default_object=use_default_object,
                         )
@@ -369,6 +373,9 @@ class ObjectPage(wx.Panel):
     def OnLoadCoil(self, event=None):
         filename = dlg.ShowLoadSaveDialog(message=_(u"Load object registration"),
                                           wildcard=_("Registration files (*.obr)|*.obr"))
+        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
+        # coil_path = 'magstim_coil_dell_laptop.obr'
+        # filename = os.path.join(data_dir, coil_path)
 
         try:
             if filename:
@@ -376,33 +383,33 @@ class ObjectPage(wx.Panel):
                     data = [s.split('\t') for s in text_file.readlines()]
 
                 registration_coordinates = np.array(data[1:]).astype(np.float32)
-                self.obj_fiducials = registration_coordinates[:, :3]
-                self.obj_orients = registration_coordinates[:, 3:]
+                obj_fiducials = registration_coordinates[:, :3]
+                obj_orients = registration_coordinates[:, 3:]
 
-                self.obj_name = data[0][1].encode(const.FS_ENCODE)
-                self.obj_ref_mode = int(data[0][-1])
+                obj_name = data[0][1].encode(const.FS_ENCODE)
+                obj_ref_mode = int(data[0][-1])
 
-                if not os.path.exists(self.obj_name):
-                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                if not os.path.exists(obj_name):
+                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                polydata = vtk_utils.CreateObjectPolyData(self.obj_name)
+                polydata = vtk_utils.CreateObjectPolyData(obj_name)
                 if polydata:
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
-                    self.obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                if os.path.basename(self.obj_name) == "magstim_fig8_coil.stl":
+                if os.path.basename(obj_name) == "magstim_fig8_coil.stl":
                     use_default_object = True
                 else:
                     use_default_object = False
 
                 Publisher.sendMessage('Update object registration',
-                                      data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                      data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage(
                     'Configure object',
-                    obj_name=self.obj_name,
+                    obj_name=obj_name,
                     polydata=polydata,
                     use_default_object=use_default_object
                 )
@@ -423,7 +430,8 @@ class ObjectPage(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnSaveCoil(self, evt):
-        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
+        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.navigation.GetObjectRegistration()
+        if np.isnan(obj_fiducials).any() or np.isnan(obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
             filename = dlg.ShowLoadSaveDialog(message=_(u"Save object registration as..."),
@@ -431,8 +439,8 @@ class ObjectPage(wx.Panel):
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename="object_registration.obr", save_ext="obr")
             if filename:
-                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
-                data = np.hstack([self.obj_fiducials, self.obj_orients])
+                hdr = 'Object' + "\t" + utils.decode(obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
+                data = np.hstack([obj_fiducials, obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 

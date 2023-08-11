@@ -136,6 +136,11 @@ class InnerTaskPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
+        plot_vectors = wx.CheckBox(self, -1, _('Plot Efield vectors'))
+        plot_vectors.SetValue(False)
+        plot_vectors.Enable(1)
+        plot_vectors.Bind(wx.EVT_CHECKBOX, partial(self.OnEnablePlotVectors, ctrl=plot_vectors))
+
         tooltip2 = wx.ToolTip(_("Load Brain Json config"))
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
@@ -147,6 +152,12 @@ class InnerTaskPanel(wx.Panel):
         self.btn_save.SetToolTip(tooltip)
         self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveEfield)
         self.btn_save.Enable(False)
+
+        tooltip3 = wx.ToolTip(_("Save All Efield"))
+        self.btn_all_save = wx.Button(self, -1, _("Save All Efield"), size=wx.Size(80, -1))
+        self.btn_all_save.SetToolTip(tooltip3)
+        self.btn_all_save.Bind(wx.EVT_BUTTON, self.OnSaveAllDataEfield)
+        self.btn_all_save.Enable(False)
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size = wx.Size(50,23), inc = 0.01)
@@ -165,11 +176,12 @@ class InnerTaskPanel(wx.Panel):
 
         line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
         line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(self.btn_all_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         # Add line sizers into main sizer
         border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Change coil:'), pos=(0,100))
-        self.combo_surface_name = wx.ComboBox(self, -1, size=(210, 23), pos=(25, 50),
+        txt_surface = wx.StaticText(self, -1, _('Change coil:'), pos=(20,100))
+        self.combo_surface_name = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
         self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboCoilNameClic)
@@ -180,8 +192,9 @@ class InnerTaskPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
         main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
-        main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
-        main_sizer.Add(self.combo_surface_name, 1, wx.BOTTOM | wx.ALIGN_RIGHT)
+        main_sizer.Add(plot_vectors, 1, wx.LEFT | wx.RIGHT, 2)
+        main_sizer.Add(self.combo_surface_name, 1, wx.ALIGN_CENTER_HORIZONTAL,2)
+        main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
 
         main_sizer.SetSizeHints(self)
@@ -192,6 +205,8 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnGetEfieldActor, 'Get Efield actor from json')
         Publisher.subscribe(self.OnGetEfieldPaths, 'Get Efield paths')
         Publisher.subscribe(self.OnGetMultilocusCoils,'Get multilocus paths from json')
+        Publisher.subscribe(self.SendNeuronavigationApi, 'Send Neuronavigation Api')
+        Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
@@ -200,13 +215,16 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage('Update status in GUI', value=50, label="Loading E-field...")
             Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Read json config file for efield', filename=filename, convert_to_inv=convert_to_inv)
+            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             self.Init_efield()
+
 
     def Init_efield(self):
         self.navigation.neuronavigation_api.initialize_efield(
             cortex_model_path=self.cortex_file,
             mesh_models_paths=self.meshes_file,
             coil_model_path=self.coil,
+            coil_set = False,
             conductivities_inside=self.ci,
             conductivities_outside=self.co,
         )
@@ -232,18 +250,22 @@ class InnerTaskPanel(wx.Panel):
                     self.enable_efield.Enable(False)
                     self.e_field_loaded = False
                     return
-            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             Publisher.sendMessage('Initialize E-field brain', e_field_brain=self.e_field_brain)
 
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
             self.combo_surface_name.Enable(True)
-            self.btn_save.Enable(True)
+            self.btn_all_save.Enable(True)
+
         else:
             Publisher.sendMessage('Recolor again')
             self.e_field_loaded = False
             #self.combo_surface_name.Enable(True)
         self.navigation.e_field_loaded = self.e_field_loaded
+
+    def OnEnablePlotVectors(self, evt, ctrl):
+        self.plot_efield_vectors = ctrl.GetValue()
+        self.navigation.plot_efield_vectors = self.plot_efield_vectors
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
@@ -261,20 +283,27 @@ class InnerTaskPanel(wx.Panel):
     def OnComboCoil(self, evt):
         coil_name = evt.GetString()
         coil_index = evt.GetSelection()
-        self.OnChangeCoil(self.multilocus_coil[coil_index])
+        if coil_index==6:
+            coil_set  = True
+        else:
+            coil_set = False
+        self.OnChangeCoil(self.multilocus_coil[coil_index], coil_set)
         #self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         #Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnChangeCoil(self, coil_model_path):
+    def OnChangeCoil(self, coil_model_path, coil_set):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path,
+            coil_set= coil_set
         )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
             self.enable_efield.Enable(False)
+            self.btn_save.Enable(True)
         else:
             self.enable_efield.Enable(True)
+            self.btn_save.Enable(False)
 
     def OnSelectSleep(self, evt, ctrl):
         self.sleep_nav = ctrl.GetValue()
@@ -311,14 +340,49 @@ class InnerTaskPanel(wx.Panel):
         else:
             current_folder_path = self.path_meshes
         parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
-        default_filename = sep.join(parts) + '.txt'
+        default_filename = sep.join(parts) + '.csv'
 
         filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
-                                          wildcard='(*.txt)|*.txt',
+                                          wildcard='(*.csv)|*.csv',
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename=default_filename)
 
         if not filename:
             return
+        plot_efield_vectors = self.navigation.plot_efield_vectors
+        Publisher.sendMessage('Save Efield data', filename = filename, plot_efield_vectors= plot_efield_vectors)
 
-        Publisher.sendMessage('Save Efield data', filename = filename)
+    def OnSaveAllDataEfield(self, evt):
+        Publisher.sendMessage('Check efield data')
+        if self.efield_data_saved:
+            import invesalius.project as prj
+            proj = prj.Project()
+            timestamp = time.localtime(time.time())
+            stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+            stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+            sep = '-'
+            if self.path_meshes is None:
+                import os
+                current_folder_path = os.getcwd()
+            else:
+                current_folder_path = self.path_meshes
+            parts = [current_folder_path,'/',stamp_date, stamp_time, proj.name, 'Efield']
+            default_filename = sep.join(parts) + '.csv'
+
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                              wildcard='(*.csv)|*.csv',
+                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                              default_filename=default_filename)
+
+            if not filename:
+                return
+
+            Publisher.sendMessage('Save all Efield data', filename = filename)
+        else:
+            dlg.Efield_no_data_to_save_warning()
+
+    def SendNeuronavigationApi(self):
+        Publisher.sendMessage('Get Neuronavigation Api', neuronavigation_api = self.navigation.neuronavigation_api)
+
+    def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
+        self.efield_data_saved = efield_data_loaded

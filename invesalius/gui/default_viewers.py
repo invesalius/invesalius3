@@ -417,8 +417,9 @@ class VolumeToolPanel(wx.Panel):
 
         # Conditions for enabling target button:
         Publisher.subscribe(self.TargetSelected, 'Target selected')
-        '''
         Publisher.subscribe(self.TrackObject, 'Track object')
+        '''
+
 
     def DisablePreset(self):
         self.off_item.Check(1)
