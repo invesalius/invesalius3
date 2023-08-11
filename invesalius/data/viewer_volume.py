@@ -1945,7 +1945,7 @@ class Viewer(wx.Panel):
         coil_face = m_img_flip[:-1, 1]
         cn = np.cross(coil_dir, coil_face)
         T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+        T_rot = np.append(T_rot, cn, axis=0)  # append
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage('Send coil position and rotation', T_rot=T_rot, cp=cp, m_img=m_img)
 
