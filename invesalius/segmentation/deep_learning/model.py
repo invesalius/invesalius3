@@ -130,6 +130,16 @@ class Unet3D(nn.Module):
         )
 
 
+class WrapModel(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, img):
+        output = self.model(img)
+        return torch.sigmoid(output[:, 1])
+
+
 def main():
     import torchviz
     dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")

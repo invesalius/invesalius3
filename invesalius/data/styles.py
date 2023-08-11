@@ -492,13 +492,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
     def SetUp(self):
-        self.viewer._set_cross_visibility(1)
+        self.viewer.set_cross_visibility(1)
         Publisher.sendMessage('Toggle toolbar item',
                               _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer._set_cross_visibility(0)
-        Publisher.sendMessage('Remove tracts')
+        self.viewer.set_cross_visibility(0)
         Publisher.sendMessage('Toggle toolbar item',
                               _id=self.state_code, value=False)
 
@@ -557,12 +556,12 @@ class TractsInteractorStyle(CrossInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnTractsReleaseLeftButton)
 
     # def SetUp(self):
-    #     self.viewer._set_cross_visibility(1)
+    #     self.viewer.set_cross_visibility(1)
     #     Publisher.sendMessage('Toggle toolbar item',
     #                           _id=self.state_code, value=True)
 
     # def CleanUp(self):
-    #     self.viewer._set_cross_visibility(0)
+    #     self.viewer.set_cross_visibility(0)
     #     Publisher.sendMessage('Toggle toolbar item',
     #                           _id=self.state_code, value=False)
 

@@ -436,10 +436,10 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
 
     def SetUp(self):
-        print("SetUP")
+        self.viewer.check_ball_reference()
 
     def CleanUp(self):
-        print("CleanUp")
+        self.viewer.uncheck_ball_reference()
 
     def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()

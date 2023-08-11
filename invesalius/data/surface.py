@@ -386,7 +386,7 @@ class SurfaceManager():
 
     def OnWriteCustomBinFile(self, polydata, filename):
         import os
-        if os.path.exists(filename) and os.path.isdir(filename):
+        if not os.path.exists(filename) and not os.path.isdir(filename):
             idlist = vtkIdList()
             points = np.zeros((polydata.GetNumberOfPoints(), 3))
             elements = np.zeros((polydata.GetNumberOfCells(), 3))

@@ -76,6 +76,29 @@ def calc_polygon_area(points):
     area = abs(area / 2.0)
     return area
 
+
+def inner1d(v0: np.ndarray, v1: np.ndarray) -> np.ndarray:
+    """
+    inner on the last dimension and broadcast on the rest
+
+    imports from numpy.core.umath_tests is being deprecated
+
+    This implementation is based on
+    https://github.com/numpy/numpy/issues/10815#issuecomment-376847774
+
+    >>> a = np.array((1, 2, 3))
+    >>> b = np.array((4, 5, 6))
+    >>> inner1d(a, b)
+    32
+
+    >>> a = np.arange(9).reshape(3,3)
+    >>> b = np.arange(9).reshape(3,3)
+    >>> inner1d(a, b)
+    array([  5,  50, 149])
+    """
+    return (v0 * v1).sum(axis=-1)
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
