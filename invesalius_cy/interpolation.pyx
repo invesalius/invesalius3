@@ -308,7 +308,7 @@ cdef void calc_coef_tricub(image_t[:, :, :] V, double x, double y, double z, dou
     _x[62] = 0.125*(_G(V, xi+1, yi+2, zi+2) - _G(V, xi-1, yi+2, zi+2) - _G(V, xi+1, yi,   zi+2) + _G(V, xi-1, yi,   zi+2) - _G(V, xi+1, yi+2, zi)   + _G(V, xi-1,yi+2,zi)+_G(V, xi+1,yi,zi)-_G(V, xi-1,yi,zi))
     _x[63] = 0.125*(_G(V, xi+2, yi+2, zi+2) - _G(V, xi,   yi+2, zi+2) - _G(V, xi+2, yi,   zi+2) + _G(V, xi,   yi,   zi+2) - _G(V, xi+2, yi+2, zi)   + _G(V, xi,yi+2,zi)+_G(V, xi+2,yi,zi)-_G(V, xi,yi,zi))
 
-    for j in prange(64):
+    for j in prange(64, nogil=True):
         coef[j] = 0.0
         for i in range(64):
                 coef[j] += (temp[j][i] * _x[i])

@@ -1,5 +1,4 @@
 #distutils: language = c++
-#cython: language_level=3
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: initializedcheck=False
@@ -254,7 +253,7 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
     cdef openmp.omp_lock_t lock
     openmp.omp_init_lock(&lock)
 
-    for i in prange(n_ids):
+    for i in prange(n_ids, nogil=True):
         vi_id = vertices_staircase[i]
         deref(weights)[vi_id] = 1.0
 
@@ -294,6 +293,7 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
                     #  vi = &mesh.vertices[v1, 0]
                     #  deref(weights)[v0] = 0.0
 
+    openmp.omp_destroy_lock(&lock)
     return weights
 
 
