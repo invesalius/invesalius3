@@ -82,12 +82,12 @@ class Session(metaclass=Singleton):
             'auto_reload_preview': False,
             'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             'last_dicom_folder': '',
-            'server_aetitle': 'INVESALIUS',
-            'server_port': '5000',
+            'server_aetitle': 'PYNETDICOM',
+            'server_port': '11120',
             'nodes': [],
             'selected_node': {},
             'store_path': str(inv_paths.USER_DICOM_DIR),
-            'server_ip': ""
+            'server_ip': "0.0.0.0"
         }
         self.WriteConfigFile()
 

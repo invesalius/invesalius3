@@ -1,12 +1,13 @@
 from pynetdicom.sop_class import (PatientRootQueryRetrieveInformationModelFind,
-    PatientRootQueryRetrieveInformationModelMove)
+                                  PatientRootQueryRetrieveInformationModelMove)
 from pydicom.dataset import Dataset
 import invesalius.utils as utils
 import pynetdicom
 import gdcm
 
+
 class DicomNet:
-    
+
     def __init__(self):
         self.address = ''
         self.port = ''
@@ -19,7 +20,7 @@ class DicomNet:
 
     def __call__(self):
         return self
-   
+
     def SetHost(self, address):
         self.address = address
 
@@ -70,7 +71,7 @@ class DicomNet:
 
         except Exception as e:
 
-            print ("Unexpected error:", e)
+            print("Unexpected error:", e)
             return False
 
     def RunCFind(self):
@@ -100,18 +101,19 @@ class DicomNet:
 
             patients = {}
 
-            response = assoc.send_c_find(ds, PatientRootQueryRetrieveInformationModelFind)
+            response = assoc.send_c_find(
+                ds, PatientRootQueryRetrieveInformationModelFind)
             for (status, identifier) in response:
 
                 if status and status.Status in (0xFF00, 0xFF01):
 
                     patient_id = identifier.PatientID
                     serie_id = identifier.SeriesInstanceUID
-                    
-                    if not(patient_id in patients.keys()):
+
+                    if not (patient_id in patients.keys()):
                         patients[patient_id] = {}
-                    
-                    if not(serie_id in patients[patient_id]):
+
+                    if not (serie_id in patients[patient_id]):
 
                         name = identifier.PatientName
                         age = identifier.PatientAge
@@ -126,16 +128,16 @@ class DicomNet:
                         acquisition_time = identifier.AcquisitionTime
                         acquisition_date = identifier.AcquisitionDate
 
-                        patients[patient_id][serie_id] = {'name':name, 'age':age, 'gender':gender,\
-                                            'study_description':study_description,\
-                                            'modality':modality, \
-                                            'acquisition_time':acquisition_time,\
-                                            'acquisition_date':acquisition_date,\
-                                            'institution':institution,\
-                                            'date_of_birth':date_of_birth,\
-                                            'acession_number':acession_number,\
-                                            'ref_physician':ref_physician,\
-                                            'serie_description':serie_description}
+                        patients[patient_id][serie_id] = {'name': name, 'age': age, 'gender': gender,
+                                                          'study_description': study_description,
+                                                          'modality': modality,
+                                                          'acquisition_time': acquisition_time,
+                                                          'acquisition_date': acquisition_date,
+                                                          'institution': institution,
+                                                          'date_of_birth': date_of_birth,
+                                                          'acession_number': acession_number,
+                                                          'ref_physician': ref_physician,
+                                                          'serie_description': serie_description}
 
                         patients[patient_id][serie_id]['n_images'] = 1
 
@@ -145,9 +147,8 @@ class DicomNet:
 
             assoc.release()
             return patients
-        
-        return False
 
+        return False
 
     def RunCMove(self, values):
         """ Run CMove to download the DICOM files. """
@@ -155,13 +156,19 @@ class DicomNet:
         def handle_store(event):
             """Handle a C-MOVE request event."""
 
-            ds = event.dataset
-            ds.file_meta = event.file_meta
+            try:
 
-            dest = f"{self.values['destination']}/{ds.SOPInstanceUID}.dcm"
-            ds.save_as(dest, write_like_original=False)
+                ds = event.dataset
+                ds.file_meta = event.file_meta
 
-            return 0x0000
+                dest = f"{values['destination']}/{ds.SOPInstanceUID}.dcm"
+                ds.save_as(dest, write_like_original=False)
+
+                return 0x0000
+
+            except Exception as e:
+
+                return 0xC001
 
         ae = pynetdicom.AE()
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
@@ -174,17 +181,21 @@ class DicomNet:
         ds.PatientID = values['patient_id']
         ds.SeriesInstanceUID = values['serie_id']
 
-        assoc = ae.associate(self.address, int(self.port), ae_title=self.aetitle)
+        assoc = ae.associate(self.address, int(
+            self.port), ae_title=self.aetitle)
         if assoc.is_established:
 
-            scp = ae.start_server((self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
+            scp = ae.start_server(
+                (self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
 
-            responses = assoc.send_c_move(ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
+            responses = assoc.send_c_move(
+                ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
             for (status, identifier) in responses:
 
                 if status:
 
-                    print('C-MOVE query status: 0x{0:04x}'.format(status.Status))
+                    print(
+                        'C-MOVE query status: 0x{0:04x}'.format(status.Status))
 
                 else:
 
@@ -192,10 +203,13 @@ class DicomNet:
 
             assoc.release()
             scp.shutdown()
+        else:
 
-        raise RuntimeError('Association rejected, aborted or never connected')
+            raise RuntimeError(
+                'Association rejected, aborted or never connected')
 
     def __str__(self):
 
         return "Address: %s\nPort: %s\nAETitle: %s\nAETitleCall: %s\nSearchWord: %s\nSearchType: %s\n" %\
-               (self.address, self.port, self.aetitle, self.aetitle_call, self.search_word, self.search_type)
+               (self.address, self.port, self.aetitle,
+                self.aetitle_call, self.search_word, self.search_type)
