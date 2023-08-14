@@ -1128,9 +1128,11 @@ class StimulatorPage(wx.Panel):
         Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
     
     def OnObjectUpdate(self, data=None):
-        self.object_reg = self.navigation.GetObjectRegistration()
         self.lbl.SetLabel("Current Configuration:")
-        self.config_txt.SetLabelText(os.path.basename(self.object_reg[-1]))
+        if self.object_reg is not None:
+            self.config_txt.SetLabelText(os.path.basename(self.object_reg[-1]))
+        else:
+            self.config_txt.SetLabelText("None")
         self.lbl.Show()
         self.config_txt.Show()
         self.next_button.Enable()
