@@ -2171,7 +2171,6 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def LoadActor(self, actor):
-        print(actor)
         self.added_actor = 1
         ren = self.ren
         ren.AddActor(actor)
