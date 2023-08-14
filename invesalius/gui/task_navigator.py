@@ -1127,8 +1127,12 @@ class StimulatorPage(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
     
+    def UpdateObjectRegistration(self):
+        self.object_reg = self.navigation.GetObjectRegistration()
+
     def OnObjectUpdate(self, data=None):
         self.lbl.SetLabel("Current Configuration:")
+        self.UpdateObjectRegistration()
         if self.object_reg is not None:
             self.config_txt.SetLabelText(os.path.basename(self.object_reg[-1]))
         else:
