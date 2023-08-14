@@ -1342,7 +1342,7 @@ class ControlPanel(wx.Panel):
         target_checkbox.SetBitmap(BMP_TARGET)
         target_checkbox.SetValue(False)
         target_checkbox.Enable(False)
-        target_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetCheckbox, ctrl=target_checkbox))
+        target_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetCheckbox))
         target_checkbox.SetToolTip(tooltip)
         self.target_checkbox = target_checkbox
         self.UpdateTargetButton()
