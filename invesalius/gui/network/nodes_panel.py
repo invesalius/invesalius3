@@ -23,7 +23,7 @@ class NodesPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.__find_input = wx.TextCtrl(self, size=(225, -1))
-        self.__find_input.SetHint(_("Enter patient name"))
+        self.__find_input.SetHint("Enter patient name")
         
         find_sizer = self._create_find_box_sizer()
 
@@ -47,13 +47,13 @@ class NodesPanel(wx.Panel):
         
         # Create the input fields
         self.__ipaddress_input = wx.TextCtrl(self, size=(225, -1))
-        self.__ipaddress_input.SetHint(_("127.0.0.1"))
+        self.__ipaddress_input.SetHint("127.0.0.1")
         self.__port_input = wx.TextCtrl(self, size=(225, -1))
-        self.__port_input.SetHint(_("4242"))
+        self.__port_input.SetHint("4242")
         self.__aetitle_input = wx.TextCtrl(self, size=(225, -1))
-        self.__aetitle_input.SetHint(_("ORTHANC"))
+        self.__aetitle_input.SetHint("ORTHANC")
         self.__description_input = wx.TextCtrl(self, size=(225, -1))
-        self.__description_input.SetHint(_("My local server"))
+        self.__description_input.SetHint("My local server")
 
         form_sizer = self._create_form_sizer()
         
