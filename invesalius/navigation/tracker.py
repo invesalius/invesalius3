@@ -48,9 +48,9 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-        self.LoadConfig()
+        self.LoadState()
 
-    def SaveConfig(self):
+    def SaveState(self):
         tracker_id = self.tracker_id
         tracker_fiducials = self.tracker_fiducials.tolist()
         tracker_fiducials_raw = self.tracker_fiducials_raw.tolist()
@@ -65,11 +65,11 @@ class Tracker(metaclass=Singleton):
             'configuration': configuration,
         }
         session = ses.Session()
-        session.SetConfig('tracker', state)
+        session.SetState('tracker', state)
 
-    def LoadConfig(self):
+    def LoadState(self):
         session = ses.Session()
-        state = session.GetConfig('tracker')
+        state = session.GetState('tracker')
 
         if state is None:
             return
@@ -129,8 +129,8 @@ class Tracker(metaclass=Singleton):
                                        self.event_coord)
                 self.thread_coord.start()
 
-            self.SaveConfig()
         Publisher.sendMessage('End busy cursor')
+            self.SaveState()
         
 
     def DisconnectTracker(self):
@@ -209,14 +209,14 @@ class Tracker(metaclass=Singleton):
 
         print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
 
-        self.SaveConfig()
+        self.SaveState()
 
     def ResetTrackerFiducials(self):
         Publisher.sendMessage("Reset tracker fiducials")
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
 
-        self.SaveConfig()
+        self.SaveState()
 
     def GetTrackerFiducials(self):
         return self.tracker_fiducials, self.tracker_fiducials_raw
