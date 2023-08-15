@@ -246,7 +246,7 @@ class Navigation(metaclass=Singleton):
     def CoilAtTarget(self, state):
         self.coil_at_target = state
 
-    def UpdateSleep(self, sleep):
+    def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
         # self.serial_port_connection.sleep_nav = sleep
 

@@ -53,6 +53,7 @@ class Preferences(wx.Dialog):
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
+            self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
             self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connection, neuronavigation_api)
             self.book.AddPage(self.pnl_tracker, _("Tracker"))

@@ -576,14 +576,21 @@ def offset_coordinate(p_old, norm_vec, offset):
 class ReceiveCoordinates(threading.Thread):
     def __init__(self, tracker_connection, tracker_id, TrackerCoordinates, event):
         threading.Thread.__init__(self, name='ReceiveCoordinates')
-
+        self.__bind_events()
+        self.sleep_coord = const.SLEEP_COORDINATES
         self.tracker_connection = tracker_connection
         self.tracker_id = tracker_id
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
 
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateCoordSleep, 'Update coord sleep')
+
+    def UpdateCoordSleep(self, data):
+        self.sleep_coord = data
+
     def run(self):
         while not self.event.is_set():
             coord_raw, markers_flag = GetCoordinatesForThread(self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE)
             self.TrackerCoordinates.SetCoordinates(coord_raw, markers_flag)
-            sleep(const.SLEEP_COORDINATES)
+            sleep(self.sleep_coord)
