@@ -3,11 +3,13 @@ import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
 from invesalius import inv_paths
 import wx.gizmos as gizmos
+import pathlib
 import wx
 import os
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
+
 
 class TextPanel(wx.Panel):
     """ Text panel. """
@@ -41,13 +43,12 @@ class TextPanel(wx.Panel):
 
     def _init_gui(self):
 
-        tree = gizmos.TreeListCtrl(self, -1, style =
-            wx.TR_DEFAULT_STYLE |
-            wx.TR_HIDE_ROOT |
-            wx.TR_ROW_LINES |
-            wx.TR_FULL_ROW_HIGHLIGHT |
-            wx.TR_SINGLE
-        )
+        tree = gizmos.TreeListCtrl(self, -1, style=wx.TR_DEFAULT_STYLE |
+                                   wx.TR_HIDE_ROOT |
+                                   wx.TR_ROW_LINES |
+                                   wx.TR_FULL_ROW_HIGHLIGHT |
+                                   wx.TR_SINGLE
+                                   )
 
         tree.AddColumn(_("Patient name"))
         tree.AddColumn(_("Patient ID"))
@@ -73,11 +74,11 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(7, 70)   # Number Images
         tree.SetColumnWidth(8, 130)  # Institution
         tree.SetColumnWidth(9, 100)  # Date of birth
-        tree.SetColumnWidth(10, 140) # Accession Number
-        tree.SetColumnWidth(11, 160) # Referring physician
+        tree.SetColumnWidth(10, 140)  # Accession Number
+        tree.SetColumnWidth(11, 160)  # Referring physician
 
         return tree
-    
+
     def _load_values(self):
 
         self.__selected = self.__session.GetConfig('selected_node') \
@@ -96,15 +97,15 @@ class TextPanel(wx.Panel):
             if self.__session.GetConfig('server_port') \
             else 11120
 
-        self.__store_path = self.__session.GetConfig('store_path') \
+        self.__store_path = pathlib.Path(self.__session.GetConfig('store_path')) \
             if self.__session.GetConfig('store_path') \
-            else str(inv_paths.USER_DICOM_DIR)
+            else inv_paths.USER_DICOM_DIR
 
     def _populate(self, patients):
         """ Populate tree. """
 
         for patient in patients.keys():
-            
+
             first_serie = list(patients[patient].keys())[0]
             title = patients[patient][first_serie]['name']
             p = patients[patient][first_serie]
@@ -115,13 +116,14 @@ class TextPanel(wx.Panel):
             study_description = p['study_description']
             modality = p['modality']
             date = p['acquisition_date']
-            time = p['acquisition_time']            
+            time = p['acquisition_time']
             institution = p['institution']
             birthdate = p['date_of_birth']
             acession_number = p['acession_number']
             physician = p['ref_physician']
 
-            n_amount_images = [patients[patient][se]['n_images'] for se in patients[patient]]
+            n_amount_images = [patients[patient][se]['n_images']
+                               for se in patients[patient]]
             n_amount_images = sum(n_amount_images)
 
             parent = self.__idpatient_treeitem[patient] \
@@ -142,23 +144,23 @@ class TextPanel(wx.Panel):
             self.__idpatient_treeitem[patient] = parent
 
             for series in patients[patient].keys():
-                                
+
                 serie_description = patients[patient][series]['serie_description']
-                n_images =  patients[patient][series]['n_images']
-                date =  patients[patient][series]['acquisition_date']
-                time =  patients[patient][series]['acquisition_time']
+                n_images = patients[patient][series]['n_images']
+                date = patients[patient][series]['acquisition_date']
+                time = patients[patient][series]['acquisition_time']
                 modality = patients[patient][series]['modality']
 
                 child = self.__idserie_treeitem[(patient, series)] \
                     if (patient, series) in self.__idserie_treeitem \
                     else self.__tree.AppendItem(parent, series)
 
-                self.__tree.SetItemPyData(child, (patient, series))
+                self.__tree.SetItemPyData(child, (patient, series, n_images))
 
                 self.__tree.SetItemText(child, serie_description, 0)
                 self.__tree.SetItemText(child, modality, 5)
                 self.__tree.SetItemText(child, date + " " + time, 6)
-                self.__tree.SetItemText(child, str(n_images) , 7)
+                self.__tree.SetItemText(child, str(n_images), 7)
                 self.__tree.SetItemText(parent, str(n_amount_images), 7)
 
                 self.__idserie_treeitem[(patient, series)] = child
@@ -171,21 +173,22 @@ class TextPanel(wx.Panel):
         item = evt.GetItem()
 
         self._load_values()
-        
+
         series_data = self.__tree.GetItemPyData(item)
         if series_data:
 
-            patient_id, series_id = series_data
+            patient_id, series_id, n_images = series_data
 
             if self.__selected is None:
 
-                wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(_("Please select a node"), _(
+                    "Error"), wx.OK | wx.ICON_ERROR)
                 return
 
-            dest = f"{self.__store_path}/{patient_id}/{series_id}"
-            if not(os.path.exists(dest)):
-
-                os.makedirs(dest)
+            dest = self.__store_path.joinpath(patient_id, series_id)
+            dest.mkdir(parents=True, exist_ok=True)
+            found = len(os.listdir(dest))
+            if found < n_images:
 
                 dn = dcm_net.DicomNet()
                 dn.SetHost(self.__selected['ipaddress'])
@@ -197,15 +200,17 @@ class TextPanel(wx.Panel):
 
                 try:
 
-                    dn.RunCMove({'patient_id': patient_id, 'serie_id': series_id, 'destination': dest})
-                
+                    dn.RunCMove({'patient_id': patient_id,
+                                'serie_id': series_id, 'destination': dest})
+
                 except Exception as e:
-                        
+
                     wx.MessageBox(str(e), _("Error"), wx.OK | wx.ICON_ERROR)
                     return
 
             Publisher.sendMessage("Hide import network panel")
-            Publisher.sendMessage('Import directory', directory=dest, use_gui=False)
+            Publisher.sendMessage('Import directory',
+                                  directory=str(dest), use_gui=False)
 
     def _on_size(self, evt):
 

@@ -161,7 +161,8 @@ class DicomNet:
                 ds = event.dataset
                 ds.file_meta = event.file_meta
 
-                dest = f"{values['destination']}/{ds.SOPInstanceUID}.dcm"
+                dest = values['destination'].joinpath(
+                    f'{ds.SOPInstanceUID}.dcm')
                 ds.save_as(dest, write_like_original=False)
 
                 return 0x0000
