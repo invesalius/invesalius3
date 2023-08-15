@@ -1414,6 +1414,18 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.TargetSelected, 'Target selected')
         Publisher.subscribe(self.TrackObject, 'Track object')
 
+        #Tractography
+        Publisher.subscribe(self.UpdateTrekkerObject, 'Update Trekker object')
+        Publisher.subscribe(self.UpdateNumTracts, 'Update number of tracts')
+        Publisher.subscribe(self.UpdateSeedOffset, 'Update seed offset')
+        Publisher.subscribe(self.UpdateSeedRadius, 'Update seed radius')
+        Publisher.subscribe(self.UpdateNumberThreads, 'Update number of threads')
+        Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
+        Publisher.subscribe(self.UpdatePeelVisualization, 'Update peel visualization')
+        Publisher.subscribe(self.UpdateEfieldVisualization, 'Update e-field visualization')
+        Publisher.subscribe(self.EnableACT, 'Enable ACT')
+        Publisher.subscribe(self.UpdateACTData, 'Update ACT data')
+
     # Config 
     def SaveConfig(self):
         track_object = self.checkbox_track_object
@@ -1556,8 +1568,37 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage("Update marker offset state", create=False)
 
     def UpdateTractsVisualization(self, data):
+        self.navigation.view_tracts = data
         self.EnableToggleButton(self.tractography_checkbox, 1)
         self.UpdateToggleButton(self.tractography_checkbox, data)
+
+    def UpdatePeelVisualization(self, data):
+        self.navigation.peel_loaded = data
+
+    def UpdateEfieldVisualization(self, data):
+        self.navigation.e_field_loaded = data
+
+    def UpdateTrekkerObject(self, data):
+        # self.trk_inp = data
+        self.navigation.trekker = data
+
+    def UpdateNumTracts(self, data):
+        self.navigation.n_tracts = data
+
+    def UpdateSeedOffset(self, data):
+        self.navigation.seed_offset = data
+
+    def UpdateSeedRadius(self, data):
+        self.navigation.seed_radius = data
+
+    def UpdateNumberThreads(self, data):
+        self.navigation.n_threads = data
+
+    def UpdateACTData(self, data):
+        self.navigation.act_data = data
+
+    def EnableACT(self, data):
+        self.navigation.enable_act = data
 
     # 'Track object' checkbox
     def EnableTrackObjectCheckbox(self, enabled):
