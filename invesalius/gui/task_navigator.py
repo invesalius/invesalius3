@@ -1266,7 +1266,7 @@ class ControlPanel(wx.Panel):
 
         # Toggle Button to track object or simply the stylus
         tooltip = wx.ToolTip(_(u"Track the object"))
-        BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("track.png")), wx.BITMAP_TYPE_PNG)
+        BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
         checkbox_track_object = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkbox_track_object.SetBackgroundColour(GREY_COLOR)
         checkbox_track_object.SetBitmap(BMP_TRACK)
@@ -1279,7 +1279,7 @@ class ControlPanel(wx.Panel):
 
         # Toggle Button for Lock to Target
         tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
-        BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock.png")), wx.BITMAP_TYPE_PNG)
+        BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG)
         lock_to_target_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         lock_to_target_checkbox.SetBackgroundColour(GREY_COLOR)
         lock_to_target_checkbox.SetBitmap(BMP_LOCK)
@@ -1291,7 +1291,7 @@ class ControlPanel(wx.Panel):
 
         # Toggle Button for object position and orientation update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Show and track TMS coil"))
-        BMP_SHOW = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
+        BMP_SHOW = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG)
         checkobj = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkobj.SetBackgroundColour(GREY_COLOR)
         checkobj.SetBitmap(BMP_SHOW)
@@ -1303,7 +1303,7 @@ class ControlPanel(wx.Panel):
     
         # Toggle Button for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
-        BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("camera.png")), wx.BITMAP_TYPE_PNG)
+        BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("orbit.png")), wx.BITMAP_TYPE_PNG)
         checkcamera =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkcamera.SetBitmap(BMP_UPDATE)
         checkcamera.SetToolTip(tooltip)
@@ -1317,7 +1317,7 @@ class ControlPanel(wx.Panel):
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
-        BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("port.png")), wx.BITMAP_TYPE_PNG)
+        BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
         checkbox_serial_port = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkbox_serial_port.SetBackgroundColour(RED_COLOR)
         checkbox_serial_port.SetBitmap(BMP_PORT)
@@ -1328,7 +1328,7 @@ class ControlPanel(wx.Panel):
 
         #Toggle Button for Efield
         tooltip = wx.ToolTip(_(u"Control E-Field"))
-        BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("efield.png")), wx.BITMAP_TYPE_PNG)
+        BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
         efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         efield_checkbox.SetBackgroundColour(GREY_COLOR)
         efield_checkbox.SetBitmap(BMP_FIELD)
@@ -1340,7 +1340,7 @@ class ControlPanel(wx.Panel):
 
         #Toggle Button for Target Mode
         tooltip = wx.ToolTip(_(u"Control Target Mode"))
-        BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("track.png")), wx.BITMAP_TYPE_PNG)
+        BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
         target_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         target_checkbox.SetBackgroundColour(GREY_COLOR)
         target_checkbox.SetBitmap(BMP_TARGET)
@@ -1361,13 +1361,14 @@ class ControlPanel(wx.Panel):
         checkbox_sizer = wx.FlexGridSizer(4, 5, 5)
         checkbox_sizer.AddMany([
             (tractography_checkbox),
-            (checkbox_track_object),
-            (lock_to_target_checkbox),
-            (checkobj),
             (checkcamera),
-            (checkbox_serial_port),
+            (target_checkbox),
+            (checkbox_track_object),
             (efield_checkbox),
-            (target_checkbox)
+            (checkbox_serial_port),
+            (lock_to_target_checkbox),
+            (checkobj)
+
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
