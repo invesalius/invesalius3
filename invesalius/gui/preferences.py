@@ -56,6 +56,7 @@ class Preferences(wx.Dialog):
             self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
             self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connection, neuronavigation_api)
+            self.book.AddPage(self.pnl_navigation, _("Navigation"))
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
@@ -177,6 +178,65 @@ class Viewer3D(wx.Panel):
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
+class NavigationPage(wx.Panel):
+    def __init__(self, parent, navigation):
+        wx.Panel.__init__(self, parent)
+        self.navigation = navigation
+        self.sleep_nav = const.SLEEP_NAVIGATION
+        self.sleep_coord = const.SLEEP_COORDINATES
+
+        text_note = wx.StaticText(self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
+        # Change sleep pause between navigation loops
+        nav_sleep = wx.StaticText(self, -1, _("Navigation Sleep (s):"))
+        spin_nav_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        spin_nav_sleep.Enable(1)
+        spin_nav_sleep.SetRange(0.01, 10.0)
+        spin_nav_sleep.SetValue(self.sleep_nav)
+        spin_nav_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+        spin_nav_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+
+        # Change sleep pause between coordinate update
+        coord_sleep = wx.StaticText(self, -1, _("Coordinate Sleep (s):"))
+        spin_coord_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        spin_coord_sleep.Enable(1)
+        spin_coord_sleep.SetRange(0.01, 10.0)
+        spin_coord_sleep.SetValue(self.sleep_coord)
+        spin_coord_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectCoordSleep, ctrl=spin_coord_sleep))
+        spin_coord_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectCoordSleep, ctrl=spin_coord_sleep))
+
+        line_nav_sleep = wx.BoxSizer(wx.HORIZONTAL)
+        line_nav_sleep.AddMany([
+            (nav_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (spin_nav_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+            ])
+
+        line_coord_sleep = wx.BoxSizer(wx.HORIZONTAL)
+        line_coord_sleep.AddMany([
+            (coord_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (spin_coord_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+            ])
+
+        # Add line sizers into main sizer
+        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Sleep time configuration"))
+        conf_sizer.AddMany([
+            (text_note, 0, wx.ALL, 10),
+            (line_nav_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (line_coord_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        ])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        self.SetSizerAndFit(main_sizer)
+        self.Layout()
+
+    def OnSelectNavSleep(self, evt, ctrl):
+        self.sleep_nav = ctrl.GetValue()
+        self.navigation.UpdateNavSleep(self.sleep_nav)
+
+    def OnSelectCoordSleep(self, evt, ctrl):
+        self.sleep_coord = ctrl.GetValue()
+        Publisher.sendMessage('Update coord sleep', data=self.sleep_coord)
+        
 class ObjectPage(wx.Panel):
     def __init__(self, parent, navigation, tracker, pedal_connection, neuronavigation_api):
         wx.Panel.__init__(self, parent)
@@ -223,7 +283,7 @@ class ObjectPage(wx.Panel):
             config_txt = wx.StaticText(self, -1, os.path.basename(self.obj_name))
         else:
             config_txt = wx.StaticText(self, -1, "None")
-            
+
         self.config_txt = config_txt    
         lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
