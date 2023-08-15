@@ -1607,10 +1607,12 @@ class ControlPanel(wx.Panel):
         if enabled:
             checked = self.checkbox_track_object.GetValue()
             self.EnableShowCoil(enabled=checked)
+        self.SaveConfig()
 
     def CheckTrackObjectCheckbox(self, checked):
         self.UpdateToggleButton(self.checkbox_track_object, checked)
         self.OnTrackObjectCheckbox()
+        self.SaveConfig()
 
     def OnTrackObjectCheckbox(self, evt=None, ctrl=None):
         if ctrl is not None:
