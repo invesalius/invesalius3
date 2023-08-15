@@ -219,44 +219,30 @@ class ObjectPage(wx.Panel):
         self.btn_save = btn_save
         
         if self.state:
-            lbl = wx.StaticText(self, -1, _("Current Configuration:"))
-            lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
             config_txt = wx.StaticText(self, -1, os.path.basename(self.obj_name))
-
-            lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
-            lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
-            lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
-
-            load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
-            inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
-            inner_load_sizer.AddMany([
-                (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (config_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (btn_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-            ])
-            load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
         else:
-            lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
-            lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
-            lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
+            config_txt = wx.StaticText(self, -1, "None")
+            
+        self.config_txt = config_txt    
+        lbl = wx.StaticText(self, -1, _("Current Configuration:"))
+        lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
+        lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
+        lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
 
-            load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
-            inner_load_sizer = wx.FlexGridSizer(2, 3, 5)
-            inner_load_sizer.AddMany([
-                (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (btn_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-            ])
-            load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
-
+        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
+        inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
+        inner_load_sizer.AddMany([
+            (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (config_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (lbl_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            (btn_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+        ])
+        load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
         spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
@@ -319,7 +305,7 @@ class ObjectPage(wx.Panel):
         self.Layout()
 
     def __bind_events(self):
-        pass
+        Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
 
     def LoadConfig(self):
         session = ses.Session()
@@ -452,6 +438,9 @@ class ObjectPage(wx.Panel):
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
+
+    def OnObjectUpdate(self, data=None):
+        self.config_txt.SetLabel(os.path.basename(data[-1]))
 
 class TrackerPage(wx.Panel):
     def __init__(self, parent, tracker, robot):
