@@ -207,13 +207,13 @@ class InnerTaskPanel(wx.Panel):
         # self.spin_radius = spin_radius
 
         # Change sleep pause between navigation loops
-        text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
-        spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_sleep.Enable(1)
-        spin_sleep.SetRange(0.01, 10.0)
-        spin_sleep.SetValue(self.sleep_nav)
-        spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
-        spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
+        # text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
+        # spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        # spin_sleep.Enable(1)
+        # spin_sleep.SetRange(0.01, 10.0)
+        # spin_sleep.SetValue(self.sleep_nav)
+        # spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
+        # spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
 
         # Change opacity of brain mask visualization
         text_opacity = wx.StaticText(self, -1, _("Brain opacity:"))
@@ -243,9 +243,9 @@ class InnerTaskPanel(wx.Panel):
         line_radius.AddMany([(text_radius, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
                              (spin_radius, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
 
-        line_sleep = wx.BoxSizer(wx.HORIZONTAL)
-        line_sleep.AddMany([(text_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                            (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
+        # line_sleep = wx.BoxSizer(wx.HORIZONTAL)
+        # line_sleep.AddMany([(text_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
+        #                     (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
 
         line_opacity = wx.BoxSizer(wx.HORIZONTAL)
         line_opacity.AddMany([(text_opacity, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
@@ -287,7 +287,7 @@ class InnerTaskPanel(wx.Panel):
         main_sizer.Add(line_ntracts, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_offset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_radius, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
-        main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
+        #main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_opacity, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_checks, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, border_last)
         main_sizer.Fit(self)
@@ -324,10 +324,10 @@ class InnerTaskPanel(wx.Panel):
         # self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update seed radius', data=self.seed_radius)
 
-    def OnSelectSleep(self, evt, ctrl):
-        self.sleep_nav = ctrl.GetValue()
-        # self.tract.seed_offset = ctrl.GetValue()
-        Publisher.sendMessage('Update sleep', data=self.sleep_nav)
+    # def OnSelectSleep(self, evt, ctrl):
+    #     self.sleep_nav = ctrl.GetValue()
+    #     # self.tract.seed_offset = ctrl.GetValue()
+    #     Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
     def OnSelectOpacity(self, evt, ctrl):
         self.brain_actor.GetProperty().SetOpacity(ctrl.GetValue())
