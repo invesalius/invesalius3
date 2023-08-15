@@ -84,6 +84,10 @@ except ImportError:
 
 from invesalius import inv_paths
 
+from concurrent.futures import wait, FIRST_COMPLETED, ThreadPoolExecutor
+import multiprocessing
+import wx.lib.agw.genericmessagedialog as GMD
+
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -364,6 +368,13 @@ class InnerTaskPanel(wx.Panel):
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
 
+    def UpdateDialog(self, msg):
+        while self.tp.running:
+            self.tp.dlg.Pulse(msg)
+            if not self.tp.running:
+                break
+            wx.Yield()
+
     def OnLinkBrain(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
         inv_proj = prj.Project()
@@ -371,6 +382,10 @@ class InnerTaskPanel(wx.Panel):
         ret = peels_dlg.ShowModal()
         method = peels_dlg.method
         if ret == wx.ID_OK:
+            t_init = time.time()
+            msg = "Setting up Brain..."
+            self.tp = dlg.TractographyProgressWindow(msg)
+
             slic = sl.Slice()
             ww = slic.window_width
             wl = slic.window_level
@@ -386,10 +401,24 @@ class InnerTaskPanel(wx.Panel):
                 choices = [i for i in inv_proj.mask_dict.values()]
                 mask_index = peels_dlg.cb_masks.GetSelection()
                 mask = choices[mask_index]
-                self.brain_peel.from_mask(mask)
+                option = 1
             else:
-                mask_path = peels_dlg.mask_path
-                self.brain_peel.from_mask_file(mask_path)
+                mask = peels_dlg.mask_path
+                option = 2
+            with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as exec:
+                    futures = [exec.submit(self.UpdateDialog, msg), exec.submit(self.BrainLoading, option, mask)]
+                    done, not_done = wait(futures, return_when=FIRST_COMPLETED)
+                    self.tp.running = False
+                    
+            t_end = time.time()
+            print("Elapsed time - {}".format(t_end-t_init))
+            self.tp.Close()
+            if self.tp.error:
+                dlgg = GMD.GenericMessageDialog(None, self.tp.error,
+                                            "Exception!",
+                                            wx.OK|wx.ICON_ERROR)
+                dlgg.ShowModal()
+                
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
             Publisher.sendMessage('Update peel', flag=True, actor=self.brain_actor)
@@ -402,9 +431,16 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label=_("Brain model loaded"))
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
-
+            del self.tp
+            wx.MessageBox(_("Brain Import successful"), _("InVesalius 3"))
         peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
+
+    def BrainLoading(self, option, mask):
+        if option == 1:
+            self.brain_peel.from_mask(mask)
+        else:
+            self.brain_peel.from_mask_file(mask)
 
     def OnLinkFOD(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
@@ -431,27 +467,19 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
             t_init = time.time()
             try:
-                import concurrent.futures as mp
-                from concurrent.futures import wait
-                from concurrent.futures import FIRST_COMPLETED
-                from concurrent.futures import ThreadPoolExecutor
-                import multiprocessing
-                import functools
-                import wx.lib.agw.genericmessagedialog as GMD
-                self.tp = dlg.FODProgressWindow()
+                msg = "Setting up FOD ... "
+                self.tp = dlg.TractographyProgressWindow(msg)
 
                 self.trekker = None
                 file = filename.encode('utf-8')
-                
                 with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as exec:
-                    futures = [exec.submit(self.UpdateDialog), exec.submit(Trekker.initialize, file)]
+                    futures = [exec.submit(self.UpdateDialog, msg), exec.submit(Trekker.initialize, file)]
                     done, not_done = wait(futures, return_when=FIRST_COMPLETED)
                     completed_future = done.pop()
                     self.TrekkerCallback(completed_future)
                     
                 t_end = time.time()
                 print("Elapsed time - {}".format(t_end-t_init))
-                self.tp.running = False
                 self.tp.Close()
                 if self.tp.error:
                     dlgg = GMD.GenericMessageDialog(None, self.tp.error,
@@ -465,13 +493,6 @@ class InnerTaskPanel(wx.Panel):
                 wx.MessageBox(_("Unable to load FOD."), _("InVesalius 3"))
 
         Publisher.sendMessage('End busy cursor')
-
-    def UpdateDialog(self):
-        while self.tp.running:
-            self.tp.dlg.Pulse("Setting up FOD ... ")
-            if not self.tp.running:
-                break
-            wx.Yield()
 
     def TrekkerCallback(self, trekker):
         self.tp.running = False
@@ -510,24 +531,32 @@ class InnerTaskPanel(wx.Panel):
                 self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
 
             try:
+                t_init = time.time()
+                msg = "Setting up ACT..."
+                self.tp = dlg.TractographyProgressWindow(msg)
+                
                 Publisher.sendMessage('Update status text in GUI', label=_("Busy"))
                 if filename:
-                    act_data = nb.squeeze_image(nb.load(filename))
-                    act_data = nb.as_closest_canonical(act_data)
-                    act_data.update_header()
-                    act_data_arr = act_data.get_fdata()
-
+                    with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as exec:
+                        futures = [exec.submit(self.UpdateDialog, msg), exec.submit(self.ACTLoading, filename)]
+                        done, not_done = wait(futures, return_when=FIRST_COMPLETED)
+                        self.tp.running = False
+                    
+                    t_end = time.time()
+                    print("Elapsed time - {}".format(t_end-t_init))
+                    self.tp.Close()
+                    if self.tp.error:
+                        dlgg = GMD.GenericMessageDialog(None, self.tp.error,
+                                                    "Exception!",
+                                                    wx.OK|wx.ICON_ERROR)
+                        dlgg.ShowModal()
+                    del self.tp
                     self.checkACT.Enable(1)
                     self.checkACT.SetValue(True)
-
-                    # ACT rules should be as follows:
-                    self.trekker.pathway_stop_at_entry(filename.encode('utf-8'), -1)  # outside
-                    self.trekker.pathway_discard_if_ends_inside(filename.encode('utf-8'), 1)  # wm
-                    self.trekker.pathway_discard_if_enters(filename.encode('utf-8'), 0)  # csf
-
-                    Publisher.sendMessage('Update ACT data', data=act_data_arr)
+                    Publisher.sendMessage('Update ACT data', data=self.act_data_arr)
                     Publisher.sendMessage('Enable ACT', data=True)
                     Publisher.sendMessage('Update status text in GUI', label=_("Trekker ACT loaded"))
+                    wx.MessageBox(_("ACT Import successful"), _("InVesalius 3"))
             except:
                 Publisher.sendMessage('Update status text in GUI', label=_("ACT initialization failed."))
                 wx.MessageBox(_("Unable to load ACT."), _("InVesalius 3"))
@@ -535,6 +564,16 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage('End busy cursor')
         else:
             wx.MessageBox(_("Load FOD image before the ACT."), _("InVesalius 3"))
+
+    def ACTLoading(self, filename):
+        act_data = nb.squeeze_image(nb.load(filename))
+        act_data = nb.as_closest_canonical(act_data)
+        act_data.update_header()
+        self.act_data_arr = act_data.get_fdata()
+        # ACT rules should be as follows:
+        self.trekker.pathway_stop_at_entry(filename.encode('utf-8'), -1)  # outside
+        self.trekker.pathway_discard_if_ends_inside(filename.encode('utf-8'), 1)  # wm
+        self.trekker.pathway_discard_if_enters(filename.encode('utf-8'), 0)  # csf
 
     def OnLoadParameters(self, event=None):
         import json
