@@ -873,7 +873,7 @@ class TrackerPage(wx.Panel):
         Publisher.sendMessage('Back to image fiducials')
     
     def OnPreferences(self, evt):
-        Publisher.sendMessage("Open preferences menu")
+        Publisher.sendMessage("Open preferences menu", page=2)
 
     def OnRegisterEnable(self):
         self.register_button.Enable()
@@ -1142,7 +1142,7 @@ class StimulatorPage(wx.Panel):
         self.next_button.Enable()
     
     def OnEditPreferences(self, evt):
-        Publisher.sendMessage('Open preferences menu')
+        Publisher.sendMessage('Open preferences menu', page=3)
     
     def OnNext(self, evt):
         Publisher.sendMessage('Open navigation menu')

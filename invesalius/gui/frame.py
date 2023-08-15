@@ -644,8 +644,8 @@ class Frame(wx.Frame):
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
 
-    def ShowPreferences(self):
-        preferences_dialog = preferences.Preferences(self)
+    def ShowPreferences(self, page=0):
+        preferences_dialog = preferences.Preferences(self, page)
         preferences_dialog.LoadPreferences()
         preferences_dialog.Center()
 

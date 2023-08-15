@@ -30,9 +30,10 @@ class Preferences(wx.Dialog):
     def __init__(
         self,
         parent,
+        page, 
         id_=-1,
         title=_("Preferences"),
-        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
     ):
         super().__init__(parent, id_, title, style=style)
         tracker = Tracker()
@@ -62,12 +63,11 @@ class Preferences(wx.Dialog):
         self.book.AddPage(self.pnl_language, _("Language"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
-
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
         min_height = max([i.GetMinHeight() for i in (self.book.GetChildren())])
         if sys.platform.startswith("linux"):
             self.book.SetMinClientSize((min_width * 2, min_height * 2))
-
+        self.book.SetSelection(page)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
