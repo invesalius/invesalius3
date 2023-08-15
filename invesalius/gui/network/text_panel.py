@@ -128,8 +128,6 @@ class TextPanel(wx.Panel):
                 if patient in self.__idpatient_treeitem \
                 else self.__tree.AppendItem(self.__root, str(title))
 
-            self.__tree.SetItemPyData(parent, patient)
-
             self.__tree.SetItemText(parent, p_id, 1)
             self.__tree.SetItemText(parent, age, 2)
             self.__tree.SetItemText(parent, gender, 3)
