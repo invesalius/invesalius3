@@ -34,13 +34,17 @@ from vtkmodules.vtkCommonCore import (
     vtkLookupTable,
     vtkPoints,
     vtkUnsignedCharArray,
-    vtkDoubleArray
+    vtkDoubleArray,
+    mutable
 )
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
 )
-from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkCommonDataModel import (
+    vtkPolyData,
+    vtkCellLocator,
+)
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
@@ -1690,8 +1694,8 @@ class Viewer(wx.Panel):
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
-
-        points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
+        [center_gravity_id]= self.FindCenterofGravity()
+        points.InsertNextPoint(center_gravity_id)
         vectors.InsertNextTuple3(self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2])
 
         dataset = vtkPolyData()
@@ -1811,6 +1815,44 @@ class Viewer(wx.Panel):
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
+    def GetIndexesAboveThreshold(self):
+        cell_id_indexes = []
+        indexes = [index for index, value in enumerate(self.e_field_norms) if
+                   value > self.efield_max * const.EFIELD_MAX_RANGE_SCALE]
+        for index, value in enumerate(indexes):
+            cell_id_indexes.append(self.Id_list[value])
+        return cell_id_indexes
+
+    def FindCenterofGravity(self):
+        cell_id_indexes = self.GetIndexesAboveThreshold()
+        weights = []
+        positions = []
+        for index, value in enumerate(cell_id_indexes):
+            weights.append(self.e_field_norms[index])
+            positions.append(self.efield_mesh.GetPoint(value))
+        x_weighted = []
+        y_weighted = []
+        z_weighted = []
+        for i, (x, y, z) in enumerate(positions):
+            x_weighted.append(x * weights[i])
+            y_weighted.append(y * weights[i])
+            z_weighted.append(z * weights[i])
+        sum_x = sum(x_weighted)
+        sum_y = sum(y_weighted)
+        sum_z = sum(z_weighted)
+        sum_weights = sum(weights)
+
+        center_gravity_x = sum_x / sum_weights
+        center_gravity_y = sum_y / sum_weights
+        center_gravity_z = sum_z / sum_weights
+
+        query_point = [center_gravity_x, center_gravity_y, center_gravity_z]
+        closest_point = [0.0, 0.0, 0.0]
+        cell_id = mutable(0)
+        sub_id = mutable(0)
+        distance = mutable(0.0)
+        self.locator_efield_cell.FindClosestPoint(query_point, closest_point, cell_id, sub_id, distance)
+        return [closest_point]
 
     def GetEfieldActor(self, e_field_actor):
         self.efield_actor  = e_field_actor
