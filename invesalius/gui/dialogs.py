@@ -5737,7 +5737,6 @@ class RobotCoregistrationDialog(wx.Dialog):
         '''
         #TODO: make aboutbox
         self.matrix_tracker_to_robot = []
-        self.robot_status = False
 
         self.robot = robot
         self.tracker = tracker
@@ -5784,8 +5783,6 @@ class RobotCoregistrationDialog(wx.Dialog):
             btn_load.Enable(False)
         else:
             btn_load.Enable(True)
-            if self.GetAcquiredPoints() >= 3:
-                self.btn_apply_reg.Enable(True)
         self.btn_load = btn_load
         
 
@@ -5846,7 +5843,6 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateRobotTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
         Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
     def OnContinuousAcquisitionButton(self, evt=None, btn=None):
@@ -5880,17 +5876,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.SetAcquiredPoints(num_points)
 
         # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
-        if self.robot_status and num_points >= 3:
-            self.btn_apply_reg.Enable(True)
-
-    def UpdateRobotConnectionStatus(self, data):
-        self.robot_status = data
-        if not self.robot_status:
-            return
-
-        # Enable 'Load' and 'Apply registration' buttons only when robot connection is ok.
-        self.btn_load.Enable(True)
-        if self.GetAcquiredPoints() >= 3:
+        if self.robot.robot_status and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
     def ResetPoints(self, evt):
