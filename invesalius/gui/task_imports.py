@@ -212,8 +212,8 @@ class InnerFoldPanel(wx.Panel):
 
             # All items, except the first one, should be disabled if
             # no data has been imported initially.
-            # if i != 0:
-            #     self.enable_items.append(item)
+            if i != 0:
+                self.enable_items.append(item)
 
             # If it is related to mask, this value should be kept
             # It is used as reference to set mouse cursor related to
