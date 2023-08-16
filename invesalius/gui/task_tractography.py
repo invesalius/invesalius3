@@ -120,7 +120,6 @@ class InnerTaskPanel(wx.Panel):
         self.view_tracts = False
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
-        self.sleep_nav = const.SLEEP_NAVIGATION
         self.brain_opacity = const.BRAIN_OPACITY
         self.brain_peel = None
         self.brain_actor = None

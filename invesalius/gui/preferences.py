@@ -182,7 +182,7 @@ class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
         self.navigation = navigation
-        self.sleep_nav = const.SLEEP_NAVIGATION
+        self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
 
         text_note = wx.StaticText(self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
