@@ -107,8 +107,12 @@ class DicomNet:
 
                 if status and status.Status in (0xFF00, 0xFF01):
 
-                    patient_id = identifier.PatientID
-                    serie_id = identifier.SeriesInstanceUID
+                    patient_id = identifier.get('PatientID', None)
+                    serie_id = identifier.get('SeriesInstanceUID', None)
+
+                    if not patient_id or not serie_id:
+
+                        continue
 
                     if not (patient_id in patients.keys()):
                         patients[patient_id] = {}
@@ -150,26 +154,20 @@ class DicomNet:
 
         return False
 
-    def RunCMove(self, values):
+    def RunCMove(self, values, progress_callback):
         """ Run CMove to download the DICOM files. """
 
         def handle_store(event):
             """Handle a C-MOVE request event."""
 
-            try:
+            ds = event.dataset
+            ds.file_meta = event.file_meta
 
-                ds = event.dataset
-                ds.file_meta = event.file_meta
+            dest = values['destination'].joinpath(
+                f'{ds.SOPInstanceUID}.dcm')
+            ds.save_as(dest, write_like_original=False)
 
-                dest = values['destination'].joinpath(
-                    f'{ds.SOPInstanceUID}.dcm')
-                ds.save_as(dest, write_like_original=False)
-
-                return 0x0000
-
-            except Exception as e:
-
-                return 0xC001
+            return 0x0000
 
         ae = pynetdicom.AE()
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
@@ -189,21 +187,34 @@ class DicomNet:
             scp = ae.start_server(
                 (self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
 
-            responses = assoc.send_c_move(
-                ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
-            for (status, identifier) in responses:
+            total_responses = values['n_images']
+            completed_responses = 0
+            progress_callback(completed_responses, total_responses)
+            try:
 
-                if status:
+                responses = assoc.send_c_move(
+                    ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
+                for (status, identifier) in responses:
 
-                    print(
-                        'C-MOVE query status: 0x{0:04x}'.format(status.Status))
+                    if status and status.Status in (0xFF00, 0x0000):
 
-                else:
+                        completed_responses += 1
+                        progress_callback(completed_responses, total_responses)
 
-                    raise RuntimeError('C-MOVE request failed')
+                    else:
 
-            assoc.release()
-            scp.shutdown()
+                        raise RuntimeError(
+                            'C-MOVE failed with status: 0x{0:04x}'.format(status.Status))
+
+            except Exception as e:
+
+                raise e
+
+            finally:
+
+                assoc.release()
+                scp.shutdown()
+
         else:
 
             raise RuntimeError(

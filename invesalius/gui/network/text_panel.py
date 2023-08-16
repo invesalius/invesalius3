@@ -24,6 +24,7 @@ class TextPanel(wx.Panel):
         self.__server_aetitle = None
         self.__server_port = None
         self.__store_path = None
+        self.__progress_dialog = None
 
         self.__session = ses.Session()
 
@@ -168,6 +169,21 @@ class TextPanel(wx.Panel):
         self.__tree.Expand(self.__root)
         self.__tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_activate)
 
+    def _update_progress(self, completed, total):
+
+        percentage = int((completed / total) * 100)
+        keep_going, skip = self.__progress_dialog.Update(
+            percentage, f"Progress: {completed}/{total}")
+
+        if not keep_going:
+
+            raise RuntimeError("Operation canceled by user")
+
+    def _destroy_progress(self):
+
+        if self.__progress_dialog:
+            self.__progress_dialog.Destroy()
+
     def _on_activate(self, evt):
 
         item = evt.GetItem()
@@ -200,14 +216,20 @@ class TextPanel(wx.Panel):
 
                 try:
 
+                    self.__progress_dialog = wx.ProgressDialog(
+                        "C-MOVE Progress", "Starting...", maximum=100, parent=self, style=wx.PD_CAN_ABORT | wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME
+                    )
+
                     dn.RunCMove({'patient_id': patient_id,
-                                'serie_id': series_id, 'destination': dest})
+                                'serie_id': series_id, 'n_images': n_images, 'destination': dest}, self._update_progress)
 
                 except Exception as e:
 
+                    self._destroy_progress()
                     wx.MessageBox(str(e), _("Error"), wx.OK | wx.ICON_ERROR)
                     return
 
+            self._destroy_progress()
             Publisher.sendMessage("Hide import network panel")
             Publisher.sendMessage('Import directory',
                                   directory=str(dest), use_gui=False)
