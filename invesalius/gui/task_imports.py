@@ -166,7 +166,7 @@ class InnerFoldPanel(wx.Panel):
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 330), 0, fpb.FPB_SINGLE_FOLD)
+                                      (-1, 400), 0, fpb.FPB_SINGLE_FOLD)
 
         image_list = wx.ImageList(16,16)
         image_list.Add(GetExpandedIconBitmap())
@@ -228,7 +228,7 @@ class InnerFoldPanel(wx.Panel):
         self.image_list = image_list
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(fold_panel, 1, wx.EXPAND)
         self.sizer = sizer
         self.SetSizerAndFit(sizer)
         self.SetStateProjectClose() 
