@@ -334,10 +334,10 @@ class UpperTaskPanel(wx.Panel):
         mode = session.GetConfig('mode')
         if mode == const.MODE_RP:
             self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
-            Publisher.subscribe(self.OnEnableState, "Enable state project")
             Publisher.subscribe(self.OnOverwrite, 'Create surface from index')
             Publisher.subscribe(self.OnFoldSurface, 'Fold surface task')
             Publisher.subscribe(self.OnFoldExport, 'Fold export task')
+        Publisher.subscribe(self.OnEnableState, "Enable state project")
         # Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
     def OnOverwrite(self, surface_parameters):

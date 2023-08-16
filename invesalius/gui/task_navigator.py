@@ -248,8 +248,8 @@ class InnerFoldPanel(wx.Panel):
         self.SetAutoLayout(1)
         
     def __bind_events(self):
-        Publisher.subscribe(self.OnShowDbs, "Show dbs folder")
-        Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
+        #Publisher.subscribe(self.OnShowDbs, "Show dbs folder")
+        #Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
         Publisher.subscribe(self.OpenNavigation, 'Open navigation menu')
     
     def __calc_best_size(self, panel):
