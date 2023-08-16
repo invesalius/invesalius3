@@ -325,8 +325,7 @@ class UpperTaskPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
         self.sizer = sizer
-        if mode == const.MODE_RP:
-            self.SetStateProjectClose()
+        self.SetStateProjectClose()
         self.SetSizerAndFit(sizer)
         self.__bind_events()
 
