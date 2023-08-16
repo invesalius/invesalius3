@@ -1550,7 +1550,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
-        Publisher.subscribe(self.CreateMarker, 'Create marker')
+        Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.SetMarkers, 'Set markers')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
@@ -1561,6 +1561,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
         Publisher.subscribe(self.GetIdList, 'Get ID list')
         Publisher.subscribe(self.GetRotationPosition, 'Send coil position and rotation')
+
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
 
@@ -2058,8 +2059,9 @@ class MarkersPanel(wx.Panel):
         self.__delete_multiple_markers(indexes)
         self.SaveState()
 
-    def OnCreateMarker(self, evt):
-        self.CreateMarker()
+    def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
+                       is_target=False, seed=None, session_id=None, is_brain_target=False):
+        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target)
 
         self.SaveState()
 
