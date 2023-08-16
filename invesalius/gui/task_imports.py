@@ -166,7 +166,7 @@ class InnerFoldPanel(wx.Panel):
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (-1, 400), 0, fpb.FPB_SINGLE_FOLD)
+                                      wx.DefaultSize, 0, fpb.FPB_SINGLE_FOLD)
 
         image_list = wx.ImageList(16,16)
         image_list.Add(GetExpandedIconBitmap())
@@ -225,6 +225,7 @@ class InnerFoldPanel(wx.Panel):
 
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
+        self.ResizeFPB()
         self.image_list = image_list
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -269,9 +270,14 @@ class InnerFoldPanel(wx.Panel):
 
     def ResizeFPB(self):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
-        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
-        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
-    
+        offset = 0
+        panels = [self.fold_panel.GetFoldPanel(panel) for panel in range(self.fold_panel.GetCount())]
+        for panel in panels:
+            if not panel.IsExpanded():
+                offset += panel.GetSize()[1]
+        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded + offset*2))
+        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded + offset*2))
+
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters['options']['overwrite']
 
