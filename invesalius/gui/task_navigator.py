@@ -525,6 +525,7 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnNextEnable, "Next enable for image fiducials")
         Publisher.subscribe(self.OnNextDisable, "Next disable for image fiducials")
+        Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
 
     def LoadImageFiducials(self, label, position):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
@@ -606,6 +607,13 @@ class ImagePage(wx.Panel):
 
     def OnNextDisable(self):
         self.next_button.Disable()
+
+    def OnResetImageFiducials(self):
+        self.OnNextDisable()
+        for ctrl in self.btns_set_fiducial:
+            ctrl.SetValue(False)
+        self.start_button.SetValue(False)
+        self.OnStartRegistration(self.start_button, self.start_button)
 
     def OnStartRegistration(self, evt, ctrl):
         value = ctrl.GetValue()
@@ -1184,8 +1192,9 @@ class NavigationPanel(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
     
     def OnCloseProject(self):
+        self.tracker.ResetTrackerFiducials()
+        self.image.ResetImageFiducials()
         Publisher.sendMessage('Disconnect tracker')
-        Publisher.sendMessage('Update object registration')
         Publisher.sendMessage('Show and track coil', enabled=False)
         Publisher.sendMessage('Delete all markers')
         Publisher.sendMessage("Update marker offset state", create=False)
