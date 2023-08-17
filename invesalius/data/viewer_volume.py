@@ -1794,7 +1794,6 @@ class Viewer(wx.Panel):
 
     def ReturnToDefaultColorActor(self):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-        self.ren.AddActor2D(self.efield_scalar_bar)
         wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
         wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
 
@@ -1923,6 +1922,7 @@ class Viewer(wx.Panel):
         if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+            self.ren.AddActor2D(self.efield_scalar_bar)
             self.efield_scalar_bar.SetNumberOfLabels(2)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
