@@ -1532,22 +1532,13 @@ class ControlPanel(wx.Panel):
         if nav_status:
             self.UpdateToggleButton(self.checkbox_serial_port)
             self.EnableToggleButton(self.checkbox_serial_port, 0)
-            self.UpdateToggleButton(self.checkobj)
-            self.EnableToggleButton(self.checkobj, 0)
-            self.UpdateToggleButton(self.checkbox_track_object)
-            self.EnableToggleButton(self.checkbox_track_object, 0)
         else:
             self.EnableToggleButton(self.checkbox_serial_port, 1)
             self.UpdateToggleButton(self.checkbox_serial_port)
-            self.EnableToggleButton(self.checkbox_track_object, 1)
-            self.UpdateToggleButton(self.checkbox_track_object)
-            if self.track_obj:
-                self.EnableToggleButton(self.checkobj, 1)
-                self.UpdateToggleButton(self.checkobj)
+
         # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
         obj_registration = self.navigation.GetObjectRegistration()
         enable_track_object = obj_registration is not None and obj_registration[0] is not None and not nav_status
-        # Publisher.sendMessage('Enable track-object checkbox', enabled=enable_track_object)
         self.EnableTrackObjectCheckbox(enable_track_object)
 
     # 'Robot'
@@ -1607,9 +1598,6 @@ class ControlPanel(wx.Panel):
     def EnableTrackObjectCheckbox(self, enabled):
         self.EnableToggleButton(self.checkbox_track_object, enabled)
         self.UpdateToggleButton(self.checkbox_track_object)
-        if enabled:
-            checked = self.checkbox_track_object.GetValue()
-            self.EnableShowCoil(enabled=checked)
         self.SaveConfig()
 
     def CheckTrackObjectCheckbox(self, checked):
@@ -1641,7 +1629,6 @@ class ControlPanel(wx.Panel):
     # 'Show coil' checkbox
     def CheckShowCoil(self, checked=False):
         self.UpdateToggleButton(self.checkobj, checked)
-        self.track_obj = checked
         self.OnShowCoil()
 
     def EnableShowCoil(self, enabled=False):
@@ -1651,8 +1638,7 @@ class ControlPanel(wx.Panel):
     def OnShowCoil(self, evt=None):
         self.UpdateToggleButton(self.checkobj)
         checked = self.checkobj.GetValue()
-        Publisher.sendMessage('Show-coil checked', checked=checked)    
-        self.show_coil_checked = checked
+        Publisher.sendMessage('Show-coil checked', checked=checked)
 
 
     # 'Volume camera' checkbox
@@ -1693,11 +1679,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(ctrl)
     
 
-    # 'Target Button'
-    def ShowCoilChecked(self, checked):
-        self.show_coil_checked = checked
-        self.UpdateTargetButton()
-    
+    # 'Target Button' 
     def TargetSelected(self, status):
         if status is not None:
             self.target_selected = status
