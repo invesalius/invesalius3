@@ -2068,7 +2068,7 @@ class Viewer(wx.Panel):
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtkIdList()
         #for debugging
-        self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
+        #self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor) # remove comment for testing
         locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
         return intersectingCellIds
