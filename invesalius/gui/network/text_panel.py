@@ -214,11 +214,11 @@ class TextPanel(wx.Panel):
                 dn.SetPortCall(self.__server_port)
                 dn.SetIPCall(self.__server_ip)
 
-                try:
+                self.__progress_dialog = wx.ProgressDialog(
+                    "C-MOVE Progress", "Starting...", maximum=100, style=wx.PD_CAN_ABORT | wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME
+                )
 
-                    self.__progress_dialog = wx.ProgressDialog(
-                        "C-MOVE Progress", "Starting...", maximum=100, parent=self, style=wx.PD_CAN_ABORT | wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME
-                    )
+                try:
 
                     dn.RunCMove({'patient_id': patient_id,
                                 'serie_id': series_id, 'n_images': n_images, 'destination': dest}, self._update_progress)

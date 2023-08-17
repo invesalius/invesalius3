@@ -196,11 +196,18 @@ class DicomNet:
                     ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
                 for (status, identifier) in responses:
 
-                    if status and status.Status in (0xFF00, 0x0000):
+                    # pending status, keep moving and updating progress
+                    if status and status.Status in (0xFF00, 0xFF01):
 
                         completed_responses += 1
                         progress_callback(completed_responses, total_responses)
 
+                    # completed case, breaks to avoid reaches 100% and get stucked
+                    elif status and status.Status == 0x0000:
+
+                        break
+
+                    # there is no status or it returned an error
                     else:
 
                         raise RuntimeError(
