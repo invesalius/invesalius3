@@ -210,10 +210,9 @@ class Tracker(metaclass=Singleton):
         self.SaveState()
 
     def ResetTrackerFiducials(self):
-        Publisher.sendMessage("Reset tracker fiducials")
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
-
+        Publisher.sendMessage("Reset tracker fiducials")
         self.SaveState()
 
     def GetTrackerFiducials(self):
