@@ -82,7 +82,7 @@ from vtkmodules.vtkIOImage import (
     vtkPostScriptWriter,
     vtkTIFFWriter,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
+from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor, vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointPicker,
@@ -1794,6 +1794,7 @@ class Viewer(wx.Panel):
 
     def ReturnToDefaultColorActor(self):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+        self.ren.AddActor2D(self.efield_scalar_bar)
         wx.CallAfter(Publisher.sendMessage, 'Initialize color array')
         wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
 
@@ -1894,6 +1895,7 @@ class Viewer(wx.Panel):
         self.target_radius_list=[]
         self.max_efield_vector = None
         self.vectorfield_actor =None
+        self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
 
     def GetNeuronavigationApi(self, neuronavigation_api):
@@ -1920,6 +1922,8 @@ class Viewer(wx.Panel):
     def OnUpdateEfieldvis(self):
         if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
+            self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+            self.efield_scalar_bar.SetNumberOfLabels(2)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
             for h in range(len(self.Id_list)):

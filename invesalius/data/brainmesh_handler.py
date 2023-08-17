@@ -41,6 +41,7 @@ from vtkmodules.vtkCommonColor import (
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
 class Brain:
     def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
@@ -338,6 +339,9 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
         self.efield_mapper = vtkPolyDataMapper()
+
+        self.efield_scalar_bar = vtkScalarBarActor()
+        self.efield_scalar_bar.SetOrientationToVertical()
         #self.lut = CreateLUTTableForEfield(0, 0.005)
 
 
