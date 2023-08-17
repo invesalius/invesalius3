@@ -270,13 +270,15 @@ class InnerFoldPanel(wx.Panel):
 
     def ResizeFPB(self):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
+        offset_constant = 1.8
         offset = 0
         panels = [self.fold_panel.GetFoldPanel(panel) for panel in range(self.fold_panel.GetCount())]
         for panel in panels:
             if not panel.IsExpanded():
                 offset += panel.GetSize()[1]
-        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded + offset*2))
-        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded + offset*2))
+        sizeNeeded += int(offset * offset_constant)
+        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded))
+        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters['options']['overwrite']
