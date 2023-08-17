@@ -1155,7 +1155,13 @@ class StimulatorPage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnCloseProject, 'Remove object data')
     
+    def OnCloseProject(self):
+        Publisher.sendMessage('Check track-object checkbox', checked=False)
+        Publisher.sendMessage('Enable track-object checkbox', enabled=False)
+        
     def UpdateObjectRegistration(self):
         self.object_reg = self.navigation.GetObjectRegistration()
 
