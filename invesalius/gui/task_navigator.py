@@ -251,6 +251,7 @@ class InnerFoldPanel(wx.Panel):
         #Publisher.subscribe(self.OnShowDbs, "Show dbs folder")
         #Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
         Publisher.subscribe(self.OpenNavigation, 'Open navigation menu')
+        Publisher.subscribe(self.OnEnableState, "Enable state project")
     
     def __calc_best_size(self, panel):
         parent = panel.GetParent()
@@ -275,6 +276,11 @@ class InnerFoldPanel(wx.Panel):
         panel.Reparent(parent)
         panel.SetInitialSize(size)
         self.SetInitialSize(self.GetSize())
+
+    def OnEnableState(self, state):
+        if not state:
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
+            Publisher.sendMessage('Back to image fiducials')
 
     def OnShowDbs(self):
         self.dbs_item.Show()
@@ -364,7 +370,9 @@ class CoregistrationPanel(wx.Panel):
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-        self.SetBackgroundColour(default_colour)
+        #Changed from default color for OSX
+        background_colour = (255, 255, 255)
+        self.SetBackgroundColour(background_colour)
 
         book = wx.Notebook(self, -1,style= wx.BK_DEFAULT)
         book.Bind(wx.EVT_BOOKCTRL_PAGE_CHANGING, self.OnPageChanging)
@@ -492,6 +500,10 @@ class ImagePage(wx.Panel):
         start_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStartRegistration, ctrl=start_button))
         self.start_button = start_button
 
+        reset_button = wx.Button(self, label="Reset", style=wx.BU_EXACTFIT)
+        reset_button.Bind(wx.EVT_BUTTON, partial(self.OnReset, ctrl=reset_button))
+        self.reset_button = reset_button
+
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
         if not self.image.AreImageFiducialsSet():
@@ -499,15 +511,18 @@ class ImagePage(wx.Panel):
         self.next_button = next_button
 
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        top_sizer.Add(start_button)
+        top_sizer.AddMany([
+            (start_button),
+            (reset_button)
+            ])
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sizer.Add(next_button)
 
         sizer = wx.GridBagSizer(5, 5)
-        sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add(self.btns_set_fiducial[2], wx.GBPosition(0, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_HORIZONTAL)
-        sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add(background, wx.GBPosition(1, 2))
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -607,6 +622,10 @@ class ImagePage(wx.Panel):
 
     def OnNextDisable(self):
         self.next_button.Disable()
+
+    def OnReset(self, evt, ctrl):
+        self.image.ResetImageFiducials()
+        self.OnResetImageFiducials()
 
     def OnResetImageFiducials(self):
         self.OnNextDisable()
@@ -749,9 +768,9 @@ class TrackerPage(wx.Panel):
         ])
 
         sizer = wx.GridBagSizer(5, 5)
-        sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 0), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add(self.btns_set_fiducial[2], wx.GBPosition(0, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_HORIZONTAL)
-        sizer.Add(self.btns_set_fiducial[1], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.btns_set_fiducial[0], wx.GBPosition(1, 3), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add(background, wx.GBPosition(1, 2))
         sizer.Add(register_button, wx.GBPosition(2, 2), span=wx.GBSpan(1, 2), flag=wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
 
