@@ -412,6 +412,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetNeuronavigationApi, 'Get Neuronavigation Api')
         Publisher.subscribe(self.UpdateEfieldPointLocationOffline,'Update interseccion offline')
         Publisher.subscribe(self.MaxEfieldActor, 'Show max Efield actor')
+        Publisher.subscribe(self.CoGEfieldActor, 'Show CoG Efield actor')
         Publisher.subscribe(self.EfieldVectors, 'Show Efield vectors')
         Publisher.subscribe(self.RecolorEfieldActor, 'Recolor efield actor')
         # Related to robot tracking during neuronavigation
@@ -1686,37 +1687,45 @@ class Viewer(wx.Panel):
     def RecolorEfieldActor(self):
         self.efield_mesh_normals_viewer.Modified()
 
-    def MaxEfieldActor(self):
-        vtk_colors = vtkNamedColors()
-        if self.max_efield_vector is not None:
-            self.ren.RemoveActor(self.max_efield_vector)
-
+    def DrawVectors(self, position, orientation, color):
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
-        [center_gravity_id]= self.FindCenterofGravity()
-        points.InsertNextPoint(center_gravity_id)
-        vectors.InsertNextTuple3(self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2])
-
+        points.InsertNextPoint(position)
+        vectors.InsertNextTuple3(orientation[0], orientation[1], orientation[2])
         dataset = vtkPolyData()
         dataset.SetPoints(points)
         dataset.GetPointData().SetVectors(vectors)
-
         arrowSource = vtkArrowSource()
-
         glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
         glyphFilter.SetScaleFactor(10)
         glyphFilter.Update()
-
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(glyphFilter.GetOutput())
+        Actor = vtkActor()
+        Actor.SetMapper(mapper)
+        Actor.GetProperty().SetColor(color)
+        return Actor
 
-        self.max_efield_vector = vtkActor()
-        self.max_efield_vector.SetMapper(mapper)
-        self.max_efield_vector.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
+    def MaxEfieldActor(self):
+        vtk_colors = vtkNamedColors()
+        if self.max_efield_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+        position = self.efield_mesh.GetPoint(self.Idmax)
+        orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
+        self.max_efield_vector = self.DrawVectors(position, orientation, vtk_colors.GetColor3d('Red'))
         self.ren.AddActor(self.max_efield_vector)
+
+    def CoGEfieldActor(self):
+        vtk_colors = vtkNamedColors()
+        if self.GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.GoGEfieldVector)
+        orientation = [self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2]]
+        [center_gravity_id] = self.FindCenterofGravity( )
+        self.GoGEfieldVector = self.DrawVectors(center_gravity_id, orientation,vtk_colors.GetColor3d('Blue'))
+        self.ren.AddActor(self.GoGEfieldVector)
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
@@ -1893,6 +1902,7 @@ class Viewer(wx.Panel):
         self.e_field_norms = None
         self.target_radius_list=[]
         self.max_efield_vector = None
+        self.GoGEfieldVector = None
         self.vectorfield_actor =None
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
@@ -1943,6 +1953,7 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.vectorfield_actor)
             if self.plot_vector:
                 wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
+                wx.CallAfter(Publisher.sendMessage, 'Show CoG Efield actor')
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
                     self.plot_vector= False
