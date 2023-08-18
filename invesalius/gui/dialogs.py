@@ -416,7 +416,22 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     return filename
 
 
+class CoordinateSpaceTransformHook(wx.FileDialogCustomizeHook):
+    def __init__(self):
+        super().__init__()
+        self.convertFromWorld = None
+
+    def AddCustomControls(self, customizer):
+        self.checkbox = customizer.AddCheckBox(_("File is in world/scanner coordinates"))
+        self.checkbox.SetValue(True)
+
+    def TransferDataFromCustomControls(self):
+        self.convertFromWorld = self.checkbox.GetValue()
+
+
 def ShowImportMeshFilesDialog():
+    from invesalius.data.slice_ import Slice
+
     # Default system path
     current_dir = os.path.abspath(".")
 
@@ -431,12 +446,20 @@ def ShowImportMeshFilesDialog():
     # stl filter is default
     dlg.SetFilterIndex(0)
 
+    if Slice().has_affine():
+        customizeHook = CoordinateSpaceTransformHook()
+        dlg.SetCustomizeHook(customizeHook)
+    else:
+        customizeHook = None
+
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filename = None
     try:
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
+            if customizeHook is not None:
+                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=customizeHook.convertFromWorld)
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
