@@ -182,6 +182,12 @@ SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
                      _("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
                      }
 
+#Colors for errors and positives
+RED_COLOR_FLOAT = (0.99, 0.55, 0.38)
+GREEN_COLOR_FLOAT = (0.40, 0.76, 0.65)
+RED_COLOR_RGB = (252, 141, 98)
+GREEN_COLOR_RGB = (102, 194, 165)
+
 # Volume view angle
 VOL_FRONT = wx.NewId()
 VOL_BACK = wx.NewId()
@@ -684,9 +690,8 @@ CAMERA = 5
 POLARIS = 6
 POLARISP4 = 7
 OPTITRACK = 8
-ROBOT = 9
-DEBUGTRACKRANDOM = 10
-DEBUGTRACKAPPROACH = 11
+DEBUGTRACKRANDOM = 9
+DEBUGTRACKAPPROACH = 10
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
@@ -696,7 +701,7 @@ TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
            _("NDI Polaris"), _("NDI Polaris P4"),
-           _("Optitrack"), _("Robot tracker"),
+           _("Optitrack"),
            _("Debug tracker (random)"), _("Debug tracker (approach)")]
 
 STATIC_REF = 0
@@ -717,24 +722,25 @@ TR2 = wx.NewId()
 TR3 = wx.NewId()
 SET = wx.NewId()
 
+FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
 IMAGE_FIDUCIALS = [
     {
         'button_id': IR1,
-        'label': 'LEI',
+        'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
         'tip': _("Select left ear in image"),
     },
     {
         'button_id': IR2,
-        'label': 'REI',
+        'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
         'tip': _("Select right ear in image"),
     },
     {
         'button_id': IR3,
-        'label': 'NAI',
+        'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
         'tip': _("Select nasion in image"),
@@ -744,21 +750,21 @@ IMAGE_FIDUCIALS = [
 TRACKER_FIDUCIALS = [
     {
         'button_id': TR1,
-        'label': 'LET',
+        'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
         'tip': _("Select left ear with spatial tracker"),
     },
     {
         'button_id': TR2,
-        'label': 'RET',
+        'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
         'tip': _("Select right ear with spatial tracker"),
     },
     {
         'button_id': TR3,
-        'label': 'NAT',
+        'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
         'tip': _("Select nasion with spatial tracker"),

@@ -280,7 +280,7 @@ class Viewer(wx.Panel):
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
 
-        self.LoadState()
+        self.LoadConfig()
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -415,7 +415,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
         Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
 
-    def SaveState(self):
+    def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
         use_default_object = self.use_default_object
 
@@ -425,11 +425,11 @@ class Viewer(wx.Panel):
         }
 
         session = ses.Session()
-        session.SetState('viewer', state)
+        session.SetConfig('viewer', state)
 
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
-        state = session.GetState('viewer')
+        state = session.GetConfig('viewer')
 
         if state is None:
             return
@@ -439,7 +439,12 @@ class Viewer(wx.Panel):
 
         self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
         self.use_default_object = use_default_object
+        # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
+        Publisher.sendMessage('Enable track-object checkbox', enabled=True)
+        Publisher.sendMessage('Check track-object checkbox', checked=True)
+        Publisher.sendMessage('Check volume camera checkbox', checked=False)
 
+        Publisher.sendMessage('Disable target mode')
         self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
 
     def get_vtk_mouse_position(self):
@@ -524,18 +529,21 @@ class Viewer(wx.Panel):
             self.probe = True
             self.CreateSensorID()
 
+        green_color = const.GREEN_COLOR_FLOAT
+        red_color = const.RED_COLOR_FLOAT
+
         if probe_id:
-            colour1 = (0, 1, 0)
+            colour1 = green_color
         else:
-            colour1 = (1, 0, 0)
+            colour1 = red_color
         if ref_id:
-            colour2 = (0, 1, 0)
+            colour2 = green_color
         else:
-            colour2 = (1, 0, 0)
+            colour2 = red_color
         if obj_id:
-            colour3 = (0, 1, 0)
+            colour3 = green_color
         else:
-            colour3 = (1, 0, 0)
+            colour3 = red_color
 
         self.dummy_probe_actor.GetProperty().SetColor(colour1)
         self.dummy_ref_actor.GetProperty().SetColor(colour2)
@@ -553,6 +561,7 @@ class Viewer(wx.Panel):
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
+        mapper.SetScalarVisibility(0)
 
         dummy_probe_actor = vtkActor()
         dummy_probe_actor.SetMapper(mapper)
@@ -574,6 +583,7 @@ class Viewer(wx.Panel):
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
+        mapper.SetScalarVisibility(0)
 
         dummy_ref_actor = vtkActor()
         dummy_ref_actor.SetMapper(mapper)
@@ -595,6 +605,7 @@ class Viewer(wx.Panel):
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
+        mapper.SetScalarVisibility(0)
 
         dummy_obj_actor = vtkActor()
         dummy_obj_actor.SetMapper(mapper)
@@ -2153,7 +2164,7 @@ class Viewer(wx.Panel):
         self.polydata = polydata
         self.use_default_object = use_default_object
 
-        self.SaveState()
+        self.SaveConfig()
 
     def TrackObject(self, enabled):
         if enabled:
