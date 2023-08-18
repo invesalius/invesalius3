@@ -529,18 +529,21 @@ class Viewer(wx.Panel):
             self.probe = True
             self.CreateSensorID()
 
+        green_color = (0.40, 0.76, 0.65)
+        red_color = (0.99, 0.55, 0.38)
+
         if probe_id:
-            colour1 = (0, 1, 0)
+            colour1 = green_color
         else:
-            colour1 = (1, 0, 0)
+            colour1 = red_color
         if ref_id:
-            colour2 = (0, 1, 0)
+            colour2 = green_color
         else:
-            colour2 = (1, 0, 0)
+            colour2 = red_color
         if obj_id:
-            colour3 = (0, 1, 0)
+            colour3 = green_color
         else:
-            colour3 = (1, 0, 0)
+            colour3 = red_color
 
         self.dummy_probe_actor.GetProperty().SetColor(colour1)
         self.dummy_ref_actor.GetProperty().SetColor(colour2)
@@ -558,6 +561,7 @@ class Viewer(wx.Panel):
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
+        mapper.SetScalarVisibility(0)
 
         dummy_probe_actor = vtkActor()
         dummy_probe_actor.SetMapper(mapper)
@@ -579,6 +583,7 @@ class Viewer(wx.Panel):
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
+        mapper.SetScalarVisibility(0)
 
         dummy_ref_actor = vtkActor()
         dummy_ref_actor.SetMapper(mapper)
@@ -600,6 +605,7 @@ class Viewer(wx.Panel):
         reader.SetFileName(filename)
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
+        mapper.SetScalarVisibility(0)
 
         dummy_obj_actor = vtkActor()
         dummy_obj_actor.SetMapper(mapper)
