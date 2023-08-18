@@ -1933,7 +1933,6 @@ class Viewer(wx.Panel):
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.efield_scalar_bar.SetLookupTable(self.efield_lut)
             self.ren.AddActor2D(self.efield_scalar_bar)
-            self.efield_scalar_bar.SetNumberOfLabels(2)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
             for h in range(len(self.Id_list)):

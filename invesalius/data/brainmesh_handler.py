@@ -348,6 +348,7 @@ class E_field_brain:
         self.efield_scalar_bar = vtkScalarBarActor()
         self.efield_scalar_bar.SetOrientationToVertical()
         self.efield_scalar_bar.SetTitle('E (V/m)')
+        self.efield_scalar_bar.SetNumberOfLabels(2)
         self.efield_scalar_bar.SetTitleTextProperty(text_property)
         #self.lut = CreateLUTTableForEfield(0, 0.005)
 
