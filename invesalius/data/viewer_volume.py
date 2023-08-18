@@ -2332,7 +2332,7 @@ class Viewer(wx.Panel):
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
 
-    def OnExportSurface(self, filename, filetype):
+    def OnExportSurface(self, filename, filetype, convert_to_world=False):
         if filetype not in (const.FILETYPE_STL,
                             const.FILETYPE_VTP,
                             const.FILETYPE_PLY,
