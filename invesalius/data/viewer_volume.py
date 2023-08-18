@@ -529,8 +529,8 @@ class Viewer(wx.Panel):
             self.probe = True
             self.CreateSensorID()
 
-        green_color = (0.40, 0.76, 0.65)
-        red_color = (0.99, 0.55, 0.38)
+        green_color = const.GREEN_COLOR_FLOAT
+        red_color = const.RED_COLOR_FLOAT
 
         if probe_id:
             colour1 = green_color

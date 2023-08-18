@@ -668,15 +668,12 @@ class TrackerPage(wx.Panel):
             
 
         self.bg_bmp = GetBitMapForBackground()
-        RED_COLOR = (255, 82, 82)
+        RED_COLOR = const.RED_COLOR_RGB
         self.RED_COLOR = RED_COLOR
-        GREEN_COLOR = (118, 255, 3)
+        GREEN_COLOR = const.GREEN_COLOR_RGB
         self.GREEN_COLOR = GREEN_COLOR
         YELLOW_COLOR = (255, 196, 0)
         self.YELLOW_COLOR = YELLOW_COLOR
-
-        TEXT_COLOR = (250, 250, 250)
-        self.TEXT_COLOR = TEXT_COLOR
 
         # Toggle buttons for image fiducials
         background = wx.StaticBitmap(self, -1, self.bg_bmp, (0, 0))
@@ -692,14 +689,13 @@ class TrackerPage(wx.Panel):
             # ctrl.SetValue(self.tracker.IsTrackerFiducialSet(n))
             # ctrl.Disable()
             w, h = wx.ScreenDC().GetTextExtent("M"*len(label))
-            ctrl = wx.StaticText(self, button_id, label=label, style=wx.TE_READONLY | wx.BORDER_NONE | wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL, size=(55, h+5))
+            ctrl = wx.StaticText(self, button_id, label='', style=wx.TE_READONLY | wx.ALIGN_CENTER| wx.ST_NO_AUTORESIZE, size=(55, h+5))
+            ctrl.SetLabel(label)
             ctrl.SetToolTip(wx.ToolTip(tip))
             if self.tracker.IsTrackerFiducialSet(n):
                 ctrl.SetBackgroundColour(GREEN_COLOR)
             else:
                 ctrl.SetBackgroundColour(RED_COLOR)
-            #ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
-
 
             self.btns_set_fiducial[n] = ctrl
 
@@ -941,10 +937,12 @@ class TrackerPage(wx.Panel):
                         callback=self.set_fiducial_callback,
                         remove_when_released=False,
                     )
-                # for button in self.btns_set_fiducial:
-                #     button.Enable()
-                if self.tracker_fiducial_being_set < 3:
+                
+                if self.tracker_fiducial_being_set is None:
+                    return
+                else:
                     self.LabelHandler(self.btns_set_fiducial[self.tracker_fiducial_being_set], self.tracker_fiducial_being_set)
+
                 if not self.tracker.AreTrackerFiducialsSet():
                     self.OnRegisterEnable()
 
@@ -1077,9 +1075,9 @@ class RefinePage(wx.Panel):
 
             self.txtctrl_fre.SetValue(str(round(fre, 2)))
             if fre_ok:
-                self.txtctrl_fre.SetBackgroundColour('GREEN')
+                self.txtctrl_fre.SetBackgroundColour(const.GREEN_COLOR_RGB)
             else:
-                self.txtctrl_fre.SetBackgroundColour('RED')
+                self.txtctrl_fre.SetBackgroundColour(const.RED_COLOR_RGB)
     
     def OnResetTrackerFiducials(self):
         for m in range(3):
@@ -1281,9 +1279,9 @@ class ControlPanel(wx.Panel):
 
         # Constants for bitmap parent toggle button
         ICON_SIZE = (48, 48)
-        RED_COLOR = (255, 82, 82)
+        RED_COLOR = const.RED_COLOR_RGB
         self.RED_COLOR = RED_COLOR
-        GREEN_COLOR = (118, 255, 3)
+        GREEN_COLOR = const.GREEN_COLOR_RGB
         self.GREEN_COLOR = GREEN_COLOR
         GREY_COLOR = (217, 217, 217)
         self.GREY_COLOR = GREY_COLOR

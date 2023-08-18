@@ -182,6 +182,12 @@ SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
                      _("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
                      }
 
+#Colors for errors and positives
+RED_COLOR_FLOAT = (0.99, 0.55, 0.38)
+GREEN_COLOR_FLOAT = (0.40, 0.76, 0.65)
+RED_COLOR_RGB = (252, 141, 98)
+GREEN_COLOR_RGB = (102, 194, 165)
+
 # Volume view angle
 VOL_FRONT = wx.NewId()
 VOL_BACK = wx.NewId()
