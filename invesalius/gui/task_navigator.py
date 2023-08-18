@@ -986,7 +986,7 @@ class RefinePage(wx.Panel):
             coord_sizer.Add(self.labels[m], pos=wx.GBPosition(m, 0))
             for n in range(3):
                 coord_sizer.Add(self.numctrls_fiducial[m][n], pos=wx.GBPosition(m, n+1))
-                if m in range(1, 6):
+                if m in range(6):
                     self.numctrls_fiducial[m][n].SetEditable(False)
         
         txt_label_track = wx.StaticText(self, -1, _("Tracker Fiducials:"))
@@ -1161,7 +1161,7 @@ class StimulatorPage(wx.Panel):
     def OnCloseProject(self):
         Publisher.sendMessage('Check track-object checkbox', checked=False)
         Publisher.sendMessage('Enable track-object checkbox', enabled=False)
-        
+
     def UpdateObjectRegistration(self):
         self.object_reg = self.navigation.GetObjectRegistration()
 
