@@ -5103,20 +5103,7 @@ class E_fieldPanel(wx.Panel):
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
         spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
 
-        border = 1
-        line_sleep = wx.BoxSizer(wx.VERTICAL)
-        line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                            (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
-        line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-
-        line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-        line_btns_save.Add(self.btn_all_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-
-        # Add line sizers into main sizer
-        border_last = 5
-        txt_surface = wx.StaticText(self, -1, _('Change coil:'), pos=(20,100))
+        combo_surface_name_title = wx.StaticText(self, -1, _('Change coil:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
@@ -5125,14 +5112,84 @@ class E_fieldPanel(wx.Panel):
         self.combo_surface_name.Insert('Select coil:',0)
         self.combo_surface_name.Enable(False)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
-        main_sizer.Add(enable_efield, 1, wx.LEFT | wx.RIGHT, 2)
-        main_sizer.Add(plot_vectors, 1, wx.LEFT | wx.RIGHT, 2)
-        main_sizer.Add(self.combo_surface_name, 1, wx.ALIGN_CENTER_HORIZONTAL,2)
-        main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP, border)
-        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
+        value = str(0)
+        tooltip = wx.ToolTip(_("dt(\u03BC s)"))
+        self.input_dt = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_dt.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_dt.SetBackgroundColour('WHITE')
+        self.input_dt.SetEditable(1)
+        self.input_dt.SetToolTip(tooltip)
 
+        tooltip = wx.ToolTip(_("dI"))
+        self.input_coil1 = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_coil1.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_coil1.SetBackgroundColour('WHITE')
+        self.input_coil1.SetEditable(1)
+        self.input_coil1.SetToolTip(tooltip)
+
+        self.input_coil2 = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_coil2.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_coil2.SetBackgroundColour('WHITE')
+        self.input_coil2.SetEditable(1)
+        self.input_coil2.SetToolTip(tooltip)
+
+        self.input_coil3 = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_coil3.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_coil3.SetBackgroundColour('WHITE')
+        self.input_coil3.SetEditable(1)
+        self.input_coil3.SetToolTip(tooltip)
+
+        self.input_coil4 = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_coil4.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_coil4.SetBackgroundColour('WHITE')
+        self.input_coil4.SetEditable(1)
+        self.input_coil4.SetToolTip(tooltip)
+
+        self.input_coil5 = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_coil5.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_coil5.SetBackgroundColour('WHITE')
+        self.input_coil5.SetEditable(1)
+        self.input_coil5.SetToolTip(tooltip)
+
+        tooltip = wx.ToolTip(_("Enter Values"))
+        btn_enter = wx.Button(self, -1, _("Enter"), size=wx.Size(80, -1))
+        btn_enter.SetToolTip(tooltip)
+        btn_enter.Bind(wx.EVT_BUTTON, self.OnEnterdIPerdt)
+        btn_enter.Enable(True)
+
+        line_checkboxes = wx.BoxSizer(wx.HORIZONTAL)
+        line_checkboxes.AddMany([(enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
+                                 (plot_vectors, 1, wx.LEFT | wx.RIGHT, 2)])
+
+        line_sleep = wx.BoxSizer(wx.HORIZONTAL)
+        line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
+                            (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW)])
+        line_btns = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
+        line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
+        line_btns_save.Add(self.input_dt, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(self.btn_all_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+
+        line_mtms = wx.BoxSizer(wx.HORIZONTAL)
+        text_mtms = wx.StaticText(self, -1, _("dI"))
+        line_mtms.Add(self.input_coil1, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT,)
+        line_mtms.Add(self.input_coil2, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT,)
+        line_mtms.Add(self.input_coil3, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT,)
+        line_mtms.Add(self.input_coil4, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT,)
+        line_mtms.Add(self.input_coil5, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT,)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
+        main_sizer.Add(line_checkboxes, 1, wx.LEFT | wx.RIGHT, 2)
+        main_sizer.Add(combo_surface_name_title, 0, wx.CENTER)
+        main_sizer.Add(self.combo_surface_name, 0, wx.CENTER)
+        main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP)
+        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
+        main_sizer.Add(text_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
+        main_sizer.Add(line_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
+        main_sizer.Add(btn_enter, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT)
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
@@ -5160,9 +5217,10 @@ class E_fieldPanel(wx.Panel):
             cortex_model_path=self.cortex_file,
             mesh_models_paths=self.meshes_file,
             coil_model_path=self.coil,
-            coil_set = False,
+            coil_set=False,
             conductivities_inside=self.ci,
             conductivities_outside=self.co,
+            dI_per_dt=self.dIperdt_list,
         )
         Publisher.sendMessage('Update status in GUI', value=0, label="Ready")
 
@@ -5251,13 +5309,14 @@ class E_fieldPanel(wx.Panel):
         self.surface_index= surface_index_cortex
         Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
-    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co):
+    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co, dIperdt_list):
         self.path_meshes = path_meshes
         self.cortex_file = cortex_file
         self.meshes_file = meshes_file
         self.ci = ci
         self.co = co
         self.coil = coil
+        self.dIperdt_list = dIperdt_list
 
     def OnGetMultilocusCoils(self, multilocus_coil_list):
         self.multilocus_coil = multilocus_coil_list
@@ -5322,6 +5381,17 @@ class E_fieldPanel(wx.Panel):
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.efield_data_saved = efield_data_loaded
+
+    def OnEnterdIPerdt(self, evt):
+        input_dt=1/(float(self.input_dt.GetValue())*1e-6)
+        self.input_coils = [float(self.input_coil1.GetValue()),float(self.input_coil2.GetValue()), float(self.input_coil3.GetValue()), float(self.input_coil4.GetValue()), float(self.input_coil5.GetValue())]
+        self.input_coils = np.array(self.input_coils)*input_dt
+        self.input_coils =self.input_coils.tolist()
+        print('dIperdt: ', self.input_coils)
+        print('input_dt: ', input_dt)
+        self.navigation.neuronavigation_api.set_dIperdt(
+            dIperdt = self.input_coils,
+        )
 
 class SessionPanel(wx.Panel):
     def __init__(self, parent):

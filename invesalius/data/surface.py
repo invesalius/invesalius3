@@ -418,6 +418,11 @@ class SurfaceManager():
         cortex =config_dict['path_meshes']+config_dict['cortex']
         bmeshes = config_dict['bmeshes']
         coil = config_dict['coil']
+        dIperdt_list = []
+        dIperdt = config_dict['dIperdts']
+        for elements in dIperdt:
+            elem = elements['dIperdt']
+            dIperdt_list.append(elem)
         if config_dict['path_meshes_second_computer'] !='':
             path_meshes = config_dict['path_meshes_second_computer']
         else:
@@ -452,7 +457,7 @@ class SurfaceManager():
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
                     co_list.append(co)
-                Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list)
+                Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list, dIperdt_list= dIperdt_list)
 
     def OnImportSurfaceFile(self, filename):
         """

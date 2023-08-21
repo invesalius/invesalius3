@@ -34,13 +34,17 @@ from vtkmodules.vtkCommonCore import (
     vtkLookupTable,
     vtkPoints,
     vtkUnsignedCharArray,
-    vtkDoubleArray
+    vtkDoubleArray,
+    mutable
 )
 from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
 )
-from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkCommonDataModel import (
+    vtkPolyData,
+    vtkCellLocator,
+)
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
@@ -78,7 +82,7 @@ from vtkmodules.vtkIOImage import (
     vtkPostScriptWriter,
     vtkTIFFWriter,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
+from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor, vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointPicker,
@@ -408,6 +412,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetNeuronavigationApi, 'Get Neuronavigation Api')
         Publisher.subscribe(self.UpdateEfieldPointLocationOffline,'Update interseccion offline')
         Publisher.subscribe(self.MaxEfieldActor, 'Show max Efield actor')
+        Publisher.subscribe(self.CoGEfieldActor, 'Show CoG Efield actor')
         Publisher.subscribe(self.EfieldVectors, 'Show Efield vectors')
         Publisher.subscribe(self.RecolorEfieldActor, 'Recolor efield actor')
         # Related to robot tracking during neuronavigation
@@ -1682,37 +1687,45 @@ class Viewer(wx.Panel):
     def RecolorEfieldActor(self):
         self.efield_mesh_normals_viewer.Modified()
 
-    def MaxEfieldActor(self):
-        vtk_colors = vtkNamedColors()
-        if self.max_efield_vector is not None:
-            self.ren.RemoveActor(self.max_efield_vector)
-
+    def DrawVectors(self, position, orientation, color):
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
-
-        points.InsertNextPoint(self.efield_mesh.GetPoint(self.Idmax))
-        vectors.InsertNextTuple3(self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2])
-
+        points.InsertNextPoint(position)
+        vectors.InsertNextTuple3(orientation[0], orientation[1], orientation[2])
         dataset = vtkPolyData()
         dataset.SetPoints(points)
         dataset.GetPointData().SetVectors(vectors)
-
         arrowSource = vtkArrowSource()
-
         glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
         glyphFilter.SetScaleFactor(10)
         glyphFilter.Update()
-
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(glyphFilter.GetOutput())
+        Actor = vtkActor()
+        Actor.SetMapper(mapper)
+        Actor.GetProperty().SetColor(color)
+        return Actor
 
-        self.max_efield_vector = vtkActor()
-        self.max_efield_vector.SetMapper(mapper)
-        self.max_efield_vector.GetProperty().SetColor(vtk_colors.GetColor3d('Red'))
+    def MaxEfieldActor(self):
+        vtk_colors = vtkNamedColors()
+        if self.max_efield_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+        position = self.efield_mesh.GetPoint(self.Idmax)
+        orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
+        self.max_efield_vector = self.DrawVectors(position, orientation, vtk_colors.GetColor3d('Red'))
         self.ren.AddActor(self.max_efield_vector)
+
+    def CoGEfieldActor(self):
+        vtk_colors = vtkNamedColors()
+        if self.GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.GoGEfieldVector)
+        orientation = [self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2]]
+        [center_gravity_id] = self.FindCenterofGravity( )
+        self.GoGEfieldVector = self.DrawVectors(center_gravity_id, orientation,vtk_colors.GetColor3d('Blue'))
+        self.ren.AddActor(self.GoGEfieldVector)
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
@@ -1811,6 +1824,44 @@ class Viewer(wx.Panel):
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
+    def GetIndexesAboveThreshold(self):
+        cell_id_indexes = []
+        indexes = [index for index, value in enumerate(self.e_field_norms) if
+                   value > self.efield_max * const.EFIELD_MAX_RANGE_SCALE]
+        for index, value in enumerate(indexes):
+            cell_id_indexes.append(self.Id_list[value])
+        return cell_id_indexes
+
+    def FindCenterofGravity(self):
+        cell_id_indexes = self.GetIndexesAboveThreshold()
+        weights = []
+        positions = []
+        for index, value in enumerate(cell_id_indexes):
+            weights.append(self.e_field_norms[index])
+            positions.append(self.efield_mesh.GetPoint(value))
+        x_weighted = []
+        y_weighted = []
+        z_weighted = []
+        for i, (x, y, z) in enumerate(positions):
+            x_weighted.append(x * weights[i])
+            y_weighted.append(y * weights[i])
+            z_weighted.append(z * weights[i])
+        sum_x = sum(x_weighted)
+        sum_y = sum(y_weighted)
+        sum_z = sum(z_weighted)
+        sum_weights = sum(weights)
+
+        center_gravity_x = sum_x / sum_weights
+        center_gravity_y = sum_y / sum_weights
+        center_gravity_z = sum_z / sum_weights
+
+        query_point = [center_gravity_x, center_gravity_y, center_gravity_z]
+        closest_point = [0.0, 0.0, 0.0]
+        cell_id = mutable(0)
+        sub_id = mutable(0)
+        distance = mutable(0.0)
+        self.locator_efield_cell.FindClosestPoint(query_point, closest_point, cell_id, sub_id, distance)
+        return [closest_point]
 
     def GetEfieldActor(self, e_field_actor):
         self.efield_actor  = e_field_actor
@@ -1851,7 +1902,9 @@ class Viewer(wx.Panel):
         self.e_field_norms = None
         self.target_radius_list=[]
         self.max_efield_vector = None
+        self.GoGEfieldVector = None
         self.vectorfield_actor =None
+        self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
 
     def GetNeuronavigationApi(self, neuronavigation_api):
@@ -1878,6 +1931,8 @@ class Viewer(wx.Panel):
     def OnUpdateEfieldvis(self):
         if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
+            self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+            self.ren.AddActor2D(self.efield_scalar_bar)
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
             for h in range(len(self.Id_list)):
@@ -1897,6 +1952,7 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.vectorfield_actor)
             if self.plot_vector:
                 wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
+                wx.CallAfter(Publisher.sendMessage, 'Show CoG Efield actor')
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
                     self.plot_vector= False
@@ -1945,7 +2001,7 @@ class Viewer(wx.Panel):
         coil_face = m_img_flip[:-1, 1]
         cn = np.cross(coil_dir, coil_face)
         T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+        T_rot = np.append(T_rot, cn, axis=0)  # append
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage('Send coil position and rotation', T_rot=T_rot, cp=cp, m_img=m_img)
 
@@ -1962,12 +2018,13 @@ class Viewer(wx.Panel):
         self.Id_list = enorm_data[4]
         if self.plot_vector:
             if session.GetConfig('debug_efield'):
-                self.e_field_norms = enorm_data[3][:,0]
-                self.e_field_col1 = enorm_data[3][:,1]
-                self.e_field_col2 = enorm_data[3][:,2]
-                self.e_field_col3 = enorm_data[3][:,3]
-                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms[self.Id_list]).argmax()])
-                self.max_efield_array = [self.e_field_col1[self.Idmax],self.e_field_col2[self.Idmax],self.e_field_col3[self.Idmax] ]
+                self.e_field_norms = enorm_data[3][self.Id_list,0]
+                self.e_field_col1 = enorm_data[3][self.Id_list,1]
+                self.e_field_col2 = enorm_data[3][self.Id_list,1]
+                self.e_field_col3 = enorm_data[3][self.Id_list,3]
+                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+                max =np.array(self.e_field_norms).argmax()
+                self.max_efield_array = [self.e_field_col1[max],self.e_field_col2[max],self.e_field_col3[max] ]
             else:
                 self.e_field_norms = enorm_data[3].enorm
                 self.e_field_col1 = enorm_data[3].column1
@@ -2021,7 +2078,7 @@ class Viewer(wx.Panel):
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtkIdList()
         #for debugging
-        self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
+        #self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
         #self.ren.AddActor(self.x_actor) # remove comment for testing
         locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
         return intersectingCellIds
