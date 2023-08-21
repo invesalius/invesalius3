@@ -52,6 +52,7 @@ from vtkmodules.vtkFiltersCore import (
     vtkCenterOfMass,
     vtkGlyph3D
 )
+from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersSources import (
@@ -1824,6 +1825,42 @@ class Viewer(wx.Panel):
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
+    def CalculateEdgesEfield(self):
+        if self.edge_actor is not None:
+            self.ren.RemoveViewProp(self.edge_actor)
+        named_colors = vtkNamedColors()
+        bcf = vtkBandedPolyDataContourFilter()
+        bcf.SetInputData(self.efield_mesh)
+        edges = self.e_field_norms
+        for i in range(len(edges)):
+            bcf.SetValue(i, edges[i])
+        bcf.SetScalarModeToIndex()
+        bcf.GenerateContourEdgesOn()
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(self.efield_mesh)
+        mapper.SetInputConnection(bcf.GetOutputPort())
+        # mapper.SetScalarRange([bounds[4], bounds[5]])
+        mapper.SetLookupTable(self.efield_lut)
+        mapper.SetScalarModeToUsePointData()
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+
+        edge_mapper = vtkPolyDataMapper()
+        edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
+        edge_mapper.SetResolveCoincidentTopologyToPolygonOffset()
+
+        self.edge_actor = vtkActor()
+        self.edge_actor.SetMapper(edge_mapper)
+        self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d('Red'))
+        actor.GetProperty().SetOpacity(0)
+        self.ren.AddViewProp(actor)
+        self.ren.AddViewProp(self.edge_actor)
+
+        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+        self.ren.AddActor2D(self.efield_scalar_bar)
+
     def GetIndexesAboveThreshold(self):
         cell_id_indexes = []
         indexes = [index for index, value in enumerate(self.e_field_norms) if
@@ -1906,7 +1943,7 @@ class Viewer(wx.Panel):
         self.vectorfield_actor =None
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
-
+        self.edge_actor= None
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
 
@@ -1931,10 +1968,12 @@ class Viewer(wx.Panel):
     def OnUpdateEfieldvis(self):
         if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
-            self.efield_scalar_bar.SetLookupTable(self.efield_lut)
-            self.ren.AddActor2D(self.efield_scalar_bar)
+            self.CalculateEdgesEfield()
+
+
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
+
             for h in range(len(self.Id_list)):
                  dcolor = 3 * [0.0]
                  index_id = self.Id_list[h]
