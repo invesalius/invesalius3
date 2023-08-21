@@ -1,9 +1,8 @@
 from pynetdicom.sop_class import (PatientRootQueryRetrieveInformationModelFind,
                                   PatientRootQueryRetrieveInformationModelMove)
 from pydicom.dataset import Dataset
-import invesalius.utils as utils
+from datetime import datetime
 import pynetdicom
-import gdcm
 
 
 class DicomNet:
@@ -79,6 +78,13 @@ class DicomNet:
         ae = pynetdicom.AE()
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
 
+        assoc = ae.associate(self.address, int(self.port))
+        if not assoc.is_established:
+
+            return False
+
+        patients = {}
+
         ds = Dataset()
         ds.QueryRetrieveLevel = 'INSTANCE'
         ds.PatientName = self.search_word
@@ -96,63 +102,68 @@ class DicomNet:
         ds.AcquisitionTime = ''
         ds.AcquisitionDate = ''
 
-        assoc = ae.associate(self.address, int(self.port))
-        if assoc.is_established:
+        response = assoc.send_c_find(
+            ds, PatientRootQueryRetrieveInformationModelFind)
+        for (status, identifier) in response:
 
-            patients = {}
+            if status and status.Status in (0xFF00, 0xFF01):
 
-            response = assoc.send_c_find(
-                ds, PatientRootQueryRetrieveInformationModelFind)
-            for (status, identifier) in response:
+                patient_id = identifier.get('PatientID', None)
+                serie_id = identifier.get('SeriesInstanceUID', None)
 
-                if status and status.Status in (0xFF00, 0xFF01):
+                if not patient_id or not serie_id:
 
-                    patient_id = identifier.get('PatientID', None)
-                    serie_id = identifier.get('SeriesInstanceUID', None)
+                    continue
 
-                    if not patient_id or not serie_id:
+                if not (patient_id in patients.keys()):
+                    patients[patient_id] = {}
 
-                        continue
+                if not (serie_id in patients[patient_id]):
 
-                    if not (patient_id in patients.keys()):
-                        patients[patient_id] = {}
+                    name = identifier.get('PatientName', None)
+                    age = identifier.get(
+                        'PatientAge', None)
+                    age = age.rstrip('Y').lstrip('0') if age else ''
+                    gender = identifier.get('PatientSex', None)
+                    study_description = identifier.get(
+                        'StudyDescription', None)
+                    modality = identifier.get('Modality', None)
+                    institution = identifier.get('InstitutionName', None)
+                    date_of_birth = identifier.get(
+                        'PatientBirthDate', None)
+                    date_of_birth = datetime.strptime(
+                        date_of_birth, '%Y%m%d').strftime('%d/%m/%Y') if date_of_birth else ''
+                    acession_number = identifier.get('AccessionNumber', None)
+                    ref_physician = identifier.get(
+                        'ReferringPhysicianName', None)
+                    serie_description = identifier.get(
+                        'SeriesDescription', None)
+                    acquisition_time = identifier.get(
+                        'AcquisitionTime', None)
+                    acquisition_time = datetime.strptime(
+                        acquisition_time, '%H%M%S').strftime('%H:%M:%S') if acquisition_time else ''
+                    acquisition_date = identifier.get(
+                        'AcquisitionDate', None)
+                    acquisition_date = datetime.strptime(
+                        acquisition_date, '%Y%m%d').strftime('%d/%m/%Y') if acquisition_date else ''
 
-                    if not (serie_id in patients[patient_id]):
+                    patients[patient_id][serie_id] = {'name': name, 'age': age, 'gender': gender,
+                                                      'study_description': study_description,
+                                                      'modality': modality,
+                                                      'acquisition_time': acquisition_time,
+                                                      'acquisition_date': acquisition_date,
+                                                      'institution': institution,
+                                                      'date_of_birth': date_of_birth,
+                                                      'acession_number': acession_number,
+                                                      'ref_physician': ref_physician,
+                                                      'serie_description': serie_description, 'n_images': 1}
 
-                        name = identifier.PatientName
-                        age = identifier.PatientAge
-                        gender = identifier.PatientSex
-                        study_description = identifier.StudyDescription
-                        modality = identifier.Modality
-                        institution = identifier.InstitutionName
-                        date_of_birth = identifier.PatientBirthDate
-                        acession_number = identifier.AccessionNumber
-                        ref_physician = identifier.ReferringPhysicianName
-                        serie_description = identifier.SeriesDescription
-                        acquisition_time = identifier.AcquisitionTime
-                        acquisition_date = identifier.AcquisitionDate
+                else:
 
-                        patients[patient_id][serie_id] = {'name': name, 'age': age, 'gender': gender,
-                                                          'study_description': study_description,
-                                                          'modality': modality,
-                                                          'acquisition_time': acquisition_time,
-                                                          'acquisition_date': acquisition_date,
-                                                          'institution': institution,
-                                                          'date_of_birth': date_of_birth,
-                                                          'acession_number': acession_number,
-                                                          'ref_physician': ref_physician,
-                                                          'serie_description': serie_description}
+                    patients[patient_id][serie_id]['n_images'] += 1
 
-                        patients[patient_id][serie_id]['n_images'] = 1
-
-                    else:
-
-                        patients[patient_id][serie_id]['n_images'] += 1
-
-            assoc.release()
-            return patients
-
-        return False
+        assoc.release()
+        return patients
 
     def RunCMove(self, values, progress_callback):
         """ Run CMove to download the DICOM files. """
