@@ -543,7 +543,7 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
 
     def LoadImageFiducials(self, label, position):
-        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', label[:2])
 
         fiducial_index = fiducial['fiducial_index']
         fiducial_name = fiducial['fiducial_name']
@@ -2544,8 +2544,8 @@ class MarkersPanel(wx.Panel):
             with open(filename, 'r') as file:
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
-                ver = int(magick_line.split('_')[-1])
-                if ver != 0:
+                version = int(magick_line.split('_')[-1])
+                if version != 0:
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
                 
@@ -2555,8 +2555,9 @@ class MarkersPanel(wx.Panel):
                 for line in file.readlines():
                     marker = self.Marker()
                     marker.from_string(line)
-                    self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour, size=marker.size,
-                                      label=marker.label, is_target=False, seed=marker.seed, session_id=marker.session_id, is_brain_target=marker.is_brain_target)
+                    self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour,
+                                      size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
+                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target)
 
                     if marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -2568,6 +2569,7 @@ class MarkersPanel(wx.Panel):
 
         except Exception as e:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
+            utils.debug(e)
 
         self.SaveState()
 
