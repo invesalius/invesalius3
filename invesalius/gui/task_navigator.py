@@ -1756,7 +1756,7 @@ class OverwriteImageFiducialsHook(wx.FileDialogCustomizeHook):
         self.overwrite = False
 
     def AddCustomControls(self, customizer):
-        self.checkbox = customizer.AddCheckBox("Overwrite image fiducials")
+        self.checkbox = customizer.AddCheckBox(_("Overwrite image fiducials"))
 
     def TransferDataFromCustomControls(self):
         self.overwrite = self.checkbox.GetValue()
