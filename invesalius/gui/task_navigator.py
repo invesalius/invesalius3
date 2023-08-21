@@ -1873,6 +1873,8 @@ class MarkersPanel(wx.Panel):
                     setattr(self, field.name, str_val[1:-1]) # remove the quotation marks
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
+                if field.type is int and str_val != 'None':
+                    setattr(self, field.name, int(str_val))
 
         def to_dict(self):
             return {
