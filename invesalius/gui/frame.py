@@ -151,6 +151,7 @@ class Frame(wx.Frame):
         sub(self._SetProjectName, 'Set project name')
         sub(self._ShowContentPanel, 'Show content panel')
         sub(self._ShowImportPanel, 'Show import panel in frame')
+        sub(self.ShowPreferences, 'Open preferences menu')
         #sub(self._ShowHelpMessage, 'Show help message')
         sub(self._ShowImportNetwork, 'Show retrieve dicom panel')
         sub(self._ShowImportBitmap, 'Show import bitmap panel in frame')
@@ -654,8 +655,8 @@ class Frame(wx.Frame):
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
 
-    def ShowPreferences(self):
-        preferences_dialog = preferences.Preferences(self)
+    def ShowPreferences(self, page=0):
+        preferences_dialog = preferences.Preferences(self, page)
         preferences_dialog.LoadPreferences()
         preferences_dialog.Center()
 

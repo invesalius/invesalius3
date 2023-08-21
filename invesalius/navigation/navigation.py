@@ -202,7 +202,7 @@ class Navigation(metaclass=Singleton):
         self.lock_to_target = False
         self.coil_at_target = False
 
-        self.LoadState()
+        self.LoadConfig()
 
         self.__bind_events()
 
@@ -212,7 +212,7 @@ class Navigation(metaclass=Singleton):
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.TrackObject, 'Track object')
 
-    def SaveState(self):
+    def SaveConfig(self):
         # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
         #   None parameter when the project is closed, crashing without this checks.
         if self.object_registration is None:
@@ -228,11 +228,11 @@ class Navigation(metaclass=Singleton):
         }
 
         session = ses.Session()
-        session.SetState('navigation', state)
+        session.SetConfig('navigation', state)
 
-    def LoadState(self):
+    def LoadConfig(self):
         session = ses.Session()
-        state = session.GetState('navigation')
+        state = session.GetConfig('navigation')
 
         if state is None:
             return
@@ -241,13 +241,12 @@ class Navigation(metaclass=Singleton):
         object_orientations = np.array(state['object_orientations'])
         object_reference_mode = state['object_reference_mode']
         object_name = state['object_name'].encode(const.FS_ENCODE)
-
         self.object_registration = (object_fiducials, object_orientations, object_reference_mode, object_name)
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
 
-    def UpdateSleep(self, sleep):
+    def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
         # self.serial_port_connection.sleep_nav = sleep
 
@@ -259,10 +258,11 @@ class Navigation(metaclass=Singleton):
     def UpdateObjectRegistration(self, data=None):
         self.object_registration = data
 
-        self.SaveState()
+        self.SaveConfig()
 
     def GetObjectRegistration(self):
         return self.object_registration
+    
 
     def TrackObject(self, enabled=False):
         self.track_obj = enabled
