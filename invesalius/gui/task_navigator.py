@@ -548,10 +548,6 @@ class ImagePage(wx.Panel):
         fiducial_index = fiducial['fiducial_index']
         fiducial_name = fiducial['fiducial_name']
 
-        if self.btns_set_fiducial[fiducial_index].GetValue():
-            print("Fiducial {} already set, not resetting".format(label))
-            return
-
         Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
         self.btns_set_fiducial[fiducial_index].SetValue(True)
@@ -1752,6 +1748,20 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None) 
 
+
+class OverwriteImageFiducialsHook(wx.FileDialogCustomizeHook):
+
+    def __init__(self):
+        super().__init__()
+        self.overwrite = False
+
+    def AddCustomControls(self, customizer):
+        self.checkbox = customizer.AddCheckBox("Overwrite image fiducials")
+
+    def TransferDataFromCustomControls(self):
+        self.overwrite = self.checkbox.GetValue()
+
+
 class MarkersPanel(wx.Panel):
     @dataclasses.dataclass
     class Marker:
@@ -2534,9 +2544,10 @@ class MarkersPanel(wx.Panel):
         """Loads markers from file and appends them to the current marker list.
         The file should contain no more than a single target marker. Also the
         file should not contain any fiducials already in the list."""
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
-                                          wildcard=const.WILDCARD_MARKER_FILES)
-                
+        customizeHook = OverwriteImageFiducialsHook()
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"), wildcard=const.WILDCARD_MARKER_FILES,
+                                          customize_hook=customizeHook)
+
         if not filename:
             return
         
@@ -2559,7 +2570,7 @@ class MarkersPanel(wx.Panel):
                                       size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
                                       session_id=marker.session_id, is_brain_target=marker.is_brain_target)
 
-                    if marker.label in self.__list_fiducial_labels():
+                    if customizeHook.overwrite and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
                     # If the new marker has is_target=True, we first create
