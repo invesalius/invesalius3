@@ -1825,23 +1825,34 @@ class Viewer(wx.Panel):
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
+    def Find_closes_value(self, arr,threshold):
+        closest_value = min(arr, key = lambda x: abs(x-threshold))
+        return closest_value
+
     def CalculateEdgesEfield(self):
         if self.edge_actor is not None:
             self.ren.RemoveViewProp(self.edge_actor)
         named_colors = vtkNamedColors()
+        second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
+
         bcf = vtkBandedPolyDataContourFilter()
         bcf.SetInputData(self.efield_mesh)
-        edges = self.e_field_norms
-        for i in range(len(edges)):
-            bcf.SetValue(i, edges[i])
+        # lower_edge = self.Find_closes_value(self.e_field_norms, self.efield_max*0.1)
+        # middle_edge = self.Find_closes_value(self.e_field_norms, self.efield_max*0.5)
+        # middle_edge1 = self.Find_closes_value(self.e_field_norms, self.efield_max*0.7)
+        # upper_edge = self.Find_closes_value(self.e_field_norms, self.efield_max*0.9)
+        # edges = [lower_edge, middle_edge, middle_edge1, upper_edge, self.efield_max]
+        # for i in range(len(edges)):
+        #     bcf.SetValue(i, edges[i])
+        bcf.GenerateValues(5, self.efield_min, self.efield_max)
         bcf.SetScalarModeToIndex()
+        bcf.SetNumberOfContours(5)
         bcf.GenerateContourEdgesOn()
-
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(self.efield_mesh)
         mapper.SetInputConnection(bcf.GetOutputPort())
         # mapper.SetScalarRange([bounds[4], bounds[5]])
-        mapper.SetLookupTable(self.efield_lut)
+        mapper.SetLookupTable(second_lut)
         mapper.SetScalarModeToUsePointData()
 
         actor = vtkActor()
@@ -1853,7 +1864,8 @@ class Viewer(wx.Panel):
 
         self.edge_actor = vtkActor()
         self.edge_actor.SetMapper(edge_mapper)
-        self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d('Red'))
+        self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d('Black'))
+        self.edge_actor.GetProperty().SetLineWidth(3.0)
         actor.GetProperty().SetOpacity(0)
         self.ren.AddViewProp(actor)
         self.ren.AddViewProp(self.edge_actor)
