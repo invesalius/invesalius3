@@ -27,13 +27,13 @@ def Get_coil_position(m_img):
     coil_face = m_img_flip[:-1, 1]
     cn = np.cross(coil_dir, coil_face)
     T_rot = np.append(ct1, ct2, axis=0)
-    T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+    T_rot = np.append(T_rot, cn, axis=0)  # append
     T_rot = T_rot.tolist()  # to list
 
     return [T_rot,cp]
 
 class Visualize_E_field_Thread(threading.Thread):
-    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm):
+    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm, plot_vectors):
         threading.Thread.__init__(self, name='Visualize_E_field_Thread')
         #self.inp = inp #list of inputs
         self.efield_queue = queues[0]
@@ -51,6 +51,7 @@ class Visualize_E_field_Thread(threading.Thread):
             self.debug = True
         else:
             self.debug = False
+        self.plot_vectors = plot_vectors
 
     def run(self):
         while not self.event.is_set():
@@ -59,6 +60,9 @@ class Visualize_E_field_Thread(threading.Thread):
                 try:
                     self.ID_list = self.e_field_IDs_queue.get_nowait()
                     self.e_field_IDs_queue.task_done()
+                    id_list = []
+                    for h in range(self.ID_list.GetNumberOfIds()):
+                        id_list.append(self.ID_list.GetId(h))
                 except queue.Full:
                     self.e_field_IDs_queue.task_done()
 
@@ -75,12 +79,20 @@ class Visualize_E_field_Thread(threading.Thread):
                             if self.debug:
                                 enorm = self.enorm_debug
                             else:
-                                enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
+                                if self.plot_vectors:
+                                    enorm = self.neuronavigation_api.update_efield_vectorROIMax(position=cp,
+                                                                                           orientation=coord[3:],
+                                                                                           T_rot=T_rot,
+                                                                                           id_list=id_list,
+                                                                                             )
+                                else:
+                                    enorm = self.neuronavigation_api.update_efield(position=cp, orientation=coord[3:], T_rot=T_rot)
                             try:
-                                self.e_field_norms_queue.put_nowait(([T_rot, cp, coord, enorm]))
+                                self.e_field_norms_queue.put_nowait(([T_rot, cp, coord, enorm, id_list]))
+
                             except queue.Full:
                                 pass
 
-                        self.coord_old = coord
+                            self.coord_old = coord
 
             time.sleep(self.sle)

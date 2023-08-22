@@ -131,14 +131,16 @@ class NeuronavigationApi(metaclass=Singleton):
                 state=state
             )
 
-    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, conductivities_inside, conductivities_outside):
+    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, coil_set, conductivities_inside, conductivities_outside, dI_per_dt):
         if self.connection is not None:
             return self.connection.initialize_efield(
                 cortex_model_path=cortex_model_path,
                 mesh_models_paths= mesh_models_paths,
                 coil_model_path =coil_model_path,
+                coil_set = coil_set,
                 conductivities_inside= conductivities_inside,
                 conductivities_outside = conductivities_outside,
+                dI_per_dt= dI_per_dt,
             )
         return None
 
@@ -149,10 +151,17 @@ class NeuronavigationApi(metaclass=Singleton):
             )
         return None
 
-    def efield_coil(self, coil_model_path):
+    def efield_coil(self, coil_model_path, coil_set):
         if self.connection is not None:
             return self.connection.set_coil(
-                coil_model_path=coil_model_path
+                coil_model_path=coil_model_path,
+                coil_set=coil_set
+            )
+
+    def set_dIperdt(self, dIperdt):
+        if self.connection is not None:
+            return self.connection.set_dIperdt(
+                dIperdt=dIperdt,
             )
 
     def update_efield(self, position, orientation, T_rot):
@@ -160,10 +169,38 @@ class NeuronavigationApi(metaclass=Singleton):
             return self.connection.update_efield(
                 position=position,
                 orientation=orientation,
-                T_rot = T_rot,
+                T_rot=T_rot,
             )
         return None
 
+    def update_efield_vector(self, position, orientation, T_rot):
+        if self.connection is not None:
+            return self.connection.update_efield_vector(
+                position=position,
+                orientation=orientation,
+                T_rot=T_rot,
+            )
+        return None
+
+    def update_efield_vectorROI(self, position, orientation, T_rot, id_list):
+        if self.connection is not None:
+            return self.connection.update_efield_vectorROI(
+                position=position,
+                orientation=orientation,
+                T_rot=T_rot,
+                id_list=id_list
+            )
+        return None
+
+    def update_efield_vectorROIMax(self, position, orientation, T_rot, id_list):
+        if self.connection is not None:
+            return self.connection.update_efield_vectorROIMax(
+                position=position,
+                orientation=orientation,
+                T_rot=T_rot,
+                id_list=id_list
+            )
+        return None
     # Functions for InVesalius to receive updates via callbacks.
 
     def __set_callbacks(self, connection):

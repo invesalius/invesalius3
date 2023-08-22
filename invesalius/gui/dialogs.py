@@ -101,9 +101,9 @@ import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
-from numpy.core.umath_tests import inner1d
 
 from invesalius import inv_paths
+from invesalius.math_utils import inner1d
 
 
 class MaskEvent(wx.PyCommandEvent):
@@ -927,7 +927,6 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
-            const.ROBOT: 'Robotic navigation',
             const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
             const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
@@ -952,6 +951,17 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
 
 def Efield_connection_warning():
     msg = _('No connection to E-field library')
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def Efield_no_data_to_save_warning():
+    msg = _('No Efield data to save')
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_INFORMATION | wx.OK)
@@ -4020,7 +4030,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
+        v1 = cam_focus - self.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
@@ -5203,7 +5213,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
+        v1 = cam_focus - self.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
@@ -5326,6 +5336,30 @@ class SetCoilOrientationDialog(wx.Dialog):
             brain_target_orientation.append(orientation)
         return brain_target_position, brain_target_orientation
 
+class TractographyProgressWindow(object):
+    def __init__(self, msg):
+        self.title = "InVesalius 3"
+        self.msg = msg
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent=None,
+                                     style=self.style)
+        self.running = True
+        self.error = None
+        self.dlg.Show()
+
+    def WasCancelled(self):
+        return self.dlg.WasCancelled()
+
+    def Update(self, msg=None, value=None):
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
+    def Close(self):
+        self.dlg.Destroy()
 
 class SurfaceProgressWindow(object):
     def __init__(self):
@@ -5695,7 +5729,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class RobotCoregistrationDialog(wx.Dialog):
-    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
+    def __init__(self, robot, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -5703,10 +5737,9 @@ class RobotCoregistrationDialog(wx.Dialog):
         '''
         #TODO: make aboutbox
         self.matrix_tracker_to_robot = []
-        self.robot_status = False
 
+        self.robot = robot
         self.tracker = tracker
-
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
@@ -5745,8 +5778,13 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
-        btn_load.Enable(False)
+        
+        if not self.robot.robot_status:
+            btn_load.Enable(False)
+        else:
+            btn_load.Enable(True)
         self.btn_load = btn_load
+        
 
         # Create a horizontal sizers
         border = 1
@@ -5805,7 +5843,6 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateRobotTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
         Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
     def OnContinuousAcquisitionButton(self, evt=None, btn=None):
@@ -5839,17 +5876,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.SetAcquiredPoints(num_points)
 
         # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
-        if self.robot_status and num_points >= 3:
-            self.btn_apply_reg.Enable(True)
-
-    def UpdateRobotConnectionStatus(self, data):
-        self.robot_status = data
-        if not self.robot_status:
-            return
-
-        # Enable 'Load' and 'Apply registration' buttons only when robot connection is ok.
-        self.btn_load.Enable(True)
-        if self.GetAcquiredPoints() >= 3:
+        if self.robot.robot_status and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
     def ResetPoints(self, evt):
@@ -5917,7 +5944,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
         # Enable 'Ok' button if connection to robot is ok.
-        if self.robot_status:
+        if self.robot.robot_status:
             self.btn_ok.Enable(True)
 
     def GetValue(self):
