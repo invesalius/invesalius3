@@ -1072,9 +1072,12 @@ class Viewer(wx.Panel):
             if target_dist <= self.distthreshold:
                 thrdist = True
                 self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
+                if not self.show_object:
+                    self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_HIDDEN_OPACITY)
             else:
                 thrdist = False
                 self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
+                self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
 
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
@@ -1246,7 +1249,7 @@ class Viewer(wx.Panel):
         aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
         aim_actor.GetProperty().SetSpecular(.2)
         aim_actor.GetProperty().SetSpecularPower(100)
-        aim_actor.GetProperty().SetOpacity(1.)
+        aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
 
@@ -2249,6 +2252,10 @@ class Viewer(wx.Panel):
             #    self.ball_actor.SetVisibility(0)
             #else:
             #    self.ball_actor.SetVisibility(1)
+
+        if self.aim_actor is not None and self.show_object:
+            self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+
         if not self.nav_status:
             self.UpdateRender()
 
