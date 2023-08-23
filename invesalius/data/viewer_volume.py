@@ -1811,7 +1811,7 @@ class Viewer(wx.Panel):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
-        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         return lut
@@ -1827,29 +1827,36 @@ class Viewer(wx.Panel):
 
     def Find_closes_value(self, arr,threshold):
         closest_value = min(arr, key = lambda x: abs(x-threshold))
-        return closest_value
+        closest_index = np.argmin(np.abs(arr-closest_value))
+        return closest_index
 
     def CalculateEdgesEfield(self):
         if self.edge_actor is not None:
             self.ren.RemoveViewProp(self.edge_actor)
         named_colors = vtkNamedColors()
         second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
-
+        second_lut.SetNumberOfTableValues(5)
         bcf = vtkBandedPolyDataContourFilter()
         bcf.SetInputData(self.efield_mesh)
-        # lower_edge = self.Find_closes_value(self.e_field_norms, self.efield_max*0.1)
-        # middle_edge = self.Find_closes_value(self.e_field_norms, self.efield_max*0.5)
-        # middle_edge1 = self.Find_closes_value(self.e_field_norms, self.efield_max*0.7)
-        # upper_edge = self.Find_closes_value(self.e_field_norms, self.efield_max*0.9)
-        # edges = [lower_edge, middle_edge, middle_edge1, upper_edge, self.efield_max]
-        # for i in range(len(edges)):
-        #     bcf.SetValue(i, edges[i])
-        bcf.GenerateValues(5, self.efield_min, self.efield_max)
+        bcf.ClippingOn()
+        lower_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_min)
+        middle_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.2)
+        middle_edge1 = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.7)
+        upper_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.9)
+        lower_edge = self.efield_mesh.GetPoint(lower_edge)
+        middle_edge = self.efield_mesh.GetPoint(middle_edge)
+        middle_edge1 = self.efield_mesh.GetPoint(middle_edge1)
+        upper_edge = self.efield_mesh.GetPoint(upper_edge)
+
+        edges = [ lower_edge, middle_edge, middle_edge1, upper_edge]
+        for i in range(len(edges)):
+            bcf.SetValue(i, edges[i][2])
+        #bcf.GenerateValues(2, lower_edge[2],upper_edge[2])
         bcf.SetScalarModeToIndex()
-        bcf.SetNumberOfContours(5)
+        #bcf.SetNumberOfContours(5)
         bcf.GenerateContourEdgesOn()
         mapper = vtkPolyDataMapper()
-        mapper.SetInputData(self.efield_mesh)
+        #mapper.SetInputData(self.efield_mesh)
         mapper.SetInputConnection(bcf.GetOutputPort())
         # mapper.SetScalarRange([bounds[4], bounds[5]])
         mapper.SetLookupTable(second_lut)
