@@ -1836,9 +1836,11 @@ class Viewer(wx.Panel):
         named_colors = vtkNamedColors()
         second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
         second_lut.SetNumberOfTableValues(5)
+
         bcf = vtkBandedPolyDataContourFilter()
         bcf.SetInputData(self.efield_mesh)
         bcf.ClippingOn()
+
         lower_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_min)
         middle_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.2)
         middle_edge1 = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.7)
@@ -1851,14 +1853,10 @@ class Viewer(wx.Panel):
         edges = [ lower_edge, middle_edge, middle_edge1, upper_edge]
         for i in range(len(edges)):
             bcf.SetValue(i, edges[i][2])
-        #bcf.GenerateValues(2, lower_edge[2],upper_edge[2])
         bcf.SetScalarModeToIndex()
-        #bcf.SetNumberOfContours(5)
         bcf.GenerateContourEdgesOn()
         mapper = vtkPolyDataMapper()
-        #mapper.SetInputData(self.efield_mesh)
         mapper.SetInputConnection(bcf.GetOutputPort())
-        # mapper.SetScalarRange([bounds[4], bounds[5]])
         mapper.SetLookupTable(second_lut)
         mapper.SetScalarModeToUsePointData()
 
@@ -1988,11 +1986,8 @@ class Viewer(wx.Panel):
         if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.CalculateEdgesEfield()
-
-
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
-
             for h in range(len(self.Id_list)):
                  dcolor = 3 * [0.0]
                  index_id = self.Id_list[h]
