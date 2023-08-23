@@ -1825,7 +1825,7 @@ class Viewer(wx.Panel):
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
 
-    def Find_closes_value(self, arr,threshold):
+    def FindClosestValueEfieldEdges(self, arr, threshold):
         closest_value = min(arr, key = lambda x: abs(x-threshold))
         closest_index = np.argmin(np.abs(arr-closest_value))
         return closest_index
@@ -1841,10 +1841,10 @@ class Viewer(wx.Panel):
         bcf.SetInputData(self.efield_mesh)
         bcf.ClippingOn()
 
-        lower_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_min)
-        middle_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.2)
-        middle_edge1 = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.7)
-        upper_edge = self.Find_closes_value(np.array(self.e_field_norms), self.efield_max*0.9)
+        lower_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_min)
+        middle_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_max * 0.2)
+        middle_edge1 = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_max * 0.7)
+        upper_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_max * 0.9)
         lower_edge = self.efield_mesh.GetPoint(lower_edge)
         middle_edge = self.efield_mesh.GetPoint(middle_edge)
         middle_edge1 = self.efield_mesh.GetPoint(middle_edge1)
@@ -1961,6 +1961,7 @@ class Viewer(wx.Panel):
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
         self.edge_actor= None
+
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
 
