@@ -498,27 +498,39 @@ class SurfaceManager():
     def UpdateConvertToInvFlag(self, convert_to_inv=False):
         self.convert_to_inv = convert_to_inv
 
+    def ConvertPolydataToInv(self, polydata, inverse=False):
+        """
+        Convert polydata between invesalius and world/scanner coordinates with shift in the Y coordinate.
+
+        :param inverse: When true, convert from invesalius coordinates, to world coordinates
+        :return: transformed polydata
+        :rtype: vtkPolydata
+        """
+        matrix_shape = sl.Slice().matrix.shape
+        spacing = sl.Slice().spacing
+        img_shift = spacing[1] * (matrix_shape[1] - 1)
+        affine = sl.Slice().affine.copy()
+        affine[1, -1] -= img_shift
+        if inverse:
+            affine = np.linalg.inv(affine)
+        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+
+        polydata_transform = vtkTransform()
+        polydata_transform.PostMultiply()
+        polydata_transform.Concatenate(affine_vtk)
+
+        transformFilter = vtkTransformPolyDataFilter()
+        transformFilter.SetTransform(polydata_transform)
+        transformFilter.SetInputData(polydata)
+        transformFilter.Update()
+
+        return transformFilter.GetOutput()
+
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False, index=None,
                                   name=None, colour=None, transparency=None,
                                   volume=None, area=None, scalar=False):
         if self.convert_to_inv:
-            # convert between invesalius and world space with shift in the Y coordinate
-            matrix_shape = sl.Slice().matrix.shape
-            spacing = sl.Slice().spacing
-            img_shift = spacing[1] * (matrix_shape[1] - 1)
-            affine = sl.Slice().affine.copy()
-            affine[1, -1] -= img_shift
-            affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
-
-            polydata_transform = vtkTransform()
-            polydata_transform.PostMultiply()
-            polydata_transform.Concatenate(affine_vtk)
-
-            transformFilter = vtkTransformPolyDataFilter()
-            transformFilter.SetTransform(polydata_transform)
-            transformFilter.SetInputData(polydata)
-            transformFilter.Update()
-            polydata = transformFilter.GetOutput()
+            polydata = self.ConvertPolydataToInv(polydata)
             self.convert_to_inv = False
 
         normals = vtkPolyDataNormals()
@@ -1032,7 +1044,7 @@ class SurfaceManager():
         proj.surface_dict[surface_index].colour = colour
         Publisher.sendMessage('Render volume viewer')
 
-    def OnExportSurface(self, filename, filetype):
+    def OnExportSurface(self, filename, filetype, convert_to_world=False):
         ftype_prefix = {
             const.FILETYPE_STL: '.stl',
             const.FILETYPE_VTP: '.vtp',
@@ -1050,7 +1062,7 @@ class SurfaceManager():
 
             temp_file = utl.decode(temp_file, const.FS_ENCODE)
             try:
-                self._export_surface(temp_file, filetype)
+                self._export_surface(temp_file, filetype, convert_to_world)
             except ValueError:
                 if wx.GetApp() is None:
                     print("It was not possible to export the surface because the surface is empty")
@@ -1074,8 +1086,7 @@ class SurfaceManager():
                     dlg.Destroy()
                 os.remove(temp_file)
 
-
-    def _export_surface(self, filename, filetype):
+    def _export_surface(self, filename, filetype, convert_to_world):
         if filetype in (const.FILETYPE_STL,
                         const.FILETYPE_VTP,
                         const.FILETYPE_PLY,
@@ -1100,6 +1111,9 @@ class SurfaceManager():
 
             if polydata.GetNumberOfPoints() == 0:
                 raise ValueError
+
+            if convert_to_world:
+                polydata = self.ConvertPolydataToInv(polydata, inverse=True)
 
             # Having a polydata that represents all surfaces
             # selected, we write it, according to filetype
