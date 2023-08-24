@@ -571,7 +571,8 @@ def ShowLoadCSVDebugEfield(message=_(u"Load debug CSV Enorm file"), current_dir=
         return None
 
 def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
-                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
+                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None,
+                       customize_hook=None):
 
     dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
                         wildcard=wildcard, style=style)
@@ -579,6 +580,10 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filepath = None
+
+    if customize_hook is not None:
+        dlg.SetCustomizeHook(customize_hook)
+
     try:
         if dlg.ShowModal() == wx.ID_OK:
             # This returns a Python list of files that were selected.
