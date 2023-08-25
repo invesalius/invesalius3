@@ -551,6 +551,7 @@ class TrackerPage(wx.Panel):
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
         
         lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
+        lbl_rob_model = wx.StaticText(self, -1, _("Select robot model: "))
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose or type the robot IP"))
@@ -607,11 +608,15 @@ class TrackerPage(wx.Panel):
             btn_rob_con.Hide()
         self.btn_rob_con = btn_rob_con
 
-        rob_sizer = wx.FlexGridSizer(rows=3, cols=3, hgap=5, vgap=5)
-        rob_sizer.AddMany([
+        rob_settings_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=5, vgap=5)
+        rob_settings_sizer.AddMany([
+            (lbl_rob_model, 0, wx.LEFT),
+            (choice_model, 1, wx.EXPAND),
             (lbl_rob, 0, wx.LEFT),
             (choice_IP, 1, wx.EXPAND),
-            (choice_model, 1, wx.EXPAND),
+        ])
+        rob_sizer = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        rob_sizer.AddMany([
             (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (0, 0),
@@ -619,6 +624,7 @@ class TrackerPage(wx.Panel):
         ])
 
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
+        rob_static_sizer.Add(rob_settings_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
         rob_static_sizer.Add(rob_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -688,7 +694,7 @@ class TrackerPage(wx.Panel):
         self.robot_model = ctrl.GetStringSelection()
     
     def OnRobotConnect(self, evt):
-        if self.robot_ip is not None:
+        if self.robot_ip is not None and self.robot_model is not None:
             self.robot.DisconnectRobot()
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
