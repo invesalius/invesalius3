@@ -1,0 +1,6 @@
+{
+    "functionalslice-extension": "run-1_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz", 
+    "antsbinspath": "~/antstoolbox/install/bin/antsApplyTransforms",
+    "t1-refextension": "desc-preproc_T1w.nii.gz",
+    "transform-extension": "from-MNI152NLin2009cAsym_to-T1w_mode-image_xfm.h5"
+}

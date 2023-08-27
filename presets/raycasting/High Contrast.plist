@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLUT</key>
+	<string>VR Muscles-Bones</string>
+	<key>advancedCLUT</key>
+	<false/>
+	<key>backgroundColorBlueComponent</key>
+	<real>0.0</real>
+	<key>backgroundColorGreenComponent</key>
+	<real>0.0</real>
+	<key>backgroundColorRedComponent</key>
+	<real>0.0</real>
+	<key>convolutionFilters</key>
+	<array/>
+	<key>groupName</key>
+	<string>Basic</string>
+	<key>name</key>
+	<string>High Contrast</string>
+	<key>opacity</key>
+	<string>Logarithmic Table</string>
+	<key>projection</key>
+	<integer>1</integer>
+	<key>shading</key>
+	<string>Default</string>
+	<key>useShading</key>
+	<true/>
+	<key>wl</key>
+	<real>304.16705322265625</real>
+	<key>ww</key>
+	<real>269.91790771484375</real>
+</dict>
+</plist>

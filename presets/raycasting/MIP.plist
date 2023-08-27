@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>16bitClutColors</key>
+	<array>
+		<array>
+			<dict>
+				<key>blue</key>
+				<real>0.0</real>
+				<key>green</key>
+				<real>0.0</real>
+				<key>red</key>
+				<real>0.0</real>
+			</dict>
+			<dict>
+				<key>blue</key>
+				<real>1.0</real>
+				<key>green</key>
+				<real>1.0</real>
+				<key>red</key>
+				<real>1.0</real>
+			</dict>
+			<dict>
+				<key>blue</key>
+				<real>1.0</real>
+				<key>green</key>
+				<real>1.0</real>
+				<key>red</key>
+				<real>1.0</real>
+			</dict>
+			<dict>
+				<key>blue</key>
+				<real>1.0</real>
+				<key>green</key>
+				<real>1.0</real>
+				<key>red</key>
+				<real>1.0</real>
+			</dict>
+		</array>
+	</array>
+	<key>16bitClutCurves</key>
+	<array>
+		<array>
+			<dict>
+				<key>x</key>
+				<real>-1024.0</real>
+				<key>y</key>
+				<real>0.0</real>
+			</dict>
+			<dict>
+				<key>x</key>
+				<real>596.66286215978903</real>
+				<key>y</key>
+				<real>0.25342465753424659</real>
+			</dict>
+			<dict>
+				<key>x</key>
+				<real>2541.4582967515362</real>
+				<key>y</key>
+				<real>1.0</real>
+			</dict>
+			<dict>
+				<key>x</key>
+				<real>3032.9999999999995</real>
+				<key>y</key>
+				<real>1.0</real>
+			</dict>
+		</array>
+	</array>
+	<key>CLUT</key>
+	<string>16-bit CLUT</string>
+	<key>advancedCLUT</key>
+	<true/>
+	<key>backgroundColorBlueComponent</key>
+	<real>0.0</real>
+	<key>backgroundColorGreenComponent</key>
+	<real>0.0</real>
+	<key>backgroundColorRedComponent</key>
+	<real>0.0</real>
+	<key>convolutionFilters</key>
+	<array>
+		<string>Basic Smooth 5x5</string>
+	</array>
+	<key>groupName</key>
+	<string>Soft Tissue CT</string>
+	<key>name</key>
+	<string>MIP</string>
+	<key>opacity</key>
+	<string>Logarithmic Inverse Table</string>
+	<key>projection</key>
+	<integer>1</integer>
+	<key>shading</key>
+	<string>Endoscopy</string>
+	<key>useShading</key>
+	<true/>
+	<key>MIP</key>
+	<true/>
+	<key>wl</key>
+	<real>-439.46817016601562</real>
+	<key>ww</key>
+	<real>408.62579345703125</real>
+</dict>
+</plist>

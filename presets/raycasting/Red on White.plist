@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLUT</key>
+	<string>VR Red Vessels</string>
+	<key>advancedCLUT</key>
+	<false/>
+	<key>backgroundColorBlueComponent</key>
+	<real>0.98814374208450317</real>
+	<key>backgroundColorGreenComponent</key>
+	<real>0.98820477724075317</real>
+	<key>backgroundColorRedComponent</key>
+	<real>1</real>
+	<key>convolutionFilters</key>
+	<array/>
+	<key>groupName</key>
+	<string>Soft Tissue CT</string>
+	<key>name</key>
+	<string>Red on White</string>
+	<key>opacity</key>
+	<string>Logarithmic Inverse Table</string>
+	<key>projection</key>
+	<integer>1</integer>
+	<key>shading</key>
+	<string>Default</string>
+	<key>useShading</key>
+	<true/>
+	<key>wl</key>
+	<real>372.83828735351562</real>
+	<key>ww</key>
+	<real>449.34271240234375</real>
+</dict>
+</plist>

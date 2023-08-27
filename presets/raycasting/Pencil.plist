@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLUT</key>
+	<string>No CLUT</string>
+	<key>advancedCLUT</key>
+	<false/>
+	<key>backgroundColorBlueComponent</key>
+	<real>0.98814374208450317</real>
+	<key>backgroundColorGreenComponent</key>
+	<real>0.98820477724075317</real>
+	<key>backgroundColorRedComponent</key>
+	<real>1</real>
+	<key>convolutionFilters</key>
+	<array/>
+	<key>groupName</key>
+	<string>Bone CT</string>
+	<key>name</key>
+	<string>Pencil</string>
+	<key>opacity</key>
+	<string>Logarithmic Inverse Table</string>
+	<key>projection</key>
+	<integer>1</integer>
+	<key>shading</key>
+	<string>Glossy Bone</string>
+	<key>useShading</key>
+	<true/>
+	<key>wl</key>
+	<real>381.529541015625</real>
+	<key>ww</key>
+	<real>640.4715576171875</real>
+</dict>
+</plist>

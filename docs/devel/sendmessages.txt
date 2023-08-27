@@ -1,0 +1,42 @@
+Arquivo binário ./gui/frame.pyc casa com o padrão
+./gui/editor.py:105:            ps.Publisher().sendMessage('Update images', self.image)
+./gui/editor.py:106:            ps.Publisher().sendMessage('Update viewer', None)
+./gui/task_data/notebook.py:83:       #         ps.Publisher().sendMessage('Set mask threshold in notebook',
+./gui/task_slice/task.py:167:        ps.Publisher().sendMessage('Create surface from index', 
+./gui/task_slice/task.py:180:            ps.Publisher().sendMessage('Create new mask', mask_name)
+./gui/task_slice/task.py:374:        ps.Publisher().sendMessage('Change mask selected', mask_index)
+./gui/task_slice/task.py:386:            ps.Publisher().sendMessage('Set threshold values',
+./gui/task_slice/task.py:394:        ps.Publisher().sendMessage('Change mask colour', colour)
+./gui/task_slice/task.py:498:        ps.Publisher().sendMessage('Set edition threshold values',
+Arquivo binário ./gui/task_slice/task.pyc casa com o padrão
+./gui/frame.py:158:        Publisher().sendMessage(('NEW PROJECT'))
+Arquivo binário ./data/slice_.pyc casa com o padrão
+./data/slice_.py.orig:55:        ps.Publisher().sendMessage('Set mask threshold in notebook',
+./data/slice_.py.orig:58:        ps.Publisher().sendMessage('Set threshold values',
+./data/slice_.py.orig:60:        ps.Publisher().sendMessage('Update slice viewer')
+./data/slice_.py.orig:76:            ps.Publisher().sendMessage('Change mask colour in notebook',
+./data/slice_.py.orig:78:            ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
+./data/slice_.py.orig:79:            ps.Publisher().sendMessage('Update slice viewer')
+./data/slice_.py.orig:107:        ps.Publisher().sendMessage('Update threshold limits list', (thresh_min,     
+./data/slice_.py.orig:163:        ps.Publisher().sendMessage('Add mask',
+./data/slice_.py.orig:252:        ps.Publisher().sendMessage('Set mask threshold in notebook',
+./data/slice_.py.orig:255:        ps.Publisher().sendMessage('Update slice viewer')
+Arquivo binário ./data/.slice_.py.swp casa com o padrão
+./data/slice_.py:55:        ps.Publisher().sendMessage('Set mask threshold in notebook',
+./data/slice_.py:59:        ps.Publisher().sendMessage('Set threshold values in gradient',
+./data/slice_.py:62:        ps.Publisher().sendMessage('Update slice viewer')
+./data/slice_.py:78:            ps.Publisher().sendMessage('Change mask colour in notebook',
+./data/slice_.py:80:            ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
+./data/slice_.py:81:            ps.Publisher().sendMessage('Update slice viewer')
+./data/slice_.py:109:        ps.Publisher().sendMessage('Update threshold limits list', (thresh_min,
+./data/slice_.py:165:        ps.Publisher().sendMessage('Add mask',
+./data/slice_.py:253:        ps.Publisher().sendMessage('Set mask threshold in notebook',
+./data/slice_.py:256:        ps.Publisher().sendMessage('Update slice viewer')
+./presets.py:67:        ps.Publisher().sendMessage('Update threshold limits', (thresh_min,     
+./invesalius.py:68:        ps.Publisher().sendMessage('Import directory', import_dir)
+Arquivo binário ./presets.pyc casa com o padrão
+Arquivo binário ./control.pyc casa com o padrão
+./control.py:36:        Publisher().sendMessage('Create surface', (imagedata,colour,threshold))
+./control.py:60:            Publisher().sendMessage('Load slice to viewer', (imagedata))
+./control.py:66:            Publisher().sendMessage('Show content panel')
+./control.py:73:        Publisher().sendMessage('Set threshold modes',(thresh_modes,const.THRESHOLD_PRESETS_INDEX))
