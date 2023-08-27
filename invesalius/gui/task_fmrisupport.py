@@ -203,8 +203,7 @@ class InnerTaskPanel(wx.Panel):
                        int(100*cmap(i)[3])) for i in np.linspace(0, 1, 20)]
         
         self.gradient.SetGradientColours(colororder)
-        print(self.gradient.gradient_slider._gradient_colours)
-        self.gradient.gradient_slider.OutPaint()
+    
         self.gradient.gradient_slider.Refresh()
         self.gradient.gradient_slider.Update()
         self.gradient.Refresh()

@@ -405,12 +405,11 @@ class GradientNoSlide(wx.Panel):
 
         self._gradient_colours = None
         self.colour = colour
-        # self.CalculateControlPositions()
 
     def _bind_events_wx(self):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
         self.Bind(wx.EVT_LEFT_UP, self.OnRelease)
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_PAINT, self.OutPaint)
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackGround)
 
         if sys.platform == "win32":
@@ -450,12 +449,11 @@ class GradientNoSlide(wx.Panel):
         self._generate_event(myEVT_SLIDER_CHANGED)
         evt.Skip()
 
-    def OutPaint(self):
+    def OutPaint(self, evt):
         # Where the magic happens. Here the controls are drawn.
         dc = wx.BufferedPaintDC(self)
         dc.Clear()
 
-        self.SetGradientColours(self.colour)
         w, h = self.GetSize()
 
         width_transparency = self.max_position - self.min_position
@@ -960,7 +958,8 @@ class GradientDisp(wx.Panel):
             self.maximun,
             self.colour,
         )
-
+        
+        self.gradient_slider.SetGradientColours(self.colour)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(1,30)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
