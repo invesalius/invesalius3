@@ -416,6 +416,7 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     return filename
 
 
+<<<<<<< HEAD
 class CoordinateSpaceTransformHook(wx.FileDialogCustomizeHook):
     def __init__(self):
         super().__init__()
@@ -432,6 +433,9 @@ class CoordinateSpaceTransformHook(wx.FileDialogCustomizeHook):
 def ShowImportMeshFilesDialog():
     from invesalius.data.slice_ import Slice
 
+=======
+def ShowImportMeshFilesDialog():
+>>>>>>> 4d3d4513 (reset)
     # Default system path
     current_dir = os.path.abspath(".")
 
@@ -446,20 +450,26 @@ def ShowImportMeshFilesDialog():
     # stl filter is default
     dlg.SetFilterIndex(0)
 
+<<<<<<< HEAD
     if Slice().has_affine():
         customizeHook = CoordinateSpaceTransformHook()
         dlg.SetCustomizeHook(customizeHook)
     else:
         customizeHook = None
 
+=======
+>>>>>>> 4d3d4513 (reset)
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filename = None
     try:
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
+<<<<<<< HEAD
             if customizeHook is not None:
                 Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=customizeHook.convertFromWorld)
+=======
+>>>>>>> 4d3d4513 (reset)
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
@@ -571,8 +581,12 @@ def ShowLoadCSVDebugEfield(message=_(u"Load debug CSV Enorm file"), current_dir=
         return None
 
 def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
+<<<<<<< HEAD
                        wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None,
                        customize_hook=None):
+=======
+                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
+>>>>>>> 4d3d4513 (reset)
 
     dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
                         wildcard=wildcard, style=style)
@@ -580,10 +594,13 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filepath = None
+<<<<<<< HEAD
 
     if customize_hook is not None:
         dlg.SetCustomizeHook(customize_hook)
 
+=======
+>>>>>>> 4d3d4513 (reset)
     try:
         if dlg.ShowModal() == wx.ID_OK:
             # This returns a Python list of files that were selected.

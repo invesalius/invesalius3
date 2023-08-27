@@ -37,7 +37,10 @@ import invesalius.project as proj
 import invesalius.session as ses
 
 from invesalius import inv_paths
+<<<<<<< HEAD
 from invesalius.data.slice_ import Slice
+=======
+>>>>>>> 4d3d4513 (reset)
 
 BTN_MASK = wx.NewId()
 BTN_PICTURE = wx.NewId()
@@ -105,6 +108,7 @@ class TaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+<<<<<<< HEAD
 
 class CoordinateSpaceTransformHook(wx.FileDialogCustomizeHook):
     def __init__(self):
@@ -119,6 +123,8 @@ class CoordinateSpaceTransformHook(wx.FileDialogCustomizeHook):
         self.convertToWorld = self.checkbox.GetValue()
 
 
+=======
+>>>>>>> 4d3d4513 (reset)
 class InnerTaskPanel(wx.Panel):
 
     def __init__(self, parent):
@@ -344,6 +350,7 @@ class InnerTaskPanel(wx.Panel):
                                 last_directory, # last used directory
                                 project_name, # filename
                                 WILDCARD_SAVE_3D,
+<<<<<<< HEAD
                                 wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
             dlg.SetFilterIndex(3) # default is STL
 
@@ -353,6 +360,11 @@ class InnerTaskPanel(wx.Panel):
             else:
                 customizeHook = None
 
+=======
+                                wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
+            dlg.SetFilterIndex(3) # default is STL
+
+>>>>>>> 4d3d4513 (reset)
             if dlg.ShowModal() == wx.ID_OK:
                 filetype_index = dlg.GetFilterIndex()
                 filetype = INDEX_TO_TYPE_3D[filetype_index]
@@ -360,15 +372,24 @@ class InnerTaskPanel(wx.Panel):
                 extension = INDEX_TO_EXTENSION[filetype_index]
                 if sys.platform != 'win32':
                     if filename.split(".")[-1] != extension:
+<<<<<<< HEAD
                         filename = filename + "." + extension
+=======
+                        filename = filename + "."+ extension
+>>>>>>> 4d3d4513 (reset)
 
                 if filename:
                     last_directory = os.path.split(filename)[0]
                     session.SetConfig('last_directory_3d_surface', last_directory)
 
+<<<<<<< HEAD
                 convert_to_world = customizeHook is not None and customizeHook.convertToWorld
                 Publisher.sendMessage('Export surface to file', filename=filename, filetype=filetype,
                                       convert_to_world=convert_to_world)
+=======
+                Publisher.sendMessage('Export surface to file',
+                                      filename=filename, filetype=filetype)
+>>>>>>> 4d3d4513 (reset)
         else:
             dlg = wx.MessageDialog(None,
                     _("You need to create a surface and make it ") +

@@ -1880,9 +1880,12 @@ class Slice(metaclass=utils.Singleton):
 
         return area
 
+<<<<<<< HEAD
     def has_affine(self):
         return not np.allclose(self.affine, np.eye(4))
 
+=======
+>>>>>>> 4d3d4513 (reset)
 
 def _conv_area(x, sx, sy, sz):
     x = x.reshape((3, 3, 3))

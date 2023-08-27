@@ -733,6 +733,12 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
+<<<<<<< HEAD
+=======
+            if not np.allclose(slice_.Slice().affine, np.eye(4)):
+                convert_to_inv = dlg.ImportMeshCoordSystem()
+                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
+>>>>>>> 4d3d4513 (reset)
             Publisher.sendMessage('Import surface file', filename=filename)
 
 

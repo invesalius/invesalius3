@@ -34,6 +34,10 @@ import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
 import invesalius.gui.task_tractography as tractography
 import invesalius.gui.task_efield as efield
+<<<<<<< HEAD
+=======
+import invesalius.gui.task_fmrisupport as fmrisupport
+>>>>>>> 4d3d4513 (reset)
 
 
 
@@ -186,7 +190,12 @@ class InnerFoldPanel(wx.Panel):
                      (_("Configure 3D surface"), surface.TaskPanel),
                      (_("Export data"), exporter.TaskPanel),
                      (_("Tractography"), tractography.TaskPanel),
+<<<<<<< HEAD
                      (_("E-Field"), efield.TaskPanel)]
+=======
+                     (_("E-Field"), efield.TaskPanel),
+                     (_("fMRI support"), fmrisupport.TaskPanel)]
+>>>>>>> 4d3d4513 (reset)
         
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
