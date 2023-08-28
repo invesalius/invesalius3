@@ -416,19 +416,6 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
     return filename
 
 
-class CoordinateSpaceTransformHook(wx.FileDialogCustomizeHook):
-    def __init__(self):
-        super().__init__()
-        self.convertFromWorld = None
-
-    def AddCustomControls(self, customizer):
-        self.checkbox = customizer.AddCheckBox(_("File is in world/scanner coordinates"))
-        self.checkbox.SetValue(True)
-
-    def TransferDataFromCustomControls(self):
-        self.convertFromWorld = self.checkbox.GetValue()
-
-
 def ShowImportMeshFilesDialog():
     from invesalius.data.slice_ import Slice
 
@@ -438,19 +425,26 @@ def ShowImportMeshFilesDialog():
     session = ses.Session()
     last_directory = session.GetConfig('last_directory_surface_import', '')
 
-    dlg = wx.FileDialog(None, message=_("Import surface file"),
-                        defaultDir=last_directory,
-                        wildcard=WILDCARD_MESH_FILES,
-                        style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
-
-    # stl filter is default
-    dlg.SetFilterIndex(0)
+    dlg_message = _("Import surface file")
+    dlg_style = wx.FD_OPEN | wx.FD_CHANGE_DIR
 
     if Slice().has_affine():
-        customizeHook = CoordinateSpaceTransformHook()
-        dlg.SetCustomizeHook(customizeHook)
+        dlg = FileSelectionDialog(title=dlg_message,
+                                  default_dir=last_directory,
+                                  wildcard=WILDCARD_MESH_FILES)
+        conversion_radio_box = wx.RadioBox(dlg, -1, _("File coordinate space"),
+                                           choices=const.SURFACE_SPACE_CHOICES,
+                                           style=wx.RA_SPECIFY_ROWS)
+        dlg.sizer.Add(conversion_radio_box, 0, wx.LEFT)
+        dlg.FitSizers()
     else:
-        customizeHook = None
+        dlg = wx.FileDialog(None, message=dlg_message,
+                            defaultDir=last_directory,
+                            wildcard=WILDCARD_MESH_FILES,
+                            style=dlg_style)
+        # stl filter is default
+        dlg.SetFilterIndex(0)
+        conversion_radio_box = None
 
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
@@ -458,8 +452,9 @@ def ShowImportMeshFilesDialog():
     try:
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
-            if customizeHook is not None:
-                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=customizeHook.convertFromWorld)
+            if conversion_radio_box is not None:
+                convert_to_inv = conversion_radio_box.GetSelection() == const.SURFACE_SPACE_WORLD
+                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
@@ -571,8 +566,7 @@ def ShowLoadCSVDebugEfield(message=_(u"Load debug CSV Enorm file"), current_dir=
         return None
 
 def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath("."), style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
-                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None,
-                       customize_hook=None):
+                       wildcard=_("Registration files (*.obr)|*.obr"), default_filename="", save_ext=None):
 
     dlg = wx.FileDialog(None, message=message, defaultDir="", defaultFile=default_filename,
                         wildcard=wildcard, style=style)
@@ -580,9 +574,6 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filepath = None
-
-    if customize_hook is not None:
-        dlg.SetCustomizeHook(customize_hook)
 
     try:
         if dlg.ShowModal() == wx.ID_OK:
@@ -6487,7 +6478,70 @@ class PeelsCreationDlg(wx.Dialog):
                 self.btn_ok.Enable(False)
 
     def _check_if_files_exists(self):
-            if self.mask_path and os.path.exists(self.mask_path):
-                return True
-            else:
-                return False
+        return self.mask_path and os.path.exists(self.mask_path)
+
+
+class FileSelectionDialog(wx.Dialog):
+    def __init__(self, title, default_dir, wildcard):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow())
+        self.SetTitle(title)
+
+        self.default_dir = default_dir
+        self.wildcard = wildcard
+        self.path = ''
+
+        # Init GUI
+        outer_sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        outer_sizer.Add(sizer, 0, wx.EXPAND | wx.ALL)
+
+        from_files_static_box = self._from_files_gui()
+        sizer.Add(from_files_static_box, 0, wx.EXPAND | wx.ALL, 5)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+
+        self.btn_ok = wx.Button(self, wx.ID_OK, "")
+        self.btn_ok.SetDefault()
+        btn_sizer.AddButton(self.btn_ok)
+
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "")
+        btn_sizer.AddButton(self.btn_cancel)
+
+        btn_sizer.Realize()
+        outer_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
+
+        self.SetSizer(outer_sizer)
+        outer_sizer.Fit(self)
+        self.sizer = sizer
+        self._outer_sizer = outer_sizer
+
+        self.SetAffirmativeId(self.btn_ok.GetId())
+        self.SetEscapeId(self.btn_cancel.GetId())
+
+        self.Layout()
+
+    def _from_files_gui(self):
+
+        files_box = wx.StaticBox(self, -1)
+        from_files_static_box = wx.StaticBoxSizer(files_box, wx.VERTICAL)
+
+        def callback(evt): self._set_path(path=evt.GetString())
+        file_browse = filebrowse.FileBrowseButton(self, -1, labelText='', fileMask=self.wildcard,
+                                                  dialogTitle=_("Choose file"), startDirectory=self.default_dir,
+                                                  changeCallback=callback)
+
+        internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        internal_sizer.Add(file_browse, 0, wx.ALL | wx.EXPAND, 5)
+
+        from_files_static_box.Add(internal_sizer, 0, wx.EXPAND)
+
+        return from_files_static_box
+
+    def _set_path(self, path=''):
+        self.path = path
+
+    def FitSizers(self):
+        self._outer_sizer.Fit(self)
+
+    def GetPath(self):
+        return self.path

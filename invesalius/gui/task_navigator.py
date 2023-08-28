@@ -1749,19 +1749,6 @@ class ControlPanel(wx.Panel):
                                   target_index=None, target=None) 
 
 
-class OverwriteImageFiducialsHook(wx.FileDialogCustomizeHook):
-
-    def __init__(self):
-        super().__init__()
-        self.overwrite = False
-
-    def AddCustomControls(self, customizer):
-        self.checkbox = customizer.AddCheckBox(_("Overwrite image fiducials"))
-
-    def TransferDataFromCustomControls(self):
-        self.overwrite = self.checkbox.GetValue()
-
-
 class MarkersPanel(wx.Panel):
     @dataclasses.dataclass
     class Marker:
@@ -2544,17 +2531,7 @@ class MarkersPanel(wx.Panel):
 
         self.SaveState()
 
-    def OnLoadMarkers(self, evt):
-        """Loads markers from file and appends them to the current marker list.
-        The file should contain no more than a single target marker. Also the
-        file should not contain any fiducials already in the list."""
-        customizeHook = OverwriteImageFiducialsHook()
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"), wildcard=const.WILDCARD_MARKER_FILES,
-                                          customize_hook=customizeHook)
-
-        if not filename:
-            return
-        
+    def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
             with open(filename, 'r') as file:
                 magick_line = file.readline()
@@ -2563,7 +2540,7 @@ class MarkersPanel(wx.Panel):
                 if version != 0:
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
-                
+
                 file.readline() # skip the header line
 
                 # Read the data lines and create markers
@@ -2574,7 +2551,7 @@ class MarkersPanel(wx.Panel):
                                       size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
                                       session_id=marker.session_id, is_brain_target=marker.is_brain_target)
 
-                    if customizeHook.overwrite and marker.label in self.__list_fiducial_labels():
+                    if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
                     # If the new marker has is_target=True, we first create
@@ -2587,6 +2564,20 @@ class MarkersPanel(wx.Panel):
             utils.debug(e)
 
         self.SaveState()
+
+    def OnLoadMarkers(self, evt):
+        """Loads markers from file and appends them to the current marker list.
+        The file should contain no more than a single target marker. Also the
+        file should not contain any fiducials already in the list."""
+
+        last_directory = ses.Session().GetConfig('last_directory_3d_surface', '')
+        dialog = dlg.FileSelectionDialog(_(u"Load markers"), last_directory, const.WILDCARD_MARKER_FILES)
+        overwrite_checkbox = wx.CheckBox(dialog, -1, _("Overwrite current image fiducials"))
+        dialog.sizer.Add(overwrite_checkbox, 0, wx.CENTER)
+        dialog.FitSizers()
+        if dialog.ShowModal() == wx.ID_OK:
+            filename = dialog.GetPath()
+            self.GetMarkersFromFile(filename, overwrite_checkbox.GetValue())
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():

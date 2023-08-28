@@ -315,6 +315,11 @@ SURFACE_QUALITY_LIST = [_("Low"),_("Medium"),_("High"),_("Optimal *")]
 SURFACE_TRANSPARENCY = 0.0
 SURFACE_NAME_PATTERN = _("Surface %d")
 
+# Surface importing/exporting options
+SURFACE_SPACE_WORLD = 0
+SURFACE_SPACE_INV = 1
+SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
+
 # Imagedata - window and level presets
 WINDOW_LEVEL = {_("Abdomen"):(350,50),
                 _("Bone"):(2000, 300),
