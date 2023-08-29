@@ -6367,7 +6367,7 @@ class PeelsCreationDlg(wx.Dialog):
         self.get_all_masks()
 
     def _init_gui(self):
-        self.SetTitle("dialog")
+        self.SetTitle(_("Peels creation"))
 
         from_mask_stbox = self._from_mask_gui()
         from_files_stbox = self._from_files_gui()
