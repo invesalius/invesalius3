@@ -2564,6 +2564,7 @@ class MarkersPanel(wx.Panel):
             utils.debug(e)
 
         self.SaveState()
+        Publisher.sendMessage("Update UI for refine tab")
 
     def OnLoadMarkers(self, evt):
         """Loads markers from file and appends them to the current marker list.
