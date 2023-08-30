@@ -30,6 +30,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
     vtkWindowLevelLookupTable,
+    vtkTextProperty
 )
 from vtkmodules.vtkCommonCore import (
     vtkLookupTable,
@@ -41,6 +42,7 @@ from vtkmodules.vtkCommonColor import (
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
 class Brain:
     def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
@@ -338,6 +340,16 @@ class E_field_brain:
         self.e_field_mesh = mesh
 
         self.efield_mapper = vtkPolyDataMapper()
+
+        text_property = vtkTextProperty()
+        text_property.SetFontSize(3)
+        text_property.SetJustificationToCentered()
+
+        self.efield_scalar_bar = vtkScalarBarActor()
+        self.efield_scalar_bar.SetOrientationToVertical()
+        self.efield_scalar_bar.SetTitle('E (V/m)')
+        self.efield_scalar_bar.SetNumberOfLabels(2)
+        self.efield_scalar_bar.SetTitleTextProperty(text_property)
         #self.lut = CreateLUTTableForEfield(0, 0.005)
 
 

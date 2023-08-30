@@ -54,6 +54,11 @@ class Image():
 
     def GetImageFiducials(self):
         return self.image_fiducials
+    
+    def ResetImageFiducials(self):
+        self.image_fiducials = np.full([3, 3], np.nan)
+        Publisher.sendMessage("Reset image fiducials")
+        self.SaveState()
 
     def GetImageFiducialForUI(self, fiducial_index, coordinate):
         value = self.image_fiducials[fiducial_index, coordinate]

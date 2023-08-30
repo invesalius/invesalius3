@@ -578,8 +578,9 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def AddMask(self, mask):
         image_index = len(self.mask_list_index)
-        self.mask_list_index[image_index] = mask.index
-        self.InsertNewItem(image_index, mask.name, str(mask.threshold_range), mask.colour)
+        if mask.index not in self.mask_list_index:
+            self.mask_list_index[image_index] = mask.index
+            self.InsertNewItem(image_index, mask.name, str(mask.threshold_range), mask.colour)
 
     def EditMaskThreshold(self, index, threshold_range):
         self.SetItem(index, 2, str(threshold_range))
@@ -732,9 +733,6 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
-            if not np.allclose(slice_.Slice().affine, np.eye(4)):
-                convert_to_inv = dlg.ImportMeshCoordSystem()
-                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
             Publisher.sendMessage('Import surface file', filename=filename)
 
 
