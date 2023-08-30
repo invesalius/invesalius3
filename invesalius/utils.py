@@ -26,7 +26,7 @@ import traceback
 import collections.abc
 
 from setuptools.extern.packaging.version import Version
-from functools import wraps
+from functools import wraps, partial
 
 import numpy as np
 
@@ -493,7 +493,6 @@ def log_traceback(ex):
     tb_lines = [line.rstrip('\n') for line in
         traceback.format_exception(ex.__class__, ex, ex_traceback)]
     return ''.join(tb_lines)
-
 
 
 def deep_merge_dict(d, u):

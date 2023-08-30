@@ -19,7 +19,6 @@
 
 import wx
 
-
 def calc_width_needed(widget, num_chars):
     width, height = widget.GetTextExtent("M" * num_chars)
     return width

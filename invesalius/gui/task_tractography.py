@@ -76,12 +76,6 @@ from invesalius.data.converters import to_vtk, convert_custom_bin_to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 
-HAS_PEDAL_CONNECTION = True
-try:
-    from invesalius.net.pedal_connection import PedalConnection
-except ImportError:
-    HAS_PEDAL_CONNECTION = False
-
 from invesalius import inv_paths
 
 from concurrent.futures import wait, FIRST_COMPLETED, ThreadPoolExecutor

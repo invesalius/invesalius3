@@ -69,7 +69,6 @@ import invesalius.project as prj
 import invesalius.session as ses
 
 from invesalius import utils
-from invesalius.gui import utils as gui_utils
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.image import Image
@@ -79,12 +78,7 @@ from invesalius.navigation.robot import Robot
 from invesalius.data.converters import to_vtk, convert_custom_bin_to_vtk
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
-
-HAS_PEDAL_CONNECTION = True
-try:
-    from invesalius.net.pedal_connection import PedalConnection
-except ImportError:
-    HAS_PEDAL_CONNECTION = False
+from invesalius.net.pedal_connection import PedalConnector
 
 from invesalius import inv_paths
 
@@ -178,11 +172,11 @@ class InnerFoldPanel(wx.Panel):
         tracker = Tracker()
         robot = Robot()
         image = Image()
-        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         icp = IterativeClosestPoint()
         neuronavigation_api = NeuronavigationApi()
+        pedal_connector = PedalConnector(neuronavigation_api, self)
         navigation = Navigation(
-            pedal_connection=pedal_connection,
+            pedal_connector=pedal_connector,
             neuronavigation_api=neuronavigation_api,
         )
         self.tracker = tracker
@@ -204,7 +198,7 @@ class InnerFoldPanel(wx.Panel):
             robot=robot,
             icp=icp,
             image=image,
-            pedal_connection=pedal_connection,
+            pedal_connector=pedal_connector,
             neuronavigation_api=neuronavigation_api,
         )
         self.fold_panel = fold_panel
@@ -223,7 +217,7 @@ class InnerFoldPanel(wx.Panel):
             robot=robot,
             icp=icp,
             image=image,
-            pedal_connection=pedal_connection,
+            pedal_connector=pedal_connector,
             neuronavigation_api=neuronavigation_api,
         )
 
@@ -364,7 +358,7 @@ class InnerFoldPanel(wx.Panel):
     
 
 class CoregistrationPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -385,11 +379,11 @@ class CoregistrationPanel(wx.Panel):
         self.robot = robot
         self.icp = icp
         self.image = image
-        self.pedal_connection = pedal_connection
+        self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
         book.AddPage(ImagePage(book, image), _("Image"))
-        book.AddPage(TrackerPage(book, icp, tracker, navigation, pedal_connection, neuronavigation_api), _("Tracker"))
+        book.AddPage(TrackerPage(book, icp, tracker, navigation, pedal_connector, neuronavigation_api), _("Tracker"))
         book.AddPage(RefinePage(book, icp, tracker, image, navigation), _("Refine"))
         book.AddPage(StimulatorPage(book, navigation), _("Stimulator"))
 
@@ -644,13 +638,13 @@ class ImagePage(wx.Panel):
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
 
 class TrackerPage(wx.Panel):
-    def __init__(self, parent, icp, tracker, navigation, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, icp, tracker, navigation, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
 
         self.icp = icp
         self.tracker = tracker
         self.navigation = navigation
-        self.pedal_connection = pedal_connection
+        self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
         self.btns_set_fiducial = [None, None, None]
@@ -838,12 +832,8 @@ class TrackerPage(wx.Panel):
                 Publisher.sendMessage('Set tracker fiducial', fiducial_name=fiducial_name)
 
         if self.tracker.AreTrackerFiducialsSet():
-            if self.pedal_connection is not None:
-                self.pedal_connection.remove_callback(name='fiducial')
+            self.pedal_connector.remove_callback('fiducial')
 
-            if self.neuronavigation_api is not None:
-                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
-            
             self.tracker_fiducial_being_set = None
         else:
             for n in [0, 1, 2]:
@@ -920,20 +910,8 @@ class TrackerPage(wx.Panel):
                 self.start_button.SetValue(False)
                 dlg.ShowNavigationTrackerWarning(0, 'choose')
             else:
-                if self.pedal_connection is not None:
-                    self.pedal_connection.add_callback(
-                        name='fiducial',
-                        callback=self.set_fiducial_callback,
-                        remove_when_released=False,
-                    )
+                self.pedal_connector.add_callback('fiducial', self.set_fiducial_callback, remove_when_released=False)
 
-                if self.neuronavigation_api is not None:
-                    self.neuronavigation_api.add_pedal_callback(
-                        name='fiducial',
-                        callback=self.set_fiducial_callback,
-                        remove_when_released=False,
-                    )
-                
                 if self.tracker_fiducial_being_set is None:
                     return
                 else:
@@ -1177,7 +1155,7 @@ class StimulatorPage(wx.Panel):
         Publisher.sendMessage('Open navigation menu')
 
 class NavigationPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
 
         self.navigation = navigation
@@ -1185,12 +1163,12 @@ class NavigationPanel(wx.Panel):
         self.robot = robot
         self.icp = icp
         self.image = image
-        self.pedal_connection = pedal_connection
+        self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
         self.__bind_events()
 
-        self.control_panel = ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connection, self.neuronavigation_api)
+        self.control_panel = ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connector, self.neuronavigation_api)
         self.marker_panel = MarkersPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.control_panel)
 
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1223,7 +1201,7 @@ class NavigationPanel(wx.Panel):
         Publisher.sendMessage('Reset cam clipping range')
         self.navigation.StopNavigation()
         self.navigation.__init__(
-            pedal_connection=self.pedal_connection,
+            pedal_connector=self.pedal_connector,
             neuronavigation_api=self.neuronavigation_api
         )
         self.tracker.__init__()
@@ -1231,7 +1209,7 @@ class NavigationPanel(wx.Panel):
 
     
 class ControlPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connector, neuronavigation_api):
 
         wx.Panel.__init__(self, parent)
         
@@ -1241,7 +1219,7 @@ class ControlPanel(wx.Panel):
         self.robot = robot
         self.icp = icp
         self.image = image
-        self.pedal_connection = pedal_connection
+        self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
         self.nav_status = False
