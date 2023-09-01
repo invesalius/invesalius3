@@ -580,7 +580,7 @@ class SurfaceManager():
             self.last_surface_index = index
 
         # Set actor colour and transparency
-        actor.GetProperty().SetColor(surface.colour)
+        actor.GetProperty().SetColor(surface.colour[:3])
         actor.GetProperty().SetOpacity(1-surface.transparency)
 
         if overwrite and self.actors_dict.keys():
