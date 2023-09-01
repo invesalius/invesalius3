@@ -1088,17 +1088,15 @@ class Slice(metaclass=utils.Singleton):
         "Set a mask colour given its index and colour (RGB 0-1 values)"
         proj = Project()
         proj.mask_dict[index].set_colour(colour)
+        colour_wx = [int(value * 255) for value in colour]
 
-        (r, g, b) = colour[:3]
-        colour_wx = [r * 255, g * 255, b * 255]
-        Publisher.sendMessage(
-            "Change mask colour in notebook", index=index, colour=(r, g, b)
-        )
+        Publisher.sendMessage("Change mask colour in notebook", index=index, colour=colour[:3])
         Publisher.sendMessage("Set GUI items colour", colour=colour_wx)
         if update:
             # Updating mask colour on vtkimagedata.
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
+
             Publisher.sendMessage("Reload actual slice")
 
         session = ses.Session()

@@ -1206,8 +1206,8 @@ class NewMask(wx.Dialog):
         import invesalius.project as prj
         proj = prj.Project()
         (thresh_min, thresh_max) = proj.threshold_modes[evt.GetString()]
-        self.gradient.SetMinimun(thresh_min)
-        self.gradient.SetMaximun(thresh_max)
+        self.gradient.SetMinValue(thresh_min)
+        self.gradient.SetMaxValue(thresh_max)
 
     def OnSlideChanged(self, evt):
         import invesalius.project as prj
