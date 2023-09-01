@@ -382,12 +382,10 @@ class GradientSlider(wx.Panel):
         self.GetEventHandler().ProcessEvent(evt)
 
 
-<<<<<<< HEAD
-=======
 class GradientNoSlide(wx.Panel):
-    # This widget is formed by a gradient background (black-white), two push
-    # buttons change the min and max values respectively and a slider which you can drag to
-    # change the both min and max values.
+    # This widget is formed by a gradient background (black-white) 
+    # Unlike GradientSlide, here the widget is used as a colorbar to display 
+    # the available colors (used in fmri support)
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         # minRange: the minimal value
         # maxrange: the maximum value
@@ -454,42 +452,6 @@ class GradientNoSlide(wx.Panel):
         dc = wx.BufferedPaintDC(self)
         dc.Clear()
 
-        w, h = self.GetSize()
-
-        width_transparency = self.max_position - self.min_position
-        gc = wx.GraphicsContext.Create(dc)
-
-        points = ((0, PUSH_WIDTH, (255, 255, 255), (255, 255, 255)),
-                  (PUSH_WIDTH, w - PUSH_WIDTH, (255, 255, 255), (255, 255, 255)),
-                  (w - PUSH_WIDTH, w, (255, 255, 255), (255, 255, 255)))
-
-        # Drawing the gradient background
-        for p1, p2, c1, c2 in points:
-            brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
-            gc.SetBrush(brush)
-            path = gc.CreatePath()
-            path.AddRectangle(p1, 0, p2 - p1, h)
-            gc.StrokePath(path)
-            gc.FillPath(path)
-
-        # Drawing the transparent coloured overlay
-        lengthcolors = len(self._gradient_colours)
-        for i, (c1, c2) in enumerate(zip(self._gradient_colours, self._gradient_colours[1:])):
-            p1 = self.min_position + i * width_transparency / lengthcolors
-            p2 = self.min_position + (i + 1) * width_transparency / lengthcolors
-            brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
-            gc.SetBrush(brush)
-            path = gc.CreatePath()
-            path.AddRectangle(p1, 0, p2 - p1, h)
-            gc.StrokePath(path)
-            gc.FillPath(path)
-
-    def OnPaint(self, evt):
-        # Where the magic happens. Here the controls are drawn.
-        dc = wx.BufferedPaintDC(self)
-        dc.Clear()
-
-        self.SetGradientColours(self.colour)
         w, h = self.GetSize()
 
         width_transparency = self.max_position - self.min_position
@@ -707,7 +669,6 @@ class GradientNoSlide(wx.Panel):
         )
         self.GetEventHandler().ProcessEvent(evt)
 
->>>>>>> 4d3d4513 (reset)
 class GradientCtrl(wx.Panel):
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         super(GradientCtrl, self).__init__(parent, id)
@@ -931,11 +892,10 @@ class GradientCtrl(wx.Panel):
             self.maximun,
         )
         self.GetEventHandler().ProcessEvent(evt)
-<<<<<<< HEAD
-=======
 
 
 class GradientDisp(wx.Panel):
+    # Class for colorbars gradient used in fmri support (showing different colormaps possible)
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         super(GradientDisp, self).__init__(parent, id)
         self.min_range = minRange
@@ -1014,4 +974,3 @@ class GradientDisp(wx.Panel):
             self.maximun,
         )
         self.GetEventHandler().ProcessEvent(evt)
->>>>>>> 4d3d4513 (reset)

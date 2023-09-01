@@ -2,6 +2,29 @@ from src.constants import *
 
 
 def volume2display(volume, flag, cluster_smoothness=10):
+    """
+    Information:
+    ------------
+    From the computed volumes (e.g functional gradients ...) 
+    we generate integer-valued arrays (in the same shape as the input)
+    that can be displayed / visualized via clustering the values
+
+    Parameters
+    ----------
+    volume::[3darray<float>]
+        Input volume that we want to visualize after clustering
+    flag::[string]
+        Either "timeframe" / "gradients" / "Yeo-7" / "Yeo-17"
+    cluster_smoothness::[int]
+        Number of class used in displaying different colors 
+        or gradients of colors
+    Returns
+    -------
+    clust_vol::[3darray<float>]
+        Clustered volumes    
+    cluster_smoothness::[int]
+        Same as input
+    """
     if (flag == "timeframe") or (flag == "gradients"):
         tmp = deepcopy(volume)
         # -> Idea is to generate one hue but with different intensity for the whole volume, intensity depending on the BOLD value

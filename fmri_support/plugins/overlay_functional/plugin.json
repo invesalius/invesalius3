@@ -1,5 +1,0 @@
-{
-    "name": "Functional Overlay Scan",
-    "description": "We put an overlay with values - gray scales representing either functional volumes of a certain frames or functional connectivity proxy",
-    "enable-startup": false
-}

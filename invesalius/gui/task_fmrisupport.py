@@ -186,9 +186,6 @@ class InnerTaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-        # main_sizer.SetSizeHints(self)
-        # self.SetSizer(main_sizer)
-
     def __bind_events(self):
         Publisher.subscribe(self.OnLinkLoad, 'Loading status')
         Publisher.subscribe(self.SelectColormap, 'Changing colormap')
