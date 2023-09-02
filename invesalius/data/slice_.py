@@ -1523,8 +1523,11 @@ class Slice(metaclass=utils.Singleton):
             return imagedata
         else:
             # map scalar values into colors
+            _min, _max = iu.get_LUT_value_255(
+                    np.array((self.matrix.min(), self.matrix.max())),
+                    self.window_width, self.window_level)
             lut_bg = vtkLookupTable()
-            lut_bg.SetTableRange(imagedata.GetScalarRange())
+            lut_bg.SetTableRange(_min, _max)
             lut_bg.SetSaturationRange(self.saturation_range)
             lut_bg.SetHueRange(self.hue_range)
             lut_bg.SetValueRange(self.value_range)
