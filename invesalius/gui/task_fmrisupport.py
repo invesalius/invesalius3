@@ -122,7 +122,8 @@ class InnerTaskPanel(wx.Panel):
         self.SetBackgroundColour(default_colour)
         self.session = ses.Session()
         self.colormaps = ["twilight","hsv","Set1","Set2","winter","hot","autumn"]
-        self.cur_colormap = "hsv"        
+        self.cur_colormap = "twilight"
+        self.filename = None
 
         line0 = wx.StaticText(self, -1,
                                     _("Select Modalities / File"))
@@ -149,7 +150,7 @@ class InnerTaskPanel(wx.Panel):
                                    choices=self.colormaps,
                                    style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_thresh.Bind(wx.EVT_COMBOBOX, self.SelectColormap)
-        combo_thresh.SetSelection(0)
+        combo_thresh.SetSelection(0) # By Default use Twilight
 
         self.combo_thresh = combo_thresh
 
@@ -193,6 +194,7 @@ class InnerTaskPanel(wx.Panel):
 
     def SelectColormap(self, event=None):
         self.cur_colormap = self.colormaps[self.combo_thresh.GetSelection()]
+        self.ReloadSlice()
         cmap = plt.get_cmap(self.cur_colormap)
         colororder = [(int(255*cmap(i)[0]),
                        int(255*cmap(i)[1]),
@@ -211,20 +213,19 @@ class InnerTaskPanel(wx.Panel):
         self.Show(False)
         self.Show(True)
 
+    def ReloadSlice(self):
+        if self.filename is None: return
 
-    def OnLinkLoad(self, event=None):
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load volume to overlay"),
-                                          wildcard=_("Registration files (*.nii.gz)|*.nii.gz"))
-        
         # Update Slice
         import nibabel as nib
-        clust_vol = nib.load(filename).get_fdata().T[:,::-1]
+        clust_vol = nib.load(self.filename).get_fdata().T[:,::-1]
         
         from invesalius.data.slice_ import Slice
         # 1. Create layer of shape first
         slc = Slice()
         slc.aux_matrices['color_overlay'] = clust_vol
         slc.aux_matrices['color_overlay'] = slc.aux_matrices['color_overlay'].astype(int)
+
         # 2. Attribute different hue accordingly
         cluster_smoothness = int(np.max(list(set(clust_vol.flatten()))))
         cmap = plt.get_cmap(self.cur_colormap)
@@ -235,3 +236,32 @@ class InnerTaskPanel(wx.Panel):
 
         # 3. Show colors
         slc.to_show_aux = 'color_overlay'
+
+        Publisher.sendMessage('Reload actual slice')        
+
+    def OnLinkLoad(self, event=None):
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Load volume to overlay"),
+                                          wildcard=_("Registration files (*.nii.gz)|*.nii.gz"))
+        self.filename = filename
+        # Update Slice
+        import nibabel as nib
+        clust_vol = nib.load(filename).get_fdata().T[:,::-1]
+        
+        from invesalius.data.slice_ import Slice
+        # 1. Create layer of shape first
+        slc = Slice()
+        slc.aux_matrices['color_overlay'] = clust_vol
+        slc.aux_matrices['color_overlay'] = slc.aux_matrices['color_overlay'].astype(int)
+
+        # 2. Attribute different hue accordingly
+        cluster_smoothness = int(np.max(list(set(clust_vol.flatten()))))
+        cmap = plt.get_cmap(self.cur_colormap)
+        colororder = [cmap(i) for i in np.linspace(0, 1, cluster_smoothness)]
+
+        slc.aux_matrices_colours['color_overlay'] = {k+1: colororder[k] for k in range(cluster_smoothness)}
+        slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0) # add transparent color for nans and non GM voxels
+
+        # 3. Show colors
+        slc.to_show_aux = 'color_overlay'
+
+        Publisher.sendMessage('Reload actual slice')
