@@ -512,6 +512,7 @@ class TrackerPage(wx.Panel):
         self.tracker = tracker
         self.robot = robot
         self.robot_ip = None
+        self.robot_model = None
         self.matrix_tracker_to_robot = None
         self.state = self.LoadConfig()
 
@@ -615,12 +616,12 @@ class TrackerPage(wx.Panel):
             (lbl_rob, 0, wx.LEFT),
             (choice_IP, 1, wx.EXPAND),
         ])
-        rob_sizer = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        rob_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=5, vgap=5)
         rob_sizer.AddMany([
             (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
+            (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (0, 0),
-            (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15)
         ])
 
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
@@ -648,6 +649,7 @@ class TrackerPage(wx.Panel):
             return False
 
         self.robot_ip = state['robot_ip']
+        self.robot_model = state['robot_model']
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
 
         return True
@@ -700,7 +702,7 @@ class TrackerPage(wx.Panel):
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
             self.robot.SetRobotModel(self.robot_model)
-            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip, robot_model=self.robot_model)
 
     def OnRobotRegister(self, evt):
         self.HideParent()
