@@ -87,7 +87,7 @@ class DicomNet:
 
         ds = Dataset()
         ds.QueryRetrieveLevel = 'INSTANCE'
-        ds.PatientName = self.search_word
+        ds.PatientName = f'*{self.search_word}*'
         ds.PatientID = ''
         ds.PatientBirthDate = ''
         ds.PatientAge = ''
