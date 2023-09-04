@@ -543,14 +543,10 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
 
     def LoadImageFiducials(self, label, position):
-        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'label', label)
+        fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', label[:2])
 
         fiducial_index = fiducial['fiducial_index']
         fiducial_name = fiducial['fiducial_name']
-
-        if self.btns_set_fiducial[fiducial_index].GetValue():
-            print("Fiducial {} already set, not resetting".format(label))
-            return
 
         Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
@@ -1752,6 +1748,7 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None) 
 
+
 class MarkersPanel(wx.Panel):
     @dataclasses.dataclass
     class Marker:
@@ -1863,6 +1860,8 @@ class MarkersPanel(wx.Panel):
                     setattr(self, field.name, str_val[1:-1]) # remove the quotation marks
                 if field.type is bool:
                     setattr(self, field.name, str_val=='True')
+                if field.type is int and str_val != 'None':
+                    setattr(self, field.name, int(str_val))
 
         def to_dict(self):
             return {
@@ -2012,7 +2011,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
-        Publisher.subscribe(self.CreateMarker, 'Create marker')
+        Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.SetMarkers, 'Set markers')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
@@ -2525,40 +2524,34 @@ class MarkersPanel(wx.Panel):
         self.__delete_multiple_markers(indexes)
         self.SaveState()
 
-    def OnCreateMarker(self, evt):
-        self.CreateMarker()
+    def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
+                       is_target=False, seed=None, session_id=None, is_brain_target=False):
+
+        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target)
 
         self.SaveState()
 
-    def OnLoadMarkers(self, evt):
-        """Loads markers from file and appends them to the current marker list.
-        The file should contain no more than a single target marker. Also the
-        file should not contain any fiducials already in the list."""
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load markers"),
-                                          wildcard=const.WILDCARD_MARKER_FILES)
-                
-        if not filename:
-            return
-        
+    def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
             with open(filename, 'r') as file:
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
-                ver = int(magick_line.split('_')[-1])
-                if ver != 0:
+                version = int(magick_line.split('_')[-1])
+                if version != 0:
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
-                
+
                 file.readline() # skip the header line
 
                 # Read the data lines and create markers
                 for line in file.readlines():
                     marker = self.Marker()
                     marker.from_string(line)
-                    self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour, size=marker.size,
-                                      label=marker.label, is_target=False, seed=marker.seed, session_id=marker.session_id, is_brain_target=marker.is_brain_target)
+                    self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour,
+                                      size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
+                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target)
 
-                    if marker.label in self.__list_fiducial_labels():
+                    if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
                     # If the new marker has is_target=True, we first create
@@ -2568,8 +2561,24 @@ class MarkersPanel(wx.Panel):
 
         except Exception as e:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
+            utils.debug(e)
 
         self.SaveState()
+        Publisher.sendMessage("Update UI for refine tab")
+
+    def OnLoadMarkers(self, evt):
+        """Loads markers from file and appends them to the current marker list.
+        The file should contain no more than a single target marker. Also the
+        file should not contain any fiducials already in the list."""
+
+        last_directory = ses.Session().GetConfig('last_directory_3d_surface', '')
+        dialog = dlg.FileSelectionDialog(_(u"Load markers"), last_directory, const.WILDCARD_MARKER_FILES)
+        overwrite_checkbox = wx.CheckBox(dialog, -1, _("Overwrite current image fiducials"))
+        dialog.sizer.Add(overwrite_checkbox, 0, wx.CENTER)
+        dialog.FitSizers()
+        if dialog.ShowModal() == wx.ID_OK:
+            filename = dialog.GetPath()
+            self.GetMarkersFromFile(filename, overwrite_checkbox.GetValue())
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():
@@ -3881,7 +3890,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
-        Publisher.subscribe(self.CreateMarker, 'Create marker')
+        Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.SetMarkers, 'Set markers')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
@@ -3892,6 +3901,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
         Publisher.subscribe(self.GetIdList, 'Get ID list')
         Publisher.subscribe(self.GetRotationPosition, 'Send coil position and rotation')
+
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
 
@@ -4389,8 +4399,9 @@ class MarkersPanel(wx.Panel):
         self.__delete_multiple_markers(indexes)
         self.SaveState()
 
-    def OnCreateMarker(self, evt):
-        self.CreateMarker()
+    def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
+                       is_target=False, seed=None, session_id=None, is_brain_target=False):
+        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target)
 
         self.SaveState()
 

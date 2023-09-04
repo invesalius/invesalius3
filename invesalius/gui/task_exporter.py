@@ -32,11 +32,12 @@ import wx.lib.platebtn as pbtn
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.gui.dialogs as dlg
+import invesalius.gui.dialogs as dlgs
 import invesalius.project as proj
 import invesalius.session as ses
 
 from invesalius import inv_paths
+from invesalius.data.slice_ import Slice
 
 BTN_MASK = wx.NewId()
 BTN_PICTURE = wx.NewId()
@@ -103,6 +104,7 @@ class TaskPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+
 
 class InnerTaskPanel(wx.Panel):
 
@@ -266,7 +268,7 @@ class InnerTaskPanel(wx.Panel):
 
     def OnMenuPicture(self, evt):
         id = evt.GetId()
-        value = dlg.ExportPicture(self.id_to_name[id])
+        value = dlgs.ExportPicture(self.id_to_name[id])
         if value:
             filename, filetype = value
             Publisher.sendMessage('Export picture to file',
@@ -324,13 +326,36 @@ class InnerTaskPanel(wx.Panel):
             session = ses.Session()
             last_directory = session.GetConfig('last_directory_3d_surface', '')
 
+            dlg_message = _("Save 3D surface as...")
+            dlg_style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+
+            convert_to_world = False
+            if Slice().has_affine():
+                dlg = dlgs.FileSelectionDialog(title=dlg_message,
+                                               default_dir=last_directory,
+                                               wildcard=WILDCARD_SAVE_3D)
+                conversion_radio_box = wx.RadioBox(dlg, -1, _("Export in"),
+                                                   choices=const.SURFACE_SPACE_CHOICES,
+                                                   style=wx.RA_SPECIFY_ROWS)
+                dlg.sizer.Hide(0)
+                dlg.sizer.Add(conversion_radio_box, 0, wx.LEFT)
+                dlg.sizer.Layout()
+                dlg.FitSizers()
+
+                if dlg.ShowModal() == wx.ID_OK:
+                    convert_to_world = conversion_radio_box.GetSelection() == const.SURFACE_SPACE_WORLD
+                else:
+                    dlg.Destroy()
+                    return
+                dlg.Destroy()
+
             dlg = wx.FileDialog(None,
-                                _("Save 3D surface as..."), # title
-                                last_directory, # last used directory
-                                project_name, # filename
+                                dlg_message,  # title
+                                last_directory,  # last used directory
+                                project_name,  # filename
                                 WILDCARD_SAVE_3D,
-                                wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
-            dlg.SetFilterIndex(3) # default is STL
+                                dlg_style)
+            dlg.SetFilterIndex(3)  # default is STL
 
             if dlg.ShowModal() == wx.ID_OK:
                 filetype_index = dlg.GetFilterIndex()
@@ -339,14 +364,14 @@ class InnerTaskPanel(wx.Panel):
                 extension = INDEX_TO_EXTENSION[filetype_index]
                 if sys.platform != 'win32':
                     if filename.split(".")[-1] != extension:
-                        filename = filename + "."+ extension
+                        filename = filename + "." + extension
 
                 if filename:
                     last_directory = os.path.split(filename)[0]
                     session.SetConfig('last_directory_3d_surface', last_directory)
 
-                Publisher.sendMessage('Export surface to file',
-                                      filename=filename, filetype=filetype)
+                Publisher.sendMessage('Export surface to file', filename=filename, filetype=filetype,
+                                      convert_to_world=convert_to_world)
         else:
             dlg = wx.MessageDialog(None,
                     _("You need to create a surface and make it ") +

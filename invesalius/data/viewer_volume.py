@@ -52,6 +52,7 @@ from vtkmodules.vtkFiltersCore import (
     vtkCenterOfMass,
     vtkGlyph3D
 )
+from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersSources import (
@@ -1813,7 +1814,7 @@ class Viewer(wx.Panel):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
-        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+        seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         return lut
@@ -1826,6 +1827,59 @@ class Viewer(wx.Panel):
         self.efield_max = max
         #self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
+
+    def FindClosestValueEfieldEdges(self, arr, threshold):
+        closest_value = min(arr, key = lambda x: abs(x-threshold))
+        closest_index = np.argmin(np.abs(arr-closest_value))
+        return closest_index
+
+    def CalculateEdgesEfield(self):
+        if self.edge_actor is not None:
+            self.ren.RemoveViewProp(self.edge_actor)
+        named_colors = vtkNamedColors()
+        second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
+        second_lut.SetNumberOfTableValues(5)
+
+        bcf = vtkBandedPolyDataContourFilter()
+        bcf.SetInputData(self.efield_mesh)
+        bcf.ClippingOn()
+
+        lower_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_min)
+        middle_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_max * 0.2)
+        middle_edge1 = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_max * 0.7)
+        upper_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_max * 0.9)
+        lower_edge = self.efield_mesh.GetPoint(lower_edge)
+        middle_edge = self.efield_mesh.GetPoint(middle_edge)
+        middle_edge1 = self.efield_mesh.GetPoint(middle_edge1)
+        upper_edge = self.efield_mesh.GetPoint(upper_edge)
+
+        edges = [ lower_edge, middle_edge, middle_edge1, upper_edge]
+        for i in range(len(edges)):
+            bcf.SetValue(i, edges[i][2])
+        bcf.SetScalarModeToIndex()
+        bcf.GenerateContourEdgesOn()
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(bcf.GetOutputPort())
+        mapper.SetLookupTable(second_lut)
+        mapper.SetScalarModeToUsePointData()
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+
+        edge_mapper = vtkPolyDataMapper()
+        edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
+        edge_mapper.SetResolveCoincidentTopologyToPolygonOffset()
+
+        self.edge_actor = vtkActor()
+        self.edge_actor.SetMapper(edge_mapper)
+        self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d('Black'))
+        self.edge_actor.GetProperty().SetLineWidth(3.0)
+        actor.GetProperty().SetOpacity(0)
+        self.ren.AddViewProp(actor)
+        self.ren.AddViewProp(self.edge_actor)
+
+        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+        self.ren.AddActor2D(self.efield_scalar_bar)
 
     def GetIndexesAboveThreshold(self):
         cell_id_indexes = []
@@ -1909,6 +1963,7 @@ class Viewer(wx.Panel):
         self.vectorfield_actor =None
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
+        self.edge_actor= None
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
@@ -1934,8 +1989,7 @@ class Viewer(wx.Panel):
     def OnUpdateEfieldvis(self):
         if len(self.Id_list) !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
-            self.efield_scalar_bar.SetLookupTable(self.efield_lut)
-            self.ren.AddActor2D(self.efield_scalar_bar)
+            self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(255)
             for h in range(len(self.Id_list)):
@@ -2407,7 +2461,7 @@ class Viewer(wx.Panel):
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
 
-    def OnExportSurface(self, filename, filetype):
+    def OnExportSurface(self, filename, filetype, convert_to_world=False):
         if filetype not in (const.FILETYPE_STL,
                             const.FILETYPE_VTP,
                             const.FILETYPE_PLY,
