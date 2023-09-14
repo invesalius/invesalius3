@@ -570,7 +570,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
     def InsertNewSurface(self, surface):
         index = surface.index
         name = surface.name
-        colour = [value*255 for value in surface.colour]
+        colour = [int(value*255) for value in surface.colour]
         i = 0
         try:
             i = self.surface_list.index([name, index])
@@ -587,6 +587,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
         self.combo_surface_name.SetSelection(i)
         transparency = 100*surface.transparency
+        # print("Button color: ", colour)
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(int(transparency))
         #  Publisher.sendMessage('Update surface data', (index))

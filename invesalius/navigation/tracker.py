@@ -28,9 +28,11 @@ import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from invesalius.i18n import tr as _
+from invesalius.utils import Singleton
 
-
-class Tracker():
+# Only one tracker will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
+class Tracker(metaclass=Singleton):
     def __init__(self):
         self.tracker_connection = None
         self.tracker_id = const.DEFAULT_TRACKER
@@ -128,6 +130,7 @@ class Tracker():
                 self.thread_coord.start()
 
             self.SaveState()
+        
 
     def DisconnectTracker(self):
         if self.tracker_connected:
@@ -158,7 +161,10 @@ class Tracker():
 
     def IsTrackerInitialized(self):
         return self.tracker_connection and self.tracker_id and self.tracker_connected
-
+   
+    def IsTrackerFiducialSet(self, fiducial_index):
+        return not np.isnan(self.tracker_fiducials)[fiducial_index].any()
+    
     def AreTrackerFiducialsSet(self):
         return not np.isnan(self.tracker_fiducials).any()
 
@@ -207,7 +213,7 @@ class Tracker():
     def ResetTrackerFiducials(self):
         for m in range(3):
             self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
-
+        Publisher.sendMessage("Reset tracker fiducials")
         self.SaveState()
 
     def GetTrackerFiducials(self):
@@ -230,6 +236,13 @@ class Tracker():
     def GetTrackerId(self):
         return self.tracker_id
 
+    def get_trackers(self):
+        return const.TRACKERS
+
+
+'''
+Deprecated Code
+
     def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
         if self.tracker_connected:
             selection_ctrl.SetSelection(self.tracker_id)
@@ -246,5 +259,4 @@ class Tracker():
         txtctrl_fre.SetValue('')
         txtctrl_fre.SetBackgroundColour('WHITE')
 
-    def get_trackers(self):
-        return const.TRACKERS
+'''

@@ -131,7 +131,7 @@ class NeuronavigationApi(metaclass=Singleton):
                 state=state
             )
 
-    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, coil_set, conductivities_inside, conductivities_outside):
+    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, coil_set, conductivities_inside, conductivities_outside, dI_per_dt):
         if self.connection is not None:
             return self.connection.initialize_efield(
                 cortex_model_path=cortex_model_path,
@@ -140,6 +140,7 @@ class NeuronavigationApi(metaclass=Singleton):
                 coil_set = coil_set,
                 conductivities_inside= conductivities_inside,
                 conductivities_outside = conductivities_outside,
+                dI_per_dt= dI_per_dt,
             )
         return None
 
@@ -154,7 +155,13 @@ class NeuronavigationApi(metaclass=Singleton):
         if self.connection is not None:
             return self.connection.set_coil(
                 coil_model_path=coil_model_path,
-                coil_set = coil_set
+                coil_set=coil_set
+            )
+
+    def set_dIperdt(self, dIperdt):
+        if self.connection is not None:
+            return self.connection.set_dIperdt(
+                dIperdt=dIperdt,
             )
 
     def update_efield(self, position, orientation, T_rot):
@@ -162,7 +169,7 @@ class NeuronavigationApi(metaclass=Singleton):
             return self.connection.update_efield(
                 position=position,
                 orientation=orientation,
-                T_rot = T_rot,
+                T_rot=T_rot,
             )
         return None
 

@@ -183,6 +183,12 @@ SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
                      _("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
                      }
 
+#Colors for errors and positives
+RED_COLOR_FLOAT = (0.99, 0.55, 0.38)
+GREEN_COLOR_FLOAT = (0.40, 0.76, 0.65)
+RED_COLOR_RGB = (252, 141, 98)
+GREEN_COLOR_RGB = (102, 194, 165)
+
 # Volume view angle
 VOL_FRONT = wx.NewId()
 VOL_BACK = wx.NewId()
@@ -309,6 +315,11 @@ SURFACE_QUALITY_LIST = [_("Low"),_("Medium"),_("High"),_("Optimal *")]
 # Surface properties
 SURFACE_TRANSPARENCY = 0.0
 SURFACE_NAME_PATTERN = _("Surface %d")
+
+# Surface importing/exporting options
+SURFACE_SPACE_WORLD = 0
+SURFACE_SPACE_INV = 1
+SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
 WINDOW_LEVEL = {_("Abdomen"):(350,50),
@@ -685,9 +696,8 @@ CAMERA = 5
 POLARIS = 6
 POLARISP4 = 7
 OPTITRACK = 8
-ROBOT = 9
-DEBUGTRACKRANDOM = 10
-DEBUGTRACKAPPROACH = 11
+DEBUGTRACKRANDOM = 9
+DEBUGTRACKAPPROACH = 10
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b'COM1'
@@ -697,7 +707,7 @@ TRACKERS = [_("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
            _("Polhemus PATRIOT"), _("Camera tracker"),
            _("NDI Polaris"), _("NDI Polaris P4"),
-           _("Optitrack"), _("Robot tracker"),
+           _("Optitrack"),
            _("Debug tracker (random)"), _("Debug tracker (approach)")]
 
 STATIC_REF = 0
@@ -718,24 +728,25 @@ TR2 = wx.NewId()
 TR3 = wx.NewId()
 SET = wx.NewId()
 
+FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
 IMAGE_FIDUCIALS = [
     {
         'button_id': IR1,
-        'label': 'LEI',
+        'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
         'tip': _("Select left ear in image"),
     },
     {
         'button_id': IR2,
-        'label': 'REI',
+        'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
         'tip': _("Select right ear in image"),
     },
     {
         'button_id': IR3,
-        'label': 'NAI',
+        'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
         'tip': _("Select nasion in image"),
@@ -745,21 +756,21 @@ IMAGE_FIDUCIALS = [
 TRACKER_FIDUCIALS = [
     {
         'button_id': TR1,
-        'label': 'LET',
+        'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
         'tip': _("Select left ear with spatial tracker"),
     },
     {
         'button_id': TR2,
-        'label': 'RET',
+        'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
         'tip': _("Select right ear with spatial tracker"),
     },
     {
         'button_id': TR3,
-        'label': 'NAT',
+        'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
         'tip': _("Select nasion with spatial tracker"),
@@ -816,6 +827,8 @@ TIMESTAMP = 2.0
 COIL_ANGLE_ARROW_PROJECTION_THRESHOLD = 5
 
 CAM_MODE = True
+AIM_ACTOR_HIDDEN_OPACITY = 0.1
+AIM_ACTOR_SHOWN_OPACITY = 0.8
 
 # Tractography visualization
 N_TRACTS = 200
@@ -825,7 +838,7 @@ SEED_OFFSET = 30
 SEED_RADIUS = 1.5
 
 #Efield Visualization
-EFIELD_MAX_RANGE_SCALE = 0.75
+EFIELD_MAX_RANGE_SCALE = 0.90
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.1

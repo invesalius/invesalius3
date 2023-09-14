@@ -418,19 +418,34 @@ def ShowImportOtherFilesDialog(id_type, msg='Import NIFTi 1 file'):
 
 
 def ShowImportMeshFilesDialog():
+    from invesalius.data.slice_ import Slice
+
     # Default system path
     current_dir = os.path.abspath(".")
 
     session = ses.Session()
     last_directory = session.GetConfig('last_directory_surface_import', '')
 
-    dlg = wx.FileDialog(None, message=_("Import surface file"),
-                        defaultDir=last_directory,
-                        wildcard=WILDCARD_MESH_FILES,
-                        style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
+    dlg_message = _("Import surface file")
+    dlg_style = wx.FD_OPEN | wx.FD_CHANGE_DIR
 
-    # stl filter is default
-    dlg.SetFilterIndex(0)
+    if Slice().has_affine():
+        dlg = FileSelectionDialog(title=dlg_message,
+                                  default_dir=last_directory,
+                                  wildcard=WILDCARD_MESH_FILES)
+        conversion_radio_box = wx.RadioBox(dlg, -1, _("File coordinate space"),
+                                           choices=const.SURFACE_SPACE_CHOICES,
+                                           style=wx.RA_SPECIFY_ROWS)
+        dlg.sizer.Add(conversion_radio_box, 0, wx.LEFT)
+        dlg.FitSizers()
+    else:
+        dlg = wx.FileDialog(None, message=dlg_message,
+                            defaultDir=last_directory,
+                            wildcard=WILDCARD_MESH_FILES,
+                            style=dlg_style)
+        # stl filter is default
+        dlg.SetFilterIndex(0)
+        conversion_radio_box = None
 
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
@@ -438,6 +453,9 @@ def ShowImportMeshFilesDialog():
     try:
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
+            if conversion_radio_box is not None:
+                convert_to_inv = conversion_radio_box.GetSelection() == const.SURFACE_SPACE_WORLD
+                Publisher.sendMessage('Update convert_to_inv flag', convert_to_inv=convert_to_inv)
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
@@ -557,6 +575,7 @@ def ShowLoadSaveDialog(message=_(u"Load File"), current_dir=os.path.abspath(".")
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filepath = None
+
     try:
         if dlg.ShowModal() == wx.ID_OK:
             # This returns a Python list of files that were selected.
@@ -928,7 +947,6 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
             const.POLARIS: 'NDI Polaris',
             const.POLARISP4: 'NDI Polaris P4',
             const.OPTITRACK: 'Optitrack',
-            const.ROBOT: 'Robotic navigation',
             const.DEBUGTRACKRANDOM: 'Debug tracker device (random)',
             const.DEBUGTRACKAPPROACH: 'Debug tracker device (approach)'}
 
@@ -1189,8 +1207,8 @@ class NewMask(wx.Dialog):
         import invesalius.project as prj
         proj = prj.Project()
         (thresh_min, thresh_max) = proj.threshold_modes[evt.GetString()]
-        self.gradient.SetMinimun(thresh_min)
-        self.gradient.SetMaximun(thresh_max)
+        self.gradient.SetMinValue(thresh_min)
+        self.gradient.SetMaxValue(thresh_max)
 
     def OnSlideChanged(self, evt):
         import invesalius.project as prj
@@ -5338,6 +5356,30 @@ class SetCoilOrientationDialog(wx.Dialog):
             brain_target_orientation.append(orientation)
         return brain_target_position, brain_target_orientation
 
+class TractographyProgressWindow(object):
+    def __init__(self, msg):
+        self.title = "InVesalius 3"
+        self.msg = msg
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent=None,
+                                     style=self.style)
+        self.running = True
+        self.error = None
+        self.dlg.Show()
+
+    def WasCancelled(self):
+        return self.dlg.WasCancelled()
+
+    def Update(self, msg=None, value=None):
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
+    def Close(self):
+        self.dlg.Destroy()
 
 class SurfaceProgressWindow(object):
     def __init__(self):
@@ -5707,7 +5749,7 @@ class SetRobotIP(wx.Dialog):
         return self.robot_ip
 
 class RobotCoregistrationDialog(wx.Dialog):
-    def __init__(self, tracker, title=_("Create transformation matrix to robot space")):
+    def __init__(self, robot, tracker, title=_("Create transformation matrix to robot space")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, #size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         '''
@@ -5715,10 +5757,9 @@ class RobotCoregistrationDialog(wx.Dialog):
         '''
         #TODO: make aboutbox
         self.matrix_tracker_to_robot = []
-        self.robot_status = False
 
+        self.robot = robot
         self.tracker = tracker
-
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.HandleContinuousAcquisition, self.timer)
 
@@ -5757,8 +5798,13 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
-        btn_load.Enable(False)
+        
+        if not self.robot.robot_status:
+            btn_load.Enable(False)
+        else:
+            btn_load.Enable(True)
         self.btn_load = btn_load
+        
 
         # Create a horizontal sizers
         border = 1
@@ -5817,7 +5863,6 @@ class RobotCoregistrationDialog(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateRobotTransformationMatrix, 'Update robot transformation matrix')
-        Publisher.subscribe(self.UpdateRobotConnectionStatus, 'Robot connection status')
         Publisher.subscribe(self.PointRegisteredByRobot, 'Coordinates for the robot transformation matrix collected')
 
     def OnContinuousAcquisitionButton(self, evt=None, btn=None):
@@ -5851,17 +5896,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.SetAcquiredPoints(num_points)
 
         # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
-        if self.robot_status and num_points >= 3:
-            self.btn_apply_reg.Enable(True)
-
-    def UpdateRobotConnectionStatus(self, data):
-        self.robot_status = data
-        if not self.robot_status:
-            return
-
-        # Enable 'Load' and 'Apply registration' buttons only when robot connection is ok.
-        self.btn_load.Enable(True)
-        if self.GetAcquiredPoints() >= 3:
+        if self.robot.robot_status and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
     def ResetPoints(self, evt):
@@ -5929,7 +5964,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
         # Enable 'Ok' button if connection to robot is ok.
-        if self.robot_status:
+        if self.robot.robot_status:
             self.btn_ok.Enable(True)
 
     def GetValue(self):
@@ -6333,7 +6368,7 @@ class PeelsCreationDlg(wx.Dialog):
         self.get_all_masks()
 
     def _init_gui(self):
-        self.SetTitle("dialog")
+        self.SetTitle(_("Peels creation"))
 
         from_mask_stbox = self._from_mask_gui()
         from_files_stbox = self._from_files_gui()
@@ -6444,7 +6479,70 @@ class PeelsCreationDlg(wx.Dialog):
                 self.btn_ok.Enable(False)
 
     def _check_if_files_exists(self):
-            if self.mask_path and os.path.exists(self.mask_path):
-                return True
-            else:
-                return False
+        return self.mask_path and os.path.exists(self.mask_path)
+
+
+class FileSelectionDialog(wx.Dialog):
+    def __init__(self, title, default_dir, wildcard):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow())
+        self.SetTitle(title)
+
+        self.default_dir = default_dir
+        self.wildcard = wildcard
+        self.path = ''
+
+        # Init GUI
+        outer_sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        outer_sizer.Add(sizer, 0, wx.EXPAND | wx.ALL)
+
+        from_files_static_box = self._from_files_gui()
+        sizer.Add(from_files_static_box, 0, wx.EXPAND | wx.ALL, 5)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+
+        self.btn_ok = wx.Button(self, wx.ID_OK, "")
+        self.btn_ok.SetDefault()
+        btn_sizer.AddButton(self.btn_ok)
+
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL, "")
+        btn_sizer.AddButton(self.btn_cancel)
+
+        btn_sizer.Realize()
+        outer_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
+
+        self.SetSizer(outer_sizer)
+        outer_sizer.Fit(self)
+        self.sizer = sizer
+        self._outer_sizer = outer_sizer
+
+        self.SetAffirmativeId(self.btn_ok.GetId())
+        self.SetEscapeId(self.btn_cancel.GetId())
+
+        self.Layout()
+
+    def _from_files_gui(self):
+
+        files_box = wx.StaticBox(self, -1)
+        from_files_static_box = wx.StaticBoxSizer(files_box, wx.VERTICAL)
+
+        def callback(evt): self._set_path(path=evt.GetString())
+        file_browse = filebrowse.FileBrowseButton(self, -1, labelText='', fileMask=self.wildcard,
+                                                  dialogTitle=_("Choose file"), startDirectory=self.default_dir,
+                                                  changeCallback=callback)
+
+        internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        internal_sizer.Add(file_browse, 0, wx.ALL | wx.EXPAND, 5)
+
+        from_files_static_box.Add(internal_sizer, 0, wx.EXPAND)
+
+        return from_files_static_box
+
+    def _set_path(self, path=''):
+        self.path = path
+
+    def FitSizers(self):
+        self._outer_sizer.Fit(self)
+
+    def GetPath(self):
+        return self.path

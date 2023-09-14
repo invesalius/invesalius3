@@ -148,12 +148,14 @@ def segment_torch_jit(
     patch_size,
     resize_by_spacing=True,
     image_spacing=(1.0, 1.0, 1.0),
-    needed_spacing=(0.5, 0.5, 0.5)
+    needed_spacing=(0.5, 0.5, 0.5),
+    flipped=False,
 ):
     import torch
     from .model import WrapModel
 
     print(f'\n\n\n{image_spacing}\n\n\n')
+    print("Patch size:",patch_size)
 
     if resize_by_spacing:
         old_shape = image.shape
@@ -183,6 +185,11 @@ def segment_torch_jit(
         sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
+
+    #FIX: to remove
+    if flipped:
+        probability_array = np.flip(probability_array,2)
+
     if resize_by_spacing:
         original_probability_array[:] = resize(probability_array, output_shape=old_shape, preserve_range=True)
 

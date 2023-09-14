@@ -128,6 +128,8 @@ class Controller():
         Publisher.subscribe(self.enable_mask_preview, 'Enable mask 3D preview')
         Publisher.subscribe(self.disable_mask_preview, 'Disable mask 3D preview')
         Publisher.subscribe(self.update_mask_preview, 'Update mask 3D preview')
+        
+        Publisher.subscribe(self.LoadProject, 'Load project data')
 
     def SetBitmapSpacing(self, spacing):
         proj = prj.Project()

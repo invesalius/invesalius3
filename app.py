@@ -539,7 +539,7 @@ def init():
         sys.stderr = open(path, "w")
 
 
-def main(connection=None):
+def main(connection=None, remote_host=None):
     """
     Start InVesalius.
 
@@ -553,6 +553,10 @@ def main(connection=None):
           app.py, the connection object defaults to None. To enable this
           functionality, InVesalius needs to be started by calling the main
           function directly with a proper connection object.
+
+        remote_host: Specifies the address and the port of the remote host with
+          which InVesalius should communicate. If provided, overrides any value
+          passed through the command line using the --remote-host argument.
     """
     init()
 
@@ -565,10 +569,10 @@ def main(connection=None):
     if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
 
-    if args.remote_host is not None:
+    if remote_host is not None or args.remote_host is not None:
         from invesalius.net.remote_control import RemoteControl
 
-        remote_control = RemoteControl(args.remote_host)
+        remote_control = RemoteControl(remote_host or args.remote_host)
         remote_control.connect()
 
     if args.use_pedal:
