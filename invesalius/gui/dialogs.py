@@ -98,6 +98,7 @@ import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.transformations as tr
 import invesalius.data.polydata_utils as pu
+import invesalius.navigation.brain_target as bt
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 import numpy as np
@@ -4351,14 +4352,13 @@ class EfieldConfiguration(wx.Dialog):
 
 class SetCoilOrientationDialog(wx.Dialog):
 
-    def __init__(self, marker, mTMS=None, brain_target=False, brain_actor=None):
+    def __init__(self, marker, brain_target=False, brain_actor=None):
         import invesalius.project as prj
 
         self.obj_actor = None
         self.polydata = None
         self.initial_focus = None
 
-        self.mTMS = mTMS
         self.marker = marker
         self.brain_target = brain_target
         self.peel_brain_actor = brain_actor
@@ -4476,9 +4476,9 @@ class SetCoilOrientationDialog(wx.Dialog):
         create_brain_grid = wx.Button(self, -1, label=_('Create brain target grid'))
         create_brain_grid.Bind(wx.EVT_BUTTON, self.OnCreateBrainGrid)
 
-        send_to_mtms = wx.Button(self, -1, label=_('Send to mTMS'))
-        send_to_mtms.Bind(wx.EVT_BUTTON, self.OnSendMtms)
-        send_to_mtms.Hide()
+        send_brain_target_button = wx.Button(self, -1, label=_('Send brain target'))
+        send_brain_target_button.Bind(wx.EVT_BUTTON, self.OnSendBrainTarget)
+        send_brain_target_button.Hide()
 
         text_rotation_x = wx.StaticText(self, -1, _("Rotation X:"))
 
@@ -4519,7 +4519,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             create_random_target_grid.Hide()
             create_target_grid.Hide()
             create_brain_grid.Hide()
-            send_to_mtms.Show()
+            send_brain_target_button.Show()
 
         top_sizer = wx.FlexGridSizer(rows=3, cols=3, hgap=50, vgap=5)
         top_sizer.AddMany([txt_surface,
@@ -4536,7 +4536,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         btn_changes_sizer.AddMany([create_random_target_grid])
         btn_changes_sizer.AddMany([create_target_grid])
         btn_changes_sizer.AddMany([create_brain_grid])
-        btn_changes_sizer.AddMany([send_to_mtms])
+        btn_changes_sizer.AddMany([send_brain_target_button])
         btn_changes_sizer.AddMany([reset_orientation])
         btn_ok_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=20, vgap=20)
         btn_ok_sizer.AddMany([btn_ok, btn_cancel])
@@ -5190,15 +5190,21 @@ class SetCoilOrientationDialog(wx.Dialog):
                 self.brain_target_actor_list.append(brain_target_actor)
                 print('Adding brain markers')
 
-    def OnSendMtms(self, evt=None):
+    def OnSendBrainTarget(self, evt=None):
         vtkmat = self.marker_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
         position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
         orientation = list(np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz")))
-        if self.mTMS:
-            self.mTMS.UpdateTarget(coil_pose=self.marker, brain_target=position+orientation)
+
+        brain_target_pose = position + orientation
+        coil_pose = self.marker
+
+        brain_target = bt.BrainTarget(pose=brain_target_pose)
+        offsets = brain_target.ComputeOffsetsRelativeToCoil(coil_pose=coil_pose)
+
+        Publisher.sendMessage('Update brain target', offsets=offsets)
 
     def CreateVTKObjectMatrix(self, direction, orientation, new_target):
         m_img = dco.coordinates_to_transformation_matrix(

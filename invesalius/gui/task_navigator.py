@@ -31,14 +31,6 @@ try:
 except ImportError:
     has_trekker = False
 
-try:
-    #TODO: the try-except could be done inside the mTMS() method call
-    from invesalius.navigation.mtms import mTMS
-    mTMS()
-    has_mTMS = True
-except:
-    has_mTMS = False
-
 import wx
 import sys
 
@@ -65,6 +57,7 @@ import invesalius.data.vtk_utils as vtk_utils
 import invesalius.data.bases as db
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
+import invesalius.navigation.brain_target as bt
 import invesalius.project as prj
 import invesalius.session as ses
 
@@ -1891,10 +1884,6 @@ class MarkersPanel(wx.Panel):
         self.robot = robot
         self.icp = icp
         self.control = control
-        if has_mTMS:
-            self.mTMS = mTMS()
-        else:
-            self.mTMS = None
 
         self.__bind_events()
 
@@ -2196,9 +2185,9 @@ class MarkersPanel(wx.Panel):
         if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
             target_menu = menu_id.Append(2, _('Remove target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
-            if has_mTMS:
-                brain_target_menu = menu_id.Append(3, _('Set brain target'))
-                menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
+
+            brain_target_menu = menu_id.Append(3, _('Set brain target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
         else:
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
@@ -2206,8 +2195,10 @@ class MarkersPanel(wx.Panel):
         orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
         is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].is_brain_target
-        if is_brain_target and has_mTMS:
-            send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
+
+        api = NeuronavigationApi()
+        if is_brain_target and api.connection is not None:
+            send_brain_target_menu = menu_id.Append(6, _('Send brain target'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
 
         if self.nav_status and self.navigation.e_field_loaded:
@@ -2434,7 +2425,7 @@ class MarkersPanel(wx.Panel):
 
         position = self.markers[index].position
         orientation = self.markers[index].orientation
-        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
 
         if dialog.ShowModal() == wx.ID_OK:
             position_list, orientation_list = dialog.GetValueBrainTarget()
@@ -2445,18 +2436,20 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def OnSendBrainTarget(self, evt):
+        brain_target = self.markers[index].position + self.markers[index].orientation
         if isinstance(evt, int):
            self.marker_list_ctrl.Focus(evt)
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        brain_target = self.markers[index].position + self.markers[index].orientation
         if self.__find_target_marker():
             coil_pose = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
             if self.navigation.coil_at_target:
-                self.mTMS.UpdateTarget(coil_pose, brain_target)
-                #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
+                brain_target = bt.BrainTarget(pose=brain_target)
+                offsets = brain_target.ComputeOffsetsRelativeToCoil(coil_pose)
+                wx.CallAfter(Publisher.sendMessage, 'Update brain target', offsets=offsets)
+
                 print("Send brain target to mTMS API")
             else:
                 print("The coil is not at the target")
@@ -2628,7 +2621,7 @@ class MarkersPanel(wx.Panel):
         list_index = marker_id if marker_id else 0
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation)
+        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
             orientation = dialog.GetValue()

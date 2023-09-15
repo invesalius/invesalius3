@@ -59,17 +59,25 @@ class NeuronavigationApi(metaclass=Singleton):
         return hasattr(obj, name) and callable(getattr(obj, name))
 
     def assert_valid(self, connection):
+        assert self._hasmethod(connection, 'update_brain_target')
         assert self._hasmethod(connection, 'update_coil_at_target')
         assert self._hasmethod(connection, 'update_coil_pose')
         assert self._hasmethod(connection, 'update_focus')
         assert self._hasmethod(connection, 'set_callback__set_markers')
 
     def __bind_events(self):
+        Publisher.subscribe(self.update_brain_target, 'Update brain target')
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         #Publisher.subscribe(self.update_focus, 'Set cross focal point')
         Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
 
     # Functions for InVesalius to send updates.
+
+    def update_brain_target(self, offsets):
+        if self.connection is not None:
+            self.connection.update_brain_target(
+                offsets=offsets,
+            )
 
     def update_target_orientation(self, target_id, orientation):
         if self.connection is not None:

@@ -31,14 +31,6 @@ try:
 except ImportError:
     has_trekker = False
 
-try:
-    #TODO: the try-except could be done inside the mTMS() method call
-    from invesalius.navigation.mtms import mTMS
-    mTMS()
-    has_mTMS = True
-except:
-    has_mTMS = False
-
 import wx
 
 try:
