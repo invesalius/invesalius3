@@ -1,4 +1,5 @@
-#cython: language_level=3
+# cython: language_level=3
+# distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 
 # from interpolation cimport interpolate
 
@@ -7,7 +8,7 @@ cimport numpy as np
 cimport cython
 
 from libc.math cimport floor, ceil, sqrt, fabs, sin, M_PI
-from cython.parallel import prange
+from cython.parallel cimport prange
 
 DEF LANCZOS_A = 4
 DEF SIZE_LANCZOS_TMP = LANCZOS_A * 2 - 1
@@ -79,16 +80,46 @@ cdef double[64][64] temp = [
     [ 8,  -8,-8, 8,-8, 8, 8,-8, 4, 4,-4,-4,-4,-4, 4, 4, 4,-4, 4,-4,-4, 4,-4, 4, 4,-4,-4, 4, 4,-4,-4, 4, 2, 2, 2, 2,-2,-2,-2,-2, 2, 2,-2,-2, 2, 2,-2,-2, 2,-2, 2,-2, 2,-2, 2,-2, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 
+
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double nearest_neighbour_interp(image_t[:, :, :] V, double x, double y, double z) nogil:
+@cython.initializedcheck(False)
+cdef inline image_t _G(const image_t[:, :, :] V, int x, int y, int z) noexcept nogil:
+    cdef int dz, dy, dx
+    dz = V.shape[0] - 1
+    dy = V.shape[1] - 1
+    dx = V.shape[2] - 1
+
+    if x <  0:
+        x = dx + x + 1
+    elif x > dx:
+        x = x - dx - 1
+
+    if y <  0:
+        y = dy + y + 1
+    elif y > dy:
+        y = y - dy - 1
+
+    if z <  0:
+        z = dz + z + 1
+    elif z > dz:
+        z = z - dz - 1
+
+    return V[z, y, x]
+
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+cdef double nearest_neighbour_interp(const image_t[:, :, :] V, double x, double y, double z) noexcept nogil:
     return V[<int>(z), <int>(y), <int>(x)]
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double interpolate(const image_t[:, :, :] V, double x, double y, double z) noexcept nogil:
     cdef double xd, yd, zd
     cdef double c00, c10, c01, c11
     cdef double c0, c1
@@ -134,7 +165,7 @@ cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline double lanczos3_L(double x, int a) nogil:
+cdef inline double lanczos3_L(double x, int a) noexcept nogil:
     if x == 0:
         return 1.0
     elif -a <= x < a:
@@ -146,7 +177,7 @@ cdef inline double lanczos3_L(double x, int a) nogil:
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double lanczos3(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double lanczos3(const image_t[:, :, :] V, double x, double y, double z) noexcept nogil:
     cdef int a = LANCZOS_A
 
     cdef int xd = <int>floor(x)
@@ -201,37 +232,12 @@ cdef double lanczos3(image_t[:, :, :] V, double x, double y, double z) nogil:
     return lz
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
-@cython.wraparound(False)
-cdef image_t _G(image_t[:, :, :] V, int x, int y, int z) nogil:
-    cdef int dz, dy, dx
-    dz = V.shape[0] - 1
-    dy = V.shape[1] - 1
-    dx = V.shape[2] - 1
-
-    if x <  0:
-        x = dx + x + 1
-    elif x > dx:
-        x = x - dx - 1
-
-    if y <  0:
-        y = dy + y + 1
-    elif y > dy:
-        y = y - dy - 1
-
-    if z <  0:
-        z = dz + z + 1
-    elif z > dz:
-        z = z - dz - 1
-
-    return V[z, y, x]
 
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef void calc_coef_tricub(image_t[:, :, :] V, double x, double y, double z, double [64] coef) nogil:
+cdef void calc_coef_tricub(image_t[:, :, :] V, double x, double y, double z, double [64] coef) noexcept nogil:
     cdef int xi = <int>floor(x)
     cdef int yi = <int>floor(y)
     cdef int zi = <int>floor(z)
@@ -342,14 +348,14 @@ cdef double tricub_interpolate(image_t[:, :, :] V, double x, double y, double z)
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double cubicInterpolate(double p[4], double x) nogil: 
+cdef double cubicInterpolate(double p[4], double x) noexcept nogil: 
     return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])))
 
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double bicubicInterpolate (double p[4][4], double x, double y) nogil:
+cdef double bicubicInterpolate (double p[4][4], double x, double y) noexcept nogil:
     cdef double arr[4]
     arr[0] = cubicInterpolate(p[0], y)
     arr[1] = cubicInterpolate(p[1], y)
@@ -361,7 +367,7 @@ cdef double bicubicInterpolate (double p[4][4], double x, double y) nogil:
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double tricubicInterpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double tricubicInterpolate(image_t[:, :, :] V, double x, double y, double z) noexcept nogil:
     # From http://www.paulinternet.nl/?page=bicubic
     cdef double p[4][4][4]
 

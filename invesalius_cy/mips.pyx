@@ -6,7 +6,7 @@ cimport numpy as np
 cimport cython
 
 from libc.math cimport floor, ceil, sqrt, fabs
-from cython.parallel import prange
+from cython.parallel cimport prange
 
 DTYPE = np.uint8
 ctypedef np.uint8_t DTYPE_t

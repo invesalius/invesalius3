@@ -20,7 +20,7 @@ from libcpp.vector cimport vector
 from libcpp.pair cimport pair
 from libcpp cimport bool
 from libcpp.deque cimport deque as cdeque
-from cython.parallel import prange
+from cython.parallel cimport prange
 cimport openmp
 
 from .cy_my_types cimport vertex_t, normal_t, vertex_id_t

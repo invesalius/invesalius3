@@ -6,7 +6,7 @@ cimport cython
 
 from collections import deque
 
-from cython.parallel import prange
+from cython.parallel cimport prange
 from libc.math cimport floor, ceil
 from libcpp cimport bool
 from libcpp.deque cimport deque as cdeque
