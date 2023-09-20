@@ -1,5 +1,10 @@
-# cython: language_level=3
 # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: initializedcheck=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: language_level=3
 
 # from interpolation cimport interpolate
 
