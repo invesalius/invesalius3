@@ -18,9 +18,6 @@ from cython.parallel cimport prange
 
 ctypedef double (*interp_function)(image_t[:, :, :], double, double, double) nogil
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
-@cython.wraparound(False)
 cdef void mul_mat4_vec4(double[:, :] M,
                             double* coord,
                             double* out) nogil:
@@ -31,9 +28,6 @@ cdef void mul_mat4_vec4(double[:, :] M,
     out[3] = coord[0] * M[3, 0] + coord[1] * M[3, 1] + coord[2] * M[3, 2] + coord[3] * M[3, 3]
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
-@cython.wraparound(False)
 cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int y, int z, double sx, double sy, double sz, int minterpol, image_t cval) nogil:
 
     cdef double coord[4]
@@ -80,9 +74,6 @@ cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int
         return cval
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
-@cython.wraparound(False)
 def apply_view_matrix_transform(image_t[:, :, :] volume,
                                 tuple spacing,
                                 double[:, :] M,
@@ -144,9 +135,6 @@ def apply_view_matrix_transform(image_t[:, :, :] volume,
             count += 1
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
-@cython.wraparound(False)
 def convolve_non_zero(image_t[:, :, :] volume,
                       image_t[:, :, :] kernel,
                       image_t cval):

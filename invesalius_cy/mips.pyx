@@ -23,7 +23,6 @@ ctypedef np.int16_t DTYPE16_t
 DTYPEF32 = np.float32
 ctypedef np.float32_t DTYPEF32_t
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
 def lmip(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t tmin,
          DTYPE16_t tmax, np.ndarray[DTYPE16_t, ndim=2] out):
     cdef DTYPE16_t max
@@ -109,8 +108,6 @@ cdef DTYPE16_t get_colour(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww):
 
     return out_colour
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
 cdef float get_opacity(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
     cdef float out_opacity
     cdef DTYPE16_t min_value = wl - (ww // 2)
@@ -124,8 +121,6 @@ cdef float get_opacity(DTYPE16_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
 
     return out_opacity
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
 cdef float get_opacity_f32(DTYPEF32_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
     cdef float out_opacity
     cdef DTYPE16_t min_value = wl - (ww // 2)
@@ -140,8 +135,6 @@ cdef float get_opacity_f32(DTYPEF32_t vl, DTYPE16_t wl, DTYPE16_t ww) nogil:
     return out_opacity
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
 def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
          DTYPE16_t ww, np.ndarray[DTYPE16_t, ndim=2] out):
     cdef int sz = image.shape[0]
@@ -265,8 +258,6 @@ def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
 
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
 cdef inline void finite_difference(DTYPE16_t[:, :, :] image,
                               int x, int y, int z, float h, float *g) noexcept nogil:
     cdef int px, py, pz, fx, fy, fz
@@ -317,8 +308,6 @@ cdef inline void finite_difference(DTYPE16_t[:, :, :] image,
 
 
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
 cdef inline float calc_fcm_itensity(DTYPE16_t[:, :, :] image,
                       int x, int y, int z, float n, float* dir) noexcept nogil:
     cdef float g[3]
@@ -330,8 +319,6 @@ cdef inline float calc_fcm_itensity(DTYPE16_t[:, :, :] image,
     cdef float vl = gm * sf
     return vl
 
-@cython.boundscheck(False) # turn of bounds-checking for entire function
-@cython.cdivision(True)
 def fast_countour_mip(np.ndarray[DTYPE16_t, ndim=3] image,
                       float n,
                       int axis,
