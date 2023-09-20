@@ -262,7 +262,7 @@ def mida(np.ndarray[DTYPE16_t, ndim=3] image, int axis, DTYPE16_t wl,
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 cdef inline void finite_difference(DTYPE16_t[:, :, :] image,
-                              int x, int y, int z, float h, float *g) nogil:
+                              int x, int y, int z, float h, float *g) noexcept nogil:
     cdef int px, py, pz, fx, fy, fz
 
     cdef int sz = image.shape[0]
@@ -314,7 +314,7 @@ cdef inline void finite_difference(DTYPE16_t[:, :, :] image,
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 cdef inline float calc_fcm_itensity(DTYPE16_t[:, :, :] image,
-                      int x, int y, int z, float n, float* dir) nogil:
+                      int x, int y, int z, float n, float* dir) noexcept nogil:
     cdef float g[3]
     finite_difference(image, x, y, z, 1.0, g)
     cdef float gm = sqrt(g[0]*g[0] + g[1]*g[1] + g[2]*g[2])
