@@ -5757,7 +5757,7 @@ class RobotCoregistrationDialog(wx.Dialog):
     def OnContinuousAcquisitionButton(self, evt=None, btn=None):
         value = btn.GetValue()
         if value:
-            self.timer.Start(100)
+            self.timer.Start(200)
         else:
             self.timer.Stop()
 
