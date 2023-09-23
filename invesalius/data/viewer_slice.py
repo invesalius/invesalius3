@@ -52,6 +52,8 @@ from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteracto
 import invesalius.data.styles as styles
 import wx
 import sys
+
+from invesalius.data.ruler import GenericLeftRuler
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -228,6 +230,8 @@ class Viewer(wx.Panel):
         self.wl_text = None
         self.on_wl = False
         self.on_text = False
+        # Newly added attribute for ruler
+        self.ruler = None
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
@@ -631,6 +635,26 @@ class Viewer(wx.Panel):
         # WARN: Return the only slice_data used in this slice_viewer.
         return self.slice_data
 
+    # CHECKME: Newly added method for ruler
+    # TODO: Complete EnableRuler function
+    def EnableRuler(self):
+        self.ruler = GenericLeftRuler(self)
+        # Since the GUI icon is still not available for ruler,
+        # ShowRuler() method has been called manually
+        self.ShowRuler()
+
+    # CHECKME: Newly added method for ruler
+    # TODO: Complete ShowRuler function
+    def ShowRuler(self):
+        if self.ruler:
+            self.canvas.draw_list.append(self.ruler)
+        self.UpdateCanvas()
+
+    # CHECKME: Newly added method for ruler
+    # TODO: Complete HideRuler function
+    def HideRuler(self):
+        pass
+
     def calcultate_scroll_position(self, x, y):
         # Based in the given coord (x, y), returns a list with the scroll positions for each
         # orientation, being the first position the sagital, second the coronal
@@ -1025,6 +1049,14 @@ class Viewer(wx.Panel):
     def OnHideText(self):
         self.HideTextActors()
 
+    # CHECKME: Newly added method for ruler
+    def OnShowRuler(self):
+        self.ShowRuler()
+
+    # CHECKME: Newly added method for ruler
+    def OnHideRuler(self):
+        self.HideRuler()
+
     def OnCloseProject(self):
         self.CloseProject()
 
@@ -1154,6 +1186,9 @@ class Viewer(wx.Panel):
 
         self.EnableText()
         self.wl_text.Hide()
+
+        self.EnableRuler()
+
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
