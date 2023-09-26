@@ -6,19 +6,17 @@
 # Last Modified Date: 16th March 2023
 #
 # -----------------------------------------------------------------------------------
-import math
 from abc import ABC, abstractmethod
 
-import wx
-import vtkmodules.all as vtk
-import invesalius.project as project
-import invesalius.constants as const
-import matplotlib.pyplot as plt
 import numpy as np
+import vtkmodules.all as vtk
+import wx
+
+import invesalius.constants as const
+import invesalius.project as project
 
 E_SHAPED = TOP_OR_LEFT = 0
 C_SHAPED = BOTTOM_OR_RIGHT = 1
-
 
 
 class Ruler(ABC):
@@ -236,26 +234,7 @@ class Ruler(ABC):
             pixel_data.SetNumberOfTuples(width * height)
             # TODO: Optimize to only get the pixel data of the area the ruler was drawn instead of the whole window
             pixel_data = renderer_window.GetRGBAPixelData(0, 0, width - 1, height - 1, vtk.VTK_RGBA)
-
             # TODO: Create an algorithm to check for a suitable contrasting colour by examining the pixel data
-
-    # bitmap = canvas.bitmap
-    # width, height = bitmap.GetSize()
-    # r = g = b = [0 for i in range(0, 256)]
-    # values = [i for i in range(0, 256)]
-    # img = bitmap.ConvertToImage()
-    # for y in range(height):
-    #     for x in range(width):
-    #         red = img.GetRed(x, y)
-    #         green = img.GetGreen(x, y)
-    #         blue = img.GetBlue(x, y)
-    #         r[red] = r[red] + 1
-    #         g[green] = g[green] + 1
-    #         b[blue] = b[blue] + 1
-    #
-    # plt.plot(values, r, label="Red", color="red")
-    # plt.plot(values, g, label="Green", color="green")
-    # plt.plot(values, b, label="Blue", color="blue")
 
     @abstractmethod
     def draw_to_canvas(self, gc, canvas):
@@ -271,74 +250,6 @@ class Ruler(ABC):
             None
         """
         pass
-
-
-class GenericRuler(Ruler):
-    """
-    # This class implements the abstract Ruler class.
-    # GenericRuler class represent a ruler that has a shape of 'E' letter.
-    # The ruler represented by this class is drawn on the left, top, right, and bottom side of the viewer.
-    # The middle line segment of three parallel line segments of the letter 'E' represents the zero mark
-      while the other two represent a specific distance up and down(or left and right) from zero mark(in millimeters).
-    # If the height(or width) of the image in the viewer is less than the maximum length the ruler can show(when zoom out),
-      the ruler will show a rounded value of the height(or width) of the image.
-    # If the height(or width) of the image in the viewer is greater than the maximum length the ruler can show(when zoom in),
-      the ruler will show a rounded value of the maximum height(or width) the ruler can show.
-
-      Attributes:
-        viewer_slice (invesalius.data.viewer_slice.Viewer): The viewer the ruler has to be drawn
-        left (boolean): True if the ruler has to be drawn on left side of viewer (default is True)
-        top (boolean): True if the ruler has to be drawn on top side of viewer (default is False)
-        right (boolean): True if the ruler has to be drawn on right side of viewer (default is False)
-        bottom (boolean): True if the ruler has to be drawn on bottom side of viewer (default is False)
-        padding (float): Padding to the ruler from left text(eg:- 'R', 'T') as a proportion to the viewport size
-        scale_text_padding (float): Top and bottom padding of the measurement text(eg:- 120 mm)
-        center_mark (float): The length of the middle line segment as a proportion to the viewport size
-        edge_mark (float): The length of the up and bottom line segments as proportions to the viewport size
-        font_size (int): Predefined in wx, eg:- wx.FONTSIZE_SMALL, wx.FONTSIZE_MEDIUM
-        colour (tuple): Colour of the lines and text of the ruler, (red_value/255, green_value/255, blue_value/255)
-        ruler_scale_step (list of tuples): ruler_scale_step is something like [(-1, 25, 5), (25, 1, 1), (1, 0.1, 0.1), (0.1, 0, 0.01)]
-                                           The meaning of this is
-                                                when infinity < m <= 25 mm: step size =  5 mm
-                                                when 25 < m <= 1 mm: step size =  1 mm
-                                                when 1 < m <= 0.1 mm: step size =  0.1 mm
-                                                when 0.1 < m <= 0 mm: step size =  0.01 mm
-                                           step size is the multiple which the measurement of the ruler(the height of the viewport in mm)
-                                           is rounded to(e.g.:- if the viewport height is 123 mm, a ruler will be drawn to represent a 120 mm of height)
-
-      Methods:
-        draw_to_canvas(gc, canvas): Draws the GenericLeftRuler on viewer
-    """
-    def __init__(self, viewer_slice, left=True, top=False, right=False, bottom=False):
-        super().__init__(viewer_slice)
-        self.left = left
-        self.top = top
-        self.right = right
-        self.bottom = bottom
-        self.padding = 0.015
-        self.scale_text_padding = 0.005
-        self.center_mark = 0.01
-        self.edge_mark = 0.02
-        self.font_size = wx.FONTSIZE_SMALL
-        self.colour = (1, 1, 1)
-        self.ruler_scale_step = [(-1, 25, 5), (25, 1, 1), (1, 0.1, 0.1), (0.1, 0, 0.01)]
-
-    def draw_to_canvas(self, gc, canvas):
-        if self.left:
-            # TODO: Draw a ruler in the left side of viewer
-            pass
-
-        if self.top:
-            # TODO: Draw a ruler in the top side of viewer
-            pass
-
-        if self.right:
-            # TODO: Draw a ruler in the right side of viewer
-            pass
-
-        if self.bottom:
-            # TODO: Draw a ruler in the bottom side of viewer
-            pass
 
 
 class GenericLeftRuler(Ruler):
@@ -411,61 +322,6 @@ class GenericLeftRuler(Ruler):
         text_size = self.GetTextSize("{:.{}f} mm".format(ruler_height, decimals), self.font_size)
         x_text = (2 * ruler_min_x + self.edge_mark * window_size[0] - (text_size[0] * window_size[0])) / 2
         y_text = (window_size[1] - ruler_height_pixels) / 2 - self.scale_text_padding
-        canvas.draw_text("{:.{}f} mm".format(ruler_height, decimals), (x_text, y_text), font=self.GetFont(self.font_size),
+        canvas.draw_text("{:.{}f} mm".format(ruler_height, decimals), (x_text, y_text),
+                         font=self.GetFont(self.font_size),
                          txt_colour=(r * 255, g * 255, b * 255))
-
-
-class StyledRuler(GenericRuler):
-    """
-    # This class implements the abstract Ruler class.
-    # StyledRuler class represent a ruler that has a shape of 'E' letter or 'C' letter. And between the marks, small
-      marks representing the step size(5mm, 2mm, 1mm, 0.1mm) will be added. In the 'E' letter shaped ruler the zero mark
-      is the center mark while in letter 'C' shaped ruler, the zero mark will be either of the two edge marks.
-    # The ruler represented by this class is drawn on the left, top, right, and bottom side of the viewer.
-    # In ruler with letter 'E' shape, the center mark represents the zero mark
-      while the other two represent a specific distance up and down(or left and right) from zero mark(in millimeters).
-    # If the height(or width) of the image in the viewer is less than the maximum length the ruler can show(when zoom out),
-      the ruler will show a rounded value of the height(or width) of the image.
-    # If the height(or width) of the image in the viewer is greater than the maximum length the ruler can show(when zoom in),
-      the ruler will show a rounded value of the maximum height(or width) the ruler can show.
-
-      Attributes:
-        viewer_slice (invesalius.data.viewer_slice.Viewer): The viewer the ruler has to be drawn
-        type (int): E shaped ruler = 0; C shaped ruler = 0
-        zero_pos (int): If the ruler type is 1('C' shaped ruler) then,
-                        0=top for vertical and left for horizontal
-                        1=bottom for vertical and right for horizontal
-        left (boolean): True if the ruler has to be drawn on left side of viewer (default is True)
-        top (boolean): True if the ruler has to be drawn on top side of viewer (default is False)
-        right (boolean): True if the ruler has to be drawn on right side of viewer (default is False)
-        bottom (boolean): True if the ruler has to be drawn on bottom side of viewer (default is False)
-        padding (float): Padding to the ruler from left text(eg:- 'R', 'T') as a proportion to the viewport size
-        scale_text_padding (float): Top and bottom padding of the measurement text(eg:- 120 mm)
-        center_mark (float): The length of the middle line segment as a proportion to the viewport size
-        edge_mark (float): The length of the up and bottom line segments as proportions to the viewport size
-        font_size (int): Predefined in wx, eg:- wx.FONTSIZE_SMALL, wx.FONTSIZE_MEDIUM
-        colour (tuple): Colour of the lines and text of the ruler, (red_value/255, green_value/255, blue_value/255)
-        ruler_scale_step (list of tuples): ruler_scale_step is something like [(-1, 25, 5), (25, 1, 1), (1, 0.1, 0.1), (0.1, 0, 0.01)]
-                                           The meaning of this is
-                                                when infinity < m <= 25 mm: step size =  5 mm
-                                                when 25 < m <= 1 mm: step size =  1 mm
-                                                when 1 < m <= 0.1 mm: step size =  0.1 mm
-                                                when 0.1 < m <= 0 mm: step size =  0.01 mm
-                                           step size is the multiple which the measurement of the ruler(the height of the viewport in mm)
-                                           is rounded to(e.g.:- if the viewport height is 123 mm, a ruler will be drawn to represent a 120 mm of height)
-
-      Methods:
-        draw_to_canvas(gc, canvas): Draws the GenericLeftRuler on viewer
-    """
-    def __init__(self, viewer_slice, type_, zero_pos=0, left=True, top=False, right=False, bottom=False):
-        super().__init__(viewer_slice, left, top, right, bottom)
-        self.type_ = type_
-        self.zero_pos = zero_pos
-
-    def draw_to_canvas(self, gc, canvas):
-        if self.type_ == E_SHAPED:
-            super().draw_to_canvas(gc, canvas)
-            # TODO: Implement adding of marks corresponding to step size
-        else:
-            # TODO: Implement drawing a 'C' shaped ruler
-            pass

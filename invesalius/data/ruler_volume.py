@@ -6,15 +6,13 @@
 # Last Modified Date: 16th March 2023
 #
 # -----------------------------------------------------------------------------------
-import math
 from abc import ABC, abstractmethod
 
-import wx
-import vtkmodules.all as vtk
-import invesalius.project as project
-import invesalius.constants as const
-import matplotlib.pyplot as plt
 import numpy as np
+import vtkmodules.all as vtk
+import wx
+
+import invesalius.constants as const
 
 E_SHAPED = TOP_OR_LEFT = 0
 C_SHAPED = BOTTOM_OR_RIGHT = 1
@@ -188,26 +186,7 @@ class RulerVolume(ABC):
             pixel_data.SetNumberOfTuples(width * height)
             # TODO: Optimize to only get the pixel data of the area the ruler was drawn instead of the whole window
             pixel_data = renderer_window.GetRGBAPixelData(0, 0, width - 1, height - 1, vtk.VTK_RGBA)
-
             # TODO: Create an algorithm to check for a suitable contrasting colour by examining the pixel data
-
-    # bitmap = canvas.bitmap
-    # width, height = bitmap.GetSize()
-    # r = g = b = [0 for i in range(0, 256)]
-    # values = [i for i in range(0, 256)]
-    # img = bitmap.ConvertToImage()
-    # for y in range(height):
-    #     for x in range(width):
-    #         red = img.GetRed(x, y)
-    #         green = img.GetGreen(x, y)
-    #         blue = img.GetBlue(x, y)
-    #         r[red] = r[red] + 1
-    #         g[green] = g[green] + 1
-    #         b[blue] = b[blue] + 1
-    #
-    # plt.plot(values, r, label="Red", color="red")
-    # plt.plot(values, g, label="Green", color="green")
-    # plt.plot(values, b, label="Blue", color="blue")
 
     @abstractmethod
     def draw_to_canvas(self, gc, canvas):
