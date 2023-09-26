@@ -59,6 +59,7 @@ class NeuronavigationApi(metaclass=Singleton):
         return hasattr(obj, name) and callable(getattr(obj, name))
 
     def assert_valid(self, connection):
+        assert self._hasmethod(connection, 'update_neuronavigation_started')
         assert self._hasmethod(connection, 'update_target_mode')
         assert self._hasmethod(connection, 'update_coil_at_target')
         assert self._hasmethod(connection, 'update_coil_pose')
@@ -66,6 +67,8 @@ class NeuronavigationApi(metaclass=Singleton):
         assert self._hasmethod(connection, 'set_callback__set_markers')
 
     def __bind_events(self):
+        Publisher.subscribe(self.start_navigation, 'Start navigation')
+        Publisher.subscribe(self.stop_navigation, 'Stop navigation')
         Publisher.subscribe(self.update_target_mode, 'Target navigation mode')
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         #Publisher.subscribe(self.update_focus, 'Set cross focal point')
@@ -73,10 +76,22 @@ class NeuronavigationApi(metaclass=Singleton):
 
     # Functions for InVesalius to send updates.
 
+    def start_navigation(self):
+        if self.connection is not None:
+            self.connection.update_neuronavigation_started(
+                started=True,
+            )
+
+    def stop_navigation(self):
+        if self.connection is not None:
+            self.connection.update_neuronavigation_started(
+                started=False,
+            )
+
     def update_target_mode(self, target_mode):
         if self.connection is not None:
             self.connection.update_target_mode(
-                target_mode=target_mode,
+                enabled=target_mode,
             )
 
     def update_target_orientation(self, target_id, orientation):
