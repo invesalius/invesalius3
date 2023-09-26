@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import math
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -93,9 +93,12 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderer,
     vtkWindowToImageFilter,
 )
+from vtk import vtkCommand
 from vtkmodules.vtkRenderingOpenGL2 import vtkCompositePolyDataMapper2
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
+from invesalius.data.ruler_volume import GenericLeftRulerVolume
+from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.pubsub import pub as Publisher
 import random
 from scipy.spatial import distance
@@ -193,9 +196,11 @@ class Viewer(wx.Panel):
 
         #  self.polygon = Polygon(None, is_3d=False)
 
-        #  self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
-        #  self.canvas.draw_list.append(self.text)
-        #  self.canvas.draw_list.append(self.polygon)
+        # Enable canvas for ruler to be drawn
+        self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer)
+        self.prev_view_port_height = None
+        # self.canvas.draw_list.append(self.text)
+        # self.canvas.draw_list.append(self.polygon)
         # axes = vtkAxesActor()
         # axes.SetXAxisLabelText('x')
         # axes.SetYAxisLabelText('y')
@@ -203,6 +208,7 @@ class Viewer(wx.Panel):
         # axes.SetTotalLength(50, 50, 50)
         #
         # self.ren.AddActor(axes)
+        self.ruler = None
 
         self.slice_plane = None
 
@@ -277,6 +283,9 @@ class Viewer(wx.Panel):
 
         self.actor_tracts = None
         self.actor_peel = None
+
+        self.surface = None
+
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
         self.colors_init = vtkUnsignedCharArray()
@@ -286,6 +295,45 @@ class Viewer(wx.Panel):
         self.old_coord = np.zeros((6,),dtype=float)
 
         self.LoadConfig()
+
+    def UpdateCanvas(self):
+        if self.canvas is not None:
+            self.canvas.modified = True
+            self.interactor.Render()
+
+    def EnableRuler(self):
+        self.ruler = GenericLeftRulerVolume(self)
+        self.interactor.AddObserver(vtkCommand.AnyEvent, self.OnInteractorEvent)
+        Publisher.sendMessage('Send ruler visibility status')
+
+    def ShowRuler(self):
+        if self.ruler and (self.ruler not in self.canvas.draw_list):
+            self.canvas.draw_list.append(self.ruler)
+            self.prev_view_port_height = round(self.ren.GetActiveCamera().GetParallelScale(), 4)
+        self.UpdateCanvas()
+
+    def HideRuler(self):
+        if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
+            self.canvas.draw_list.remove(self.ruler)
+            self.prev_view_port_height = None
+        self.UpdateCanvas()
+
+    def OnRulerVisibilityStatus(self, status):
+        if status and self.canvas and self.ruler:
+            self.ShowRuler()
+
+    def OnHideRuler(self):
+        self.HideRuler()
+
+    def OnShowRuler(self):
+        self.ShowRuler()
+
+    def OnInteractorEvent(self, sender, event):
+        if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
+            view_port_height = round(self.ren.GetActiveCamera().GetParallelScale(), 4)
+            if view_port_height != self.prev_view_port_height:
+                self.prev_view_port_height = view_port_height
+                self.UpdateCanvas()
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -339,6 +387,11 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.OnShowText,
                                  'Show text actors on viewers')
+        Publisher.subscribe(self.OnShowRuler,
+                            'Show rulers on viewers')
+        Publisher.subscribe(self.OnHideRuler,
+                            'Hide rulers on viewers')
+        Publisher.subscribe(self.OnRulerVisibilityStatus, 'Receive ruler visibility status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
         Publisher.subscribe(self.RemoveAllActor, 'Remove all volume actors')
@@ -1305,6 +1358,20 @@ class Viewer(wx.Panel):
         tdist.BoldOn()
         self.ren.AddActor(tdist.actor)
         self.tdist = tdist
+
+
+    def AddLine(self):
+        line_source = vtkLineSource()
+        line_source.SetPoint1(0, 0, 0)
+        line_source.SetPoint2(100, 100, 100)
+
+        line_mapper = vtkPolyDataMapper()
+        line_mapper.SetInputConnection(line_source.GetOutputPort())
+
+        line_actor = vtkActor()
+        line_actor.SetMapper(line_mapper)
+
+        self.ren.AddActor(line_actor)
 
     def DisableCoilTracker(self):
         try:
@@ -2400,6 +2467,7 @@ class Viewer(wx.Panel):
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
+
         self.UpdateRender()
 
         self.state = state
@@ -2547,7 +2615,6 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def LoadActor(self, actor):
-        print(actor)
         self.added_actor = 1
         ren = self.ren
         ren.AddActor(actor)
@@ -2563,6 +2630,13 @@ class Viewer(wx.Panel):
         self.UpdateRender()
         # self._to_show_ball += 1
         # self._check_and_set_ball_visibility()
+
+        # make camera projection to parallel
+        self.ren.GetActiveCamera().ParallelProjectionOn()
+
+        self.surface = actor
+        self.EnableRuler()
+
 
     def RemoveActor(self, actor):
         utils.debug("RemoveActor")

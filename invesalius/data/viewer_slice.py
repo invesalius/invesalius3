@@ -635,25 +635,18 @@ class Viewer(wx.Panel):
         # WARN: Return the only slice_data used in this slice_viewer.
         return self.slice_data
 
-    # CHECKME: Newly added method for ruler
-    # TODO: Complete EnableRuler function
     def EnableRuler(self):
         self.ruler = GenericLeftRuler(self)
-        # Since the GUI icon is still not available for ruler,
-        # ShowRuler() method has been called manually
-        self.ShowRuler()
 
-    # CHECKME: Newly added method for ruler
-    # TODO: Complete ShowRuler function
     def ShowRuler(self):
-        if self.ruler:
+        if self.ruler and (self.ruler not in self.canvas.draw_list):
             self.canvas.draw_list.append(self.ruler)
         self.UpdateCanvas()
 
-    # CHECKME: Newly added method for ruler
-    # TODO: Complete HideRuler function
     def HideRuler(self):
-        pass
+        if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
+            self.canvas.draw_list.remove(self.ruler)
+        self.UpdateCanvas()
 
     def calcultate_scroll_position(self, x, y):
         # Based in the given coord (x, y), returns a list with the scroll positions for each
@@ -921,6 +914,10 @@ class Viewer(wx.Panel):
                                  'Show text actors on viewers')
         Publisher.subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
+        Publisher.subscribe(self.OnShowRuler,
+                            'Show rulers on viewers')
+        Publisher.subscribe(self.OnHideRuler,
+                            'Hide rulers on viewers')
         Publisher.subscribe(self.OnExportPicture,'Export picture to file')
         Publisher.subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
 
@@ -1049,11 +1046,9 @@ class Viewer(wx.Panel):
     def OnHideText(self):
         self.HideTextActors()
 
-    # CHECKME: Newly added method for ruler
     def OnShowRuler(self):
         self.ShowRuler()
 
-    # CHECKME: Newly added method for ruler
     def OnHideRuler(self):
         self.HideRuler()
 
