@@ -43,8 +43,9 @@ class Robot(metaclass=Singleton):
 
         success = self.LoadConfig()
         if success:
-            self.ConnectToRobot()
-            self.InitializeRobot()
+            pass
+#            self.ConnectToRobot()
+#            self.InitializeRobot()
 
         self.__bind_events()
 
