@@ -255,10 +255,11 @@ class GenericLeftRulerVolume(RulerVolume):
         max_ruler_height = window_size[1] - 2 * ruler_min_y
         image_size_in_pixels = image_height / pixel_size
         if image_size_in_pixels < max_ruler_height:
-            ruler_height, decimals = self.RoundToMultiple(image_height / 2, self.ruler_scale_step)
+            ruler_half_height, decimals = self.RoundToMultiple(image_height / 2, self.ruler_scale_step)
         else:
-            ruler_height, decimals = self.RoundToMultiple((max_ruler_height * pixel_size / 2), self.ruler_scale_step)
-        ruler_height_pixels = (ruler_height * 2) / pixel_size
+            ruler_half_height, decimals = self.RoundToMultiple((max_ruler_height * pixel_size / 2), self.ruler_scale_step)
+        ruler_height = ruler_half_height * 2
+        ruler_height_pixels = ruler_height / pixel_size
         lines = [[(ruler_min_x, (window_size[1] - ruler_height_pixels) / 2),
                   (ruler_min_x, (window_size[1] + ruler_height_pixels) / 2)],
                  [(ruler_min_x, (window_size[1] - ruler_height_pixels) / 2),

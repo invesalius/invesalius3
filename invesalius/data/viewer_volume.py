@@ -2634,6 +2634,7 @@ class Viewer(wx.Panel):
         # make camera projection to parallel
         self.ren.GetActiveCamera().ParallelProjectionOn()
 
+        # use the 3D surface actor for measurement calculations
         self.surface = actor
         self.EnableRuler()
 
@@ -2646,6 +2647,10 @@ class Viewer(wx.Panel):
             self.UpdateRender()
         # self._to_show_ball -= 1
         # self._check_and_set_ball_visibility()
+
+        # remove the ruler if visible
+        if self.ruler:
+            self.HideRuler()
 
     def RemoveAllActor(self):
         utils.debug("RemoveAllActor")
@@ -2680,12 +2685,24 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
+        # make camera projection to parallel
+        self.ren.GetActiveCamera().ParallelProjectionOn()
+
+        # if there is no 3D surface, use the volume render for measurement calculation
+        if not self.added_actor:
+            self.surface = volume
+        self.EnableRuler()
+
     def UnloadVolume(self, volume):
         self.ren.RemoveVolume(volume)
         del volume
         self.raycasting_volume = False
         # self._to_show_ball -= 1
         # self._check_and_set_ball_visibility()
+
+        # remove the ruler if visible
+        if self.ruler:
+            self.HideRuler()
 
     def load_mask_preview(self, mask_3d_actor, flag=True):
         if flag:
