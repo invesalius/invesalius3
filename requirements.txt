@@ -1,5 +1,5 @@
 Cython==3.0.2
-Pillow==9.4.0
+Pillow==10.0.1
 Pypubsub==4.0.3
 h5py==3.8.0
 imageio==2.31.1
