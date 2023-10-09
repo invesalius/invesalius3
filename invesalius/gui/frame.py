@@ -52,8 +52,8 @@ except ImportError:
 
 # Layout tools' IDs - this is used only locally, therefore doesn't
 # need to be defined in constants.py
-VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
-                                [wx.NewId() for number in range(2)]
+VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] =\
+                                [wx.NewId() for number in range(3)]
 
 WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
     "NIfTI 1 (*.nii)|*.nii|" \
@@ -2087,7 +2087,8 @@ class LayoutToolBar(AuiToolBar):
 
         self.ontool_layout = False
         self.ontool_text = True
-        self.enable_items = [ID_TEXT]
+        self.ontool_ruler = True
+        self.enable_items = [ID_TEXT, ID_RULER]
 
         self.Realize()
         self.SetStateProjectClose()
@@ -2100,6 +2101,7 @@ class LayoutToolBar(AuiToolBar):
         sub(self._EnableState, "Enable state project")
         sub(self._SetLayoutWithTask, "Set layout button data only")
         sub(self._SetLayoutWithoutTask, "Set layout button full")
+        sub(self._SendRulerVisibilityStatus, 'Send ruler visibility status')
 
     def __bind_events_wx(self):
         """
@@ -2127,6 +2129,12 @@ class LayoutToolBar(AuiToolBar):
             p = os.path.join(d, "text_original.png")
             self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
+            # Bitmaps for show/hide task item
+            p = os.path.join(d, "ruler_original_disabled.png")
+            self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "ruler_original_enabled.png")
+            self.BMP_WITH_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
         else:
             # Bitmaps for show/hide task panel item
             p = os.path.join(d, "layout_data_only.png")
@@ -2142,6 +2150,13 @@ class LayoutToolBar(AuiToolBar):
             p = os.path.join(d, "text.png")
             self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
+            # Bitmaps for show/hide task item
+            p = os.path.join(d, "ruler_disabled.png")
+            self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "ruler_enabled.png")
+            self.BMP_WITH_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+
         self.AddTool(ID_LAYOUT,
                           "",
                           self.BMP_WITHOUT_MENU,
@@ -2154,6 +2169,12 @@ class LayoutToolBar(AuiToolBar):
                           wx.NullBitmap,
                           wx.ITEM_NORMAL,
                           short_help_string= _("Hide text"))
+        self.AddTool(ID_RULER,
+                     "",
+                     self.BMP_WITH_RULER,
+                     wx.NullBitmap,
+                     wx.ITEM_NORMAL,
+                     short_help_string=_("Hide ruler"))
 
     def _EnableState(self, state):
         """
@@ -2165,6 +2186,9 @@ class LayoutToolBar(AuiToolBar):
         else:
             self.SetStateProjectClose()
         self.Refresh()
+
+    def _SendRulerVisibilityStatus(self):
+        Publisher.sendMessage('Receive ruler visibility status', status=self.ontool_ruler)
 
     def _SetLayoutWithoutTask(self):
         """
@@ -2187,6 +2211,8 @@ class LayoutToolBar(AuiToolBar):
             self.ToggleLayout()
         elif id== ID_TEXT:
             self.ToggleText()
+        elif id == ID_RULER:
+            self.ToggleRulers()
 
         for item in VIEW_TOOLS:
             state = self.GetToolToggled(item)
@@ -2198,7 +2224,9 @@ class LayoutToolBar(AuiToolBar):
         Disable menu items (e.g. text) when project is closed.
         """
         self.ontool_text = True
+        self.ontool_ruler = True
         self.ToggleText()
+        self.ToggleRulers()
         for tool in self.enable_items:
             self.EnableTool(tool, False)
 
@@ -2207,7 +2235,9 @@ class LayoutToolBar(AuiToolBar):
         Disable menu items (e.g. text) when project is closed.
         """
         self.ontool_text = False
+        self.ontool_ruler = False
         self.ToggleText()
+        self.ToggleRulers()
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
@@ -2244,6 +2274,24 @@ class LayoutToolBar(AuiToolBar):
             Publisher.sendMessage('Update AUI')
             self.ontool_text = True
 
+    def ToggleRulers(self):
+        """
+        Based on previous ruler state, toggle it.
+        """
+        if self.ontool_ruler:
+            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
+            Publisher.sendMessage('Hide rulers on viewers')
+            self.SetToolShortHelp(ID_RULER, _("Show rulers"))
+            Publisher.sendMessage('Update AUI')
+            self.ontool_ruler = False
+        else:
+            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
+            Publisher.sendMessage('Show rulers on viewers')
+            self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
+            Publisher.sendMessage('Update AUI')
+            self.ontool_ruler = True
+
+
 
 class HistoryToolBar(AuiToolBar):
     """
@@ -2265,7 +2313,8 @@ class HistoryToolBar(AuiToolBar):
 
         self.ontool_layout = False
         self.ontool_text = True
-        #self.enable_items = [ID_TEXT]
+        self.ontool_rulers = True
+        #self.enable_items = [ID_TEXT, ID_RULERS]
 
         self.Realize()
         #self.SetStateProjectClose()
@@ -2365,6 +2414,8 @@ class HistoryToolBar(AuiToolBar):
             self.ToggleLayout()
         elif id== ID_TEXT:
             self.ToggleText()
+        elif id == ID_RULER:
+            self.ToggleRulers()
 
         for item in VIEW_TOOLS:
             state = self.GetToolToggled(item)
@@ -2376,7 +2427,9 @@ class HistoryToolBar(AuiToolBar):
         Disable menu items (e.g. text) when project is closed.
         """
         self.ontool_text = True
+        self.ontool_rulers = True
         self.ToggleText()
+        self.ToggleRulers()
         for tool in self.enable_items:
             self.EnableTool(tool, False)
 
@@ -2385,7 +2438,9 @@ class HistoryToolBar(AuiToolBar):
         Disable menu items (e.g. text) when project is closed.
         """
         self.ontool_text = False
+        self.ontool_rulers = False
         self.ToggleText()
+        self.ToggleRulers()
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
@@ -2421,6 +2476,23 @@ class HistoryToolBar(AuiToolBar):
             self.SetToolShortHelp(ID_TEXT,_("Hide text"))
             Publisher.sendMessage('Update AUI')
             self.ontool_text = True
+
+    def ToggleRulers(self):
+        """
+        Based on previous ruler state, toggle it.
+        """
+        if self.ontool_ruler:
+            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
+            Publisher.sendMessage('Hide rulers on viewers')
+            self.SetToolShortHelp(ID_RULER, _("Show rulers"))
+            Publisher.sendMessage('Update AUI')
+            self.ontool_ruler = False
+        else:
+            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
+            Publisher.sendMessage('Show rulers on viewers')
+            self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
+            Publisher.sendMessage('Update AUI')
+            self.ontool_ruler = True
 
     def OnEnableUndo(self, value):
         if value:

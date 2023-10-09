@@ -1730,7 +1730,7 @@ class ControlPanel(wx.Panel):
     def UpdateTargetButton(self):
         if self.target_selected and self.track_obj:
             self.EnableToggleButton(self.target_checkbox, True)
-            self.UpdateToggleButton(self.target_checkbox, False)
+            self.UpdateToggleButton(self.target_checkbox, self.target_checkbox.GetValue())
         else:
             self.DisableTargetMode()
             self.EnableToggleButton(self.target_checkbox, False)
