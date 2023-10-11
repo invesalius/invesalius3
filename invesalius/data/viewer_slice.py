@@ -52,6 +52,8 @@ from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteracto
 import invesalius.data.styles as styles
 import wx
 import sys
+
+from invesalius.data.ruler import GenericLeftRuler
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -228,6 +230,8 @@ class Viewer(wx.Panel):
         self.wl_text = None
         self.on_wl = False
         self.on_text = False
+        # Newly added attribute for ruler
+        self.ruler = None
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
@@ -631,6 +635,19 @@ class Viewer(wx.Panel):
         # WARN: Return the only slice_data used in this slice_viewer.
         return self.slice_data
 
+    def EnableRuler(self):
+        self.ruler = GenericLeftRuler(self)
+
+    def ShowRuler(self):
+        if self.ruler and (self.ruler not in self.canvas.draw_list):
+            self.canvas.draw_list.append(self.ruler)
+        self.UpdateCanvas()
+
+    def HideRuler(self):
+        if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
+            self.canvas.draw_list.remove(self.ruler)
+        self.UpdateCanvas()
+
     def calcultate_scroll_position(self, x, y):
         # Based in the given coord (x, y), returns a list with the scroll positions for each
         # orientation, being the first position the sagital, second the coronal
@@ -897,6 +914,10 @@ class Viewer(wx.Panel):
                                  'Show text actors on viewers')
         Publisher.subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
+        Publisher.subscribe(self.OnShowRuler,
+                            'Show rulers on viewers')
+        Publisher.subscribe(self.OnHideRuler,
+                            'Hide rulers on viewers')
         Publisher.subscribe(self.OnExportPicture,'Export picture to file')
         Publisher.subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
 
@@ -1024,6 +1045,12 @@ class Viewer(wx.Panel):
 
     def OnHideText(self):
         self.HideTextActors()
+
+    def OnShowRuler(self):
+        self.ShowRuler()
+
+    def OnHideRuler(self):
+        self.HideRuler()
 
     def OnCloseProject(self):
         self.CloseProject()
@@ -1154,6 +1181,9 @@ class Viewer(wx.Panel):
 
         self.EnableText()
         self.wl_text.Hide()
+
+        self.EnableRuler()
+
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
