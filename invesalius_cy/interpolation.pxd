@@ -1,5 +1,3 @@
-#cython: language_level=3
-
 from .cy_my_types cimport image_t
 
 cdef double interpolate(image_t[:, :, :], double, double, double) nogil

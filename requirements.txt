@@ -1,4 +1,4 @@
-Cython==0.29.35
+Cython==3.0.2
 Pillow==9.4.0
 Pypubsub==4.0.3
 h5py==3.8.0
