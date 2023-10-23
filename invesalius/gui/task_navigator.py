@@ -2013,6 +2013,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.SetMarkers, 'Set markers')
+        Publisher.subscribe(self.UpdateFromFT, 'Update target from FT values')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
@@ -2254,6 +2255,28 @@ class MarkersPanel(wx.Panel):
 
         self.PopupMenu(menu_id)
         menu_id.Destroy()
+
+    def UpdateFromFT(self, data):
+        print('received from robot', data)
+        distance, status = data
+        prev_idx = self.__find_target_marker()
+        if prev_idx is None:
+            return
+        else:
+            prev_pose = self.markers[prev_idx].position
+            new_pose = prev_pose
+            new_orientation = self.markers[prev_idx].orientation
+            new_pose[0], new_pose[1] = prev_pose[0] + distance[0]*10, prev_pose[1] + distance[1]*10
+            print(new_pose)
+
+            if status:
+                del self.markers[prev_idx]
+                self.marker_list_ctrl.DeleteItem(prev_idx)
+                self.CreateMarker(position=new_pose, orientation=new_orientation)
+                new_idx = len(self.markers)
+                self.__set_marker_as_target(new_idx-1, display_messagebox=False)
+
+            self.SaveState()
 
     def OnItemBlink(self, evt):
         Publisher.sendMessage('Blink Marker', index=self.marker_list_ctrl.GetFocusedItem())
