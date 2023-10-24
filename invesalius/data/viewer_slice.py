@@ -219,6 +219,7 @@ class Viewer(wx.Panel):
         self.orientation = orientation
         self.slice_number = 0
         self.scroll_enabled = True
+        self.nav_status = False
 
         self.__init_gui()
 
@@ -332,7 +333,8 @@ class Viewer(wx.Panel):
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
         self.state = state
 
@@ -349,7 +351,8 @@ class Viewer(wx.Panel):
     def UpdateWindowLevelText(self, window, level):
         self.acum_achange_window, self.acum_achange_level = window, level
         self.SetWLText(window, level)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def OnClutChange(self, evt):
         Publisher.sendMessage('Change colour table from background image from widget',
@@ -428,7 +431,8 @@ class Viewer(wx.Panel):
         self.left_text.SetValue(directions[1])
         self.down_text.SetValue(directions[2])
         self.right_text.SetValue(directions[3])
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ResetTextDirection(self, cam):
         # Values are on ccw order, starting from the top:
@@ -440,7 +444,8 @@ class Viewer(wx.Panel):
             values = [_("T"), _("P"), _("B"), _("A")]
 
         self.RenderTextDirection(values)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def UpdateTextDirection(self, cam):
         croll = cam.GetRoll()
@@ -570,7 +575,8 @@ class Viewer(wx.Panel):
 
         ren.ResetCamera()
         ren.GetActiveCamera().Zoom(1.0)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ChangeBrushColour(self, colour):
         vtk_colour = colour
@@ -948,6 +954,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.GetCrossPos, "Set Update cross pos")
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
+        Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
 
 
     def RefreshViewer(self):
@@ -1083,6 +1090,9 @@ class Viewer(wx.Panel):
         if (style not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
             Publisher.sendMessage('Set interactor default cursor')
 
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
+
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
@@ -1177,7 +1187,8 @@ class Viewer(wx.Panel):
         self.__update_camera()
         self.slice_data.renderer.ResetCamera()
         self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
         self.EnableText()
         self.wl_text.Hide()
@@ -1283,8 +1294,8 @@ class Viewer(wx.Panel):
                 self.slice_actor.InterpolateOff()
             else:
                 self.slice_actor.InterpolateOn()
-            self.interactor.Render()
-
+            if not self.nav_status:
+                self.UpdateRender()
 
     def SetInterpolatedSlices(self, flag):
         self.interpolation_slice_status = flag
@@ -1293,7 +1304,8 @@ class Viewer(wx.Panel):
                 self.slice_actor.InterpolateOn()
             else:
                 self.slice_actor.InterpolateOff()
-            self.interactor.Render()
+            if not self.nav_status:
+                self.UpdateRender()
 
     def __update_camera(self):
         orientation = self.orientation
@@ -1318,7 +1330,8 @@ class Viewer(wx.Panel):
         if self.canvas is not None:
             self._update_draw_list()
             self.canvas.modified = True
-            self.interactor.Render()
+            if not self.nav_status:
+                self.UpdateRender()
 
     def _update_draw_list(self):
         cp_draw_list = self.canvas.draw_list[:]
@@ -1379,7 +1392,8 @@ class Viewer(wx.Panel):
         # This Render needs to come before the self.style.OnScrollBar, otherwise the GetFocalPoint will sometimes
         # provide the non-updated coordinate and the cross focal point will lag one pixel behind the actual
         # scroll position
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
         try:
             self.style.OnScrollBar()
@@ -1446,7 +1460,8 @@ class Viewer(wx.Panel):
             skip = False
 
         self.UpdateSlice3D(pos)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
         if evt and skip:
             evt.Skip()
@@ -1554,7 +1569,8 @@ class Viewer(wx.Panel):
     def ReloadActualSlice(self):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def OnUpdateScroll(self):
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
@@ -1584,7 +1600,8 @@ class Viewer(wx.Panel):
         self.cross.SetFocalPoint(coord)
         Publisher.sendMessage('Co-registered points',  arg=None, position=(coord[0], coord[1], coord[2], 0., 0., 0.))
         self.OnScrollBar()
-        self.interactor.Render()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"
