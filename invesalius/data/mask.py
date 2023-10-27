@@ -347,7 +347,6 @@ class Mask():
         shutil.copyfile(self.temp_file, filename)
 
     def _open_mask(self, filename, shape, dtype='uint8'):
-        print(">>", filename, shape)
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
