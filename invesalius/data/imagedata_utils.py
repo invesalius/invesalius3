@@ -304,12 +304,14 @@ def create_dicom_thumbnails(image, window=None, level=None):
 
 
 def array2memmap(arr, filename=None):
+    fd = None
     if filename is None:
         fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")
     matrix = numpy.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
-    os.close(fd)
+    if fd:
+        os.close(fd)
     return matrix
 
 
