@@ -256,20 +256,22 @@ class Project(metaclass=Singleton):
         # Saving the measurements
         measurements = self.GetMeasuresDict()
         measurements_filename = 'measurements.plist'
-        temp_mplist = tempfile.mktemp()
+        fd_mplist, temp_mplist = tempfile.mkstemp()
         with open(temp_mplist, 'w+b') as f:
             plistlib.dump(measurements, f)
         filelist[temp_mplist] = measurements_filename
         project['measurements'] = measurements_filename
+        os.close(fd_mplist)
 
         # Saving the annotations (empty in this version)
         project['annotations'] = {}
 
         # Saving the main plist
-        temp_plist = tempfile.mktemp()
+        temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(project, f)
         filelist[temp_plist] = 'main.plist'
+        os.close(temp_fd)
 
         # Compressing and generating the .inv3 file
         path = os.path.join(dir_,filename)
@@ -469,9 +471,8 @@ class Project(metaclass=Singleton):
 def Compress(folder, filename, filelist, compress=False):
     tmpdir, tmpdir_ = os.path.split(folder)
     current_dir = os.path.abspath(".")
-    temp_inv3 = tempfile.mktemp()
+    fd_inv3, temp_inv3 = tempfile.mkstemp()
     if _has_win32api:
-        touch(temp_inv3)
         temp_inv3 = win32api.GetShortPathName(temp_inv3)
 
     temp_inv3 = decode(temp_inv3, const.FS_ENCODE)
@@ -484,6 +485,7 @@ def Compress(folder, filename, filelist, compress=False):
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
+    os.close(fd_inv3)
     shutil.move(temp_inv3, filename)
     #os.chdir(current_dir)
 
