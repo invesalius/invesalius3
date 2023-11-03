@@ -440,11 +440,10 @@ class SurfaceManager():
             cortex_save_file = path_meshes +'export_inv/'+config_dict['cortex']
             polydata = proj.surface_dict[surface_index_cortex].polydata
             file_extension = cortex_save_file.split('.')[-1]
-            if file_extension == "bin":
-                print("FILE EXTENSION:", file_extension)
-                self.OnWriteCustomBinFile(polydata,cortex_save_file)
-            elif file_extension =="stl":
-                Publisher.sendMessage('Export surface to file', filename = cortex_save_file, filetype=112, convert_to_world = False)
+            if file_extension == "stl":
+                cortex_save_file = cortex_save_file.split('.')[0] + ".bin"
+            self.OnWriteCustomBinFile(polydata,cortex_save_file)
+
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
             bmeshes_list = []
             ci_list = []
@@ -459,13 +458,9 @@ class SurfaceManager():
                     bmeshes_save_file = path_meshes + 'export_inv/' + elements['file']
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
                     file_extension = bmeshes_save_file.split('.')[-1]
-                    if file_extension == "bin":
-                        print("FILE EXTENSION bmeshes:", file_extension)
-                        self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
-                    elif file_extension == "stl":
-                        Publisher.sendMessage('Export surface to file', filename=bmeshes_save_file,
-                                              filetype=112, convert_to_world=False)
-
+                    if file_extension == "stl":
+                        bmeshes_save_file = bmeshes_save_file.split('.')[0] + ".bin"
+                    self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
                     co_list.append(co)
