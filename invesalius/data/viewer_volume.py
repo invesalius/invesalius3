@@ -145,6 +145,8 @@ class Viewer(wx.Panel):
 
         self.static_markers = []
         self.static_arrows = []
+        self.static_markers_efield = []
+        self.plot_vector = None
         self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
@@ -294,6 +296,7 @@ class Viewer(wx.Panel):
         self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
 
+        self.efield_mesh = None
         self.LoadConfig()
 
     def UpdateCanvas(self):
@@ -878,6 +881,15 @@ class Viewer(wx.Panel):
             Markers arrow with orientation created by navigation tools and rendered in volume viewer.
             """
             marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
+            if self.efield_mesh is not None:
+                vtk_colors = vtkNamedColors()
+                marker_actor_brain =  self.DrawVectors(self.efield_mesh.GetPoint(self.Idmax), [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]],vtk_colors.GetColor3d('Orange'), scale_factor=3)
+                Publisher.sendMessage('Save target data', target_list_index=marker_id, position=self.efield_mesh.GetPoint(self.Idmax),
+                                      orientation=[self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]], plot_efield_vectors=self.plot_vector)
+
+                self.static_markers_efield.append(marker_actor_brain)
+                self.ren.AddActor(marker_actor_brain)
+
         else:
             marker_actor = self.CreateActorBall(position_flip, colour, size)
 
@@ -1758,7 +1770,7 @@ class Viewer(wx.Panel):
     def RecolorEfieldActor(self):
         self.efield_mesh_normals_viewer.Modified()
 
-    def DrawVectors(self, position, orientation, color):
+    def DrawVectors(self, position, orientation, color, scale_factor=10):
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
@@ -1771,7 +1783,7 @@ class Viewer(wx.Panel):
         glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
-        glyphFilter.SetScaleFactor(10)
+        glyphFilter.SetScaleFactor(scale_factor)
         glyphFilter.Update()
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(glyphFilter.GetOutput())
