@@ -1782,21 +1782,27 @@ class Viewer(wx.Panel):
 
     def MaxEfieldActor(self):
         vtk_colors = vtkNamedColors()
-        if self.max_efield_vector is not None:
+        if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
+            self.ren.RemoveActor(self.ball_max_vector)
         position = self.efield_mesh.GetPoint(self.Idmax)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
-        self.max_efield_vector = self.DrawVectors(position, orientation, vtk_colors.GetColor3d('Red'))
+        self.max_efield_vector= self.DrawVectors(position, orientation, vtk_colors.GetColor3d('Red'))
+        self.ball_max_vector = self.CreateActorBall(position, vtk_colors.GetColor3d('Red'), 0.5)
         self.ren.AddActor(self.max_efield_vector)
+        self.ren.AddActor(self.ball_max_vector)
 
     def CoGEfieldActor(self):
         vtk_colors = vtkNamedColors()
-        if self.GoGEfieldVector is not None:
+        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
             self.ren.RemoveActor(self.GoGEfieldVector)
+            self.ren.RemoveActor(self.ball_GoGEfieldVector)
         orientation = [self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2]]
         [center_gravity_id] = self.FindCenterofGravity( )
         self.GoGEfieldVector = self.DrawVectors(center_gravity_id, orientation,vtk_colors.GetColor3d('Blue'))
+        self.ball_GoGEfieldVector = self.CreateActorBall(center_gravity_id, vtk_colors.GetColor3d('Blue'),0.5)
         self.ren.AddActor(self.GoGEfieldVector)
+        self.ren.AddActor(self.ball_GoGEfieldVector)
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
@@ -2026,6 +2032,8 @@ class Viewer(wx.Panel):
         self.e_field_norms = None
         self.target_radius_list=[]
         self.max_efield_vector = None
+        self.ball_max_vector = None
+        self.ball_GoGEfieldVector = None
         self.GoGEfieldVector = None
         self.vectorfield_actor =None
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
