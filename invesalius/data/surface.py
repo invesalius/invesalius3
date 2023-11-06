@@ -119,9 +119,10 @@ class Surface():
         else:
             filename = u'surface_%d' % self.index
             vtp_filename = filename + u'.vtp'
-            vtp_filepath = tempfile.mktemp()
+            vtp_fd, vtp_filepath = tempfile.mkstemp()
             pu.Export(self.polydata, vtp_filepath, bin=True)
             self.filename = vtp_filepath
+            os.close(vtp_fd)
 
         filelist[vtp_filepath] = vtp_filename
 
@@ -136,11 +137,12 @@ class Surface():
                   }
         plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
-        temp_plist = tempfile.mktemp()
+        temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(surface, f)
 
         filelist[temp_plist] = plist_filename
+        os.close(temp_fd)
 
         return plist_filename
 
@@ -1052,12 +1054,12 @@ class SurfaceManager():
             const.FILETYPE_STL_ASCII: '.stl',
         }
         if filetype in ftype_prefix:
-            temp_file = tempfile.mktemp(suffix=ftype_prefix[filetype])
+            temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
 
             if _has_win32api:
-                utl.touch(temp_file)
                 _temp_file = temp_file
                 temp_file = win32api.GetShortPathName(temp_file)
+                os.close(temp_fd)
                 os.remove(_temp_file)
 
             temp_file = utl.decode(temp_file, const.FS_ENCODE)
