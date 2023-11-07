@@ -297,6 +297,14 @@ class Viewer(wx.Panel):
         self.old_coord = np.zeros((6,),dtype=float)
 
         self.efield_mesh = None
+        self.max_efield_vector = None
+        self.ball_max_vector = None
+        self.ball_GoGEfieldVector = None
+        self.GoGEfieldVector = None
+        self.vectorfield_actor =None
+        self.efield_scalar_bar = None
+        self.edge_actor= None
+
         self.LoadConfig()
 
     def UpdateCanvas(self):
@@ -2041,14 +2049,26 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.target_radius_list=[]
-        self.max_efield_vector = None
-        self.ball_max_vector = None
-        self.ball_GoGEfieldVector = None
-        self.GoGEfieldVector = None
-        self.vectorfield_actor =None
+        
+        if self.max_efield_vector and self.ball_max_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+            self.ren.RemoveActor(self.ball_max_vector)
+
+        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.GoGEfieldVector)
+            self.ren.RemoveActor(self.ball_GoGEfieldVector)
+
+        if self.vectorfield_actor is not None:
+            self.ren.RemoveActor(self.vectorfield_actor)
+
+        if self.efield_scalar_bar is not None:
+            self.ren.RemoveActor(self.efield_scalar_bar)
+
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
-        self.edge_actor= None
+
+        if self.edge_actor is not None:
+            self.ren.RemoveActor(self.edge_actor)
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
