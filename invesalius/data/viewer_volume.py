@@ -2009,8 +2009,6 @@ class Viewer(wx.Panel):
         self.efield_actor  = e_field_actor
 
     def FindPointsAroundRadiusEfield(self, cellId):
-        #radius = vtk.mutable(50)
-        #self.radius_list = vtk.vtkIdList()
         self.locator_efield.FindPointsWithinRadius(20, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     def GetCellIDsfromlistPoints(self, vlist, mesh):
