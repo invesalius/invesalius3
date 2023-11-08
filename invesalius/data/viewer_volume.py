@@ -478,6 +478,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldPointLocationOffline,'Update interseccion offline')
         Publisher.subscribe(self.MaxEfieldActor, 'Show max Efield actor')
         Publisher.subscribe(self.CoGEfieldActor, 'Show CoG Efield actor')
+        Publisher.subscribe(self.CalculateDistanceMaxEfieldCoGE, 'Show distance between Max and CoG Efield')
         Publisher.subscribe(self.EfieldVectors, 'Show Efield vectors')
         Publisher.subscribe(self.RecolorEfieldActor, 'Recolor efield actor')
         # Related to robot tracking during neuronavigation
@@ -1805,10 +1806,10 @@ class Viewer(wx.Panel):
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
             self.ren.RemoveActor(self.ball_max_vector)
-        position = self.efield_mesh.GetPoint(self.Idmax)
+        self.position_max = self.efield_mesh.GetPoint(self.Idmax)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
-        self.max_efield_vector= self.DrawVectors(position, orientation, vtk_colors.GetColor3d('Red'))
-        self.ball_max_vector = self.CreateActorBall(position, vtk_colors.GetColor3d('Red'), 0.5)
+        self.max_efield_vector= self.DrawVectors(self.position_max, orientation, vtk_colors.GetColor3d('Red'))
+        self.ball_max_vector = self.CreateActorBall(self.position_max, vtk_colors.GetColor3d('Red'), 0.5)
         self.ren.AddActor(self.max_efield_vector)
         self.ren.AddActor(self.ball_max_vector)
 
@@ -1818,11 +1819,23 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.GoGEfieldVector)
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
         orientation = [self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2]]
-        [center_gravity_id] = self.FindCenterofGravity( )
-        self.GoGEfieldVector = self.DrawVectors(center_gravity_id, orientation,vtk_colors.GetColor3d('Blue'))
-        self.ball_GoGEfieldVector = self.CreateActorBall(center_gravity_id, vtk_colors.GetColor3d('Blue'),0.5)
+        [self.center_gravity_id] = self.FindCenterofGravity( )
+        self.GoGEfieldVector = self.DrawVectors(self.center_gravity_id, orientation,vtk_colors.GetColor3d('Blue'))
+        self.ball_GoGEfieldVector = self.CreateActorBall(self.center_gravity_id, vtk_colors.GetColor3d('Blue'),0.5)
         self.ren.AddActor(self.GoGEfieldVector)
         self.ren.AddActor(self.ball_GoGEfieldVector)
+
+    def CreateEfieldSpreadLegend(self):
+        self.SpreadEfieldFactorTextActor = vtku.Text()
+        self.SpreadEfieldFactorTextActor.SetSize(const.TEXT_SIZE_DIST_NAV)
+        self.SpreadEfieldFactorTextActor.SetPosition((const.X, 1. - const.Y))
+        self.SpreadEfieldFactorTextActor.SetVerticalJustificationToBottom()
+        self.SpreadEfieldFactorTextActor.BoldOn()
+        self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
+
+    def CalculateDistanceMaxEfieldCoGE(self):
+        distance_efield = distance.euclidean(self.center_gravity_id, self.position_max)
+        self.SpreadEfieldFactorTextActor.SetValue(str("{:06.2f}".format(distance_efield)))
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
@@ -2049,7 +2062,8 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.target_radius_list=[]
-        
+        self.CreateEfieldSpreadLegend()
+
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
             self.ren.RemoveActor(self.ball_max_vector)
@@ -2115,6 +2129,7 @@ class Viewer(wx.Panel):
             if self.plot_vector:
                 wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
                 wx.CallAfter(Publisher.sendMessage, 'Show CoG Efield actor')
+                wx.CallAfter(Publisher.sendMessage, 'Show distance between Max and CoG Efield')
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
                     self.plot_vector= False
