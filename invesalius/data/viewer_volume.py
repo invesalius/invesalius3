@@ -1825,17 +1825,20 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.GoGEfieldVector)
         self.ren.AddActor(self.ball_GoGEfieldVector)
 
+    def CreateTextLegend(self, FontSize, Position):
+        TextLegend = vtku.Text()
+        TextLegend.SetSize(FontSize)
+        TextLegend.SetPosition(Position)
+        TextLegend.BoldOn()
+        return TextLegend
+
     def CreateEfieldSpreadLegend(self):
-        self.SpreadEfieldFactorTextActor = vtku.Text()
-        self.SpreadEfieldFactorTextActor.SetSize(const.TEXT_SIZE_DIST_NAV)
-        self.SpreadEfieldFactorTextActor.SetPosition((const.X, 1. - const.Y))
-        self.SpreadEfieldFactorTextActor.SetVerticalJustificationToBottom()
-        self.SpreadEfieldFactorTextActor.BoldOn()
+        self.SpreadEfieldFactorTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.9))
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
         distance_efield = distance.euclidean(self.center_gravity_id, self.position_max)
-        self.SpreadEfieldFactorTextActor.SetValue(str("{:06.2f}".format(distance_efield)))
+        self.SpreadEfieldFactorTextActor.SetValue('Spread distance: ' + str("{:04.2f}".format(distance_efield)))
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
@@ -1877,7 +1880,7 @@ class Viewer(wx.Panel):
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
                 e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
-                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors, self.heights])
             else:
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
 
@@ -2002,6 +2005,8 @@ class Viewer(wx.Panel):
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
             positions.append(self.efield_mesh.GetPoint(value))
+        self.SegmentEfieldMax(positions, weights)
+        self.DetectClustersEfieldSpread(positions)
         x_weighted = []
         y_weighted = []
         z_weighted = []
@@ -2025,6 +2030,22 @@ class Viewer(wx.Panel):
         distance = mutable(0.0)
         self.locator_efield_cell.FindClosestPoint(query_point, closest_point, cell_id, sub_id, distance)
         return [closest_point]
+
+    def DetectClustersEfieldSpread(self, points):
+        from sklearn.cluster import DBSCAN
+        dbscan = DBSCAN(eps=5, min_samples=2).fit(points)
+        labels = dbscan.labels_
+        n_clusters = len(set(labels)) - (1 if -1 in labels else 0 )
+        self.ClusterEfieldTextActor.SetValue('Clusters: '+ str(n_clusters))
+
+    def CreateClustersEfieldLegend(self):
+        self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,const.TEXT_POS_LEFT_UP)
+        self.ren.AddActor(self.ClusterEfieldTextActor.actor)
+
+    def SegmentEfieldMax(self, positions, values):
+        self.heights = []
+        for i, pos in enumerate(positions):
+            self.heights.append([pos, values[i]])
 
     def GetEfieldActor(self, e_field_actor):
         self.efield_actor  = e_field_actor
@@ -2063,6 +2084,7 @@ class Viewer(wx.Panel):
         self.e_field_norms = None
         self.target_radius_list=[]
         self.CreateEfieldSpreadLegend()
+        self.CreateClustersEfieldLegend()
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2243,7 +2265,7 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
-        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors']
+        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors', 'heights']
         all_data = list(self.target_radius_list)
         with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)
