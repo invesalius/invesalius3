@@ -2225,13 +2225,18 @@ class MarkersPanel(wx.Panel):
                         efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
                         menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
                     else:
-                        efield_target_menu = menu_id.Append(9, _('Set as Efield target'))
+                        efield_target_menu = menu_id.Append(9, _('Set as Efield target(compare)'))
                         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         if self.navigation.e_field_loaded and not self.nav_status:
             if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
                 efield_vector_plot_menu = menu_id.Append(10,_('Show vector field'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu)
+
+        if self.navigation.e_field_loaded:
+            create_efield_target = menu_id.Append(11, _('Set as Efield target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
+            self.marker_list_ctrl.GetFocusedItem()
 
         menu_id.AppendSeparator()
 
@@ -2336,6 +2341,12 @@ class MarkersPanel(wx.Panel):
         orientation = self.markers[list_index].orientation
         plot_efield_vectors = self.navigation.plot_efield_vectors
         Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation, plot_efield_vectors= plot_efield_vectors)
+
+    def OnSetEfieldBrainTarget(self, evt):
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        position = self.markers[list_index].position
+        orientation =  self.markers[list_index].orientation
+        Publisher.sendMessage('Send efield target position on brain', position = position, orientation = orientation)
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
