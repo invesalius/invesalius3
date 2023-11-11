@@ -65,6 +65,7 @@ class NeuronavigationApi(metaclass=Singleton):
         assert self._hasmethod(connection, 'update_coil_pose')
         assert self._hasmethod(connection, 'update_focus')
         assert self._hasmethod(connection, 'set_callback__set_markers')
+        assert self._hasmethod(connection, 'set_callback__stimulation_pulse_received')
 
     def __bind_events(self):
         Publisher.subscribe(self.start_navigation, 'Start navigation')
@@ -229,6 +230,7 @@ class NeuronavigationApi(metaclass=Singleton):
     def __set_callbacks(self, connection):
         connection.set_callback__set_markers(self.set_markers)
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
+        connection.set_callback__stimulation_pulse_received(self.stimulation_pulse_received)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
         if self.connection is not None:
@@ -247,3 +249,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def set_markers(self, markers):
         wx.CallAfter(Publisher.sendMessage, 'Set markers', markers=markers)
+
+    def stimulation_pulse_received(self):
+        # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
+        wx.CallAfter(Publisher.sendMessage, 'Create marker')
