@@ -185,7 +185,7 @@ class LoadBitmap:
         image_copy = vtkImageData()
         image_copy.DeepCopy(img.GetOutput())
 
-        thumbnail_path = tempfile.mktemp()
+        fd, thumbnail_path = tempfile.mkstemp()
 
         write_png = vtkPNGWriter()
         write_png.SetInputConnection(img.GetOutputPort())
@@ -219,6 +219,7 @@ class LoadBitmap:
             file_name,
             id,
         ]
+        os.close(fd)
         self.bmp_file.Add(bmp_item)
 
 
