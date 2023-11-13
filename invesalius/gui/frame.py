@@ -2068,7 +2068,7 @@ class LayoutToolBar(AuiToolBar):
         self.ontool_layout = False
         self.ontool_text = True
         self.ontool_ruler = True
-        self.enable_items = [ID_TEXT, ID_RULER]
+        self.enable_items = [ID_TEXT]
 
         self.Realize()
         self.SetStateProjectClose()
@@ -2215,7 +2215,7 @@ class LayoutToolBar(AuiToolBar):
         Disable menu items (e.g. text) when project is closed.
         """
         self.ontool_text = False
-        self.ontool_ruler = False
+        self.ontool_ruler = True
         self.ToggleText()
         self.ToggleRulers()
         for tool in self.enable_items:
