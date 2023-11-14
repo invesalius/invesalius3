@@ -441,7 +441,11 @@ class SurfaceManager():
             proj = prj.Project()
             cortex_save_file = path_meshes +'export_inv/'+config_dict['cortex']
             polydata = proj.surface_dict[surface_index_cortex].polydata
+            file_extension = cortex_save_file.split('.')[-1]
+            if file_extension == "stl":
+                cortex_save_file = cortex_save_file.split('.')[0] + ".bin"
             self.OnWriteCustomBinFile(polydata,cortex_save_file)
+
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
             bmeshes_list = []
             ci_list = []
@@ -455,6 +459,9 @@ class SurfaceManager():
                 if surface_index_bmesh is not None:
                     bmeshes_save_file = path_meshes + 'export_inv/' + elements['file']
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
+                    file_extension = bmeshes_save_file.split('.')[-1]
+                    if file_extension == "stl":
+                        bmeshes_save_file = bmeshes_save_file.split('.')[0] + ".bin"
                     self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
