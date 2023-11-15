@@ -2098,13 +2098,11 @@ class Viewer(wx.Panel):
 
     def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
         vtk_colors = vtkNamedColors()
-        import invesalius.data.brainmesh_handler as brain
         self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
         position_flip = list(position)
         position_flip[1] = -position_flip[1]
         point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
-        self.efield_actor_ball = self.CreateActorBall(point_scalp, colour=vtk_colors.GetColor3d('Orange'), size=5)
-        self.ren.AddActor(self.efield_actor_ball)
+        Publisher.sendMessage('Create Marker from tangential', point = point_scalp, orientation =orientation)
 
     # def getAdjacentCells(self, mesh, cellId):
     #     # get points that make up the cellId of mesh

@@ -2298,9 +2298,13 @@ class MarkersPanel(wx.Panel):
         self.indexes_saved_lists = indexes_saved_list
 
     def CreateMarkerEfield(self, point, orientation):
+        from vtkmodules.vtkCommonColor import (
+            vtkNamedColors
+        )
+        vtk_colors = vtkNamedColors()
         position_flip = list(point)
         position_flip[1] = -position_flip[1]
-        self.CreateMarker(position = position_flip, orientation = list(orientation), colour=[0,1,0.5], size = 2, is_brain_target=False)
+        self.CreateMarker(position = position_flip, orientation = list(orientation), colour=vtk_colors.GetColor3d('Orange'), size = 2, is_brain_target=False)
 
     def OnMenuShowVectorField(self, evt):
         session = ses.Session()
