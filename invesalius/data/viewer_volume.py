@@ -2038,7 +2038,6 @@ class Viewer(wx.Panel):
         from sklearn.cluster import DBSCAN
         dbscan = DBSCAN(eps=5, min_samples=2).fit(points)
         labels = dbscan.labels_
-        print('labels: ', labels)
         n_clusters = len(set(labels)) - (1 if -1 in labels else 0 )
         self.ClusterEfieldTextActor.SetValue('Clusters: '+ str(n_clusters))
 
@@ -2057,44 +2056,44 @@ class Viewer(wx.Panel):
     def FindPointsAroundRadiusEfield(self, cellId):
         self.locator_efield.FindPointsWithinRadius(20, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
-    def GetCellIDsfromlistPoints(self, vlist, mesh):
-        cell_ids_array = []
-        pts1 = vtkIdList()
-        for i in range(vlist.GetNumberOfIds()):
-            mesh.GetPointCells(vlist.GetId(i), pts1)
-            for j in range(pts1.GetNumberOfIds()):
-                cell_ids_array.append(pts1.GetId(j))
-        return cell_ids_array
-
-    def CreatePoissonSurface(self, input_points, mesh):
-        import vtk
-        points = vtkPoints()
-        for i in range(input_points.GetNumberOfIds()):
-            point = mesh.GetPoint(input_points.GetId(i))
-            points.InsertNextPoint(point)
-
-        input_polydata = vtkPolyData()
-        input_polydata.SetPoints(points)
-
-        delaunay_3d = vtk.vtkDelaunay3D()
-        delaunay_3d.SetAlpha(100)
-        delaunay_3d.BoundingTriangulationOff()
-        delaunay_3d.SetInputData(input_polydata)
-
-        surface_filter = vtk.vtkDataSetSurfaceFilter()
-        surface_filter.SetInputConnection(delaunay_3d.GetOutputPort())
-        surface_filter.Update()
-        output_polydata = surface_filter.GetOutput()
-
-        # Create a mapper and actor
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(surface_filter.GetOutputPort())
-
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        #self.ren.AddActor(actor)
-        return output_polydata
+    # def GetCellIDsfromlistPoints(self, vlist, mesh):
+    #     cell_ids_array = []
+    #     pts1 = vtkIdList()
+    #     for i in range(vlist.GetNumberOfIds()):
+    #         mesh.GetPointCells(vlist.GetId(i), pts1)
+    #         for j in range(pts1.GetNumberOfIds()):
+    #             cell_ids_array.append(pts1.GetId(j))
+    #     return cell_ids_array
+    #
+    # def CreatePoissonSurface(self, input_points, mesh):
+    #     import vtk
+    #     points = vtkPoints()
+    #     for i in range(input_points.GetNumberOfIds()):
+    #         point = mesh.GetPoint(input_points.GetId(i))
+    #         points.InsertNextPoint(point)
+    #
+    #     input_polydata = vtkPolyData()
+    #     input_polydata.SetPoints(points)
+    #
+    #     delaunay_3d = vtk.vtkDelaunay3D()
+    #     delaunay_3d.SetAlpha(100)
+    #     delaunay_3d.BoundingTriangulationOff()
+    #     delaunay_3d.SetInputData(input_polydata)
+    #
+    #     surface_filter = vtk.vtkDataSetSurfaceFilter()
+    #     surface_filter.SetInputConnection(delaunay_3d.GetOutputPort())
+    #     surface_filter.Update()
+    #     output_polydata = surface_filter.GetOutput()
+    #
+    #     # Create a mapper and actor
+    #     mapper = vtk.vtkPolyDataMapper()
+    #     mapper.SetInputConnection(surface_filter.GetOutputPort())
+    #
+    #     actor = vtk.vtkActor()
+    #     actor.SetMapper(mapper)
+    #
+    #     #self.ren.AddActor(actor)
+    #     return output_polydata
 
     def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
         vtk_colors = vtkNamedColors()
