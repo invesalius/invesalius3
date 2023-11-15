@@ -2108,13 +2108,16 @@ class Viewer(wx.Panel):
         Publisher.sendMessage('Create Marker from tangential', point = point_scalp, orientation =orientation)
 
     def ShowEfieldAtCortexTarget(self):
-        session = ses.Session()
-
         if self.target_at_cortex is not None:
+            cell_number = 0
             index = self.locator_efield_cell.FindCell(self.target_at_cortex)
-            if session.GetConfig('debug_efield'):
-                index = 100
-            self.EfieldAtTargetLegend.SetValue('Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[index])))
+            for i in range(self.radius_list.GetNumberOfIds()):
+                if index == self.radius_list.GetId(i):
+                    cell_number = i
+                    break
+                else:
+                    continue
+            self.EfieldAtTargetLegend.SetValue('Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
 
     def CreateEfieldAtTargetLegend(self):
         self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.97))
