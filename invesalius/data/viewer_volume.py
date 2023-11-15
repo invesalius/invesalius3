@@ -2096,12 +2096,27 @@ class Viewer(wx.Panel):
     #     return output_polydata
 
     def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
+        self.target_at_cortex = None
         vtk_colors = vtkNamedColors()
         self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
         position_flip = list(position)
         position_flip[1] = -position_flip[1]
+        self.target_at_cortex = position_flip
         point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
         Publisher.sendMessage('Create Marker from tangential', point = point_scalp, orientation =orientation)
+
+    def ShowEfieldAtCortexTarget(self):
+        session = ses.Session()
+
+        if self.target_at_cortex is not None:
+            index = self.locator_efield_cell.FindCell(self.target_at_cortex)
+            if session.GetConfig('debug_efield'):
+                index = 100
+            self.EfieldAtTargetLegend.SetValue('Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[index])))
+
+    def CreateEfieldAtTargetLegend(self):
+        self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.97))
+        self.ren.AddActor(self.EfieldAtTargetLegend.actor)
 
     # def getAdjacentCells(self, mesh, cellId):
     #     # get points that make up the cellId of mesh
@@ -2267,6 +2282,7 @@ class Viewer(wx.Panel):
         self.target_radius_list=[]
         self.CreateEfieldSpreadLegend()
         self.CreateClustersEfieldLegend()
+        self.CreateEfieldAtTargetLegend()
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2334,6 +2350,7 @@ class Viewer(wx.Panel):
                 wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
                 wx.CallAfter(Publisher.sendMessage, 'Show CoG Efield actor')
                 wx.CallAfter(Publisher.sendMessage, 'Show distance between Max and CoG Efield')
+                self.ShowEfieldAtCortexTarget()
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
                     self.plot_vector= False
