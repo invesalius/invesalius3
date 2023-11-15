@@ -2022,6 +2022,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
         Publisher.subscribe(self.GetIdList, 'Get ID list')
         Publisher.subscribe(self.GetRotationPosition, 'Send coil position and rotation')
+        Publisher.subscribe(self.CreateMarkerEfield, 'Create Marker from tangential')
 
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
@@ -2296,6 +2297,11 @@ class MarkersPanel(wx.Panel):
         self.efield_data_saved = efield_data_loaded
         self.indexes_saved_lists = indexes_saved_list
 
+    def CreateMarkerEfield(self, point, orientation):
+        position_flip = list(point)
+        position_flip[1] = -position_flip[1]
+        self.CreateMarker(position = position_flip, orientation = list(orientation), colour=[0,1,0.5], size = 2, is_brain_target=False)
+
     def OnMenuShowVectorField(self, evt):
         session = ses.Session()
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -2346,7 +2352,7 @@ class MarkersPanel(wx.Panel):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation =  self.markers[list_index].orientation
-        Publisher.sendMessage('Send efield target position on brain', position = position, orientation = orientation)
+        Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
