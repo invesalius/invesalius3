@@ -413,6 +413,8 @@ class SurfaceManager():
 
     def OnImportJsonConfig(self, filename, convert_to_inv):
         import json
+        self.convert_to_inv = convert_to_inv
+        scalp_index = None
         with open(filename, 'r') as config_file:
             config_dict = json.load(config_file)
         cortex =config_dict['path_meshes']+config_dict['cortex']
@@ -436,6 +438,7 @@ class SurfaceManager():
             Publisher.sendMessage('Get multilocus paths from json', multilocus_coil_list= multilocus_coil_list)
         surface_index_cortex = self.OnImportCustomBinFile(cortex)
         if surface_index_cortex is not None:
+            self.convert_to_inv = convert_to_inv
             proj = prj.Project()
             cortex_save_file = path_meshes +'export_inv/'+config_dict['cortex']
             polydata = proj.surface_dict[surface_index_cortex].polydata
@@ -451,6 +454,8 @@ class SurfaceManager():
                 co = elements['co']
                 surface_index_bmesh = self.OnImportCustomBinFile(file)
                 if surface_index_bmesh is not None:
+                    if elements['file'] == 'sc.stl':
+                        scalp_index = surface_index_bmesh
                     bmeshes_save_file = path_meshes + 'export_inv/' + elements['file']
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
                     self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
@@ -458,6 +463,13 @@ class SurfaceManager():
                     ci_list.append(ci)
                     co_list.append(co)
                 Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list, dIperdt_list= dIperdt_list)
+        if scalp_index is not None:
+            Publisher.sendMessage('Send scalp index', scalp_actor = self.actors_dict[scalp_index])
+        else:
+            self.convert_to_inv = convert_to_inv
+            scalp_path = config_dict['path_meshes'] + config_dict['scalp path']
+            surface_index_bmesh = self.OnImportCustomBinFile(scalp_path)
+            Publisher.sendMessage('Send scalp index', scalp_actor = self.actors_dict[surface_index_bmesh])
 
     def OnImportSurfaceFile(self, filename):
         """
