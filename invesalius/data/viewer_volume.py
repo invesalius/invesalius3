@@ -304,7 +304,9 @@ class Viewer(wx.Panel):
         self.vectorfield_actor =None
         self.efield_scalar_bar = None
         self.edge_actor= None
-        self.dummy_efield_coil_actor = None
+        #self.dummy_efield_coil_actor = None
+        self.target_at_cortex = None
+
 
         self.LoadConfig()
 
