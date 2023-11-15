@@ -487,7 +487,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
         Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
-        Publisher.subscribe(self.GetEfieldRange, 'Send efield target position on brain')
+        Publisher.subscribe(self.CreateCortexProjectionOnScalp, 'Send efield target position on brain')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -2096,253 +2096,143 @@ class Viewer(wx.Panel):
         #self.ren.AddActor(actor)
         return output_polydata
 
-    def GetEfieldRange(self, marker_id, position, orientation):
-        import invesalius.data.brainmesh_handler as brain
-        print('position: ', position)
-        print('orientation', orientation)
-        self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
-        self.scalp = brain.Scalp(self.scalp_mesh)
+    def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
         vtk_colors = vtkNamedColors()
-        #p1 = self.efield_actor.GetCenter()
+        import invesalius.data.brainmesh_handler as brain
+        self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
         position_flip = list(position)
         position_flip[1] = -position_flip[1]
-        closest_point = [0.0, 0.0, 0.0]
-        cell_id = mutable(0)
-        sub_id = mutable(0)
-        distance = mutable(0.0)
-        self.locator_efield_cell.FindClosestPoint(position_flip, closest_point, cell_id, sub_id, distance)
-        list_for_surface = vtkIdList()
-        self.locator_efield.FindPointsWithinRadius(20, self.e_field_mesh_centers.GetPoint(cell_id), list_for_surface)
-        cortex_surface_mesh = self.CreatePoissonSurface(list_for_surface, self.efield_mesh)
-        
         point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
         self.efield_actor_ball = self.CreateActorBall(point_scalp, colour=vtk_colors.GetColor3d('Orange'), size=5)
         self.ren.AddActor(self.efield_actor_ball)
-        point_ID = self.scalp.locator_Cell.FindCell(point_scalp)
-        ptIds = vtkIdList()
-        self.scalp_mesh.GetCellPoints(point_ID, ptIds)
-        #point_ID2 = self.scalp_mesh.GetPoint(ptIds.GetId(0))
-        list_for_surface_scalp = vtkIdList()
-        #self.scalp.locator.FindPointsWithinRadius(100, self.scalp_mesh.GetPoint(ptIds.GetId(0)), list_for_surface_scalp)
-        # scalp_surface_mesh = self.CreatePoissonSurface(list_for_surface_scalp, self.scalp_mesh)
-        #
-        # point_scalp_on_surface = self.FindClosestPointToMesh(point_scalp, scalp_surface_mesh)
-        # scalp_surface_normals = self.GetNormals(scalp_surface_mesh)
-        # locator_Cell_surface_scalp = vtkCellLocator()
-        # locator_Cell_surface_scalp.SetDataSet(scalp_surface_mesh)
-        # locator_Cell_surface_scalp.BuildLocator()
-        # scalp_surface_point_ID = locator_Cell_surface_scalp.FindCell(point_scalp_on_surface)
-        # closest_point = [0.0, 0.0, 0.0]
-        # cell_id_surface_scalp = mutable(0)
-        # sub_id = mutable(0)
-        # distance = mutable(0.0)
-        # #locator_Cell_surface_scalp.FindClosestPointWithinRadius()
-        # locator_Cell_surface_scalp.FindClosestPoint(point_scalp_on_surface, closest_point, cell_id_surface_scalp, sub_id, distance)
-        # neighbors = vtkIdList()
-        # locator_Cell_surface_scalp.FindCellsWithinBounds(scalp_surface_mesh.GetCell(scalp_surface_point_ID).GetBounds(), neighbors)
 
-        import vtk
-        cell = vtk.vtkGenericCell()
-        self.scalp_mesh.GetCell(point_ID, cell)
-        points = cell.GetPoints()
-
-        point0 = points.GetPoint(0)
-        point1 = points.GetPoint(1)
-        point2 = points.GetPoint(2)
-        vector1 = [point1[i] - point0[i] for i in range(3)]
-        vector2 = [point2[i] - point0[i] for i in range(3)]
-        #tangent = np.cross(vector1, vector2)
-        # scalp_surface_mesh.FindPoint(point0)
-        # target_point_id =scalp_surface_mesh.FindPoint(point0)  # Replace with the actual point ID
-
-        # belonging_cells = []
-        # for cell_id in range(scalp_surface_mesh.GetNumberOfCells()):
-        #     cell = scalp_surface_mesh.GetCell(cell_id)
-        #     point_ids = cell.GetPointIds()
-        #
-        #     if target_point_id in [point_ids.GetId(j) for j in range(point_ids.GetNumberOfIds())]:
-        #         belonging_cells.append(cell_id)
-        #
-        # cellNeighbors = self.getAdjacentCells(scalp_surface_mesh,cell_id_surface_scalp)
-        [nearest_cell_id, dist ]= self.find_nearest_cellid(self.scalp_mesh, point_ID)
-        tangent = np.cross(self.scalp.mesh_normals.GetTuple(nearest_cell_id),
-                           self.scalp.mesh_normals.GetTuple(point_ID))
-        #tangent = np.cross(scalp_surface_normals.GetTuple(scalp_surface_point_ID), scalp_surface_normals.GetTuple(scalp_surface_point_ID))
-
-        #tangent = np.cross(scalp_surface_normals.GetTuple(scalp_surface_point_ID), scalp_surface_normals.GetTuple(belonging_cells[0]))
-        #tangent = np.cross(self.scalp.mesh_normals.GetTuple(point_ID),self.scalp.mesh_normals.GetTuple(ptIds.GetId(0)))
-        orientation = (np.arcsin(tangent[0]), np.arcsin(tangent[1]), np.arcsin(tangent[2]))
-        orientation = np.degrees(tangent)
-        vector2 = tangent
-        roll = math.atan2(vector2[1], vector2[0])  # Rotation around the z-axis
-        pitch = math.atan2(vector2[2], math.sqrt(vector2[0] ** 2 + vector2[1] ** 2))  # Rotation around the x-axis
-        yaw = 0
-        #orientation = [roll, pitch, yaw]
-        roll_degrees = math.degrees(roll)
-        pitch_degrees = math.degrees(pitch)
-        yaw_degrees = math.degrees(yaw)
-        #orientation = [pitch_degrees,roll_degrees,yaw_degrees]
-        #orientation = [roll, pitch, yaw]
-        #orientation = [roll_degrees, pitch_degrees, yaw_degrees]
-        #orientation = (np.arcsin(vector1[0]), np.arcsin(vector1[1]), np.arcsin(vector1[2]))
-        #orientation = np.degrees(orientation)
-        # scalp_surface_mesh.GetCellEdgeNeighbors(cell_id_surface_scalp, cell.GetPointId(0), cell.GetPointId(1),
-        #                                         list_for_surface)
-
-        Publisher.sendMessage('Create Marker from tangential', point = point_scalp, orientation =orientation)
-        #target_cell = self.scalp_mesh.GetCell(point_ID)
-
-        #p2 = np.array((self.e_field_mesh_normals.GetTuple(cell_id)))
-
-        #point = self.ScanNormalsforCoilPlacement(cell_id)
-
-        # p2 = (-position_flip[0]+75, position_flip[1], position_flip[2])
-        #self.x_actor.SetVisibility(1)
-        # self.x_actor = self.add_line(position_flip,p2,vtk_colors.GetColor3d('Blue'))
-        # self.efield_actor_ball =self.CreateActorBall(position_flip, colour= [0.3, 0.4, 0.2], size =5)
-        # self.ren.AddActor(self.CreateActorBall(p2, colour=vtk_colors.GetColor3d('Orange'), size=5))
-        # self.ren.AddActor(self.x_actor)
-        # self.ren.AddActor(self.efield_actor_ball)
-        # intersectingCellIds = self.GetCellIntersection(position_flip, p2, self.scalp.locator_Cell)
-        # cellId = intersectingCellIds.GetId(0)
-        #
-        # point = self.scalp.mesh_centers.GetPoint(cellId)
-        # self.test_actor = self.CreateActorBall(point, colour=vtk_colors.GetColor3d('Pink'), size=5)
-        # self.ren.AddActor(self.test_actor)
-        #Publisher.sendMessage('Send Neuronavigation Api')
-        [T_rot, cp] =self.SetInitialCoilOrientation(point_scalp, orientation)
-        #initial_enorm = self.neuronavigation_api.update_efield(position = cp, orientation=[0.,0.,0.], T_rot=T_rot)
-        # arrow_test_actor = self.CreateActorArrow(direction=point, orientation=[0.,0.,0.], colour=[1.0, 0.0, 1.0], size = 5)
-        # self.ren.AddActor(arrow_test_actor)
-        # Efield_max_Range = np.amax(initial_enorm)
-
-    def getAdjacentCells(self, mesh, cellId):
-        # get points that make up the cellId of mesh
-        cellPoints = vtkIdList()
-        mesh.GetCellPoints(cellId, cellPoints)
-        # get all cells that are connected to these points
-        cellNeighbors = vtkIdList()
-        for i in range(0, cellPoints.GetNumberOfIds()):
-            pointId = cellPoints.GetId(i)
-            connectedCells = vtkIdList()
-            mesh.GetPointCells(pointId, connectedCells)
-
-            for j in range(0, connectedCells.GetNumberOfIds()):
-                connectedCellId = connectedCells.GetId(j)
-
-                # remove duplicate and the original cellId
-                if connectedCellId != cellId:
-                    cellNeighbors.InsertUniqueId(connectedCellId)
-        return cellNeighbors
-
-    def get_cell_centers(self,mesh):
-        # Calculate cell centers
-        import vtk
-        cell_centers = vtk.vtkCellCenters()
-        cell_centers.SetInputData(mesh)
-        cell_centers.Update()
-        return cell_centers.GetOutput()
-    def get_center(self, cell):
-        bounds = cell.GetBounds()
-        center = [0, 0, 0]
-        center[0] = (bounds[1] - bounds[0]) / 2 + bounds[0]
-        center[1] = (bounds[3] - bounds[2]) / 2 + bounds[2]
-        center[2] = (bounds[5] - bounds[4]) / 2 + bounds[4]
-        return center
-
-    def find_nearest_cellid(self, mesh, cellId):
-        from scipy.spatial import cKDTree
-        cell_centers = self.get_cell_centers(mesh)  # Get cell centers
-        tree = cKDTree([cell_centers.GetPoint(i) for i in range(cell_centers.GetNumberOfPoints())])
-
-        center = self.get_center(mesh.GetCell(cellId))  # Calculate center of the cell with given cellId
-
-        # Query nearest cell and exclude itself
-        dists, ids = tree.query(center, 2)  # Query two nearest cells
-        nearest_cell_id = ids[1] if ids[0] == cellId else ids[0]
-
-        return nearest_cell_id, dists[1]
-
-    def GetNormals(self,mesh):
-        # Compute normals of triangles
-        normalComputer = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
-        normalComputer.SetInputData(mesh)
-        normalComputer.ComputePointNormalsOff()
-        normalComputer.ComputeCellNormalsOn()
-        normalComputer.Update()
-        # This converts to the normals to an array for easy access
-        normals = normalComputer.GetOutput().GetCellData().GetNormals()
-        return normals
-
-    def SetInitialCoilOrientation(self, point, orientation):
-        import invesalius.data.transformations as tr
-
-        angles = orientation
-        translate = list(point)
-        m_img = tr.compose_matrix(angles = angles, translate = translate)
-        img_vtk = self.CreateVTKObjectMatrix(direction = point, orientation=angles)
-        if self.dummy_efield_coil_actor is not None:
-            self.ren.RemoveActor(self.dummy_efield_coil_actor)
-        self.dummy_efield_coil_actor = self.CreateDummyCoilForEfieldCoilPlacement()
-        self.dummy_efield_coil_actor.SetUserMatrix(img_vtk)
-        self.ren.AddActor(self.dummy_efield_coil_actor)
-        m_img_flip = m_img.copy()
-        m_img_flip[1,-1] = -m_img_flip[1,-1]
-        cp = m_img_flip[:-1, -1]  # coil center
-        cp = cp * 0.001  # convert to meters
-        cp = cp.tolist()
-
-        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
-        cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
-        T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
-        T_rot = T_rot.tolist()  # to list
-        return [T_rot, cp]
-
-    def CreateDummyCoilForEfieldCoilPlacement(self):
-        vtk_colors = vtkNamedColors()
-
-        obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
-        transform = vtkTransform()
-        transform.RotateZ(90)
-
-        transform_filt = vtkTransformPolyDataFilter()
-        transform_filt.SetTransform(transform)
-        transform_filt.SetInputData(obj_polydata)
-        transform_filt.Update()
-
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(transform_filt.GetOutput())
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
-
-        obj_mapper = vtkPolyDataMapper()
-        obj_mapper.SetInputData(normals.GetOutput())
-        obj_mapper.ScalarVisibilityOff()
-        dummy_coil_actor = vtkActor()
-        dummy_coil_actor.SetMapper(obj_mapper)
-        dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkBlue'))
-        dummy_coil_actor.GetProperty().SetSpecular(0.5)
-        dummy_coil_actor.GetProperty().SetSpecularPower(10)
-        dummy_coil_actor.GetProperty().SetOpacity(.3)
-
-        return dummy_coil_actor
-
-    def ScanNormalsforCoilPlacement(self, cortex_id_cell):
-        vtk_colors = vtkNamedColors()
-        point_array = []
-        for i in range(self.scalp.mesh_normals.GetNumberOfTuples()):
-            pointnormal_scalp = self.scalp.mesh_normals.GetTuple(i)
-            angle = np.rad2deg(np.arccos(np.dot(pointnormal_scalp, self.e_field_mesh_normals.GetTuple(cortex_id_cell))))
-            if angle < 7:
-                point_array.append(self.scalp_mesh.GetPoint(i))
-                self.ren.AddActor(self.CreateActorBall(self.scalp_mesh.GetPoint(i), colour=vtk_colors.GetColor3d('Pink'), size=5))
-        point = self.FindClosestPoint(point_array, self.efield_mesh.GetPoint(cortex_id_cell))
-        return point
+    # def getAdjacentCells(self, mesh, cellId):
+    #     # get points that make up the cellId of mesh
+    #     cellPoints = vtkIdList()
+    #     mesh.GetCellPoints(cellId, cellPoints)
+    #     # get all cells that are connected to these points
+    #     cellNeighbors = vtkIdList()
+    #     for i in range(0, cellPoints.GetNumberOfIds()):
+    #         pointId = cellPoints.GetId(i)
+    #         connectedCells = vtkIdList()
+    #         mesh.GetPointCells(pointId, connectedCells)
+    #
+    #         for j in range(0, connectedCells.GetNumberOfIds()):
+    #             connectedCellId = connectedCells.GetId(j)
+    #
+    #             # remove duplicate and the original cellId
+    #             if connectedCellId != cellId:
+    #                 cellNeighbors.InsertUniqueId(connectedCellId)
+    #     return cellNeighbors
+    #
+    # def get_cell_centers(self,mesh):
+    #     # Calculate cell centers
+    #     import vtk
+    #     cell_centers = vtk.vtkCellCenters()
+    #     cell_centers.SetInputData(mesh)
+    #     cell_centers.Update()
+    #     return cell_centers.GetOutput()
+    # def get_center(self, cell):
+    #     bounds = cell.GetBounds()
+    #     center = [0, 0, 0]
+    #     center[0] = (bounds[1] - bounds[0]) / 2 + bounds[0]
+    #     center[1] = (bounds[3] - bounds[2]) / 2 + bounds[2]
+    #     center[2] = (bounds[5] - bounds[4]) / 2 + bounds[4]
+    #     return center
+    #
+    # def find_nearest_cellid(self, mesh, cellId):
+    #     from scipy.spatial import cKDTree
+    #     cell_centers = self.get_cell_centers(mesh)  # Get cell centers
+    #     tree = cKDTree([cell_centers.GetPoint(i) for i in range(cell_centers.GetNumberOfPoints())])
+    #
+    #     center = self.get_center(mesh.GetCell(cellId))  # Calculate center of the cell with given cellId
+    #
+    #     # Query nearest cell and exclude itself
+    #     dists, ids = tree.query(center, 2)  # Query two nearest cells
+    #     nearest_cell_id = ids[1] if ids[0] == cellId else ids[0]
+    #
+    #     return nearest_cell_id, dists[1]
+    #
+    # def GetNormals(self,mesh):
+    #     # Compute normals of triangles
+    #     normalComputer = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
+    #     normalComputer.SetInputData(mesh)
+    #     normalComputer.ComputePointNormalsOff()
+    #     normalComputer.ComputeCellNormalsOn()
+    #     normalComputer.Update()
+    #     # This converts to the normals to an array for easy access
+    #     normals = normalComputer.GetOutput().GetCellData().GetNormals()
+    #     return normals
+    #
+    # def SetInitialCoilOrientation(self, point, orientation):
+    #     import invesalius.data.transformations as tr
+    #
+    #     angles = orientation
+    #     translate = list(point)
+    #     m_img = tr.compose_matrix(angles = angles, translate = translate)
+    #     img_vtk = self.CreateVTKObjectMatrix(direction = point, orientation=angles)
+    #     if self.dummy_efield_coil_actor is not None:
+    #         self.ren.RemoveActor(self.dummy_efield_coil_actor)
+    #     self.dummy_efield_coil_actor = self.CreateDummyCoilForEfieldCoilPlacement()
+    #     self.dummy_efield_coil_actor.SetUserMatrix(img_vtk)
+    #     self.ren.AddActor(self.dummy_efield_coil_actor)
+    #     m_img_flip = m_img.copy()
+    #     m_img_flip[1,-1] = -m_img_flip[1,-1]
+    #     cp = m_img_flip[:-1, -1]  # coil center
+    #     cp = cp * 0.001  # convert to meters
+    #     cp = cp.tolist()
+    #
+    #     ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
+    #     ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
+    #     coil_dir = m_img_flip[:-1, 0]
+    #     coil_face = m_img_flip[:-1, 1]
+    #     cn = np.cross(coil_dir, coil_face)
+    #     T_rot = np.append(ct1, ct2, axis=0)
+    #     T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
+    #     T_rot = T_rot.tolist()  # to list
+    #     return [T_rot, cp]
+    #
+    # def CreateDummyCoilForEfieldCoilPlacement(self):
+    #     vtk_colors = vtkNamedColors()
+    #
+    #     obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+    #     transform = vtkTransform()
+    #     transform.RotateZ(90)
+    #
+    #     transform_filt = vtkTransformPolyDataFilter()
+    #     transform_filt.SetTransform(transform)
+    #     transform_filt.SetInputData(obj_polydata)
+    #     transform_filt.Update()
+    #
+    #     normals = vtkPolyDataNormals()
+    #     normals.SetInputData(transform_filt.GetOutput())
+    #     normals.SetFeatureAngle(80)
+    #     normals.AutoOrientNormalsOn()
+    #     normals.Update()
+    #
+    #     obj_mapper = vtkPolyDataMapper()
+    #     obj_mapper.SetInputData(normals.GetOutput())
+    #     obj_mapper.ScalarVisibilityOff()
+    #     dummy_coil_actor = vtkActor()
+    #     dummy_coil_actor.SetMapper(obj_mapper)
+    #     dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkBlue'))
+    #     dummy_coil_actor.GetProperty().SetSpecular(0.5)
+    #     dummy_coil_actor.GetProperty().SetSpecularPower(10)
+    #     dummy_coil_actor.GetProperty().SetOpacity(.3)
+    #
+    #     return dummy_coil_actor
+    #
+    # def ScanNormalsforCoilPlacement(self, cortex_id_cell):
+    #     vtk_colors = vtkNamedColors()
+    #     point_array = []
+    #     for i in range(self.scalp.mesh_normals.GetNumberOfTuples()):
+    #         pointnormal_scalp = self.scalp.mesh_normals.GetTuple(i)
+    #         angle = np.rad2deg(np.arccos(np.dot(pointnormal_scalp, self.e_field_mesh_normals.GetTuple(cortex_id_cell))))
+    #         if angle < 7:
+    #             point_array.append(self.scalp_mesh.GetPoint(i))
+    #             self.ren.AddActor(self.CreateActorBall(self.scalp_mesh.GetPoint(i), colour=vtk_colors.GetColor3d('Pink'), size=5))
+    #     point = self.FindClosestPoint(point_array, self.efield_mesh.GetPoint(cortex_id_cell))
+    #     return point
 
     def FindClosestPointToMesh(self, point,mesh):
         closest_distance = float('inf')
