@@ -2101,7 +2101,7 @@ class Viewer(wx.Panel):
         self.target_at_cortex = None
         vtk_colors = vtkNamedColors()
         self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
-        position_flip = list(position)
+        position_flip = position
         position_flip[1] = -position_flip[1]
         self.target_at_cortex = position_flip
         point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
@@ -2254,8 +2254,9 @@ class Viewer(wx.Panel):
     def FindClosestPointToMesh(self, point,mesh):
         closest_distance = float('inf')
         closest_point = None
+        point = np.array(point)
         for i in range(mesh.GetNumberOfCells()):
-            distance_sq = distance.euclidean(self.scalp_mesh.GetPoint(i),point)
+            distance_sq = np.linalg.norm(np.array(self.scalp_mesh.GetPoint(i)) -point)
             if distance_sq < closest_distance:
                 closest_distance = distance_sq
                 closest_point = self.scalp_mesh.GetPoint(i)
