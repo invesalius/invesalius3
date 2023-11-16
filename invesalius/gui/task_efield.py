@@ -167,6 +167,14 @@ class InnerTaskPanel(wx.Panel):
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
         spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
 
+        text_threshold = wx.StaticText(self, -1, _("Threshold:"))
+        spin_threshold = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        spin_threshold.Enable(1)
+        spin_threshold.SetRange(0.1, 1)
+        spin_threshold.SetValue(const.EFIELD_MAX_RANGE_SCALE)
+        spin_threshold.Bind(wx.EVT_TEXT, partial(self.OnSelectThreshold, ctrl=spin_threshold))
+        spin_threshold.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectThreshold, ctrl=spin_threshold))
+
         combo_surface_name_title = wx.StaticText(self, -1, _('Change coil:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
@@ -227,7 +235,10 @@ class InnerTaskPanel(wx.Panel):
 
         line_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
-                            (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW)])
+                            (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW),
+                            (text_threshold, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
+                            (spin_threshold, 0, wx.ALL | wx.EXPAND | wx.GROW)])
+
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
@@ -366,6 +377,10 @@ class InnerTaskPanel(wx.Panel):
         self.sleep_nav = ctrl.GetValue()
         # self.tract.seed_offset = ctrl.GetValue()
         Publisher.sendMessage('Update sleep', data=self.sleep_nav)
+
+    def OnSelectThreshold(self, evt, ctrl):
+        threshold = ctrl.GetValue()
+        Publisher.sendMessage('Update Efield Threshold', data = threshold)
 
     def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
         self.e_field_mesh = efield_actor

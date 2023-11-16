@@ -490,6 +490,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
         Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
         Publisher.subscribe(self.CreateCortexProjectionOnScalp, 'Send efield target position on brain')
+        Publisher.subscribe(self.UpdateEfieldThreshold, 'Update Efield Threshold')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1915,7 +1916,7 @@ class Viewer(wx.Panel):
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName('Colors')
-        color = 3 * [255.0]
+        color = 3 * [const.CORTEX_COLOR]
         for i in range(self.efield_mesh.GetNumberOfCells()):
             self.colors_init.InsertTuple(i, color)
 
@@ -1998,10 +1999,13 @@ class Viewer(wx.Panel):
     def GetIndexesAboveThreshold(self):
         cell_id_indexes = []
         indexes = [index for index, value in enumerate(self.e_field_norms) if
-                   value > self.efield_max * const.EFIELD_MAX_RANGE_SCALE]
+                   value > self.efield_max * self.efield_threshold]
         for index, value in enumerate(indexes):
             cell_id_indexes.append(self.Id_list[value])
         return cell_id_indexes
+
+    def UpdateEfieldThreshold(self, data):
+        self.efield_threshold = data
 
     def FindCenterofGravity(self):
         cell_id_indexes = self.GetIndexesAboveThreshold()
@@ -2041,7 +2045,7 @@ class Viewer(wx.Panel):
         dbscan = DBSCAN(eps=5, min_samples=2).fit(points)
         labels = dbscan.labels_
         n_clusters = len(set(labels)) - (1 if -1 in labels else 0 )
-        self.ClusterEfieldTextActor.SetValue('Clusters: '+ str(n_clusters))
+        self.ClusterEfieldTextActor.SetValue('Clusters above '+ str(int(self.efield_threshold*100)) + '% percent: ' + str(n_clusters))
 
     def CreateClustersEfieldLegend(self):
         self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,const.TEXT_POS_LEFT_UP)
@@ -2111,6 +2115,9 @@ class Viewer(wx.Panel):
         if self.target_at_cortex is not None:
             cell_number = 0
             index = self.locator_efield_cell.FindCell(self.target_at_cortex)
+            color = 3 * [144]
+            self.colors_init.InsertTuple(index, color)
+            wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
             for i in range(self.radius_list.GetNumberOfIds()):
                 if index == self.radius_list.GetId(i):
                     cell_number = i
@@ -2285,6 +2292,7 @@ class Viewer(wx.Panel):
         self.coil_position = None
         self.coil_position_Trot = None
         self.e_field_norms = None
+        self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.target_radius_list=[]
         self.CreateEfieldSpreadLegend()
         self.CreateClustersEfieldLegend()
@@ -2336,7 +2344,7 @@ class Viewer(wx.Panel):
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
-            self.colors_init.Fill(255)
+            self.colors_init.Fill(const.CORTEX_COLOR)
             for h in range(len(self.Id_list)):
                  dcolor = 3 * [0.0]
                  index_id = self.Id_list[h]

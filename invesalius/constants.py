@@ -838,6 +838,7 @@ SEED_RADIUS = 1.5
 
 #Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
+CORTEX_COLOR = 190
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.1
