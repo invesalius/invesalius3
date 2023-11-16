@@ -873,6 +873,6 @@ PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 #Robot
 ROBOT_IP = ['192.168.1.6', '192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
-ROBOT_MODEL = ['elfin', 'dobot']
+ROBOT_MODEL = ['elfin', 'elfin_linux', 'dobot']
 
 MTMS_RADIUS = 15
