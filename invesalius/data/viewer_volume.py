@@ -2064,7 +2064,7 @@ class Viewer(wx.Panel):
         self.efield_actor  = e_field_actor
 
     def FindPointsAroundRadiusEfield(self, cellId):
-        radius = round(self.efield_ROISize)
+        radius = int(self.efield_ROISize)
         self.locator_efield.FindPointsWithinRadius(radius, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     # def GetCellIDsfromlistPoints(self, vlist, mesh):

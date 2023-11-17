@@ -392,7 +392,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.sendMessage('Update Efield Threshold', data = threshold)
 
     def OnSelectROISize(self, evt, ctrl):
-        ROI_size = ctrl.GetValue
+        ROI_size = ctrl.GetValue()
         Publisher.sendMessage('Update Efield ROI size', data = ROI_size)
 
     def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
