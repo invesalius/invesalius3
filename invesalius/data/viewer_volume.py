@@ -491,6 +491,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
         Publisher.subscribe(self.CreateCortexProjectionOnScalp, 'Send efield target position on brain')
         Publisher.subscribe(self.UpdateEfieldThreshold, 'Update Efield Threshold')
+        Publisher.subscribe(self.UpdateEfieldROISize, 'Update Efield ROI size')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -2007,6 +2008,9 @@ class Viewer(wx.Panel):
     def UpdateEfieldThreshold(self, data):
         self.efield_threshold = data
 
+    def UpdateEfieldROISize(self, data):
+        self.efield_ROISize = data
+
     def FindCenterofGravity(self):
         cell_id_indexes = self.GetIndexesAboveThreshold()
         weights = []
@@ -2060,7 +2064,8 @@ class Viewer(wx.Panel):
         self.efield_actor  = e_field_actor
 
     def FindPointsAroundRadiusEfield(self, cellId):
-        self.locator_efield.FindPointsWithinRadius(20, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
+        radius = round(self.efield_ROISize)
+        self.locator_efield.FindPointsWithinRadius(radius, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
     # def GetCellIDsfromlistPoints(self, vlist, mesh):
     #     cell_ids_array = []
@@ -2113,17 +2118,23 @@ class Viewer(wx.Panel):
 
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
+            import vtk
             cell_number = 0
-            index = self.locator_efield_cell.FindCell(self.target_at_cortex)
-            color = 3 * [144]
-            self.colors_init.InsertTuple(index, color)
-            wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
+            cell_id = self.locator_efield_cell.FindCell(self.target_at_cortex)
+            idlist = vtkIdList()
+            self.locator_efield.FindPointsWithinRadius(5, self.e_field_mesh_centers.GetPoint(cell_id), idlist)
+            index = cell_id
+            print('cell Id:', cell_id)
+            color = [255, 165, 0]
+            for i in range(idlist.GetNumberOfIds()):
+                self.colors_init.InsertTuple(idlist.GetId(i), color)
             for i in range(self.radius_list.GetNumberOfIds()):
                 if index == self.radius_list.GetId(i):
                     cell_number = i
                     break
                 else:
                     continue
+            wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
             self.EfieldAtTargetLegend.SetValue('Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
 
     def CreateEfieldAtTargetLegend(self):
@@ -2293,6 +2304,7 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
+        self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list=[]
         self.CreateEfieldSpreadLegend()
         self.CreateClustersEfieldLegend()

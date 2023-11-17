@@ -175,6 +175,13 @@ class InnerTaskPanel(wx.Panel):
         spin_threshold.Bind(wx.EVT_TEXT, partial(self.OnSelectThreshold, ctrl=spin_threshold))
         spin_threshold.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectThreshold, ctrl=spin_threshold))
 
+        text_ROI_size = wx.StaticText(self, -1, _("ROI size:"))
+        spin_ROI_size = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        spin_ROI_size.Enable(1)
+        spin_ROI_size.SetValue(const.EFIELD_ROI_SIZE)
+        spin_ROI_size.Bind(wx.EVT_TEXT, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
+        spin_ROI_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
+
         combo_surface_name_title = wx.StaticText(self, -1, _('Change coil:'))
         self.combo_surface_name = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
                                               style=wx.CB_DROPDOWN | wx.CB_READONLY)
@@ -237,7 +244,9 @@ class InnerTaskPanel(wx.Panel):
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
                             (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW),
                             (text_threshold, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
-                            (spin_threshold, 0, wx.ALL | wx.EXPAND | wx.GROW)])
+                            (spin_threshold, 0, wx.ALL | wx.EXPAND | wx.GROW),
+                            (text_ROI_size,  1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
+                            (spin_ROI_size, 0, wx.ALL | wx.EXPAND | wx.GROW)])
 
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
@@ -381,6 +390,10 @@ class InnerTaskPanel(wx.Panel):
     def OnSelectThreshold(self, evt, ctrl):
         threshold = ctrl.GetValue()
         Publisher.sendMessage('Update Efield Threshold', data = threshold)
+
+    def OnSelectROISize(self, evt, ctrl):
+        ROI_size = ctrl.GetValue
+        Publisher.sendMessage('Update Efield ROI size', data = ROI_size)
 
     def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
         self.e_field_mesh = efield_actor
