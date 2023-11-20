@@ -1293,7 +1293,6 @@ class MenuBar(wx.MenuBar):
             self._plugins_menu_ids[_new_id] = items[item]
             menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
             menu_item.Enable(items[item]["enable_startup"])
-            print(">>> menu", item)
 
     def OnEnableState(self, state):
         """
