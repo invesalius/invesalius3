@@ -2580,6 +2580,9 @@ class MarkersPanel(wx.Panel):
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers) - 1)
 
+                    if marker.label == 'Efield target':
+                        Publisher.sendMessage('Set as Efield target at cortex', position = marker.position, orientation = marker.orientation)
+
         except Exception as e:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
             utils.debug(e)
