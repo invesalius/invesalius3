@@ -2010,6 +2010,7 @@ class Viewer(wx.Panel):
 
     def UpdateEfieldROISize(self, data):
         self.efield_ROISize = data
+        self.radius_list.Reset()
 
     def FindCenterofGravity(self):
         cell_id_indexes = self.GetIndexesAboveThreshold()
@@ -2108,7 +2109,6 @@ class Viewer(wx.Panel):
 
     def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
         self.target_at_cortex = None
-        vtk_colors = vtkNamedColors()
         self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
         position_flip = position
         position_flip[1] = -position_flip[1]
@@ -2120,22 +2120,26 @@ class Viewer(wx.Panel):
         if self.target_at_cortex is not None:
             import vtk
             cell_number = 0
-            cell_id = self.locator_efield_cell.FindCell(self.target_at_cortex)
-            idlist = vtkIdList()
-            self.locator_efield.FindPointsWithinRadius(5, self.e_field_mesh_centers.GetPoint(cell_id), idlist)
-            index = cell_id
-            print('cell Id:', cell_id)
-            color = [255, 165, 0]
-            for i in range(idlist.GetNumberOfIds()):
-                self.colors_init.InsertTuple(idlist.GetId(i), color)
+            index = self.efield_mesh.FindPoint(self.target_at_cortex)
+
+            #cell_id = self.locator_efield_cell.FindCell(self.target_at_cortex)
+            # idlist = vtkIdList()
+            # self.locator_efield.FindPointsWithinRadius(5, self.e_field_mesh_centers.GetPoint(cell_id), idlist)
+            # index = cell_id
+            # print('cell Id:', cell_id)
+            # color = [255, 165, 0]
+            # for i in range(idlist.GetNumberOfIds()):
+            #     self.colors_init.InsertTuple(idlist.GetId(i), color)
             for i in range(self.radius_list.GetNumberOfIds()):
                 if index == self.radius_list.GetId(i):
                     cell_number = i
+                    self.EfieldAtTargetLegend.SetValue(
+                        'Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
+
                     break
                 else:
                     continue
-            wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
-            self.EfieldAtTargetLegend.SetValue('Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
+            #wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
 
     def CreateEfieldAtTargetLegend(self):
         self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.97))
