@@ -306,6 +306,9 @@ class Viewer(wx.Panel):
         self.edge_actor= None
         #self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
+        self.SpreadEfieldFactorTextActor = None
+        self.EfieldAtTargetLegend = None
+        self.ClusterEfieldTextActor = None
 
 
         self.LoadConfig()
@@ -2121,7 +2124,7 @@ class Viewer(wx.Panel):
             import vtk
             cell_number = 0
             index = self.efield_mesh.FindPoint(self.target_at_cortex)
-
+            index_found_on_id_list = False
             #cell_id = self.locator_efield_cell.FindCell(self.target_at_cortex)
             # idlist = vtkIdList()
             # self.locator_efield.FindPointsWithinRadius(5, self.e_field_mesh_centers.GetPoint(cell_id), idlist)
@@ -2135,10 +2138,13 @@ class Viewer(wx.Panel):
                     cell_number = i
                     self.EfieldAtTargetLegend.SetValue(
                         'Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
-
+                    index_found_on_id_list = True
                     break
                 else:
                     continue
+            if index_found_on_id_list == False:
+                self.EfieldAtTargetLegend.SetValue(
+                    'Efield at Target: ' + str("{:04.2f}".format(0)))
             #wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
 
     def CreateEfieldAtTargetLegend(self):
@@ -2310,9 +2316,7 @@ class Viewer(wx.Panel):
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list=[]
-        self.CreateEfieldSpreadLegend()
-        self.CreateClustersEfieldLegend()
-        self.CreateEfieldAtTargetLegend()
+
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2328,12 +2332,25 @@ class Viewer(wx.Panel):
         if self.efield_scalar_bar is not None:
             self.ren.RemoveActor(self.efield_scalar_bar)
 
+        if self.ClusterEfieldTextActor is not None:
+            self.ren.RemoveActor(self.ClusterEfieldTextActor)
+
+        if self.EfieldAtTargetLegend is not None:
+            self.ren.RemoveActor(self.EfieldAtTargetLegend)
+
+        if self.SpreadEfieldFactorTextActor is not None:
+            self.ren.RemoveActor(self.SpreadEfieldFactorTextActor)
+
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
 
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
 
+        self.CreateEfieldSpreadLegend()
+        self.CreateClustersEfieldLegend()
+        self.CreateEfieldAtTargetLegend()
+        
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
 
