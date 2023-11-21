@@ -2339,13 +2339,13 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.efield_scalar_bar)
 
         if self.ClusterEfieldTextActor is not None:
-            self.ren.RemoveActor(self.ClusterEfieldTextActor)
+            self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
 
         if self.EfieldAtTargetLegend is not None:
-            self.ren.RemoveActor(self.EfieldAtTargetLegend)
+            self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
 
         if self.SpreadEfieldFactorTextActor is not None:
-            self.ren.RemoveActor(self.SpreadEfieldFactorTextActor)
+            self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
         #self.efield_lut = e_field_brain.lut
