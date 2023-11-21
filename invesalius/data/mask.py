@@ -40,7 +40,7 @@ class EditionHistoryNode(object):
     def __init__(self, index, orientation, array, clean=False):
         self.index = index
         self.orientation = orientation
-        self.filename = tempfile.mktemp(suffix='.npy')
+        self.fd, self.filename = tempfile.mkstemp(suffix='.npy')
         self.clean = clean
 
         self._save_array(array)
@@ -70,6 +70,7 @@ class EditionHistoryNode(object):
 
     def __del__(self):
         print("Removing", self.filename)
+        os.close(self.fd)
         os.remove(self.filename)
 
 
@@ -295,11 +296,12 @@ class Mask():
         plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, plist_filename)
 
-        temp_plist = tempfile.mktemp()
+        temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(mask, f)
 
         filelist[temp_plist] = plist_filename
+        os.close(temp_fd)
 
         return plist_filename
 
@@ -376,7 +378,7 @@ class Mask():
         Parameters:
             shape(int, int, int): The shape of the new mask.
         """
-        self.temp_file = tempfile.mktemp()
+        self.temp_fd, self.temp_file = tempfile.mkstemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = np.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
@@ -486,4 +488,5 @@ class Mask():
             del self.matrix
         except AttributeError:
             pass
+        os.close(self.temp_fd)
         os.remove(self.temp_file)

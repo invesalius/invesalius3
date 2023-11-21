@@ -119,9 +119,10 @@ class Surface():
         else:
             filename = u'surface_%d' % self.index
             vtp_filename = filename + u'.vtp'
-            vtp_filepath = tempfile.mktemp()
+            vtp_fd, vtp_filepath = tempfile.mkstemp()
             pu.Export(self.polydata, vtp_filepath, bin=True)
             self.filename = vtp_filepath
+            os.close(vtp_fd)
 
         filelist[vtp_filepath] = vtp_filename
 
@@ -136,11 +137,12 @@ class Surface():
                   }
         plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
-        temp_plist = tempfile.mktemp()
+        temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(surface, f)
 
         filelist[temp_plist] = plist_filename
+        os.close(temp_fd)
 
         return plist_filename
 
@@ -442,7 +444,11 @@ class SurfaceManager():
             proj = prj.Project()
             cortex_save_file = path_meshes +'export_inv/'+config_dict['cortex']
             polydata = proj.surface_dict[surface_index_cortex].polydata
+            file_extension = cortex_save_file.split('.')[-1]
+            if file_extension == "stl":
+                cortex_save_file = cortex_save_file.split('.')[0] + ".bin"
             self.OnWriteCustomBinFile(polydata,cortex_save_file)
+
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
             bmeshes_list = []
             ci_list = []
@@ -458,6 +464,9 @@ class SurfaceManager():
                         scalp_index = surface_index_bmesh
                     bmeshes_save_file = path_meshes + 'export_inv/' + elements['file']
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
+                    file_extension = bmeshes_save_file.split('.')[-1]
+                    if file_extension == "stl":
+                        bmeshes_save_file = bmeshes_save_file.split('.')[0] + ".bin"
                     self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
@@ -1064,12 +1073,12 @@ class SurfaceManager():
             const.FILETYPE_STL_ASCII: '.stl',
         }
         if filetype in ftype_prefix:
-            temp_file = tempfile.mktemp(suffix=ftype_prefix[filetype])
+            temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
 
             if _has_win32api:
-                utl.touch(temp_file)
                 _temp_file = temp_file
                 temp_file = win32api.GetShortPathName(temp_file)
+                os.close(temp_fd)
                 os.remove(_temp_file)
 
             temp_file = utl.decode(temp_file, const.FS_ENCODE)

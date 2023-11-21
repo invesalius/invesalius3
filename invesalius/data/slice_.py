@@ -527,9 +527,10 @@ class Slice(metaclass=utils.Singleton):
         f.close()
 
     def create_temp_mask(self):
-        temp_file = tempfile.mktemp()
+        temp_fd, temp_file = tempfile.mkstemp()
         shape = self.matrix.shape
         matrix = np.memmap(temp_file, mode="w+", dtype="uint8", shape=shape)
+        os.close(temp_fd)
         return temp_file, matrix
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
@@ -1713,7 +1714,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.sendMessage("Reload actual slice")
 
     def apply_reorientation(self):
-        temp_file = tempfile.mktemp()
+        temp_fd, temp_file = tempfile.mkstemp()
         mcopy = np.memmap(
             temp_file, shape=self.matrix.shape, dtype=self.matrix.dtype, mode="w+"
         )
@@ -1737,6 +1738,7 @@ class Slice(metaclass=utils.Singleton):
         )
 
         del mcopy
+        os.close(temp_fd)
         os.remove(temp_file)
 
         self.q_orientation = np.array((1, 0, 0, 0))
