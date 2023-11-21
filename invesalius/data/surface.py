@@ -448,7 +448,6 @@ class SurfaceManager():
             if file_extension == "stl":
                 cortex_save_file = cortex_save_file.split('.')[0] + ".bin"
             self.OnWriteCustomBinFile(polydata,cortex_save_file)
-
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
             bmeshes_list = []
             ci_list = []
@@ -471,7 +470,7 @@ class SurfaceManager():
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
                     co_list.append(co)
-                Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list, dIperdt_list= dIperdt_list)
+            Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list, dIperdt_list= dIperdt_list)
         if scalp_index is not None:
             Publisher.sendMessage('Send scalp index', scalp_actor = self.actors_dict[scalp_index])
         else:
