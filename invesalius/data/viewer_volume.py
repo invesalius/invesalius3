@@ -903,11 +903,7 @@ class Viewer(wx.Panel):
             """
             marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
             if self.efield_mesh is not None and self.nav_status is True:
-                vtk_colors = vtkNamedColors()
-                marker_actor_brain =  self.DrawVectors(self.efield_mesh.GetPoint(self.Idmax), [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]],vtk_colors.GetColor3d('Orange'), scale_factor=3)
-                Publisher.sendMessage('Save target data', target_list_index=marker_id, position=self.efield_mesh.GetPoint(self.Idmax),
-                                      orientation=[self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]], plot_efield_vectors=self.plot_vector)
-
+                marker_actor_brain = self.CoGEforCortexMarker(marker_id)
                 self.static_markers_efield.append(marker_actor_brain)
                 self.ren.AddActor(marker_actor_brain)
 
@@ -1831,11 +1827,24 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.GoGEfieldVector)
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
         orientation = [self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2]]
-        [self.center_gravity_id] = self.FindCenterofGravity( )
-        self.GoGEfieldVector = self.DrawVectors(self.center_gravity_id, orientation,vtk_colors.GetColor3d('Blue'))
-        self.ball_GoGEfieldVector = self.CreateActorBall(self.center_gravity_id, vtk_colors.GetColor3d('Blue'),0.5)
+        [cell_id_indexes, positions_above_threshold]= self.GetIndexesAboveThreshold(self.efield_threshold)
+        self.center_gravity_position = self.FindCenterofGravity(cell_id_indexes, positions_above_threshold)
+        self.GoGEfieldVector = self.DrawVectors(self.center_gravity_position, orientation, vtk_colors.GetColor3d('Blue'))
+        self.ball_GoGEfieldVector = self.CreateActorBall(self.center_gravity_position, vtk_colors.GetColor3d('Blue'), 0.5)
         self.ren.AddActor(self.GoGEfieldVector)
         self.ren.AddActor(self.ball_GoGEfieldVector)
+
+    def CoGEforCortexMarker(self, marker_id):
+        vtk_colors = vtkNamedColors()
+        [cell_id_indexes, positions_above_threshold] = self.GetIndexesAboveThreshold(0.98)
+        center_gravity_position_for_marker = self.FindCenterofGravity(cell_id_indexes, positions_above_threshold)
+        marker_actor_brain = self.DrawVectors( center_gravity_position_for_marker,
+                                          [self.max_efield_array[0], self.max_efield_array[1],
+                                           self.max_efield_array[2]], vtk_colors.GetColor3d('Orange'), scale_factor=3)
+        Publisher.sendMessage('Save target data', target_list_index=marker_id, position= center_gravity_position_for_marker,
+                              orientation=[self.max_efield_array[0], self.max_efield_array[1],
+                                           self.max_efield_array[2]], plot_efield_vectors=self.plot_vector)
+        return marker_actor_brain
 
     def CreateTextLegend(self, FontSize, Position):
         TextLegend = vtku.Text()
@@ -1849,7 +1858,7 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
-        distance_efield = distance.euclidean(self.center_gravity_id, self.position_max)
+        distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue('Spread distance: ' + str("{:04.2f}".format(distance_efield)))
 
     def EfieldVectors(self):
@@ -2002,13 +2011,15 @@ class Viewer(wx.Panel):
         self.efield_scalar_bar.SetLookupTable(self.efield_lut)
         self.ren.AddActor2D(self.efield_scalar_bar)
 
-    def GetIndexesAboveThreshold(self):
+    def GetIndexesAboveThreshold(self, threshold):
         cell_id_indexes = []
+        positions = []
         indexes = [index for index, value in enumerate(self.e_field_norms) if
-                   value > self.efield_max * self.efield_threshold]
+                   value > self.efield_max * threshold]
         for index, value in enumerate(indexes):
             cell_id_indexes.append(self.Id_list[value])
-        return cell_id_indexes
+            positions.append(self.efield_mesh.GetPoint(self.Id_list[value]))
+        return [cell_id_indexes, positions]
 
     def UpdateEfieldThreshold(self, data):
         self.efield_threshold = data
@@ -2017,13 +2028,13 @@ class Viewer(wx.Panel):
         self.efield_ROISize = data
         self.radius_list.Reset()
 
-    def FindCenterofGravity(self):
-        cell_id_indexes = self.GetIndexesAboveThreshold()
+
+    def FindCenterofGravity(self, cell_id_indexes, positions):
         weights = []
-        positions = []
+        #positions = []
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
-            positions.append(self.efield_mesh.GetPoint(value))
+            #positions.append(self.efield_mesh.GetPoint(value))
         if self.enableefieldabovethreshold:
             self.SegmentEfieldMax(cell_id_indexes)
         self.DetectClustersEfieldSpread(positions)
@@ -2044,12 +2055,12 @@ class Viewer(wx.Panel):
         center_gravity_z = sum_z / sum_weights
 
         query_point = [center_gravity_x, center_gravity_y, center_gravity_z]
-        closest_point = [0.0, 0.0, 0.0]
+        center_gravity = [0.0, 0.0, 0.0]
         cell_id = mutable(0)
         sub_id = mutable(0)
         distance = mutable(0.0)
-        self.locator_efield_cell.FindClosestPoint(query_point, closest_point, cell_id, sub_id, distance)
-        return [closest_point]
+        self.locator_efield_cell.FindClosestPoint(query_point, center_gravity, cell_id, sub_id, distance)
+        return center_gravity
 
     def DetectClustersEfieldSpread(self, points):
         from sklearn.cluster import DBSCAN
