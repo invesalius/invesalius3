@@ -309,7 +309,7 @@ class Viewer(wx.Panel):
         self.SpreadEfieldFactorTextActor = None
         self.EfieldAtTargetLegend = None
         self.ClusterEfieldTextActor = None
-
+        self.enableefieldabovethreshold = False
 
         self.LoadConfig()
 
@@ -496,6 +496,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldThreshold, 'Update Efield Threshold')
         Publisher.subscribe(self.UpdateEfieldROISize, 'Update Efield ROI size')
         Publisher.subscribe(self.SetEfieldTargetAtCortex, 'Set as Efield target at cortex')
+        Publisher.subscribe(self.EnableShowEfieldAboveThreshold, 'Show area above threshold')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -2023,7 +2024,8 @@ class Viewer(wx.Panel):
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
             positions.append(self.efield_mesh.GetPoint(value))
-        self.SegmentEfieldMax(positions, weights)
+        if self.enableefieldabovethreshold:
+            self.SegmentEfieldMax(positions, weights)
         self.DetectClustersEfieldSpread(positions)
         x_weighted = []
         y_weighted = []
@@ -2051,7 +2053,7 @@ class Viewer(wx.Panel):
 
     def DetectClustersEfieldSpread(self, points):
         from sklearn.cluster import DBSCAN
-        dbscan = DBSCAN(eps=5, min_samples=2).fit(points)
+        dbscan = DBSCAN(eps=5, min_samples=1).fit(points)
         labels = dbscan.labels_
         n_clusters = len(set(labels)) - (1 if -1 in labels else 0 )
         self.ClusterEfieldTextActor.SetValue('Clusters above '+ str(int(self.efield_threshold*100)) + '% percent: ' + str(n_clusters))
@@ -2060,10 +2062,21 @@ class Viewer(wx.Panel):
         self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,const.TEXT_POS_LEFT_UP)
         self.ren.AddActor(self.ClusterEfieldTextActor.actor)
 
+    def EnableShowEfieldAboveThreshold(self, enable):
+        self.enableefieldabovethreshold = enable
+
     def SegmentEfieldMax(self, positions, values):
-        self.heights = []
-        for i, pos in enumerate(positions):
-            self.heights.append([pos, values[i]])
+        #self.heights = []
+        color = [255, 165, 0]
+        indexes = []
+        #find indexes
+        # for i, pos in enumerate(positions):
+        #     indexes.append(self.efield_mesh.FindPoint(pos))
+            #self.heights.append([pos, values[i]])
+        for j, pos in enumerate(positions):
+            for i in range(self.radius_list.GetNumberOfIds()):
+                if self.efield_mesh.FindPoint(pos) == self.radius_list.GetId(i):
+                    self.colors_init.InsertTuple(self.radius_list.GetId(i), color)
 
     def GetEfieldActor(self, e_field_actor):
         self.efield_actor  = e_field_actor
@@ -2322,6 +2335,7 @@ class Viewer(wx.Panel):
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list=[]
+
 
 
         if self.max_efield_vector and self.ball_max_vector is not None:

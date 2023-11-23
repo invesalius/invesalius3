@@ -141,6 +141,11 @@ class InnerTaskPanel(wx.Panel):
         plot_vectors.Enable(1)
         plot_vectors.Bind(wx.EVT_CHECKBOX, partial(self.OnEnablePlotVectors, ctrl=plot_vectors))
 
+        plot_area = wx.CheckBox(self, -1, _('Show area above threshold'))
+        plot_area.SetValue(False)
+        plot_area.Enable(1)
+        plot_area.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableShowAreaAboveThreshold, ctrl=plot_area))
+
         tooltip2 = wx.ToolTip(_("Load Brain Json config"))
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
@@ -238,7 +243,9 @@ class InnerTaskPanel(wx.Panel):
 
         line_checkboxes = wx.BoxSizer(wx.HORIZONTAL)
         line_checkboxes.AddMany([(enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
-                                 (plot_vectors, 1, wx.LEFT | wx.RIGHT, 2)])
+                                 (plot_vectors, 1, wx.LEFT | wx.RIGHT, 2),
+                                 (plot_area, 1, wx.LEFT | wx.RIGHT, 2)
+                                 ])
 
         line_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
@@ -343,6 +350,10 @@ class InnerTaskPanel(wx.Panel):
     def OnEnablePlotVectors(self, evt, ctrl):
         self.plot_efield_vectors = ctrl.GetValue()
         self.navigation.plot_efield_vectors = self.plot_efield_vectors
+
+    def OnEnableShowAreaAboveThreshold(self, evt, ctrl):
+        enable = ctrl.GetValue
+        Publisher.sendMessage('Show area above threshold', enable = enable)
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
