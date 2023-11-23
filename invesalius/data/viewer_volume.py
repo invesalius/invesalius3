@@ -310,7 +310,7 @@ class Viewer(wx.Panel):
         self.EfieldAtTargetLegend = None
         self.ClusterEfieldTextActor = None
         self.enableefieldabovethreshold = False
-
+        self.efield_tools = False
         self.LoadConfig()
 
     def UpdateCanvas(self):
@@ -497,6 +497,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldROISize, 'Update Efield ROI size')
         Publisher.subscribe(self.SetEfieldTargetAtCortex, 'Set as Efield target at cortex')
         Publisher.subscribe(self.EnableShowEfieldAboveThreshold, 'Show area above threshold')
+        Publisher.subscribe(self.EnableEfieldTools, 'Enable Efield tools')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1827,8 +1828,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.GoGEfieldVector)
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
         orientation = [self.max_efield_array[0] , self.max_efield_array[1], self.max_efield_array[2]]
-        [cell_id_indexes, positions_above_threshold]= self.GetIndexesAboveThreshold(self.efield_threshold)
-        self.center_gravity_position = self.FindCenterofGravity(cell_id_indexes, positions_above_threshold)
+        [self.cell_id_indexes_above_threshold, self.positions_above_threshold]= self.GetIndexesAboveThreshold(self.efield_threshold)
+        self.center_gravity_position = self.FindCenterofGravity(self.cell_id_indexes_above_threshold, self.positions_above_threshold)
         self.GoGEfieldVector = self.DrawVectors(self.center_gravity_position, orientation, vtk_colors.GetColor3d('Blue'))
         self.ball_GoGEfieldVector = self.CreateActorBall(self.center_gravity_position, vtk_colors.GetColor3d('Blue'), 0.5)
         self.ren.AddActor(self.GoGEfieldVector)
@@ -2028,16 +2029,20 @@ class Viewer(wx.Panel):
         self.efield_ROISize = data
         self.radius_list.Reset()
 
+    def EnableEfieldTools(self, enable):
+        self.efield_tools = enable
+        if self.efield_tools:
+            self.CreateEfieldSpreadLegend()
+            self.CreateClustersEfieldLegend()
+        elif not self.efield_tools and self.ClusterEfieldTextActor is not None:
+            self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
+            self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
+
 
     def FindCenterofGravity(self, cell_id_indexes, positions):
         weights = []
-        #positions = []
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
-            #positions.append(self.efield_mesh.GetPoint(value))
-        if self.enableefieldabovethreshold:
-            self.SegmentEfieldMax(cell_id_indexes)
-        self.DetectClustersEfieldSpread(positions)
         x_weighted = []
         y_weighted = []
         z_weighted = []
@@ -2144,30 +2149,15 @@ class Viewer(wx.Panel):
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
             import vtk
-            cell_number = 0
             index = self.efield_mesh.FindPoint(self.target_at_cortex)
-            index_found_on_id_list = False
-            #cell_id = self.locator_efield_cell.FindCell(self.target_at_cortex)
-            # idlist = vtkIdList()
-            # self.locator_efield.FindPointsWithinRadius(5, self.e_field_mesh_centers.GetPoint(cell_id), idlist)
-            # index = cell_id
-            # print('cell Id:', cell_id)
-            # color = [255, 165, 0]
-            # for i in range(idlist.GetNumberOfIds()):
-            #     self.colors_init.InsertTuple(idlist.GetId(i), color)
-            for i in range(self.Id_list.GetNumberOfIds()):
-                if index == self.Id_list.GetId(i):
-                    cell_number = i
-                    self.EfieldAtTargetLegend.SetValue(
-                        'Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
-                    index_found_on_id_list = True
-                    break
-                else:
-                    continue
-            if index_found_on_id_list == False:
+            if index in self.Id_list:
+                cell_number = self.Id_list.index(index)
+                self.EfieldAtTargetLegend.SetValue(
+                    'Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
+            else:
                 self.EfieldAtTargetLegend.SetValue(
                     'Efield at Target: ' + str("{:04.2f}".format(0)))
-            #wx.CallAfter(Publisher.sendMessage, 'Recolor efield actor')
+
 
     def CreateEfieldAtTargetLegend(self):
         self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.97))
@@ -2370,8 +2360,7 @@ class Viewer(wx.Panel):
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
 
-        self.CreateEfieldSpreadLegend()
-        self.CreateClustersEfieldLegend()
+
         self.CreateEfieldAtTargetLegend()
 
     def GetNeuronavigationApi(self, neuronavigation_api):
@@ -2419,7 +2408,11 @@ class Viewer(wx.Panel):
             if self.plot_vector:
                 wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
                 wx.CallAfter(Publisher.sendMessage, 'Show CoG Efield actor')
-                wx.CallAfter(Publisher.sendMessage, 'Show distance between Max and CoG Efield')
+                if self.efield_tools:
+                    wx.CallAfter(Publisher.sendMessage, 'Show distance between Max and CoG Efield')
+                    self.DetectClustersEfieldSpread(self.positions_above_threshold)
+                if self.enableefieldabovethreshold:
+                    self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
                 self.ShowEfieldAtCortexTarget()
                 if self.plot_no_connection:
                     wx.CallAfter(Publisher.sendMessage,'Show Efield vectors')
