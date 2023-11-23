@@ -1892,7 +1892,7 @@ class Viewer(wx.Panel):
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
                 e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
-                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors, self.heights])
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
             else:
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
 
@@ -2025,7 +2025,7 @@ class Viewer(wx.Panel):
             weights.append(self.e_field_norms[index])
             positions.append(self.efield_mesh.GetPoint(value))
         if self.enableefieldabovethreshold:
-            self.SegmentEfieldMax(positions, weights)
+            self.SegmentEfieldMax(cell_id_indexes)
         self.DetectClustersEfieldSpread(positions)
         x_weighted = []
         y_weighted = []
@@ -2065,18 +2065,10 @@ class Viewer(wx.Panel):
     def EnableShowEfieldAboveThreshold(self, enable):
         self.enableefieldabovethreshold = enable
 
-    def SegmentEfieldMax(self, positions, values):
-        #self.heights = []
+    def SegmentEfieldMax(self, cell_id_indexes):
         color = [255, 165, 0]
-        indexes = []
-        #find indexes
-        # for i, pos in enumerate(positions):
-        #     indexes.append(self.efield_mesh.FindPoint(pos))
-            #self.heights.append([pos, values[i]])
-        for j, pos in enumerate(positions):
-            for i in range(self.radius_list.GetNumberOfIds()):
-                if self.efield_mesh.FindPoint(pos) == self.radius_list.GetId(i):
-                    self.colors_init.InsertTuple(self.radius_list.GetId(i), color)
+        for j , value in enumerate(cell_id_indexes):
+            self.colors_init.InsertTuple(value, color)
 
     def GetEfieldActor(self, e_field_actor):
         self.efield_actor  = e_field_actor
@@ -2152,8 +2144,8 @@ class Viewer(wx.Panel):
             # color = [255, 165, 0]
             # for i in range(idlist.GetNumberOfIds()):
             #     self.colors_init.InsertTuple(idlist.GetId(i), color)
-            for i in range(self.radius_list.GetNumberOfIds()):
-                if index == self.radius_list.GetId(i):
+            for i in range(self.Id_list.GetNumberOfIds()):
+                if index == self.Id_list.GetId(i):
                     cell_number = i
                     self.EfieldAtTargetLegend.SetValue(
                         'Efield at Target: ' + str("{:04.2f}".format(self.e_field_norms[cell_number])))
@@ -2531,7 +2523,7 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
-        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors', 'heights']
+        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors']
         all_data = list(self.target_radius_list)
         with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)
