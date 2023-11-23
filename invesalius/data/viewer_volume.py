@@ -2038,7 +2038,6 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
-
     def FindCenterofGravity(self, cell_id_indexes, positions):
         weights = []
         for index, value in enumerate(cell_id_indexes):
