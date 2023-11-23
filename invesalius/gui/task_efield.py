@@ -352,7 +352,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.plot_efield_vectors = self.plot_efield_vectors
 
     def OnEnableShowAreaAboveThreshold(self, evt, ctrl):
-        enable = ctrl.GetValue
+        enable = ctrl.GetValue()
         Publisher.sendMessage('Show area above threshold', enable = enable)
 
     def OnComboNameClic(self, evt):
