@@ -376,7 +376,8 @@ class InnerTaskPanel(wx.Panel):
         self.combo_surface_name.Clear()
         if self.multilocus_coil is not None:
             for elements in range(len(self.multilocus_coil)):
-                self.combo_surface_name.Insert(self.multilocus_coil[elements], elements)
+                coil_name = self.multilocus_coil[elements].split('/')[-1].split('.bin')[0]
+                self.combo_surface_name.Insert(coil_name, elements)
 
     def OnComboCoil(self, evt):
         coil_name = evt.GetString()
