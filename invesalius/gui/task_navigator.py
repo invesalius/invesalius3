@@ -1978,6 +1978,9 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
         marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.EFIELD_TARGET_COLUMN, 'Efield Target')
+        marker_list_ctrl.SetColumnWidth(const.EFIELD_TARGET_COLUMN,45)
+
         if self.session.GetConfig('debug'):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, 'X')
             marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
@@ -2046,6 +2049,7 @@ class MarkersPanel(wx.Panel):
                 label=d['label'],
                 # XXX: See comment below. Should be improved so that is_target wouldn't need to be set as False here.
                 is_target=False,
+                is_efield_target=False,
                 seed=d['seed'],
                 session_id=d['session_id']
             )
@@ -2054,6 +2058,9 @@ class MarkersPanel(wx.Panel):
             # suffice to set it as target.
             if d['is_target']:
                 self.__set_marker_as_target(len(self.markers) - 1, display_messagebox=False)
+            # elif d['is_efield_target']:
+            #     Publisher.sendMessage('Set as Efield target at cortex', position=marker.position,
+            #                           orientation=marker.orientation)
 
     def __find_target_marker(self):
         """
@@ -2064,6 +2071,13 @@ class MarkersPanel(wx.Panel):
             if self.markers[i].is_target:
                 return i
                 
+        return None
+
+    def __find_efield_target_marker(self):
+        for i in range(len(self.markers)):
+            if self.markers[i].is_efield_target:
+                return i
+
         return None
 
     def __get_brain_target_markers(self):
@@ -2130,6 +2144,33 @@ class MarkersPanel(wx.Panel):
             for n in range(0, self.marker_list_ctrl.GetItemCount()):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', indexes=brain_target_index)
+
+    def __set_marker_as_efield_target(self, idx, display_messagebox=True):
+        """
+        Set marker indexed by idx as the new target. idx must be a valid index.
+        """
+        # Find the previous target
+        prev_idx = self.__find_efield_target_marker()
+
+        # If the new target is same as the previous do nothing.
+        if prev_idx == idx:
+            return
+
+        # Unset the previous target
+        if prev_idx is not None:
+            self.markers[prev_idx].is_efield_target = False
+            self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
+            Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
+            self.marker_list_ctrl.SetItem(prev_idx, const.EFIELD_TARGET_COLUMN, "")
+
+        # Set the new target
+        self.markers[idx].is_efield_target = True
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'PURPLE')
+        self.marker_list_ctrl.SetItem(idx, const.EFIELD_TARGET_COLUMN, _("Yes"))
+
+        #self.__delete_all_brain_targets()
+        if display_messagebox:
+            wx.MessageBox(_("New Efield target selected."), _("InVesalius 3"))
 
     def __set_marker_as_target(self, idx, display_messagebox=True):
         """
@@ -2235,9 +2276,13 @@ class MarkersPanel(wx.Panel):
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu)
 
         if self.navigation.e_field_loaded:
-            create_efield_target = menu_id.Append(11, _('Set as Efield target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
-            self.marker_list_ctrl.GetFocusedItem()
+            if self.__find_efield_target_marker() == self.marker_list_ctrl.GetFocusedItem():
+                create_efield_target = menu_id.Append(10, _('Remove Efield Cortex target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target)
+            else:
+                create_efield_target = menu_id.Append(11, _('Set as Efield target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
+                self.marker_list_ctrl.GetFocusedItem()
 
         menu_id.AppendSeparator()
 
@@ -2353,9 +2398,11 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation, plot_efield_vectors= plot_efield_vectors)
 
     def OnSetEfieldBrainTarget(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation =  self.markers[list_index].orientation
+        self.__set_marker_as_efield_target(idx)
         Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
 
     def OnMenuSetCoilOrientation(self, evt):
@@ -2384,6 +2431,16 @@ class MarkersPanel(wx.Panel):
         self.efield_target_idx = None
         #self.__delete_all_brain_targets()
         wx.MessageBox(_("Efield target removed."), _("InVesalius 3"))
+
+    def OnMenuRemoveEfieldTargetatCortex(self,evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        self.markers[idx].is_efield_target = False
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
+        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        self.marker_list_ctrl.SetItem(idx, const.EFIELD_TARGET_COLUMN, "")
+        Publisher.sendMessage('Clear efield target at cortex')
+        #self.__delete_all_brain_targets()
+        wx.MessageBox(_("Efield target at cortex removed."), _("InVesalius 3"))
 
     def OnMenuRemoveTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2546,9 +2603,9 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
-                       is_target=False, seed=None, session_id=None, is_brain_target=False):
+                       is_target=False, seed=None, session_id=None, is_brain_target=False, is_efield_target=False):
 
-        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target)
+        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target, is_efield_target)
 
         self.SaveState()
 
@@ -2570,7 +2627,7 @@ class MarkersPanel(wx.Panel):
                     marker.from_string(line)
                     self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour,
                                       size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
-                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target)
+                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target, is_efield_target=marker.is_efield_target)
 
                     if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -2580,7 +2637,7 @@ class MarkersPanel(wx.Panel):
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers) - 1)
 
-                    if marker.label == 'Efield target':
+                    if marker.is_efield_target == 'Efield target':
                         Publisher.sendMessage('Set as Efield target at cortex', position = marker.position, orientation = marker.orientation)
 
         except Exception as e:
@@ -2689,7 +2746,7 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
 
-    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None, is_brain_target=False):
+    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None, is_brain_target=False, is_efield_target=False):
         new_marker = self.Marker()
         new_marker.position = position or self.current_position
         new_marker.orientation = orientation or self.current_orientation
@@ -2700,6 +2757,7 @@ class MarkersPanel(wx.Panel):
         new_marker.seed = seed or self.current_seed
         new_marker.session_id = session_id or self.current_session
         new_marker.is_brain_target = is_brain_target
+        new_marker.is_efield_target = is_efield_target
 
         if self.robot.IsConnected() and self.nav_status:
             current_head_robot_target_status = True

@@ -498,6 +498,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SetEfieldTargetAtCortex, 'Set as Efield target at cortex')
         Publisher.subscribe(self.EnableShowEfieldAboveThreshold, 'Show area above threshold')
         Publisher.subscribe(self.EnableEfieldTools, 'Enable Efield tools')
+        Publisher.subscribe(self.ClearTargetAtCortex, 'Clear efield target at cortex')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -2138,12 +2139,20 @@ class Viewer(wx.Panel):
         position_flip[1] = -position_flip[1]
         self.target_at_cortex = position_flip
         point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
+        self.CreateEfieldAtTargetLegend()
         Publisher.sendMessage('Create Marker from tangential', point = point_scalp, orientation =orientation)
+
+    def ClearTargetAtCortex(self):
+        self.target_at_cortex = None
+        if self.EfieldAtTargetLegend is not None:
+            self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
 
     def SetEfieldTargetAtCortex(self, position, orientation):
         position_flip = position
         position_flip[1] = -position_flip[1]
         self.target_at_cortex = position_flip
+        self.CreateEfieldAtTargetLegend()
+
 
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
@@ -2360,7 +2369,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.edge_actor)
 
 
-        self.CreateEfieldAtTargetLegend()
+
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
