@@ -2058,9 +2058,10 @@ class MarkersPanel(wx.Panel):
             # suffice to set it as target.
             if d['is_target']:
                 self.__set_marker_as_target(len(self.markers) - 1, display_messagebox=False)
-            # elif d['is_efield_target']:
-            #     Publisher.sendMessage('Set as Efield target at cortex', position=marker.position,
-            #                           orientation=marker.orientation)
+            # if d['is_efield_target']:
+            #     self.__set_marker_as_efield_target(len(self.markers) - 1, display_messagebox=False)
+            #     Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
+            #                            orientation=d['orientation'])
 
     def __find_target_marker(self):
         """
@@ -2404,6 +2405,7 @@ class MarkersPanel(wx.Panel):
         orientation =  self.markers[list_index].orientation
         self.__set_marker_as_efield_target(idx)
         Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
+        self.SaveState()
 
     def OnMenuSetCoilOrientation(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -2441,6 +2443,8 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Clear efield target at cortex')
         #self.__delete_all_brain_targets()
         wx.MessageBox(_("Efield target at cortex removed."), _("InVesalius 3"))
+        self.SaveState()
+
 
     def OnMenuRemoveTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
