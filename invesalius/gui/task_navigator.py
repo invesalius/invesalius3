@@ -1771,7 +1771,7 @@ class MarkersPanel(wx.Panel):
         is_target : bool = False
         session_id : int = 1
         is_brain_target : bool = False
-
+        is_efield_target: bool = False
         # x, y, z can be jointly accessed as position
         @property
         def position(self):
