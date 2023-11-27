@@ -415,6 +415,7 @@ class SurfaceManager():
 
     def OnImportJsonConfig(self, filename, convert_to_inv):
         import json
+        create_meshes_flag = False
         self.convert_to_inv = convert_to_inv
         scalp_index = None
         with open(filename, 'r') as config_file:
@@ -431,6 +432,7 @@ class SurfaceManager():
             path_meshes = config_dict['path_meshes_second_computer']
         else:
             path_meshes = config_dict['path_meshes']
+            create_meshes_flag = True
         if 'multilocus_coils' in config_dict:
             multilocus_coil = config_dict['multilocus_coils']
             multilocus_coil_list = []
@@ -447,7 +449,8 @@ class SurfaceManager():
             file_extension = cortex_save_file.split('.')[-1]
             if file_extension == "stl":
                 cortex_save_file = cortex_save_file.split('.')[0] + ".bin"
-            self.OnWriteCustomBinFile(polydata,cortex_save_file)
+            if create_meshes_flag:
+                self.OnWriteCustomBinFile(polydata,cortex_save_file)
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
             bmeshes_list = []
             ci_list = []
@@ -466,7 +469,8 @@ class SurfaceManager():
                     file_extension = bmeshes_save_file.split('.')[-1]
                     if file_extension == "stl":
                         bmeshes_save_file = bmeshes_save_file.split('.')[0] + ".bin"
-                    self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
+                    if create_meshes_flag:
+                        self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
                     co_list.append(co)
