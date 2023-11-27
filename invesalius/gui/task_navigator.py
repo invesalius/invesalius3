@@ -1871,6 +1871,7 @@ class MarkersPanel(wx.Panel):
                 'size': self.size,
                 'label': self.label,
                 'is_target': self.is_target,
+                'is_efield_target' : self.is_efield_target,
                 'seed': self.seed,
                 'session_id': self.session_id,
             }
@@ -2058,10 +2059,10 @@ class MarkersPanel(wx.Panel):
             # suffice to set it as target.
             if d['is_target']:
                 self.__set_marker_as_target(len(self.markers) - 1, display_messagebox=False)
-            # if d['is_efield_target']:
-            #     self.__set_marker_as_efield_target(len(self.markers) - 1, display_messagebox=False)
-            #     Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
-            #                            orientation=d['orientation'])
+            if d['is_efield_target']:
+                self.__set_marker_as_efield_target(len(self.markers) - 1, display_messagebox=False)
+                Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
+                                       orientation=d['orientation'])
 
     def __find_target_marker(self):
         """
