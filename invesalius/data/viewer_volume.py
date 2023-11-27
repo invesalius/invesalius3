@@ -2358,9 +2358,6 @@ class Viewer(wx.Panel):
         if self.ClusterEfieldTextActor is not None:
             self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
 
-        if self.EfieldAtTargetLegend is not None:
-            self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
-
         if self.SpreadEfieldFactorTextActor is not None:
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
