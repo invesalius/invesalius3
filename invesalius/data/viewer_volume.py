@@ -2168,6 +2168,8 @@ class Viewer(wx.Panel):
 
 
     def CreateEfieldAtTargetLegend(self):
+        if self.EfieldAtTargetLegend is not None:
+            self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
         self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.97))
         self.ren.AddActor(self.EfieldAtTargetLegend.actor)
 
