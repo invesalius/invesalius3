@@ -2395,7 +2395,7 @@ class Viewer(wx.Panel):
             self.radius_list.Reset()
 
     def OnUpdateEfieldvis(self):
-        if len(self.radius_list) !=0:
+        if self.radius_list.GetNumberOfIds() !=0:
             self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
             self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
