@@ -2059,11 +2059,11 @@ class MarkersPanel(wx.Panel):
             # suffice to set it as target.
             if d['is_target']:
                 self.__set_marker_as_target(len(self.markers) - 1, display_messagebox=False)
-            if d['is_efield_target']:
-                self.__set_marker_as_efield_target(len(self.markers) - 1, display_messagebox=False)
-                Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
-                                       orientation=d['orientation'])
-
+            if 'is_efield_target' in d:
+                if d['is_efield_target']:
+                    self.__set_marker_as_efield_target(len(self.markers) - 1, display_messagebox=False)
+                    Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
+                                          orientation=d['orientation'])
     def __find_target_marker(self):
         """
         Return the index of the marker currently selected as target (there
