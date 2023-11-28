@@ -499,6 +499,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.EnableShowEfieldAboveThreshold, 'Show area above threshold')
         Publisher.subscribe(self.EnableEfieldTools, 'Enable Efield tools')
         Publisher.subscribe(self.ClearTargetAtCortex, 'Clear efield target at cortex')
+        Publisher.subscribe(self.CoGEforCortexMarker, 'Get Cortex position')
+        Publisher.subscribe(self.AddCortexMarkerActor, 'Add cortex marker actor')
+        Publisher.subscribe(self.CortexMarkersVisualization, 'Display efield markers at cortex')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -891,7 +894,7 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def AddMarker(self, marker_id, size, colour, position, orientation, arrow_flag):
+    def AddMarker(self, marker_id, size, colour, position, orientation, cortex_marker, arrow_flag):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
@@ -904,10 +907,8 @@ class Viewer(wx.Panel):
             Markers arrow with orientation created by navigation tools and rendered in volume viewer.
             """
             marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
-            if self.efield_mesh is not None and self.nav_status is True:
-                marker_actor_brain = self.CoGEforCortexMarker(marker_id)
-                self.static_markers_efield.append(marker_actor_brain)
-                self.ren.AddActor(marker_actor_brain)
+            if cortex_marker[0] is not None:
+                Publisher.sendMessage('Add cortex marker actor', position_orientation = cortex_marker, marker_id = marker_id)
 
         else:
             marker_actor = self.CreateActorBall(position_flip, colour, size)
@@ -964,6 +965,12 @@ class Viewer(wx.Panel):
         for i in range(0, ballid):
             self.ren.RemoveActor(self.static_markers[i])
         self.static_markers = []
+
+        if len(self.static_markers_efield) > 0:
+            for i in range(len(self.static_markers_efield)):
+                self.ren.RemoveActor(self.static_markers_efield[i][0])
+            self.static_markers_efield= []
+
         if not self.nav_status:
             self.UpdateRender()
 
@@ -972,6 +979,13 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
             self.marker_id = self.marker_id - 1
+            # if len(self.static_markers_efield) > 0:
+            #     if i in self.static_markers_efield[:][1]:
+            #         self.ren.RemoveActor(self.static_markers_efield[i][0])
+            #         del self.static_markers_efield[i]
+            #     for j in range(len(self.static_markers_efield)):
+            #         self.static_markers_efield[j][1] -= 1
+
         if not self.nav_status:
             self.UpdateRender()
 
@@ -1836,17 +1850,31 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.GoGEfieldVector)
         self.ren.AddActor(self.ball_GoGEfieldVector)
 
-    def CoGEforCortexMarker(self, marker_id):
+    def CoGEforCortexMarker(self):
+        if self.e_field_norms is not None:
+            [cell_id_indexes, positions_above_threshold] = self.GetIndexesAboveThreshold(0.98)
+            center_gravity_position_for_marker = self.FindCenterofGravity(cell_id_indexes, positions_above_threshold)
+            center_gravity_orientation_for_marker = [self.max_efield_array[0], self.max_efield_array[1],
+                                           self.max_efield_array[2]]
+            Publisher.sendMessage('Update Cortex Marker', CoGposition = center_gravity_position_for_marker, CoGorientation = center_gravity_orientation_for_marker)
+        # Publisher.sendMessage('Save target data', target_list_index=marker_id, position= center_gravity_position_for_marker,
+        #                       orientation= center_gravity_orientation_for_marker, plot_efield_vectors=self.plot_vector)
+        #return [marker_actor_brain, center_gravity_position_for_marker, center_gravity_orientation_for_marker]
+
+    def AddCortexMarkerActor(self, position_orientation, marker_id):
         vtk_colors = vtkNamedColors()
-        [cell_id_indexes, positions_above_threshold] = self.GetIndexesAboveThreshold(0.98)
-        center_gravity_position_for_marker = self.FindCenterofGravity(cell_id_indexes, positions_above_threshold)
-        marker_actor_brain = self.DrawVectors( center_gravity_position_for_marker,
-                                          [self.max_efield_array[0], self.max_efield_array[1],
-                                           self.max_efield_array[2]], vtk_colors.GetColor3d('Orange'), scale_factor=3)
-        Publisher.sendMessage('Save target data', target_list_index=marker_id, position= center_gravity_position_for_marker,
-                              orientation=[self.max_efield_array[0], self.max_efield_array[1],
-                                           self.max_efield_array[2]], plot_efield_vectors=self.plot_vector)
-        return marker_actor_brain
+        marker_actor_brain = self.DrawVectors(position_orientation[:3],
+                                              position_orientation[3:], vtk_colors.GetColor3d('Orange'),
+                                              scale_factor=3)
+        self.static_markers_efield.append([marker_actor_brain, marker_id])
+        self.ren.AddActor(marker_actor_brain)
+
+    def CortexMarkersVisualization(self, display_flag):
+        for i in range(len(self.static_markers_efield)):
+            if display_flag:
+                self.ren.AddActor(self.static_markers_efield[i][0])
+            else:
+                self.ren.RemoveActor(self.static_markers_efield[i][0])
 
     def CreateTextLegend(self, FontSize, Position):
         TextLegend = vtku.Text()
@@ -2340,7 +2368,6 @@ class Viewer(wx.Panel):
         self.target_radius_list=[]
 
 
-
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
             self.ren.RemoveActor(self.ball_max_vector)
@@ -2366,9 +2393,6 @@ class Viewer(wx.Panel):
 
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
-
-
-
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api

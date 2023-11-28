@@ -151,6 +151,11 @@ class InnerTaskPanel(wx.Panel):
         efield_tools.Enable(1)
         efield_tools.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfieldTargetingTools, ctrl=efield_tools))
 
+        efield_cortex_markers = wx.CheckBox(self, -1, _('View cortex Markers'))
+        efield_cortex_markers.SetValue(True)
+        efield_cortex_markers.Enable(1)
+        efield_cortex_markers.Bind(wx.EVT_CHECKBOX, partial(self.OnViewCortexMarkers, ctrl=efield_cortex_markers))
+
         tooltip2 = wx.ToolTip(_("Load Brain Json config"))
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
@@ -277,6 +282,9 @@ class InnerTaskPanel(wx.Panel):
         line_mtms.Add(self.input_coil4, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, )
         line_mtms.Add(self.input_coil5, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, )
 
+        line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
+        line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
         main_sizer.Add(line_checkboxes, 1, wx.LEFT | wx.RIGHT, 2)
@@ -287,6 +295,7 @@ class InnerTaskPanel(wx.Panel):
         main_sizer.Add(text_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
         main_sizer.Add(line_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
         main_sizer.Add(btn_enter, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT)
+        main_sizer.Add(line_cortex_markers, wx.BOTTOM | wx.ALIGN_CENTER)
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
@@ -364,6 +373,10 @@ class InnerTaskPanel(wx.Panel):
     def OnEnableEfieldTargetingTools(self, evt, ctrl):
         enable = ctrl.GetValue()
         Publisher.sendMessage('Enable Efield tools', enable = enable)
+
+    def OnViewCortexMarkers(self, evt, ctrl):
+        enable = ctrl.GetValue()
+        Publisher.sendMessage('Display efield markers at cortex', display_flag = enable)
 
     def OnComboNameClic(self, evt):
         import invesalius.project as prj

@@ -1772,6 +1772,13 @@ class MarkersPanel(wx.Panel):
         session_id : int = 1
         is_brain_target : bool = False
         is_efield_target: bool = False
+        x_cortex: float = 0
+        y_cortex: float = 0
+        z_cortex: float = 0
+        alpha_cortex: float = dataclasses.field(default = None)
+        beta_cortex: float = dataclasses.field(default = None)
+        gamma_cortex: float = dataclasses.field(default = None)
+
         # x, y, z can be jointly accessed as position
         @property
         def position(self):
@@ -1812,6 +1819,14 @@ class MarkersPanel(wx.Panel):
         @seed.setter
         def seed(self, new_seed):
             self.x_seed, self.y_seed, self.z_seed = new_seed
+
+        @property
+        def cortex_position_orientation(self):
+            return list((self.x_cortex, self.y_cortex, self.z_cortex, self.alpha_cortex, self.beta_cortex, self.gamma_cortex),)
+
+        @cortex_position_orientation.setter
+        def cortex_position_orientation(self, new_cortex):
+            self.x_cortex, self.y_cortex, self.z_cortex, self.alpha_cortex, self.beta_cortex, self.gamma_cortex = new_cortex
 
         @classmethod
         def to_string_headers(cls):
@@ -1874,6 +1889,7 @@ class MarkersPanel(wx.Panel):
                 'is_efield_target' : self.is_efield_target,
                 'seed': self.seed,
                 'session_id': self.session_id,
+                'cortex_position_orientation': self.cortex_position_orientation,
             }
 
 
@@ -1904,10 +1920,9 @@ class MarkersPanel(wx.Panel):
         self.current_position = [0, 0, 0]
         self.current_orientation = [None, None, None]
         self.current_seed = 0, 0, 0
-
+        self.cortex_position_orientation = [None, None, None, None, None, None]
         self.markers = []
         self.nav_status = False
-        self.efield_loaded = False
         self.efield_data_saved = False
         self.efield_target_idx = None 
         self.target_mode = False
@@ -2027,7 +2042,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.GetIdList, 'Get ID list')
         Publisher.subscribe(self.GetRotationPosition, 'Send coil position and rotation')
         Publisher.subscribe(self.CreateMarkerEfield, 'Create Marker from tangential')
-
+        Publisher.subscribe(self.UpdateCortexMarker, 'Update Cortex Marker')
     def SaveState(self):
         state = [marker.to_dict() for marker in self.markers]
 
@@ -2052,7 +2067,8 @@ class MarkersPanel(wx.Panel):
                 is_target=False,
                 is_efield_target=False,
                 seed=d['seed'],
-                session_id=d['session_id']
+                session_id=d['session_id'],
+                cortex_position_orientation = d['cortex_position_orientation'],
             )
             # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
             # then set as target if needed. This could be refactored so that a CreateMarker call would
@@ -2224,6 +2240,9 @@ class MarkersPanel(wx.Panel):
 
     def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)):
         self.current_seed = coord_offset_w
+
+    def UpdateCortexMarker(self, CoGposition, CoGorientation):
+        self.cortex_position_orientation = CoGposition +  CoGorientation
 
     def OnMouseRightDown(self, evt):
         # TODO: Enable the "Set as target" only when target is created with registered object
@@ -2608,9 +2627,10 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
-                       is_target=False, seed=None, session_id=None, is_brain_target=False, is_efield_target=False):
-
-        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target, is_efield_target)
+                       is_target=False, seed=None, session_id=None, is_brain_target=False, is_efield_target=False, cortex_position = None):
+        if self.nav_status and self.navigation.e_field_loaded:
+            Publisher.sendMessage('Get Cortex position')
+        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target, is_efield_target, cortex_position)
 
         self.SaveState()
 
@@ -2632,7 +2652,7 @@ class MarkersPanel(wx.Panel):
                     marker.from_string(line)
                     self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour,
                                       size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
-                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target, is_efield_target=marker.is_efield_target)
+                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target, is_efield_target=marker.is_efield_target, cortex_position_orientation= marker.cortex_position_orientation)
 
                     if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -2751,7 +2771,8 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
 
-    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None, session_id=None, is_brain_target=False, is_efield_target=False):
+    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None,
+                     session_id=None, is_brain_target=False, is_efield_target=False, cortex_position_orientation= None):
         new_marker = self.Marker()
         new_marker.position = position or self.current_position
         new_marker.orientation = orientation or self.current_orientation
@@ -2763,6 +2784,7 @@ class MarkersPanel(wx.Panel):
         new_marker.session_id = session_id or self.current_session
         new_marker.is_brain_target = is_brain_target
         new_marker.is_efield_target = is_efield_target
+        new_marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
 
         if self.robot.IsConnected() and self.nav_status:
             current_head_robot_target_status = True
@@ -2786,6 +2808,7 @@ class MarkersPanel(wx.Panel):
                               colour=new_marker.colour,
                               position=new_marker.position,
                               orientation=new_marker.orientation,
+                              cortex_marker = new_marker.cortex_position_orientation,
                               arrow_flag=arrow_flag)
 
         self.markers.append(new_marker)
