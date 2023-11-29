@@ -976,15 +976,21 @@ class Viewer(wx.Panel):
 
     def RemoveMultipleMarkers(self, indexes):
         for i in reversed(indexes):
+
+            if len(self.static_markers_efield) > 0:
+                index = None
+                index = [h for h, row in enumerate(self.static_markers_efield) if row[1] == i]
+                if index is not None:
+                    index = int(index[0])
+                    self.ren.RemoveActor(self.static_markers_efield[index][0])
+                    del self.static_markers_efield[index]
+                    if i != len(self.static_markers)-1:
+                        for j in range(len(self.static_markers_efield)):
+                            self.static_markers_efield[j][1] -= 1
+
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
             self.marker_id = self.marker_id - 1
-            # if len(self.static_markers_efield) > 0:
-            #     if i in self.static_markers_efield[:][1]:
-            #         self.ren.RemoveActor(self.static_markers_efield[i][0])
-            #         del self.static_markers_efield[i]
-            #     for j in range(len(self.static_markers_efield)):
-            #         self.static_markers_efield[j][1] -= 1
 
         if not self.nav_status:
             self.UpdateRender()
