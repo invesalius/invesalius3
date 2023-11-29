@@ -995,9 +995,16 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def BlinkMarker(self, index):
+        self.index_static_markers_efield = None
         if self.timer:
             self.timer.Stop()
             self.static_markers[self.index].SetVisibility(1)
+            if len(self.static_markers_efield) > 0:
+                index_static_markers_efield = [h for h, row in enumerate(self.static_markers_efield) if row[1] == index]
+                if index_static_markers_efield:
+                    index_static_markers_efield = int(index_static_markers_efield[0])
+                    self.static_markers_efield[index_static_markers_efield][0].SetVisibility(1)
+                    self.index_static_markers_efield = index_static_markers_efield
         self.index = index
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnBlinkMarker, self.timer)
@@ -1006,6 +1013,8 @@ class Viewer(wx.Panel):
 
     def OnBlinkMarker(self, evt):
         self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
+        if self.index_static_markers_efield is not None:
+            self.static_markers_efield[self.index_static_markers_efield][0].SetVisibility(int(self.timer_count % 2))
         if not self.nav_status:
             self.UpdateRender()
         self.timer_count += 1
@@ -1015,6 +1024,8 @@ class Viewer(wx.Panel):
             self.timer.Stop()
             if index is None:
                 self.static_markers[self.index].SetVisibility(1)
+                if self.index_static_markers_efield is not None:
+                    self.static_markers_efield[self.index_static_markers_efield][0].SetVisibility(1)
                 if not self.nav_status:
                     self.UpdateRender()
             self.index = False
