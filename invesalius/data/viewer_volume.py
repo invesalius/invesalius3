@@ -1890,7 +1890,7 @@ class Viewer(wx.Panel):
         return TextLegend
 
     def CreateEfieldSpreadLegend(self):
-        self.SpreadEfieldFactorTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.9))
+        self.SpreadEfieldFactorTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.9))
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
@@ -2109,7 +2109,7 @@ class Viewer(wx.Panel):
         self.ClusterEfieldTextActor.SetValue('Clusters above '+ str(int(self.efield_threshold*100)) + '% percent: ' + str(n_clusters))
 
     def CreateClustersEfieldLegend(self):
-        self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,const.TEXT_POS_LEFT_UP)
+        self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.03, 0.99))
         self.ren.AddActor(self.ClusterEfieldTextActor.actor)
 
     def EnableShowEfieldAboveThreshold(self, enable):
@@ -2204,7 +2204,7 @@ class Viewer(wx.Panel):
     def CreateEfieldAtTargetLegend(self):
         if self.EfieldAtTargetLegend is not None:
             self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
-        self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.35, 0.97))
+        self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.96))
         self.ren.AddActor(self.EfieldAtTargetLegend.actor)
 
     # def getAdjacentCells(self, mesh, cellId):
