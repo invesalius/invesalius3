@@ -2443,8 +2443,8 @@ class Viewer(wx.Panel):
             if self.vectorfield_actor is not None:
                 self.ren.RemoveActor(self.vectorfield_actor)
             if self.plot_vector:
-                wx.CallAfter(Publisher.sendMessage, 'Show max Efield actor')
-                wx.CallAfter(Publisher.sendMessage, 'Show CoG Efield actor')
+                Publisher.sendMessage('Show max Efield actor')
+                Publisher.sendMessage('Show CoG Efield actor')
                 if self.efield_tools:
                     wx.CallAfter(Publisher.sendMessage, 'Show distance between Max and CoG Efield')
                     self.DetectClustersEfieldSpread(self.positions_above_threshold)
