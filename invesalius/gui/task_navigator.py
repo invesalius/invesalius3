@@ -1057,17 +1057,15 @@ class RefinePage(wx.Panel):
         Publisher.subscribe(self.OnResetTrackerFiducials, "Reset tracker fiducials")
     
     def OnUpdateUI(self):
+        for m in range(6):
+            for n in range(3):
+                if m <= 2:
+                    value = self.image.GetImageFiducialForUI(m, n)
+                else:
+                    value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
+                self.numctrls_fiducial[m][n].SetValue(value)
+
         if self.tracker.AreTrackerFiducialsSet() and self.image.AreImageFiducialsSet():
-            for m in range(6):
-                for n in range(3):
-                    if m <= 2:
-                        value = self.image.GetImageFiducialForUI(m, n)
-                    else:
-                        value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
-
-                    self.numctrls_fiducial[m][n].SetValue(value)
-        
-
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
             self.navigation.UpdateFiducialRegistrationError(self.tracker, self.image)
             fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
@@ -1082,7 +1080,7 @@ class RefinePage(wx.Panel):
         for m in range(3):
             for n in range(3):
                 value = self.tracker.GetTrackerFiducialForUI(m, n)
-                self.numctrls_fiducial[m][n].SetValue(value)
+                self.numctrls_fiducial[m + 3][n].SetValue(value)
 
     def OnBack(self, evt):
         Publisher.sendMessage('Back to image fiducials')
