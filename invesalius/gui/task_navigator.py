@@ -2057,6 +2057,10 @@ class MarkersPanel(wx.Panel):
             return
 
         for d in state:
+            if 'cortex_position_orientation' in d:
+                cortex_position_orientation = d['cortex_position_orientation']
+            else:
+                cortex_position_orientation = None
             self.CreateMarker(
                 position=d['position'],
                 orientation=d['orientation'],
@@ -2068,8 +2072,9 @@ class MarkersPanel(wx.Panel):
                 is_efield_target=False,
                 seed=d['seed'],
                 session_id=d['session_id'],
-                cortex_position_orientation = d['cortex_position_orientation'],
+                cortex_position_orientation=cortex_position_orientation,
             )
+
             # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
             # then set as target if needed. This could be refactored so that a CreateMarker call would
             # suffice to set it as target.
