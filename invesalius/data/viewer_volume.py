@@ -983,9 +983,9 @@ class Viewer(wx.Panel):
                     index = int(index[0])
                     self.ren.RemoveActor(self.static_markers_efield[index][0])
                     del self.static_markers_efield[index]
-                    if i != len(self.static_markers)-1:
-                        for j in range(len(self.static_markers_efield)):
-                            self.static_markers_efield[j][1] -= 1
+                if i != len(self.static_markers)-1:
+                    for j in range(len(self.static_markers_efield)):
+                        self.static_markers_efield[j][1] -= 1
 
             self.ren.RemoveActor(self.static_markers[i])
             del self.static_markers[i]
