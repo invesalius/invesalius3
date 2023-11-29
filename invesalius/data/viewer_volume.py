@@ -978,9 +978,8 @@ class Viewer(wx.Panel):
         for i in reversed(indexes):
 
             if len(self.static_markers_efield) > 0:
-                index = None
                 index = [h for h, row in enumerate(self.static_markers_efield) if row[1] == i]
-                if index is not None:
+                if index:
                     index = int(index[0])
                     self.ren.RemoveActor(self.static_markers_efield[index][0])
                     del self.static_markers_efield[index]
