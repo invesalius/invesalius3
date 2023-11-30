@@ -2282,19 +2282,24 @@ class MarkersPanel(wx.Panel):
             #Publisher.sendMessage('Check efield data')
             #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
             if self.__find_target_marker()  == self.marker_list_ctrl.GetFocusedItem():
-                efield_menu = menu_id.Append(8, _('Save Efield target Data'))
+                efield_menu = menu_id.Append(7, _('Save Efield target Data'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
         if self.navigation.e_field_loaded:
-            Publisher.sendMessage('Check efield data')
-            if self.efield_data_saved:
-                if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
-                    if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
-                        efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
-                        menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
-                    else:
-                        efield_target_menu = menu_id.Append(9, _('Set as Efield target(compare)'))
-                        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
+            efield_target_menu = menu_id.Append(8, _('Set as Efield target 1 (origin)'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
+
+            efield_target_menu = menu_id.Append(9, _('Set as Efield target 2'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget2, efield_target_menu)
+            # Publisher.sendMessage('Check efield data')
+            # if self.efield_data_saved:
+            #     if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
+            #         if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
+            #             efield_target_menu  = menu_id.Append(9, _('Remove Efield target'))
+            #             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu )
+            #         else:
+            #             efield_target_menu = menu_id.Append(9, _('Set as Efield target(compare)'))
+            #             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         if self.navigation.e_field_loaded and not self.nav_status:
             if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
@@ -2303,10 +2308,10 @@ class MarkersPanel(wx.Panel):
 
         if self.navigation.e_field_loaded:
             if self.__find_efield_target_marker() == self.marker_list_ctrl.GetFocusedItem():
-                create_efield_target = menu_id.Append(10, _('Remove Efield Cortex target'))
+                create_efield_target = menu_id.Append(11, _('Remove Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target)
             else:
-                create_efield_target = menu_id.Append(11, _('Set as Efield target'))
+                create_efield_target = menu_id.Append(11, _('Set as Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
                 self.marker_list_ctrl.GetFocusedItem()
 
@@ -2413,8 +2418,19 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
         self.__set_marker_as_target(idx)
-        self.efield_target_idx = idx
-        Publisher.sendMessage('Get target index efield', target_index_list = idx )
+        self.efield_target_idx_origin = idx
+
+        #Publisher.sendMessage('Get target index efield', target_index_list = idx )
+
+    def OnMenuSetEfieldTarget2(self,evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        if idx == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        efield_target_idx_2 = idx
+        target1_origin = self.markers[self.efield_target_idx_origin].cortex_position_orientation
+        target2 = self.markers[efield_target_idx_2].cortex_position_orientation
+        Publisher.sendMessage('Get targets Ids for mtms', target1_origin = target1_origin, target2 = target2)
 
     def OnMenuSaveEfieldTargetData(self,evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()

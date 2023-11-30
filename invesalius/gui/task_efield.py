@@ -208,7 +208,7 @@ class InnerTaskPanel(wx.Panel):
 
         value = str(0)
         tooltip = wx.ToolTip(_("dt(\u03BC s)"))
-        self.input_dt = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_dt = wx.TextCtrl(self, value=str(60), size=wx.Size(60, -1), style=wx.TE_CENTRE)
         self.input_dt.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.input_dt.SetBackgroundColour('WHITE')
         self.input_dt.SetEditable(1)
@@ -306,7 +306,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnGetMultilocusCoils, 'Get multilocus paths from json')
         Publisher.subscribe(self.SendNeuronavigationApi, 'Send Neuronavigation Api')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
-
+        Publisher.subscribe(self.GetIds, 'Get dI for mtms')
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
         if filename:
@@ -515,8 +515,24 @@ class InnerTaskPanel(wx.Panel):
                             float(self.input_coil5.GetValue())]
         self.input_coils = np.array(self.input_coils) * input_dt
         self.input_coils = self.input_coils.tolist()
-        print('dIperdt: ', self.input_coils)
-        print('input_dt: ', input_dt)
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+
+    def SenddI(self, dIs):
+
+        input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
+        self.input_coils = dIs
+        self.input_coils = np.array(self.input_coils) * input_dt
+        self.input_coil1.SetValue(str(dIs[0]))
+        self.input_coil2.SetValue(str(dIs[1]))
+        self.input_coil3.SetValue(str(dIs[2]))
+        self.input_coil4.SetValue(str(dIs[3]))
+        self.input_coil5.SetValue(str(dIs[4]))
+
+        self.navigation.neuronavigation_api.set_dIperdt(
+            dIperdt=self.input_coils,
+        )
+
+    def GetIds(self, dIs):
+        self.SenddI(dIs)

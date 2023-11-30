@@ -307,6 +307,7 @@ class Viewer(wx.Panel):
         #self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
         self.SpreadEfieldFactorTextActor = None
+        self.mTMSCoordTextActor = None
         self.EfieldAtTargetLegend = None
         self.ClusterEfieldTextActor = None
         self.enableefieldabovethreshold = False
@@ -502,6 +503,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.CoGEforCortexMarker, 'Get Cortex position')
         Publisher.subscribe(self.AddCortexMarkerActor, 'Add cortex marker actor')
         Publisher.subscribe(self.CortexMarkersVisualization, 'Display efield markers at cortex')
+        Publisher.subscribe(self.GetTargetPositions, 'Get targets Ids for mtms')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1962,6 +1964,48 @@ class Viewer(wx.Panel):
 
         #location_previous_max = self.saved_target_data[3]
         #saved_efield_data = self.saved_target_data[2]
+
+    def CreateEfieldmTMSCoorlegend(self):
+        self.mTMSCoordTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.2))
+        self.ren.AddActor(self.mTMSCoordTextActor.actor)
+
+    def GetTargetPositions(self, target1_origin, target2):
+        if self.mTMSCoordTextActor is None:
+            self.CreateEfieldmTMSCoorlegend()
+
+        x_diff = round(target1_origin[0]- target2[0])
+        y_diff = round(target1_origin[1]- target2[1])
+        csv_filename = '/home/ana/mtms/data/neuronavigation/Aalto_genetic.csv'
+        target_numbers = [x_diff, y_diff, 0]
+        self.matching_row = self.find_and_extract_data(csv_filename, target_numbers)
+        dIs = self.mTMS_multiplyFactor(1000)
+        Publisher.sendMessage('Get dI for mtms', dIs = dIs)
+        self.mTMSCoordTextActor.SetValue('mTMS coords: '+ str(target_numbers))
+
+    def mTMS_multiplyFactor(self, factor):
+        result = []
+        for row in self.matching_row:
+            convert = float(row) * factor
+            result.append(convert)
+        return result
+
+    def find_and_extract_data(self,csv_filename, target_numbers):
+        import csv
+        matching_rows = []
+
+        with open(csv_filename, 'r') as csvfile:
+            csv_reader = csv.reader(csvfile)
+            for row in csv_reader:
+                # Extract the first three numbers from the current row
+                first_three_numbers = list(map(float, row[:3]))
+
+                # Check if the first three numbers match the target numbers
+                if first_three_numbers == target_numbers:
+                    # If there's a match, append the row (excluding the first three numbers)
+                    matching_rows = row[3:8]
+                    break
+
+        return matching_rows
 
     def CheckStatusSavedEfieldData(self):
         indexes_saved_list = []
