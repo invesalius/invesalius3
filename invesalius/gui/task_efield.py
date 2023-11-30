@@ -532,7 +532,7 @@ class InnerTaskPanel(wx.Panel):
         )
 
     def SenddI(self, dIs):
-
+        self.OnChangeCoil(self.multilocus_coil[6], True)
         input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
         self.input_coils = dIs
         self.input_coils = np.array(self.input_coils) * input_dt
@@ -551,4 +551,3 @@ class InnerTaskPanel(wx.Panel):
 
     def OnReset(self, evt):
         Publisher.sendMessage('Get targets Ids for mtms', target1_origin = [0,0], target2 = [0,0])
-        print('here')
