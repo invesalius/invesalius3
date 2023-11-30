@@ -504,6 +504,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.AddCortexMarkerActor, 'Add cortex marker actor')
         Publisher.subscribe(self.CortexMarkersVisualization, 'Display efield markers at cortex')
         Publisher.subscribe(self.GetTargetPositions, 'Get targets Ids for mtms')
+        Publisher.subscribe(self.GetTargetPathmTMS, 'Send targeting file path')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1969,13 +1970,16 @@ class Viewer(wx.Panel):
         self.mTMSCoordTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.2))
         self.ren.AddActor(self.mTMSCoordTextActor.actor)
 
+    def GetTargetPathmTMS(self,targeting_file):
+        self.targeting_file = targeting_file
+
     def GetTargetPositions(self, target1_origin, target2):
         if self.mTMSCoordTextActor is None:
             self.CreateEfieldmTMSCoorlegend()
 
         x_diff = round(target1_origin[0]- target2[0])
         y_diff = round(target1_origin[1]- target2[1])
-        csv_filename = '/app/data/neuronavigation/Aalto_genetic.csv'
+        csv_filename = self.targeting_file
         target_numbers = [x_diff, y_diff, 0]
         self.matching_row = self.find_and_extract_data(csv_filename, target_numbers)
         dIs = self.mTMS_multiplyFactor(1000)

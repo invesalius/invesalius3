@@ -423,6 +423,7 @@ class SurfaceManager():
         cortex =config_dict['path_meshes']+config_dict['cortex']
         bmeshes = config_dict['bmeshes']
         coil = config_dict['coil']
+        targeting_file = config_dict['targeting csv file']
         dIperdt_list = []
         dIperdt = config_dict['dIperdts']
         for elements in dIperdt:
@@ -482,6 +483,7 @@ class SurfaceManager():
             scalp_path = config_dict['path_meshes'] + config_dict['scalp path']
             surface_index_bmesh = self.OnImportCustomBinFile(scalp_path)
             Publisher.sendMessage('Send scalp index', scalp_actor = self.actors_dict[surface_index_bmesh])
+            Publisher.sendMessage('Send targeting file path', targeting_file= targeting_file)
 
     def OnImportSurfaceFile(self, filename):
         """
