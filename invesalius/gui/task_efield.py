@@ -251,6 +251,12 @@ class InnerTaskPanel(wx.Panel):
         btn_enter.Bind(wx.EVT_BUTTON, self.OnEnterdIPerdt)
         btn_enter.Enable(True)
 
+        tooltip = wx.ToolTip(_("Reset Values"))
+        btn_reset = wx.Button(self, -1, _("Reset"), size=wx.Size(80, -1))
+        btn_reset.SetToolTip(tooltip)
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+        btn_reset.Enable(True)
+
         line_checkboxes = wx.BoxSizer(wx.HORIZONTAL)
         line_checkboxes.AddMany([(enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
                                  (plot_vectors, 1, wx.LEFT | wx.RIGHT, 2),
@@ -282,6 +288,11 @@ class InnerTaskPanel(wx.Panel):
         line_mtms.Add(self.input_coil4, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, )
         line_mtms.Add(self.input_coil5, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, )
 
+        line_mtms_buttoms = wx.BoxSizer(wx.HORIZONTAL)
+        line_mtms_buttoms.AddMany([(btn_enter, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT),
+                                   (btn_reset, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT)
+        ])
+
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
         line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
 
@@ -294,7 +305,7 @@ class InnerTaskPanel(wx.Panel):
         main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
         main_sizer.Add(text_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
         main_sizer.Add(line_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
-        main_sizer.Add(btn_enter, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT)
+        main_sizer.Add(line_mtms_buttoms, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT)
         main_sizer.Add(line_cortex_markers, wx.BOTTOM | wx.ALIGN_CENTER)
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
@@ -307,6 +318,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.SendNeuronavigationApi, 'Send Neuronavigation Api')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
         Publisher.subscribe(self.GetIds, 'Get dI for mtms')
+
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
         if filename:
@@ -536,3 +548,7 @@ class InnerTaskPanel(wx.Panel):
 
     def GetIds(self, dIs):
         self.SenddI(dIs)
+
+    def OnReset(self, evt):
+        Publisher.sendMessage('Get targets Ids for mtms', target1_origin = [0,0], target2 = [0,0])
+        print('here')
