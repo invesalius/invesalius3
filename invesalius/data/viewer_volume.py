@@ -2161,10 +2161,17 @@ class Viewer(wx.Panel):
 
     def DetectClustersEfieldSpread(self, points):
         from sklearn.cluster import DBSCAN
+        from sklearn.metrics import pairwise_distances
+        points = np.array(points) if isinstance(points, list) else points
         dbscan = DBSCAN(eps=5, min_samples=1).fit(points)
         labels = dbscan.labels_
         n_clusters = len(set(labels)) - (1 if -1 in labels else 0 )
-        self.ClusterEfieldTextActor.SetValue('Clusters above '+ str(int(self.efield_threshold*100)) + '% percent: ' + str(n_clusters))
+        core_sample_indices = dbscan.core_sample_indices_
+        cluster_centers = points[core_sample_indices, :]
+        representative_centers = np.array([cluster.mean(axis=0) for cluster in np.split(cluster_centers, np.cumsum(
+            np.unique(dbscan.labels_, return_counts=True)[1])[:-1])])
+        distances_between_representatives = np.max(pairwise_distances(representative_centers))
+        self.ClusterEfieldTextActor.SetValue('Clusters above '+ str(int(self.efield_threshold*100)) + '% percent: ' + str(n_clusters) +' distance:' +str(distances_between_representatives))
 
     def CreateClustersEfieldLegend(self):
         self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.03, 0.99))
