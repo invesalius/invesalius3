@@ -198,13 +198,13 @@ class InnerTaskPanel(wx.Panel):
         spin_ROI_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
 
         combo_surface_name_title = wx.StaticText(self, -1, _('Change coil:'))
-        self.combo_surface_name = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
-                                              style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.combo_change_coil = wx.ComboBox(self, -1, size=(100, 23), pos=(25, 20),
+                                             style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
-        self.combo_surface_name.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboCoilNameClic)
-        self.combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboCoil)
-        self.combo_surface_name.Insert('Select coil:', 0)
-        self.combo_surface_name.Enable(False)
+        self.combo_change_coil.Bind(wx.EVT_COMBOBOX_DROPDOWN, self.OnComboCoilNameClic)
+        self.combo_change_coil.Bind(wx.EVT_COMBOBOX, self.OnComboCoil)
+        self.combo_change_coil.Insert('Select coil:', 0)
+        self.combo_change_coil.Enable(False)
 
         value = str(0)
         tooltip = wx.ToolTip(_("dt(\u03BC s)"))
@@ -245,6 +245,20 @@ class InnerTaskPanel(wx.Panel):
         self.input_coil5.SetEditable(1)
         self.input_coil5.SetToolTip(tooltip)
 
+        tooltip = wx.ToolTip(_("mtms coords"))
+        text_input_coord = wx.StaticText(self, -1, _("mtms coords:"))
+        self.input_coord = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_coord .SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.input_coord.SetBackgroundColour('WHITE')
+        self.input_coord.SetEditable(1)
+        self.input_coord.SetToolTip(tooltip)
+
+        tooltip = wx.ToolTip(_("Enter mtms coord"))
+        btn_enter_mtms_coord = wx.Button(self, -1, _("Enter mtms coord"), size=wx.Size(80, -1))
+        btn_enter_mtms_coord.SetToolTip(tooltip)
+        btn_enter_mtms_coord.Bind(wx.EVT_BUTTON, self.OnEnterMtmsCoords)
+        btn_enter_mtms_coord.Enable(True)
+
         tooltip = wx.ToolTip(_("Enter Values"))
         btn_enter = wx.Button(self, -1, _("Enter"), size=wx.Size(80, -1))
         btn_enter.SetToolTip(tooltip)
@@ -263,6 +277,15 @@ class InnerTaskPanel(wx.Panel):
                                  (show_area, 1, wx.LEFT | wx.RIGHT, 2),
                                  (efield_tools, 1, wx.LEFT | wx.RIGHT, 2)
                                  ])
+
+        line_change_coil_input_coord_text = wx.BoxSizer(wx.HORIZONTAL)
+        line_change_coil_input_coord_text.AddMany([(combo_surface_name_title, 0, wx.RIGHT),
+                                              (text_input_coord, 0, wx.CENTER)])
+
+        line_change_coil_input_coord = wx.BoxSizer(wx.HORIZONTAL)
+        line_change_coil_input_coord.AddMany([(self.combo_change_coil,1, wx.RIGHT,2),
+                                              (self.input_coord, 1, wx.LEFT,2),
+                                              (btn_enter_mtms_coord, 1, wx.LEFT,2)])
 
         line_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_sleep.AddMany([(text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
@@ -299,8 +322,8 @@ class InnerTaskPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
         main_sizer.Add(line_checkboxes, 1, wx.LEFT | wx.RIGHT, 2)
-        main_sizer.Add(combo_surface_name_title, 0, wx.CENTER)
-        main_sizer.Add(self.combo_surface_name, 0, wx.CENTER)
+        main_sizer.Add(line_change_coil_input_coord_text, 0, wx.RIGHT)
+        main_sizer.Add(line_change_coil_input_coord, 0, wx.RIGHT)
         main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP)
         main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
         main_sizer.Add(text_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
@@ -365,7 +388,7 @@ class InnerTaskPanel(wx.Panel):
 
             Publisher.sendMessage('Initialize color array')
             self.e_field_loaded = True
-            self.combo_surface_name.Enable(True)
+            self.combo_change_coil.Enable(True)
             self.btn_all_save.Enable(True)
 
         else:
@@ -393,16 +416,16 @@ class InnerTaskPanel(wx.Panel):
     def OnComboNameClic(self, evt):
         import invesalius.project as prj
         proj = prj.Project()
-        self.combo_surface_name.Clear()
+        self.combo_change_coil.Clear()
         for n in range(len(proj.surface_dict)):
-            self.combo_surface_name.Insert(str(proj.surface_dict[n].name), n)
+            self.combo_change_coil.Insert(str(proj.surface_dict[n].name), n)
 
     def OnComboCoilNameClic(self, evt):
-        self.combo_surface_name.Clear()
+        self.combo_change_coil.Clear()
         if self.multilocus_coil is not None:
             for elements in range(len(self.multilocus_coil)):
                 coil_name = self.multilocus_coil[elements].split('/')[-1].split('.bin')[0]
-                self.combo_surface_name.Insert(coil_name, elements)
+                self.combo_change_coil.Insert(coil_name, elements)
 
     def OnComboCoil(self, evt):
         coil_name = evt.GetString()
@@ -530,6 +553,11 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+
+    def OnEnterMtmsCoords(self, evt):
+        input_coord_str = self.input_coord.GetValue()
+        input_coord = [int(i) for i in input_coord_str.split(',') if i]
+        Publisher.sendMessage('Send mtms coords', mtms_coord = input_coord)
 
     def SenddI(self, dIs):
         self.OnChangeCoil(self.multilocus_coil[6], True)

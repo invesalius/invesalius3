@@ -505,6 +505,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.CortexMarkersVisualization, 'Display efield markers at cortex')
         Publisher.subscribe(self.GetTargetPositions, 'Get targets Ids for mtms')
         Publisher.subscribe(self.GetTargetPathmTMS, 'Send targeting file path')
+        Publisher.subscribe(self.GetdIsfromCoord,'Send mtms coords')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1985,6 +1986,14 @@ class Viewer(wx.Panel):
         dIs = self.mTMS_multiplyFactor(1000)
         Publisher.sendMessage('Get dI for mtms', dIs = dIs)
         self.mTMSCoordTextActor.SetValue('mTMS coords: '+ str(target_numbers))
+
+    def GetdIsfromCoord(self,mtms_coord):
+        if self.mTMSCoordTextActor is None:
+            self.CreateEfieldmTMSCoorlegend()
+        self.matching_row = self.find_and_extract_data(self.targeting_file, mtms_coord)
+        dIs = self.mTMS_multiplyFactor(1000)
+        Publisher.sendMessage('Get dI for mtms', dIs=dIs)
+        self.mTMSCoordTextActor.SetValue('mTMS coords: ' + str(mtms_coord))
 
     def mTMS_multiplyFactor(self, factor):
         result = []
