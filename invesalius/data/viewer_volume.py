@@ -1951,7 +1951,9 @@ class Viewer(wx.Panel):
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
                 e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
-                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors])
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
+           #REMOVE THIS
+                self.mtms_coord = None
             else:
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
 
@@ -1977,7 +1979,7 @@ class Viewer(wx.Panel):
     def GetTargetPositions(self, target1_origin, target2):
         if self.mTMSCoordTextActor is None:
             self.CreateEfieldmTMSCoorlegend()
-
+        self.mtms_coord = None
         x_diff = round(target1_origin[0]- target2[0])
         y_diff = round(target1_origin[1]- target2[1])
         csv_filename = self.targeting_file
@@ -1986,14 +1988,17 @@ class Viewer(wx.Panel):
         dIs = self.mTMS_multiplyFactor(1000)
         Publisher.sendMessage('Get dI for mtms', dIs = dIs)
         self.mTMSCoordTextActor.SetValue('mTMS coords: '+ str(target_numbers))
+        self.mtms_coord = target_numbers
 
     def GetdIsfromCoord(self,mtms_coord):
         if self.mTMSCoordTextActor is None:
             self.CreateEfieldmTMSCoorlegend()
+        self.mtms_coord = None
         self.matching_row = self.find_and_extract_data(self.targeting_file, mtms_coord)
         dIs = self.mTMS_multiplyFactor(1000)
         Publisher.sendMessage('Get dI for mtms', dIs=dIs)
         self.mTMSCoordTextActor.SetValue('mTMS coords: ' + str(mtms_coord))
+        self.mtms_coord = mtms_coord
 
     def mTMS_multiplyFactor(self, factor):
         result = []
@@ -2624,7 +2629,7 @@ class Viewer(wx.Panel):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
         all_data=[]
-        header = ['T_rot','coil position','coords position', 'coords', 'Enorm', 'efield vectors']
+        header = ['T_rot','coil position','coords position', 'coords', 'Enorm', 'efield vectors', 'norm cell indexes', 'focal factors', 'efield threshold', 'efield ROI size', 'mtms_coord']
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
@@ -2633,8 +2638,9 @@ class Viewer(wx.Panel):
             efield_coords_position = [list(position_world), list(orientation_world)]
         if plot_efield_vectors:
             e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
-            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors])
-
+            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors, self.Id_list, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
+            #REMOVE THIS
+            self.mtms_coord = None
         else:
             all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
 
@@ -2646,7 +2652,7 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
-        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors']
+        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors', 'focal factors', 'efield threshold', 'efield ROI size', 'mtms_coord']
         all_data = list(self.target_radius_list)
         with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)
