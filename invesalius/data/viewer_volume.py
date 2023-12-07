@@ -1981,7 +1981,7 @@ class Viewer(wx.Panel):
         x_diff = round(target1_origin[0]- target2[0])
         y_diff = round(target1_origin[1]- target2[1])
         csv_filename = self.targeting_file
-        target_numbers = [x_diff, y_diff, 0]
+        target_numbers = [-x_diff, y_diff, 0]
         self.matching_row = self.find_and_extract_data(csv_filename, target_numbers)
         dIs = self.mTMS_multiplyFactor(1000)
         Publisher.sendMessage('Get dI for mtms', dIs = dIs)
