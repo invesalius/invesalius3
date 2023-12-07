@@ -1908,8 +1908,8 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
-        distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
-        self.SpreadEfieldFactorTextActor.SetValue('Spread distance: ' + str("{:04.2f}".format(distance_efield)))
+        self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
+        self.SpreadEfieldFactorTextActor.SetValue('Spread distance: ' + str("{:04.2f}".format(self.distance_efield)))
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
@@ -2172,22 +2172,21 @@ class Viewer(wx.Panel):
         from sklearn.cluster import DBSCAN
         from sklearn.metrics import pairwise_distances
 
-        from scipy.stats import kurtosis
-        kurtosis = kurtosis(self.e_field_norms)
-
         points = np.array(points) if isinstance(points, list) else points
         dbscan = DBSCAN(eps=5, min_samples=1).fit(points)
         labels = dbscan.labels_
-        n_clusters = len(set(labels)) - (1 if -1 in labels else 0 )
+        n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
         core_sample_indices = dbscan.core_sample_indices_
         cluster_centers = points[core_sample_indices, :]
         representative_centers = np.array([cluster.mean(axis=0) for cluster in np.split(cluster_centers, np.cumsum(
             np.unique(dbscan.labels_, return_counts=True)[1])[:-1])])
         distances_between_representatives = np.max(pairwise_distances(representative_centers))
+        focal_factor = n_clusters/len(self.Id_list) + distances_between_representatives/30 + self.distance_efield/15
+        focal_factor = 1/focal_factor
         self.ClusterEfieldTextActor.SetValue('Clusters above '+ str(int(self.efield_threshold*100)) + '% percent: ' +
                                              str(n_clusters)+ '\n' +' distance:' +str(distances_between_representatives) +
-                                            '\n'+ 'Kurtosis: ' + str(kurtosis))
-
+                                            '\n'+ 'Focal Factor: ' + '  '+str(focal_factor))
+        self.focal_factor_members = [n_clusters, n_clusters/len(self.Id_list), distances_between_representatives,distances_between_representatives/30, self.distance_efield, self.distance_efield/15,focal_factor]
 
     def CreateClustersEfieldLegend(self):
         self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.03, 0.99))
@@ -2453,7 +2452,9 @@ class Viewer(wx.Panel):
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list=[]
-
+        self.focal_factor_members=[]
+        self.distance_efield = None
+        self.mtms_coord = None
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
