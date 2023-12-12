@@ -3459,7 +3459,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.SetObjectFiducial, 'Set object fiducial')
+        pass
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3687,6 +3687,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         #
         def set_fiducial_callback(state):
             if state:
+                self.SetObjectFiducial(index)
                 Publisher.sendMessage('Set object fiducial', fiducial_index=index)
 
                 ctrl.SetValue(False)
