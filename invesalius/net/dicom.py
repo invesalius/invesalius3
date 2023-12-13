@@ -60,7 +60,8 @@ class DicomNet:
 
             ae = pynetdicom.AE()
             ae.add_requested_context('1.2.840.10008.1.1')
-            assoc = ae.associate(self.address, int(self.port))
+            assoc = ae.associate(self.address, int(
+                self.port), ae_title=self.aetitle)
             if assoc.is_established:
 
                 assoc.release()
@@ -78,7 +79,8 @@ class DicomNet:
         ae = pynetdicom.AE()
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
 
-        assoc = ae.associate(self.address, int(self.port))
+        assoc = ae.associate(self.address, int(
+            self.port), ae_title=self.aetitle)
         if not assoc.is_established:
 
             return False
@@ -86,81 +88,137 @@ class DicomNet:
         patients = {}
 
         ds = Dataset()
-        ds.QueryRetrieveLevel = 'INSTANCE'
+        ds.QueryRetrieveLevel = 'PATIENT'
         ds.PatientName = f'*{self.search_word}*'
         ds.PatientID = ''
-        ds.PatientBirthDate = ''
-        ds.PatientAge = ''
-        ds.PatientSex = ''
-        ds.StudyDescription = ''
-        ds.InstitutionName = ''
-        ds.Modality = ''
-        ds.AccessionNumber = ''
-        ds.ReferringPhysicianName = ''
-        ds.SeriesInstanceUID = ''
-        ds.SeriesDescription = ''
-        ds.AcquisitionTime = ''
-        ds.AcquisitionDate = ''
 
+        patientsId = []
         response = assoc.send_c_find(
             ds, PatientRootQueryRetrieveInformationModelFind)
-        for (status, identifier) in response:
+        for (patient_status, patient_identifier) in response:
 
-            if status and status.Status in (0xFF00, 0xFF01):
+            if patient_status and patient_status.Status in (0xFF00, 0xFF01):
 
-                patient_id = identifier.get('PatientID', None)
-                serie_id = identifier.get('SeriesInstanceUID', None)
+                patientsId.append(patient_identifier.get('PatientID', None))
 
-                if not patient_id or not serie_id:
+        patientStudies = {}
+        for id in patientsId:
 
-                    continue
+            ds.QueryRetrieveLevel = 'STUDY'
+            ds.PatientID = id
+            ds.StudyInstanceUID = ''
+            response = assoc.send_c_find(
+                ds, PatientRootQueryRetrieveInformationModelFind)
+            for (status, identifier) in response:
 
-                if not (patient_id in patients.keys()):
-                    patients[patient_id] = {}
+                if status and status.Status in (0xFF00, 0xFF01):
 
-                if not (serie_id in patients[patient_id]):
+                    if not id in patientStudies.keys():
+                        patientStudies[id] = []
 
-                    name = identifier.get('PatientName', None)
-                    age = identifier.get(
-                        'PatientAge', None)
-                    age = age.rstrip('Y').lstrip('0') if age else ''
-                    gender = identifier.get('PatientSex', None)
-                    study_description = identifier.get(
-                        'StudyDescription', None)
-                    modality = identifier.get('Modality', None)
-                    institution = identifier.get('InstitutionName', None)
-                    date_of_birth = identifier.get(
-                        'PatientBirthDate', None)
-                    date_of_birth = datetime.strptime(
-                        date_of_birth, '%Y%m%d').strftime('%d/%m/%Y') if date_of_birth else ''
-                    acession_number = identifier.get('AccessionNumber', None)
-                    ref_physician = identifier.get(
-                        'ReferringPhysicianName', None)
-                    serie_description = identifier.get(
-                        'SeriesDescription', None)
-                    acquisition_time = identifier.get(
-                        'AcquisitionTime', None)
-                    acquisition_time = datetime.strptime(
-                        acquisition_time, '%H%M%S').strftime('%H:%M:%S') if acquisition_time else ''
-                    acquisition_date = identifier.get(
-                        'AcquisitionDate', None)
-                    acquisition_date = datetime.strptime(
-                        acquisition_date, '%Y%m%d').strftime('%d/%m/%Y') if acquisition_date else ''
+                    patientStudies[id].append(
+                        identifier.get('StudyInstanceUID', None))
 
-                    patients[patient_id][serie_id] = {'name': name, 'age': age, 'gender': gender,
-                                                      'study_description': study_description,
-                                                      'modality': modality,
-                                                      'acquisition_time': acquisition_time,
-                                                      'acquisition_date': acquisition_date,
-                                                      'institution': institution,
-                                                      'date_of_birth': date_of_birth,
-                                                      'acession_number': acession_number,
-                                                      'ref_physician': ref_physician,
-                                                      'serie_description': serie_description, 'n_images': 1}
+            studySeries = {}
+            for study_id in patientStudies[id]:
 
-                else:
+                ds.QueryRetrieveLevel = 'SERIES'
+                ds.PatientID = id
+                ds.StudyInstanceUID = study_id
+                ds.SeriesInstanceUID = ''
+                response = assoc.send_c_find(
+                    ds, PatientRootQueryRetrieveInformationModelFind)
+                for (status, identifier) in response:
 
-                    patients[patient_id][serie_id]['n_images'] += 1
+                    if status and status.Status in (0xFF00, 0xFF01):
+
+                        if not study_id in studySeries.keys():
+                            studySeries[study_id] = []
+
+                        studySeries[study_id].append(
+                            identifier.get('SeriesInstanceUID', None))
+
+                for serie_id in studySeries[study_id]:
+
+                    ds.QueryRetrieveLevel = 'IMAGE'
+                    ds.PatientID = id
+                    ds.StudyInstanceUID = study_id
+                    ds.SeriesInstanceUID = serie_id
+                    ds.SOPInstanceUID = ''
+                    ds.PatientName = ''
+                    ds.PatientBirthDate = ''
+                    ds.PatientAge = ''
+                    ds.PatientSex = ''
+                    ds.StudyDescription = ''
+                    ds.InstitutionName = ''
+                    ds.Modality = ''
+                    ds.AccessionNumber = ''
+                    ds.ReferringPhysicianName = ''
+                    ds.SeriesDescription = ''
+                    ds.AcquisitionTime = ''
+                    ds.AcquisitionDate = ''
+                    response = assoc.send_c_find(
+                        ds, PatientRootQueryRetrieveInformationModelFind)
+                    for (status, identifier) in response:
+
+                        if status and status.Status in (0xFF00, 0xFF01):
+
+                            if not (id in patients.keys()):
+                                patients[id] = {}
+
+                            if not (serie_id in patients[id]):
+
+                                name = identifier.get('PatientName', None)
+                                age = identifier.get(
+                                    'PatientAge', None)
+                                age = age.rstrip('Y').lstrip(
+                                    '0') if age else ''
+                                gender = identifier.get('PatientSex', None)
+                                study_instance_uid = identifier.get(
+                                    'StudyInstanceUID', None)
+                                study_description = identifier.get(
+                                    'StudyDescription', None)
+                                modality = identifier.get('Modality', None)
+                                institution = identifier.get(
+                                    'InstitutionName', None)
+                                date_of_birth = identifier.get(
+                                    'PatientBirthDate', None)
+                                date_of_birth = datetime.strptime(
+                                    date_of_birth, '%Y%m%d').strftime('%d/%m/%Y') if date_of_birth else ''
+                                acession_number = identifier.get(
+                                    'AccessionNumber', None)
+                                ref_physician = identifier.get(
+                                    'ReferringPhysicianName', None)
+                                serie_description = identifier.get(
+                                    'SeriesDescription', None)
+                                acquisition_time = identifier.get(
+                                    'AcquisitionTime', None)
+                                acquisition_time = datetime.strptime(
+                                    acquisition_time, '%H%M%S').strftime('%H:%M:%S') if acquisition_time else ''
+                                acquisition_date = identifier.get(
+                                    'AcquisitionDate', None)
+                                acquisition_date = datetime.strptime(
+                                    acquisition_date, '%Y%m%d').strftime('%d/%m/%Y') if acquisition_date else ''
+
+                                patients[id][serie_id] = {'name': name, 'age': age, 'gender': gender,
+                                                          'study_id': study_instance_uid,
+                                                          'study_description': study_description,
+                                                          'modality': modality,
+                                                          'acquisition_time': acquisition_time,
+                                                          'acquisition_date': acquisition_date,
+                                                          'institution': institution,
+                                                          'date_of_birth': date_of_birth,
+                                                          'acession_number': acession_number,
+                                                          'ref_physician': ref_physician,
+                                                          'serie_description': serie_description, 'n_images': 1}
+
+                            else:
+
+                                patients[id][serie_id]['n_images'] += 1
+
+                    break
+
+                break
 
         assoc.release()
         return patients
@@ -189,6 +247,7 @@ class DicomNet:
         ds = Dataset()
         ds.QueryRetrieveLevel = 'SERIES'
         ds.PatientID = values['patient_id']
+        ds.StudyInstanceUID = values['study_id']
         ds.SeriesInstanceUID = values['serie_id']
 
         assoc = ae.associate(self.address, int(

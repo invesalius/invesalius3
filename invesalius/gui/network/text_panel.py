@@ -114,6 +114,7 @@ class TextPanel(wx.Panel):
             p_id = patient
             age = p['age']
             gender = p['gender']
+            study_id = p['study_id']
             study_description = p['study_description']
             modality = p['modality']
             date = p['acquisition_date']
@@ -156,7 +157,8 @@ class TextPanel(wx.Panel):
                     if (patient, series) in self.__idserie_treeitem \
                     else self.__tree.AppendItem(parent, series)
 
-                self.__tree.SetItemPyData(child, (patient, series, n_images))
+                self.__tree.SetItemPyData(
+                    child, (patient, study_id, series, n_images))
 
                 self.__tree.SetItemText(child, serie_description, 0)
                 self.__tree.SetItemText(child, modality, 5)
@@ -193,7 +195,7 @@ class TextPanel(wx.Panel):
         series_data = self.__tree.GetItemPyData(item)
         if series_data:
 
-            patient_id, series_id, n_images = series_data
+            patient_id, study_id, series_id, n_images = series_data
 
             if self.__selected is None:
 
@@ -220,7 +222,7 @@ class TextPanel(wx.Panel):
 
                 try:
 
-                    dn.RunCMove({'patient_id': patient_id,
+                    dn.RunCMove({'patient_id': patient_id, 'study_id': study_id,
                                 'serie_id': series_id, 'n_images': n_images, 'destination': dest}, self._update_progress)
 
                 except Exception as e:

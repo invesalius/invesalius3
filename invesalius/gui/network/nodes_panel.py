@@ -7,12 +7,13 @@ import wx.grid as gridlib
 import sys
 import wx
 
+
 class NodesPanel(wx.Panel):
     """ Dicom Nodes Dialog. """
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        
+
         self.__nodes = []
         self.__selected_index = None
         self.__selected_node = None
@@ -24,7 +25,7 @@ class NodesPanel(wx.Panel):
 
         self.__find_input = wx.TextCtrl(self, size=(225, -1))
         self.__find_input.SetHint("Enter patient name")
-        
+
         find_sizer = self._create_find_box_sizer()
 
         buttons_sizer = self._create_buttons_box_sizer()
@@ -41,10 +42,10 @@ class NodesPanel(wx.Panel):
 
         # Load values from config file
         self._load_values()
-        
+
         # Add the grid table to the main sizer
         main_sizer.Add(self.__list_ctrl, 1, wx.GROW | wx.EXPAND)
-        
+
         # Create the input fields
         self.__ipaddress_input = wx.TextCtrl(self, size=(225, -1))
         self.__ipaddress_input.SetHint("127.0.0.1")
@@ -56,10 +57,10 @@ class NodesPanel(wx.Panel):
         self.__description_input.SetHint("My local server")
 
         form_sizer = self._create_form_sizer()
-        
+
         # Add the form sizer to the main sizer
         main_sizer.Add(form_sizer, 0, wx.ALIGN_CENTER)
-        
+
         # Set the main sizer as the sizer for the frame
         self.SetSizer(main_sizer)
 
@@ -69,19 +70,21 @@ class NodesPanel(wx.Panel):
         """ Find button event. """
 
         if self.__selected_node is None:
-            
-            wx.MessageBox(_("Please, select a node."), _("Error"), wx.OK | wx.ICON_ERROR)
+
+            wx.MessageBox(_("Please, select a node."),
+                          _("Error"), wx.OK | wx.ICON_ERROR)
             return
 
         dn = dcm_net.DicomNet()
         dn.SetHost(self.__selected_node['ipaddress'])
         dn.SetPort(self.__selected_node['port'])
         dn.SetSearchWord(self.__find_input.GetValue())
+        dn.SetAETitle(self.__selected_node['aetitle'])
         Publisher.sendMessage('Populate tree', patients=dn.RunCFind())
 
     def _add_node(self, node):
         """ Add a node to the nodes list. """
-        
+
         self.__nodes.append(node)
 
     def _remove_node(self, idx):
@@ -97,7 +100,7 @@ class NodesPanel(wx.Panel):
             else []
 
         for node in nodes:
-            
+
             # Add node row to the grid
             self._add_node_to_list(node)
 
@@ -118,12 +121,12 @@ class NodesPanel(wx.Panel):
     def _create_find_box_sizer(self):
         """ Create the find box sizer. """
 
-        find_sizer = wx.BoxSizer(wx.HORIZONTAL) 
+        find_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         btn_find = wx.Button(self, label="Search")
         btn_find.Bind(wx.EVT_BUTTON, self._on_button_find)
-        
-        find_sizer.Add(self.__find_input, 0, wx.ALL, 5) 
+
+        find_sizer.Add(self.__find_input, 0, wx.ALL, 5)
         find_sizer.Add(btn_find, 0, wx.ALL, 5)
 
         return find_sizer
@@ -152,7 +155,7 @@ class NodesPanel(wx.Panel):
     def _create_list_ctrl(self):
 
         list_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
-        
+
         list_ctrl.InsertColumn(0, _("Active"))
         list_ctrl.InsertColumn(1, _("IP Address"))
         list_ctrl.InsertColumn(2, _("Port"))
@@ -166,8 +169,10 @@ class NodesPanel(wx.Panel):
     def _bind_evt(self):
         """ Bind events. """
 
-        self.Bind(wx.EVT_LIST_ITEM_CHECKED, self._on_item_selected, self.__list_ctrl)
-        self.Bind(wx.EVT_LIST_ITEM_UNCHECKED, self._on_item_deselected, self.__list_ctrl)
+        self.Bind(wx.EVT_LIST_ITEM_CHECKED,
+                  self._on_item_selected, self.__list_ctrl)
+        self.Bind(wx.EVT_LIST_ITEM_UNCHECKED,
+                  self._on_item_deselected, self.__list_ctrl)
 
     def _add_node_to_list(self, node):
         """ add node to list. """
@@ -175,9 +180,9 @@ class NodesPanel(wx.Panel):
         try:
 
             index = self.__list_ctrl.InsertItem(sys.maxsize, "")
-        
+
         except (OverflowError, AssertionError):
-            
+
             index = self.__list_ctrl.InsertItem(sys.maxsize, "")
 
         self.__list_ctrl.SetItem(index, 0, "", 0)
@@ -192,12 +197,14 @@ class NodesPanel(wx.Panel):
 
         if self.__selected_node is None:
 
-            wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Please select a node"), _(
+                "Error"), wx.OK | wx.ICON_ERROR)
             return
 
         dn = dcm_net.DicomNet()
         dn.SetHost(self.__selected_node['ipaddress'])
         dn.SetPort(self.__selected_node['port'])
+        dn.SetAETitle(self.__selected_node['aetitle'])
 
         ok = dn.RunCEcho()
         self.__list_ctrl.SetItem(self.__selected_index, 5, _("ok")) if ok\
@@ -234,7 +241,7 @@ class NodesPanel(wx.Panel):
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         sizer1.Add(wx.StaticText(self, label="IP Address"), 0, wx.ALL, 5)
         sizer1.Add(self.__ipaddress_input, 0, wx.ALL, 5)
-        
+
         sizer2 = wx.BoxSizer(wx.VERTICAL)
         sizer2.Add(wx.StaticText(self, label="Port"), 0, wx.ALL, 5)
         sizer2.Add(self.__port_input, 0, wx.ALL, 5)
@@ -246,7 +253,7 @@ class NodesPanel(wx.Panel):
         sizer4 = wx.BoxSizer(wx.VERTICAL)
         sizer4.Add(wx.StaticText(self, label="Description"), 0, wx.ALL, 5)
         sizer4.Add(self.__description_input, 0, wx.ALL, 5)
-        
+
         form_sizer.Add(sizer1, 0, wx.ALL, 5)
         form_sizer.Add(sizer2, 0, wx.ALL, 5)
         form_sizer.Add(sizer3, 0, wx.ALL, 5)
@@ -289,7 +296,8 @@ class NodesPanel(wx.Panel):
 
         if self.__selected_index is None:
 
-            wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Please select a node"), _(
+                "Error"), wx.OK | wx.ICON_ERROR)
             return
 
         # Remove node from the grid
