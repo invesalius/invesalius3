@@ -226,8 +226,12 @@ class DicomNet:
     def RunCMove(self, values, progress_callback):
         """ Run CMove to download the DICOM files. """
 
+        completed_responses = 0
+
         def handle_store(event):
             """Handle a C-MOVE request event."""
+
+            nonlocal completed_responses
 
             ds = event.dataset
             ds.file_meta = event.file_meta
@@ -235,6 +239,8 @@ class DicomNet:
             dest = values['destination'].joinpath(
                 f'{ds.SOPInstanceUID}.dcm')
             ds.save_as(dest, write_like_original=False)
+
+            completed_responses += 1
 
             return 0x0000
 
@@ -255,10 +261,8 @@ class DicomNet:
         if assoc.is_established:
 
             scp = ae.start_server(
-                (self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
-
+                (self.ip_call, int(self.port_call)), ae_title=self.aetitle_call, block=False, evt_handlers=handlers)
             total_responses = values['n_images']
-            completed_responses = 0
             progress_callback(completed_responses, total_responses)
             try:
 
@@ -269,12 +273,13 @@ class DicomNet:
                     # pending status, keep moving and updating progress
                     if status and status.Status in (0xFF00, 0xFF01):
 
-                        completed_responses += 1
                         progress_callback(completed_responses, total_responses)
 
-                    # completed case, breaks to avoid reaches 100% and get stucked
+                    # completed case, subtract 1 to avoid reaches 100% and get stuck
                     elif status and status.Status == 0x0000:
 
+                        progress_callback(
+                            completed_responses - 1, total_responses)
                         break
 
                     # there is no status or it returned an error
