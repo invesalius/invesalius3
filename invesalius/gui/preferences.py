@@ -98,6 +98,9 @@ class Preferences(wx.Dialog):
         surface_interpolation = session.GetConfig('surface_interpolation')
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
+        do_logging = session.GetConfig('do_logging')
+        logging_file  = session.GetConfig('logging_file')
+
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
@@ -108,12 +111,14 @@ class Preferences(wx.Dialog):
             const.SURFACE_INTERPOLATION: surface_interpolation,
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
+            const.LOGGING: do_logging,
+            const.LOGFILE: logging_file,
         }
 
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
         self.pnl_logging.LoadSelection(values)
-        
+
 class Viewer3D(wx.Panel):
     def __init__(self, parent):
 
