@@ -192,21 +192,21 @@ class Logging(wx.Panel):
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
-        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging option"))
-        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Do Logging"))
-        rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
-            bsizer_slices.GetStaticBox(),
+        bsizer_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging option"))
+        lbl_logging = wx.StaticText(bsizer_logging.GetStaticBox(), -1, _("Do Logging"))
+        rb_logging = self.rb_logging = wx.RadioBox(
+            bsizer_logging.GetStaticBox(),
             -1,
             choices=[_("No"), _("Yes")],
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
 
-        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
-        bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_logging.Add(lbl_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_logging.Add(rb_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer_slices, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         
         self.SetSizerAndFit(border)
         self.Layout()
@@ -214,14 +214,14 @@ class Logging(wx.Panel):
     def GetSelection(self):
 
         options = {
-            const.LOGGING: self.rb_inter_sl.GetSelection()
+            const.LOGGING: self.rb_logging.GetSelection()
         }
 
         return options
 
     def LoadSelection(self, values):
         logging = values[const.LOGGING]
-        self.rb_inter_sl.SetSelection(int(logging))
+        self.rb_logging.SetSelection(int(logging))
 
 class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):
