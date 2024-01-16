@@ -88,7 +88,7 @@ class Preferences(wx.Dialog):
         logging = self.pnl_logging.GetSelection()
         values.update(lang)
         values.update(viewer)
-
+        values.update(logging)
         return values
 
     def LoadPreferences(self):
@@ -112,7 +112,8 @@ class Preferences(wx.Dialog):
 
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
-
+        self.pnl_logging.LoadSelection(values)
+        
 class Viewer3D(wx.Panel):
     def __init__(self, parent):
 

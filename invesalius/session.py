@@ -60,7 +60,9 @@ class Session(metaclass=Singleton):
             'project_status': 3,
             'language': '',
             'auto_reload_preview': False,
-        }
+            'do_logging': 0,
+            'logging_file': '',
+       }
         self._exited_successfully_last_time = not self._ReadState()
         self.__bind_events()
 
@@ -82,6 +84,8 @@ class Session(metaclass=Singleton):
             'auto_reload_preview': False,
             'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             'last_dicom_folder': '',
+            'do_logging': 0,
+            'logging_file': '',
         }
         self.WriteConfigFile()
 
@@ -224,6 +228,8 @@ class Session(metaclass=Singleton):
         slice_interpolation = config.getint('session', 'slice_interpolation')
         rendering = config.getint('session', 'rendering')
         random_id = config.getint('session','random_id')
+        do_logging = config.getint('session', 'do_logging')
+        #logging_file = config.get('paths','last_dicom_folder') 
 
         recent_projects = eval(config.get('project','recent_projects'))
         recent_projects = [list(rp) for rp in recent_projects]
@@ -238,6 +244,7 @@ class Session(metaclass=Singleton):
         self.SetConfig('rendering', rendering)
         self.SetConfig('random_id', random_id)
         self.SetConfig('recent_projects', recent_projects)
+        self.SetConfig('do_logging', do_logging)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
