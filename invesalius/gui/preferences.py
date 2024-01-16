@@ -49,7 +49,7 @@ class Preferences(wx.Dialog):
 
         self.pnl_viewer3d = Viewer3D(self.book)
         self.pnl_language = Language(self.book)
-        self.pnl_logging = Viewer3D(self.book)
+        self.pnl_logging = Logging(self.book)
 
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
@@ -187,6 +187,41 @@ class Viewer3D(wx.Panel):
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
+
+class Logging(wx.Panel):
+    def __init__(self, parent):
+
+        wx.Panel.__init__(self, parent)
+        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging option"))
+        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Do Logging"))
+        rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
+            bsizer_slices.GetStaticBox(),
+            -1,
+            choices=[_("No"), _("Yes")],
+            majorDimension=3,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+
+        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        border = wx.BoxSizer(wx.VERTICAL)
+        border.Add(bsizer_slices, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        
+        self.SetSizerAndFit(border)
+        self.Layout()
+
+    def GetSelection(self):
+
+        options = {
+            const.LOGGING: self.rb_inter_sl.GetSelection()
+        }
+
+        return options
+
+    def LoadSelection(self, values):
+        logging = values[const.LOGGING]
+        self.rb_inter_sl.SetSelection(int(logging))
 
 class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):

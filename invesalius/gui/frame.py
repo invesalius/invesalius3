@@ -659,11 +659,13 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
+            logging  = values[const.LOGGING]
 
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
             session.SetConfig('language', language)
             session.SetConfig('slice_interpolation', slice_interpolation)
+            session.SetConfig('do_logging', logging)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
