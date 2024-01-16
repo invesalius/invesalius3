@@ -49,7 +49,7 @@ class Preferences(wx.Dialog):
 
         self.pnl_viewer3d = Viewer3D(self.book)
         self.pnl_language = Language(self.book)
-        self.pnl_viewer3d0 = Viewer3D(self.book)
+        self.pnl_logging = Viewer3D(self.book)
 
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
@@ -63,7 +63,7 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
-        self.book.AddPage(self.pnl_viewer3d0, _("Logging"))
+        self.book.AddPage(self.pnl_logging, _("Logging"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -85,6 +85,7 @@ class Preferences(wx.Dialog):
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
+        logging = self.pnl_logging.GetSelection()
         values.update(lang)
         values.update(viewer)
 
