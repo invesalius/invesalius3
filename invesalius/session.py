@@ -61,6 +61,8 @@ class Session(metaclass=Singleton):
             'language': '',
             'auto_reload_preview': False,
             'do_logging': 0,
+            'logging_level': 0,
+            'append_log_file': 0,
             'logging_file': '',
        }
         self._exited_successfully_last_time = not self._ReadState()
@@ -85,6 +87,8 @@ class Session(metaclass=Singleton):
             'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             'last_dicom_folder': '',
             'do_logging': 0,
+            'logging_level': 0,
+            'append_log_file': 0,
             'logging_file': '',
         }
         self.WriteConfigFile()
@@ -229,6 +233,8 @@ class Session(metaclass=Singleton):
         rendering = config.getint('session', 'rendering')
         random_id = config.getint('session','random_id')
         do_logging = config.getint('session', 'do_logging')
+        logging_level = config.getint('session', 'logging_level')
+        append_log_file = config.getint('session', 'append_log_file')
         #logging_file = config.get('paths','last_dicom_folder') 
 
         recent_projects = eval(config.get('project','recent_projects'))
@@ -245,6 +251,8 @@ class Session(metaclass=Singleton):
         self.SetConfig('random_id', random_id)
         self.SetConfig('recent_projects', recent_projects)
         self.SetConfig('do_logging', do_logging)
+        self.SetConfig('logging_level', logging_level)
+        self.SetConfig('append_log_file', append_log_file)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
