@@ -6,7 +6,7 @@ import nibabel as nb
 import numpy as np
 import invesalius.constants as const
 import invesalius.session as ses
-import invesalius.gui.dialogs as dlg
+import invesalius.gui.dialogs as dlg0
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius import inv_paths
 
@@ -99,6 +99,8 @@ class Preferences(wx.Dialog):
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
         do_logging = session.GetConfig('do_logging')
+        logging_level = session.GetConfig('logging_level')
+        append_log_file = session.GetConfig('append_log_file')
         logging_file  = session.GetConfig('logging_file')
 
         session = ses.Session()
@@ -112,6 +114,8 @@ class Preferences(wx.Dialog):
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
             const.LOGGING: do_logging,
+            const.LOGGING_LEVEL: logging_level,
+            const.APPEND_LOG_FILE: append_log_file,           
             const.LOGFILE: logging_file,
         }
 
@@ -192,7 +196,8 @@ class Logging(wx.Panel):
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
-        bsizer_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging option"))
+        bsizer_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging options"))
+
         lbl_logging = wx.StaticText(bsizer_logging.GetStaticBox(), -1, _("Do Logging"))
         rb_logging = self.rb_logging = wx.RadioBox(
             bsizer_logging.GetStaticBox(),
@@ -201,9 +206,30 @@ class Logging(wx.Panel):
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
-
         bsizer_logging.Add(lbl_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_logging.Add(rb_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        lbl_logging_level = wx.StaticText(bsizer_logging.GetStaticBox(), -1, _("Logging level"))
+        rb_logging_level = self.rb_logging_level = wx.RadioBox(
+            bsizer_logging.GetStaticBox(),
+            -1,
+            choices=[_("NOTSET"), _("DEBUG"), ("INFO"), _("WARN"), ("ERROR"), ("CRITICAL")],
+            majorDimension=3,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_logging.Add(lbl_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_logging.Add(rb_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        lbl_append_file = wx.StaticText(bsizer_logging.GetStaticBox(), -1, _("Append Log file"))
+        rb_append_file = self.rb_append_file = wx.RadioBox(
+            bsizer_logging.GetStaticBox(),
+            -1,
+            choices=[_("No"), _("Yes")],
+            majorDimension=3,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_logging.Add(lbl_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
@@ -214,7 +240,9 @@ class Logging(wx.Panel):
     def GetSelection(self):
 
         options = {
-            const.LOGGING: self.rb_logging.GetSelection()
+            const.LOGGING: self.rb_logging.GetSelection(),
+            const.LOGGING_LEVEL: self.rb_logging_level.GetSelection(),
+            const.APPEND_LOG_FILE: self.rb_append_file.GetSelection()
         }
 
         return options
@@ -222,6 +250,10 @@ class Logging(wx.Panel):
     def LoadSelection(self, values):
         logging = values[const.LOGGING]
         self.rb_logging.SetSelection(int(logging))
+        logging_level = values[const.LOGGING_LEVEL]
+        self.rb_logging_level.SetSelection(int(logging_level))
+        append_log_file = values[const.APPEND_LOG_FILE]
+        self.rb_logging.SetSelection(int(append_log_file))
 
 class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):
