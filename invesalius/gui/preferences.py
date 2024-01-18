@@ -61,8 +61,8 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.pnl_navigation, _("Navigation"))
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
-        self.book.AddPage(self.pnl_language, _("Language"))
 
+        self.book.AddPage(self.pnl_language, _("Language"))
         self.book.AddPage(self.pnl_logging, _("Logging"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
@@ -86,9 +86,16 @@ class Preferences(wx.Dialog):
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
         logging = self.pnl_logging.GetSelection()
+        print('lang:', lang)
+        print('viewer:', viewer)
+        print('logging:', logging)
+
         values.update(lang)
+        print('values0:', values)
         values.update(viewer)
+        print('values1:', values)
         values.update(logging)
+        print('values2:', values)
         return values
 
     def LoadPreferences(self):
@@ -103,7 +110,7 @@ class Preferences(wx.Dialog):
         append_log_file = session.GetConfig('append_log_file')
         logging_file  = session.GetConfig('logging_file')
 
-        session = ses.Session()
+        #session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
             self.pnl_object.LoadConfig()
@@ -180,7 +187,7 @@ class Viewer3D(wx.Panel):
             const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
             const.SLICE_INTERPOLATION: self.rb_inter_sl.GetSelection()
         }
-
+        print('Viewer options:', options)
         return options
 
     def LoadSelection(self, values):
@@ -202,7 +209,7 @@ class Logging(wx.Panel):
         rb_logging = self.rb_logging = wx.RadioBox(
             bsizer_logging.GetStaticBox(),
             -1,
-            choices=[_("No"), _("Yes")],
+            choices=["No", "Yes"],
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
@@ -213,8 +220,8 @@ class Logging(wx.Panel):
         rb_logging_level = self.rb_logging_level = wx.RadioBox(
             bsizer_logging.GetStaticBox(),
             -1,
-            choices=[_("NOTSET"), _("DEBUG"), ("INFO"), _("WARN"), ("ERROR"), ("CRITICAL")],
-            majorDimension=3,
+            choices=["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
+            majorDimension=6,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
         bsizer_logging.Add(lbl_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
@@ -224,7 +231,7 @@ class Logging(wx.Panel):
         rb_append_file = self.rb_append_file = wx.RadioBox(
             bsizer_logging.GetStaticBox(),
             -1,
-            choices=[_("No"), _("Yes")],
+            choices=["No", "Yes"],
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
@@ -242,18 +249,18 @@ class Logging(wx.Panel):
         options = {
             const.LOGGING: self.rb_logging.GetSelection(),
             const.LOGGING_LEVEL: self.rb_logging_level.GetSelection(),
-            const.APPEND_LOG_FILE: self.rb_append_file.GetSelection()
+            const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
         }
-
+        print('Logging options:', options, self.rb_logging.GetSelection(), self.rb_logging_level.GetSelection(), self.rb_append_file.GetSelection())
         return options
 
     def LoadSelection(self, values):
         logging = values[const.LOGGING]
-        self.rb_logging.SetSelection(int(logging))
         logging_level = values[const.LOGGING_LEVEL]
-        self.rb_logging_level.SetSelection(int(logging_level))
         append_log_file = values[const.APPEND_LOG_FILE]
-        self.rb_logging.SetSelection(int(append_log_file))
+        self.rb_logging.SetSelection(int(logging))
+        self.rb_logging_level.SetSelection(int(logging_level))
+        self.rb_append_file.SetSelection(int(append_log_file))
 
 class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):
