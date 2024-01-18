@@ -231,6 +231,15 @@ class Logging(wx.Panel):
         bsizer_logging.Add(lbl_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
+        lbl_log_fname = wx.StaticText(bsizer_logging.GetStaticBox(), -1, _("Log file name"))
+        rb_log_fname = self.rb_log_fname = wx.TextCtrl(
+            bsizer_logging.GetStaticBox(),
+            -1,
+            "Dockable",
+        )
+        bsizer_logging.Add(lbl_log_fname, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_logging.Add(rb_log_fname, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         
@@ -242,6 +251,7 @@ class Logging(wx.Panel):
         options = {
             const.LOGGING: self.rb_logging.GetSelection(),
             const.LOGGING_LEVEL: self.rb_logging_level.GetSelection(),
+            const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
             const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
         }
         return options
