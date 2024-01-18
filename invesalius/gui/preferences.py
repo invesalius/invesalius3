@@ -86,16 +86,10 @@ class Preferences(wx.Dialog):
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
         logging = self.pnl_logging.GetSelection()
-        print('lang:', lang)
-        print('viewer:', viewer)
-        print('logging:', logging)
 
         values.update(lang)
-        print('values0:', values)
         values.update(viewer)
-        print('values1:', values)
         values.update(logging)
-        print('values2:', values)
         return values
 
     def LoadPreferences(self):
@@ -187,7 +181,6 @@ class Viewer3D(wx.Panel):
             const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
             const.SLICE_INTERPOLATION: self.rb_inter_sl.GetSelection()
         }
-        print('Viewer options:', options)
         return options
 
     def LoadSelection(self, values):
@@ -251,7 +244,6 @@ class Logging(wx.Panel):
             const.LOGGING_LEVEL: self.rb_logging_level.GetSelection(),
             const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
         }
-        print('Logging options:', options, self.rb_logging.GetSelection(), self.rb_logging_level.GetSelection(), self.rb_append_file.GetSelection())
         return options
 
     def LoadSelection(self, values):
