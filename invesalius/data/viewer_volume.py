@@ -917,7 +917,6 @@ class Viewer(wx.Panel):
             marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
             if cortex_marker[0] is not None:
                 Publisher.sendMessage('Add cortex marker actor', position_orientation = cortex_marker, marker_id = marker_id)
-
         else:
             marker_actor = self.CreateActorBall(position_flip, colour, size)
 
@@ -1985,14 +1984,22 @@ class Viewer(wx.Panel):
 
     def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
         if len(self.Id_list)>0:
+            if self.efield_coords is not None:
+                import invesalius.data.imagedata_utils as imagedata_utils
+
+                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                    position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
+                    orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
+                )
+                efield_coords_position = [list(position_world), list(orientation_world)]
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
                 e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
-                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot, e_field_vectors, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, self.coil_position, efield_coords_position, self.efield_coords,  self.coil_position_Trot, e_field_vectors, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
            #REMOVE THIS
                 self.mtms_coord = None
             else:
-                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, position, orientation, self.coil_position_Trot])
+                self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, self.coil_position, efield_coords_position, self.efield_coords, self.coil_position_Trot])
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list)>0:
@@ -2600,7 +2607,7 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def UpdateEfieldPointLocationOffline(self, m_img, coord):
+    def UpdateEfieldPointLocationOffline(self, m_img, coord, list_index):
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
         intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
@@ -2609,6 +2616,7 @@ class Viewer(wx.Panel):
             id_list.append(self.radius_list.GetId(h))
         Publisher.sendMessage('Get ID list', ID_list = id_list)
         self.plot_no_connection = True
+        self.list_index_efield_vectors = list_index
 
     def GetCoilPosition(self, position, orientation):
         m_img = tr.compose_matrix(angles=orientation, translate=position)
@@ -2692,11 +2700,12 @@ class Viewer(wx.Panel):
             #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         self.GetEfieldMaxMin(self.e_field_norms)
 
-    def SaveEfieldData(self, filename, plot_efield_vectors):
+    def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
         all_data=[]
-        header = ['T_rot','coil position','coords position', 'coords', 'Enorm', 'efield vectors', 'norm cell indexes', 'focal factors', 'efield threshold', 'efield ROI size', 'mtms_coord']
+
+        header = ['Marker ID', 'T_rot','Coil center','Coil position in world coordinates', 'InVesalius coordinates', 'Enorm','ID cell max', 'Efield vectors', 'Enorm cell indexes', 'Focal factors', 'Efield threshold', 'Efield ROI size', 'Mtms_coord']
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
@@ -2704,12 +2713,15 @@ class Viewer(wx.Panel):
                  )
             efield_coords_position = [list(position_world), list(orientation_world)]
         if plot_efield_vectors:
-            e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
-            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), e_field_vectors, self.Id_list, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
+            if self.plot_no_connection:
+                e_field_vectors = [list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+            else:
+                e_field_vectors = list(self.max_efield_array)
+            all_data.append([marker_id, self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms), self.Idmax, e_field_vectors, self.Id_list, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
             #REMOVE THIS
             self.mtms_coord = None
         else:
-            all_data.append([self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
+            all_data.append([marker_id, self.coil_position_Trot, self.coil_position, efield_coords_position, self.efield_coords, list(self.e_field_norms)])
 
         with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
@@ -2719,7 +2731,7 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import invesalius.data.imagedata_utils as imagedata_utils
         import csv
-        header = ['target index', 'norm cell indexes', 'enorm', 'ID cell Max', 'position', 'orientation', 'Trot', 'efield vectors', 'focal factors', 'efield threshold', 'efield ROI size', 'mtms_coord']
+        header = ['Marker ID', 'Enorm cell indexes', 'Enorm', 'ID cell Max', 'Coil center','Coil position world coordinates','InVesalius coordinates','T_rot', 'Efield vectors', 'Focal factors', 'Efield threshold', 'Efield ROI size', 'Mtms_coord']
         all_data = list(self.target_radius_list)
         with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)

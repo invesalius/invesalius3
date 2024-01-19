@@ -2392,7 +2392,7 @@ class MarkersPanel(wx.Panel):
         coord = np.array(coord).flatten()
 
         #Check here, it resets the radious list
-        Publisher.sendMessage('Update interseccion offline', m_img =self.m_img_offline, coord = coord)
+        Publisher.sendMessage('Update interseccion offline', m_img =self.m_img_offline, coord = coord, list_index = list_index)
 
         if session.GetConfig('debug_efield'):
             enorm = self.navigation.debug_efield_enorm
