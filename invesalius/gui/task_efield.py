@@ -156,6 +156,11 @@ class InnerTaskPanel(wx.Panel):
         efield_cortex_markers.Enable(1)
         efield_cortex_markers.Bind(wx.EVT_CHECKBOX, partial(self.OnViewCortexMarkers, ctrl=efield_cortex_markers))
 
+        efield_save_automatically = wx.CheckBox(self, -1, _('Save Automatically'))
+        efield_save_automatically.SetValue(False)
+        efield_save_automatically.Enable(1)
+        efield_save_automatically.Bind(wx.EVT_CHECKBOX, partial(self.OnSaveEfieldAutomatically, ctrl=efield_save_automatically))
+
         tooltip2 = wx.ToolTip(_("Load Brain Json config"))
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
@@ -318,6 +323,7 @@ class InnerTaskPanel(wx.Panel):
 
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
         line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
+        line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 2)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
@@ -482,6 +488,10 @@ class InnerTaskPanel(wx.Panel):
     def OnGetMultilocusCoils(self, multilocus_coil_list):
         self.multilocus_coil = multilocus_coil_list
 
+    def OnSaveEfieldAutomatically(self, evt, ctrl):
+        enable = ctrl.GetValue()
+        Publisher.sendMessage('Save automatically efield data', enable = enable, path_meshes = self.path_meshes, plot_efield_vectors = self.navigation.plot_efield_vectors)
+
     def OnSaveEfield(self, evt):
         import invesalius.project as prj
 
@@ -506,7 +516,7 @@ class InnerTaskPanel(wx.Panel):
         if not filename:
             return
         plot_efield_vectors = self.navigation.plot_efield_vectors
-        Publisher.sendMessage('Save Efield data', filename=filename, plot_efield_vectors=plot_efield_vectors)
+        Publisher.sendMessage('Save Efield data', filename=filename, plot_efield_vectors=plot_efield_vectors, marker_id = None)
 
     def OnSaveAllDataEfield(self, evt):
         Publisher.sendMessage('Check efield data')

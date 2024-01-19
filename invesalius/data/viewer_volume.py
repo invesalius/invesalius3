@@ -312,6 +312,9 @@ class Viewer(wx.Panel):
         self.ClusterEfieldTextActor = None
         self.enableefieldabovethreshold = False
         self.efield_tools = False
+        self.save_automatically = False
+        self.positions_above_threshold = None
+        self.cell_id_indexes_above_threshold = None
         self.LoadConfig()
 
     def UpdateCanvas(self):
@@ -506,6 +509,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetTargetPositions, 'Get targets Ids for mtms')
         Publisher.subscribe(self.GetTargetPathmTMS, 'Send targeting file path')
         Publisher.subscribe(self.GetdIsfromCoord,'Send mtms coords')
+        Publisher.subscribe(self.EnableSaveAutomaticallyEfieldData, 'Save automatically efield data')
 
     def SaveConfig(self):
         object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
@@ -1888,6 +1892,39 @@ class Viewer(wx.Panel):
                                               scale_factor=3)
         self.static_markers_efield.append([marker_actor_brain, marker_id])
         self.ren.AddActor(marker_actor_brain)
+        if self.save_automatically:
+            import invesalius.project as prj
+            import time
+            import invesalius.gui.dialogs as dlg
+            proj = prj.Project()
+            timestamp = time.localtime(time.time())
+            stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+            stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+            sep = '-'
+
+            if self.path_meshes is None:
+                import os
+                current_folder_path = os.getcwd()
+            else:
+                current_folder_path = self.path_meshes
+
+            parts = [current_folder_path, '/', stamp_date, stamp_time, proj.name, 'Efield']
+            default_filename = sep.join(parts) + '.csv'
+
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                              wildcard='(*.csv)|*.csv',
+                                              style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                              default_filename=default_filename)
+
+            if not filename:
+                return
+
+            Publisher.sendMessage('Save Efield data', filename=filename, plot_efield_vectors=self.plot_efield_vectors, marker_id = marker_id)
+
+    def EnableSaveAutomaticallyEfieldData(self, enable, path_meshes, plot_efield_vectors):
+        self.save_automatically = enable
+        self.path_meshes = path_meshes
+        self.plot_efield_vectors = plot_efield_vectors
 
     def CortexMarkersVisualization(self, display_flag):
         for i in range(len(self.static_markers_efield)):
@@ -2534,8 +2571,9 @@ class Viewer(wx.Panel):
                 wx.CallAfter(Publisher.sendMessage,'Show CoG Efield actor')
                 if self.efield_tools:
                     wx.CallAfter(Publisher.sendMessage, 'Show distance between Max and CoG Efield')
-                    self.DetectClustersEfieldSpread(self.positions_above_threshold)
-                if self.enableefieldabovethreshold:
+                    if self.positions_above_threshold is not None:
+                        self.DetectClustersEfieldSpread(self.positions_above_threshold)
+                if self.enableefieldabovethreshold and self.cell_id_indexes_above_threshold is not None:
                     self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
                 self.ShowEfieldAtCortexTarget()
                 if self.plot_no_connection:
@@ -2617,6 +2655,35 @@ class Viewer(wx.Panel):
                 self.e_field_col3 = enorm_data[3].column3
                 self.max_efield_array = enorm_data[3].mvector
                 self.Idmax = self.Id_list[enorm_data[3].maxindex]
+                if self.save_automatically and self.plot_no_connection:
+                    import invesalius.project as prj
+                    import time
+                    import invesalius.gui.dialogs as dlg
+                    proj = prj.Project()
+                    timestamp = time.localtime(time.time())
+                    stamp_date = '{:0>4d}{:0>2d}{:0>2d}'.format(timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday)
+                    stamp_time = '{:0>2d}{:0>2d}{:0>2d}'.format(timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec)
+                    sep = '-'
+
+                    if self.path_meshes is None:
+                        import os
+                        current_folder_path = os.getcwd()
+                    else:
+                        current_folder_path = self.path_meshes
+
+                    parts = [current_folder_path, '/', stamp_date, stamp_time, proj.name, 'Efield']
+                    default_filename = sep.join(parts) + '.csv'
+
+                    filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                                                      wildcard='(*.csv)|*.csv',
+                                                      style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                                                      default_filename=default_filename)
+
+                    if not filename:
+                        return
+
+                    Publisher.sendMessage('Save Efield data', filename=filename,
+                                          plot_efield_vectors=self.plot_efield_vectors, marker_id = self.list_index_efield_vectors )
         else:
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
