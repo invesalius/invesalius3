@@ -592,29 +592,16 @@ class ImagePage(wx.Panel):
     def OnImageFiducials(self, n, evt):
         fiducial_name = const.IMAGE_FIDUCIALS[n]['fiducial_name']
 
-        # XXX: This is still a bit hard to read, could be cleaned up.
-        label = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
-
         if self.btns_set_fiducial[n].GetValue():
             position = self.numctrls_fiducial[n][0].GetValue(),\
-                    self.numctrls_fiducial[n][1].GetValue(),\
-                    self.numctrls_fiducial[n][2].GetValue()
-            orientation = None, None, None
-
-            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
-
-            colour = (0., 1., 0.)
-            size = 2
-            seed = 3 * [0.]
-
-            Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
-                                   label=label, seed=seed)
+                       self.numctrls_fiducial[n][1].GetValue(),\
+                       self.numctrls_fiducial[n][2].GetValue()
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
-            print(self.numctrls_fiducial)
-            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=np.nan)
-            Publisher.sendMessage('Delete fiducial marker', label=label)
+            position = np.nan
+
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
     def OnNext(self, evt):
         Publisher.sendMessage("Next to tracker fiducials")

@@ -21,6 +21,7 @@ import numpy as np
 
 import invesalius.session as ses
 import invesalius.project as prj
+import invesalius.constants as const
 from invesalius.pubsub import pub as Publisher
 
 
@@ -49,6 +50,8 @@ class Image:
 
     def SetImageFiducial(self, fiducial_index, position):
         self.fiducials[fiducial_index, :] = position
+        self.UpdateFiducialMarker(fiducial_index)
+
         print("Image fiducial {} set to coordinates {}".format(fiducial_index, position))
         ses.Session().ChangeProject()
         self.SaveState()
@@ -74,3 +77,19 @@ class Image:
 
     def IsImageFiducialSet(self, fiducial_index):
         return not np.isnan(self.fiducials)[fiducial_index].any()
+
+    def UpdateFiducialMarker(self, fiducial_index):
+        fiducial_name = next((f['fiducial_name'] for f in const.IMAGE_FIDUCIALS if f['fiducial_index'] == fiducial_index), 'unknown')
+
+        label = fiducial_name + 'I'
+        position_np = self.fiducials[fiducial_index, :3]
+        position = position_np.tolist()
+        orientation = [None, None, None]
+        colour = (0., 1., 0.)
+        size = 2
+        seed = 3 * [0.]
+
+        Publisher.sendMessage('Delete fiducial marker', label=label)
+        if not np.isnan(position_np).any():
+            Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
+                                  label=label, seed=seed)
