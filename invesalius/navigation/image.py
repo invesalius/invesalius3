@@ -27,11 +27,16 @@ from invesalius.pubsub import pub as Publisher
 
 class Image:
     def __init__(self):
+        self.__bind_events()
         self.LoadState()
 
     @property
     def fiducials(self):
         return prj.Project().image_fiducials
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnStateProject, 'Enable state project')
+        pass
 
     def SaveState(self):
         pass
@@ -93,3 +98,12 @@ class Image:
         if not np.isnan(position_np).any():
             Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
                                   label=label, seed=seed)
+
+    def UpdateFiducialMarkers(self):
+        for fiducial in const.IMAGE_FIDUCIALS:
+            fiducial_index = fiducial['fiducial_index']
+            self.UpdateFiducialMarker(fiducial_index)
+
+    def OnStateProject(self, state):
+        self.UpdateFiducialMarkers()
+
