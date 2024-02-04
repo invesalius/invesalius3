@@ -664,7 +664,8 @@ class Frame(wx.Frame):
             logging  = values[const.LOGGING]
             logging_level  = values[const.LOGGING_LEVEL]
             append_log_file  = values[const.APPEND_LOG_FILE]
-
+            logging_file = values[const.LOGFILE]
+            
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
             session.SetConfig('language', language)
@@ -672,6 +673,7 @@ class Frame(wx.Frame):
             session.SetConfig('do_logging', logging)
             session.SetConfig('logging_level', logging_level)
             session.SetConfig('append_log_file', append_log_file)
+            session.SetConfig('logging_file', logging_file)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
