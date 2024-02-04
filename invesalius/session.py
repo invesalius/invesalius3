@@ -29,6 +29,7 @@ import time
 import codecs
 import collections
 import json
+import datetime
 from random import randint
 from threading import Thread
 from json.decoder import JSONDecodeError
@@ -55,7 +56,6 @@ class Session(metaclass=Singleton):
     def __init__(self):
         self.temp_item = False
         self.mask_3d_preview = False
-
         self._config = {
             'project_status': 3,
             'language': '',
@@ -65,11 +65,19 @@ class Session(metaclass=Singleton):
             'append_log_file': 0,
             'logging_file': '',
        }
+        self.__set_default_logfile()
         self._exited_successfully_last_time = not self._ReadState()
         self.__bind_events()
 
     def __bind_events(self):
         Publisher.subscribe(self._Exit, 'Exit session')
+
+    def __set_default_logfile(self):
+        if self._config['logging_file'] =='':
+            logging_file =  datetime.datetime.now().strftime("log-%Y-%m-%d-%H-%M.txt")
+            self.SetConfig('logging_file', logging_file)
+            print('Setting Default logging_file: ', logging_file)
+        
 
     def CreateConfig(self):
         import invesalius.constants as const
@@ -91,6 +99,7 @@ class Session(metaclass=Singleton):
             'append_log_file': 0,
             'logging_file': '',
         }
+        self.__set_default_logfile()
         self.WriteConfigFile()
 
     def CreateState(self):
@@ -99,6 +108,7 @@ class Session(metaclass=Singleton):
 
     def DeleteStateFile(self):
         if os.path.exists(STATE_PATH):
+
             os.remove(STATE_PATH)
             print("Successfully deleted state file.")
         else:
@@ -215,6 +225,8 @@ class Session(metaclass=Singleton):
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
         self.project_status = 3
+        self.__set_default_logfile()
+
 
     def _read_config_from_ini(self, config_filename):
         file = codecs.open(config_filename, 'rb', SESSION_ENCODING)
@@ -235,6 +247,8 @@ class Session(metaclass=Singleton):
         do_logging = config.getint('session', 'do_logging')
         logging_level = config.getint('session', 'logging_level')
         append_log_file = config.getint('session', 'append_log_file')
+        logging_file = config.get('session', 'logging_file')
+
         #logging_file = config.get('paths','last_dicom_folder') 
 
         recent_projects = eval(config.get('project','recent_projects'))
@@ -253,6 +267,8 @@ class Session(metaclass=Singleton):
         self.SetConfig('do_logging', do_logging)
         self.SetConfig('logging_level', logging_level)
         self.SetConfig('append_log_file', append_log_file)
+        self.SetConfig('logging_file', logging_file)
+        self.__set_default_logfile()
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius

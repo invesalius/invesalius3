@@ -235,7 +235,7 @@ class Logging(wx.Panel):
         rb_log_fname = self.rb_log_fname = wx.TextCtrl(
             bsizer_logging.GetStaticBox(),
             -1,
-            "Dockable",
+            "",
         )
         bsizer_logging.Add(lbl_log_fname, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_logging.Add(rb_log_fname, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
@@ -252,7 +252,7 @@ class Logging(wx.Panel):
             const.LOGGING: self.rb_logging.GetSelection(),
             const.LOGGING_LEVEL: self.rb_logging_level.GetSelection(),
             const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
-            const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
+            const.LOGFILE: self.rb_log_fname.GetValue(),
         }
         return options
 
@@ -260,9 +260,12 @@ class Logging(wx.Panel):
         logging = values[const.LOGGING]
         logging_level = values[const.LOGGING_LEVEL]
         append_log_file = values[const.APPEND_LOG_FILE]
+        logging_file = values[const.LOGFILE]
+        
         self.rb_logging.SetSelection(int(logging))
         self.rb_logging_level.SetSelection(int(logging_level))
         self.rb_append_file.SetSelection(int(append_log_file))
+        self.rb_log_fname.SetValue(logging_file)
 
 class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):
