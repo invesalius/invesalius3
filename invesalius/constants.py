@@ -859,9 +859,13 @@ EFIELD_MAX_RANGE_SCALE = 0.90
 CORTEX_COLOR = 190
 EFIELD_ROI_SIZE = 20
 
-# Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.1
-SLEEP_COORDINATES = 0.1
+# Note that the sleep parameters can be set in the preferences dialog in the UI. The values here are default values,
+# selected to be a conservative compromise between frame rate and responsiveness, leaning towards responsiveness even
+# on slower machines. The values are in seconds.
+#
+# Please do not set these to a lower value than 0.15 seconds; it will cause freezing on slower computers.
+SLEEP_NAVIGATION = 0.15
+SLEEP_COORDINATES = 0.15
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
@@ -884,7 +888,7 @@ TREKKER_CONFIG = {'seed_max': 1,
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
 CURRENT_MARKER_FILE_VERSION = 0
-WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss") 
+WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Serial port
 BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
