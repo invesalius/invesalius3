@@ -474,7 +474,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
 class CrossInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for the Cross.
+    Interactor style used for slice visualization when the 'cross' icon has been selected from the toolbar.
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)

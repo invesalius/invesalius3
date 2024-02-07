@@ -69,9 +69,11 @@ class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
 
 class DefaultInteractorStyle(Base3DInteractorStyle):
     """
-    Interactor style responsible for Default functionalities:
-    * Zoom moving mouse with right button pressed;
-    * Change the slices with the scroll.
+    Interactor style responsible for navigating 3d volume viewer using three mouse buttons:
+
+    * Rotate by moving mouse with left button pressed.
+    * Pan by moving mouse with middle button pressed.
+    * Zoom by moving mouse with right button pressed.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -79,10 +81,11 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
         self.viewer = viewer
 
-        # Zoom using right button
+        # Rotate using left button
         self.AddObserver("LeftButtonPressEvent",self.OnRotateLeftClick)
         self.AddObserver("LeftButtonReleaseEvent",self.OnRotateLeftRelease)
 
+        # Zoom using right button
         self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
         self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
 
@@ -131,8 +134,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for zoom with movement of the mouse and the
-    left mouse button clicked.
+    Interactor style responsible for zooming by clicking left mouse button and moving the mouse.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -173,7 +175,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
 
 class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
-    Interactor style responsible for zoom by selecting a region.
+    Interactor style responsible for zooming by selecting a region.
     """
     def __init__(self, viewer):
         self.viewer = viewer
@@ -199,7 +201,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for translate the camera.
+    Interactor style responsible for translating the camera by clicking left mouse button and moving the mouse.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -240,7 +242,7 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
 
 class SpinInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for spin the camera.
+    Interactor style responsible for spinning the camera by clicking left mouse button and moving the mouse.
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
@@ -323,7 +325,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
 class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for insert linear measurements.
+    Interactor style responsible for linear measurements by clicking consecutive points in the volume viewer.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -364,7 +366,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for insert linear measurements.
+    Interactor style responsible for angular measurements by clicking consecutive points in the volume viewer.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -403,7 +405,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
 
 class SeedInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for select sub surfaces.
+    Interactor style responsible for selecting sub-surfaces.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -452,6 +454,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
             self.viewer.set_camera_position=True
+
 
 class Styles:
     styles = {
