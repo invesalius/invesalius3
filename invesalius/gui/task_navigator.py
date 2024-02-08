@@ -1493,11 +1493,6 @@ class ControlPanel(wx.Panel):
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
-        # After disabling the navigation style, enable the 'cross' toolbar button.
-        # This is so that after navigation is finished, the user can select points in the
-        # volume rendering window without having to click the 'cross' button manually.
-        Publisher.sendMessage("Toggle toolbar button", id=const.SLICE_STATE_CROSS)
-
         self.navigation.StopNavigation()
         if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
