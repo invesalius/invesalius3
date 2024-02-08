@@ -430,12 +430,11 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         super().__init__(viewer)
 
-        self.state_code = const.SLICE_STATE_CROSS
         self.picker = vtkCellPicker()
         self.picker.SetTolerance(1e-3)
-        # self.picker.SetUseCells(True)
         self.viewer.interactor.SetPicker(self.picker)
-        self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
+
+        self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
 
     def SetUp(self):
         self.viewer.check_ball_reference()
@@ -447,6 +446,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         x, y = self.viewer.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.picker.GetPickPosition()
+
         if self.picker.GetActor():
             self.viewer.set_camera_position=False
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
