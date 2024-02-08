@@ -2044,14 +2044,14 @@ class SliceToolBar(AuiToolBar):
             self.EnableTool(tool, True)
         self.Refresh()
 
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
 
 class LayoutToolBar(AuiToolBar):
     """
-    Toolbar related to general layout/ visualization configuration
-    e.g: show/hide task panel and show/hide text on viewers.
+    Toolbar related to general layout. Contains the following buttons:
+
+    - show/hide task panel (= the left UI panel)
+    - show/hide text (= the texts indicating the anterior, posterior, etc. directions)
+    - show/hide rulers (= the rulers showing the scale on each viewer)
     """
     def __init__(self, parent):
         style = AUI_TB_PLAIN_BACKGROUND
@@ -2276,8 +2276,7 @@ class LayoutToolBar(AuiToolBar):
 
 class HistoryToolBar(AuiToolBar):
     """
-    Toolbar related to general layout/ visualization configuration
-    e.g: show/hide task panel and show/hide text on viewers.
+    Toolbar related to project history. Contains undo and redo buttons.
     """
     def __init__(self, parent):
         style = AUI_TB_PLAIN_BACKGROUND
@@ -2292,22 +2291,13 @@ class HistoryToolBar(AuiToolBar):
         self.__bind_events()
         self.__bind_events_wx()
 
-        self.ontool_layout = False
-        self.ontool_text = True
-        self.ontool_rulers = True
-        #self.enable_items = [ID_TEXT, ID_RULERS]
-
         self.Realize()
-        #self.SetStateProjectClose()
 
     def __bind_events(self):
         """
         Bind events related to pubsub.
         """
         sub = Publisher.subscribe
-        #sub(self._EnableState, "Enable state project")
-        #sub(self._SetLayoutWithTask, "Set layout button data only")
-        #sub(self._SetLayoutWithoutTask, "Set layout button full")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
 
@@ -2315,7 +2305,6 @@ class HistoryToolBar(AuiToolBar):
         """
         Bind normal events from wx (except pubsub related).
         """
-        #self.Bind(wx.EVT_TOOL, self.OnToggle)
         self.Bind(wx.EVT_TOOL, self.OnUndo, id=wx.ID_UNDO)
         self.Bind(wx.EVT_TOOL, self.OnRedo, id=wx.ID_REDO)
 
@@ -2325,7 +2314,7 @@ class HistoryToolBar(AuiToolBar):
         """
         d = inv_paths.ICON_DIR
         if sys.platform == 'darwin':
-            # Bitmaps for show/hide task panel item
+            # Bitmaps for undo/redo buttons
             p = os.path.join(d, "undo_original.png")
             self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
@@ -2333,7 +2322,7 @@ class HistoryToolBar(AuiToolBar):
             self.BMP_REDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
         else:
-            # Bitmaps for show/hide task panel item
+            # Bitmaps for undo/redo buttons
             p = os.path.join(d, "undo_small.png")
             self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
@@ -2357,123 +2346,11 @@ class HistoryToolBar(AuiToolBar):
         self.EnableTool(wx.ID_UNDO, False)
         self.EnableTool(wx.ID_REDO, False)
 
-    def _EnableState(self, state):
-        """
-        Based on given state, enable or disable menu items which
-        depend if project is open or not.
-        """
-        if state:
-            self.SetStateProjectOpen()
-        else:
-            self.SetStateProjectClose()
-        self.Refresh()
-
-    def _SetLayoutWithoutTask(self):
-        """
-        Set item bitmap to task panel hiden.
-        """
-        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
-
-    def _SetLayoutWithTask(self):
-        """
-        Set item bitmap to task panel shown.
-        """
-        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
-
     def OnUndo(self, event):
         Publisher.sendMessage('Undo edition')
 
     def OnRedo(self, event):
         Publisher.sendMessage('Redo edition')
-
-    def OnToggle(self, event):
-        """
-        Update status of toolbar item (bitmap and help)
-        """
-        id = event.GetId()
-        if id == ID_LAYOUT:
-            self.ToggleLayout()
-        elif id== ID_TEXT:
-            self.ToggleText()
-        elif id == ID_RULER:
-            self.ToggleRulers()
-
-        for item in VIEW_TOOLS:
-            state = self.GetToolToggled(item)
-            if state and (item != id):
-                self.ToggleTool(item, False)
-
-    def SetStateProjectClose(self):
-        """
-        Disable menu items (e.g. text) when project is closed.
-        """
-        self.ontool_text = True
-        self.ontool_rulers = True
-        self.ToggleText()
-        self.ToggleRulers()
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
-
-    def SetStateProjectOpen(self):
-        """
-        Disable menu items (e.g. text) when project is closed.
-        """
-        self.ontool_text = False
-        self.ontool_rulers = False
-        self.ToggleText()
-        self.ToggleRulers()
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
-
-    def ToggleLayout(self):
-        """
-        Based on previous layout item state, toggle it.
-        """
-        if self.ontool_layout:
-            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
-            Publisher.sendMessage('Show task panel')
-            self.SetToolShortHelp(ID_LAYOUT,_("Hide task panel"))
-            self.ontool_layout = False
-        else:
-            self.bitmap = self.BMP_WITH_MENU
-            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
-            Publisher.sendMessage('Hide task panel')
-            self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
-            self.ontool_layout = True
-
-    def ToggleText(self):
-        """
-        Based on previous text item state, toggle it.
-        """
-        if self.ontool_text:
-            self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
-            Publisher.sendMessage('Hide text actors on viewers')
-            self.SetToolShortHelp(ID_TEXT,_("Show text"))
-            Publisher.sendMessage('Update AUI')
-            self.ontool_text = False
-        else:
-            self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
-            Publisher.sendMessage('Show text actors on viewers')
-            self.SetToolShortHelp(ID_TEXT,_("Hide text"))
-            Publisher.sendMessage('Update AUI')
-            self.ontool_text = True
-
-    def ToggleRulers(self):
-        """
-        Based on previous ruler state, toggle it.
-        """
-        if self.ontool_ruler:
-            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
-            Publisher.sendMessage('Hide rulers on viewers')
-            self.SetToolShortHelp(ID_RULER, _("Show rulers"))
-            Publisher.sendMessage('Update AUI')
-            self.ontool_ruler = False
-        else:
-            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
-            Publisher.sendMessage('Show rulers on viewers')
-            self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
-            Publisher.sendMessage('Update AUI')
-            self.ontool_ruler = True
 
     def OnEnableUndo(self, value):
         if value:
