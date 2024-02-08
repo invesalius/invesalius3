@@ -456,6 +456,15 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             self.viewer.set_camera_position=True
 
 
+class NavigationInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style used for 3d volume viewer during navigation mode. The functions are the same as
+    in the default interactor style: rotating, panning, and zooming.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -468,6 +477,7 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        const.STATE_NAVIGATION: NavigationInteractorStyle,
     }
 
     @classmethod

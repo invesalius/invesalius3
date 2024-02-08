@@ -5543,7 +5543,7 @@ class GoToDialogScannerCoord(wx.Dialog):
             Publisher.sendMessage('Update status text in GUI', label=_("Calculating the transformation ..."))
 
             Publisher.sendMessage('Set Update cross pos')
-            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Toggle toolbar button", id=const.SLICE_STATE_CROSS)
 
             Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         except ValueError:

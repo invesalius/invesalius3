@@ -1958,7 +1958,7 @@ class SliceToolBar(AuiToolBar):
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle slice toolbar items')
-        sub(self.OnToggle, 'Toggle Cross')
+        sub(self.OnToggle, 'Toggle toolbar button')
         sub(self.ToggleItem, 'Toggle toolbar item')
 
     def __bind_events_wx(self):

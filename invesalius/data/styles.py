@@ -472,9 +472,33 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             self.OnScrollBackward(obj, evt)
 
 
+class NavigationInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style used for slice viewers during navigation mode:
+
+    Displays the cross that shows the selected point, but does not allow the user to move it manually
+    by clicking and dragging the mouse.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+        self.viewer = viewer
+
+    def SetUp(self):
+        self.viewer.set_cross_visibility(1)
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        self.viewer.set_cross_visibility(0)
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=False)
+
+
 class CrossInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style used for slice visualization when the 'cross' icon has been selected from the toolbar.
+
+    The style displays the cross in each slice and allows the user to move the cross in the slices by clicking and dragging the mouse.
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
@@ -2877,6 +2901,7 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
+        const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,
