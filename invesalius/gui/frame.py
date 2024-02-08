@@ -2207,7 +2207,7 @@ class LayoutToolBar(AuiToolBar):
         self.ontool_text = True
         self.ontool_ruler = True
         self.ToggleText()
-        self.ToggleRulers()
+        self.HideRulers()
         for tool in self.enable_items:
             self.EnableTool(tool, False)
 
@@ -2218,7 +2218,7 @@ class LayoutToolBar(AuiToolBar):
         self.ontool_text = False
         self.ontool_ruler = True
         self.ToggleText()
-        self.ToggleRulers()
+        self.HideRulers()
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
@@ -2255,23 +2255,34 @@ class LayoutToolBar(AuiToolBar):
             Publisher.sendMessage('Update AUI')
             self.ontool_text = True
 
+    def ShowRulers(self):
+        """
+        Show the rulers on the viewers.
+        """
+        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
+        Publisher.sendMessage('Show rulers on viewers')
+        self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
+        Publisher.sendMessage('Update AUI')
+        self.ontool_ruler = True
+
+    def HideRulers(self):
+        """
+        Hide the rulers on the viewers.
+        """
+        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
+        Publisher.sendMessage('Hide rulers on viewers')
+        self.SetToolShortHelp(ID_RULER, _("Show rulers"))
+        Publisher.sendMessage('Update AUI')
+        self.ontool_ruler = False
+
     def ToggleRulers(self):
         """
-        Based on previous ruler state, toggle it.
+        Based on the current ruler state, either show or hide the rulers.
         """
         if self.ontool_ruler:
-            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
-            Publisher.sendMessage('Hide rulers on viewers')
-            self.SetToolShortHelp(ID_RULER, _("Show rulers"))
-            Publisher.sendMessage('Update AUI')
-            self.ontool_ruler = False
+            self.HideRulers()
         else:
-            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
-            Publisher.sendMessage('Show rulers on viewers')
-            self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
-            Publisher.sendMessage('Update AUI')
-            self.ontool_ruler = True
-
+            self.ShowRulers()
 
 
 class HistoryToolBar(AuiToolBar):
