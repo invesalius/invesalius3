@@ -2110,7 +2110,7 @@ class LayoutToolBar(AuiToolBar):
             p = os.path.join(d, "text_original.png")
             self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            # Bitmaps for show/hide task item
+            # Bitmaps for showing/hiding the ruler.
             p = os.path.join(d, "ruler_original_disabled.png")
             self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
@@ -2259,7 +2259,7 @@ class LayoutToolBar(AuiToolBar):
         """
         Show the rulers on the viewers.
         """
-        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
+        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
         Publisher.sendMessage('Show rulers on viewers')
         self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
         Publisher.sendMessage('Update AUI')
@@ -2269,7 +2269,7 @@ class LayoutToolBar(AuiToolBar):
         """
         Hide the rulers on the viewers.
         """
-        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
+        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
         Publisher.sendMessage('Hide rulers on viewers')
         self.SetToolShortHelp(ID_RULER, _("Show rulers"))
         Publisher.sendMessage('Update AUI')
