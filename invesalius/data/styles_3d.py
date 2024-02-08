@@ -464,6 +464,27 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         super().__init__(viewer)
 
+    def OnMouseMove(self, evt, obj):
+        # Do not allow to rotate, pan or zoom if the target mode is active.
+        if self.viewer.IsTargetMode():
+            return
+
+        super().OnMouseMove(evt, obj)
+
+    def OnScrollForward(self, evt, obj):
+        # Do not allow to scroll forward with the mouse wheel if the target mode is active.
+        if self.viewer.IsTargetMode():
+            return
+
+        super().OnScrollForward(evt, obj)
+
+    def OnScrollBackward(self, evt, obj):
+        # Do not allow to scroll backward with the mouse wheel if the target mode is active.
+        if self.viewer.IsTargetMode():
+            return
+
+        super().OnScrollBackward(evt, obj)
+
 
 class Styles:
     styles = {

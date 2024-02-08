@@ -1055,10 +1055,13 @@ class Viewer(wx.Panel):
     def OnUpdateDistThreshold(self, dist_threshold):
         self.distthreshold = dist_threshold
 
-    def ActivateTargetMode(self, evt=None, target_mode=None):
+    def IsTargetMode(self):
+        return self.target_mode
 
+    def ActivateTargetMode(self, evt=None, target_mode=False):
         vtk_colors = vtkNamedColors()
         self.target_mode = target_mode
+
         if self.target_coord and self.target_mode:
             if self.actor_peel:
                 self.object_orientation_torus_actor.SetVisibility(0)
@@ -1175,12 +1178,9 @@ class Viewer(wx.Panel):
 
     def OnUpdateObjectTargetGuide(self, m_img, coord):
         vtk_colors = vtkNamedColors()
-
         if self.target_coord and self.target_mode:
-
             target_dist = distance.euclidean(coord[0:3],
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
-
             # self.txt.SetCoilDistanceValue(target_dist)
             self.tdist.SetValue('Distance: ' + str("{:06.2f}".format(target_dist)) + ' mm')
             self.ren.ResetCamera()
@@ -1314,7 +1314,7 @@ class Viewer(wx.Panel):
             print("Target updated to coordinates {}".format(coord))
 
     def RemoveTarget(self):
-        self.target_mode = None
+        self.target_mode = False
         self.target_coord = None
         self.RemoveTargetAim()
         Publisher.sendMessage('Target selected', status=False)
