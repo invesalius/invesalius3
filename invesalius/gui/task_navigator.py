@@ -1468,7 +1468,7 @@ class ControlPanel(wx.Panel):
 
         else:
             # Prepare GUI for navigation.
-            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Enable style", style=const.STATE_NAVIGATION)
             Publisher.sendMessage("Hide current mask")
 
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
@@ -1491,6 +1491,13 @@ class ControlPanel(wx.Panel):
                 btn_nav.SetValue(False)
     
     def OnStopNavigation(self):
+        Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
+
+        # After disabling the navigation style, enable the 'cross' toolbar button.
+        # This is so that after navigation is finished, the user can select points in the
+        # volume rendering window without having to click the 'cross' button manually.
+        Publisher.sendMessage("Toggle toolbar button", id=const.SLICE_STATE_CROSS)
+
         self.navigation.StopNavigation()
         if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
