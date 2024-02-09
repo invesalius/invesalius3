@@ -467,6 +467,12 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
         if self.viewer.IsTargetMode():
             return
 
+        # Do not allow to rotate or pan when locking to coil is enabled, as the camera will be
+        # reset to the coil position during the next update of coil position. However, allow zooming
+        # using right mouse button.
+        if self.viewer.lock_to_coil and not self.right_pressed:
+            return
+
         super().OnMouseMove(evt, obj)
 
     def OnScrollForward(self, evt, obj):
