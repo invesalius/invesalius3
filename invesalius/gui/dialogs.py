@@ -4818,7 +4818,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
         self.ren.ResetCamera()
-        self.SetVolumeCamera(coord_flip[:3])
+        self.LockToCoil(coord_flip[:3])
         self.interactor.Render()
 
         return obj_actor
@@ -5206,7 +5206,7 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         return m_img_vtk_rotate, rx, ry, rz
 
-    def SetVolumeCamera(self, cam_focus):
+    def LockToCoil(self, cam_focus):
         cam = self.ren.GetActiveCamera()
 
         if self.initial_focus is None:
