@@ -1602,9 +1602,12 @@ class Viewer(wx.Panel):
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
 
-        # Update the red sphere on volume visualization.
-        if self.ball_actor is not None:
+        # Update the red sphere when not navigating.
+        if self.ball_actor is not None and not self.nav_status:
             self.ball_actor.SetPosition(coord_flip)
+
+            # Update the render window manually, as it is not updated automatically when not navigating.
+            self.UpdateRender()
 
     def UpdateCamera(self, position):
         """
@@ -1617,10 +1620,6 @@ class Viewer(wx.Panel):
         # Lock camera position to the coil if enabled in the user interface.
         if self.lock_to_coil:
             self.LockToCoil(coord_flip)
-
-        # TODO: Is this necessary?
-        if not self.nav_status:
-            self.UpdateRender()
 
     def AddObjectActor(self, obj_name):
         """
