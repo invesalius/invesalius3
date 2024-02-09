@@ -316,7 +316,7 @@ class InnerFoldPanel(wx.Panel):
         self.OnVolumeCameraCheckbox()
 
     def OnVolumeCameraCheckbox(self, evt=None, status=None):
-        Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
+        Publisher.sendMessage('Lock to coil', enabled=self.checkcamera.GetValue())
 
     def EnableVolumeCameraCheckbox(self, enabled):
         self.checkcamera.Enable(enabled)
@@ -1294,7 +1294,7 @@ class ControlPanel(wx.Panel):
         checkcamera =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkcamera.SetBitmap(BMP_UPDATE)
         checkcamera.SetToolTip(tooltip)
-        checkcamera.SetValue(const.CAM_MODE)
+        checkcamera.SetValue(const.LOCK_TO_COIL_AS_DEFAULT)
         if checkcamera.IsEnabled():
             checkcamera.SetBackgroundColour(GREEN_COLOR)
         else:
@@ -1635,7 +1635,7 @@ class ControlPanel(wx.Panel):
 
     def OnVolumeCameraCheckbox(self, evt=None, status=None):
         self.UpdateToggleButton(self.checkcamera)
-        Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
+        Publisher.sendMessage('Lock to coil', enabled=self.checkcamera.GetValue())
 
     def EnableVolumeCameraCheckbox(self, enabled):
         self.EnableToggleButton(self.checkcamera, enabled)

@@ -238,7 +238,7 @@ class Viewer(wx.Panel):
         self.repositioned_coronal_plan = 0
         self.added_actor = 0
 
-        self.camera_state = const.CAM_MODE
+        self.lock_to_coil = const.LOCK_TO_COIL_AS_DEFAULT
         self.camera_show_object = None
 
         self.nav_status = False
@@ -294,7 +294,6 @@ class Viewer(wx.Panel):
         self.colors_init = vtkUnsignedCharArray()
         self.plot_no_connection = False
 
-        self.set_camera_position = True
         self.old_coord = np.zeros((6,),dtype=float)
 
         self.efield_mesh = None
@@ -397,7 +396,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
 
-        Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
+        Publisher.subscribe(self.SetLockToCoil, 'Lock to coil')
 
         Publisher.subscribe(self.enable_style, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
@@ -429,11 +428,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
-
-        # XXX: During navigation, 'cross focal point' refers to the coil location, while when not
-        #   navigating, it refers to the point selected by the user - these two functions should be
-        #   decoupled.
-        Publisher.subscribe(self.UpdateFocus, 'Set cross focal point')
+        Publisher.subscribe(self.UpdateCrossFocalPoint, 'Set cross focal point')
+        Publisher.subscribe(self.UpdateCamera, 'Update camera')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
@@ -1598,15 +1594,10 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.ball_actor)
 
-    def UpdateFocus(self, position):
+    def UpdateCrossFocalPoint(self, position):
         """
         When not navigating, update the position of the red sphere on volume visualization
         when the slice planes are moved or a new point is selected from the volume viewer.
-
-        During navigation, update camera position to follow the coil if enabled in the
-        user interface.
-
-        TODO: These two functionalities should be decoupled.
         """
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
@@ -1615,9 +1606,17 @@ class Viewer(wx.Panel):
         if self.ball_actor is not None:
             self.ball_actor.SetPosition(coord_flip)
 
-        # Update camera position to follow the coil if enabled in the user interface.
-        if self.set_camera_position:
-            self.SetVolumeCamera(coord_flip)
+    def UpdateCamera(self, position):
+        """
+        During navigation, update camera position to lock to the coil if enabled in the
+        user interface.
+        """
+        coord_flip = list(position[:3])
+        coord_flip[1] = -coord_flip[1]
+
+        # Lock camera position to the coil if enabled in the user interface.
+        if self.lock_to_coil:
+            self.LockToCoil(coord_flip)
 
         # TODO: Is this necessary?
         if not self.nav_status:
@@ -2852,41 +2851,39 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
-    def SetVolumeCameraState(self, camera_state):
-        self.camera_state = camera_state
+    def SetLockToCoil(self, enabled):
+        self.lock_to_coil = enabled
         self.camera_show_object = None
 
-    # def SetVolumeCamera(self, arg, position):
-    def SetVolumeCamera(self, cam_focus):
-        if self.camera_state:
-            # TODO: exclude dependency on initial focus
-            # cam_focus = np.array(bases.flip_x(position[:3]))
-            # cam_focus = np.array(bases.flip_x(position))
-            cam = self.ren.GetActiveCamera()
+    def LockToCoil(self, cam_focus):
+        # TODO: exclude dependency on initial focus
+        # cam_focus = np.array(bases.flip_x(position[:3]))
+        # cam_focus = np.array(bases.flip_x(position))
+        cam = self.ren.GetActiveCamera()
 
-            if self.initial_focus is None:
-                self.initial_focus = np.array(cam.GetFocalPoint())
+        if self.initial_focus is None:
+            self.initial_focus = np.array(cam.GetFocalPoint())
 
-            cam_pos0 = np.array(cam.GetPosition())
-            cam_focus0 = np.array(cam.GetFocalPoint())
-            v0 = cam_pos0 - cam_focus0
-            v0n = np.sqrt(inner1d(v0, v0))
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
 
-            if self.camera_show_object is None:
-                self.camera_show_object = self.show_object
+        if self.camera_show_object is None:
+            self.camera_show_object = self.show_object
 
-            if self.camera_show_object:
-                v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])
-            else:
-                v1 = cam_focus - self.initial_focus
+        if self.camera_show_object:
+            v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])
+        else:
+            v1 = cam_focus - self.initial_focus
 
-            v1n = np.sqrt(inner1d(v1, v1))
-            if not v1n:
-                v1n = 1.0
-            cam_pos = (v1/v1n)*v0n + cam_focus
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1/v1n)*v0n + cam_focus
 
-            cam.SetFocalPoint(cam_focus)
-            cam.SetPosition(cam_pos)
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
 
         # It works without doing the reset. Check with trackers if there is any difference.
         # Need to be outside condition for sphere marker position update

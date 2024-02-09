@@ -125,6 +125,10 @@ class UpdateNavigationScene(threading.Thread):
                 # new marker is created, it is created in the current position of the object.
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
 
+                # Update camera in the volume viewer, so it can lock to the new position of the tracked object if
+                # enabled in the user interface.
+                wx.CallAfter(Publisher.sendMessage, 'Update camera', position=coord)
+
                 if self.e_field_loaded and object_visible_flag:
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
                                  coord=coord, queue_IDs=self.e_field_IDs_queue)

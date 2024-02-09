@@ -448,12 +448,10 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.picker.GetPickPosition()
 
         if self.picker.GetActor():
-            self.viewer.set_camera_position=False
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
             Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
-            self.viewer.set_camera_position=True
 
 
 class NavigationInteractorStyle(DefaultInteractorStyle):
