@@ -596,30 +596,19 @@ class Viewer(wx.Panel):
 
     def check_ball_reference(self):
         self._mode_cross = True
-        # self._check_and_set_ball_visibility()
-        #if not self.actor_peel:
         self._ball_ref_visibility = True
-        #else:
-        #    self._ball_ref_visibility = False
-        # if self._to_show_ball:
-        if not self.ball_actor: #and not self.actor_peel:
+        if not self.ball_actor:
             self.CreateBallReference()
-            #self.ball_actor.SetVisibility(1)
-        #else:
-         #   self.ball_actor.SetVisibility(0)
         self.UpdateRender()
 
     def uncheck_ball_reference(self):
         self._mode_cross = False
-        # self.RemoveBallReference()
         self._ball_ref_visibility = True
         if self.ball_actor:
             self.ren.RemoveActor(self.ball_actor)
             self.ball_actor = None
-
         self.UpdateRender()
-    
-    
+
     def OnSensors(self, markers_flag):
         probe_id, ref_id, obj_id = markers_flag
 
@@ -1606,11 +1595,7 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.ball_actor)
 
-    # def SetCrossFocalPoint(self, position):
-    #     self.UpdateCameraBallPosition(None, position)
-
     def UpdateCameraBallPosition(self, position):
-        #if not self.actor_peel:
         if self.ball_actor is not None:
             coord_flip = list(position[:3])
             coord_flip[1] = -coord_flip[1]
@@ -2577,7 +2562,7 @@ class Viewer(wx.Panel):
         vtk_colors = vtkNamedColors()
         closestDist = 50
 
-        #if find intersection , calculate angle and add actors
+        # If intersection is was found, calculate angle and add actors.
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
                 cellId = intersectingCellIds.GetId(i)
@@ -2593,16 +2578,14 @@ class Viewer(wx.Panel):
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     #print('the angle:', angle)
 
-                    #for debbuging
+                    # For debugging
                     self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
                                                          vtk_colors.GetColor3d('Yellow'))
 
                     #self.ren.AddActor(self.y_actor)# remove comment for testing
 
-
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_torus_actor)
-                    self.ball_actor.SetVisibility(0)
                     self.obj_projection_arrow_actor.SetPosition(closestPoint)
                     self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
@@ -2618,13 +2601,10 @@ class Viewer(wx.Panel):
                         self.obj_projection_arrow_actor.GetProperty().SetColor([240/255,146/255,105/255])
                 else:
                     self.ren.RemoveActor(self.y_actor)
-
         else:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.x_actor)
-            self.ball_actor.SetVisibility(1)
-
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
