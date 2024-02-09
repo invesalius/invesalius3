@@ -1864,7 +1864,7 @@ msgid "Extra tools"
 msgstr ""
 
 #: task_navigator.py:146
-msgid "Update camera in volume"
+msgid "Lock to coil"
 msgstr ""
 
 #: task_navigator.py:147
