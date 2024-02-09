@@ -430,7 +430,10 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-        Publisher.subscribe(self.UpdateCameraBallPosition, 'Set cross focal point')
+        # XXX: During navigation, 'cross focal point' refers to the coil location, while when not
+        #   navigating, it refers to the point selected by the user - these two functions should be
+        #   decoupled.
+        Publisher.subscribe(self.UpdateFocus, 'Set cross focal point')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
@@ -1595,15 +1598,30 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.ball_actor)
 
-    def UpdateCameraBallPosition(self, position):
+    def UpdateFocus(self, position):
+        """
+        When not navigating, update the position of the red sphere on volume visualization
+        when the slice planes are moved or a new point is selected from the volume viewer.
+
+        During navigation, update camera position to follow the coil if enabled in the
+        user interface.
+
+        TODO: These two functionalities should be decoupled.
+        """
+        coord_flip = list(position[:3])
+        coord_flip[1] = -coord_flip[1]
+
+        # Update the red sphere on volume visualization.
         if self.ball_actor is not None:
-            coord_flip = list(position[:3])
-            coord_flip[1] = -coord_flip[1]
             self.ball_actor.SetPosition(coord_flip)
-            if self.set_camera_position:
-                self.SetVolumeCamera(coord_flip)
-            if not self.nav_status:
-                self.UpdateRender()
+
+        # Update camera position to follow the coil if enabled in the user interface.
+        if self.set_camera_position:
+            self.SetVolumeCamera(coord_flip)
+
+        # TODO: Is this necessary?
+        if not self.nav_status:
+            self.UpdateRender()
 
     def AddObjectActor(self, obj_name):
         """
