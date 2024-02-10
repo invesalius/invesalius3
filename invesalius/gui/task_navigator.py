@@ -56,6 +56,12 @@ import invesalius.constants as const
 
 import invesalius.data.imagedata_utils as imagedata_utils
 import invesalius.data.coregistration as dcr
+import invesalius.data.slice_ as sl
+import invesalius.data.tractography as dti
+import invesalius.data.record_coords as rec
+import invesalius.data.vtk_utils as vtk_utils
+import invesalius.data.bases as db
+
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 import invesalius.session as ses
@@ -161,7 +167,6 @@ class InnerFoldPanel(wx.Panel):
         # available to several panels.
 
         tracker = Tracker()
-        robot = Robot()
         image = Image()
         icp = IterativeClosestPoint()
         neuronavigation_api = NeuronavigationApi()
@@ -170,6 +175,12 @@ class InnerFoldPanel(wx.Panel):
             pedal_connector=pedal_connector,
             neuronavigation_api=neuronavigation_api,
         )
+        robot = Robot(
+            tracker=tracker,
+            navigation=navigation,
+            icp=icp,
+        )
+
         self.tracker = tracker
         self.robot = robot
         self.image = image
@@ -923,7 +934,7 @@ class RefinePage(wx.Panel):
         self.labels = [wx.StaticText(self, -1, _(label)) for label in labels]
 
         for m in range(6):
-            for n in range(3):
+                for n in range(3):
                 if m <= 2:
                     value = self.image.GetImageFiducialForUI(m, n)
                 else:
@@ -1228,7 +1239,6 @@ class ControlPanel(wx.Panel):
             btn_robot.Hide()
         self.btn_robot = btn_robot
 
-
         # Constants for bitmap parent toggle button
         ICON_SIZE = (48, 48)
         RED_COLOR = const.RED_COLOR_RGB
@@ -1288,16 +1298,16 @@ class ControlPanel(wx.Panel):
         self.show_coil_button = show_coil_button
 
         # Toggle button for enabling robot during navigation
-        tooltip = wx.ToolTip(_("Enable robot"))
+        tooltip = wx.ToolTip(_("Robot"))
         BMP_ENABLE_ROBOT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot.png")), wx.BITMAP_TYPE_PNG)
-        enable_robot_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        enable_robot_button.SetBackgroundColour(GREY_COLOR)
-        enable_robot_button.SetBitmap(BMP_ENABLE_ROBOT)
-        enable_robot_button.SetToolTip(tooltip)
-        enable_robot_button.SetValue(False)
-        enable_robot_button.Enable(False)
-        enable_robot_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnEnableRobotButton)
-        self.enable_robot_button = enable_robot_button
+        robot_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        robot_button.SetBackgroundColour(GREY_COLOR)
+        robot_button.SetBitmap(BMP_ENABLE_ROBOT)
+        robot_button.SetToolTip(tooltip)
+        robot_button.SetValue(False)
+        robot_button.Enable(False)
+        robot_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotButton, ctrl=robot_button))
+        self.robot_button = robot_button
 
         # Toggle button for locking camera to coil during navigation
         tooltip = wx.ToolTip(_("Lock to coil"))
@@ -1361,7 +1371,7 @@ class ControlPanel(wx.Panel):
             (tractography_checkbox),
             (lock_to_coil_button),
             (show_target_button),
-            (enable_robot_button),
+            (robot_button),
             (track_object_button),
             (efield_checkbox),
             (lock_to_target_button),
@@ -1382,7 +1392,6 @@ class ControlPanel(wx.Panel):
         self.Update()
         self.LoadConfig()
 
-
     def __bind_events(self):
         Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
@@ -1391,6 +1400,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
         Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
+        Publisher.subscribe(self.OnSetTargetMode, 'Target navigation mode')
 
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
 
@@ -1403,6 +1413,8 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.PressTrackObjectButton, 'Press track object button')
         Publisher.subscribe(self.EnableTrackObjectButton, 'Enable track object button')
+
+        Publisher.subscribe(self.EnableRobotButton, 'Enable robot button')
 
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
@@ -1499,7 +1511,7 @@ class ControlPanel(wx.Panel):
                 btn_nav.SetLabelText(_("Stop neuronavigation"))
             else:
                 btn_nav.SetValue(False)
-    
+
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
@@ -1538,7 +1550,7 @@ class ControlPanel(wx.Panel):
         enable_track_object = obj_registration is not None and obj_registration[0] is not None and not nav_status
         self.EnableTrackObjectButton(enable_track_object)
 
-    # 'Robot'
+    # Robot
     def OnRobotStatus(self, data):
         if data:
             self.btn_robot.Show()
@@ -1548,8 +1560,23 @@ class ControlPanel(wx.Panel):
         Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
 
+    # Enable robot button if:
+    #
+    #   - Navigation is on
+    #   - Target is set
+    #   - Target mode is on
+    #   - Robot is connected
+    #
+    def UpdateRobotButton(self):
+        enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
+        self.EnableRobotButton(enabled=enabled)
 
-    # 'Tractography'
+    # Update robot button state when target mode is changed.
+    def OnSetTargetMode(self, evt=None, target_mode=None):
+        self.target_mode = target_mode
+        self.UpdateRobotButton()
+
+    # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
         self.view_tracts = ctrl.GetValue()
         self.UpdateToggleButton(ctrl)
@@ -1636,11 +1663,15 @@ class ControlPanel(wx.Panel):
         pressed = self.show_coil_button.GetValue()
         Publisher.sendMessage('Show-coil pressed', pressed=pressed)
 
-    # 'Enable robot' button
-    def OnEnableRobotButton(self, evt, ctrl):
+    # 'Robot' button
+    def EnableRobotButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_button, enabled)
+        self.UpdateToggleButton(self.robot_button)
+
+    def OnRobotButton(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
-        value = ctrl.GetValue()
-        self.robot.SetEnabled(value)
+        pressed = ctrl.GetValue()
+        self.robot.SetEnabledInGui(pressed)
 
     # 'Lock to coil' button
     def PressLockToCoilButton(self, pressed):
@@ -1673,18 +1704,17 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage('Update serial port', serial_port_in_use=True, com_port=com_port, baud_rate=baud_rate)
         else:
             Publisher.sendMessage('Update serial port', serial_port_in_use=False)
-    
 
     # 'E Field'
     def OnEfieldCheckbox(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
-    
 
     # 'Target Button' 
     def TargetSelected(self, status):
         if status is not None:
             self.target_selected = status
             self.UpdateTargetButton()
+            self.UpdateRobotButton()
     
     def TrackObject(self, enabled):
         self.track_obj = enabled
@@ -1898,7 +1928,6 @@ class MarkersPanel(wx.Panel):
         self.nav_status = False
         self.efield_data_saved = False
         self.efield_target_idx = None 
-        self.target_mode = False
 
         self.marker_colour = const.MARKER_COLOUR
         self.marker_size = const.MARKER_SIZE
@@ -2009,7 +2038,6 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
-        Publisher.subscribe(self.OnActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
         Publisher.subscribe(self.GetIdList, 'Get ID list')
@@ -2292,16 +2320,6 @@ class MarkersPanel(wx.Panel):
 
         menu_id.AppendSeparator()
 
-        # Enable "Send target to robot" button only if tracker is robot, if navigation is on and if target is not none
-        if self.robot.IsConnected():
-            send_target_to_robot = menu_id.Append(7, _('Send InVesalius target to robot'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuSendTargetToRobot, send_target_to_robot)
-
-            send_target_to_robot.Enable(False)
-
-            if self.nav_status and self.target_mode and (self.marker_list_ctrl.GetFocusedItem() == self.__find_target_marker()):
-                send_target_to_robot.Enable(True)
-
         is_target_orientation_set = all([elem is not None for elem in self.markers[self.marker_list_ctrl.GetFocusedItem()].orientation])
 
         if is_target_orientation_set and not is_brain_target:
@@ -2339,6 +2357,7 @@ class MarkersPanel(wx.Panel):
         if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
+
         self.__set_marker_as_target(idx)
 
         self.SaveState()
@@ -2501,27 +2520,6 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set new color', index=index, color=color_new)
 
         self.SaveState()
-
-    def OnMenuSendTargetToRobot(self, evt):
-        if isinstance(evt, int):
-           self.marker_list_ctrl.Focus(evt)
-
-        index = self.marker_list_ctrl.GetFocusedItem()
-        if index == -1:
-            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
-            return
-
-        esko
-        Publisher.sendMessage('Reset robot process', data=None)
-        matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
-        Publisher.sendMessage('Update tracker fiducials matrix',
-                              matrix_tracker_fiducials=matrix_tracker_fiducials)
-
-        nav_target = self.markers[index].position + self.markers[index].orientation
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-        m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, nav_target, self.icp, self.navigation.obj_data)
-
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=True, target_index=self.marker_list_ctrl.GetFocusedItem(), target=m_target.tolist())
 
     def OnSetBrainTarget(self, evt):
         if isinstance(evt, int):
@@ -2743,9 +2741,6 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Update target orientation',
                                   target_id=marker_id, orientation=list(orientation))
         dialog.Destroy()
-
-    def OnActivateTargetMode(self, evt=None, target_mode=None):
-        self.target_mode = target_mode
 
     def AddPeeledSurface(self, flag, actor):
         self.brain_actor = actor

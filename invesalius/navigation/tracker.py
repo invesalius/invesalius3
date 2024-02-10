@@ -238,25 +238,3 @@ class Tracker(metaclass=Singleton):
 
     def get_trackers(self):
         return const.TRACKERS
-
-
-'''
-Deprecated Code
-
-    def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
-        if self.tracker_connected:
-            selection_ctrl.SetSelection(self.tracker_id)
-        else:
-            selection_ctrl.SetSelection(0)
-
-        # Update tracker location in the UI.
-        for m in range(3):
-            coord = self.tracker_fiducials[m, :]
-            for n in range(0, 3):
-                value = 0.0 if np.isnan(coord[n]) else float(coord[n])
-                numctrls_fiducial[m][n].SetValue(value)
-
-        txtctrl_fre.SetValue('')
-        txtctrl_fre.SetBackgroundColour('WHITE')
-
-'''

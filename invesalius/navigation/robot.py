@@ -24,6 +24,7 @@ import numpy as np
 import wx
 
 import invesalius.constants as const
+import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
@@ -34,8 +35,12 @@ from invesalius.navigation.tracker import Tracker
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Robot(metaclass=Singleton):
-    def __init__(self):
-        self.tracker = Tracker()
+    def __init__(self, tracker, navigation, icp):
+        self.tracker = tracker
+        self.navigation = navigation
+        self.icp = icp
+
+        self.enabled_in_gui = False
 
         self.robot_status = None
         self.robot_ip = None
@@ -52,6 +57,7 @@ class Robot(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
         Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
+        Publisher.subscribe(self.SetNewTarget, 'Update target')
 
     def SaveConfig(self):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
@@ -84,7 +90,11 @@ class Robot(metaclass=Singleton):
         if not self.robot_status:
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
             return
-        self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self, self.tracker)
+
+        self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(
+            robot=self,
+            tracker=self.tracker
+        )
 
         # Show dialog and store relevant output values.
         status = self.robot_coregistration_dialog.ShowModal()
@@ -123,3 +133,33 @@ class Robot(metaclass=Singleton):
 
     def DisconnectRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)
+
+    def SendTargetToRobot(self):
+        matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
+
+        Publisher.sendMessage('Reset robot process', data=None)
+        Publisher.sendMessage('Update tracker fiducials matrix',
+                              matrix_tracker_fiducials=matrix_tracker_fiducials)
+
+        # Compute the target in tracker coordinate system.
+        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, self.target, self.icp, self.navigation.obj_data)
+
+        Publisher.sendMessage('Update robot target',
+            # TODO: 'robot_tracker_flag' indicates if the target has been set. The name is not very clear. Changing
+            #   it would require changes on both robot control and InVesalius side.
+            robot_tracker_flag=True,
+            target=m_target.tolist()
+        )
+
+    def SetNewTarget(self, coord):
+        self.target = coord
+
+        if self.enabled_in_gui and self.target is not None:
+            self.SendTargetToRobot()
+
+    def SetEnabledInGui(self, enabled_in_gui):
+        self.enabled_in_gui = enabled_in_gui
+
+        if self.enabled_in_gui and self.target is not None:
+            self.SendTargetToRobot()
