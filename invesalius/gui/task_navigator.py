@@ -298,15 +298,15 @@ class InnerFoldPanel(wx.Panel):
     # 'Show coil' checkbox
 
     def CheckShowCoil(self, checked=False):
-        self.checkobj.SetValue(checked)
+        self.show_coil_button.SetValue(checked)
 
         self.OnShowCoil()
 
     def EnableShowCoil(self, enabled=False):
-        self.checkobj.Enable(enabled)
+        self.show_coil_button.Enable(enabled)
 
     def OnShowCoil(self, evt=None):
-        checked = self.checkobj.GetValue()
+        checked = self.show_coil_button.GetValue()
         Publisher.sendMessage('Show-coil checked', checked=checked)
 
     # 'Volume camera' checkbox
@@ -1267,28 +1267,40 @@ class ControlPanel(wx.Panel):
         # Toggle Button for Lock to Target
         tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
         BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG)
-        lock_to_target_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        lock_to_target_checkbox.SetBackgroundColour(GREY_COLOR)
-        lock_to_target_checkbox.SetBitmap(BMP_LOCK)
-        lock_to_target_checkbox.SetValue(False)
-        lock_to_target_checkbox.Enable(False)
-        lock_to_target_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnLockToTargetCheckbox, ctrl=lock_to_target_checkbox))
-        lock_to_target_checkbox.SetToolTip(tooltip)
-        self.lock_to_target_checkbox = lock_to_target_checkbox
+        lock_to_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        lock_to_target_button.SetBackgroundColour(GREY_COLOR)
+        lock_to_target_button.SetBitmap(BMP_LOCK)
+        lock_to_target_button.SetValue(False)
+        lock_to_target_button.Enable(False)
+        lock_to_target_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnLockToTargetButton, ctrl=lock_to_target_button))
+        lock_to_target_button.SetToolTip(tooltip)
+        self.lock_to_target_button = lock_to_target_button
 
-        # Toggle Button for object position and orientation update in volume rendering during navigation
+        # Toggle button for showing coil during navigation
         tooltip = wx.ToolTip(_("Show and track TMS coil"))
-        BMP_SHOW = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG)
-        checkobj = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        checkobj.SetBackgroundColour(GREY_COLOR)
-        checkobj.SetBitmap(BMP_SHOW)
-        checkobj.SetToolTip(tooltip)
-        checkobj.SetValue(False)
-        checkobj.Enable(False)
-        checkobj.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
-        self.checkobj = checkobj
-    
-        # Toggle Button for camera update in volume rendering during navigation
+        BMP_SHOW_COIL = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG)
+        show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        show_coil_button.SetBackgroundColour(GREY_COLOR)
+        show_coil_button.SetBitmap(BMP_SHOW_COIL)
+        show_coil_button.SetToolTip(tooltip)
+        show_coil_button.SetValue(False)
+        show_coil_button.Enable(False)
+        show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
+        self.show_coil_button = show_coil_button
+
+        # Toggle button for enabling robot during navigation
+        tooltip = wx.ToolTip(_("Enable robot"))
+        BMP_ENABLE_ROBOT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot.png")), wx.BITMAP_TYPE_PNG)
+        enable_robot_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        enable_robot_button.SetBackgroundColour(GREY_COLOR)
+        enable_robot_button.SetBitmap(BMP_ENABLE_ROBOT)
+        enable_robot_button.SetToolTip(tooltip)
+        enable_robot_button.SetValue(False)
+        enable_robot_button.Enable(False)
+        enable_robot_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnEnableRobotButton)
+        self.enable_robot_button = enable_robot_button
+
+        # Toggle button for locking camera to coil during navigation
         tooltip = wx.ToolTip(_("Lock to coil"))
         BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("orbit.png")), wx.BITMAP_TYPE_PNG)
         lock_to_coil_button =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
@@ -1350,12 +1362,12 @@ class ControlPanel(wx.Panel):
             (tractography_checkbox),
             (lock_to_coil_button),
             (target_checkbox),
+            (enable_robot_button),
             (checkbox_track_object),
             (efield_checkbox),
+            (lock_to_target_button),
+            (show_coil_button),
             (checkbox_serial_port),
-            (lock_to_target_checkbox),
-            (checkobj)
-
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1502,8 +1514,8 @@ class ControlPanel(wx.Panel):
         self.navigation.target = coord
 
         if coord is not None:
-            self.EnableToggleButton(self.lock_to_target_checkbox, 1)
-            self.UpdateToggleButton(self.lock_to_target_checkbox, True)
+            self.EnableToggleButton(self.lock_to_target_button, 1)
+            self.UpdateToggleButton(self.lock_to_target_button, True)
             self.navigation.SetLockToTarget(True)
             self.target_selected = True
             self.UpdateTargetButton()
@@ -1606,29 +1618,33 @@ class ControlPanel(wx.Panel):
 
         self.SaveConfig()
 
-
-    # 'Lock to Target' checkbox        
-    def OnLockToTargetCheckbox(self, evt, ctrl):
+    # 'Lock to Target' button
+    def OnLockToTargetButton(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
         value = ctrl.GetValue()
         self.navigation.SetLockToTarget(value)
 
-    # 'Show coil' checkbox
+    # 'Show coil' button
     def CheckShowCoil(self, checked=False):
-        self.UpdateToggleButton(self.checkobj, checked)
+        self.UpdateToggleButton(self.show_coil_button, checked)
         self.OnShowCoil()
 
     def EnableShowCoil(self, enabled=False):
-        self.EnableToggleButton(self.checkobj, enabled)
-        self.UpdateToggleButton(self.checkobj)
+        self.EnableToggleButton(self.show_coil_button, enabled)
+        self.UpdateToggleButton(self.show_coil_button)
 
     def OnShowCoil(self, evt=None):
-        self.UpdateToggleButton(self.checkobj)
-        checked = self.checkobj.GetValue()
+        self.UpdateToggleButton(self.show_coil_button)
+        checked = self.show_coil_button.GetValue()
         Publisher.sendMessage('Show-coil checked', checked=checked)
 
+    # 'Enable robot' button
+    def OnEnableRobotButton(self, evt, ctrl):
+        self.UpdateToggleButton(ctrl)
+        value = ctrl.GetValue()
+        self.robot.SetEnabled(value)
 
-    # 'Volume camera' checkbox
+    # 'Lock to coil' button
     def CheckLockToCoilCheckbox(self, checked):
         self.UpdateToggleButton(self.lock_to_coil_button, checked)
         self.OnLockToCoilCheckbox()
@@ -2497,6 +2513,7 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
+        esko
         Publisher.sendMessage('Reset robot process', data=None)
         matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage('Update tracker fiducials matrix',
