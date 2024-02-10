@@ -1253,15 +1253,15 @@ class ControlPanel(wx.Panel):
         # Toggle Button to track object or simply the stylus
         tooltip = wx.ToolTip(_(u"Track the object"))
         BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
-        checkbox_track_object = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        checkbox_track_object.SetBackgroundColour(GREY_COLOR)
-        checkbox_track_object.SetBitmap(BMP_TRACK)
-        checkbox_track_object.SetValue(False)
+        track_object_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        track_object_button.SetBackgroundColour(GREY_COLOR)
+        track_object_button.SetBitmap(BMP_TRACK)
+        track_object_button.SetValue(False)
         if not self.track_obj:
-            checkbox_track_object.Enable(False)
-        checkbox_track_object.SetToolTip(tooltip)
-        checkbox_track_object.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=checkbox_track_object))
-        self.checkbox_track_object = checkbox_track_object
+            track_object_button.Enable(False)
+        track_object_button.SetToolTip(tooltip)
+        track_object_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button))
+        self.track_object_button = track_object_button
 
         # Toggle Button for Lock to Target
         tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
@@ -1339,14 +1339,14 @@ class ControlPanel(wx.Panel):
         #Toggle Button for Target Mode
         tooltip = wx.ToolTip(_(u"Control Target Mode"))
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        target_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        target_checkbox.SetBackgroundColour(GREY_COLOR)
-        target_checkbox.SetBitmap(BMP_TARGET)
-        target_checkbox.SetValue(False)
-        target_checkbox.Enable(False)
-        target_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetCheckbox))
-        target_checkbox.SetToolTip(tooltip)
-        self.target_checkbox = target_checkbox
+        show_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        show_target_button.SetBackgroundColour(GREY_COLOR)
+        show_target_button.SetBitmap(BMP_TARGET)
+        show_target_button.SetValue(False)
+        show_target_button.Enable(False)
+        show_target_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton))
+        show_target_button.SetToolTip(tooltip)
+        self.show_target_button = show_target_button
         self.UpdateTargetButton()
 
         #Sizers
@@ -1360,9 +1360,9 @@ class ControlPanel(wx.Panel):
         checkbox_sizer.AddMany([
             (tractography_checkbox),
             (lock_to_coil_button),
-            (target_checkbox),
+            (show_target_button),
             (enable_robot_button),
-            (checkbox_track_object),
+            (track_object_button),
             (efield_checkbox),
             (lock_to_target_button),
             (show_coil_button),
@@ -1396,10 +1396,10 @@ class ControlPanel(wx.Panel):
 
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowCoilButton, 'Press show-coil button')
-        Publisher.subscribe(self.PressLockToCoilButton, 'Press lock to coil button')
-
         Publisher.subscribe(self.EnableShowCoilButton, 'Enable show-coil button')
-        Publisher.subscribe(self.EnableLockToCoilButton, 'Enable lock to coil checkbox')
+
+        Publisher.subscribe(self.PressLockToCoilButton, 'Press lock to coil button')
+        Publisher.subscribe(self.EnableLockToCoilButton, 'Enable lock to coil button')
 
         Publisher.subscribe(self.PressTrackObjectButton, 'Press track object button')
         Publisher.subscribe(self.EnableTrackObjectButton, 'Enable track object button')
@@ -1426,7 +1426,7 @@ class ControlPanel(wx.Panel):
 
     # Config 
     def SaveConfig(self):
-        track_object = self.checkbox_track_object
+        track_object = self.track_object_button
         state = {
             'track_object': {
                 'checked': track_object.GetValue(),
@@ -1591,21 +1591,21 @@ class ControlPanel(wx.Panel):
     def EnableACT(self, data):
         self.navigation.enable_act = data
 
-    # 'Track object' checkbox
+    # 'Track object' button
     def EnableTrackObjectButton(self, enabled):
-        self.EnableToggleButton(self.checkbox_track_object, enabled)
-        self.UpdateToggleButton(self.checkbox_track_object)
+        self.EnableToggleButton(self.track_object_button, enabled)
+        self.UpdateToggleButton(self.track_object_button)
         self.SaveConfig()
 
     def PressTrackObjectButton(self, pressed):
-        self.UpdateToggleButton(self.checkbox_track_object, pressed)
+        self.UpdateToggleButton(self.track_object_button, pressed)
         self.OnTrackObjectButton()
         self.SaveConfig()
 
     def OnTrackObjectButton(self, evt=None, ctrl=None):
         if ctrl is not None:
             self.UpdateToggleButton(ctrl)
-        pressed = self.checkbox_track_object.GetValue()
+        pressed = self.track_object_button.GetValue()
         Publisher.sendMessage('Track object', enabled=pressed)
 
         # Disable or enable 'Show coil' button, based on if 'Track object' button is pressed.
@@ -1691,33 +1691,33 @@ class ControlPanel(wx.Panel):
         self.UpdateTargetButton()
 
     def ShowTargetButton(self):
-        self.target_checkbox.Show()
+        self.show_target_button.Show()
 
     def HideTargetButton(self):
-        self.target_checkbox.Hide()
+        self.show_target_button.Hide()
 
     def DisableTargetMode(self):
-        self.UpdateToggleButton(self.target_checkbox, False)
-        self.OnTargetCheckbox(False)
+        self.UpdateToggleButton(self.show_target_button, False)
+        self.OnTargetButton(False)
 
     def UpdateTargetButton(self):
         if self.target_selected and self.track_obj:
-            self.EnableToggleButton(self.target_checkbox, True)
-            self.UpdateToggleButton(self.target_checkbox, self.target_checkbox.GetValue())
+            self.EnableToggleButton(self.show_target_button, True)
+            self.UpdateToggleButton(self.show_target_button, self.show_target_button.GetValue())
         else:
             self.DisableTargetMode()
-            self.EnableToggleButton(self.target_checkbox, False)
+            self.EnableToggleButton(self.show_target_button, False)
 
-    def OnTargetCheckbox(self, evt):
-        if self.target_checkbox.GetValue():
-            self.UpdateToggleButton(self.target_checkbox, True)
-            Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
+    def OnTargetButton(self, evt):
+        if self.show_target_button.GetValue():
+            self.UpdateToggleButton(self.show_target_button, True)
+            Publisher.sendMessage('Target navigation mode', target_mode=self.show_target_button.GetValue())
             Publisher.sendMessage('Press lock to coil button', pressed=False)
-            Publisher.sendMessage('Enable lock to coil checkbox', enabled=False)
+            Publisher.sendMessage('Enable lock to coil button', enabled=False)
         else:
-            self.UpdateToggleButton(self.target_checkbox, False)
-            Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
-            Publisher.sendMessage('Enable lock to coil checkbox', enabled=True)
+            self.UpdateToggleButton(self.show_target_button, False)
+            Publisher.sendMessage('Target navigation mode', target_mode=self.show_target_button.GetValue())
+            Publisher.sendMessage('Enable lock to coil button', enabled=True)
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None) 
 
