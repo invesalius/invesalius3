@@ -446,7 +446,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SetMarkers, 'Set markers')
 
         # Related to UI state
-        Publisher.subscribe(self.ShowObject, 'Show-coil checked')
+        Publisher.subscribe(self.ShowCoilPressed, 'Show-coil pressed')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
@@ -536,10 +536,11 @@ class Viewer(wx.Panel):
 
         self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
         self.use_default_object = use_default_object
-        # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
-        Publisher.sendMessage('Enable track-object checkbox', enabled=True)
-        Publisher.sendMessage('Check track-object checkbox', checked=True)
-        Publisher.sendMessage('Check lock to coil checkbox', checked=False)
+
+        # Automatically enable and press 'Track object' button and unpress 'Lock to coil' button.
+        Publisher.sendMessage('Enable track object button', enabled=True)
+        Publisher.sendMessage('Press track object button', pressed=True)
+        Publisher.sendMessage('Press lock to coil button', pressed=False)
 
         Publisher.sendMessage('Disable target mode')
         self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
@@ -2721,8 +2722,9 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def ShowObject(self, checked):
-        self.show_object = checked
+    # Called when 'show coil' button is pressed in the user interface.
+    def ShowCoilPressed(self, pressed):
+        self.show_object = pressed
         if self.dummy_coil_actor is not None:
             self.dummy_coil_actor.SetVisibility(self.show_object)
 
@@ -2731,10 +2733,6 @@ class Viewer(wx.Panel):
             self.x_actor.SetVisibility(self.show_object)
             self.y_actor.SetVisibility(self.show_object)
             self.z_actor.SetVisibility(self.show_object)
-            #if self.actor_peel:
-            #    self.ball_actor.SetVisibility(0)
-            #else:
-            #    self.ball_actor.SetVisibility(1)
 
         if self.aim_actor is not None and self.show_object:
             self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)

@@ -295,30 +295,31 @@ class InnerFoldPanel(wx.Panel):
         else:
             Publisher.sendMessage('Update serial port', serial_port_in_use=False)
 
-    # 'Show coil' checkbox
+    # 'Show coil' button
 
-    def CheckShowCoil(self, checked=False):
-        self.show_coil_button.SetValue(checked)
-
+    # Called when the 'Show coil' button is pressed elsewhere in code.
+    def PressShowCoilButton(self, pressed=False):
+        self.show_coil_button.SetValue(pressed)
         self.OnShowCoil()
 
-    def EnableShowCoil(self, enabled=False):
+    def EnableShowCoilButton(self, enabled=False):
         self.show_coil_button.Enable(enabled)
 
     def OnShowCoil(self, evt=None):
-        checked = self.show_coil_button.GetValue()
-        Publisher.sendMessage('Show-coil checked', checked=checked)
+        pressed = self.show_coil_button.GetValue()
+        Publisher.sendMessage('Show-coil pressed', pressed=pressed)
 
-    # 'Volume camera' checkbox
+    # 'Lock to coil' button
 
-    def CheckLockToCoilCheckbox(self, checked):
-        self.lock_to_coil_button.SetValue(checked)
-        self.OnLockToCoilCheckbox()
+    # Called when the 'Lock to coil' button is pressed elsewhere in code.
+    def PressLockToCoilButton(self, pressed):
+        self.lock_to_coil_button.SetValue(pressed)
+        self.OnLockToCoilButton()
 
-    def OnLockToCoilCheckbox(self, evt=None, status=None):
+    def OnLockToCoilButton(self, evt=None, status=None):
         Publisher.sendMessage('Lock to coil', enabled=self.lock_to_coil_button.GetValue())
 
-    def EnableLockToCoilCheckbox(self, enabled):
+    def EnableLockToCoilButton(self, enabled):
         self.lock_to_coil_button.Enable(enabled)
     
     def OnFoldPressCaption(self, evt):
@@ -1110,8 +1111,8 @@ class StimulatorPage(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, 'Remove object data')
     
     def OnCloseProject(self):
-        Publisher.sendMessage('Check track-object checkbox', checked=False)
-        Publisher.sendMessage('Enable track-object checkbox', enabled=False)
+        Publisher.sendMessage('Press track object button', pressed=False)
+        Publisher.sendMessage('Enable track object button', enabled=False)
 
     def UpdateObjectRegistration(self):
         self.object_reg = self.navigation.GetObjectRegistration()
@@ -1208,8 +1209,6 @@ class ControlPanel(wx.Panel):
         self.navigation_status = False
 
         self.target_selected = False
-        self.show_coil_checked = False
-
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
@@ -1261,7 +1260,7 @@ class ControlPanel(wx.Panel):
         if not self.track_obj:
             checkbox_track_object.Enable(False)
         checkbox_track_object.SetToolTip(tooltip)
-        checkbox_track_object.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectCheckbox, ctrl=checkbox_track_object))
+        checkbox_track_object.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=checkbox_track_object))
         self.checkbox_track_object = checkbox_track_object
 
         # Toggle Button for Lock to Target
@@ -1311,7 +1310,7 @@ class ControlPanel(wx.Panel):
             lock_to_coil_button.SetBackgroundColour(GREEN_COLOR)
         else:
             lock_to_coil_button.SetBackgroundColour(RED_COLOR)
-        lock_to_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnLockToCoilCheckbox)
+        lock_to_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnLockToCoilButton)
         self.lock_to_coil_button = lock_to_coil_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
@@ -1395,16 +1394,15 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
 
-        # Externally check/uncheck and enable/disable checkboxes.
-        Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
-        Publisher.subscribe(self.CheckLockToCoilCheckbox, 'Check lock to coil checkbox')
+        # Externally press/unpress and enable/disable buttons.
+        Publisher.subscribe(self.PressShowCoilButton, 'Press show-coil button')
+        Publisher.subscribe(self.PressLockToCoilButton, 'Press lock to coil button')
 
-        Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
-        Publisher.subscribe(self.EnableLockToCoilCheckbox, 'Enable lock to coil checkbox')
+        Publisher.subscribe(self.EnableShowCoilButton, 'Enable show-coil button')
+        Publisher.subscribe(self.EnableLockToCoilButton, 'Enable lock to coil checkbox')
 
-        # Externally check/uncheck and enable/disable checkboxes.
-        Publisher.subscribe(self.CheckTrackObjectCheckbox, 'Check track-object checkbox')
-        Publisher.subscribe(self.EnableTrackObjectCheckbox, 'Enable track-object checkbox')
+        Publisher.subscribe(self.PressTrackObjectButton, 'Press track object button')
+        Publisher.subscribe(self.EnableTrackObjectButton, 'Enable track object button')
 
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
@@ -1448,8 +1446,8 @@ class ControlPanel(wx.Panel):
 
         track_object = state['track_object']
 
-        self.EnableTrackObjectCheckbox(track_object['enabled'])
-        self.CheckTrackObjectCheckbox(track_object['checked'])
+        self.EnableTrackObjectButton(track_object['enabled'])
+        self.PressTrackObjectButton(track_object['checked'])
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -1538,7 +1536,7 @@ class ControlPanel(wx.Panel):
         # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
         obj_registration = self.navigation.GetObjectRegistration()
         enable_track_object = obj_registration is not None and obj_registration[0] is not None and not nav_status
-        self.EnableTrackObjectCheckbox(enable_track_object)
+        self.EnableTrackObjectButton(enable_track_object)
 
     # 'Robot'
     def OnRobotStatus(self, data):
@@ -1594,27 +1592,27 @@ class ControlPanel(wx.Panel):
         self.navigation.enable_act = data
 
     # 'Track object' checkbox
-    def EnableTrackObjectCheckbox(self, enabled):
+    def EnableTrackObjectButton(self, enabled):
         self.EnableToggleButton(self.checkbox_track_object, enabled)
         self.UpdateToggleButton(self.checkbox_track_object)
         self.SaveConfig()
 
-    def CheckTrackObjectCheckbox(self, checked):
-        self.UpdateToggleButton(self.checkbox_track_object, checked)
-        self.OnTrackObjectCheckbox()
+    def PressTrackObjectButton(self, pressed):
+        self.UpdateToggleButton(self.checkbox_track_object, pressed)
+        self.OnTrackObjectButton()
         self.SaveConfig()
 
-    def OnTrackObjectCheckbox(self, evt=None, ctrl=None):
+    def OnTrackObjectButton(self, evt=None, ctrl=None):
         if ctrl is not None:
             self.UpdateToggleButton(ctrl)
-        checked = self.checkbox_track_object.GetValue()
-        Publisher.sendMessage('Track object', enabled=checked)
+        pressed = self.checkbox_track_object.GetValue()
+        Publisher.sendMessage('Track object', enabled=pressed)
 
-        # Disable or enable 'Show coil' checkbox, based on if 'Track object' checkbox is checked.
-        Publisher.sendMessage('Enable show-coil checkbox', enabled=checked)
+        # Disable or enable 'Show coil' button, based on if 'Track object' button is pressed.
+        Publisher.sendMessage('Enable show-coil button', enabled=pressed)
 
-        # Also, automatically check or uncheck 'Show coil' checkbox.
-        Publisher.sendMessage('Check show-coil checkbox', checked=checked)
+        # Also, automatically press or unpress 'Show coil' button.
+        Publisher.sendMessage('Press show-coil button', pressed=pressed)
 
         self.SaveConfig()
 
@@ -1625,18 +1623,18 @@ class ControlPanel(wx.Panel):
         self.navigation.SetLockToTarget(value)
 
     # 'Show coil' button
-    def CheckShowCoil(self, checked=False):
-        self.UpdateToggleButton(self.show_coil_button, checked)
+    def PressShowCoilButton(self, pressed=False):
+        self.UpdateToggleButton(self.show_coil_button, pressed)
         self.OnShowCoil()
 
-    def EnableShowCoil(self, enabled=False):
+    def EnableShowCoilButton(self, enabled=False):
         self.EnableToggleButton(self.show_coil_button, enabled)
         self.UpdateToggleButton(self.show_coil_button)
 
     def OnShowCoil(self, evt=None):
         self.UpdateToggleButton(self.show_coil_button)
-        checked = self.show_coil_button.GetValue()
-        Publisher.sendMessage('Show-coil checked', checked=checked)
+        pressed = self.show_coil_button.GetValue()
+        Publisher.sendMessage('Show-coil pressed', pressed=pressed)
 
     # 'Enable robot' button
     def OnEnableRobotButton(self, evt, ctrl):
@@ -1645,15 +1643,15 @@ class ControlPanel(wx.Panel):
         self.robot.SetEnabled(value)
 
     # 'Lock to coil' button
-    def CheckLockToCoilCheckbox(self, checked):
-        self.UpdateToggleButton(self.lock_to_coil_button, checked)
-        self.OnLockToCoilCheckbox()
+    def PressLockToCoilButton(self, pressed):
+        self.UpdateToggleButton(self.lock_to_coil_button, pressed)
+        self.OnLockToCoilButton()
 
-    def OnLockToCoilCheckbox(self, evt=None, status=None):
+    def OnLockToCoilButton(self, evt=None, status=None):
         self.UpdateToggleButton(self.lock_to_coil_button)
         Publisher.sendMessage('Lock to coil', enabled=self.lock_to_coil_button.GetValue())
 
-    def EnableLockToCoilCheckbox(self, enabled):
+    def EnableLockToCoilButton(self, enabled):
         self.EnableToggleButton(self.lock_to_coil_button, enabled)
         self.UpdateToggleButton(self.lock_to_coil_button)
     
@@ -1714,7 +1712,7 @@ class ControlPanel(wx.Panel):
         if self.target_checkbox.GetValue():
             self.UpdateToggleButton(self.target_checkbox, True)
             Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
-            Publisher.sendMessage('Check lock to coil checkbox', checked=False)
+            Publisher.sendMessage('Press lock to coil button', pressed=False)
             Publisher.sendMessage('Enable lock to coil checkbox', enabled=False)
         else:
             self.UpdateToggleButton(self.target_checkbox, False)
