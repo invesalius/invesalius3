@@ -512,6 +512,7 @@ class TrackerPage(wx.Panel):
         self.tracker = tracker
         self.robot = robot
         self.robot_ip = None
+        self.robot_model = None
         self.matrix_tracker_to_robot = None
         self.state = self.LoadConfig()
 
@@ -551,10 +552,12 @@ class TrackerPage(wx.Panel):
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
         
         lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
+        lbl_rob_model = wx.StaticText(self, -1, _("Select robot model: "))
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose or type the robot IP"))
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_IP
+        robot_model_options = [_("Select robot model:")] + const.ROBOT_MODEL
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
@@ -565,6 +568,17 @@ class TrackerPage(wx.Panel):
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
         self.choice_IP = choice_IP
+
+        choice_model = wx.ComboBox(self, -1, "",
+                                  choices=robot_model_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        choice_model.SetToolTip(tooltip)
+        if self.robot.robot_ip is not None:
+            choice_model.SetSelection(robot_model_options.index(self.robot.robot_model))
+        else:
+            choice_model.SetSelection(0)
+        choice_model.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceModel, ctrl=choice_model))
+        choice_model.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_model))
+        self.choice_model = choice_model
 
         btn_rob = wx.Button(self, -1, _("Connect"))
         btn_rob.SetToolTip("Connect to IP")
@@ -595,17 +609,23 @@ class TrackerPage(wx.Panel):
             btn_rob_con.Hide()
         self.btn_rob_con = btn_rob_con
 
-        rob_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=5, vgap=5)
-        rob_sizer.AddMany([
+        rob_settings_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=5, vgap=5)
+        rob_settings_sizer.AddMany([
+            (lbl_rob_model, 0, wx.LEFT),
+            (choice_model, 1, wx.EXPAND),
             (lbl_rob, 0, wx.LEFT),
             (choice_IP, 1, wx.EXPAND),
+        ])
+        rob_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=5, vgap=5)
+        rob_sizer.AddMany([
             (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
+            (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
             (0, 0),
-            (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15)
         ])
 
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
+        rob_static_sizer.Add(rob_settings_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
         rob_static_sizer.Add(rob_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -629,6 +649,7 @@ class TrackerPage(wx.Panel):
             return False
 
         self.robot_ip = state['robot_ip']
+        self.robot_model = state['robot_model']
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
 
         return True
@@ -670,14 +691,18 @@ class TrackerPage(wx.Panel):
 
     def OnChoiceIP(self, evt, ctrl):
         self.robot_ip = ctrl.GetStringSelection()
+
+    def OnChoiceModel(self, evt, ctrl):
+        self.robot_model = ctrl.GetStringSelection()
     
     def OnRobotConnect(self, evt):
-        if self.robot_ip is not None:
+        if self.robot_ip is not None and self.robot_model is not None:
             self.robot.DisconnectRobot()
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
-            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+            self.robot.SetRobotModel(self.robot_model)
+            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip, robot_model=self.robot_model)
 
     def OnRobotRegister(self, evt):
         self.HideParent()

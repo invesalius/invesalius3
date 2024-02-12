@@ -840,8 +840,8 @@ SEED_RADIUS = 1.5
 EFIELD_MAX_RANGE_SCALE = 0.90
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
-SLEEP_NAVIGATION = 0.1
-SLEEP_COORDINATES = 0.1
+SLEEP_NAVIGATION = 0.04
+SLEEP_COORDINATES = 0.04
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
@@ -872,6 +872,7 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 #Robot
-ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_IP = ['192.168.1.6', '192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+ROBOT_MODEL = ['elfin', 'elfin_linux', 'dobot']
 
 MTMS_RADIUS = 15

@@ -38,6 +38,7 @@ class Robot(metaclass=Singleton):
 
         self.robot_status = None
         self.robot_ip = None
+        self.robot_model = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
 
@@ -57,6 +58,7 @@ class Robot(metaclass=Singleton):
 
         state = {
             'robot_ip': self.robot_ip,
+            'robot_model': self.robot_model,
             'tracker_to_robot': matrix_tracker_to_robot
         }
         session = ses.Session()
@@ -70,6 +72,7 @@ class Robot(metaclass=Singleton):
             return False
 
         self.robot_ip = state['robot_ip']
+        self.robot_model = state['robot_model']
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
 
         return True
@@ -111,8 +114,12 @@ class Robot(metaclass=Singleton):
         if data is not None:
             self.robot_ip = data
 
+    def SetRobotModel(self, data):
+        if data is not None:
+            self.robot_model = data
+
     def ConnectToRobot(self):
-        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip, robot_model=self.robot_model)
         print("Connected to Robot!")
 
     def InitializeRobot(self):

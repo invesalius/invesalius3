@@ -299,7 +299,8 @@ class Viewer(wx.Panel):
     def UpdateCanvas(self):
         if self.canvas is not None:
             self.canvas.modified = True
-            self.interactor.Render()
+            if not self.nav_status:
+                self.interactor.Render()
 
     def EnableRuler(self):
         self.ruler = GenericLeftRulerVolume(self)
