@@ -459,7 +459,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
-        Publisher.subscribe(self.OnUpdateTargetCoordinates, 'Update target')
+        Publisher.subscribe(self.OnSetNewTarget, 'Update target')
         Publisher.subscribe(self.OnDisableOrEnableCoilTracker, 'Disable or enable coil tracker')
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
@@ -1294,10 +1294,9 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
 
-    def OnUpdateTargetCoordinates(self, coord):
+    def OnSetNewTarget(self, coord):
         if coord is not None:
             self.target_coord = coord
-            self.target_coord[1] = -self.target_coord[1]
             self.CreateTargetAim()
             Publisher.sendMessage('Target selected', status=True)
             print("Target updated to coordinates {}".format(coord))
