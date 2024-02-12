@@ -2221,10 +2221,18 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'RED')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
-        Publisher.sendMessage('Update target', coord=self.markers[idx].position+self.markers[idx].orientation)
+        coord = self.markers[idx].position + self.markers[idx].orientation
+
+        # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
+        #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
+        #   subscribers of 'Update target' receive the correctly transformed coordinates.
+        coord[1] = -coord[1]
+
         self.control.target_selected = True
+
+        Publisher.sendMessage('Update target', coord=coord)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
-        #self.__delete_all_brain_targets()
+
         if display_messagebox:
             wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 

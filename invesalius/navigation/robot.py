@@ -143,7 +143,14 @@ class Robot(metaclass=Singleton):
 
         # Compute the target in tracker coordinate system.
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
-        m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, self.target, self.icp, self.navigation.obj_data)
+
+        # TODO: This is done here for now because the robot code expects the y-coordinate to be flipped. When this
+        #   is removed, the robot code should be updated similarly, and vice versa. Create a copy of self.target by
+        #   to avoid modifying it.
+        target = self.target[:]
+        target[1] = -target[1]
+
+        m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, target, self.icp, self.navigation.obj_data)
 
         Publisher.sendMessage('Update robot target',
             # TODO: 'robot_tracker_flag' indicates if the target has been set. The name is not very clear. Changing
