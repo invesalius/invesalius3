@@ -2073,6 +2073,8 @@ class MarkersPanel(wx.Panel):
                 seed=d['seed'],
                 session_id=d['session_id'],
                 cortex_position_orientation=cortex_position_orientation,
+                render=False
+
             )
 
             # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
@@ -2667,13 +2669,16 @@ class MarkersPanel(wx.Panel):
 
                 file.readline() # skip the header line
 
+                self.marker_list_ctrl.Hide()
                 # Read the data lines and create markers
                 for line in file.readlines():
                     marker = self.Marker()
                     marker.from_string(line)
                     self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour,
                                       size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
-                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target, is_efield_target=marker.is_efield_target, cortex_position_orientation= marker.cortex_position_orientation)
+
+                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target, is_efield_target=marker.is_efield_target, cortex_position_orientation= marker.cortex_position_orientation, render=False)
+
 
                     if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -2690,6 +2695,8 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
             utils.debug(e)
 
+        self.marker_list_ctrl.Show()
+        Publisher.sendMessage('Render volume viewer')
         self.SaveState()
         Publisher.sendMessage("Update UI for refine tab")
 
@@ -2787,13 +2794,16 @@ class MarkersPanel(wx.Panel):
                 colour=colour,
                 position=position,
                 orientation=orientation,
+                render=False
             )
 
+        Publisher.sendMessage('Render volume viewer')
         self.SaveState()
 
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None,
-                     session_id=None, is_brain_target=False, is_efield_target=False, cortex_position_orientation= None):
+                     session_id=None, is_brain_target=False, is_efield_target=False, cortex_position_orientation= None, render = True):
+
         new_marker = self.Marker()
         new_marker.position = position or self.current_position
         new_marker.orientation = orientation or self.current_orientation
@@ -2836,11 +2846,14 @@ class MarkersPanel(wx.Panel):
 
         # Add item to list control in panel
         num_items = self.marker_list_ctrl.GetItemCount()
-        self.marker_list_ctrl.InsertItem(num_items, str(num_items + 1))
+        list_entry = ["" for _ in range(0, const.TARGET_COLUMN)]
+        list_entry[const.ID_COLUMN] = num_items
+        list_entry[const.SESSION_COLUMN] = str(new_marker.session_id)
+        list_entry[const.LABEL_COLUMN] = new_marker.label
+        self.marker_list_ctrl.Append(list_entry)
+
         if is_brain_target:
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
-        self.marker_list_ctrl.SetItem(num_items, const.SESSION_COLUMN, str(new_marker.session_id))
-        self.marker_list_ctrl.SetItem(num_items, const.LABEL_COLUMN, new_marker.label)
 
         if self.session.GetConfig('debug'):
             self.marker_list_ctrl.SetItem(num_items, const.X_COLUMN, str(round(new_marker.x, 1)))
@@ -2848,6 +2861,10 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
+
+        # Disable render when adding many markers at once
+        if render and not self.nav_status:
+            Publisher.sendMessage('Render volume viewer')
 
 
 '''

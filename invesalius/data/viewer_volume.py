@@ -925,8 +925,6 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.static_markers[self.marker_id])
         self.marker_id += 1
-        if not self.nav_status:
-            self.UpdateRender()
 
     def add_marker(self, coord, color):
         """Simplified version for creating a spherical marker in the 3D scene
