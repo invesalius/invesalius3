@@ -342,10 +342,10 @@ class InnerFoldPanel(wx.Panel):
 
         if id == self.__id_nav:
             status = self.CheckRegistration()
-            if not status:
+            """ if not status:
                 self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
                 wx.MessageBox(_("Complete coregistration first!"), _("InVesalius 3"))
-                return
+                return """
         if not expanded:
             self.fold_panel.Expand(evt.GetTag())
         else:
