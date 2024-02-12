@@ -1994,9 +1994,8 @@ class Viewer(wx.Panel):
                 efield_coords_position = [list(position_world), list(orientation_world)]
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
-                e_field_vectors = list(self.max_efield_array)#[list(self.e_field_col1), list(self.e_field_col2), list(self.e_field_col3)]
+                e_field_vectors = list(self.max_efield_array)
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, self.coil_position, efield_coords_position, self.efield_coords,  self.coil_position_Trot, e_field_vectors, self.focal_factor_members, self.efield_threshold, self.efield_ROISize, self.mtms_coord])
-           #REMOVE THIS
                 self.mtms_coord = None
             else:
                 self.target_radius_list.append([target_list_index, self.Id_list, enorms_list, self.Idmax, self.coil_position, efield_coords_position, self.efield_coords, self.coil_position_Trot])
@@ -2009,9 +2008,6 @@ class Viewer(wx.Panel):
                     target_index= i
                     self.saved_target_data = self.target_radius_list[target_index]
                     break
-
-        #location_previous_max = self.saved_target_data[3]
-        #saved_efield_data = self.saved_target_data[2]
 
     def CreateEfieldmTMSCoorlegend(self):
         self.mTMSCoordTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.2))
@@ -2256,45 +2252,6 @@ class Viewer(wx.Panel):
         radius = int(self.efield_ROISize)
         self.locator_efield.FindPointsWithinRadius(radius, self.e_field_mesh_centers.GetPoint(cellId), self.radius_list)
 
-    # def GetCellIDsfromlistPoints(self, vlist, mesh):
-    #     cell_ids_array = []
-    #     pts1 = vtkIdList()
-    #     for i in range(vlist.GetNumberOfIds()):
-    #         mesh.GetPointCells(vlist.GetId(i), pts1)
-    #         for j in range(pts1.GetNumberOfIds()):
-    #             cell_ids_array.append(pts1.GetId(j))
-    #     return cell_ids_array
-    #
-    # def CreatePoissonSurface(self, input_points, mesh):
-    #     import vtk
-    #     points = vtkPoints()
-    #     for i in range(input_points.GetNumberOfIds()):
-    #         point = mesh.GetPoint(input_points.GetId(i))
-    #         points.InsertNextPoint(point)
-    #
-    #     input_polydata = vtkPolyData()
-    #     input_polydata.SetPoints(points)
-    #
-    #     delaunay_3d = vtk.vtkDelaunay3D()
-    #     delaunay_3d.SetAlpha(100)
-    #     delaunay_3d.BoundingTriangulationOff()
-    #     delaunay_3d.SetInputData(input_polydata)
-    #
-    #     surface_filter = vtk.vtkDataSetSurfaceFilter()
-    #     surface_filter.SetInputConnection(delaunay_3d.GetOutputPort())
-    #     surface_filter.Update()
-    #     output_polydata = surface_filter.GetOutput()
-    #
-    #     # Create a mapper and actor
-    #     mapper = vtk.vtkPolyDataMapper()
-    #     mapper.SetInputConnection(surface_filter.GetOutputPort())
-    #
-    #     actor = vtk.vtkActor()
-    #     actor.SetMapper(mapper)
-    #
-    #     #self.ren.AddActor(actor)
-    #     return output_polydata
-
     def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
         self.target_at_cortex = None
         self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
@@ -2329,140 +2286,11 @@ class Viewer(wx.Panel):
                 self.EfieldAtTargetLegend.SetValue(
                     'Efield at Target: ' + str("{:04.2f}".format(0)))
 
-
     def CreateEfieldAtTargetLegend(self):
         if self.EfieldAtTargetLegend is not None:
             self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
         self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.96))
         self.ren.AddActor(self.EfieldAtTargetLegend.actor)
-
-    # def getAdjacentCells(self, mesh, cellId):
-    #     # get points that make up the cellId of mesh
-    #     cellPoints = vtkIdList()
-    #     mesh.GetCellPoints(cellId, cellPoints)
-    #     # get all cells that are connected to these points
-    #     cellNeighbors = vtkIdList()
-    #     for i in range(0, cellPoints.GetNumberOfIds()):
-    #         pointId = cellPoints.GetId(i)
-    #         connectedCells = vtkIdList()
-    #         mesh.GetPointCells(pointId, connectedCells)
-    #
-    #         for j in range(0, connectedCells.GetNumberOfIds()):
-    #             connectedCellId = connectedCells.GetId(j)
-    #
-    #             # remove duplicate and the original cellId
-    #             if connectedCellId != cellId:
-    #                 cellNeighbors.InsertUniqueId(connectedCellId)
-    #     return cellNeighbors
-    #
-    # def get_cell_centers(self,mesh):
-    #     # Calculate cell centers
-    #     import vtk
-    #     cell_centers = vtk.vtkCellCenters()
-    #     cell_centers.SetInputData(mesh)
-    #     cell_centers.Update()
-    #     return cell_centers.GetOutput()
-    # def get_center(self, cell):
-    #     bounds = cell.GetBounds()
-    #     center = [0, 0, 0]
-    #     center[0] = (bounds[1] - bounds[0]) / 2 + bounds[0]
-    #     center[1] = (bounds[3] - bounds[2]) / 2 + bounds[2]
-    #     center[2] = (bounds[5] - bounds[4]) / 2 + bounds[4]
-    #     return center
-    #
-    # def find_nearest_cellid(self, mesh, cellId):
-    #     from scipy.spatial import cKDTree
-    #     cell_centers = self.get_cell_centers(mesh)  # Get cell centers
-    #     tree = cKDTree([cell_centers.GetPoint(i) for i in range(cell_centers.GetNumberOfPoints())])
-    #
-    #     center = self.get_center(mesh.GetCell(cellId))  # Calculate center of the cell with given cellId
-    #
-    #     # Query nearest cell and exclude itself
-    #     dists, ids = tree.query(center, 2)  # Query two nearest cells
-    #     nearest_cell_id = ids[1] if ids[0] == cellId else ids[0]
-    #
-    #     return nearest_cell_id, dists[1]
-    #
-    # def GetNormals(self,mesh):
-    #     # Compute normals of triangles
-    #     normalComputer = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
-    #     normalComputer.SetInputData(mesh)
-    #     normalComputer.ComputePointNormalsOff()
-    #     normalComputer.ComputeCellNormalsOn()
-    #     normalComputer.Update()
-    #     # This converts to the normals to an array for easy access
-    #     normals = normalComputer.GetOutput().GetCellData().GetNormals()
-    #     return normals
-    #
-    # def SetInitialCoilOrientation(self, point, orientation):
-    #     import invesalius.data.transformations as tr
-    #
-    #     angles = orientation
-    #     translate = list(point)
-    #     m_img = tr.compose_matrix(angles = angles, translate = translate)
-    #     img_vtk = self.CreateVTKObjectMatrix(direction = point, orientation=angles)
-    #     if self.dummy_efield_coil_actor is not None:
-    #         self.ren.RemoveActor(self.dummy_efield_coil_actor)
-    #     self.dummy_efield_coil_actor = self.CreateDummyCoilForEfieldCoilPlacement()
-    #     self.dummy_efield_coil_actor.SetUserMatrix(img_vtk)
-    #     self.ren.AddActor(self.dummy_efield_coil_actor)
-    #     m_img_flip = m_img.copy()
-    #     m_img_flip[1,-1] = -m_img_flip[1,-1]
-    #     cp = m_img_flip[:-1, -1]  # coil center
-    #     cp = cp * 0.001  # convert to meters
-    #     cp = cp.tolist()
-    #
-    #     ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-    #     ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-    #     coil_dir = m_img_flip[:-1, 0]
-    #     coil_face = m_img_flip[:-1, 1]
-    #     cn = np.cross(coil_dir, coil_face)
-    #     T_rot = np.append(ct1, ct2, axis=0)
-    #     T_rot = np.append(T_rot, cn, axis=0) * 0.001  # append and convert to meters
-    #     T_rot = T_rot.tolist()  # to list
-    #     return [T_rot, cp]
-    #
-    # def CreateDummyCoilForEfieldCoilPlacement(self):
-    #     vtk_colors = vtkNamedColors()
-    #
-    #     obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
-    #     transform = vtkTransform()
-    #     transform.RotateZ(90)
-    #
-    #     transform_filt = vtkTransformPolyDataFilter()
-    #     transform_filt.SetTransform(transform)
-    #     transform_filt.SetInputData(obj_polydata)
-    #     transform_filt.Update()
-    #
-    #     normals = vtkPolyDataNormals()
-    #     normals.SetInputData(transform_filt.GetOutput())
-    #     normals.SetFeatureAngle(80)
-    #     normals.AutoOrientNormalsOn()
-    #     normals.Update()
-    #
-    #     obj_mapper = vtkPolyDataMapper()
-    #     obj_mapper.SetInputData(normals.GetOutput())
-    #     obj_mapper.ScalarVisibilityOff()
-    #     dummy_coil_actor = vtkActor()
-    #     dummy_coil_actor.SetMapper(obj_mapper)
-    #     dummy_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkBlue'))
-    #     dummy_coil_actor.GetProperty().SetSpecular(0.5)
-    #     dummy_coil_actor.GetProperty().SetSpecularPower(10)
-    #     dummy_coil_actor.GetProperty().SetOpacity(.3)
-    #
-    #     return dummy_coil_actor
-    #
-    # def ScanNormalsforCoilPlacement(self, cortex_id_cell):
-    #     vtk_colors = vtkNamedColors()
-    #     point_array = []
-    #     for i in range(self.scalp.mesh_normals.GetNumberOfTuples()):
-    #         pointnormal_scalp = self.scalp.mesh_normals.GetTuple(i)
-    #         angle = np.rad2deg(np.arccos(np.dot(pointnormal_scalp, self.e_field_mesh_normals.GetTuple(cortex_id_cell))))
-    #         if angle < 7:
-    #             point_array.append(self.scalp_mesh.GetPoint(i))
-    #             self.ren.AddActor(self.CreateActorBall(self.scalp_mesh.GetPoint(i), colour=vtk_colors.GetColor3d('Pink'), size=5))
-    #     point = self.FindClosestPoint(point_array, self.efield_mesh.GetPoint(cortex_id_cell))
-    #     return point
 
     def FindClosestPointToMesh(self, point,mesh):
         closest_distance = float('inf')
@@ -2526,7 +2354,6 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
-        #self.efield_lut = e_field_brain.lut
 
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
@@ -2696,8 +2523,6 @@ class Viewer(wx.Panel):
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
 
-        #self.Idmax = np.array(self.e_field_norms).argmax()
-            #wx.CallAfter(Publisher.sendMessage, 'Update efield vis')
         self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
