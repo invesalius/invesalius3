@@ -676,9 +676,10 @@ ID_COLUMN = 0
 SESSION_COLUMN = 1
 LABEL_COLUMN = 2
 TARGET_COLUMN = 3
-X_COLUMN = 4
-Y_COLUMN = 5
-Z_COLUMN = 6
+EFIELD_TARGET_COLUMN = 4
+X_COLUMN = 5
+Y_COLUMN = 6
+Z_COLUMN = 7
 
 #------------ Navigation defaults -------------------
 
@@ -840,6 +841,8 @@ SEED_RADIUS = 1.5
 
 #Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
+CORTEX_COLOR = 190
+EFIELD_ROI_SIZE = 20
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.1
