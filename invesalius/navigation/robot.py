@@ -124,7 +124,6 @@ class Robot(metaclass=Singleton):
     def DisconnectRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)
 
-
 '''
 Deprecated Code
 

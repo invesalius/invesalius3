@@ -80,8 +80,6 @@ class Presets():
             for key in presets:
                 (t_min, t_max) = presets[key]
 
-                print(key, t_min, t_max)
-
                 if (t_min is None) or (t_max is None): # setting custom preset
                     t_min = thresh_min
                     t_max = thresh_max

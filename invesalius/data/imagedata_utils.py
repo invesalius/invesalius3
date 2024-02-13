@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import os
 import math
 import sys
 import tempfile
@@ -133,9 +134,10 @@ def resize_slice(im_array, resolution_percentage):
 def resize_image_array(image, resolution_percentage, as_mmap=False):
     out = zoom(image, resolution_percentage, image.dtype, order=2)
     if as_mmap:
-        fname = tempfile.mktemp(suffix="_resized")
+        fd, fname = tempfile.mkstemp(suffix="_resized")
         out_mmap = np.memmap(fname, shape=out.shape, dtype=out.dtype, mode="w+")
         out_mmap[:] = out
+        os.close(fd)
         return out_mmap
     return out
 
@@ -283,12 +285,13 @@ def create_dicom_thumbnails(image, window=None, level=None):
             thumb_image = np.array(
                 get_LUT_value_255(thumb_image, window, level), dtype=np.uint8
             )
-            thumbnail_path = tempfile.mktemp(prefix="thumb_", suffix=".png")
+            fd, thumbnail_path = tempfile.mkstemp(prefix="thumb_", suffix=".png")
             imageio.imsave(thumbnail_path, thumb_image)
             thumbnail_paths.append(thumbnail_path)
+            os.close(fd)
         return thumbnail_paths
     else:
-        thumbnail_path = tempfile.mktemp(prefix="thumb_", suffix=".png")
+        fd, thumbnail_path = tempfile.mkstemp(prefix="thumb_", suffix=".png")
         if pf.GetSamplesPerPixel() == 1:
             thumb_image = zoom(np_image, 0.25)
             thumb_image = np.array(
@@ -297,15 +300,19 @@ def create_dicom_thumbnails(image, window=None, level=None):
         else:
             thumb_image = zoom(np_image, (0.25, 0.25, 1))
         imageio.imsave(thumbnail_path, thumb_image)
+        os.close(fd)
         return thumbnail_path
 
 
 def array2memmap(arr, filename=None):
+    fd = None
     if filename is None:
-        filename = tempfile.mktemp(prefix="inv3_", suffix=".dat")
+        fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")
     matrix = numpy.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
+    if fd:
+        os.close(fd)
     return matrix
 
 
@@ -320,7 +327,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             len(files) - 1, dialog_type="ProgressDialog"
         )
 
-    temp_file = tempfile.mktemp()
+    temp_fd, temp_file = tempfile.mkstemp()
 
     if orientation == "SAGITTAL":
         if resolution_percentage == 1.0:
@@ -425,6 +432,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
     matrix.flush()
     scalar_range = min_scalar, max_scalar
+    os.close(temp_fd)
 
     return matrix, scalar_range, temp_file
 
@@ -443,7 +451,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     first_slice = read_dcm_slice_as_np2(files[0], resolution_percentage)
     slice_size = first_slice.shape[::-1]
 
-    temp_file = tempfile.mktemp()
+    temp_fd, temp_file = tempfile.mkstemp()
 
     if orientation == "SAGITTAL":
         shape = slice_size[0], slice_size[1], len(files)
@@ -470,6 +478,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
+    os.close(temp_fd)
 
     return matrix, scalar_range, temp_file
 
@@ -485,7 +494,7 @@ def dcmmf2memmap(dcm_file, orientation):
     np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
     if samples_per_pixel == 3:
         np_image = image_normalize(rgb2gray(np_image), 0, 255)
-    temp_file = tempfile.mktemp()
+    temp_fd, temp_file = tempfile.mkstemp()
     matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=np_image.shape)
     z, y, x = np_image.shape
     if orientation == "CORONAL":
@@ -504,6 +513,7 @@ def dcmmf2memmap(dcm_file, orientation):
 
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
+    os.close(temp_fd)
 
     return matrix, scalar_range, spacing, temp_file
 
@@ -514,7 +524,7 @@ def img2memmap(group):
     returns it and its related filename.
     """
 
-    temp_file = tempfile.mktemp()
+    temp_fd, temp_file = tempfile.mkstemp()
 
     data = group.get_fdata()
 
@@ -534,6 +544,7 @@ def img2memmap(group):
     matrix.flush()
 
     scalar_range = numpy.amin(matrix), numpy.amax(matrix)
+    os.close(temp_fd)
 
     return matrix, scalar_range, temp_file
 

@@ -76,11 +76,12 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          from_binary, algorithm, imagedata_resolution, fill_border_holes):
 
 
-    log_path = tempfile.mktemp('vtkoutput.txt')
+    log_fd, log_path = tempfile.mkstemp('vtkoutput.txt')
     fow = vtkFileOutputWindow()
     fow.SetFileName(log_path)
     ow = vtkOutputWindow()
     ow.SetInstance(fow)
+    os.close(log_fd)
 
 
     pad_bottom = (roi.start == 0)
@@ -177,7 +178,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     del image
     del contour
 
-    filename = tempfile.mktemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
+    fd, filename = tempfile.mkstemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
     writer = vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
@@ -185,6 +186,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
 
     print("Writing piece", roi, "to", filename)
     print("MY PID MC", os.getpid())
+    os.close(fd)
     return filename
 
 
@@ -195,11 +197,12 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
         except queue.Full as e:
             print(e)
 
-    log_path = tempfile.mktemp('vtkoutput.txt')
+    log_fd, log_path = tempfile.mkstemp('vtkoutput.txt')
     fow = vtkFileOutputWindow()
     fow.SetFileName(log_path)
     ow = vtkOutputWindow()
     ow.SetInstance(fow)
+    os.close(log_fd)
 
     send_message('Joining surfaces ...')
     polydata_append = vtkAppendPolyData()
@@ -424,7 +427,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     area =  float(measured_polydata.GetSurfaceArea())
     del measured_polydata
 
-    filename = tempfile.mktemp(suffix='_full.vtp')
+    fd, filename = tempfile.mkstemp(suffix='_full.vtp')
     writer = vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
@@ -432,4 +435,5 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     del writer
 
     print("MY PID", os.getpid())
+    os.close(fd)
     return filename, {'volume': volume, 'area': area}

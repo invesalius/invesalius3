@@ -16,11 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import os
 
-import dataclasses
 from functools import partial
-import itertools
 import time
 
 import nibabel as nb
@@ -46,43 +43,22 @@ try:
 except ImportError:
     import wx.lib.foldpanelbar as fpb
 
-import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
 from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.brainmesh_handler as brain
-
-import invesalius.data.imagedata_utils as imagedata_utils
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
-import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
-import invesalius.data.bases as db
-import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
-import invesalius.session as ses
-
-from invesalius import utils
-from invesalius.gui import utils as gui_utils
-from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
-from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.image import Image
-from invesalius.navigation.tracker import Tracker
-
-from invesalius.navigation.robot import Robot
-from invesalius.data.converters import to_vtk, convert_custom_bin_to_vtk
-
-from invesalius.net.neuronavigation_api import NeuronavigationApi
 
 HAS_PEDAL_CONNECTION = True
 try:
     from invesalius.net.pedal_connection import PedalConnection
 except ImportError:
     HAS_PEDAL_CONNECTION = False
-
-from invesalius import inv_paths
 
 from concurrent.futures import wait, FIRST_COMPLETED, ThreadPoolExecutor
 import multiprocessing
