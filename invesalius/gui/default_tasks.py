@@ -179,7 +179,7 @@ class LowerTaskPanel(wx.Panel):
         image_list.Add(GetCollapsedIconBitmap())
 
         # Fold 1 - Data
-        item = fold_panel.AddFoldPanel(_("Data"), collapsed=True,
+        item = fold_panel.AddFoldPanel(_("Data"), collapsed=False,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
