@@ -468,16 +468,14 @@ class ImagePage(wx.Panel):
             ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
             ctrl.SetToolTip(wx.ToolTip(tip))
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
-            ctrl.SetValue(self.image.IsImageFiducialSet(n))
             ctrl.Disable()
 
             self.btns_set_fiducial[n] = ctrl
 
         for m in range(len(self.btns_set_fiducial)):
             for n in range(3):
-                value = self.image.GetImageFiducialForUI(m, n)
                 self.numctrls_fiducial[m].append(
-                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1, value=value, )
+                    wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1)
                     )
                 self.numctrls_fiducial[m][n].Hide()
         
@@ -491,8 +489,7 @@ class ImagePage(wx.Panel):
 
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
-        if not self.image.AreImageFiducialsSet():
-            next_button.Disable()
+        next_button.Disable()
         self.next_button = next_button
 
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -523,9 +520,24 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
-        Publisher.subscribe(self.OnNextEnable, "Next enable for image fiducials")
-        Publisher.subscribe(self.OnNextDisable, "Next disable for image fiducials")
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
+        Publisher.subscribe(self._OnStateProject, "Enable state project")
+
+    def _OnStateProject(self, state):
+        self.UpdateData()
+
+    def UpdateData(self):
+        """
+        Update UI elements based on fiducial data in self.image
+        """
+        for m, btn in enumerate(self.btns_set_fiducial):
+            btn.SetValue(self.image.IsImageFiducialSet(m))
+
+            for n in range(3):
+                value = self.image.GetImageFiducialForUI(m, n)
+                self.numctrls_fiducial[m][n].SetValue(value)
+
+        self.UpdateNextButton()
 
     def LoadImageFiducials(self, label, position):
         fiducial = self.GetFiducialByAttribute(const.IMAGE_FIDUCIALS, 'fiducial_name', label[:2])
@@ -539,10 +551,7 @@ class ImagePage(wx.Panel):
         for m in [0, 1, 2]:
             self.numctrls_fiducial[fiducial_index][m].SetValue(position[m])
         
-        if self.image.AreImageFiducialsSet():
-            self.OnNextEnable()
-        else:
-            self.OnNextDisable()
+        self.UpdateNextButton()
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -555,10 +564,7 @@ class ImagePage(wx.Panel):
         fiducial_index = fiducial['fiducial_index']
 
         self.image.SetImageFiducial(fiducial_index, position)
-        if self.image.AreImageFiducialsSet():
-            self.OnNextEnable()
-        else:
-            self.OnNextDisable()
+        self.UpdateNextButton()
 
     def UpdateImageCoordinates(self, position):
         self.current_coord = position
@@ -571,45 +577,29 @@ class ImagePage(wx.Panel):
     def OnImageFiducials(self, n, evt):
         fiducial_name = const.IMAGE_FIDUCIALS[n]['fiducial_name']
 
-        # XXX: This is still a bit hard to read, could be cleaned up.
-        label = list(const.BTNS_IMG_MARKERS[evt.GetId()].values())[0]
-
         if self.btns_set_fiducial[n].GetValue():
             position = self.numctrls_fiducial[n][0].GetValue(),\
-                    self.numctrls_fiducial[n][1].GetValue(),\
-                    self.numctrls_fiducial[n][2].GetValue()
-            orientation = None, None, None
-
-            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
-
-            colour = (0., 1., 0.)
-            size = 2
-            seed = 3 * [0.]
-
-            Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
-                                   label=label, seed=seed)
+                       self.numctrls_fiducial[n][1].GetValue(),\
+                       self.numctrls_fiducial[n][2].GetValue()
         else:
             for m in [0, 1, 2]:
                 self.numctrls_fiducial[n][m].SetValue(float(self.current_coord[m]))
-            print(self.numctrls_fiducial)
-            Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=np.nan)
-            Publisher.sendMessage('Delete fiducial marker', label=label)
+            position = np.nan
+
+        Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
     def OnNext(self, evt):
         Publisher.sendMessage("Next to tracker fiducials")
 
-    def OnNextEnable(self):
-        self.next_button.Enable()
-
-    def OnNextDisable(self):
-        self.next_button.Disable()
+    def UpdateNextButton(self):
+        self.next_button.Enable(self.image.AreImageFiducialsSet())
 
     def OnReset(self, evt, ctrl):
         self.image.ResetImageFiducials()
         self.OnResetImageFiducials()
 
     def OnResetImageFiducials(self):
-        self.OnNextDisable()
+        self.next_button.Disable()
         for ctrl in self.btns_set_fiducial:
             ctrl.SetValue(False)
         self.start_button.SetValue(False)
@@ -1023,17 +1013,15 @@ class RefinePage(wx.Panel):
         Publisher.subscribe(self.OnResetTrackerFiducials, "Reset tracker fiducials")
     
     def OnUpdateUI(self):
+        for m in range(6):
+            for n in range(3):
+                if m <= 2:
+                    value = self.image.GetImageFiducialForUI(m, n)
+                else:
+                    value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
+                self.numctrls_fiducial[m][n].SetValue(value)
+
         if self.tracker.AreTrackerFiducialsSet() and self.image.AreImageFiducialsSet():
-            for m in range(6):
-                for n in range(3):
-                    if m <= 2:
-                        value = self.image.GetImageFiducialForUI(m, n)
-                    else:
-                        value = self.tracker.GetTrackerFiducialForUI(m - 3, n)
-
-                    self.numctrls_fiducial[m][n].SetValue(value)
-        
-
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
             self.navigation.UpdateFiducialRegistrationError(self.tracker, self.image)
             fre, fre_ok = self.navigation.GetFiducialRegistrationError(self.icp)
@@ -1048,7 +1036,7 @@ class RefinePage(wx.Panel):
         for m in range(3):
             for n in range(3):
                 value = self.tracker.GetTrackerFiducialForUI(m, n)
-                self.numctrls_fiducial[m][n].SetValue(value)
+                self.numctrls_fiducial[m + 3][n].SetValue(value)
 
     def OnBack(self, evt):
         Publisher.sendMessage('Back to image fiducials')
