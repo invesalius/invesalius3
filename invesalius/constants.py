@@ -24,6 +24,7 @@ import sys
 import wx
 import itertools
 
+from invesalius.i18n import tr as _
 from invesalius import utils
 from invesalius import inv_paths
 

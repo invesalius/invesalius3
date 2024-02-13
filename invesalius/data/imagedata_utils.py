@@ -39,6 +39,7 @@ import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.reader.bitmap_reader as bitmap_reader
+from invesalius.i18n import tr as _
 from invesalius.data import vtk_utils as vtk_utils
 from skimage.color import rgb2gray
 

@@ -25,6 +25,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
+from invesalius.i18n import tr as _
 
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)

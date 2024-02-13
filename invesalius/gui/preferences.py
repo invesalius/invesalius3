@@ -15,6 +15,7 @@ from invesalius import utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot

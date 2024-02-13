@@ -30,6 +30,7 @@ import invesalius.utils as utils
 
 from invesalius import math_utils
 from invesalius.gui.widgets.canvas_renderer import TextBox, Ellipse, Polygon, CanvasHandlerBase
+from invesalius.i18n import tr as _
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),

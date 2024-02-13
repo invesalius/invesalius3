@@ -14,6 +14,7 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 NROWS = 3
 NCOLS = 6

@@ -27,6 +27,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 from invesalius.utils import Singleton
 from invesalius.navigation.tracker import Tracker
 
@@ -122,3 +123,31 @@ class Robot(metaclass=Singleton):
 
     def DisconnectRobot(self):
         Publisher.sendMessage('Robot navigation mode', robot_mode=False)
+
+'''
+Deprecated Code
+
+    def ConfigureRobot(self):
+        if self.tracker.tracker_connection and self.tracker.tracker_connection.IsConnected():
+            select_ip_dialog = dlg.SetRobotIP()
+            status = select_ip_dialog.ShowModal()
+
+            if status == ID_OK:
+                robot_ip = select_ip_dialog.GetValue()
+                self.robot_ip = robot_ip
+                self.configuration = {
+                    'tracker_id': self.tracker.GetTrackerId(),
+                    'robot_ip': robot_ip,
+                    'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
+                }
+                self.connection = self.tracker.tracker_connection
+                Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+                select_ip_dialog.Destroy()
+                return True
+            else:
+                select_ip_dialog.Destroy()
+                return False
+        else:
+            wx.MessageBox(_("Select Tracker first"), _("InVesalius 3"))
+            return False
+'''

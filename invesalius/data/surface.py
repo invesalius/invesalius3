@@ -79,6 +79,7 @@ import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.data.converters import convert_custom_bin_to_vtk
+from invesalius.i18n import tr as _
 
 from invesalius.gui import dialogs
 from invesalius_cy import cy_mesh

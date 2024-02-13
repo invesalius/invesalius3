@@ -100,6 +100,7 @@ import invesalius.data.transformations as tr
 import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
+from invesalius.i18n import tr as _
 import numpy as np
 
 from invesalius import inv_paths

@@ -56,6 +56,7 @@ from vtkmodules.util import numpy_support
 import invesalius.session as ses
 
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
 
 
 Kernels = { 
