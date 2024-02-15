@@ -229,20 +229,12 @@ class Logging(wx.Panel):
 
         bsizer_log_file_name = wx.StaticBoxSizer(wx.VERTICAL, self, _("Log file name"))
         lbl_log_file_label = wx.StaticText(bsizer_log_file_name.GetStaticBox(), -1, _("Current file:"))
-        #lbl_log_file_name = wx.StaticText(bsizer_log_file_name.GetStaticBox(), -1, "")
         tc_log_file_name = self.tc_log_file_name = wx.TextCtrl(
-            bsizer_log_file_name.GetStaticBox(),
-            -1,
-            "",
-        )
+            bsizer_log_file_name.GetStaticBox(), -1, "", 
+            style = wx.TE_READONLY | wx.TE_LEFT | wx.TE_MULTILINE , 
+            size=(300, -1))
         tc_log_file_name.SetForegroundColour(wx.RED)
-        bt_log_file_select = wx.Button(bsizer_log_file_name.GetStaticBox(), label="Select")
-        #fd_log_fname = self.fd_log_fname = wx.FileDialog(
-        #    bsizer_log_file_name.GetStaticBox(),
-        #    "Set log file", "", "", "Log files (*.log)|*.log", 
-        #    wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
-        #)
-        #last_directory, default_filename,               
+        bt_log_file_select = wx.Button(bsizer_log_file_name.GetStaticBox(), label="Modify")
         bsizer_log_file_name.Add(lbl_log_file_label, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
         bsizer_log_file_name.Add(tc_log_file_name, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
         bsizer_log_file_name.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
@@ -254,11 +246,25 @@ class Logging(wx.Panel):
         border.Add(bsizer_log_file_name, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         self.SetSizerAndFit(border)
 
-        bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnSelectButton)
+        bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
         self.Layout()
 
-    def OnSelectButton(self):
-        print("SELECT chosen")
+    def OnModifyButton(self,e):
+        logging_file = self.tc_log_file_name.GetValue()
+        path, fname = os.path.split(logging_file)
+        dlg = wx.FileDialog(self, message = "Save Log Contents",
+            defaultDir = path, #os.getcwd(),
+            defaultFile = fname, #default_file,
+            wildcard = "Log files (*.log)|*.log",
+            style = wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            dlg.Destroy()
+            return False
+
+        file_path = dlg.GetPath()
+        self.tc_log_file_name.SetValue(file_path)
+        dlg.Destroy()
+        return True
 
     def GetSelection(self):
 

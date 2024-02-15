@@ -64,8 +64,7 @@ class Session(metaclass=Singleton):
             'logging_level': 0,
             'append_log_file': 0,
             'logging_file': '',
-       }
-        self.__set_default_logfile()
+        }
         self._exited_successfully_last_time = not self._ReadState()
         self.__bind_events()
 
@@ -99,7 +98,6 @@ class Session(metaclass=Singleton):
             'append_log_file': 0,
             'logging_file': '',
         }
-        self.__set_default_logfile()
         self.WriteConfigFile()
 
     def CreateState(self):
@@ -225,7 +223,6 @@ class Session(metaclass=Singleton):
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
         self.project_status = 3
-        self.__set_default_logfile()
 
 
     def _read_config_from_ini(self, config_filename):
@@ -268,7 +265,6 @@ class Session(metaclass=Singleton):
         self.SetConfig('logging_level', logging_level)
         self.SetConfig('append_log_file', append_log_file)
         self.SetConfig('logging_file', logging_file)
-        self.__set_default_logfile()
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
