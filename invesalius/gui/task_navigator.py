@@ -61,6 +61,7 @@ import invesalius.data.record_coords as rec
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.data.bases as db
 import invesalius.data.markers.marker
+import invesalius.data.markers.marker_transformator
 
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
@@ -1760,6 +1761,8 @@ class MarkersPanel(wx.Panel):
         else:
             self.mTMS = None
 
+        self.marker_transformator = invesalius.data.markers.marker_transformator.MarkerTransformator()
+
         self.__bind_events()
 
         self.session = ses.Session()
@@ -1906,7 +1909,8 @@ class MarkersPanel(wx.Panel):
                 cortex_position_orientation = d['cortex_position_orientation']
             else:
                 cortex_position_orientation = None
-            self.CreateMarker(
+
+            marker = self.CreateMarker(
                 position=d['position'],
                 orientation=d['orientation'],
                 colour=d['colour'],
@@ -1918,9 +1922,9 @@ class MarkersPanel(wx.Panel):
                 seed=d['seed'],
                 session_id=d['session_id'],
                 cortex_position_orientation=cortex_position_orientation,
-                render=False
-
             )
+            # Note that we don't want to render the markers here for each loop iteration.
+            self.AddMarker(marker, render=False)
 
             # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
             # then set as target if needed. This could be refactored so that a CreateMarker call would
@@ -2123,23 +2127,28 @@ class MarkersPanel(wx.Panel):
 
         orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
+
+        # Create 'Project to scalp' menu item.
+        project_to_scalp_menu = menu_id.Append(6, _('Project to scalp'))
+        menu_id.Bind(wx.EVT_MENU, self.OnProjectToScalp, project_to_scalp_menu)
+
         is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].is_brain_target
         if is_brain_target and has_mTMS:
-            send_brain_target_menu = menu_id.Append(6, _('Send brain target to mTMS'))
+            send_brain_target_menu = menu_id.Append(7, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu)
 
         if self.nav_status and self.navigation.e_field_loaded:
             #Publisher.sendMessage('Check efield data')
             #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
             if self.__find_target_marker()  == self.marker_list_ctrl.GetFocusedItem():
-                efield_menu = menu_id.Append(7, _('Save Efield target Data'))
+                efield_menu = menu_id.Append(8, _('Save Efield target Data'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
         if self.navigation.e_field_loaded:
-            efield_target_menu = menu_id.Append(8, _('Set as Efield target 1 (origin)'))
+            efield_target_menu = menu_id.Append(9, _('Set as Efield target 1 (origin)'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
-            efield_target_menu = menu_id.Append(9, _('Set as Efield target 2'))
+            efield_target_menu = menu_id.Append(10, _('Set as Efield target 2'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget2, efield_target_menu)
             # Publisher.sendMessage('Check efield data')
             # if self.efield_data_saved:
@@ -2153,15 +2162,15 @@ class MarkersPanel(wx.Panel):
 
         if self.navigation.e_field_loaded and not self.nav_status:
             if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
-                efield_vector_plot_menu = menu_id.Append(10,_('Show vector field'))
+                efield_vector_plot_menu = menu_id.Append(11,_('Show vector field'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu)
 
         if self.navigation.e_field_loaded:
             if self.__find_efield_target_marker() == self.marker_list_ctrl.GetFocusedItem():
-                create_efield_target = menu_id.Append(11, _('Remove Efield Cortex target'))
+                create_efield_target = menu_id.Append(12, _('Remove Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target)
             else:
-                create_efield_target = menu_id.Append(11, _('Set as Efield Cortex target'))
+                create_efield_target = menu_id.Append(12, _('Set as Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
                 self.marker_list_ctrl.GetFocusedItem()
 
@@ -2184,6 +2193,21 @@ class MarkersPanel(wx.Panel):
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
     def OnMarkerUnfocused(self, evt):
         Publisher.sendMessage('Unhighlight marker')
+        
+    def OnProjectToScalp(self, evt):
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        # Create a duplicate of the selected marker.
+        new_marker = self.markers[list_index].duplicate()
+
+        # Project to the scalp.        
+        self.marker_transformator.ProjectToScalp(new_marker)
+
+        # Add the new marker to the marker list and render it.
+        self.AddMarker(new_marker, render=True)
 
     def OnMenuEditMarkerLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -2223,7 +2247,9 @@ class MarkersPanel(wx.Panel):
         vtk_colors = vtkNamedColors()
         position_flip = list(point)
         position_flip[1] = -position_flip[1]
-        self.CreateMarker(position = position_flip, orientation = list(orientation), colour=vtk_colors.GetColor3d('Orange'), size = 2, is_brain_target=False)
+
+        marker = self.CreateMarker(position = position_flip, orientation = list(orientation), colour=vtk_colors.GetColor3d('Orange'), size = 2, is_brain_target=False)
+        self.AddMarker(marker, render=True)
 
     def OnMenuShowVectorField(self, evt):
         session = ses.Session()
@@ -2299,9 +2325,14 @@ class MarkersPanel(wx.Panel):
         dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_actor=self.brain_actor)
         if dialog.ShowModal() == wx.ID_OK:
             coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
-            self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=False)
+
+            marker = self.CreateMarker(list(coil_position_list[0]), list(coil_orientation_list[0]), is_brain_target=False)
+            self.AddMarker(marker, render=True)
+
             for (position, orientation) in zip(brain_position_list, brain_orientation_list):
-                self.CreateMarker(list(position), list(orientation), is_brain_target=True)
+                marker = self.CreateMarker(list(position), list(orientation), is_brain_target=True)
+                self.AddMarker(marker, render=True)
+                
         dialog.Destroy()
 
         self.SaveState()
@@ -2385,7 +2416,9 @@ class MarkersPanel(wx.Panel):
         if dialog.ShowModal() == wx.ID_OK:
             position_list, orientation_list = dialog.GetValueBrainTarget()
             for (position, orientation) in zip(position_list, orientation_list):
-                self.CreateMarker(list(position), list(orientation), size=0.05, is_brain_target=True)
+                marker = self.CreateMarker(list(position), list(orientation), size=0.05, is_brain_target=True)
+                self.AddMarker(marker, render=True)
+                
         dialog.Destroy()
 
         self.SaveState()
@@ -2474,7 +2507,8 @@ class MarkersPanel(wx.Panel):
                        is_target=False, seed=None, session_id=None, is_brain_target=False, is_efield_target=False, cortex_position = None):
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage('Get Cortex position')
-        self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target, is_efield_target, cortex_position)
+        marker = self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, is_brain_target, is_efield_target, cortex_position)
+        self.AddMarker(marker, render=True)
 
         self.SaveState()
 
@@ -2495,11 +2529,21 @@ class MarkersPanel(wx.Panel):
                 for line in file.readlines():
                     marker = invesalius.data.markers.marker.Marker()
                     marker.from_string(line)
-                    self.CreateMarker(position=marker.position, orientation=marker.orientation, colour=marker.colour,
-                                      size=marker.size, label=marker.label, is_target=False, seed=marker.seed,
-
-                                      session_id=marker.session_id, is_brain_target=marker.is_brain_target, is_efield_target=marker.is_efield_target, cortex_position_orientation= marker.cortex_position_orientation, render=False)
-
+                    marker = self.CreateMarker(
+                        position=marker.position,
+                        orientation=marker.orientation,
+                        colour=marker.colour,
+                        size=marker.size,
+                        label=marker.label,
+                        is_target=False,
+                        seed=marker.seed,
+                        session_id=marker.session_id,
+                        is_brain_target=marker.is_brain_target,
+                        is_efield_target=marker.is_efield_target,
+                        cortex_position_orientation=marker.cortex_position_orientation,
+                    )
+                    # Note that we don't want to render the markers here for each loop iteration.
+                    self.AddMarker(marker, render=False)
 
                     if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -2607,76 +2651,86 @@ class MarkersPanel(wx.Panel):
             position = marker["position"]
             orientation = marker["orientation"]
 
-            self.CreateMarker(
+            marker = self.CreateMarker(
                 size=size,
                 colour=colour,
                 position=position,
                 orientation=orientation,
-                render=False
             )
+            # Note that we don't want to render the markers for each loop iteration.
+            self.AddMarker(marker, render=False)
 
         Publisher.sendMessage('Render volume viewer')
         self.SaveState()
 
-
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None,
-                     session_id=None, is_brain_target=False, is_efield_target=False, cortex_position_orientation= None, render = True):
+                     session_id=None, is_brain_target=False, is_efield_target=False, cortex_position_orientation=None):
+        """
+        Create a new marker object.
+        """
+        marker = invesalius.data.markers.marker.Marker()
 
-        new_marker = invesalius.data.markers.marker.Marker()
-        new_marker.position = position or self.current_position
-        new_marker.orientation = orientation or self.current_orientation
-        new_marker.colour = colour or self.marker_colour
-        new_marker.size = size or self.marker_size
-        new_marker.label = label
-        new_marker.is_target = is_target
-        new_marker.seed = seed or self.current_seed
-        new_marker.session_id = session_id or self.current_session
-        new_marker.is_brain_target = is_brain_target
-        new_marker.is_efield_target = is_efield_target
-        new_marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
+        marker.position = position or self.current_position
+        marker.orientation = orientation or self.current_orientation
 
+        marker.colour = colour or self.marker_colour
+        marker.size = size or self.marker_size
+        marker.label = label
+        marker.is_target = is_target
+        marker.seed = seed or self.current_seed
+        marker.session_id = session_id or self.current_session
+        marker.is_brain_target = is_brain_target
+        marker.is_efield_target = is_efield_target
+        marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
+
+        if marker.is_brain_target:
+            marker.colour = [0, 0, 1]
+
+        return marker
+
+    def AddMarker(self, marker, render=True):
+        """
+        Given a marker object, add it to the list of markers and render the new marker.
+        """
         if self.robot.IsConnected() and self.nav_status:
             current_head_robot_target_status = True
         else:
             current_head_robot_target_status = False
 
-        if all([elem is not None for elem in new_marker.orientation]):
+        if all([elem is not None for elem in marker.orientation]):
             arrow_flag = True
         else:
             arrow_flag = False
-
-        if is_brain_target:
-            new_marker.colour = [0, 0, 1]
 
         # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
         marker_id = len(self.markers)
 
         Publisher.sendMessage('Add marker',
                               marker_id=marker_id,
-                              size=new_marker.size,
-                              colour=new_marker.colour,
-                              position=new_marker.position,
-                              orientation=new_marker.orientation,
-                              cortex_marker = new_marker.cortex_position_orientation,
+                              size=marker.size,
+                              colour=marker.colour,
+                              position=marker.position,
+                              orientation=marker.orientation,
+                              cortex_marker = marker.cortex_position_orientation,
                               arrow_flag=arrow_flag)
 
-        self.markers.append(new_marker)
+        self.markers.append(marker)
 
         # Add item to list control in panel
         num_items = self.marker_list_ctrl.GetItemCount()
         list_entry = ["" for _ in range(0, const.TARGET_COLUMN)]
         list_entry[const.ID_COLUMN] = num_items
-        list_entry[const.SESSION_COLUMN] = str(new_marker.session_id)
-        list_entry[const.LABEL_COLUMN] = new_marker.label
+        list_entry[const.SESSION_COLUMN] = str(marker.session_id)
+        list_entry[const.LABEL_COLUMN] = marker.label
         self.marker_list_ctrl.Append(list_entry)
 
-        if is_brain_target:
+        if marker.is_brain_target:
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
 
         if self.session.GetConfig('debug'):
-            self.marker_list_ctrl.SetItem(num_items, const.X_COLUMN, str(round(new_marker.x, 1)))
-            self.marker_list_ctrl.SetItem(num_items, const.Y_COLUMN, str(round(new_marker.y, 1)))
-            self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(new_marker.z, 1)))
+            self.marker_list_ctrl.SetItem(num_items, const.X_COLUMN, str(round(marker.x, 1)))
+            self.marker_list_ctrl.SetItem(num_items, const.Y_COLUMN, str(round(marker.y, 1)))
+            self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
