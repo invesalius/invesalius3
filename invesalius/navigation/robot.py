@@ -159,14 +159,28 @@ class Robot(metaclass=Singleton):
             target=m_target.tolist()
         )
 
+    def StopRobot(self):
+        Publisher.sendMessage('Update robot target', robot_tracker_flag=False, target_index=None, target=None)
+
     def SetNewTarget(self, coord):
+        # Note that target can also be set to None, which means the target is unset.
         self.target = coord
 
+        # If the robot is enabled from the GUI and a target is set, send the target to the robot.
         if self.enabled_in_gui and self.target is not None:
             self.SendTargetToRobot()
+
+        # If target is unset, stop the robot.
+        if self.target is None:
+            self.StopRobot()
 
     def SetEnabledInGui(self, enabled_in_gui):
         self.enabled_in_gui = enabled_in_gui
 
+        # If the robot is enabled from the GUI and a target is set, send the target to the robot.
         if self.enabled_in_gui and self.target is not None:
             self.SendTargetToRobot()
+
+        # When the robot is disabled from the GUI, stop it.
+        if not self.enabled_in_gui:
+            self.StopRobot()

@@ -1229,16 +1229,6 @@ class ControlPanel(wx.Panel):
         self.btn_nav = btn_nav
         self.btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=self.btn_nav))
     
-        # Toggle button for robot
-        tooltip = wx.ToolTip(_("Stop robot"))
-        btn_robot = wx.Button(self, -1, _("Stop Robot"), size=wx.Size(80, -1))
-        btn_robot.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        btn_robot.SetToolTip(tooltip)
-        btn_robot.Bind(wx.EVT_BUTTON, partial(self.OnStopRobot, ctrl=btn_robot))
-        if not self.robot.IsConnected():
-            btn_robot.Hide()
-        self.btn_robot = btn_robot
-
         # Constants for bitmap parent toggle button
         ICON_SIZE = (48, 48)
         RED_COLOR = const.RED_COLOR_RGB
@@ -1363,7 +1353,6 @@ class ControlPanel(wx.Panel):
         button_sizer = wx.BoxSizer(wx.VERTICAL)
         button_sizer.AddMany([
             (btn_nav, 0, wx.EXPAND | wx.GROW),
-            (btn_robot, 0, wx.EXPAND | wx.GROW)
         ])
 
         checkbox_sizer = wx.FlexGridSizer(4, 5, 5)
@@ -1553,12 +1542,7 @@ class ControlPanel(wx.Panel):
     # Robot
     def OnRobotStatus(self, data):
         if data:
-            self.btn_robot.Show()
             self.Layout()
-            
-    def OnStopRobot(self, evt, ctrl):
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
 
     # Enable robot button if:
     #
