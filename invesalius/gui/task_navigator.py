@@ -1227,7 +1227,7 @@ class ControlPanel(wx.Panel):
         btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
         self.btn_nav = btn_nav
-        self.btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn_nav=self.btn_nav))
+        self.btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStartNavigationButton, btn_nav=self.btn_nav))
     
         # Constants for bitmap parent toggle button
         ICON_SIZE = (48, 48)
@@ -1485,7 +1485,7 @@ class ControlPanel(wx.Panel):
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
             self.navigation.StartNavigation(self.tracker, self.icp)
 
-    def OnNavigate(self, evt, btn_nav):
+    def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
@@ -1525,6 +1525,9 @@ class ControlPanel(wx.Panel):
             self.current_orientation = None, None, None
         else:
             self.nav_status = True
+
+        # Update robot button when navigation status is changed.
+        self.UpdateRobotButton()
 
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
