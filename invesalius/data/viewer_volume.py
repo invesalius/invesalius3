@@ -494,7 +494,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RecolorEfieldActor, 'Recolor efield actor')
         Publisher.subscribe(self.GetScalpEfield, 'Send scalp index')
         # Related to robot tracking during neuronavigation
-        Publisher.subscribe(self.ActivateRobotMode, 'Robot navigation mode')
         Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
         Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
         Publisher.subscribe(self.CreateCortexProjectionOnScalp, 'Send efield target position on brain')
@@ -2758,45 +2757,12 @@ class Viewer(wx.Panel):
             self.actor_tracts = None
             self.Refresh()
 
-    def ActivateRobotMode(self, robot_mode=None):
-        if robot_mode:
-            self.ren_robot = vtkRenderer()
-            self.ren_robot.SetLayer(1)
-
-            self.interactor.GetRenderWindow().AddRenderer(self.ren_robot)
-            self.ren_robot.SetViewport(0.01, 0.19, 0.15, 0.39)
-            filename = os.path.join(inv_paths.OBJ_DIR, "robot.stl")
-
-            reader = vtkSTLReader()
-            reader.SetFileName(filename)
-            mapper = vtkPolyDataMapper()
-            mapper.SetInputConnection(reader.GetOutputPort())
-
-            dummy_robot_actor = vtkActor()
-            dummy_robot_actor.SetMapper(mapper)
-            dummy_robot_actor.GetProperty().SetColor(1, 1, 1)
-            dummy_robot_actor.GetProperty().SetOpacity(1.)
-            self.dummy_robot_actor = dummy_robot_actor
-
-            self.ren_robot.AddActor(dummy_robot_actor)
-            self.ren_robot.InteractiveOff()
-
-            self.UpdateRender()
-        else:
-            self.DisableRobotMode()
-
     def OnUpdateRobotStatus(self, robot_status):
         if self.dummy_robot_actor:
             if robot_status:
                 self.dummy_robot_actor.GetProperty().SetColor(0, 1, 0)
             else:
                 self.dummy_robot_actor.GetProperty().SetColor(1, 0, 0)
-
-    def DisableRobotMode(self):
-        if self.dummy_robot_actor:
-            self.ren_robot.RemoveActor(self.dummy_robot_actor)
-            self.interactor.GetRenderWindow().RemoveRenderer(self.ren_robot)
-            self.UpdateRender()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)

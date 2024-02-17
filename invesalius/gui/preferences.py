@@ -640,7 +640,6 @@ class TrackerPage(wx.Panel):
             choice = None
 
         self.tracker.DisconnectTracker()
-        self.robot.DisconnectRobot()
         self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice)
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
@@ -669,7 +668,6 @@ class TrackerPage(wx.Panel):
     
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None:
-            self.robot.DisconnectRobot()
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
