@@ -127,12 +127,8 @@ class Robot(metaclass=Singleton):
         print("Connected to robot")
 
     def InitializeRobot(self):
-        Publisher.sendMessage('Robot navigation mode', robot_mode=True)
         Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
         print("Robot initialized")
-
-    def DisconnectRobot(self):
-        Publisher.sendMessage('Robot navigation mode', robot_mode=False)
 
     def SendTargetToRobot(self):
         matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
