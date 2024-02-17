@@ -145,7 +145,6 @@ class Viewer(wx.Panel):
         self.initial_focus = None
 
         self.static_markers = []
-        self.static_arrows = []
         self.static_markers_efield = []
         self.plot_vector = None
         self.style = None
@@ -266,9 +265,6 @@ class Viewer(wx.Panel):
         self.probe = False
         self.ref = False
         self.obj = False
-
-        self.timer = False
-        self.index = False
 
         self.target_coord = None
         self.aim_actor = None
@@ -440,8 +436,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
         Publisher.subscribe(self.RemoveMultipleMarkers, 'Remove multiple markers')
-        Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
-        Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
+        Publisher.subscribe(self.HighlightMarker, 'Highlight marker')
+        Publisher.subscribe(self.UnhighlightMarker, 'Unhighlight marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
         Publisher.subscribe(self.SetMarkers, 'Set markers')
 
@@ -904,16 +900,24 @@ class Viewer(wx.Panel):
             """
             Markers arrow with orientation created by navigation tools and rendered in volume viewer.
             """
-            marker_actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
+            actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
             if cortex_marker[0] is not None:
                 Publisher.sendMessage('Add cortex marker actor', position_orientation = cortex_marker, marker_id = marker_id)
         else:
-            marker_actor = self.CreateActorBall(position_flip, colour, size)
+            actor = self.CreateActorBall(position_flip, colour, size)
 
-        # adding a new actor for the marker
-        self.static_markers.append(marker_actor)
+        # Add marker to the list of all markers.
+        self.static_markers.append(
+            {
+                "actor": actor,
+                "position": position,
+                "orientation": orientation,
+                "colour": colour,
+                "type": "arrow" if arrow_flag else "ball",
+            }
+        )
 
-        self.ren.AddActor(self.static_markers[self.marker_id])
+        self.ren.AddActor(actor)
         self.marker_id += 1
 
     def add_marker(self, coord, color):
@@ -944,21 +948,24 @@ class Viewer(wx.Panel):
     def HideAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.static_markers[i].SetVisibility(0)
-        if not self.nav_status:
-            self.UpdateRender()
+            actor = self.static_markers[i]["actor"]
+            actor.SetVisibility(0)
+
+        self.UpdateRender()
 
     def ShowAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.static_markers[i].SetVisibility(1)
-        if not self.nav_status:
-            self.UpdateRender()
+            actor = self.static_markers[i]["actor"]
+            actor.SetVisibility(1)
+
+        self.UpdateRender()
 
     def RemoveAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
-            self.ren.RemoveActor(self.static_markers[i])
+            actor = self.static_markers[i]["actor"]
+            self.ren.RemoveActor(actor)
         self.static_markers = []
 
         if len(self.static_markers_efield) > 0:
@@ -966,12 +973,12 @@ class Viewer(wx.Panel):
                 self.ren.RemoveActor(self.static_markers_efield[i][0])
             self.static_markers_efield= []
 
-        if not self.nav_status:
-            self.UpdateRender()
+        self.UpdateRender()
 
     def RemoveMultipleMarkers(self, indexes):
         for i in reversed(indexes):
 
+            # TODO: Not sure what this is doing, it should be cleaned up.
             if len(self.static_markers_efield) > 0:
                 index = [h for h, row in enumerate(self.static_markers_efield) if row[1] == i]
                 if index:
@@ -982,60 +989,60 @@ class Viewer(wx.Panel):
                     for j in range(len(self.static_markers_efield)):
                         self.static_markers_efield[j][1] -= 1
 
-            self.ren.RemoveActor(self.static_markers[i])
+            actor = self.static_markers[i]["actor"]
+            self.ren.RemoveActor(actor)
+
             del self.static_markers[i]
             self.marker_id = self.marker_id - 1
 
-        if not self.nav_status:
-            self.UpdateRender()
+        self.UpdateRender()
 
-    def BlinkMarker(self, index):
-        self.index_static_markers_efield = None
-        if self.timer:
-            self.timer.Stop()
-            self.static_markers[self.index].SetVisibility(1)
-            if len(self.static_markers_efield) > 0:
-                index_static_markers_efield = [h for h, row in enumerate(self.static_markers_efield) if row[1] == index]
-                if index_static_markers_efield:
-                    index_static_markers_efield = int(index_static_markers_efield[0])
-                    self.static_markers_efield[index_static_markers_efield][0].SetVisibility(1)
-                    self.index_static_markers_efield = index_static_markers_efield
-        self.index = index
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnBlinkMarker, self.timer)
-        self.timer.Start(500)
-        self.timer_count = 0
+    def HighlightMarker(self, index):
+        # Return early in case the index is out of bounds.
+        if index >= len(self.static_markers) or index < 0:
+            return
 
-    def OnBlinkMarker(self, evt):
-        self.static_markers[self.index].SetVisibility(int(self.timer_count % 2))
-        if self.index_static_markers_efield is not None:
-            self.static_markers_efield[self.index_static_markers_efield][0].SetVisibility(int(self.timer_count % 2))
-        if not self.nav_status:
-            self.UpdateRender()
-        self.timer_count += 1
+        actor = self.static_markers[index]["actor"]
 
-    def StopBlinkMarker(self, index=None):
-        if self.timer:
-            self.timer.Stop()
-            if index is None:
-                self.static_markers[self.index].SetVisibility(1)
-                if self.index_static_markers_efield is not None:
-                    self.static_markers_efield[self.index_static_markers_efield][0].SetVisibility(1)
-                if not self.nav_status:
-                    self.UpdateRender()
-            self.index = False
+        # Change the color of the marker to black.
+        actor.GetProperty().SetColor((0, 0, 0))
+
+        # Store the index of the highlighted marker.
+        self.highlighted_marker_index = index
+
+        self.UpdateRender()
+
+    def UnhighlightMarker(self):
+        # Return early in case there is no highlighted marker. This shouldn't happen, though.
+        if self.highlighted_marker_index is None:
+            return
+
+        idx = self.highlighted_marker_index
+
+        actor = self.static_markers[idx]["actor"]
+        colour = self.static_markers[idx]["colour"]
+
+        # Change the color of the marker back to its original color.
+        actor.GetProperty().SetColor(colour)
+
+        # Reset the highlighted marker index.
+        self.highlighted_marker_index = None
+
+        self.UpdateRender()
 
     def SetNewColor(self, index, color):
-        self.static_markers[index].GetProperty().SetColor([round(s / 255.0, 3) for s in color])
-        if not self.nav_status:
-            self.UpdateRender()
+        actor = self.static_markers[index]["actor"]
+        actor.GetProperty().SetColor([round(s / 255.0, 3) for s in color])
+
+        self.UpdateRender()
 
     def OnTargetMarkerTransparency(self, status, index):
+        actor = self.static_markers[index]["actor"]
         if status:
-            self.static_markers[index].GetProperty().SetOpacity(1)
-            # self.staticballs[index].GetProperty().SetOpacity(0.4)
+            actor.GetProperty().SetOpacity(1)
+            # actor.GetProperty().SetOpacity(0.4)
         else:
-            self.static_markers[index].GetProperty().SetOpacity(1)
+            actor.GetProperty().SetOpacity(1)
 
     def OnUpdateAngleThreshold(self, angle):
         self.anglethreshold = angle
