@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 
 @dataclasses.dataclass
@@ -141,3 +142,7 @@ class Marker:
             'session_id': self.session_id,
             'cortex_position_orientation': self.cortex_position_orientation,
         }
+
+    def duplicate(self):
+        """Create a deep copy of this Marker object."""
+        return copy.deepcopy(self)
