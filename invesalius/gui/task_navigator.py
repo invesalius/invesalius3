@@ -1854,8 +1854,8 @@ class MarkersPanel(wx.Panel):
             marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
 
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
-        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
-        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
 
         self.marker_list_ctrl = marker_list_ctrl
 
@@ -2177,11 +2177,13 @@ class MarkersPanel(wx.Panel):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
-    def OnItemBlink(self, evt):
-        Publisher.sendMessage('Blink Marker', index=self.marker_list_ctrl.GetFocusedItem())
+    # Called when a marker on the list gets the focus by the user left-clicking on it.
+    def OnMarkerFocused(self, evt):
+        Publisher.sendMessage('Highlight marker', index=self.marker_list_ctrl.GetFocusedItem())
 
-    def OnStopItemBlink(self, evt):
-        Publisher.sendMessage('Stop Blink Marker')
+    # Called when a marker on the list loses the focus by the user left-clicking on another marker.
+    def OnMarkerUnfocused(self, evt):
+        Publisher.sendMessage('Unhighlight marker')
 
     def OnMenuEditMarkerLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -2428,7 +2430,7 @@ class MarkersPanel(wx.Panel):
         self.markers = []
         Publisher.sendMessage('Remove all markers', indexes=self.marker_list_ctrl.GetItemCount())
         self.marker_list_ctrl.DeleteAllItems()
-        Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
+        Publisher.sendMessage('Unhighlight marker', index='DeleteAll')
 
         self.SaveState()
 
