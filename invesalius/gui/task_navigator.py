@@ -934,7 +934,7 @@ class RefinePage(wx.Panel):
         self.labels = [wx.StaticText(self, -1, _(label)) for label in labels]
 
         for m in range(6):
-                for n in range(3):
+            for n in range(3):
                 if m <= 2:
                     value = self.image.GetImageFiducialForUI(m, n)
                 else:
