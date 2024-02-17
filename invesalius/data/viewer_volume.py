@@ -1004,8 +1004,8 @@ class Viewer(wx.Panel):
 
         actor = self.static_markers[index]["actor"]
 
-        # Change the color of the marker to black.
-        actor.GetProperty().SetColor((0, 0, 0))
+        # Change the color of the marker to white.
+        actor.GetProperty().SetColor((1, 1, 1))
 
         # Store the index of the highlighted marker.
         self.highlighted_marker_index = index
