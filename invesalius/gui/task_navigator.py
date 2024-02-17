@@ -2069,10 +2069,10 @@ class MarkersPanel(wx.Panel):
             # then set as target if needed. This could be refactored so that a CreateMarker call would
             # suffice to set it as target.
             if d['is_target']:
-                self.__set_marker_as_target(len(self.markers) - 1, display_messagebox=False)
+                self.__set_marker_as_target(len(self.markers) - 1)
             if 'is_efield_target' in d:
                 if d['is_efield_target']:
-                    self.__set_marker_as_efield_target(len(self.markers) - 1, display_messagebox=False)
+                    self.__set_marker_as_efield_target(len(self.markers) - 1)
                     Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
                                           orientation=d['orientation'])
     def __find_target_marker(self):
@@ -2158,7 +2158,7 @@ class MarkersPanel(wx.Panel):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', indexes=brain_target_index)
 
-    def __set_marker_as_efield_target(self, idx, display_messagebox=True):
+    def __set_marker_as_efield_target(self, idx):
         """
         Set marker indexed by idx as the new target. idx must be a valid index.
         """
@@ -2182,10 +2182,8 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.SetItem(idx, const.EFIELD_TARGET_COLUMN, _("Yes"))
 
         #self.__delete_all_brain_targets()
-        if display_messagebox:
-            wx.MessageBox(_("New Efield target selected."), _("InVesalius 3"))
 
-    def __set_marker_as_target(self, idx, display_messagebox=True):
+    def __set_marker_as_target(self, idx):
         """
         Set marker indexed by idx as the new target. idx must be a valid index.
         """
@@ -2219,9 +2217,6 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update target', coord=coord)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
-
-        if display_messagebox:
-            wx.MessageBox(_("New target selected."), _("InVesalius 3"))
 
     @staticmethod
     def __list_fiducial_labels():
