@@ -19,7 +19,8 @@ class MarkerTransformator:
         Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
 
     def LoadActor(self, actor):
-        # XXX: Assuming that the first actor is the scalp and the second actor is the brain. This should be made more explicit.
+        # XXX: Assuming that the first actor is the scalp and the second actor is the brain. This should be made more explicit by the
+        #   publisher of 'Load surface actor into viewer' message. See similar assumption in volume_viewer.py.
         if 'scalp' not in self.surfaces:
             surface_name = 'scalp'
         else:
