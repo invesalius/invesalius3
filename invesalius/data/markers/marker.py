@@ -1,5 +1,38 @@
 import copy
 import dataclasses
+from enum import Enum
+
+import invesalius.data.imagedata_utils as imagedata_utils
+
+
+class MarkerType(Enum):
+    """Enum for marker types. The values are used to visually distinguish
+    between different types of markers. The values are used in the
+    'marker_type' field of the Marker class. The enum values are:
+
+    LANDMARK: a point of interest, e.g. a point on the brain surface.
+    BRAIN_TARGET: a target point and orientation on the brain surface.
+    COIL_TARGET: a target point and orientation for the coil.
+    ELECTRIC_FIELD_TARGET: a target point and orientation for the electric field.
+    """
+    LANDMARK = 0
+    BRAIN_TARGET = 1
+    COIL_TARGET = 2
+    ELECTRIC_FIELD_TARGET = 3
+
+    @property
+    def human_readable(self):
+        """Returns a human-readable name for the enum member."""
+        # Dictionary mapping enum values to human-readable names.
+        names = {
+            MarkerType.LANDMARK: "Landmark",
+            MarkerType.BRAIN_TARGET: "Brain Target",
+            MarkerType.COIL_TARGET: "Coil Target",
+            MarkerType.ELECTRIC_FIELD_TARGET: "E-Field Target",
+        }
+        # Return the human-readable name for the enum member.
+        return names[self]
+
 
 @dataclasses.dataclass
 class Marker:
@@ -21,14 +54,13 @@ class Marker:
     z_seed : float = 0
     is_target : bool = False
     session_id : int = 1
-    is_brain_target : bool = False
-    is_efield_target: bool = False
     x_cortex: float = 0
     y_cortex: float = 0
     z_cortex: float = 0
     alpha_cortex: float = dataclasses.field(default = None)
     beta_cortex: float = dataclasses.field(default = None)
     gamma_cortex: float = dataclasses.field(default = None)
+    marker_type: MarkerType = MarkerType.LANDMARK
 
     # x, y, z can be jointly accessed as position
     @property
@@ -80,20 +112,22 @@ class Marker:
         self.x_cortex, self.y_cortex, self.z_cortex, self.alpha_cortex, self.beta_cortex, self.gamma_cortex = new_cortex
 
     @classmethod
-    def to_string_headers(cls):
-        """Return the string containing tab-separated list of field names (headers)."""
+    def to_csv_header(cls):
+        """Return the string containing tab-separated list of field names (header)."""
         res = [field.name for field in dataclasses.fields(cls)]
         res.extend(['x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world'])
         return '\t'.join(map(lambda x: '\"%s\"' % x, res))
 
-    def to_string(self):
+    def to_csv_row(self):
         """Serialize to excel-friendly tab-separated string"""
         res = ''
         for field in dataclasses.fields(self.__class__):
             if field.type is str:
-                res += ('\"%s\"\t' % getattr(self, field.name))
+                res += '\"%s\"\t' % getattr(self, field.name)
+            elif field.type is MarkerType:
+                res += '%s\t' % getattr(self, field.name).value
             else:
-                res += ('%s\t' % str(getattr(self, field.name)))
+                res += '%s\t' % str(getattr(self, field.name))
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).
@@ -111,11 +145,12 @@ class Marker:
         res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
         return res
 
-    def from_string(self, inp_str):
+    def from_csv_row(self, input_str):
         """Deserialize from a tab-separated string. If the string is not 
         properly formatted, might throw an exception and leave the object
         in an inconsistent state."""
-        for field, str_val in zip(dataclasses.fields(self.__class__), inp_str.split('\t')):
+        splitted = input_str.split('\t')
+        for field, str_val in zip(dataclasses.fields(self.__class__), splitted):
             if field.type is float and str_val != 'None':
                 setattr(self, field.name, float(str_val))
             if field.type is float and str_val == 'None':
@@ -128,6 +163,8 @@ class Marker:
                 setattr(self, field.name, str_val=='True')
             if field.type is int and str_val != 'None':
                 setattr(self, field.name, int(str_val))
+            if field.type is MarkerType:
+                setattr(self, field.name, MarkerType(int(str_val)))
 
     def to_dict(self):
         return {
@@ -137,7 +174,7 @@ class Marker:
             'size': self.size,
             'label': self.label,
             'is_target': self.is_target,
-            'is_efield_target' : self.is_efield_target,
+            'marker_type': self.marker_type.value,
             'seed': self.seed,
             'session_id': self.session_id,
             'cortex_position_orientation': self.cortex_position_orientation,

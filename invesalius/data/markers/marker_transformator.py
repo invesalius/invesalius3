@@ -6,6 +6,8 @@ import numpy as np
 from invesalius.pubsub import pub as Publisher
 import invesalius.data.transformations as tr
 import invesalius.data.coordinates as dco
+from invesalius.data.markers.marker import MarkerType
+
 
 class MarkerTransformator:
     def __init__(self):
@@ -97,3 +99,6 @@ class MarkerTransformator:
 
         marker.position = closest_point
         marker.orientation = euler_angles_deg
+
+        # Set marker type to 'coil target'.
+        marker.marker_type = MarkerType.COIL_TARGET
