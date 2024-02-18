@@ -99,6 +99,3 @@ class MarkerTransformator:
 
         marker.position = closest_point
         marker.orientation = euler_angles_deg
-
-        # Set marker type to 'coil target'.
-        marker.marker_type = MarkerType.COIL_TARGET

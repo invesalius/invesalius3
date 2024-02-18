@@ -4334,7 +4334,7 @@ class EfieldConfiguration(wx.Dialog):
          Publisher.sendMessage('Import bin file', filename=filename)
 
 
-class SetCoilOrientationDialog(wx.Dialog):
+class CreateBrainTargetDialog(wx.Dialog):
 
     def __init__(self, marker, mTMS=None, brain_target=False, brain_actor=None):
         import invesalius.project as prj

@@ -2135,12 +2135,12 @@ class MarkersPanel(wx.Panel):
             target_menu = menu_id.Append(2, _('Set as target'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
 
-        orientation_menu = menu_id.Append(5, _('Set coil target orientation'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetCoilOrientation, orientation_menu)
+        create_brain_target_menu = menu_id.Append(5, _('Create brain target'))
+        menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTarget, create_brain_target_menu)
 
-        # Create 'Project to scalp' menu item.
-        project_to_scalp_menu = menu_id.Append(6, _('Project to scalp'))
-        menu_id.Bind(wx.EVT_MENU, self.OnProjectToScalp, project_to_scalp_menu)
+        # 'Create coil target' menu item.
+        create_coil_target_menu = menu_id.Append(6, _('Create coil target'))
+        menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTarget, create_coil_target_menu)
 
         is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].marker_type == MarkerType.BRAIN_TARGET
         if is_brain_target and has_mTMS:
@@ -2204,7 +2204,7 @@ class MarkersPanel(wx.Panel):
     def OnMarkerUnfocused(self, evt):
         Publisher.sendMessage('Unhighlight marker')
         
-    def OnProjectToScalp(self, evt):
+    def OnCreateCoilTarget(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -2215,6 +2215,9 @@ class MarkersPanel(wx.Panel):
 
         # Project to the scalp.        
         self.marker_transformator.ProjectToScalp(new_marker)
+
+        # Set marker type to 'coil target'.
+        new_marker.marker_type = MarkerType.COIL_TARGET
 
         # Add the new marker to the marker list and render it.
         self.AddMarker(new_marker, render=True)
@@ -2334,12 +2337,12 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
         self.SaveState()
 
-    def OnMenuSetCoilOrientation(self, evt):
+    def OnCreateBrainTarget(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
 
-        dialog = dlg.SetCoilOrientationDialog(marker=position+orientation, brain_actor=self.brain_actor)
+        dialog = dlg.CreateBrainTargetDialog(marker=position+orientation, brain_actor=self.brain_actor)
         if dialog.ShowModal() == wx.ID_OK:
             coil_position_list, coil_orientation_list, brain_position_list, brain_orientation_list = dialog.GetValue()
 
@@ -2445,7 +2448,7 @@ class MarkersPanel(wx.Panel):
 
         position = self.markers[index].position
         orientation = self.markers[index].orientation
-        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
+        dialog = dlg.CreateBrainTargetDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
 
         if dialog.ShowModal() == wx.ID_OK:
             position_list, orientation_list = dialog.GetValueBrainTarget()
@@ -2658,7 +2661,7 @@ class MarkersPanel(wx.Panel):
         list_index = marker_id if marker_id else 0
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
-        dialog = dlg.SetCoilOrientationDialog(mTMS=self.mTMS, marker=position+orientation)
+        dialog = dlg.CreateBrainTargetDialog(mTMS=self.mTMS, marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
             orientation = dialog.GetValue()
