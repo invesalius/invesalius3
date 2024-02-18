@@ -109,6 +109,7 @@ import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.data.markers.surface_geometry import SurfaceGeometry
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
@@ -951,6 +952,7 @@ class Viewer(wx.Panel):
                 "position": position,
                 "orientation": orientation,
                 "colour": colour,
+                "marker_type": marker_type,
             }
         )
 
@@ -1039,7 +1041,11 @@ class Viewer(wx.Panel):
         if index >= len(self.static_markers) or index < 0:
             return
 
-        actor = self.static_markers[index]["actor"]
+        marker = self.static_markers[index]
+
+        # Unpack relevant fields from the marker.
+        actor = marker["actor"]
+        marker_type = marker["marker_type"]
 
         # Use color red for highlighting.
         vtk_colors = vtkNamedColors()
@@ -1157,30 +1163,30 @@ class Viewer(wx.Panel):
             obj_pitch.RotateY(90)
             obj_pitch.RotateZ(180)
 
-            arrow_roll_z1 = self.CreateArrowActor([-50, -35, 12], [-50, -35, 50])
+            arrow_roll_z1 = self.CreateArrowBetweenPointsActor([-50, -35, 12], [-50, -35, 50])
             arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
             arrow_roll_z1.RotateX(-60)
             arrow_roll_z1.RotateZ(180)
-            arrow_roll_z2 = self.CreateArrowActor([50, -35, 0], [50, -35, -50])
+            arrow_roll_z2 = self.CreateArrowBetweenPointsActor([50, -35, 0], [50, -35, -50])
             arrow_roll_z2.GetProperty().SetColor(1, 1, 0)
             arrow_roll_z2.RotateX(-60)
             arrow_roll_z2.RotateZ(180)
 
-            arrow_yaw_y1 = self.CreateArrowActor([-50, -35, 0], [-50, 5, 0])
+            arrow_yaw_y1 = self.CreateArrowBetweenPointsActor([-50, -35, 0], [-50, 5, 0])
             arrow_yaw_y1.GetProperty().SetColor(0, 1, 0)
             arrow_yaw_y1.SetPosition(0, -150, 0)
             arrow_yaw_y1.RotateZ(180)
-            arrow_yaw_y2 = self.CreateArrowActor([50, -35, 0], [50, -75, 0])
+            arrow_yaw_y2 = self.CreateArrowBetweenPointsActor([50, -35, 0], [50, -75, 0])
             arrow_yaw_y2.GetProperty().SetColor(0, 1, 0)
             arrow_yaw_y2.SetPosition(0, -150, 0)
             arrow_yaw_y2.RotateZ(180)
 
-            arrow_pitch_x1 = self.CreateArrowActor([0, 65, 38], [0, 65, 68])
+            arrow_pitch_x1 = self.CreateArrowBetweenPointsActor([0, 65, 38], [0, 65, 68])
             arrow_pitch_x1.GetProperty().SetColor(1, 0, 0)
             arrow_pitch_x1.SetPosition(0, -300, 0)
             arrow_pitch_x1.RotateY(90)
             arrow_pitch_x1.RotateZ(180)
-            arrow_pitch_x2 = self.CreateArrowActor([0, -55, 5], [0, -55, -30])
+            arrow_pitch_x2 = self.CreateArrowBetweenPointsActor([0, -55, 5], [0, -55, -30])
             arrow_pitch_x2.GetProperty().SetColor(1, 0, 0)
             arrow_pitch_x2.SetPosition(0, -300, 0)
             arrow_pitch_x2.RotateY(90)
@@ -1277,12 +1283,12 @@ class Viewer(wx.Panel):
 
             offset = 5
 
-            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
+            arrow_roll_x1 = self.CreateArrowBetweenPointsActor([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
             arrow_roll_x1.RotateX(-60)
             arrow_roll_x1.RotateZ(180)
             arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
 
-            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset + coordrx_arrow])
+            arrow_roll_x2 = self.CreateArrowBetweenPointsActor([55, -35, offset], [55, -35, offset + coordrx_arrow])
             arrow_roll_x2.RotateX(-60)
             arrow_roll_x2.RotateZ(180)
             arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
@@ -1298,12 +1304,12 @@ class Viewer(wx.Panel):
 
             offset = -35
 
-            arrow_yaw_z1 = self.CreateArrowActor([-55, offset, 0], [-55, offset - coordrz_arrow, 0])
+            arrow_yaw_z1 = self.CreateArrowBetweenPointsActor([-55, offset, 0], [-55, offset - coordrz_arrow, 0])
             arrow_yaw_z1.SetPosition(0, -150, 0)
             arrow_yaw_z1.RotateZ(180)
             arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
 
-            arrow_yaw_z2 = self.CreateArrowActor([55, offset, 0], [55, offset + coordrz_arrow, 0])
+            arrow_yaw_z2 = self.CreateArrowBetweenPointsActor([55, offset, 0], [55, offset + coordrz_arrow, 0])
             arrow_yaw_z2.SetPosition(0, -150, 0)
             arrow_yaw_z2.RotateZ(180)
             arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
@@ -1318,14 +1324,14 @@ class Viewer(wx.Panel):
                 self.obj_actor_list[2].GetProperty().SetColor(1, 1, 1)
 
             offset = 38
-            arrow_pitch_y1 = self.CreateArrowActor([0, 65, offset], [0, 65, offset + coordry_arrow])
+            arrow_pitch_y1 = self.CreateArrowBetweenPointsActor([0, 65, offset], [0, 65, offset + coordry_arrow])
             arrow_pitch_y1.SetPosition(0, -300, 0)
             arrow_pitch_y1.RotateY(90)
             arrow_pitch_y1.RotateZ(180)
             arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
 
             offset = 5
-            arrow_pitch_y2 = self.CreateArrowActor([0, -55, offset], [0, -55, offset - coordry_arrow])
+            arrow_pitch_y2 = self.CreateArrowBetweenPointsActor([0, -55, offset], [0, -55, offset - coordry_arrow])
             arrow_pitch_y2.SetPosition(0, -300, 0)
             arrow_pitch_y2.RotateY(90)
             arrow_pitch_y2.RotateZ(180)
@@ -1474,7 +1480,7 @@ class Viewer(wx.Panel):
         except:
             None
 
-    def CreateArrowActor(self, startPoint, endPoint):
+    def CreateArrowBetweenPointsActor(self, startPoint, endPoint):
         # Compute a basis
         normalizedX = [0 for i in range(3)]
         normalizedY = [0 for i in range(3)]
@@ -1695,10 +1701,17 @@ class Viewer(wx.Panel):
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
-        self.obj_projection_arrow_actor = self.CreateArrowActor([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
-                                                                8)
-        self.object_orientation_torus_actor = self.AddTorus([0., 0., 0.], [0., 0., 0.],
-                                                            vtk_colors.GetColor3d('Red'))
+        self.obj_projection_arrow_actor = self.CreateArrowActor(
+            position=[0., 0., 0.],
+            orientation=[0., 0., 0.],
+            colour=vtk_colors.GetColor3d('Red'),
+            size=8
+        )
+        self.object_orientation_torus_actor = self.CreateTorusActor(
+            position=[0., 0., 0.],
+            orientation=[0., 0., 0.],
+            colour=vtk_colors.GetColor3d('Red')
+        )
 
         #self.obj_projection_arrow_actor.SetVisibility(False)
         #self.object_orientation_torus_actor.SetVisibility(False)
@@ -1740,7 +1753,7 @@ class Viewer(wx.Panel):
 
         return disk_actor
 
-    def AddTorus(self, position, orientation, color=[0.0, 0.0, 1.0]):
+    def CreateTorusActor(self, position, orientation, color=[0.0, 0.0, 1.0]):
         torus = vtkParametricTorus()
         torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
@@ -1761,10 +1774,10 @@ class Viewer(wx.Panel):
 
         return torusActor
 
-    def CreateBallActor(self, coord_flip, colour=[0.0, 0.0, 1.0], size=2):
+    def CreateBallActor(self, position, colour=[0.0, 0.0, 1.0], size=2):
         ball_ref = vtkSphereSource()
         ball_ref.SetRadius(size)
-        ball_ref.SetCenter(coord_flip)
+        ball_ref.SetCenter(position)
 
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
