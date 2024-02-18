@@ -236,7 +236,7 @@ class Viewer(wx.Panel):
         self.repositioned_axial_plan = 0
         self.repositioned_sagital_plan = 0
         self.repositioned_coronal_plan = 0
-        self.added_actor = 0
+        self.surface_added = False
 
         self.lock_to_coil = const.LOCK_TO_COIL_AS_DEFAULT
         self.camera_show_object = None
@@ -284,6 +284,10 @@ class Viewer(wx.Panel):
         self.actor_peel = None
 
         self.surface = None
+
+        # A dict to store the surfaces that are loaded into the viewer. The keys are the names of the surfaces,
+        # and the values are the actors of the surfaces.
+        self.surfaces = {}
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -354,9 +358,9 @@ class Viewer(wx.Panel):
                 self.UpdateCanvas()
 
     def __bind_events(self):
-        Publisher.subscribe(self.LoadActor,
+        Publisher.subscribe(self.AddSurface,
                                  'Load surface actor into viewer')
-        Publisher.subscribe(self.RemoveActor,
+        Publisher.subscribe(self.RemoveSurface,
                                 'Remove surface actor from viewer')
         # Publisher.subscribe(self.OnShowSurface, 'Show surface')
         Publisher.subscribe(self.UpdateRender,
@@ -412,7 +416,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnRulerVisibilityStatus, 'Receive ruler visibility status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-        Publisher.subscribe(self.RemoveAllActor, 'Remove all volume actors')
+        Publisher.subscribe(self.RemoveAllActors, 'Remove all volume actors')
 
         Publisher.subscribe(self.OnExportPicture,'Export picture to file')
 
@@ -2999,22 +3003,31 @@ class Viewer(wx.Panel):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
-    def LoadActor(self, actor):
-        self.added_actor = 1
+    def AddSurface(self, actor):
+        # XXX: Assuming that the first actor is the scalp and the second actor is the brain. This should be made more explicit by the
+        #   publisher of 'Load surface actor into viewer' message. See similar assumption in marker_transformator.py.
+        if 'scalp' not in self.surfaces:
+            surface_name = 'scalp'
+        else:
+            surface_name = 'brain'
+
+        # Store the actor in the surfaces dictionary.
+        self.surfaces[surface_name] = actor
+
+        # Add the actor to the renderer.
         ren = self.ren
         ren.AddActor(actor)
 
-        if not (self.view_angle):
+        self.surface_added = True
+
+        if not self.view_angle:
             self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
 
-        #self.ShowOrientationCube()
         self.UpdateRender()
-        # self._to_show_ball += 1
-        # self._check_and_set_ball_visibility()
 
         # make camera projection to parallel
         self.ren.GetActiveCamera().ParallelProjectionOn()
@@ -3023,24 +3036,22 @@ class Viewer(wx.Panel):
         self.surface = actor
         self.EnableRuler()
 
+    def RemoveSurface(self, actor):
+        # XXX: The publisher of 'Remove surface actor from viewer' should be more explicit about which actor to remove by
+        #   naming the surface. Currently, self.surfaces cannot be updated correctly when surface is removed due to the lack
+        #   of that information.
 
-    def RemoveActor(self, actor):
-        utils.debug("RemoveActor")
-        ren = self.ren
-        ren.RemoveActor(actor)
-        if not self.nav_status:
-            self.UpdateRender()
-        # self._to_show_ball -= 1
-        # self._check_and_set_ball_visibility()
+        # Remove the actor from the renderer.
+        self.ren.RemoveActor(actor)
+        self.UpdateRender()
 
-        # remove the ruler if visible
+        # Remove the ruler if visible.
         if self.ruler:
             self.HideRuler()
 
-    def RemoveAllActor(self):
-        utils.debug("RemoveAllActor")
+    def RemoveAllActors(self):
         self.ren.RemoveAllProps()
-        Publisher.sendMessage('Render volume viewer')
+        self.UpdateRender()
 
     def LoadSlicePlane(self):
         self.slice_plane = SlicePlane()
@@ -3074,7 +3085,7 @@ class Viewer(wx.Panel):
         self.ren.GetActiveCamera().ParallelProjectionOn()
 
         # if there is no 3D surface, use the volume render for measurement calculation
-        if not self.added_actor:
+        if not self.surface_added:
             self.surface = volume
         self.EnableRuler()
 
@@ -3168,16 +3179,16 @@ class Viewer(wx.Panel):
         self.ren.AddActor(actor)
 
     def Reposition3DPlane(self, plane_label):
-        if not(self.added_actor) and not(self.raycasting_volume):
-            if not(self.repositioned_axial_plan) and (plane_label == 'Axial'):
+        if not self.surface_added and not self.raycasting_volume:
+            if not self.repositioned_axial_plan and plane_label == 'Axial':
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_axial_plan = 1
 
-            elif not(self.repositioned_sagital_plan) and (plane_label == 'Sagital'):
+            elif not self.repositioned_sagital_plan and plane_label == 'Sagital':
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_sagital_plan = 1
 
-            elif not(self.repositioned_coronal_plan) and (plane_label == 'Coronal'):
+            elif not self.repositioned_coronal_plan and plane_label == 'Coronal':
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
 
@@ -3257,7 +3268,7 @@ class SlicePlane:
         Publisher.sendMessage('Set Widget Interactor', widget=plane_y)
         Publisher.sendMessage('Set Widget Interactor', widget=plane_z)
 
-        self.Render()
+        Publisher.sendMessage('Render volume viewer')
 
     def Enable(self, plane_label=None):
         if plane_label:
@@ -3274,7 +3285,8 @@ class SlicePlane:
             self.plane_y.On()
             Publisher.sendMessage('Set volume view angle',
                                   view=const.VOL_ISO)
-        self.Render()
+
+        Publisher.sendMessage('Render volume viewer')
 
     def Disable(self, plane_label=None):
         if plane_label:
@@ -3289,27 +3301,26 @@ class SlicePlane:
             self.plane_x.Off()
             self.plane_y.Off()
 
-        self.Render()
-
-    def Render(self):
-        Publisher.sendMessage('Render volume viewer')    
+        Publisher.sendMessage('Render volume viewer')
 
     def ChangeSlice(self, orientation, index):
         if  orientation == "CORONAL" and self.plane_y.GetEnabled():
             Publisher.sendMessage('Update slice 3D',
                                   widget=self.plane_y,
                                   orientation=orientation)
-            self.Render()
+            Publisher.sendMessage('Render volume viewer')
+
         elif orientation == "SAGITAL" and self.plane_x.GetEnabled():
             Publisher.sendMessage('Update slice 3D', 
                                   widget=self.plane_x,
                                   orientation=orientation)
-            self.Render()
+            Publisher.sendMessage('Render volume viewer')
+
         elif orientation == 'AXIAL' and self.plane_z.GetEnabled() :
             Publisher.sendMessage('Update slice 3D',
                                   widget=self.plane_z,
                                   orientation=orientation)
-            self.Render()
+            Publisher.sendMessage('Render volume viewer')
 
     def UpdateAllSlice(self):
         Publisher.sendMessage('Update slice 3D',
