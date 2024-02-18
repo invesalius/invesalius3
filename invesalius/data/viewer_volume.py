@@ -108,6 +108,7 @@ from imageio import imsave
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+from invesalius.data.markers.marker import Marker, MarkerType
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
@@ -268,7 +269,7 @@ class Viewer(wx.Panel):
         self.obj = False
 
         self.target_coord = None
-        self.aim_actor = None
+        self.active_aim_actor = None
         self.dummy_coil_actor = None
         self.dummy_robot_actor = None
         self.dummy_probe_actor = None
@@ -889,23 +890,43 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def AddMarker(self, marker_id, size, colour, position, orientation, cortex_marker, arrow_flag):
+    def AddMarker(self, marker):
         """
-        Markers created by navigation tools and rendered in volume viewer.
+        Add a marker created by navigation tools for the volume viewer to be render.
         """
-        self.marker_id = marker_id
-        position_flip = list(position)
-        position_flip[1] = -position_flip[1]
+        marker_id = marker.marker_id
+        marker_type = marker.marker_type
+        position = marker.position
+        orientation = marker.orientation
+        colour = marker.colour
+        size = marker.size
 
-        if arrow_flag:
-            """
-            Markers arrow with orientation created by navigation tools and rendered in volume viewer.
-            """
-            actor = self.CreateActorArrow(position_flip, orientation, colour, const.ARROW_MARKER_SIZE)
+        # TODO: Rename.
+        self.marker_id = marker_id
+        
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
+
+        # For 'landmark' type markers, create a ball.
+        if marker_type == MarkerType.LANDMARK:
+            actor = self.CreateBallActor(position_flipped, colour, size)
+
+        # For 'brain target' type markers, create an arrow.
+        elif marker_type == MarkerType.BRAIN_TARGET:
+            actor = self.CreateArrowActor(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
+
+        # For 'coil target' type markers, create a crosshair.
+        elif marker_type == MarkerType.COIL_TARGET:
+            actor = self.CreateAimActor(position_flipped, orientation, colour)
+
+        # For 'electric field target' type markers, create an arrow.
+        elif marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
+            actor = self.CreateArrowActor(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
             if cortex_marker[0] is not None:
-                Publisher.sendMessage('Add cortex marker actor', position_orientation = cortex_marker, marker_id = marker_id)
+                Publisher.sendMessage('Add cortex marker actor', position_orientation=cortex_marker, marker_id=marker_id)
+
         else:
-            actor = self.CreateActorBall(position_flip, colour, size)
+            assert False, "Invalid marker type."
 
         # Add marker to the list of all markers.
         self.static_markers.append(
@@ -914,7 +935,6 @@ class Viewer(wx.Panel):
                 "position": position,
                 "orientation": orientation,
                 "colour": colour,
-                "type": "arrow" if arrow_flag else "ball",
             }
         )
 
@@ -1059,6 +1079,9 @@ class Viewer(wx.Panel):
         self.target_mode = target_mode
 
         if self.target_coord and self.target_mode:
+            # Set the transformation matrix for the target.
+            self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
+
             if self.actor_peel:
                 self.object_orientation_torus_actor.SetVisibility(0)
                 self.obj_projection_arrow_actor.SetVisibility(0)
@@ -1189,13 +1212,13 @@ class Viewer(wx.Panel):
 
             if target_dist <= self.distthreshold:
                 thrdist = True
-                self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
+                self.active_aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
                 if not self.show_object:
-                    self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_HIDDEN_OPACITY)
+                    self.active_aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_HIDDEN_OPACITY)
             else:
                 thrdist = False
-                self.aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
-                self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+                self.active_aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
+                self.active_aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
 
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
@@ -1303,7 +1326,10 @@ class Viewer(wx.Panel):
 
     def OnSetNewTarget(self, coord):
         if coord is not None:
+            # Store the new target coordinates and create a new transformation matrix for the target.
             self.target_coord = coord
+            self.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
+
             self.CreateTargetAim()
             Publisher.sendMessage('Target selected', status=True)
             print("Target updated to coordinates {}".format(coord))
@@ -1334,40 +1360,20 @@ class Viewer(wx.Panel):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
         return m_img_vtk
-
+        
     def CreateTargetAim(self):
-        if self.aim_actor:
+        if self.active_aim_actor:
             self.RemoveTargetAim()
-            self.aim_actor = None
+            self.active_aim_actor = None
 
         vtk_colors = vtkNamedColors()
 
-        self.m_img_vtk = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
+        aim_actor = self.CreateAimActor(self.target_coord[:3], self.target_coord[3:], vtk_colors.GetColor3d('DarkOrange'))
 
-        filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
+        # Store the currently active aim actor.
+        self.active_aim_actor = aim_actor
 
-        reader = vtkSTLReader()
-        reader.SetFileName(filename)
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(reader.GetOutputPort())
-
-        # Transform the polydata
-        transform = vtkTransform()
-        transform.SetMatrix(self.m_img_vtk)
-        transformPD = vtkTransformPolyDataFilter()
-        transformPD.SetTransform(transform)
-        transformPD.SetInputConnection(reader.GetOutputPort())
-        transformPD.Update()
-        # mapper transform
-        mapper.SetInputConnection(transformPD.GetOutputPort())
-
-        aim_actor = vtkActor()
-        aim_actor.SetMapper(mapper)
-        aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
-        aim_actor.GetProperty().SetSpecular(.2)
-        aim_actor.GetProperty().SetSpecularPower(100)
-        aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
-        self.aim_actor = aim_actor
+        # Add the aim actor to the renderer.
         self.ren.AddActor(aim_actor)
 
         if self.use_default_object:
@@ -1401,14 +1407,14 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor.GetProperty().SetSpecularPower(10)
         self.dummy_coil_actor.GetProperty().SetOpacity(.3)
         self.dummy_coil_actor.SetVisibility(self.show_object)
-        self.dummy_coil_actor.SetUserMatrix(self.m_img_vtk)
+        self.dummy_coil_actor.SetUserMatrix(self.m_target)
 
         self.ren.AddActor(self.dummy_coil_actor)
         if not self.nav_status:
             self.UpdateRender()
 
     def RemoveTargetAim(self):
-        self.ren.RemoveActor(self.aim_actor)
+        self.ren.RemoveActor(self.active_aim_actor)
         self.ren.RemoveActor(self.dummy_coil_actor)
         if not self.nav_status:
             self.UpdateRender()
@@ -1554,7 +1560,7 @@ class Viewer(wx.Panel):
         oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
 
         newvtk = vtkMatrix4x4()
-        newvtk.Multiply4x4(self.m_img_vtk, oldcamVTK, newvtk)
+        newvtk.Multiply4x4(self.m_target, oldcamVTK, newvtk)
 
         transform = vtkTransform()
         transform.SetMatrix(newvtk)
@@ -1666,7 +1672,7 @@ class Viewer(wx.Panel):
         self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
         self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
 
-        self.obj_projection_arrow_actor = self.CreateActorArrow([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
+        self.obj_projection_arrow_actor = self.CreateArrowActor([0., 0., 0.], [0., 0., 0.], vtk_colors.GetColor3d('Red'),
                                                                 8)
         self.object_orientation_torus_actor = self.AddTorus([0., 0., 0.], [0., 0., 0.],
                                                             vtk_colors.GetColor3d('Red'))
@@ -1732,7 +1738,7 @@ class Viewer(wx.Panel):
 
         return torusActor
 
-    def CreateActorBall(self, coord_flip, colour=[0.0, 0.0, 1.0], size=2):
+    def CreateBallActor(self, coord_flip, colour=[0.0, 0.0, 1.0], size=2):
         ball_ref = vtkSphereSource()
         ball_ref.SetRadius(size)
         ball_ref.SetCenter(coord_flip)
@@ -1750,7 +1756,7 @@ class Viewer(wx.Panel):
 
         return actor
 
-    def CreateActorArrow(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+    def CreateArrowActor(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
         arrow = vtkArrowSource()
         arrow.SetArrowOriginToCenter()
         arrow.SetTipResolution(40)
@@ -1773,6 +1779,39 @@ class Viewer(wx.Panel):
         actor.SetUserMatrix(m_img_vtk)
 
         return actor
+
+    def CreateAimActor(self, direction, orientation, colour=[1.0, 1.0, 0.0]):
+        """
+        Create the aim (crosshair) actor.
+        """
+        filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
+
+        reader = vtkSTLReader()
+        reader.SetFileName(filename)
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
+
+        # Transform the polydata
+        transform = vtkTransform()
+        transform.SetMatrix(m_img_vtk)
+        transformPD = vtkTransformPolyDataFilter()
+        transformPD.SetTransform(transform)
+        transformPD.SetInputConnection(reader.GetOutputPort())
+        transformPD.Update()
+        # mapper transform
+        mapper.SetInputConnection(transformPD.GetOutputPort())
+
+        aim_actor = vtkActor()
+        aim_actor.SetMapper(mapper)
+        aim_actor.GetProperty().SetDiffuseColor(colour)
+        aim_actor.GetProperty().SetSpecular(.2)
+        aim_actor.GetProperty().SetSpecularPower(100)
+        aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+
+        return aim_actor
 
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -1864,7 +1903,7 @@ class Viewer(wx.Panel):
         self.position_max = self.efield_mesh.GetPoint(self.Idmax)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
         self.max_efield_vector= self.DrawVectors(self.position_max, orientation, vtk_colors.GetColor3d('Red'))
-        self.ball_max_vector = self.CreateActorBall(self.position_max, vtk_colors.GetColor3d('Red'), 0.5)
+        self.ball_max_vector = self.CreateBallActor(self.position_max, vtk_colors.GetColor3d('Red'), 0.5)
         self.ren.AddActor(self.max_efield_vector)
         self.ren.AddActor(self.ball_max_vector)
 
@@ -1877,7 +1916,7 @@ class Viewer(wx.Panel):
         [self.cell_id_indexes_above_threshold, self.positions_above_threshold]= self.GetIndexesAboveThreshold(self.efield_threshold)
         self.center_gravity_position = self.FindCenterofGravity(self.cell_id_indexes_above_threshold, self.positions_above_threshold)
         self.GoGEfieldVector = self.DrawVectors(self.center_gravity_position, orientation, vtk_colors.GetColor3d('Blue'))
-        self.ball_GoGEfieldVector = self.CreateActorBall(self.center_gravity_position, vtk_colors.GetColor3d('Blue'), 0.5)
+        self.ball_GoGEfieldVector = self.CreateBallActor(self.center_gravity_position, vtk_colors.GetColor3d('Blue'), 0.5)
         self.ren.AddActor(self.GoGEfieldVector)
         self.ren.AddActor(self.ball_GoGEfieldVector)
 
@@ -2740,8 +2779,8 @@ class Viewer(wx.Panel):
             self.y_actor.SetVisibility(self.show_object)
             self.z_actor.SetVisibility(self.show_object)
 
-        if self.aim_actor is not None and self.show_object:
-            self.aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+        if self.active_aim_actor is not None and self.show_object:
+            self.active_aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
 
         if not self.nav_status:
             self.UpdateRender()

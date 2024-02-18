@@ -38,6 +38,7 @@ class MarkerType(Enum):
 class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
+    marker_id : int = 0
     x : float = 0
     y : float = 0
     z : float = 0
