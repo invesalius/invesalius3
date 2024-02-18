@@ -540,8 +540,13 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         self.viewer.UpdateSlicesPosition([x, y, z])
-        # This "Set cross" message is needed to update the cross in the other slices
+
+        # Update the position of the cross in other slices.
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
+
+        # Update the pointer in the volume viewer.
+        Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z, None, None, None])
+
         # Also update camera in the volume viewer.
         Publisher.sendMessage('Update camera', position=[x, -y, z, None, None, None])
         Publisher.sendMessage('Update slice viewer')
