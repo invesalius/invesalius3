@@ -261,6 +261,7 @@ class Viewer(wx.Panel):
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
+        self.highlighted_marker_index = None
 
         self.probe = False
         self.ref = False
