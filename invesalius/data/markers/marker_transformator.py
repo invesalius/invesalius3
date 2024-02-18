@@ -3,66 +3,21 @@ import math
 import vtk
 import numpy as np
 
-from invesalius.pubsub import pub as Publisher
-import invesalius.data.transformations as tr
-import invesalius.data.coordinates as dco
 from invesalius.data.markers.marker import MarkerType
+from invesalius.data.markers.surface_geometry import SurfaceGeometry
+import invesalius.data.transformations as tr
 
 
 class MarkerTransformator:
     def __init__(self):
-        self.__bind_events()
-        
-        self.surfaces = {}
-
-    def __bind_events(self):
-        Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
-
-    def LoadActor(self, actor):
-        # XXX: Assuming that the first actor is the scalp and the second actor is the brain. This should be made more explicit by the
-        #   publisher of 'Load surface actor into viewer' message. See similar assumption in volume_viewer.py.
-        if 'scalp' not in self.surfaces:
-            surface_name = 'scalp'
-        else:
-            surface_name = 'brain'
-
-        # Get the polydata from the actor.
-        polydata = actor.GetMapper().GetInput()
-
-        # Compute normals for the surface.
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(polydata)
-        normals.ComputePointNormalsOn()
-        normals.Update()
-
-        self.surfaces[surface_name] = {
-            'actor': actor,
-            'polydata': polydata,
-            'normals': normals.GetOutput()
-        }
+        self.surface_geometry = SurfaceGeometry()
 
     def ProjectToScalp(self, marker):
         # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        surface = self.surfaces['scalp']
-
-        polydata = surface['polydata']
-        normals = surface['normals']
-
-        # Create a cell locator using VTK. This will allow us to find the closest point on the surface to the marker.
-        point_locator = vtk.vtkPointLocator()
-        point_locator.SetDataSet(polydata)
-        point_locator.BuildLocator()
-        closest_point_id = point_locator.FindClosestPoint(marker_position)
-
-        # Retrieve the coordinates of the closest point using the point ID.
-        closest_point = polydata.GetPoint(closest_point_id)
-
-        # Extract the normal at the closest point
-        normal_data = normals.GetPointData().GetNormals()
-        closest_normal = normal_data.GetTuple(closest_point_id)
+        closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', marker_position)
 
         # The reference direction vector that we want to align the normal to.
         #
