@@ -1836,7 +1836,6 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, 'Session')
         marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 51)
 
-        # esko
         marker_list_ctrl.InsertColumn(const.MARKER_TYPE_COLUMN, 'Type')
         marker_list_ctrl.SetColumnWidth(const.MARKER_TYPE_COLUMN, 77)
 
@@ -2505,7 +2504,6 @@ class MarkersPanel(wx.Panel):
         self.markers = []
         Publisher.sendMessage('Remove all markers', indexes=self.marker_list_ctrl.GetItemCount())
         self.marker_list_ctrl.DeleteAllItems()
-        Publisher.sendMessage('Unhighlight marker')
 
         self.SaveState()
 
@@ -2716,6 +2714,9 @@ class MarkersPanel(wx.Panel):
         marker.marker_type = marker_type
         marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
 
+        # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
+        marker.marker_id = len(self.markers)
+
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             marker.colour = [0, 0, 1]
 
@@ -2730,23 +2731,7 @@ class MarkersPanel(wx.Panel):
         else:
             current_head_robot_target_status = False
 
-        if all([elem is not None for elem in marker.orientation]):
-            arrow_flag = True
-        else:
-            arrow_flag = False
-
-        # Note that ball_id is zero-based, so we assign it len(self.markers) before the new marker is added
-        marker_id = len(self.markers)
-
-        Publisher.sendMessage('Add marker',
-                              marker_id=marker_id,
-                              size=marker.size,
-                              colour=marker.colour,
-                              position=marker.position,
-                              orientation=marker.orientation,
-                              cortex_marker = marker.cortex_position_orientation,
-                              arrow_flag=arrow_flag)
-
+        Publisher.sendMessage('Add marker', marker=marker)
         self.markers.append(marker)
 
         # Add marker to the marker list in GUI.

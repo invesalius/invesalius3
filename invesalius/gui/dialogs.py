@@ -4352,7 +4352,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.center_brain_target_actor = None
         self.marker_actor = None
         self.dummy_coil_actor = None
-        self.m_img_vtk = None
+        self.m_target = None
 
         self.spinning = False
         self.rotationX = 0
@@ -4790,7 +4790,7 @@ class CreateBrainTargetDialog(wx.Dialog):
             circle_actor.SetMapper(mapper)
             circle_actor.PickableOff()
             circle_actor.GetProperty().SetColor(colors.GetColor3d('Red'))
-            circle_actor.SetUserMatrix(self.m_img_vtk)
+            circle_actor.SetUserMatrix(self.m_target)
             self.ren.AddActor(circle_actor)
             self.marker_actor.PickableOff()
         else:
@@ -4839,11 +4839,11 @@ class CreateBrainTargetDialog(wx.Dialog):
             rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
             ry += 90
             m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=True)
-            self.m_img_vtk = m_img_vtk
+            self.m_target = m_img_vtk
         else:
             m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=False)
-            if not self.m_img_vtk:
-                self.m_img_vtk = m_img_vtk
+            if not self.m_target:
+                self.m_target = m_img_vtk
 
         coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
         marker_actor = self.CreateActorArrow(m_img_vtk, colour=colour)
