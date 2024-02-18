@@ -2555,10 +2555,32 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
-                       is_target=False, seed=None, session_id=None, marker_type=MarkerType.LANDMARK, cortex_position = None):
+                       is_target=False, seed=None, session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None):
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage('Get Cortex position')
-        marker = self.CreateMarker(position, orientation, colour, size, label, is_target, seed, session_id, marker_type, cortex_position)
+
+        # XXX: Set marker type to 'coil target' if created during navigation, otherwise 'landmark'. This enables creating
+        #   coil targets during navigation. However, this logic shouldn't be inferred from the navigation status. Ideally,
+        #   there would be two buttons for creating coil targets and landmarks, and the user would choose which one to create,
+        #   or a similar explicit logic.
+        #
+        #   In addition, when creating a fiducial marker, we shouldn't care if navigation is on or not; hence, skip the logic
+        #   in that case.
+        if marker_type is not MarkerType.FIDUCIAL:
+            marker_type = MarkerType.COIL_TARGET if self.nav_status else MarkerType.LANDMARK
+
+        marker = self.CreateMarker(
+            position=position,
+            orientation=orientation,
+            colour=colour,
+            size=size,
+            label=label,
+            is_target=is_target,
+            seed=seed,
+            session_id=session_id,
+            marker_type=marker_type,
+            cortex_position_orientation=cortex_position_orientation,
+        )
         self.AddMarker(marker, render=True)
 
         self.SaveState()
