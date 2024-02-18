@@ -15,16 +15,18 @@ class MarkerType(Enum):
     COIL_TARGET: a target point and orientation for the coil.
     ELECTRIC_FIELD_TARGET: a target point and orientation for the electric field.
     """
-    LANDMARK = 0
-    BRAIN_TARGET = 1
-    COIL_TARGET = 2
-    ELECTRIC_FIELD_TARGET = 3
+    FIDUCIAL = 0
+    LANDMARK = 1
+    BRAIN_TARGET = 2
+    COIL_TARGET = 3
+    ELECTRIC_FIELD_TARGET = 4
 
     @property
     def human_readable(self):
         """Returns a human-readable name for the enum member."""
         # Dictionary mapping enum values to human-readable names.
         names = {
+            MarkerType.FIDUCIAL: "Fiducial",
             MarkerType.LANDMARK: "Landmark",
             MarkerType.BRAIN_TARGET: "Brain Target",
             MarkerType.COIL_TARGET: "Coil Target",
