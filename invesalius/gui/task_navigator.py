@@ -1943,7 +1943,7 @@ class MarkersPanel(wx.Panel):
                 Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
                                         orientation=d['orientation'])
 
-    def __find_target_marker(self):
+    def __find_target_marker_idx(self):
         """
         Return the index of the marker currently selected as target (there
         should be at most one). If there is no such marker, return None.
@@ -2058,7 +2058,7 @@ class MarkersPanel(wx.Panel):
         Set marker indexed by idx as the new target. idx must be a valid index.
         """
         # Find the previous target
-        prev_idx = self.__find_target_marker()
+        prev_idx = self.__find_target_marker_idx()
 
         # If the new target is same as the previous do nothing.
         if prev_idx == idx:
@@ -2113,7 +2113,17 @@ class MarkersPanel(wx.Panel):
         self.cortex_position_orientation = CoGposition +  CoGorientation
 
     def OnMouseRightDown(self, evt):
-        # TODO: Enable the "Set as target" only when target is created with registered object
+        focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
+        target_marker_idx = self.__find_target_marker_idx()
+        marker_type = self.markers[focused_marker_idx].marker_type
+
+        # Check if the currently focused marker is the active target.
+        is_active_target = focused_marker_idx == target_marker_idx
+
+        # Check if the currently focused marker is of the type 'coil target'.
+        is_coil_target = marker_type == MarkerType.COIL_TARGET
+
+        # Create the context menu.
         menu_id = wx.Menu()
 
         edit_id = menu_id.Append(0, _('Edit label'))
@@ -2124,16 +2134,19 @@ class MarkersPanel(wx.Panel):
 
         menu_id.AppendSeparator()
 
-        if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
-            target_menu = menu_id.Append(2, _('Remove target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
-            if has_mTMS:
-                brain_target_menu = menu_id.Append(3, _('Set brain target'))
-                menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
-        else:
-            target_menu = menu_id.Append(2, _('Set as target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        # Show 'Set as target'/'Remove target' menu item only if the marker is a coil target.
+        if is_coil_target:
+            if is_active_target:
+                target_menu = menu_id.Append(2, _('Remove target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu)
+                if has_mTMS:
+                    brain_target_menu = menu_id.Append(3, _('Set brain target'))
+                    menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu)
+            else:
+                target_menu = menu_id.Append(2, _('Set as target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
 
+        # 'Create brain target' menu item.
         create_brain_target_menu = menu_id.Append(5, _('Create brain target'))
         menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTarget, create_brain_target_menu)
 
@@ -2149,7 +2162,7 @@ class MarkersPanel(wx.Panel):
         if self.nav_status and self.navigation.e_field_loaded:
             #Publisher.sendMessage('Check efield data')
             #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
-            if self.__find_target_marker()  == self.marker_list_ctrl.GetFocusedItem():
+            if self.__find_target_marker_idx()  == self.marker_list_ctrl.GetFocusedItem():
                 efield_menu = menu_id.Append(8, _('Save Efield target Data'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu)
 
@@ -2170,7 +2183,7 @@ class MarkersPanel(wx.Panel):
             #             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         if self.navigation.e_field_loaded and not self.nav_status:
-            if self.__find_target_marker() == self.marker_list_ctrl.GetFocusedItem():
+            if self.__find_target_marker_idx() == self.marker_list_ctrl.GetFocusedItem():
                 efield_vector_plot_menu = menu_id.Append(11,_('Show vector field'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu)
 
@@ -2184,13 +2197,6 @@ class MarkersPanel(wx.Panel):
                 self.marker_list_ctrl.GetFocusedItem()
 
         menu_id.AppendSeparator()
-
-        is_target_orientation_set = all([elem is not None for elem in self.markers[self.marker_list_ctrl.GetFocusedItem()].orientation])
-
-        if is_target_orientation_set and not is_brain_target:
-            target_menu.Enable(True)
-        else:
-            target_menu.Enable(False)
 
         self.PopupMenu(menu_id)
         menu_id.Destroy()
@@ -2472,8 +2478,8 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
         brain_target = self.markers[index].position + self.markers[index].orientation
-        if self.__find_target_marker():
-            coil_pose = self.markers[self.__find_target_marker()].position+self.markers[self.__find_target_marker()].orientation
+        if self.__find_target_marker_idx():
+            coil_pose = self.markers[self.__find_target_marker_idx()].position+self.markers[self.__find_target_marker_idx()].orientation
             if self.navigation.coil_at_target:
                 self.mTMS.UpdateTarget(coil_pose, brain_target)
                 #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
@@ -2493,7 +2499,7 @@ class MarkersPanel(wx.Panel):
             if result != wx.ID_OK:
                 return
 
-        if self.__find_target_marker() is not None:
+        if self.__find_target_marker_idx() is not None:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             if evt is not None:
                 wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
@@ -2532,7 +2538,7 @@ class MarkersPanel(wx.Panel):
             return
 
         # If current target is removed, handle it as a special case.
-        if self.__find_target_marker() in indexes:
+        if self.__find_target_marker_idx() in indexes:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             Publisher.sendMessage('Update target', coord=None)
             if self.robot.IsConnected():
