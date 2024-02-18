@@ -1033,9 +1033,12 @@ class Viewer(wx.Panel):
 
         actor = self.static_markers[index]["actor"]
 
-        esko
-        # Change the color of the marker to white.
-        actor.GetProperty().SetColor((1, 1, 1))
+        # Use color red for highlighting.
+        vtk_colors = vtkNamedColors()
+        color = vtk_colors.GetColor3d('Red')
+
+        # Change the color of the marker.
+        actor.GetProperty().SetColor(color)
 
         # Store the index of the highlighted marker.
         self.highlighted_marker_index = index
@@ -1598,6 +1601,9 @@ class Viewer(wx.Panel):
         The sphere's radius will be scale times bigger than the average of
         image spacing values.
         """
+        vtk_colors = vtkNamedColors()
+        color = vtk_colors.GetColor3d('DarkRed')
+
         scale = 2.0
         proj = prj.Project()
         s = proj.spacing
@@ -1611,7 +1617,7 @@ class Viewer(wx.Panel):
 
         pointer_actor = vtkActor()
         pointer_actor.SetMapper(mapper)
-        pointer_actor.GetProperty().SetColor(1, 0, 0)
+        pointer_actor.GetProperty().SetColor(color)
         pointer_actor.PickableOff()
         
         return pointer_actor
