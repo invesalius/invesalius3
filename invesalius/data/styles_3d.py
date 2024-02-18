@@ -449,8 +449,11 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         is_scalp_visible = scalp_actor.GetVisibility()
 
         # If scalp if visible, hide it to allow the picker to pick from the brain surface.
-        if is_scalp_visible:
-            scalp_actor.SetVisibility(False)
+        #
+        # XXX: Disable for now, projecting to the scalp is not working properly.
+        if False:
+            if is_scalp_visible:
+                scalp_actor.SetVisibility(False)
 
         # TODO: Other actors should be hidden as well, to allow the picker to pick exclusively from the brain surface.
         #   However, most of the benefit is already achieved by hiding the scalp.
