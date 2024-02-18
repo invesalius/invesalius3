@@ -2123,6 +2123,9 @@ class MarkersPanel(wx.Panel):
         # Check if the currently focused marker is of the type 'coil target'.
         is_coil_target = marker_type == MarkerType.COIL_TARGET
 
+        # Check if the currently focused marker is of the type 'landmark'.
+        is_landmark = marker_type == MarkerType.LANDMARK
+
         # Create the context menu.
         menu_id = wx.Menu()
 
@@ -2146,13 +2149,15 @@ class MarkersPanel(wx.Panel):
                 target_menu = menu_id.Append(2, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
 
-        # 'Create brain target' menu item.
-        create_brain_target_menu = menu_id.Append(5, _('Create brain target'))
-        menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTarget, create_brain_target_menu)
+        # Show 'Create brain target' and 'Create coil target' menu items only if the marker is a landmark.
+        if is_landmark:
+            # 'Create brain target' menu item.
+            create_brain_target_menu = menu_id.Append(5, _('Create brain target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTarget, create_brain_target_menu)
 
-        # 'Create coil target' menu item.
-        create_coil_target_menu = menu_id.Append(6, _('Create coil target'))
-        menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTarget, create_coil_target_menu)
+            # 'Create coil target' menu item.
+            create_coil_target_menu = menu_id.Append(6, _('Create coil target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTarget, create_coil_target_menu)
 
         is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].marker_type == MarkerType.BRAIN_TARGET
         if is_brain_target and has_mTMS:
