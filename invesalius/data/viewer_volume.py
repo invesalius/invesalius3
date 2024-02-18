@@ -243,7 +243,7 @@ class Viewer(wx.Panel):
 
         self.nav_status = False
 
-        self.ball_actor = None
+        self.pointer_actor = None
         self.obj_actor = None
         self.obj_axes = None
         self.obj_name = False
@@ -259,9 +259,7 @@ class Viewer(wx.Panel):
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
-        self._mode_cross = False
         self._to_show_ball = 0
-        self._ball_ref_visibility = False
         self.highlighted_marker_index = None
 
         self.probe = False
@@ -425,8 +423,9 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
 
+        Publisher.subscribe(self.UpdatePointer, 'Update volume viewer pointer')
+
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
-        Publisher.subscribe(self.UpdateCrossFocalPoint, 'Set cross focal point')
         Publisher.subscribe(self.UpdateCamera, 'Update camera')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
@@ -591,19 +590,28 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def check_ball_reference(self):
-        self._mode_cross = True
-        self._ball_ref_visibility = True
-        if not self.ball_actor:
-            self.CreateBallReference()
+    def CreatePointer(self):
+        """
+        Create pointer and add it to the renderer.
+        
+        The pointer refers to the ball that is shown to indicate the 3D point in the volume viewer that corresponds to the
+        selected slice positions. The same pointer is also used to show the point selected from the 3D viewer by right-clicking on it.
+        """
+        if not self.pointer_actor:
+            actor = self.CreatePointerActor()
+
+            # Store the pointer actor.
+            self.pointer_actor = actor        
+            
+            # Add the actor to the renderer.
+            self.ren.AddActor(actor)
+
         self.UpdateRender()
 
-    def uncheck_ball_reference(self):
-        self._mode_cross = False
-        self._ball_ref_visibility = True
-        if self.ball_actor:
-            self.ren.RemoveActor(self.ball_actor)
-            self.ball_actor = None
+    def DeletePointer(self):
+        if self.pointer_actor:
+            self.ren.RemoveActor(self.pointer_actor)
+            self.pointer_actor = None
         self.UpdateRender()
 
     def OnSensors(self, markers_flag):
@@ -1025,6 +1033,7 @@ class Viewer(wx.Panel):
 
         actor = self.static_markers[index]["actor"]
 
+        esko
         # Change the color of the marker to white.
         actor.GetProperty().SetColor((1, 1, 1))
 
@@ -1582,9 +1591,9 @@ class Viewer(wx.Panel):
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
 
-    def CreateBallReference(self):
+    def CreatePointerActor(self):
         """
-        Red sphere on volume visualization to reference center of
+        Create a sphere on volume visualization to reference center of
         cross in slice planes.
         The sphere's radius will be scale times bigger than the average of
         image spacing values.
@@ -1600,24 +1609,24 @@ class Viewer(wx.Panel):
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(ball_source.GetOutputPort())
 
-        self.ball_actor = vtkActor()
-        self.ball_actor.SetMapper(mapper)
-        self.ball_actor.GetProperty().SetColor(1, 0, 0)
-        self.ball_actor.PickableOff()
+        pointer_actor = vtkActor()
+        pointer_actor.SetMapper(mapper)
+        pointer_actor.GetProperty().SetColor(1, 0, 0)
+        pointer_actor.PickableOff()
+        
+        return pointer_actor
 
-        self.ren.AddActor(self.ball_actor)
-
-    def UpdateCrossFocalPoint(self, position):
+    def UpdatePointer(self, position):
         """
-        When not navigating, update the position of the red sphere on volume visualization
+        When not navigating, update the position of the pointer sphere. It is done
         when the slice planes are moved or a new point is selected from the volume viewer.
         """
         coord_flip = list(position[:3])
         coord_flip[1] = -coord_flip[1]
 
-        # Update the red sphere when not navigating.
-        if self.ball_actor is not None and not self.nav_status:
-            self.ball_actor.SetPosition(coord_flip)
+        # Update the pointer sphere when not navigating.
+        if self.pointer_actor is not None and not self.nav_status:
+            self.pointer_actor.SetPosition(coord_flip)
 
             # Update the render window manually, as it is not updated automatically when not navigating.
             self.UpdateRender()
@@ -1851,8 +1860,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.actor_peel = None
-            if self.ball_actor:
-                self.ball_actor.SetVisibility(1)
+            if self.pointer_actor:
+                self.pointer_actor.SetVisibility(1)
 
         if flag and actor:
             self.ren.AddActor(actor)
@@ -3165,18 +3174,6 @@ class Viewer(wx.Panel):
             elif not(self.repositioned_coronal_plan) and (plane_label == 'Coronal'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
-
-    # def _check_and_set_ball_visibility(self):
-    #     #TODO: When creating Raycasting volume and cross is pressed, it is not
-    #     # automatically creating the ball reference.
-    #     # print("mode_cross, show_ball, ball_vis ", self._mode_cross, self._to_show_ball, self._ball_ref_visibility)
-    #     if self._mode_cross:
-    #         if self._to_show_ball > 0 and not self._ball_ref_visibility:
-    #             self.ActivateBallReference()
-    #             self.interactor.Render()
-    #         elif not self._to_show_ball and self._ball_ref_visibility:
-    #             self.RemoveBallReference()
-    #             self.interactor.Render()
 
 class SlicePlane:
     def __init__(self):

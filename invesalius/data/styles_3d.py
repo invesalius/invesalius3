@@ -437,10 +437,10 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
 
     def SetUp(self):
-        self.viewer.check_ball_reference()
+        self.viewer.CreatePointer()
 
     def CleanUp(self):
-        self.viewer.uncheck_ball_reference()
+        self.viewer.DeletePointer()
 
     def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
@@ -450,6 +450,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         if self.picker.GetActor():
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
             Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z, None, None, None])
+
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
 
