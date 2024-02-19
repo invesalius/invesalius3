@@ -2223,29 +2223,29 @@ class MarkersPanel(wx.Panel):
         WXK_MINUS_NUMPAD = 390
 
         direction = None
-        if keycode == wx.WXK_DOWN:
-            direction = [0, -1, 0, 0, 0, 0]
-            stay_on_scalp = True
+        stay_on_scalp = True
 
-        elif keycode == wx.WXK_UP:
-            direction = [0, 1, 0, 0, 0, 0]
-            stay_on_scalp = True
+        # Only allow moving the marker along the scalp if navigation is off.
+        if not self.nav_status:
+            if keycode == wx.WXK_DOWN:
+                direction = [0, -1, 0, 0, 0, 0]
 
-        elif keycode == wx.WXK_LEFT:
-            direction = [-1, 0, 0, 0, 0, 0]
-            stay_on_scalp = True
+            elif keycode == wx.WXK_UP:
+                direction = [0, 1, 0, 0, 0, 0]
 
-        elif keycode == wx.WXK_RIGHT:
-            direction = [1, 0, 0, 0, 0, 0]
-            stay_on_scalp = True
-        
-        elif keycode == WXK_PLUS or keycode == WXK_PLUS_NUMPAD:
-            direction = [0, 0, 1, 0, 0, 0]
+            elif keycode == wx.WXK_LEFT:
+                direction = [-1, 0, 0, 0, 0, 0]
+
+            elif keycode == wx.WXK_RIGHT:
+                direction = [1, 0, 0, 0, 0, 0]
+
+        if keycode == WXK_PLUS or keycode == WXK_PLUS_NUMPAD:
             stay_on_scalp = False
+            direction = [0, 0, 1, 0, 0, 0]
             
         elif keycode == WXK_MINUS or keycode == WXK_MINUS_NUMPAD:
-            direction = [0, 0, -1, 0, 0, 0]
             stay_on_scalp = False
+            direction = [0, 0, -1, 0, 0, 0]
 
         if direction is not None:
             displacement = 1 * np.array(direction)
