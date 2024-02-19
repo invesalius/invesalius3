@@ -454,6 +454,7 @@ class Viewer(wx.Panel):
 
         # Related to marker creation in navigation tools
         Publisher.subscribe(self.AddMarker, 'Add marker')
+        Publisher.subscribe(self.UpdateMarker, 'Update marker')
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
@@ -935,6 +936,9 @@ class Viewer(wx.Panel):
         
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
+        
+        if marker_id == 1:
+            print(position_flipped)
 
         # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
         if marker_type == MarkerType.FIDUCIAL:
@@ -964,6 +968,7 @@ class Viewer(wx.Panel):
         # Add marker to the list of all markers.
         self.static_markers.append(
             {
+                "marker_id": marker_id,
                 "actor": actor,
                 "position": position_flipped,
                 "orientation": orientation,
@@ -974,6 +979,41 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(actor)
         self.marker_id += 1
+
+    def UpdateMarker(self, index, position, orientation):
+        """
+        Update the position and orientation of a marker.
+        """
+        marker = self.static_markers[index]
+        
+        is_highlighted = self.marker_viewer.highlighted_marker_index == index
+
+        actor = marker["actor"]
+        colour = marker["colour"]
+
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
+
+        # XXX: Workaround because modifying the original actor does not seem to work using
+        #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
+        #   and remove the old one. This only works for coil target markers, as the new actor
+        #   created is of a fixed type (aim).
+        new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
+
+        if is_highlighted:
+            self.marker_viewer.UnhighlightMarker()
+
+        marker["actor"] = new_actor
+        marker["position"] = position_flipped
+        marker["orientation"] = orientation
+
+        self.ren.RemoveActor(actor)
+        self.ren.AddActor(new_actor)
+
+        if is_highlighted:
+            self.marker_viewer.HighlightMarker(index)
+
+        self.UpdateRender()
 
     def add_marker(self, coord, color):
         """Simplified version for creating a spherical marker in the 3D scene
