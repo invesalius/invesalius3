@@ -109,7 +109,9 @@ import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.data.markers.marker_viewer import MarkerViewer
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
+from invesalius.data.actor_factory import ActorFactory
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
@@ -292,6 +294,17 @@ class Viewer(wx.Panel):
 
         self.surface_geometry = SurfaceGeometry()
         self.projection_actor = None
+
+        # An object that can be used to create actors, such as lines, arrows, and spheres.
+        self.actor_factory = ActorFactory()
+
+        # An object that can be used to manage the highlighting of markers in the 3D viewer. Later this class could be
+        # extended to handle other marker-related functionality, such as adding and removing markers, etc.
+        self.marker_viewer = MarkerViewer(
+            renderer=self.ren,
+            static_markers=self.static_markers,
+            actor_factory=self.actor_factory,
+        )
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -606,7 +619,7 @@ class Viewer(wx.Panel):
         selected slice positions. The same pointer is also used to show the point selected from the 3D viewer by right-clicking on it.
         """
         if not self.pointer_actor:
-            actor = self.CreatePointerActor()
+            actor = self.actor_factory.CreatePointer()
 
             # Store the pointer actor.
             self.pointer_actor = actor        
@@ -925,23 +938,23 @@ class Viewer(wx.Panel):
 
         # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
         if marker_type == MarkerType.FIDUCIAL:
-            actor = self.CreateBallActor(position_flipped, colour, size)
+            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
 
         # For 'landmark' type markers, create a ball.
         elif marker_type == MarkerType.LANDMARK:
-            actor = self.CreateBallActor(position_flipped, colour, size)
+            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
 
         # For 'brain target' type markers, create an arrow.
         elif marker_type == MarkerType.BRAIN_TARGET:
-            actor = self.CreateArrowActor(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
+            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
 
         # For 'coil target' type markers, create a crosshair.
         elif marker_type == MarkerType.COIL_TARGET:
-            actor = self.CreateAimActor(position_flipped, orientation, colour)
+            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
 
         # For 'electric field target' type markers, create an arrow.
         elif marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
-            actor = self.CreateArrowActor(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
+            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
             if cortex_marker[0] is not None:
                 Publisher.sendMessage('Add cortex marker actor', position_orientation=cortex_marker, marker_id=marker_id)
 
@@ -1040,82 +1053,11 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def HighlightMarker(self, index):
-        # Return early in case the index is out of bounds.
-        if index >= len(self.static_markers) or index < 0:
-            return
-
-        marker = self.static_markers[index]
-
-        # Unpack relevant fields from the marker.
-        actor = marker["actor"]
-        marker_type = marker["marker_type"]
-        position = marker["position"]
-        orientation = marker["orientation"]
-
-        # Use color red for highlighting.
-        vtk_colors = vtkNamedColors()
-        colour = vtk_colors.GetColor3d('Red')
-
-        # Change the color of the marker.
-        actor.GetProperty().SetColor(colour)
-
-        # If the marker is a coil target, project it to the brain surface and create a torus actor to represent the projection.
-        if marker_type == MarkerType.COIL_TARGET:
-            startpoint = position[:]
-            endpoint = position[:]
-
-            # Move the endpoint 30 mm in the direction of the orientation.
-            dx = 0
-            dy = 0
-            dz = -30
-            delta_translation = [dx, dy, dz]
-            delta_orientation = [0, 0, 0]
-
-            m_direction = dco.coordinates_to_transformation_matrix(
-                position=delta_translation,
-                orientation=delta_orientation,
-                axes='sxyz',
-            )
-            m_marker = dco.coordinates_to_transformation_matrix(
-                position=position,
-                orientation=orientation,
-                axes='sxyz',
-            )
-            m_endpoint = m_marker @ m_direction
-
-            endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
-
-            actor = self.CreateLineBetweenPointsActor(startpoint, endpoint, colour=colour)
-
-            self.ren.AddActor(actor)
-            self.projection_actor = actor
-
-        # Store the index of the highlighted marker.
-        self.highlighted_marker_index = index
-
+        self.marker_viewer.HighlightMarker(index)
         self.UpdateRender()
 
     def UnhighlightMarker(self):
-        # Return early in case there is no highlighted marker. This shouldn't happen, though.
-        if self.highlighted_marker_index is None:
-            return
-
-        idx = self.highlighted_marker_index
-
-        actor = self.static_markers[idx]["actor"]
-        colour = self.static_markers[idx]["colour"]
-
-        # Change the color of the marker back to its original color.
-        actor.GetProperty().SetColor(colour)
-
-        # Remove the projection actor if it exists.
-        if self.projection_actor:
-            self.ren.RemoveActor(self.projection_actor)
-            self.projection_actor = None
-
-        # Reset the highlighted marker index.
-        self.highlighted_marker_index = None
-
+        self.marker_viewer.UnhighlightMarker()
         self.UpdateRender()
 
     def SetNewColor(self, index, color):
@@ -1204,30 +1146,30 @@ class Viewer(wx.Panel):
             obj_pitch.RotateY(90)
             obj_pitch.RotateZ(180)
 
-            arrow_roll_z1 = self.CreateArrowBetweenPointsActor([-50, -35, 12], [-50, -35, 50])
+            arrow_roll_z1 = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
             arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
             arrow_roll_z1.RotateX(-60)
             arrow_roll_z1.RotateZ(180)
-            arrow_roll_z2 = self.CreateArrowBetweenPointsActor([50, -35, 0], [50, -35, -50])
+            arrow_roll_z2 = self.actor_factory.CreateArrow([50, -35, 0], [50, -35, -50])
             arrow_roll_z2.GetProperty().SetColor(1, 1, 0)
             arrow_roll_z2.RotateX(-60)
             arrow_roll_z2.RotateZ(180)
 
-            arrow_yaw_y1 = self.CreateArrowBetweenPointsActor([-50, -35, 0], [-50, 5, 0])
+            arrow_yaw_y1 = self.actor_factory.CreateArrow([-50, -35, 0], [-50, 5, 0])
             arrow_yaw_y1.GetProperty().SetColor(0, 1, 0)
             arrow_yaw_y1.SetPosition(0, -150, 0)
             arrow_yaw_y1.RotateZ(180)
-            arrow_yaw_y2 = self.CreateArrowBetweenPointsActor([50, -35, 0], [50, -75, 0])
+            arrow_yaw_y2 = self.actor_factory.CreateArrow([50, -35, 0], [50, -75, 0])
             arrow_yaw_y2.GetProperty().SetColor(0, 1, 0)
             arrow_yaw_y2.SetPosition(0, -150, 0)
             arrow_yaw_y2.RotateZ(180)
 
-            arrow_pitch_x1 = self.CreateArrowBetweenPointsActor([0, 65, 38], [0, 65, 68])
+            arrow_pitch_x1 = self.actor_factory.CreateArrow([0, 65, 38], [0, 65, 68])
             arrow_pitch_x1.GetProperty().SetColor(1, 0, 0)
             arrow_pitch_x1.SetPosition(0, -300, 0)
             arrow_pitch_x1.RotateY(90)
             arrow_pitch_x1.RotateZ(180)
-            arrow_pitch_x2 = self.CreateArrowBetweenPointsActor([0, -55, 5], [0, -55, -30])
+            arrow_pitch_x2 = self.actor_factory.CreateArrow([0, -55, 5], [0, -55, -30])
             arrow_pitch_x2.GetProperty().SetColor(1, 0, 0)
             arrow_pitch_x2.SetPosition(0, -300, 0)
             arrow_pitch_x2.RotateY(90)
@@ -1324,12 +1266,12 @@ class Viewer(wx.Panel):
 
             offset = 5
 
-            arrow_roll_x1 = self.CreateArrowBetweenPointsActor([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
+            arrow_roll_x1 = self.actor_factory.CreateArrow([-55, -35, offset], [-55, -35, offset - coordrx_arrow])
             arrow_roll_x1.RotateX(-60)
             arrow_roll_x1.RotateZ(180)
             arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
 
-            arrow_roll_x2 = self.CreateArrowBetweenPointsActor([55, -35, offset], [55, -35, offset + coordrx_arrow])
+            arrow_roll_x2 = self.actor_factory.CreateArrow([55, -35, offset], [55, -35, offset + coordrx_arrow])
             arrow_roll_x2.RotateX(-60)
             arrow_roll_x2.RotateZ(180)
             arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
@@ -1345,12 +1287,12 @@ class Viewer(wx.Panel):
 
             offset = -35
 
-            arrow_yaw_z1 = self.CreateArrowBetweenPointsActor([-55, offset, 0], [-55, offset - coordrz_arrow, 0])
+            arrow_yaw_z1 = self.actor_factory.CreateArrow([-55, offset, 0], [-55, offset - coordrz_arrow, 0])
             arrow_yaw_z1.SetPosition(0, -150, 0)
             arrow_yaw_z1.RotateZ(180)
             arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
 
-            arrow_yaw_z2 = self.CreateArrowBetweenPointsActor([55, offset, 0], [55, offset + coordrz_arrow, 0])
+            arrow_yaw_z2 = self.actor_factory.CreateArrow([55, offset, 0], [55, offset + coordrz_arrow, 0])
             arrow_yaw_z2.SetPosition(0, -150, 0)
             arrow_yaw_z2.RotateZ(180)
             arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
@@ -1365,14 +1307,14 @@ class Viewer(wx.Panel):
                 self.obj_actor_list[2].GetProperty().SetColor(1, 1, 1)
 
             offset = 38
-            arrow_pitch_y1 = self.CreateArrowBetweenPointsActor([0, 65, offset], [0, 65, offset + coordry_arrow])
+            arrow_pitch_y1 = self.actor_factory.CreateArrow([0, 65, offset], [0, 65, offset + coordry_arrow])
             arrow_pitch_y1.SetPosition(0, -300, 0)
             arrow_pitch_y1.RotateY(90)
             arrow_pitch_y1.RotateZ(180)
             arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
 
             offset = 5
-            arrow_pitch_y2 = self.CreateArrowBetweenPointsActor([0, -55, offset], [0, -55, offset - coordry_arrow])
+            arrow_pitch_y2 = self.actor_factory.CreateArrow([0, -55, offset], [0, -55, offset - coordry_arrow])
             arrow_pitch_y2.SetPosition(0, -300, 0)
             arrow_pitch_y2.RotateY(90)
             arrow_pitch_y2.RotateZ(180)
@@ -1435,7 +1377,7 @@ class Viewer(wx.Panel):
 
         vtk_colors = vtkNamedColors()
 
-        aim_actor = self.CreateAimActor(self.target_coord[:3], self.target_coord[3:], vtk_colors.GetColor3d('DarkOrange'))
+        aim_actor = self.actor_factory.CreateAim(self.target_coord[:3], self.target_coord[3:], vtk_colors.GetColor3d('DarkOrange'))
 
         # Store the currently active aim actor.
         self.active_aim_actor = aim_actor
@@ -1495,23 +1437,6 @@ class Viewer(wx.Panel):
         self.ren.AddActor(tdist.actor)
         self.tdist = tdist
 
-    def CreateLineBetweenPointsActor(self, startpoint, endpoint, colour=(1, 1, 1)):
-        # Create a line source.
-        line_source = vtkLineSource()
-        line_source.SetPoint1(startpoint)
-        line_source.SetPoint2(endpoint)
-
-        # Create a mapper.
-        line_mapper = vtkPolyDataMapper()
-        line_mapper.SetInputConnection(line_source.GetOutputPort())
-
-        # Create an actor.
-        line_actor = vtkActor()
-        line_actor.GetProperty().SetColor(colour)
-        line_actor.SetMapper(line_mapper)
-
-        return line_actor
-
     def DisableCoilTracker(self):
         try:
             self.ren.SetViewport(0, 0, 1, 1)
@@ -1523,60 +1448,6 @@ class Viewer(wx.Panel):
                 self.UpdateRender()
         except:
             None
-
-    def CreateArrowBetweenPointsActor(self, startPoint, endPoint):
-        # Compute a basis
-        normalizedX = [0 for i in range(3)]
-        normalizedY = [0 for i in range(3)]
-        normalizedZ = [0 for i in range(3)]
-
-        # The X axis is a vector from start to end
-        math = vtkMath()
-        math.Subtract(endPoint, startPoint, normalizedX)
-        length = math.Norm(normalizedX)
-        math.Normalize(normalizedX)
-
-        # The Z axis is an arbitrary vector cross X
-        arbitrary = [0 for i in range(3)]
-        arbitrary[0] = random.uniform(-10, 10)
-        arbitrary[1] = random.uniform(-10, 10)
-        arbitrary[2] = random.uniform(-10, 10)
-        math.Cross(normalizedX, arbitrary, normalizedZ)
-        math.Normalize(normalizedZ)
-
-        # The Y axis is Z cross X
-        math.Cross(normalizedZ, normalizedX, normalizedY)
-        matrix = vtkMatrix4x4()
-
-        # Create the direction cosine matrix
-        matrix.Identity()
-        for i in range(3):
-            matrix.SetElement(i, 0, normalizedX[i])
-            matrix.SetElement(i, 1, normalizedY[i])
-            matrix.SetElement(i, 2, normalizedZ[i])
-
-        # Apply the transforms arrow 1
-        transform_1 = vtkTransform()
-        transform_1.Translate(startPoint)
-        transform_1.Concatenate(matrix)
-        transform_1.Scale(length, length, length)
-        # source
-        arrowSource1 = vtkArrowSource()
-        arrowSource1.SetTipResolution(50)
-        # Create a mapper and actor
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(arrowSource1.GetOutputPort())
-        # Transform the polydata
-        transformPD = vtkTransformPolyDataFilter()
-        transformPD.SetTransform(transform_1)
-        transformPD.SetInputConnection(arrowSource1.GetOutputPort())
-        # mapper transform
-        mapper.SetInputConnection(transformPD.GetOutputPort())
-        # actor
-        actor_arrow = vtkActor()
-        actor_arrow.SetMapper(mapper)
-
-        return actor_arrow
 
     def CenterOfMass(self):
         barycenter = [0.0, 0.0, 0.0]
@@ -1652,34 +1523,6 @@ class Viewer(wx.Panel):
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
 
-    def CreatePointerActor(self):
-        """
-        Create a sphere on volume visualization to reference center of
-        cross in slice planes.
-        The sphere's radius will be scale times bigger than the average of
-        image spacing values.
-        """
-        vtk_colors = vtkNamedColors()
-        color = vtk_colors.GetColor3d('DarkRed')
-
-        scale = 2.0
-        proj = prj.Project()
-        s = proj.spacing
-        r = (s[0] + s[1] + s[2]) / 3.0 * scale
-
-        ball_source = vtkSphereSource()
-        ball_source.SetRadius(r)
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(ball_source.GetOutputPort())
-
-        pointer_actor = vtkActor()
-        pointer_actor.SetMapper(mapper)
-        pointer_actor.GetProperty().SetColor(color)
-        pointer_actor.PickableOff()
-        
-        return pointer_actor
-
     def UpdatePointer(self, position):
         """
         When not navigating, update the position of the pointer sphere. It is done
@@ -1741,17 +1584,17 @@ class Viewer(wx.Panel):
         self.obj_actor.GetProperty().SetOpacity(.4)
         self.obj_actor.SetVisibility(0)
 
-        self.x_actor = self.add_line([0., 0., 0.], [1., 0., 0.], color=[.0, .0, 1.0])
-        self.y_actor = self.add_line([0., 0., 0.], [0., 1., 0.], color=[.0, 1.0, .0])
-        self.z_actor = self.add_line([0., 0., 0.], [0., 0., 1.], color=[1.0, .0, .0])
+        self.x_actor = self.actor_factory.CreateLine([0., 0., 0.], [1., 0., 0.], colour=[.0, .0, 1.0])
+        self.y_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
+        self.z_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
 
-        self.obj_projection_arrow_actor = self.CreateArrowActor(
+        self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
             position=[0., 0., 0.],
             orientation=[0., 0., 0.],
             colour=vtk_colors.GetColor3d('Red'),
             size=8
         )
-        self.object_orientation_torus_actor = self.CreateTorusActor(
+        self.object_orientation_torus_actor = self.actor_factory.CreateTorus(
             position=[0., 0., 0.],
             orientation=[0., 0., 0.],
             colour=vtk_colors.GetColor3d('Red')
@@ -1777,122 +1620,6 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
-    def AddObjectOrientationDisk(self, position, orientation, color=[0.0, 0.0, 1.0]):
-        # Create a disk to show target
-        disk = vtkDiskSource()
-        disk.SetInnerRadius(5)
-        disk.SetOuterRadius(15)
-        disk.SetRadialResolution(100)
-        disk.SetCircumferentialResolution(100)
-        disk.Update()
-
-        disk_mapper = vtkPolyDataMapper()
-        disk_mapper.SetInputData(disk.GetOutput())
-        disk_actor = vtkActor()
-        disk_actor.SetMapper(disk_mapper)
-        disk_actor.GetProperty().SetColor(color)
-        disk_actor.GetProperty().SetOpacity(1)
-        disk_actor.SetPosition(position)
-        disk_actor.SetOrientation(orientation)
-
-        return disk_actor
-
-    def CreateTorusActor(self, position, orientation, colour=[0.0, 0.0, 1.0]):
-        torus = vtkParametricTorus()
-        torus.SetRingRadius(2)
-        torus.SetCrossSectionRadius(1)
-
-        torusSource = vtkParametricFunctionSource()
-        torusSource.SetParametricFunction(torus)
-        torusSource.Update()
-
-        torusMapper = vtkPolyDataMapper()
-        torusMapper.SetInputConnection(torusSource.GetOutputPort())
-        torusMapper.SetScalarRange(0, 360)
-
-        torusActor = vtkActor()
-        torusActor.SetMapper(torusMapper)
-        torusActor.GetProperty().SetDiffuseColor(colour)
-        torusActor.SetPosition(position)
-        torusActor.SetOrientation(orientation)
-
-        return torusActor
-
-    def CreateBallActor(self, position, colour=[0.0, 0.0, 1.0], size=2):
-        ball_ref = vtkSphereSource()
-        ball_ref.SetRadius(size)
-        ball_ref.SetCenter(position)
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(ball_ref.GetOutputPort())
-
-        prop = vtkProperty()
-        prop.SetColor(colour)
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.SetProperty(prop)
-        actor.PickableOff()
-
-        return actor
-
-    def CreateArrowActor(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
-        arrow = vtkArrowSource()
-        arrow.SetArrowOriginToCenter()
-        arrow.SetTipResolution(40)
-        arrow.SetShaftResolution(40)
-        arrow.SetShaftRadius(0.05)
-        arrow.SetTipRadius(0.15)
-        arrow.SetTipLength(0.35)
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(arrow.GetOutputPort())
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(colour)
-        actor.GetProperty().SetLineWidth(5)
-        actor.AddPosition(0, 0, 0)
-        actor.SetScale(size)
-
-        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
-        actor.SetUserMatrix(m_img_vtk)
-
-        return actor
-
-    def CreateAimActor(self, direction, orientation, colour=[1.0, 1.0, 0.0]):
-        """
-        Create the aim (crosshair) actor.
-        """
-        filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
-
-        reader = vtkSTLReader()
-        reader.SetFileName(filename)
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(reader.GetOutputPort())
-
-        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
-
-        # Transform the polydata
-        transform = vtkTransform()
-        transform.SetMatrix(m_img_vtk)
-        transformPD = vtkTransformPolyDataFilter()
-        transformPD.SetTransform(transform)
-        transformPD.SetInputConnection(reader.GetOutputPort())
-        transformPD.Update()
-        # mapper transform
-        mapper.SetInputConnection(transformPD.GetOutputPort())
-
-        aim_actor = vtkActor()
-        aim_actor.SetMapper(mapper)
-        aim_actor.GetProperty().SetDiffuseColor(colour)
-        aim_actor.GetProperty().SetSpecular(.2)
-        aim_actor.GetProperty().SetSpecularPower(100)
-        aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
-
-        return aim_actor
-
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
         # m_img[:3, 1] is from left to right direction of the coil
@@ -1909,21 +1636,6 @@ class Viewer(wx.Panel):
         coil_dir = np.array([coord[3], coord[4], coord[5]])
 
         return coil_dir, p2_norm, coil_norm, p1
-
-
-    def add_line(self, p1, p2, color=[0.0, 0.0, 1.0]):
-        line = vtkLineSource()
-        line.SetPoint1(p1)
-        line.SetPoint2(p2)
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(line.GetOutputPort())
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(color)
-
-        return actor
 
     def AddPeeledSurface(self, flag, actor):
         if self.actor_peel:
@@ -1983,7 +1695,7 @@ class Viewer(wx.Panel):
         self.position_max = self.efield_mesh.GetPoint(self.Idmax)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
         self.max_efield_vector= self.DrawVectors(self.position_max, orientation, vtk_colors.GetColor3d('Red'))
-        self.ball_max_vector = self.CreateBallActor(self.position_max, vtk_colors.GetColor3d('Red'), 0.5)
+        self.ball_max_vector = self.actor_factory.CreateBall(self.position_max, vtk_colors.GetColor3d('Red'), 0.5)
         self.ren.AddActor(self.max_efield_vector)
         self.ren.AddActor(self.ball_max_vector)
 
@@ -1996,7 +1708,7 @@ class Viewer(wx.Panel):
         [self.cell_id_indexes_above_threshold, self.positions_above_threshold]= self.GetIndexesAboveThreshold(self.efield_threshold)
         self.center_gravity_position = self.FindCenterofGravity(self.cell_id_indexes_above_threshold, self.positions_above_threshold)
         self.GoGEfieldVector = self.DrawVectors(self.center_gravity_position, orientation, vtk_colors.GetColor3d('Blue'))
-        self.ball_GoGEfieldVector = self.CreateBallActor(self.center_gravity_position, vtk_colors.GetColor3d('Blue'), 0.5)
+        self.ball_GoGEfieldVector = self.actor_factory.CreateBall(self.center_gravity_position, vtk_colors.GetColor3d('Blue'), 0.5)
         self.ren.AddActor(self.GoGEfieldVector)
         self.ren.AddActor(self.ball_GoGEfieldVector)
 
@@ -2694,9 +2406,6 @@ class Viewer(wx.Panel):
         vtk_colors = vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtkIdList()
-        #for debugging
-        #self.x_actor = self.add_line(p1,p2,vtk_colors.GetColor3d('Blue'))
-        #self.ren.AddActor(self.x_actor) # remove comment for testing
         locator.FindCellsAlongLine(p1, p2, .001, intersectingCellIds)
         return intersectingCellIds
 
@@ -2721,8 +2430,8 @@ class Viewer(wx.Panel):
                     #print('the angle:', angle)
 
                     # For debugging
-                    self.y_actor = self.add_line(closestPoint, closestPoint + 75 * pointnormal,
-                                                         vtk_colors.GetColor3d('Yellow'))
+                    self.y_actor = self.actor_factory.CreateLine(closestPoint, closestPoint + 75 * pointnormal,
+                                                                     vtk_colors.GetColor3d('Yellow'))
 
                     #self.ren.AddActor(self.y_actor)# remove comment for testing
 
