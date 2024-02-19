@@ -290,6 +290,9 @@ class Viewer(wx.Panel):
         # and the values are the actors of the surfaces.
         self.surfaces = {}
 
+        self.surface_geometry = SurfaceGeometry()
+        self.projection_actor = None
+
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
         self.colors_init = vtkUnsignedCharArray()
@@ -949,7 +952,7 @@ class Viewer(wx.Panel):
         self.static_markers.append(
             {
                 "actor": actor,
-                "position": position,
+                "position": position_flipped,
                 "orientation": orientation,
                 "colour": colour,
                 "marker_type": marker_type,
@@ -1046,13 +1049,46 @@ class Viewer(wx.Panel):
         # Unpack relevant fields from the marker.
         actor = marker["actor"]
         marker_type = marker["marker_type"]
+        position = marker["position"]
+        orientation = marker["orientation"]
 
         # Use color red for highlighting.
         vtk_colors = vtkNamedColors()
-        color = vtk_colors.GetColor3d('Red')
+        colour = vtk_colors.GetColor3d('Red')
 
         # Change the color of the marker.
-        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetColor(colour)
+
+        # If the marker is a coil target, project it to the brain surface and create a torus actor to represent the projection.
+        if marker_type == MarkerType.COIL_TARGET:
+            startpoint = position[:]
+            endpoint = position[:]
+
+            # Move the endpoint 30 mm in the direction of the orientation.
+            dx = 0
+            dy = 0
+            dz = -30
+            delta_translation = [dx, dy, dz]
+            delta_orientation = [0, 0, 0]
+
+            m_direction = dco.coordinates_to_transformation_matrix(
+                position=delta_translation,
+                orientation=delta_orientation,
+                axes='sxyz',
+            )
+            m_marker = dco.coordinates_to_transformation_matrix(
+                position=position,
+                orientation=orientation,
+                axes='sxyz',
+            )
+            m_endpoint = m_marker @ m_direction
+
+            endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
+
+            actor = self.CreateLineBetweenPointsActor(startpoint, endpoint, colour=colour)
+
+            self.ren.AddActor(actor)
+            self.projection_actor = actor
 
         # Store the index of the highlighted marker.
         self.highlighted_marker_index = index
@@ -1071,6 +1107,11 @@ class Viewer(wx.Panel):
 
         # Change the color of the marker back to its original color.
         actor.GetProperty().SetColor(colour)
+
+        # Remove the projection actor if it exists.
+        if self.projection_actor:
+            self.ren.RemoveActor(self.projection_actor)
+            self.projection_actor = None
 
         # Reset the highlighted marker index.
         self.highlighted_marker_index = None
@@ -1454,19 +1495,22 @@ class Viewer(wx.Panel):
         self.ren.AddActor(tdist.actor)
         self.tdist = tdist
 
-
-    def AddLine(self):
+    def CreateLineBetweenPointsActor(self, startpoint, endpoint, colour=(1, 1, 1)):
+        # Create a line source.
         line_source = vtkLineSource()
-        line_source.SetPoint1(0, 0, 0)
-        line_source.SetPoint2(100, 100, 100)
+        line_source.SetPoint1(startpoint)
+        line_source.SetPoint2(endpoint)
 
+        # Create a mapper.
         line_mapper = vtkPolyDataMapper()
         line_mapper.SetInputConnection(line_source.GetOutputPort())
 
+        # Create an actor.
         line_actor = vtkActor()
+        line_actor.GetProperty().SetColor(colour)
         line_actor.SetMapper(line_mapper)
 
-        self.ren.AddActor(line_actor)
+        return line_actor
 
     def DisableCoilTracker(self):
         try:
@@ -1753,7 +1797,7 @@ class Viewer(wx.Panel):
 
         return disk_actor
 
-    def CreateTorusActor(self, position, orientation, color=[0.0, 0.0, 1.0]):
+    def CreateTorusActor(self, position, orientation, colour=[0.0, 0.0, 1.0]):
         torus = vtkParametricTorus()
         torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
@@ -1768,7 +1812,7 @@ class Viewer(wx.Panel):
 
         torusActor = vtkActor()
         torusActor.SetMapper(torusMapper)
-        torusActor.GetProperty().SetDiffuseColor(color)
+        torusActor.GetProperty().SetDiffuseColor(colour)
         torusActor.SetPosition(position)
         torusActor.SetOrientation(orientation)
 
