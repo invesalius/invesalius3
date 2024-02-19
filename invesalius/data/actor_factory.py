@@ -229,3 +229,20 @@ class ActorFactory(object):
         torusActor.SetOrientation(orientation)
 
         return torusActor
+
+    # Manipulate actors
+
+    # XXX: Do not use, does not seem to work correctly.
+    def UpdatePositionAndOrientation(self, actor, new_position, new_orientation):
+        """
+        Update the position and orientation of an existing actor.
+        """
+        # Create the transformation matrix for the new position and orientation.
+        m_img_vtk = self.CreateVTKObjectMatrix(new_position, new_orientation)
+
+        # Create a vtkTransform and apply the new matrix.
+        transform = vtk.vtkTransform()
+        transform.SetMatrix(m_img_vtk)
+
+        # Update the actor's transformation matrix.
+        actor.SetUserTransform(transform)

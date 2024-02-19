@@ -1861,6 +1861,9 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
+        
+        # Intercept key-down events to have custom behaviour for the arrow keys (moving markers).
+        marker_list_ctrl.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
         self.marker_list_ctrl = marker_list_ctrl
 
@@ -2206,6 +2209,36 @@ class MarkersPanel(wx.Panel):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
+    def OnKeyDown(self, event):
+        keycode = event.GetKeyCode()
+
+        focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.markers[focused_marker_idx]
+
+        direction = None
+        if keycode == wx.WXK_DOWN:
+            direction = [0, -1, 0, 0, 0, 0]
+
+        elif keycode == wx.WXK_UP:
+            direction = [0, 1, 0, 0, 0, 0]
+
+        elif keycode == wx.WXK_LEFT:
+            direction = [-1, 0, 0, 0, 0, 0]
+
+        elif keycode == wx.WXK_RIGHT:
+            direction = [1, 0, 0, 0, 0, 0]
+
+        if direction is not None:
+            displacement = 5 * np.array(direction)
+            self.marker_transformator.MoveMarkerOnScalp(
+                marker=marker,
+                displacement=displacement,
+            )
+            Publisher.sendMessage('Update marker', index=focused_marker_idx, position=marker.position, orientation=marker.orientation)
+        else:
+            # Allow other key events to be processed.
+            event.Skip()
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         Publisher.sendMessage('Highlight marker', index=self.marker_list_ctrl.GetFocusedItem())
@@ -2224,7 +2257,12 @@ class MarkersPanel(wx.Panel):
         new_marker = self.markers[list_index].duplicate()
 
         # Project to the scalp.        
-        self.marker_transformator.ProjectToScalp(new_marker)
+        self.marker_transformator.ProjectToScalp(
+            marker=new_marker,
+            # We are projecting the marker that is on the brain surface; hence, project to the opposite side
+            # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
+            opposite_side=True,
+        )
 
         # Set marker type to 'coil target'.
         new_marker.marker_type = MarkerType.COIL_TARGET

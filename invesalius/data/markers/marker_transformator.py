@@ -5,6 +5,8 @@ import numpy as np
 
 from invesalius.data.markers.marker import MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
+
+import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 
 
@@ -12,20 +14,66 @@ class MarkerTransformator:
     def __init__(self):
         self.surface_geometry = SurfaceGeometry()
 
-    def ProjectToScalp(self, marker):
+    def MoveMarker(self, marker, displacement):
+        """
+        Move marker in its local coordinate system by the given displacement.
+        """
+        position = marker.position[:]
+        orientation = marker.orientation[:]
+
+        # Create transformation matrices for the marker and the displacement.
+        m_displacement = dco.coordinates_to_transformation_matrix(
+            position=displacement[:3],
+            orientation=displacement[3:],
+            axes='sxyz',
+        )
+        m_marker = dco.coordinates_to_transformation_matrix(
+            position=position,
+            orientation=orientation,
+            axes='sxyz',
+        )
+        m_marker_new = m_marker @ m_displacement
+
+        new_position, _ = dco.transformation_matrix_to_coordinates(m_marker_new, 'sxyz')
+
+        marker.position = new_position
+
+    def MoveMarkerOnScalp(self, marker, displacement):
+        """
+        Move marker in its local coordinate system by the given displacement and project it to the scalp,
+        to make it stay on the scalp surface.
+        """
+        self.MoveMarker(
+            marker=marker,
+            displacement=displacement,
+        )
+        self.ProjectToScalp(
+            marker=marker,
+            # We are projecting a marker that is already over the scalp; hence, do not project to the opposite side
+            # to keep the marker on top of the scalp.
+            opposite_side=False,
+        )
+
+    def ProjectToScalp(self, marker, opposite_side=False):
+        """
+        Project a marker to the scalp.
+
+        If opposite_side is True, the marker is projected to the other side of the scalp, compared to the original position.
+        If projecting from the brain to the scalp, this is done to avoid the marker being inside the scalp, where the normal vectors are not reliable.
+        """
         # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        closest_point, _ = self.surface_geometry.get_closest_point_on_surface('scalp', marker_position)
+        closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', marker_position)
 
-        # Move to the other side of the scalp by going towards the closest point and then a bit further.
-        # This is done to avoid the marker being inside the scalp, where the normal vectors are not reliable.
-        direction_vector = np.array(closest_point) - np.array(marker_position)
-        new_position = np.array(closest_point) + 1.1 * direction_vector
+        if opposite_side:
+            # Move to the other side of the scalp by going towards the closest point and then a bit further.
+            direction_vector = np.array(closest_point) - np.array(marker_position)
+            new_position = np.array(closest_point) + 1.1 * direction_vector
 
-        # Re-compute the closest point and normal, but now for the new position.
-        closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', new_position)
+            # Re-compute the closest point and normal, but now for the new position.
+            closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', new_position)
 
         # The reference direction vector that we want to align the normal to.
         #
