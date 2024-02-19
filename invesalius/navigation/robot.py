@@ -42,7 +42,7 @@ class Robot(metaclass=Singleton):
 
         self.enabled_in_gui = False
 
-        self.robot_status = None
+        self.robot_status = False
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
