@@ -2215,25 +2215,52 @@ class MarkersPanel(wx.Panel):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[focused_marker_idx]
 
+        # Keycodes for plus and minus signs.
+        WXK_PLUS = 43
+        WXK_PLUS_NUMPAD = 388
+        WXK_MINUS = 45
+        WXK_MINUS_NUMPAD = 390
+
         direction = None
         if keycode == wx.WXK_DOWN:
             direction = [0, -1, 0, 0, 0, 0]
+            stay_on_scalp = True
 
         elif keycode == wx.WXK_UP:
             direction = [0, 1, 0, 0, 0, 0]
+            stay_on_scalp = True
 
         elif keycode == wx.WXK_LEFT:
             direction = [-1, 0, 0, 0, 0, 0]
+            stay_on_scalp = True
 
         elif keycode == wx.WXK_RIGHT:
             direction = [1, 0, 0, 0, 0, 0]
+            stay_on_scalp = True
+        
+        elif keycode == WXK_PLUS or keycode == WXK_PLUS_NUMPAD:
+            print("plus")
+            direction = [0, 0, 1, 0, 0, 0]
+            stay_on_scalp = False
+            
+        elif keycode == WXK_MINUS or keycode == WXK_MINUS_NUMPAD:
+            print("minus")
+            direction = [0, 0, -1, 0, 0, 0]
+            stay_on_scalp = False
 
         if direction is not None:
             displacement = 1 * np.array(direction)
-            self.marker_transformator.MoveMarkerOnScalp(
-                marker=marker,
-                displacement=displacement,
-            )
+            if stay_on_scalp:
+                self.marker_transformator.MoveMarkerOnScalp(
+                    marker=marker,
+                    displacement=displacement,
+                )
+            else:
+                self.marker_transformator.MoveMarker(
+                    marker=marker,
+                    displacement=displacement,
+                )
+
             Publisher.sendMessage('Update marker', index=focused_marker_idx, position=marker.position, orientation=marker.orientation)
         else:
             # Allow other key events to be processed.
