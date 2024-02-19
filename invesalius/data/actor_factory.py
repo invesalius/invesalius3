@@ -52,6 +52,29 @@ class ActorFactory(object):
 
         return line_actor
 
+    def CreateTube(self, startpoint, endpoint, colour=(1, 1, 1), width=1.5):
+        # Create a line source.
+        line_source = vtk.vtkLineSource()
+        line_source.SetPoint1(startpoint)
+        line_source.SetPoint2(endpoint)
+
+        # Apply a tube filter to create a thick line (tube).
+        tube_filter = vtk.vtkTubeFilter()
+        tube_filter.SetInputConnection(line_source.GetOutputPort())
+        tube_filter.SetRadius(width)
+        tube_filter.SetNumberOfSides(12)
+
+        # Create a mapper.
+        line_mapper = vtk.vtkPolyDataMapper()
+        line_mapper.SetInputConnection(tube_filter.GetOutputPort())
+
+        # Create an actor.
+        line_actor = vtk.vtkActor()
+        line_actor.GetProperty().SetColor(colour)
+        line_actor.SetMapper(line_mapper)
+
+        return line_actor
+
     def CreateArrow(self, startPoint, endPoint):
         # Compute a basis
         normalizedX = [0 for i in range(3)]

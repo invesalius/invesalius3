@@ -68,7 +68,7 @@ class MarkerViewer:
 
             endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
 
-            actor = self.actor_factory.CreateLine(startpoint, endpoint, colour=colour)
+            actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=colour)
 
             self.renderer.AddActor(actor)
 
