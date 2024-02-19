@@ -43,16 +43,27 @@ class MarkerTransformator:
         Move marker in its local coordinate system by the given displacement and project it to the scalp,
         to make it stay on the scalp surface.
         """
-        self.MoveMarker(
-            marker=marker,
-            displacement=displacement,
-        )
-        self.ProjectToScalp(
-            marker=marker,
-            # We are projecting a marker that is already over the scalp; hence, do not project to the opposite side
-            # to keep the marker on top of the scalp.
-            opposite_side=False,
-        )
+        desired_distance = np.linalg.norm(displacement)
+
+        distance = None
+        scale = 1
+        while distance is None or distance < desired_distance:
+            old_position = marker.position
+
+            scaled_displacement = scale * np.array(displacement)
+            self.MoveMarker(
+                marker=marker,
+                displacement=scaled_displacement,
+            )
+            self.ProjectToScalp(
+                marker=marker,
+                # We are projecting a marker that is already over the scalp; hence, do not project to the opposite side
+                # to keep the marker on top of the scalp.
+                opposite_side=False,
+            )
+
+            distance = np.linalg.norm(np.array(marker.position) - np.array(old_position))
+            scale += 1
 
     def ProjectToScalp(self, marker, opposite_side=False):
         """
@@ -65,7 +76,7 @@ class MarkerTransformator:
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', marker_position)
+        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface('scalp', marker_position)
 
         if opposite_side:
             # Move to the other side of the scalp by going towards the closest point and then a bit further.
@@ -73,7 +84,7 @@ class MarkerTransformator:
             new_position = np.array(closest_point) + 1.1 * direction_vector
 
             # Re-compute the closest point and normal, but now for the new position.
-            closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', new_position)
+            closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface('scalp', new_position)
 
         # The reference direction vector that we want to align the normal to.
         #
