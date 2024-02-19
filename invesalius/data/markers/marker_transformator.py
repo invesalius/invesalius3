@@ -17,7 +17,15 @@ class MarkerTransformator:
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', marker_position)
+        closest_point, _ = self.surface_geometry.get_closest_point_on_surface('scalp', marker_position)
+
+        # Move to the other side of the scalp by going towards the closest point and then a bit further.
+        # This is done to avoid the marker being inside the scalp, where the normal vectors are not reliable.
+        direction_vector = np.array(closest_point) - np.array(marker_position)
+        new_position = np.array(closest_point) + 1.1 * direction_vector
+
+        # Re-compute the closest point and normal, but now for the new position.
+        closest_point, closest_normal = self.surface_geometry.get_closest_point_on_surface('scalp', new_position)
 
         # The reference direction vector that we want to align the normal to.
         #
