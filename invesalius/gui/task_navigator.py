@@ -339,10 +339,7 @@ class InnerFoldPanel(wx.Panel):
 
         if id == self.__id_nav:
             status = self.CheckRegistration()
-            """ if not status:
-                self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
-                wx.MessageBox(_("Complete coregistration first!"), _("InVesalius 3"))
-                return """
+
         if not expanded:
             self.fold_panel.Expand(evt.GetTag())
         else:
@@ -2455,8 +2452,6 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
         Publisher.sendMessage('Update target', coord=None)
         self.efield_target_idx = None
-        #self.__delete_all_brain_targets()
-        wx.MessageBox(_("Efield target removed."), _("InVesalius 3"))
 
     def OnMenuRemoveEfieldTargetatCortex(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2468,10 +2463,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
         self.marker_list_ctrl.SetItem(idx, const.EFIELD_TARGET_COLUMN, "")
         Publisher.sendMessage('Clear efield target at cortex')
-        #self.__delete_all_brain_targets()
-        wx.MessageBox(_("Efield target at cortex removed."), _("InVesalius 3"))
         self.SaveState()
-
 
     def OnMenuRemoveTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2484,9 +2476,6 @@ class MarkersPanel(wx.Panel):
         if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
-        #self.__delete_all_brain_targets()
-        wx.MessageBox(_("Target removed."), _("InVesalius 3"))
-
         self.SaveState()
 
     def OnMenuSetColor(self, evt):
@@ -2571,8 +2560,6 @@ class MarkersPanel(wx.Panel):
 
         if self.__find_target_marker_idx() is not None:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            if evt is not None:
-                wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
             if self.robot.IsConnected():
                 Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                       target_index=None, target=None)
@@ -2614,7 +2601,6 @@ class MarkersPanel(wx.Panel):
             if self.robot.IsConnected():
                 Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                         target_index=None, target=None)
-            wx.MessageBox(_("Target deleted."), _("InVesalius 3"))
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()
