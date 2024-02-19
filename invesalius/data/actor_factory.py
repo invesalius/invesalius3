@@ -17,9 +17,9 @@ class ActorFactory(object):
     # Utilities
     
     # TODO: This is copied from viewer_volume.py, should be de-duplicated and moved to a single place.
-    def CreateVTKObjectMatrix(self, direction, orientation):
+    def CreateVTKObjectMatrix(self, position, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
-            position=direction,
+            position=position,
             orientation=orientation,
             axes='sxyz',
         )
@@ -157,7 +157,7 @@ class ActorFactory(object):
         
         return pointer_actor
 
-    def CreateArrowUsingDirection(self, direction, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+    def CreateArrowUsingDirection(self, position, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
         arrow = vtk.vtkArrowSource()
         arrow.SetArrowOriginToCenter()
         arrow.SetTipResolution(40)
@@ -176,12 +176,12 @@ class ActorFactory(object):
         actor.AddPosition(0, 0, 0)
         actor.SetScale(size)
 
-        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
+        m_img_vtk = self.CreateVTKObjectMatrix(position, orientation)
         actor.SetUserMatrix(m_img_vtk)
 
         return actor
 
-    def CreateAim(self, direction, orientation, colour=[1.0, 1.0, 0.0]):
+    def CreateAim(self, position, orientation, colour=[1.0, 1.0, 0.0]):
         """
         Create the aim (crosshair) actor.
         """
@@ -193,7 +193,7 @@ class ActorFactory(object):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
 
-        m_img_vtk = self.CreateVTKObjectMatrix(direction, orientation)
+        m_img_vtk = self.CreateVTKObjectMatrix(position, orientation)
 
         # Transform the polydata
         transform = vtk.vtkTransform()
