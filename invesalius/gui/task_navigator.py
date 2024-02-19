@@ -2236,12 +2236,10 @@ class MarkersPanel(wx.Panel):
             stay_on_scalp = True
         
         elif keycode == WXK_PLUS or keycode == WXK_PLUS_NUMPAD:
-            print("plus")
             direction = [0, 0, 1, 0, 0, 0]
             stay_on_scalp = False
             
         elif keycode == WXK_MINUS or keycode == WXK_MINUS_NUMPAD:
-            print("minus")
             direction = [0, 0, -1, 0, 0, 0]
             stay_on_scalp = False
 
@@ -2259,6 +2257,15 @@ class MarkersPanel(wx.Panel):
                 )
 
             Publisher.sendMessage('Update marker', index=focused_marker_idx, position=marker.position, orientation=marker.orientation)
+            if marker.is_target:
+                coord = marker.position + marker.orientation
+
+                # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
+                #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
+                #   subscribers of 'Update target' receive the correctly transformed coordinates.
+                coord[1] = -coord[1]
+
+                Publisher.sendMessage('Update target', coord=coord)
         else:
             # Allow other key events to be processed.
             event.Skip()
