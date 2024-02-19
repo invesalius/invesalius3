@@ -2212,6 +2212,10 @@ class MarkersPanel(wx.Panel):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[focused_marker_idx]
 
+        # Only allow moving markers of type 'coil target' using arrow keys.
+        if marker.marker_type != MarkerType.COIL_TARGET:
+            return
+
         # Keycodes for plus and minus signs.
         WXK_PLUS = 43
         WXK_PLUS_NUMPAD = 388
