@@ -1,8 +1,10 @@
 import vtk
 import numpy as np
 
-from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
+from invesalius.pubsub import pub as Publisher
+import invesalius.data.coordinates as dco
 
 
 class SurfaceGeometry(metaclass=Singleton):
@@ -37,7 +39,7 @@ class SurfaceGeometry(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
 
-    def get_closest_point_on_surface(self, surface_name, point):
+    def GetClosestPointOnSurface(self, surface_name, point):
         surface = self.surfaces[surface_name]
 
         polydata = surface['polydata']

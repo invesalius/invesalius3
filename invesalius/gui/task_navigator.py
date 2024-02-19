@@ -2229,7 +2229,7 @@ class MarkersPanel(wx.Panel):
             direction = [1, 0, 0, 0, 0, 0]
 
         if direction is not None:
-            displacement = 5 * np.array(direction)
+            displacement = 1 * np.array(direction)
             self.marker_transformator.MoveMarkerOnScalp(
                 marker=marker,
                 displacement=displacement,
