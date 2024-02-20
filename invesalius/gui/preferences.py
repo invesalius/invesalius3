@@ -211,10 +211,12 @@ class Logging(wx.Panel):
         rb_logging_level = self.rb_logging_level = wx.RadioBox(
             bsizer_logging_level.GetStaticBox(),
             -1,
-            choices=["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
+            choices=const.LOGGING_LEVEl_TYPES, #["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
             majorDimension=6,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
+        #rb_logging_level = self.rb_logging_level = wx.Choice 
+
         bsizer_logging_level.Add(rb_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         bsizer_append_log_file = wx.StaticBoxSizer(wx.VERTICAL, self, _("Append Log file"))
