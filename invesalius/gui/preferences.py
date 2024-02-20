@@ -208,23 +208,13 @@ class Logging(wx.Panel):
         bsizer_do_logging.Add(rb_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         bsizer_logging_level = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging level"))
-        '''
-        rb_logging_level = self.rb_logging_level = wx.RadioBox(
-            bsizer_logging_level.GetStaticBox(),
-            -1,
-            choices=const.LOGGING_LEVEl_TYPES, #["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
-            majorDimension=6,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-        )
-        '''
-        rb_logging_level = self.rb_logging_level = wx.Choice(
+        cb_logging_level = self.cb_logging_level = wx.Choice(
             bsizer_logging_level.GetStaticBox(),
             -1,
             choices=const.LOGGING_LEVEl_TYPES, 
-            #style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         ) 
 
-        bsizer_logging_level.Add(rb_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_logging_level.Add(cb_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         bsizer_append_log_file = wx.StaticBoxSizer(wx.VERTICAL, self, _("Append Log file"))
         rb_append_file = self.rb_append_file = wx.RadioBox(
@@ -279,7 +269,7 @@ class Logging(wx.Panel):
 
         options = {
             const.LOGGING: self.rb_logging.GetSelection(),
-            const.LOGGING_LEVEL: self.rb_logging_level.GetSelection(),
+            const.LOGGING_LEVEL: self.cb_logging_level.GetSelection(),
             const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
             const.LOGFILE: self.tc_log_file_name.GetValue(),
         }
@@ -292,7 +282,7 @@ class Logging(wx.Panel):
         logging_file = values[const.LOGFILE]
         
         self.rb_logging.SetSelection(int(logging))
-        self.rb_logging_level.SetSelection(int(logging_level))
+        self.cb_logging_level.SetSelection(int(logging_level))
         self.rb_append_file.SetSelection(int(append_log_file))
         self.tc_log_file_name.SetValue(logging_file)
 
