@@ -208,6 +208,7 @@ class Logging(wx.Panel):
         bsizer_do_logging.Add(rb_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         bsizer_logging_level = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging level"))
+        '''
         rb_logging_level = self.rb_logging_level = wx.RadioBox(
             bsizer_logging_level.GetStaticBox(),
             -1,
@@ -215,7 +216,13 @@ class Logging(wx.Panel):
             majorDimension=6,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
-        #rb_logging_level = self.rb_logging_level = wx.Choice 
+        '''
+        rb_logging_level = self.rb_logging_level = wx.Choice(
+            bsizer_logging_level.GetStaticBox(),
+            -1,
+            choices=const.LOGGING_LEVEl_TYPES, 
+            #style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        ) 
 
         bsizer_logging_level.Add(rb_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
