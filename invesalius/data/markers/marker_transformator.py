@@ -34,9 +34,10 @@ class MarkerTransformator:
         )
         m_marker_new = m_marker @ m_displacement
 
-        new_position, _ = dco.transformation_matrix_to_coordinates(m_marker_new, 'sxyz')
+        new_position, new_orientation = dco.transformation_matrix_to_coordinates(m_marker_new, 'sxyz')
 
         marker.position = new_position
+        marker.orientation = new_orientation
 
     def MoveMarkerOnScalp(self, marker, displacement):
         """
