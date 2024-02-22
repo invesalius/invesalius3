@@ -49,6 +49,7 @@ import sys
 
 from invesalius import inv_paths
 from invesalius import plugins
+from invesalius.i18n import tr as _
 
 DEFAULT_THRESH_MODE = 0
 

@@ -38,6 +38,7 @@ from invesalius import inv_paths
 
 import invesalius.session as ses
 import invesalius.constants as const
+from invesalius.i18n import tr as _
 
 class Panel(wx.Panel):
     def __init__(self, parent):

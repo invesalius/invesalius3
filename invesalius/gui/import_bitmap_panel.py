@@ -26,6 +26,9 @@ import invesalius.gui.dialogs as dlg
 import invesalius.gui.bitmap_preview_panel as bpp
 import invesalius.reader.bitmap_reader as bpr
 from invesalius.gui.dialogs import ImportBitmapParameters as dialogs
+from invesalius.i18n import tr as _
+
+
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
 
@@ -37,6 +40,7 @@ EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
 
 myEVT_SELECT_SERIE_TEXT = wx.NewEventType()
 EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
+
 
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id):

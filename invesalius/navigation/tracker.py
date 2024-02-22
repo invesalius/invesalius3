@@ -27,6 +27,7 @@ import invesalius.data.tracker_connection as tc
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 from invesalius.utils import Singleton
 
 # Only one tracker will be initialized per time. Therefore, we use

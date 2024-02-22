@@ -33,6 +33,7 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
+from invesalius.i18n import tr as _
 import invesalius.gui.task_imports as imports
 
 FPB_DEFAULT_STYLE = 2621440
@@ -179,7 +180,7 @@ class LowerTaskPanel(wx.Panel):
         image_list.Add(GetCollapsedIconBitmap())
 
         # Fold 1 - Data
-        item = fold_panel.AddFoldPanel(_("Data"), collapsed=True,
+        item = fold_panel.AddFoldPanel(_("Data"), collapsed=False,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
