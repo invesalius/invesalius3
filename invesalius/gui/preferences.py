@@ -6,6 +6,7 @@ import nibabel as nb
 import numpy as np
 import invesalius.constants as const
 import invesalius.session as ses
+import invesalius.data.log as log
 import invesalius.gui.dialogs as dlg0
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius import inv_paths
@@ -90,6 +91,7 @@ class Preferences(wx.Dialog):
         values.update(lang)
         values.update(viewer)
         values.update(logging)
+
         return values
 
     def LoadPreferences(self):
@@ -263,6 +265,7 @@ class Logging(wx.Panel):
         file_path = dlg.GetPath()
         self.tc_log_file_name.SetValue(file_path)
         dlg.Destroy()
+
         return True
 
     def GetSelection(self):

@@ -36,6 +36,7 @@ import invesalius.gui.preferences as preferences
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius.data.log as log
 import wx
 import wx.aui
 import wx.lib.popupctl as pc
@@ -651,6 +652,7 @@ class Frame(wx.Frame):
 
         if preferences_dialog.ShowModal() == wx.ID_OK:
             values = preferences_dialog.GetPreferences()
+ 
             preferences_dialog.Destroy()
 
             session = ses.Session()
@@ -679,6 +681,9 @@ class Frame(wx.Frame):
             Publisher.sendMessage('Update Slice Interpolation MenuBar')
             Publisher.sendMessage('Update Navigation Mode MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
+
+            log.configureLogging()
+
 
     def ShowAbout(self):
         """
