@@ -9,26 +9,19 @@ class MarkerViewer:
     A class for managing the highlighting of markers in the 3D viewer. Later, this class could be extended to handle other
     marker-related functionality, such as adding and removing markers, etc.
     """
-    def __init__(self, renderer, static_markers, actor_factory):
+    def __init__(self, renderer, actor_factory):
         self.renderer = renderer
-        self.static_markers = static_markers
         
         # The actor factory is used to create actor for the projection line of the coil target to the brain surface.
         self.actor_factory = actor_factory
 
-        # The index of the currently highlighted marker.
-        self.highlighted_marker_index = None
+        # The currently highlighted marker object.
+        self.highlighted_marker = None
 
         # The actor representing the projection line of the coil target to the brain surface.
         self.projection_line_actor = None
 
-    def HighlightMarker(self, index):
-        # Return early in case the index is out of bounds.
-        if index >= len(self.static_markers) or index < 0:
-            return
-
-        marker = self.static_markers[index]
-
+    def HighlightMarker(self, marker):
         # Unpack relevant fields from the marker.
         actor = marker["actor"]
         marker_type = marker["marker_type"]
@@ -75,18 +68,18 @@ class MarkerViewer:
             # Store the projection line actor so that it can be removed later.
             self.projection_line_actor = actor
 
-        # Store the index of the highlighted marker.
-        self.highlighted_marker_index = index
+        # Store the highlighted marker.
+        self.highlighted_marker = marker
 
     def UnhighlightMarker(self):
         # Return early in case there is no highlighted marker. This shouldn't happen, though.
-        if self.highlighted_marker_index is None:
+        if self.highlighted_marker is None:
             return
 
-        idx = self.highlighted_marker_index
+        marker = self.highlighted_marker
 
-        actor = self.static_markers[idx]["actor"]
-        colour = self.static_markers[idx]["colour"]
+        actor = marker["actor"]
+        colour = marker["colour"]
 
         # Change the color of the marker back to its original color.
         actor.GetProperty().SetColor(colour)
@@ -97,4 +90,4 @@ class MarkerViewer:
             self.projection_line_actor = None
 
         # Reset the highlighted marker index.
-        self.highlighted_marker_index = None
+        self.highlighted_marker = None
