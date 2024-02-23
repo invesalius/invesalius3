@@ -302,7 +302,6 @@ class Viewer(wx.Panel):
         # extended to handle other marker-related functionality, such as adding and removing markers, etc.
         self.marker_viewer = MarkerViewer(
             renderer=self.ren,
-            static_markers=self.static_markers,
             actor_factory=self.actor_factory,
         )
 
@@ -889,7 +888,7 @@ class Viewer(wx.Panel):
         """
         Set all markers, overwriting the previous markers.
         """
-        self.RemoveAllMarkers(len(self.static_markers))
+        self.RemoveAllMarkers()
 
         target_selected = False
         for marker in markers:
@@ -930,9 +929,6 @@ class Viewer(wx.Panel):
         orientation = marker.orientation
         colour = marker.colour
         size = marker.size
-
-        # TODO: Rename.
-        self.marker_id = marker_id
         
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
@@ -976,9 +972,7 @@ class Viewer(wx.Panel):
                 "marker_type": marker_type,
             }
         )
-
         self.ren.AddActor(actor)
-        self.marker_id += 1
 
     def UpdateMarker(self, index, position, orientation):
         """
@@ -1056,9 +1050,9 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def RemoveAllMarkers(self, indexes):
-        ballid = indexes
-        for i in range(0, ballid):
+    def RemoveAllMarkers(self):
+        num_of_markers = len(self.static_markers)
+        for i in range(num_of_markers):
             actor = self.static_markers[i]["actor"]
             self.ren.RemoveActor(actor)
         self.static_markers = []
@@ -1088,12 +1082,17 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(actor)
 
             del self.static_markers[i]
-            self.marker_id = self.marker_id - 1
 
         self.UpdateRender()
 
     def HighlightMarker(self, index):
-        self.marker_viewer.HighlightMarker(index)
+        # Return early in case the index is out of bounds.
+        if index >= len(self.static_markers) or index < 0:
+            return
+
+        marker = self.static_markers[index]
+
+        self.marker_viewer.HighlightMarker(marker)
         self.UpdateRender()
 
     def UnhighlightMarker(self):

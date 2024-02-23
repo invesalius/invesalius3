@@ -2591,7 +2591,7 @@ class MarkersPanel(wx.Panel):
                                       target_index=None, target=None)
 
         self.markers = []
-        Publisher.sendMessage('Remove all markers', indexes=self.marker_list_ctrl.GetItemCount())
+        Publisher.sendMessage('Remove all markers')
         self.marker_list_ctrl.DeleteAllItems()
 
         self.SaveState()
