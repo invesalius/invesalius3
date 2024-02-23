@@ -971,6 +971,7 @@ class Viewer(wx.Panel):
                 "orientation": orientation,
                 "colour": colour,
                 "marker_type": marker_type,
+                "highlighted": False,
             }
         )
         self.ren.AddActor(actor)
@@ -981,10 +982,9 @@ class Viewer(wx.Panel):
         """
         marker = self.static_markers[index]
         
-        is_highlighted = self.marker_viewer.highlighted_marker_index == index
-
         actor = marker["actor"]
         colour = marker["colour"]
+        highlighted = marker["highlighted"]
 
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
@@ -995,7 +995,7 @@ class Viewer(wx.Panel):
         #   created is of a fixed type (aim).
         new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
 
-        if is_highlighted:
+        if highlighted:
             self.marker_viewer.UnhighlightMarker()
 
         marker["actor"] = new_actor
@@ -1005,8 +1005,8 @@ class Viewer(wx.Panel):
         self.ren.RemoveActor(actor)
         self.ren.AddActor(new_actor)
 
-        if is_highlighted:
-            self.marker_viewer.HighlightMarker(index)
+        if highlighted:
+            self.marker_viewer.HighlightMarker(marker)
 
         self.UpdateRender()
 
