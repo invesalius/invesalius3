@@ -929,7 +929,8 @@ class Viewer(wx.Panel):
         orientation = marker.orientation
         colour = marker.colour
         size = marker.size
-        
+        cortex_marker = marker.cortex_position_orientation
+
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
         
