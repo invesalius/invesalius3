@@ -2242,12 +2242,18 @@ class MarkersPanel(wx.Panel):
         # Only allow moving markers of type 'coil target' using arrow keys.
         if marker.marker_type != MarkerType.COIL_TARGET:
             return
-            
-        # Keycodes for plus and minus signs.
+
+        # Keycodes for the relevant keys.
         WXK_PLUS = 43
         WXK_PLUS_NUMPAD = 388
         WXK_MINUS = 45
         WXK_MINUS_NUMPAD = 390
+
+        WXK_KEY_A = 65
+        WXK_KEY_D = 68
+        WXK_KEY_W = 87
+        WXK_KEY_S = 83
+
         WXK_PAGEUP = 366
         WXK_PAGEDOWN = 367
 
@@ -2256,16 +2262,16 @@ class MarkersPanel(wx.Panel):
 
         # Allow moving the marker in X- or Y-direction or rotating along Z-axis only if navigation is off.
         if not self.nav_status:
-            if keycode == wx.WXK_DOWN:
+            if keycode == WXK_KEY_S:
                 direction = [0, -1, 0, 0, 0, 0]
 
-            elif keycode == wx.WXK_UP:
+            elif keycode == WXK_KEY_W:
                 direction = [0, 1, 0, 0, 0, 0]
 
-            elif keycode == wx.WXK_LEFT:
+            elif keycode == WXK_KEY_A:
                 direction = [-1, 0, 0, 0, 0, 0]
 
-            elif keycode == wx.WXK_RIGHT:
+            elif keycode == WXK_KEY_D:
                 direction = [1, 0, 0, 0, 0, 0]
 
             elif keycode == WXK_PAGEUP:
