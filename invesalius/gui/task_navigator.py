@@ -1400,6 +1400,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressTrackObjectButton, 'Press track object button')
         Publisher.subscribe(self.EnableTrackObjectButton, 'Enable track object button')
 
+        Publisher.subscribe(self.PressRobotButton, 'Press robot button')
         Publisher.subscribe(self.EnableRobotButton, 'Enable robot button')
 
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
@@ -1652,9 +1653,13 @@ class ControlPanel(wx.Panel):
         self.EnableToggleButton(self.robot_button, enabled)
         self.UpdateToggleButton(self.robot_button)
 
-    def OnRobotButton(self, evt, ctrl):
-        self.UpdateToggleButton(ctrl)
-        pressed = ctrl.GetValue()
+    def PressRobotButton(self, pressed):
+        self.UpdateToggleButton(self.robot_button, pressed)
+        self.OnRobotButton()
+
+    def OnRobotButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_button)
+        pressed = self.robot_button.GetValue()
         self.robot.SetEnabledInGui(pressed)
 
     # 'Lock to coil' button
@@ -1664,13 +1669,13 @@ class ControlPanel(wx.Panel):
 
     def OnLockToCoilButton(self, evt=None, status=None):
         self.UpdateToggleButton(self.lock_to_coil_button)
-        Publisher.sendMessage('Lock to coil', enabled=self.lock_to_coil_button.GetValue())
+        pressed = self.lock_to_coil_button.GetValue()
+        Publisher.sendMessage('Lock to coil', enabled=pressed)
 
     def EnableLockToCoilButton(self, enabled):
         self.EnableToggleButton(self.lock_to_coil_button, enabled)
         self.UpdateToggleButton(self.lock_to_coil_button)
     
-
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
@@ -2333,9 +2338,9 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
-        if self.robot.IsConnected():
-            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
+        # Unpress the robot button when a new target is selected. This prevents the robot from
+        # automatically moving to the new target, making robot movement more explicit and predictable.
+        Publisher.sendMessage('Press robot button', pressed=False)
 
         self.__set_marker_as_target(idx)
 
