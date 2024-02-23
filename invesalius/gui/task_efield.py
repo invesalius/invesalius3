@@ -51,11 +51,17 @@ import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 
 from invesalius import utils
-from invesalius.net.pedal_connection import PedalConnector
+from invesalius.gui import utils as gui_utils
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
+
+HAS_PEDAL_CONNECTION = True
+try:
+    from invesalius.net.pedal_connection import PedalConnection
+except ImportError:
+    HAS_PEDAL_CONNECTION = False
 
 from invesalius import inv_paths
 
@@ -63,14 +69,14 @@ from invesalius import inv_paths
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
 
-        wx.Panel.__init__(self, parent)
-
+        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         neuronavigation_api = NeuronavigationApi()
-        pedal_connector = PedalConnector(neuronavigation_api, self)
         navigation = Navigation(
-            pedal_connector=pedal_connector,
+            pedal_connection=pedal_connection,
             neuronavigation_api=neuronavigation_api,
         )
+
+        wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self, navigation)
 

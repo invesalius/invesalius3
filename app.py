@@ -576,9 +576,9 @@ def main(connection=None, remote_host=None):
         remote_control.connect()
 
     if args.use_pedal:
-        from invesalius.net.pedal_connection import MidiPedal
+        from invesalius.net.pedal_connection import PedalConnection
 
-        MidiPedal().start()
+        PedalConnection().start()
 
     from invesalius.net.neuronavigation_api import NeuronavigationApi
 

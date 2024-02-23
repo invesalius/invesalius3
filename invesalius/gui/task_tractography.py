@@ -54,6 +54,12 @@ import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 
+HAS_PEDAL_CONNECTION = True
+try:
+    from invesalius.net.pedal_connection import PedalConnection
+except ImportError:
+    HAS_PEDAL_CONNECTION = False
+
 from invesalius import inv_paths
 
 from concurrent.futures import wait, FIRST_COMPLETED, ThreadPoolExecutor

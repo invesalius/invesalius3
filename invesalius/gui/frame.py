@@ -92,7 +92,7 @@ class Frame(wx.Frame):
         """
         Initialize frame, given its parent.
         """
-        wx.Frame.__init__(self, id=const.ID_FRAME, name='', parent=prnt,
+        wx.Frame.__init__(self, id=-1, name='', parent=prnt,
               pos=wx.Point(0, 0),
               size=wx.Size(1024, 748), #size = wx.DisplaySize(),
               style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3')

@@ -19,94 +19,18 @@
 
 import time
 from threading import Thread
-from functools import partial
 
-import wx
+import mido
 
-import invesalius.constants as const
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton, debug
+from invesalius.utils import Singleton
 
-HAS_PEDAL_CONNECTION = True
-try:
-    import mido
-except ImportError:
-    HAS_PEDAL_CONNECTION = False
-
-
-class PedalConnector:
-    """
-    Interface for using any type of pedal (midi, neuronavigation_api, keystroke)
-    """
-    def __init__(self, neuronavigation_api=None, window=None):
-
-        self.pedal_connection = MidiPedal() if HAS_PEDAL_CONNECTION else None
-        self.neuronavigation_api = neuronavigation_api
-        self.frame = None
-
-        if const.KEYSTROKE_PEDAL_ENABLED:
-            self._set_frame(window)
-            self.panel_callbacks = {}
-
-    def _set_frame(self, panel):
-        try:
-            while panel is not None and panel.GetId() != const.ID_FRAME:
-                panel = panel.GetParent()
-        except Exception as err:
-            debug("PedalConnector could not find frame: " + str(err))
-
-        self.frame = panel
-
-    def _bind_callbacks_to_panel(self, panel):
-        panel_id = panel.GetId()
-        self.panel_callbacks.update({panel_id: {}})
-
-        def OnKeyPress(evt, state):
-            key_code = evt.GetKeyCode()
-            if key_code == const.KEYSTROKE_PEDAL_KEY:
-                for name in list(self.panel_callbacks[panel_id].keys()):
-                    callback, remove_when_released = self.panel_callbacks[panel_id][name]
-                    callback(state)
-                    if remove_when_released:
-                        self.panel_callbacks[panel_id].pop(name)
-            evt.Skip()
-        panel.Bind(wx.EVT_CHAR_HOOK, partial(OnKeyPress, state=True))
-
-    def add_callback(self, name, callback, remove_when_released=False, panel=None):
-
-        if self.pedal_connection is not None:
-            self.pedal_connection.add_callback(name, callback, remove_when_released)
-
-        if self.neuronavigation_api is not None:
-            self.neuronavigation_api.add_pedal_callback(name, callback, remove_when_released)
-
-        panel = panel or self.frame
-        if panel is not None and const.KEYSTROKE_PEDAL_ENABLED:
-            panel_id = panel.GetId()
-            if panel_id not in self.panel_callbacks:
-                self._bind_callbacks_to_panel(panel)
-
-            self.panel_callbacks[panel_id].update({name: (callback, remove_when_released)})
-
-    def remove_callback(self, name, panel=None):
-
-        if self.pedal_connection is not None:
-            self.pedal_connection.remove_callback(name)
-
-        if self.neuronavigation_api is not None:
-            self.neuronavigation_api.remove_pedal_callback(name)
-
-        panel = panel or self.frame
-        if panel is not None and const.KEYSTROKE_PEDAL_ENABLED:
-            self.panel_callbacks[panel.GetId()].pop(name)
-
-
-class MidiPedal(Thread, metaclass=Singleton):
+class PedalConnection(Thread, metaclass=Singleton):
     """
     Connect to the trigger pedal via MIDI, and allow adding callbacks for the pedal
     being pressed or released.
 
-    Started by calling MidiPedal().start()
+    Started by calling PedalConnection().start()
     """
     def __init__(self):
         Thread.__init__(self)

@@ -26,7 +26,6 @@ import numpy as np
 
 import invesalius.constants as const
 import invesalius.project as prj
-import invesalius.utils as utils
 import invesalius.data.bases as db
 import invesalius.data.coregistration as dcr
 import invesalius.data.serial_port_connection as spc
@@ -157,8 +156,8 @@ class UpdateNavigationScene(threading.Thread):
 
 
 class Navigation(metaclass=Singleton):
-    def __init__(self, pedal_connector, neuronavigation_api):
-        self.pedal_connector = pedal_connector
+    def __init__(self, pedal_connection, neuronavigation_api):
+        self.pedal_connection = pedal_connection
         self.neuronavigation_api = neuronavigation_api
 
         self.correg = None
@@ -420,12 +419,20 @@ class Navigation(metaclass=Singleton):
                 jobs.start()
                 # del jobs
 
-            self.pedal_connector.add_callback('navigation', self.PedalStateChanged)
+            if self.pedal_connection is not None:
+                self.pedal_connection.add_callback(name='navigation', callback=self.PedalStateChanged)
+
+            if self.neuronavigation_api is not None:
+                self.neuronavigation_api.add_pedal_callback(name='navigation', callback=self.PedalStateChanged)
 
     def StopNavigation(self):
         self.event.set()
 
-        self.pedal_connector.remove_callback('navigation')
+        if self.pedal_connection is not None:
+            self.pedal_connection.remove_callback(name='navigation')
+
+        if self.neuronavigation_api is not None:
+            self.neuronavigation_api.remove_pedal_callback(name='navigation')
 
         self.coord_queue.clear()
         self.coord_queue.join()
