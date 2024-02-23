@@ -98,7 +98,10 @@ class PedalConnector:
 
         panel = panel or self.frame
         if panel is not None and const.KEYSTROKE_PEDAL_ENABLED:
-            self.panel_callbacks[panel.GetId()].pop(name)
+            try:
+                self.panel_callbacks[panel.GetId()].pop(name)
+            except KeyError:
+                pass
 
 
 class MidiPedal(Thread, metaclass=Singleton):
