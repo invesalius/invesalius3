@@ -71,6 +71,9 @@ class MarkerViewer:
         # Store the highlighted marker.
         self.highlighted_marker = marker
 
+        # Store the 'highlighted' status in the marker.
+        marker["highlighted"] = True
+
     def UnhighlightMarker(self):
         # Return early in case there is no highlighted marker. This shouldn't happen, though.
         if self.highlighted_marker is None:
@@ -89,5 +92,6 @@ class MarkerViewer:
             self.renderer.RemoveActor(self.projection_line_actor)
             self.projection_line_actor = None
 
-        # Reset the highlighted marker index.
+        # Reset the highlighted marker.
         self.highlighted_marker = None
+        marker["highlighted"] = False
