@@ -2281,7 +2281,7 @@ class MarkersPanel(wx.Panel):
             if stay_on_scalp:
                 self.marker_transformator.MoveMarkerOnScalp(
                     marker=marker,
-                    displacement=displacement,
+                    displacement_along_scalp_tangent=displacement,
                 )
             else:
                 self.marker_transformator.MoveMarker(
