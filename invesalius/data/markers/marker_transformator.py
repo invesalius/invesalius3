@@ -18,7 +18,10 @@ class MarkerTransformator:
         """
         Move marker in its local coordinate system by the given displacement.
         """
-        position = marker.position[:]
+        # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
+        position = list(marker.position[:])
+        position[1] = -position[1]
+
         orientation = marker.orientation[:]
 
         # Create transformation matrices for the marker and the displacement.
@@ -35,6 +38,10 @@ class MarkerTransformator:
         m_marker_new = m_marker @ m_displacement
 
         new_position, new_orientation = dco.transformation_matrix_to_coordinates(m_marker_new, 'sxyz')
+
+        # XXX: Invert back to the get to 'marker space'.
+        new_position = list(new_position)
+        new_position[1] = -new_position[1]
 
         marker.position = new_position
         marker.orientation = new_orientation
