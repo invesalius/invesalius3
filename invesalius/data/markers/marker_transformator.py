@@ -46,19 +46,32 @@ class MarkerTransformator:
         marker.position = new_position
         marker.orientation = new_orientation
 
-    def MoveMarkerOnScalp(self, marker, displacement):
+    def MoveMarkerOnScalp(self, marker, displacement_along_scalp_tangent):
         """
-        Move marker in its local coordinate system by the given displacement and project it to the scalp,
+        Move marker along scalp tangent by the given displacement and project it to the scalp,
         to make it stay on the scalp surface.
+
+        Maintain the distance to the scalp after the movement.
         """
-        desired_distance = np.linalg.norm(displacement)
+        # XXX: This should be orthogonal distance to the scalp - currently its the distance to the closest point on the scalp.
+        distance_to_scalp = self.DistanceToScalp(marker)
+
+        # Move the marker towards the scalp.
+        displacement = [0, 0, -distance_to_scalp, 0, 0, 0]
+        self.MoveMarker(
+            marker=marker,
+            displacement=displacement,
+        )
+
+        # Move the marker along the scalp tangent by the desired displacement.
+        desired_distance_along_scalp_tangent = np.linalg.norm(displacement_along_scalp_tangent)
 
         distance = None
         scale = 1
-        while distance is None or distance < desired_distance:
+        while distance is None or distance < desired_distance_along_scalp_tangent:
             old_position = marker.position
 
-            scaled_displacement = scale * np.array(displacement)
+            scaled_displacement = scale * np.array(displacement_along_scalp_tangent)
             self.MoveMarker(
                 marker=marker,
                 displacement=scaled_displacement,
@@ -76,6 +89,41 @@ class MarkerTransformator:
             # XXX: Avoid infinite loop.
             if scale >= 100:
                 break
+            
+        self.ProjectToScalp(
+            marker=marker,
+            # We are projecting a marker that is already over the scalp; hence, do not project to the opposite side
+            # to keep the marker on top of the scalp.
+            opposite_side=False,
+        )
+        # Move the marker back from the scalp by the same distance it was before the movement.
+        #
+        # XXX: This should be orthogonal distance to the scalp - currently its the distance to the closest point on the scalp.
+        #   Hence, the marker does not end up the same orthogonal distance to the scalp as it was before the movement, but instead,
+        #   usually ends up closer to the scalp. (For instance, repeated movements back and forth will eventually make the marker
+        #   end up touching the scalp). It's better that it tries to maintain the distance to the scalp that the marker had than
+        #   not doing that, so this better than nothing - but it should be fixed.
+        displacement = [0, 0, distance_to_scalp, 0, 0, 0]
+        self.MoveMarker(
+            marker=marker,
+            displacement=displacement,
+        )
+
+    def DistanceToScalp(self, marker):
+        """
+        Return the distance from the marker to the closest point on the scalp.
+
+        TODO: This would be more useful if it returned the orthogonal distance to the scalp, instead of the distance to the closest point.
+        """
+        # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
+        marker_position = list(marker.position)
+        marker_position[1] = -marker_position[1]
+
+        closest_point, _ = self.surface_geometry.GetClosestPointOnSurface('scalp', marker_position)
+
+        distance = np.linalg.norm(np.array(marker_position) - np.array(closest_point))
+
+        return distance
 
     def ProjectToScalp(self, marker, opposite_side=False):
         """
