@@ -2150,11 +2150,11 @@ class MarkersPanel(wx.Panel):
 
         menu_id.AppendSeparator()
 
-        # Show 'Set as target'/'Remove target' menu item only if the marker is a coil target.
+        # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
             if is_active_target:
-                target_menu_item = menu_id.Append(3, _('Remove target'))
-                menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveTarget, target_menu_item)
+                target_menu_item = menu_id.Append(3, _('Unset target'))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
                     brain_target_menu_item= menu_id.Append(3, _('Set brain target'))
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
@@ -2519,7 +2519,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Clear efield target at cortex')
         self.SaveState()
 
-    def OnMenuRemoveTarget(self, evt):
+    def OnMenuUnsetTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
         self.markers[idx].is_target = False
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
