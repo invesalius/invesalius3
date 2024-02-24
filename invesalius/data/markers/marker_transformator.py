@@ -73,6 +73,10 @@ class MarkerTransformator:
             distance = np.linalg.norm(np.array(marker.position) - np.array(old_position))
             scale += 1
 
+            # XXX: Avoid infinite loop.
+            if scale >= 100:
+                break
+
     def ProjectToScalp(self, marker, opposite_side=False):
         """
         Project a marker to the scalp.
