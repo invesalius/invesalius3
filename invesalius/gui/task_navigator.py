@@ -2355,6 +2355,8 @@ class MarkersPanel(wx.Panel):
 
         # Add the new marker to the marker list and render it.
         self.AddMarker(new_marker, render=True)
+        
+        self.SaveState()
 
     def OnMenuEditMarkerLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
