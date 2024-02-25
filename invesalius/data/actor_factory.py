@@ -181,14 +181,22 @@ class ActorFactory(object):
 
         return actor
 
-    def CreateAim(self, position, orientation, colour=[1.0, 1.0, 0.0]):
+    def CreateAim(self, position, orientation, colour=[1.0, 1.0, 0.0], highlight_zero_angle=True):
         """
         Create the aim (crosshair) actor.
+
+        If highlight_zero_angle is True, the aim will have have a small bump at the direction of the
+        zero angle.
         """
-        filename = os.path.join(inv_paths.OBJ_DIR, "aim.stl")
+        if highlight_zero_angle:
+            filename = "aim_with_zero_angle_highlighted.stl"
+        else:
+            filename = "aim.stl"
+
+        path = os.path.join(inv_paths.OBJ_DIR, filename)
 
         reader = vtk.vtkSTLReader()
-        reader.SetFileName(filename)
+        reader.SetFileName(path)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(reader.GetOutputPort())
