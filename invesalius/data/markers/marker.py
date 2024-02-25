@@ -12,14 +12,18 @@ class MarkerType(Enum):
 
     LANDMARK: a point of interest, e.g. a point on the brain surface.
     BRAIN_TARGET: a target point and orientation on the brain surface.
-    COIL_TARGET: a target point and orientation for the coil.
+    COIL_TARGET: a target point and orientation (= pose) of the coil.
+    COIL_POSE: a point and orientation (= pose) of the coil; otherwise similar to COIL_TARGET,
+        but created to store the coil pose after a stimulation pulse is delivered. Visualized
+        differently from COIL_TARGET.
     ELECTRIC_FIELD_TARGET: a target point and orientation for the electric field.
     """
     FIDUCIAL = 0
     LANDMARK = 1
     BRAIN_TARGET = 2
     COIL_TARGET = 3
-    ELECTRIC_FIELD_TARGET = 4
+    COIL_POSE = 4
+    ELECTRIC_FIELD_TARGET = 5
 
     @property
     def human_readable(self):
@@ -30,6 +34,7 @@ class MarkerType(Enum):
             MarkerType.LANDMARK: "Landmark",
             MarkerType.BRAIN_TARGET: "Brain Target",
             MarkerType.COIL_TARGET: "Coil Target",
+            MarkerType.COIL_POSE: "Coil pose",
             MarkerType.ELECTRIC_FIELD_TARGET: "E-Field Target",
         }
         # Return the human-readable name for the enum member.

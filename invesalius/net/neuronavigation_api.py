@@ -19,6 +19,7 @@
 
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug
+from invesalius.data.markers.marker import MarkerType
 
 import wx
 
@@ -252,4 +253,4 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def stimulation_pulse_received(self):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
-        wx.CallAfter(Publisher.sendMessage, 'Create marker')
+        wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)

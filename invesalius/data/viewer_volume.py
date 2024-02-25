@@ -950,6 +950,11 @@ class Viewer(wx.Panel):
         elif marker_type == MarkerType.COIL_TARGET:
             actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
 
+        # For 'coil' type markers, create a smaller crosshair; they are generated when pulses are
+        # given; hence, they easily clutter the volume viewer if they are too big.
+        elif marker_type == MarkerType.COIL_POSE:
+            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=0.3)
+
         # For 'electric field target' type markers, create an arrow.
         elif marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
             actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)

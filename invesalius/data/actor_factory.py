@@ -181,7 +181,7 @@ class ActorFactory(object):
 
         return actor
 
-    def CreateAim(self, position, orientation, colour=[1.0, 1.0, 0.0], highlight_zero_angle=True):
+    def CreateAim(self, position, orientation, colour=[1.0, 1.0, 0.0], scale=1.0, highlight_zero_angle=True):
         """
         Create the aim (crosshair) actor.
 
@@ -198,29 +198,37 @@ class ActorFactory(object):
         reader = vtk.vtkSTLReader()
         reader.SetFileName(path)
 
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(reader.GetOutputPort())
+        # Create the transformation for scaling
+        scale_transform = vtk.vtkTransform()
+        scale_transform.Scale(scale, scale, scale)
+
+        # Apply the scaling to the polydata
+        scaled_polydata = vtk.vtkTransformPolyDataFilter()
+        scaled_polydata.SetTransform(scale_transform)
+        scaled_polydata.SetInputConnection(reader.GetOutputPort())
+        scaled_polydata.Update()
 
         m_img_vtk = self.CreateVTKObjectMatrix(position, orientation)
 
-        # Transform the polydata
+        # Transform the polydata with position and orientation
         transform = vtk.vtkTransform()
         transform.SetMatrix(m_img_vtk)
-        transformPD = vtk.vtkTransformPolyDataFilter()
-        transformPD.SetTransform(transform)
-        transformPD.SetInputConnection(reader.GetOutputPort())
-        transformPD.Update()
-        # mapper transform
-        mapper.SetInputConnection(transformPD.GetOutputPort())
+        transformed_polydata = vtk.vtkTransformPolyDataFilter()
+        transformed_polydata.SetTransform(transform)
+        transformed_polydata.SetInputConnection(scaled_polydata.GetOutputPort())
+        transformed_polydata.Update()
 
-        aim_actor = vtk.vtkActor()
-        aim_actor.SetMapper(mapper)
-        aim_actor.GetProperty().SetDiffuseColor(colour)
-        aim_actor.GetProperty().SetSpecular(.2)
-        aim_actor.GetProperty().SetSpecularPower(100)
-        aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(transformed_polydata.GetOutputPort())
 
-        return aim_actor
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetDiffuseColor(colour)
+        actor.GetProperty().SetSpecular(.2)
+        actor.GetProperty().SetSpecularPower(100)
+        actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+
+        return actor
 
     def CreateBall(self, position, colour=[0.0, 0.0, 1.0], size=2):
         ball_ref = vtk.vtkSphereSource()
