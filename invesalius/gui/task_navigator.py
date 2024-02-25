@@ -2150,6 +2150,9 @@ class MarkersPanel(wx.Panel):
         # Check if the currently focused marker is of the type 'coil target'.
         is_coil_target = marker_type == MarkerType.COIL_TARGET
 
+        # Check if the currently focused marker is of the type 'coil pose'.
+        is_coil_pose = marker_type == MarkerType.COIL_POSE
+
         # Check if the currently focused marker is of the type 'landmark'.
         is_landmark = marker_type == MarkerType.LANDMARK
 
@@ -2184,15 +2187,21 @@ class MarkersPanel(wx.Panel):
                 target_menu_item = menu_id.Append(3, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
+        # Show 'Create coil target' menu item if the marker is a coil pose.
+        if is_coil_pose:
+            # 'Create coil target' menu item.
+            create_coil_target_menu_item = menu_id.Append(6, _('Create coil target'))
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTargetFromCoilPose, create_coil_target_menu_item)
+
         # Show 'Create brain target' and 'Create coil target' menu items only if the marker is a landmark.
         if is_landmark:
             # 'Create brain target' menu item.
             create_brain_target_menu_item = menu_id.Append(5, _('Create brain target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTarget, create_brain_target_menu_item)
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTargetFromLandmark, create_brain_target_menu_item)
 
             # 'Create coil target' menu item.
             create_coil_target_menu_item = menu_id.Append(6, _('Create coil target'))
-            menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTarget, create_coil_target_menu_item)
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTargetFromLandmark, create_coil_target_menu_item)
 
         is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].marker_type == MarkerType.BRAIN_TARGET
         if is_brain_target and has_mTMS:
@@ -2247,7 +2256,7 @@ class MarkersPanel(wx.Panel):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[focused_marker_idx]
 
-        # Only allow moving markers of type 'coil target' using arrow keys.
+        # Only allow moving markers of type 'coil target' using keyboard.
         if marker.marker_type != MarkerType.COIL_TARGET:
             return
 
@@ -2333,7 +2342,7 @@ class MarkersPanel(wx.Panel):
     def OnMarkerUnfocused(self, evt):
         Publisher.sendMessage('Unhighlight marker')
         
-    def OnCreateCoilTarget(self, evt):
+    def OnCreateCoilTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -2349,6 +2358,23 @@ class MarkersPanel(wx.Panel):
             # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
             opposite_side=True,
         )
+
+        # Set marker type to 'coil target'.
+        new_marker.marker_type = MarkerType.COIL_TARGET
+
+        # Add the new marker to the marker list and render it.
+        self.AddMarker(new_marker, render=True)
+        
+        self.SaveState()
+
+    def OnCreateCoilTargetFromCoilPose(self, evt):
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        # Create a duplicate of the selected marker.
+        new_marker = self.markers[list_index].duplicate()
 
         # Set marker type to 'coil target'.
         new_marker.marker_type = MarkerType.COIL_TARGET
@@ -2485,7 +2511,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
         self.SaveState()
 
-    def OnCreateBrainTarget(self, evt):
+    def OnCreateBrainTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation = self.markers[list_index].orientation
