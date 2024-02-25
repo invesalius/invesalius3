@@ -617,7 +617,7 @@ class ImagePage(wx.Panel):
     def OnStartRegistration(self, evt, ctrl):
         value = ctrl.GetValue()
         if value:
-            Publisher.sendMessage("Enable style", style=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Enable style", style=const.STATE_REGISTRATION)
             for button in self.btns_set_fiducial:
                 button.Enable()
             self.start_button.SetLabel("Stop registration")
@@ -625,7 +625,7 @@ class ImagePage(wx.Panel):
             self.start_button.SetLabel("Start registration")
             for button in self.btns_set_fiducial:
                 button.Disable()
-            Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Disable style", style=const.STATE_REGISTRATION)
 
 class TrackerPage(wx.Panel):
     def __init__(self, parent, icp, tracker, navigation, pedal_connector, neuronavigation_api):

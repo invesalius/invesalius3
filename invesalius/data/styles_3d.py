@@ -427,6 +427,13 @@ class SeedInteractorStyle(DefaultInteractorStyle):
 
 
 class CrossInteractorStyle(DefaultInteractorStyle):
+    """
+    This interactor style is used when the user enables the cross mode from the toolbar.
+
+    When the user clicks on the volume viewer, it picks the position shown in the volume viewer
+    in the location of the mouse click. The picked position is then used to update the position
+    of the slices and the cross pointer.
+    """
     def __init__(self, viewer):
         super().__init__(viewer)
 
@@ -470,6 +477,46 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
+
+
+class RegistrationInteractorStyle(DefaultInteractorStyle):
+    """
+    This interactor style is used during registration.
+
+    When performing registration, the user can click on the volume viewer to select points for
+    registration (i.e., left ear, right ear, and nasion).
+ 
+    Similar to CrossInteractorStyle, but does not hide the scalp, so that the picker can pick from
+    the scalp surface, which is needed for registration.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        self.viewer.interactor.SetPicker(self.picker)
+
+        self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
+
+    def SetUp(self):
+        self.viewer.CreatePointer()
+
+    def CleanUp(self):
+        self.viewer.DeletePointer()
+
+    def OnCrossMouseClick(self, obj, evt):
+        x, y = self.viewer.get_vtk_mouse_position()
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.picker.GetPickPosition()
+
+        if self.picker.GetActor():
+            Publisher.sendMessage('Update slices position', position=[x, -y, z])
+            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z, None, None, None])
+
+            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Render volume viewer')
+
 
 
 class NavigationInteractorStyle(DefaultInteractorStyle):
@@ -521,6 +568,7 @@ class Styles:
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
+        const.STATE_REGISTRATION: RegistrationInteractorStyle,
     }
 
     @classmethod

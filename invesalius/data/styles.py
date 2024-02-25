@@ -2906,6 +2906,9 @@ class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        # Use the same style during registration that is used when enabling cross mode on the toolbar;
+        # that is, allow selecting point from the slices using the mouse.
+        const.STATE_REGISTRATION: CrossInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
