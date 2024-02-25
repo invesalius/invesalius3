@@ -1250,7 +1250,10 @@ class Viewer(wx.Panel):
             target_dist = distance.euclidean(coord[0:3],
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
             # self.txt.SetCoilDistanceValue(target_dist)
-            self.tdist.SetValue('Distance: ' + str("{:06.2f}".format(target_dist)) + ' mm')
+
+            formatted_distance = "Distance: {: >5.1f} mm".format(target_dist)
+            self.tdist.SetValue(formatted_distance)
+
             self.ren.ResetCamera()
             self.SetCameraTarget()
             if target_dist > 100:
