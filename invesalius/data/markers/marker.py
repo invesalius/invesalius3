@@ -34,7 +34,7 @@ class MarkerType(Enum):
             MarkerType.LANDMARK: "Landmark",
             MarkerType.BRAIN_TARGET: "Brain Target",
             MarkerType.COIL_TARGET: "Coil Target",
-            MarkerType.COIL_POSE: "Coil pose",
+            MarkerType.COIL_POSE: "Coil Pose",
             MarkerType.ELECTRIC_FIELD_TARGET: "E-Field Target",
         }
         # Return the human-readable name for the enum member.
