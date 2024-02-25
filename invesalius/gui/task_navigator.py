@@ -1346,6 +1346,18 @@ class ControlPanel(wx.Panel):
         robot_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotButton, ctrl=robot_button))
         self.robot_button = robot_button
 
+        # Toggle button for moving robot away from head
+        tooltip = wx.ToolTip(_("Move away from head"))
+        BMP_ENABLE_MOVE_AWAY = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("move_robot_away.png")), wx.BITMAP_TYPE_PNG)
+        move_away_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        move_away_button.SetBackgroundColour(GREY_COLOR)
+        move_away_button.SetBitmap(BMP_ENABLE_MOVE_AWAY)
+        move_away_button.SetToolTip(tooltip)
+        move_away_button.SetValue(False)
+        move_away_button.Enable(False)
+        move_away_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnMoveAwayButton, ctrl=move_away_button))
+        self.move_away_button = move_away_button
+
         # Sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
         start_navigation_button_sizer.AddMany([
@@ -1364,9 +1376,10 @@ class ControlPanel(wx.Panel):
             (show_coil_button),
         ])
 
-        robot_buttons_sizer = wx.FlexGridSizer(1, 5, 5)
+        robot_buttons_sizer = wx.FlexGridSizer(2, 5, 5)
         robot_buttons_sizer.AddMany([
             (robot_button),
+            (move_away_button),
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1653,20 +1666,6 @@ class ControlPanel(wx.Panel):
         pressed = self.show_coil_button.GetValue()
         Publisher.sendMessage('Show-coil pressed', pressed=pressed)
 
-    # 'Robot' button
-    def EnableRobotButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_button, enabled)
-        self.UpdateToggleButton(self.robot_button)
-
-    def PressRobotButton(self, pressed):
-        self.UpdateToggleButton(self.robot_button, pressed)
-        self.OnRobotButton()
-
-    def OnRobotButton(self, evt=None, ctrl=None):
-        self.UpdateToggleButton(self.robot_button)
-        pressed = self.robot_button.GetValue()
-        self.robot.SetEnabledInGui(pressed)
-
     # 'Lock to coil' button
     def PressLockToCoilButton(self, pressed):
         self.UpdateToggleButton(self.lock_to_coil_button, pressed)
@@ -1743,7 +1742,37 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage('Target navigation mode', target_mode=self.show_target_button.GetValue())
             Publisher.sendMessage('Enable lock to coil button', enabled=True)
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None) 
+                                  target_index=None, target=None)
+
+    # Robot-related buttons
+
+    # 'Robot' button
+    def EnableRobotButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_button, enabled)
+        self.UpdateToggleButton(self.robot_button)
+
+    def PressRobotButton(self, pressed):
+        self.UpdateToggleButton(self.robot_button, pressed)
+        self.OnRobotButton()
+
+    def OnRobotButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_button)
+        pressed = self.robot_button.GetValue()
+        self.robot.SetEnabledInGui(pressed)
+
+    # 'Move away' button
+    def EnableMoveAwayButton(self, enabled=False):
+        self.EnableToggleButton(self.move_away_button, enabled)
+        self.UpdateToggleButton(self.move_away_button)
+
+    def PressMoveAwayButton(self, pressed):
+        self.UpdateToggleButton(self.move_away_button, pressed)
+        self.OnMoveAwayButton()
+
+    def OnMoveAwayButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.move_away_button)
+        pressed = self.move_away_button.GetValue()
+        # TODO: Not doing anything yet.
 
 
 class MarkersPanel(wx.Panel):
