@@ -1306,18 +1306,6 @@ class ControlPanel(wx.Panel):
         show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
         self.show_coil_button = show_coil_button
 
-        # Toggle button for enabling robot during navigation
-        tooltip = wx.ToolTip(_("Robot"))
-        BMP_ENABLE_ROBOT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot.png")), wx.BITMAP_TYPE_PNG)
-        robot_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        robot_button.SetBackgroundColour(GREY_COLOR)
-        robot_button.SetBitmap(BMP_ENABLE_ROBOT)
-        robot_button.SetToolTip(tooltip)
-        robot_button.SetValue(False)
-        robot_button.Enable(False)
-        robot_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotButton, ctrl=robot_button))
-        self.robot_button = robot_button
-
         # Toggle button for locking camera to coil during navigation
         tooltip = wx.ToolTip(_("Lock to coil"))
         BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("orbit.png")), wx.BITMAP_TYPE_PNG)
@@ -1368,29 +1356,46 @@ class ControlPanel(wx.Panel):
         self.show_target_button = show_target_button
         self.UpdateTargetButton()
 
-        #Sizers
-        button_sizer = wx.BoxSizer(wx.VERTICAL)
-        button_sizer.AddMany([
+        # Toggle button for enabling robot during navigation
+        tooltip = wx.ToolTip(_("Robot"))
+        BMP_ENABLE_ROBOT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot.png")), wx.BITMAP_TYPE_PNG)
+        robot_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        robot_button.SetBackgroundColour(GREY_COLOR)
+        robot_button.SetBitmap(BMP_ENABLE_ROBOT)
+        robot_button.SetToolTip(tooltip)
+        robot_button.SetValue(False)
+        robot_button.Enable(False)
+        robot_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotButton, ctrl=robot_button))
+        self.robot_button = robot_button
+
+        # Sizers
+        start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
+        start_navigation_button_sizer.AddMany([
             (btn_nav, 0, wx.EXPAND | wx.GROW),
         ])
 
-        checkbox_sizer = wx.FlexGridSizer(4, 5, 5)
-        checkbox_sizer.AddMany([
+        navigation_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
+        navigation_buttons_sizer.AddMany([
             (tractography_checkbox),
             (lock_to_coil_button),
             (show_target_button),
-            (robot_button),
             (track_object_button),
+            (checkbox_serial_port),
             (efield_checkbox),
             (lock_to_target_button),
             (show_coil_button),
-            (checkbox_serial_port),
+        ])
+
+        robot_buttons_sizer = wx.FlexGridSizer(1, 5, 5)
+        robot_buttons_sizer.AddMany([
+            (robot_button),
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
-            (button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-            (checkbox_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM , 20)
+            (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
+            (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM , 20),
+            (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM , 20)
         ])
 
         self.sizer = main_sizer
