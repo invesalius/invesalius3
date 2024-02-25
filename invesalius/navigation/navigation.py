@@ -35,6 +35,7 @@ import invesalius.data.e_field as e_field
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.session as ses
+from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -111,7 +112,7 @@ class UpdateNavigationScene(threading.Thread):
                 if self.serial_port_enabled:
                     trigger_on = self.serial_port_queue.get_nowait()
                     if trigger_on:
-                        wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                        wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)
                     self.serial_port_queue.task_done()
 
                 # TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
