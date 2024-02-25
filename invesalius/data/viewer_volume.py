@@ -934,9 +934,6 @@ class Viewer(wx.Panel):
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
         
-        if marker_id == 1:
-            print(position_flipped)
-
         # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
         if marker_type == MarkerType.FIDUCIAL:
             actor = self.actor_factory.CreateBall(position_flipped, colour, size)
