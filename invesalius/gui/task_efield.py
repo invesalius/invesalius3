@@ -112,10 +112,10 @@ class InnerTaskPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
-        plot_vectors = wx.CheckBox(self, -1, _('Plot Efield vectors'))
-        plot_vectors.SetValue(False)
-        plot_vectors.Enable(1)
-        plot_vectors.Bind(wx.EVT_CHECKBOX, partial(self.OnEnablePlotVectors, ctrl=plot_vectors))
+        # plot_vectors = wx.CheckBox(self, -1, _('Plot Efield vectors'))
+        # plot_vectors.SetValue(False)
+        # plot_vectors.Enable(1)
+        # plot_vectors.Bind(wx.EVT_CHECKBOX, partial(self.OnEnablePlotVectors, ctrl=plot_vectors))
 
         show_area = wx.CheckBox(self, -1, _('Show area above threshold'))
         show_area.SetValue(False)
@@ -254,7 +254,6 @@ class InnerTaskPanel(wx.Panel):
 
         line_checkboxes = wx.BoxSizer(wx.HORIZONTAL)
         line_checkboxes.AddMany([(enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
-                                 (plot_vectors, 1, wx.LEFT | wx.RIGHT, 2),
                                  (show_area, 1, wx.LEFT | wx.RIGHT, 2),
                                  (efield_tools, 1, wx.LEFT | wx.RIGHT, 2)
                                  ])
@@ -348,6 +347,8 @@ class InnerTaskPanel(wx.Panel):
 
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
+        self.plot_efield_vectors = ctrl.GetValue()
+        self.navigation.plot_efield_vectors = self.plot_efield_vectors
         if efield_enabled:
             if self.session.GetConfig('debug_efield'):
                 debug_efield_enorm = dlg.ShowLoadCSVDebugEfield()
