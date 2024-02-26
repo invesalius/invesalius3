@@ -103,24 +103,20 @@ class OptitrackTrackerConnection(TrackerConnection):
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
 
-        try:
-            import optitrack
-            connection = optitrack.optr()
+        import optitrack
+        connection = optitrack.optr()
 
-            calibration = self.configuration['calibration']
-            user_profile = self.configuration['user_profile']
+        calibration = self.configuration['calibration']
+        user_profile = self.configuration['user_profile']
 
-            if connection.Initialize(calibration, user_profile) == 0:
-                connection.Run()  # Runs 'Run' function once to update cameras.
-                lib_mode = 'wrapper'
+        if connection.Initialize(calibration, user_profile) == 0:
+            connection.Run()  # Runs 'Run' function once to update cameras.
+            lib_mode = 'wrapper'
 
-                self.connection = connection
-            else:
-                lib_mode = 'error'
-
-        except ImportError:
+            self.connection = connection
+        else:
+            print("Could not connect to Optitrack tracker.")
             lib_mode = 'error'
-            print('Error')
 
         self.lib_mode = lib_mode
 

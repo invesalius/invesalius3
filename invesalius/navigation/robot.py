@@ -17,7 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import threading
+from enum import Enum
 
 from wx import ID_OK
 import numpy as np
@@ -31,6 +31,13 @@ from invesalius.pubsub import pub as Publisher
 from invesalius.i18n import tr as _
 from invesalius.utils import Singleton
 from invesalius.navigation.tracker import Tracker
+
+
+class RobotObjective(Enum):
+    NONE = 0
+    TRACK_TARGET = 1
+    MOVE_AWAY_FROM_HEAD = 2
+
 
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
@@ -47,6 +54,8 @@ class Robot(metaclass=Singleton):
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
 
+        self.objective = RobotObjective.NONE
+
         success = self.LoadConfig()
         if success:
             self.ConnectToRobot()
@@ -58,6 +67,7 @@ class Robot(metaclass=Singleton):
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
         Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
         Publisher.subscribe(self.SetNewTarget, 'Update target')
+        Publisher.subscribe(self.GetCurrentObjectiveFromRobot, 'Send current objective from robot to neuronavigation')
 
     def SaveConfig(self):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
@@ -145,6 +155,10 @@ class Robot(metaclass=Singleton):
         #   to avoid modifying it.
         target = self.target[:]
         target[1] = -target[1]
+        
+        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
+        if self.navigation.m_change is None or self.navigation.obj_data is None:
+            return False
 
         m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, target, self.icp, self.navigation.obj_data)
 
@@ -158,25 +172,43 @@ class Robot(metaclass=Singleton):
     def StopRobot(self):
         Publisher.sendMessage('Update robot target', robot_tracker_flag=False, target_index=None, target=None)
 
+    def SetObjective(self, objective):
+        # If the objective is already set to the same value, return early.
+        # This is done to avoid sending the same objective to the robot repeatedly.
+        if self.objective == objective:
+            return
+        
+        self.objective = objective
+        Publisher.sendMessage('Send objective from neuronavigation to robot', objective=objective.value)
+
+        if objective == RobotObjective.TRACK_TARGET:
+            self.SendTargetToRobot()
+
+    def GetCurrentObjectiveFromRobot(self, objective):
+        if objective is None:
+            return
+
+        self.objective = RobotObjective(objective)
+        if self.objective == RobotObjective.TRACK_TARGET:
+            # Unpress 'Move away from robot' button when the robot is tracking the target.
+            Publisher.sendMessage('Press move away button', pressed=False)
+
+        elif self.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
+            # Unpress 'Track target' button when the robot is moving away from head.
+            Publisher.sendMessage('Press robot button', pressed=False)
+            
+        elif self.objective == RobotObjective.NONE:
+            # Unpress 'Track target' and 'Move away from robot' buttons when the robot has no objective.
+            Publisher.sendMessage('Press robot button', pressed=False)
+            Publisher.sendMessage('Press move away button', pressed=False)
+
     def SetNewTarget(self, coord):
         # Note that target can also be set to None, which means the target is unset.
         self.target = coord
-
-        # If the robot is enabled from the GUI and a target is set, send the target to the robot.
-        if self.enabled_in_gui and self.target is not None:
+    
+        if self.target is not None:
             self.SendTargetToRobot()
 
         # If target is unset, stop the robot.
         if self.target is None:
-            self.StopRobot()
-
-    def SetEnabledInGui(self, enabled_in_gui):
-        self.enabled_in_gui = enabled_in_gui
-
-        # If the robot is enabled from the GUI and a target is set, send the target to the robot.
-        if self.enabled_in_gui and self.target is not None:
-            self.SendTargetToRobot()
-
-        # When the robot is disabled from the GUI, stop it.
-        if not self.enabled_in_gui:
-            self.StopRobot()
+            self.StopRobot()#

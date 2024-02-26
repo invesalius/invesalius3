@@ -72,7 +72,7 @@ from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.image import Image
 from invesalius.navigation.tracker import Tracker
 
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robot, RobotObjective
 
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -1421,6 +1421,9 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressRobotButton, 'Press robot button')
         Publisher.subscribe(self.EnableRobotButton, 'Enable robot button')
 
+        Publisher.subscribe(self.PressMoveAwayButton, 'Press move away button')
+        Publisher.subscribe(self.EnableMoveAwayButton, 'Enable move away button')
+
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
         Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
@@ -1520,6 +1523,10 @@ class ControlPanel(wx.Panel):
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
+        # Unpress robot buttons when stopping navigation.
+        Publisher.sendMessage('Press robot button', pressed=False)
+        Publisher.sendMessage('Press move away button', pressed=False)
+
         self.navigation.StopNavigation()
         if self.robot.IsConnected():
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
@@ -1543,7 +1550,7 @@ class ControlPanel(wx.Panel):
             self.nav_status = True
 
         # Update robot button when navigation status is changed.
-        self.UpdateRobotButton()
+        self.UpdateRobotButtons()
 
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
@@ -1563,21 +1570,28 @@ class ControlPanel(wx.Panel):
         if data:
             self.Layout()
 
-    # Enable robot button if:
+    # Enable robot buttons if:
     #
     #   - Navigation is on
     #   - Target is set
     #   - Target mode is on
     #   - Robot is connected
     #
-    def UpdateRobotButton(self):
+    def UpdateRobotButtons(self):
         enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
         self.EnableRobotButton(enabled=enabled)
+        self.EnableMoveAwayButton(enabled=enabled)
 
-    # Update robot button state when target mode is changed.
     def OnSetTargetMode(self, evt=None, target_mode=None):
         self.target_mode = target_mode
-        self.UpdateRobotButton()
+
+        # Update robot button state when target mode is changed.
+        self.UpdateRobotButtons()
+
+        # Unpress robot buttons when target mode is off.
+        if not target_mode:
+            Publisher.sendMessage('Press robot button', pressed=False)
+            Publisher.sendMessage('Press move away button', pressed=False)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -1707,7 +1721,7 @@ class ControlPanel(wx.Panel):
         if status is not None:
             self.target_selected = status
             self.UpdateTargetButton()
-            self.UpdateRobotButton()
+            self.UpdateRobotButtons()
     
     def TrackObject(self, enabled):
         self.track_obj = enabled
@@ -1758,7 +1772,13 @@ class ControlPanel(wx.Panel):
     def OnRobotButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_button)
         pressed = self.robot_button.GetValue()
-        self.robot.SetEnabledInGui(pressed)
+        if pressed:
+            self.robot.SetObjective(RobotObjective.TRACK_TARGET)
+        else:
+            # If 'Robot' button is unpressed, set robot objective to NONE, but do not override
+            # objective set by another button; hence this check.
+            if self.robot.objective == RobotObjective.TRACK_TARGET:
+                self.robot.SetObjective(RobotObjective.NONE)
 
     # 'Move away' button
     def EnableMoveAwayButton(self, enabled=False):
@@ -1772,7 +1792,13 @@ class ControlPanel(wx.Panel):
     def OnMoveAwayButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.move_away_button)
         pressed = self.move_away_button.GetValue()
-        # TODO: Not doing anything yet.
+        if pressed:
+            self.robot.SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
+        else:
+            # If 'Move away' button is unpressed, set robot objective to NONE, but do not override
+            # objective set by another button; hence this check.
+            if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
+                self.robot.SetObjective(RobotObjective.NONE)
 
 
 class MarkersPanel(wx.Panel):
