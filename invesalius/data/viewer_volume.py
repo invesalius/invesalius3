@@ -288,10 +288,6 @@ class Viewer(wx.Panel):
 
         self.surface = None
 
-        # A dict to store the surfaces that are loaded into the viewer. The keys are the names of the surfaces,
-        # and the values are the actors of the surfaces.
-        self.surfaces = {}
-
         self.surface_geometry = SurfaceGeometry()
         self.projection_actor = None
 
@@ -2819,16 +2815,6 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def AddSurface(self, actor):
-        # XXX: Assuming that the first actor is the scalp and the second actor is the brain. This should be made more explicit by the
-        #   publisher of 'Load surface actor into viewer' message. See similar assumption in marker_transformator.py.
-        if 'scalp' not in self.surfaces:
-            surface_name = 'scalp'
-        else:
-            surface_name = 'brain'
-
-        # Store the actor in the surfaces dictionary.
-        self.surfaces[surface_name] = actor
-
         # Add the actor to the renderer.
         ren = self.ren
         ren.AddActor(actor)
@@ -2852,10 +2838,6 @@ class Viewer(wx.Panel):
         self.EnableRuler()
 
     def RemoveSurface(self, actor):
-        # XXX: The publisher of 'Remove surface actor from viewer' should be more explicit about which actor to remove by
-        #   naming the surface. Currently, self.surfaces cannot be updated correctly when surface is removed due to the lack
-        #   of that information.
-
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
         self.UpdateRender()
