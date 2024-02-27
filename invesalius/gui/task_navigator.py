@@ -1334,29 +1334,29 @@ class ControlPanel(wx.Panel):
         self.show_target_button = show_target_button
         self.UpdateTargetButton()
 
-        # Toggle button for enabling robot during navigation
-        tooltip = wx.ToolTip(_("Robot"))
-        BMP_ENABLE_ROBOT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot.png")), wx.BITMAP_TYPE_PNG)
-        robot_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        robot_button.SetBackgroundColour(GREY_COLOR)
-        robot_button.SetBitmap(BMP_ENABLE_ROBOT)
-        robot_button.SetToolTip(tooltip)
-        robot_button.SetValue(False)
-        robot_button.Enable(False)
-        robot_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotButton, ctrl=robot_button))
-        self.robot_button = robot_button
+        # Toggle button for tracking target with robot during navigation
+        tooltip = wx.ToolTip(_("Track target with robot"))
+        BMP_TRACK_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot_track_target.png")), wx.BITMAP_TYPE_PNG)
+        robot_track_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        robot_track_target_button.SetBackgroundColour(GREY_COLOR)
+        robot_track_target_button.SetBitmap(BMP_TRACK_TARGET)
+        robot_track_target_button.SetToolTip(tooltip)
+        robot_track_target_button.SetValue(False)
+        robot_track_target_button.Enable(False)
+        robot_track_target_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotTrackTargetButton, ctrl=robot_track_target_button))
+        self.robot_track_target_button = robot_track_target_button
 
         # Toggle button for moving robot away from head
-        tooltip = wx.ToolTip(_("Move away from head"))
-        BMP_ENABLE_MOVE_AWAY = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("move_robot_away.png")), wx.BITMAP_TYPE_PNG)
-        move_away_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        move_away_button.SetBackgroundColour(GREY_COLOR)
-        move_away_button.SetBitmap(BMP_ENABLE_MOVE_AWAY)
-        move_away_button.SetToolTip(tooltip)
-        move_away_button.SetValue(False)
-        move_away_button.Enable(False)
-        move_away_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnMoveAwayButton, ctrl=move_away_button))
-        self.move_away_button = move_away_button
+        tooltip = wx.ToolTip(_("Move robot away from head"))
+        BMP_ENABLE_MOVE_AWAY = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot_move_away.png")), wx.BITMAP_TYPE_PNG)
+        robot_move_away_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        robot_move_away_button.SetBackgroundColour(GREY_COLOR)
+        robot_move_away_button.SetBitmap(BMP_ENABLE_MOVE_AWAY)
+        robot_move_away_button.SetToolTip(tooltip)
+        robot_move_away_button.SetValue(False)
+        robot_move_away_button.Enable(False)
+        robot_move_away_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotMoveAwayButton, ctrl=robot_move_away_button))
+        self.robot_move_away_button = robot_move_away_button
 
         # Sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1378,8 +1378,8 @@ class ControlPanel(wx.Panel):
 
         robot_buttons_sizer = wx.FlexGridSizer(2, 5, 5)
         robot_buttons_sizer.AddMany([
-            (robot_button),
-            (move_away_button),
+            (robot_track_target_button),
+            (robot_move_away_button),
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1418,11 +1418,11 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressTrackObjectButton, 'Press track object button')
         Publisher.subscribe(self.EnableTrackObjectButton, 'Enable track object button')
 
-        Publisher.subscribe(self.PressRobotButton, 'Press robot button')
-        Publisher.subscribe(self.EnableRobotButton, 'Enable robot button')
+        Publisher.subscribe(self.PressRobotTrackTargetButton, 'Press robot button')
+        Publisher.subscribe(self.EnableRobotTrackTargetButton, 'Enable robot button')
 
-        Publisher.subscribe(self.PressMoveAwayButton, 'Press move away button')
-        Publisher.subscribe(self.EnableMoveAwayButton, 'Enable move away button')
+        Publisher.subscribe(self.PressRobotMoveAwayButton, 'Press move away button')
+        Publisher.subscribe(self.EnableRobotMoveAwayButton, 'Enable move away button')
 
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
@@ -1579,8 +1579,8 @@ class ControlPanel(wx.Panel):
     #
     def UpdateRobotButtons(self):
         enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
-        self.EnableRobotButton(enabled=enabled)
-        self.EnableMoveAwayButton(enabled=enabled)
+        self.EnableRobotTrackTargetButton(enabled=enabled)
+        self.EnableRobotMoveAwayButton(enabled=enabled)
 
     def OnSetTargetMode(self, evt=None, target_mode=None):
         self.target_mode = target_mode
@@ -1760,18 +1760,18 @@ class ControlPanel(wx.Panel):
 
     # Robot-related buttons
 
-    # 'Robot' button
-    def EnableRobotButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_button, enabled)
-        self.UpdateToggleButton(self.robot_button)
+    # 'Track target with robot' button
+    def EnableRobotTrackTargetButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_track_target_button, enabled)
+        self.UpdateToggleButton(self.robot_track_target_button)
 
-    def PressRobotButton(self, pressed):
-        self.UpdateToggleButton(self.robot_button, pressed)
-        self.OnRobotButton()
+    def PressRobotTrackTargetButton(self, pressed):
+        self.UpdateToggleButton(self.robot_track_target_button, pressed)
+        self.OnRobotTrackTargetButton()
 
-    def OnRobotButton(self, evt=None, ctrl=None):
-        self.UpdateToggleButton(self.robot_button)
-        pressed = self.robot_button.GetValue()
+    def OnRobotTrackTargetButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_track_target_button)
+        pressed = self.robot_track_target_button.GetValue()
         if pressed:
             self.robot.SetObjective(RobotObjective.TRACK_TARGET)
         else:
@@ -1781,17 +1781,17 @@ class ControlPanel(wx.Panel):
                 self.robot.SetObjective(RobotObjective.NONE)
 
     # 'Move away' button
-    def EnableMoveAwayButton(self, enabled=False):
-        self.EnableToggleButton(self.move_away_button, enabled)
-        self.UpdateToggleButton(self.move_away_button)
+    def EnableRobotMoveAwayButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_move_away_button, enabled)
+        self.UpdateToggleButton(self.robot_move_away_button)
 
-    def PressMoveAwayButton(self, pressed):
-        self.UpdateToggleButton(self.move_away_button, pressed)
-        self.OnMoveAwayButton()
+    def PressRobotMoveAwayButton(self, pressed):
+        self.UpdateToggleButton(self.robot_move_away_button, pressed)
+        self.OnRobotMoveAwayButton()
 
-    def OnMoveAwayButton(self, evt=None, ctrl=None):
-        self.UpdateToggleButton(self.move_away_button)
-        pressed = self.move_away_button.GetValue()
+    def OnRobotMoveAwayButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_move_away_button)
+        pressed = self.robot_move_away_button.GetValue()
         if pressed:
             self.robot.SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
         else:
