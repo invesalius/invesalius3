@@ -16,90 +16,28 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import os
-
-import dataclasses
-from functools import partial
-import itertools
-import time
 
 import nibabel as nb
 import numpy as np
 import matplotlib.pyplot as plt
-try:
-    import Trekker
-    has_trekker = True
-except ImportError:
-    has_trekker = False
-
-try:
-    #TODO: the try-except could be done inside the mTMS() method call
-    from invesalius.navigation.mtms import mTMS
-    mTMS()
-    has_mTMS = True
-except:
-    has_mTMS = False
-
 import wx
-
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ImportError:
-    import wx.lib.foldpanelbar as fpb
-
-import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
-from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.data.brainmesh_handler as brain
-
-import invesalius.data.imagedata_utils as imagedata_utils
-import invesalius.data.slice_ as sl
-import invesalius.data.tractography as dti
-import invesalius.data.record_coords as rec
-import invesalius.data.vtk_utils as vtk_utils
-import invesalius.data.bases as db
-import invesalius.data.coregistration as dcr
+from invesalius.data.slice_ import Slice
 import invesalius.gui.dialogs as dlg
-import invesalius.project as prj
-import invesalius.session as ses
 import invesalius.gui.widgets.gradient as grad
+from invesalius.pubsub import pub as Publisher
+import invesalius.session as ses
+import invesalius.utils as utils
 
-
-from invesalius import utils
-from invesalius.gui import utils as gui_utils
-from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
-from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.image import Image
-from invesalius.navigation.tracker import Tracker
-
-from invesalius.navigation.robot import Robot
-from invesalius.data.converters import to_vtk, convert_custom_bin_to_vtk
-
-from invesalius.net.neuronavigation_api import NeuronavigationApi
-
-HAS_PEDAL_CONNECTION = True
-try:
-    from invesalius.net.pedal_connection import PedalConnection
-except ImportError:
-    HAS_PEDAL_CONNECTION = False
-
-from invesalius import inv_paths
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
 
-        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
-        neuronavigation_api = NeuronavigationApi()
-        navigation = Navigation(
-            pedal_connection=pedal_connection,
-            neuronavigation_api=neuronavigation_api,
-        )
-
         wx.Panel.__init__(self, parent)
 
-        inner_panel = InnerTaskPanel(self, navigation)
+        inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
@@ -110,8 +48,9 @@ class TaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+
 class InnerTaskPanel(wx.Panel):
-    def __init__(self, parent, navigation):
+    def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -133,7 +72,7 @@ class InnerTaskPanel(wx.Panel):
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadFmri)
         self.btn_load = btn_load
 
         # Create a horizontal sizer to represent button save
@@ -148,7 +87,7 @@ class InnerTaskPanel(wx.Panel):
         combo_thresh = wx.ComboBox(self, -1, "", #size=(15,-1),
                                    choices=self.colormaps,
                                    style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_thresh.Bind(wx.EVT_COMBOBOX, self.SelectColormap)
+        combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
         combo_thresh.SetSelection(0) # By Default use Twilight
 
         self.combo_thresh = combo_thresh
@@ -188,11 +127,9 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnLinkLoad, 'Loading status')
-        Publisher.subscribe(self.SelectColormap, 'Changing colormap')
+        pass
 
-
-    def SelectColormap(self, event=None):
+    def OnSelectColormap(self, event=None):
         self.cur_colormap = self.colormaps[self.combo_thresh.GetSelection()]
         self.ReloadSlice()
         cmap = plt.get_cmap(self.cur_colormap)
@@ -216,13 +153,12 @@ class InnerTaskPanel(wx.Panel):
         self.Show(True)
 
     def ReloadSlice(self):
-        if self.filename is None: return
+        #if self.filename is None: return
 
         # Update Slice
-        import nibabel as nib
-        clust_vol = nib.load(self.filename).get_fdata().T[:,::-1]
-        
-        from invesalius.data.slice_ import Slice
+        # clust_vol = nb.load(self.filename).get_fdata().T[:,::-1]
+        clust_vol = self.clust_vol
+
         # 1. Create layer of shape first
         slc = Slice()
         slc.aux_matrices['color_overlay'] = clust_vol
@@ -241,16 +177,23 @@ class InnerTaskPanel(wx.Panel):
 
         Publisher.sendMessage('Reload actual slice')        
 
-    def OnLinkLoad(self, event=None):
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load volume to overlay"),
-                                          wildcard=_("Registration files (*.nii.gz)|*.nii.gz"))
-        self.filename = filename
-        # Update Slice
-        import nibabel as nib
-        clust_vol = nib.load(filename).get_fdata().T[:,::-1]
-        
+    def OnLoadFmri(self, event=None):
+        filename = dlg.ShowImportOtherFilesDialog(id_type=const.ID_NIFTI_IMPORT)
 
-        from invesalius.data.slice_ import Slice
+        filename = utils.decode(filename, const.FS_ENCODE)
+
+        self.filename = filename
+
+        fmri_data = nb.squeeze_image(nb.load(filename))
+        fmri_data = nb.as_closest_canonical(fmri_data)
+        fmri_data.update_header()
+
+        clust_vol = fmri_data.get_fdata().T[:, ::-1]
+        self.clust_vol = clust_vol
+
+        # Update Slice
+        # clust_vol = nb.load(filename).get_fdata().T[:,::-1]
+
         # 1. Create layer of shape first
         slc = Slice()
         if slc.matrix.shape != clust_vol.shape:
