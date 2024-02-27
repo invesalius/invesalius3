@@ -11,16 +11,26 @@ class SurfaceGeometry(metaclass=Singleton):
     def __init__(self):
         self.__bind_events()
 
-        self.surfaces = {}
+        self.surfaces = []
 
     def LoadActor(self, actor):
-        # XXX: Assuming that the first actor is the scalp and the second actor is the brain. This should be made more explicit by the
-        #   publisher of 'Load surface actor into viewer' message. See similar assumption in volume_viewer.py.
-        if 'scalp' not in self.surfaces:
-            surface_name = 'scalp'
-        else:
-            surface_name = 'brain'
+        normals = self.GetSurfaceNormals(actor)
+        highest_z = self.CalculateHighestZ(actor)
 
+        # Get the polydata from the actor.
+        polydata = actor.GetMapper().GetInput()
+
+        self.surfaces.append({
+            'actor': actor,
+            'polydata': polydata,
+            'normals': normals,
+            'highest_z': highest_z,
+        })
+
+    def __bind_events(self):
+        Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
+
+    def GetSurfaceNormals(self, actor):
         # Get the polydata from the actor.
         polydata = actor.GetMapper().GetInput()
 
@@ -30,17 +40,27 @@ class SurfaceGeometry(metaclass=Singleton):
         normals.ComputePointNormalsOn()
         normals.Update()
 
-        self.surfaces[surface_name] = {
-            'actor': actor,
-            'polydata': polydata,
-            'normals': normals.GetOutput()
-        }
+        return normals.GetOutput()
 
-    def __bind_events(self):
-        Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
+    def CalculateHighestZ(self, actor):
+        # Get the polydata from the actor.
+        polydata = actor.GetMapper().GetInput()
+
+        # Extract the z-coordinates of all points and return the highest one.
+        points = polydata.GetPoints()
+        highest_z = max([points.GetPoint(i)[2] for i in range(points.GetNumberOfPoints())])
+
+        return highest_z
+
+    def GetScalpSurface(self):
+        # Retrieve the surface with the highest z-coordinate.
+        if not self.surfaces:
+            return None
+
+        return max(self.surfaces, key=lambda surface: surface['highest_z'])
 
     def GetClosestPointOnSurface(self, surface_name, point):
-        surface = self.surfaces[surface_name]
+        surface = self.GetScalpSurface()
 
         polydata = surface['polydata']
         normals = surface['normals']

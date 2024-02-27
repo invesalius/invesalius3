@@ -452,7 +452,9 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
 
-        scalp_actor = self.viewer.surfaces['scalp']
+        scalp_surface = self.viewer.surface_geometry.GetScalpSurface()
+        scalp_actor = scalp_surface['actor']
+
         is_scalp_visible = scalp_actor.GetVisibility()
 
         # If scalp if visible, hide it to allow the picker to pick from the brain surface.
