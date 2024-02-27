@@ -284,7 +284,6 @@ class Viewer(wx.Panel):
         self.obj = False
 
         self.target_coord = None
-        self.active_aim_actor = None
 
         self.dummy_robot_actor = None
         self.dummy_probe_actor = None
@@ -487,7 +486,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
-        Publisher.subscribe(self.OnSetNewTarget, 'Update target')
+        Publisher.subscribe(self.OnSetTarget, 'Set target')
         Publisher.subscribe(self.OnDisableOrEnableCoilTracker, 'Disable or enable coil tracker')
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
@@ -921,7 +920,7 @@ class Viewer(wx.Panel):
             )
 
             if target:
-                Publisher.sendMessage('Update target', coord=position + orientation)
+                Publisher.sendMessage('Set target', coord=position + orientation)
                 target_selected = True
 
         if not target_selected:
@@ -1146,7 +1145,7 @@ class Viewer(wx.Panel):
             if self.actor_peel:
                 self.object_orientation_torus_actor.SetVisibility(0)
                 self.obj_projection_arrow_actor.SetVisibility(0)
-            self.CreateTargetAim()
+            self.CreateTargetCoil()
 
             # Create a line
             self.ren.SetViewport(0, 0, 0.75, 1)
@@ -1284,15 +1283,7 @@ class Viewer(wx.Panel):
             # the distance between 1 and 100 mm
             self.ren.GetActiveCamera().Zoom((-0.0404 * distance_to_target) + 5.0404)
 
-            if distance_to_target <= self.distance_threshold:
-                is_under_distance_threshold = True
-                self.active_aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
-                if not self.show_coil:
-                    self.active_aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_HIDDEN_OPACITY)
-            else:
-                is_under_distance_threshold = False
-                self.active_aim_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Yellow'))
-                self.active_aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+            is_under_distance_threshold = distance_to_target <= self.distance_threshold
 
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
@@ -1406,20 +1397,21 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
 
-    def OnSetNewTarget(self, coord):
+    def OnSetTarget(self, coord):
         if coord is not None:
             # Store the new target coordinates and create a new transformation matrix for the target.
             self.target_coord = coord
             self.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
 
-            self.CreateTargetAim()
+            self.CreateTargetCoil()
+
             Publisher.sendMessage('Target selected', status=True)
             print("Target updated to coordinates {}".format(coord))
 
     def RemoveTarget(self):
         self.target_mode = False
         self.target_coord = None
-        self.RemoveTargetAim()
+        self.RemoveTargetCoil()
         Publisher.sendMessage('Target selected', status=False)
 
     def OnDisableOrEnableCoilTracker(self, status):
@@ -1442,21 +1434,11 @@ class Viewer(wx.Panel):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
         return m_img_vtk
-        
-    def CreateTargetAim(self):
-        if self.active_aim_actor:
-            self.RemoveTargetAim()
-            self.active_aim_actor = None
+
+    def CreateTargetCoil(self):
+        self.RemoveTargetCoil()
 
         vtk_colors = vtkNamedColors()
-
-        aim_actor = self.actor_factory.CreateAim(self.target_coord[:3], self.target_coord[3:], vtk_colors.GetColor3d('DarkOrange'))
-
-        # Store the currently active aim actor.
-        self.active_aim_actor = aim_actor
-
-        # Add the aim actor to the renderer.
-        self.ren.AddActor(aim_actor)
 
         if self.use_default_object:
             obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
@@ -1495,9 +1477,13 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def RemoveTargetAim(self):
-        self.ren.RemoveActor(self.active_aim_actor)
+    def RemoveTargetCoil(self):
+        if self.target_coil_actor is None:
+            return
+
         self.ren.RemoveActor(self.target_coil_actor)
+        self.target_coil_actor = None
+
         if not self.nav_status:
             self.UpdateRender()
 
@@ -1517,7 +1503,7 @@ class Viewer(wx.Panel):
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
             self.SetViewAngle(const.VOL_FRONT)
             self.ren.RemoveActor(self.distance_text.actor)
-            self.CreateTargetAim()
+            self.CreateTargetCoil()
             if not self.nav_status:
                 self.UpdateRender()
         except:
@@ -2641,9 +2627,6 @@ class Viewer(wx.Panel):
             self.x_actor.SetVisibility(state)
             self.y_actor.SetVisibility(state)
             self.z_actor.SetVisibility(state)
-
-        if self.active_aim_actor is not None and state:
-            self.active_aim_actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
 
         if not self.nav_status:
             self.UpdateRender()
