@@ -92,6 +92,7 @@ class Preferences(wx.Dialog):
         values.update(viewer)
         values.update(logging)
 
+        log.configureLogging()
         return values
 
     def LoadPreferences(self):
@@ -269,7 +270,6 @@ class Logging(wx.Panel):
         return True
 
     def GetSelection(self):
-
         options = {
             const.LOGGING: self.rb_logging.GetSelection(),
             const.LOGGING_LEVEL: self.cb_logging_level.GetSelection(),

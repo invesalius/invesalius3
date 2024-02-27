@@ -136,6 +136,7 @@ class Frame(wx.Frame):
         self.__bind_events()
         self.__bind_events_wx()
 
+        log.configureLogging()
 
     def __bind_events(self):
         """
@@ -428,8 +429,10 @@ class Frame(wx.Frame):
         dialog.Destroy()
 
         if not save and answer == wx.ID_YES:
+            log.closeLogging()
             return 1  # Exit and delete session
         elif save and answer == wx.ID_YES:
+            log.closeLogging()
             return 2  # Exit without deleting session
         else:
             return 0  # Don't Exit
@@ -681,8 +684,6 @@ class Frame(wx.Frame):
             Publisher.sendMessage('Update Slice Interpolation MenuBar')
             Publisher.sendMessage('Update Navigation Mode MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
-
-            log.configureLogging()
 
 
     def ShowAbout(self):
