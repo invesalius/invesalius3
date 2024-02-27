@@ -324,7 +324,7 @@ class InnerFoldPanel(wx.Panel):
 
     def OnShowCoil(self, evt=None):
         pressed = self.show_coil_button.GetValue()
-        Publisher.sendMessage('Show-coil pressed', pressed=pressed)
+        Publisher.sendMessage('Show coil in viewer volume', state=pressed)
 
     # 'Lock to coil' button
 
@@ -1698,7 +1698,7 @@ class ControlPanel(wx.Panel):
     def OnShowCoil(self, evt=None):
         self.UpdateToggleButton(self.show_coil_button)
         pressed = self.show_coil_button.GetValue()
-        Publisher.sendMessage('Show-coil pressed', pressed=pressed)
+        Publisher.sendMessage('Show coil in viewer volume', state=pressed)
 
     # 'Lock to coil' button
     def PressLockToCoilButton(self, pressed):
