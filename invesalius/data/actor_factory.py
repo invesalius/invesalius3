@@ -248,7 +248,7 @@ class ActorFactory(object):
 
         return actor
 
-    def CreateTorus(self, position, orientation, colour=[0.0, 0.0, 1.0]):
+    def CreateTorus(self, position, orientation, colour=[0.0, 0.0, 1.0], scale=1.0):
         torus = vtk.vtkParametricTorus()
         torus.SetRingRadius(2)
         torus.SetCrossSectionRadius(1)
@@ -266,6 +266,7 @@ class ActorFactory(object):
         torusActor.GetProperty().SetDiffuseColor(colour)
         torusActor.SetPosition(position)
         torusActor.SetOrientation(orientation)
+        torusActor.SetScale(scale, scale, scale)
 
         return torusActor
 
