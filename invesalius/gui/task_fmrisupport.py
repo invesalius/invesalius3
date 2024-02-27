@@ -56,13 +56,15 @@ class InnerTaskPanel(wx.Panel):
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+
         self.__bind_events()
 
         self.SetBackgroundColour(default_colour)
         self.session = ses.Session()
+        self.slc = Slice()
         self.colormaps = ["twilight","hsv","Set1","Set2","winter","hot","autumn"]
-        self.cur_colormap = "twilight"
-        self.filename = None
+        self.current_colormap = "twilight"
+        self.cluster_volume = None
 
         line0 = wx.StaticText(self, -1,
                                     _("Select Modalities / File"))
@@ -93,14 +95,14 @@ class InnerTaskPanel(wx.Panel):
         self.combo_thresh = combo_thresh
 
         ## LINE 4
-        cmap = plt.get_cmap(self.cur_colormap)
+        cmap = plt.get_cmap(self.current_colormap)
         colororder = [(int(255*cmap(i)[0]),
                        int(255*cmap(i)[1]),
                        int(255*cmap(i)[2]),
                        int(100*cmap(i)[3])) for i in np.linspace(0, 1, 100)]
         
         gradient = grad.GradientDisp(self, -1, -5000, 5000, -5000, 5000,
-                                           colororder, colortype=self.cur_colormap in ['Set1', 'Set2'])
+                                     colororder, colortype=self.current_colormap in ['Set1', 'Set2'])
         self.gradient = gradient
 
         # Add all lines into main sizer
@@ -130,17 +132,16 @@ class InnerTaskPanel(wx.Panel):
         pass
 
     def OnSelectColormap(self, event=None):
-        self.cur_colormap = self.colormaps[self.combo_thresh.GetSelection()]
-        self.ReloadSlice()
-        cmap = plt.get_cmap(self.cur_colormap)
+        self.current_colormap = self.colormaps[self.combo_thresh.GetSelection()]
+        cmap = plt.get_cmap(self.current_colormap)
         colororder = [(int(255*cmap(i)[0]),
                        int(255*cmap(i)[1]),
                        int(255*cmap(i)[2]),
                        int(100*cmap(i)[3])) for i in np.linspace(0, 1, 20)]
         
         self.gradient.SetGradientColours(colororder)
-        self.gradient.colortype = self.cur_colormap in ['Set1', 'Set2']
-        self.gradient.gradient_slider.colortype = self.cur_colormap in ['Set1', 'Set2']
+        self.gradient.colortype = self.current_colormap in ['Set1', 'Set2']
+        self.gradient.gradient_slider.colortype = self.current_colormap in ['Set1', 'Set2']
         
         self.gradient.gradient_slider.Refresh()
         self.gradient.gradient_slider.Update()
@@ -152,66 +153,38 @@ class InnerTaskPanel(wx.Panel):
         self.Show(False)
         self.Show(True)
 
-    def ReloadSlice(self):
-        #if self.filename is None: return
-
-        # Update Slice
-        # clust_vol = nb.load(self.filename).get_fdata().T[:,::-1]
-        clust_vol = self.clust_vol
-
-        # 1. Create layer of shape first
-        slc = Slice()
-        slc.aux_matrices['color_overlay'] = clust_vol
-        slc.aux_matrices['color_overlay'] = slc.aux_matrices['color_overlay'].astype(int)
-
-        # 2. Attribute different hue accordingly
-        cluster_smoothness = int(np.max(list(set(clust_vol.flatten()))))
-        cmap = plt.get_cmap(self.cur_colormap)
-        colororder = [cmap(i) for i in np.linspace(0, 1, cluster_smoothness)]
-
-        slc.aux_matrices_colours['color_overlay'] = {k+1: colororder[k] for k in range(cluster_smoothness)}
-        slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0) # add transparent color for nans and non GM voxels
-
-        # 3. Show colors
-        slc.to_show_aux = 'color_overlay'
-
-        Publisher.sendMessage('Reload actual slice')        
+        if isinstance(self.cluster_volume, np.ndarray):
+            self.apply_colormap(self.current_colormap, self.cluster_volume)
 
     def OnLoadFmri(self, event=None):
         filename = dlg.ShowImportOtherFilesDialog(id_type=const.ID_NIFTI_IMPORT)
-
         filename = utils.decode(filename, const.FS_ENCODE)
-
-        self.filename = filename
 
         fmri_data = nb.squeeze_image(nb.load(filename))
         fmri_data = nb.as_closest_canonical(fmri_data)
         fmri_data.update_header()
 
-        clust_vol = fmri_data.get_fdata().T[:, ::-1]
-        self.clust_vol = clust_vol
-
-        # Update Slice
-        # clust_vol = nb.load(filename).get_fdata().T[:,::-1]
+        self.cluster_volume = fmri_data.get_fdata().T[:, ::-1]
 
         # 1. Create layer of shape first
-        slc = Slice()
-        if slc.matrix.shape != clust_vol.shape:
+        if self.slc.matrix.shape != self.cluster_volume.shape:
             wx.MessageBox(("The overlay volume does not match the underlying structural volume"), ("InVesalius 3"))
-            return
 
-        slc.aux_matrices['color_overlay'] = clust_vol
-        slc.aux_matrices['color_overlay'] = slc.aux_matrices['color_overlay'].astype(int)
+        else:
+            self.slc.aux_matrices['color_overlay'] = self.cluster_volume
+            self.slc.aux_matrices['color_overlay'] = self.slc.aux_matrices['color_overlay'].astype(int)
+            # 3. Show colors
+            self.slc.to_show_aux = 'color_overlay'
+            self.apply_colormap(self.current_colormap, self.cluster_volume)
 
+    def apply_colormap(self, colormap, cluster_volume):
         # 2. Attribute different hue accordingly
-        cluster_smoothness = int(np.max(list(set(clust_vol.flatten()))))
-        cmap = plt.get_cmap(self.cur_colormap)
+        cluster_smoothness = int(np.max(list(set(cluster_volume.flatten()))))
+        cmap = plt.get_cmap(colormap)
         colororder = [cmap(i) for i in np.linspace(0, 1, cluster_smoothness)]
 
-        slc.aux_matrices_colours['color_overlay'] = {k+1: colororder[k] for k in range(cluster_smoothness)}
-        slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0) # add transparent color for nans and non GM voxels
-
-        # 3. Show colors
-        slc.to_show_aux = 'color_overlay'
+        self.slc.aux_matrices_colours['color_overlay'] = {k + 1: colororder[k] for k in range(cluster_smoothness)}
+        # add transparent color for nans and non GM voxels
+        self.slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0)
 
         Publisher.sendMessage('Reload actual slice')
