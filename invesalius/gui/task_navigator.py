@@ -1545,14 +1545,10 @@ class ControlPanel(wx.Panel):
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
-        # Unpress robot buttons when stopping navigation.
-        Publisher.sendMessage('Press robot button', pressed=False)
-        Publisher.sendMessage('Press move away button', pressed=False)
+        # Set robot objective to NONE when stopping navigation.
+        self.robot.SetObjective(RobotObjective.NONE)
 
         self.navigation.StopNavigation()
-        if self.robot.IsConnected():
-            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
 
     def UpdateTarget(self, coord):
         self.navigation.target = coord
@@ -1610,10 +1606,9 @@ class ControlPanel(wx.Panel):
         # Update robot button state when target mode is changed.
         self.UpdateRobotButtons()
 
-        # Unpress robot buttons when target mode is off.
+        # Set robot objective to NONE when target mode is off.
         if not target_mode:
-            Publisher.sendMessage('Press robot button', pressed=False)
-            Publisher.sendMessage('Press move away button', pressed=False)
+            self.robot.SetObjective(RobotObjective.NONE)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -1777,8 +1772,10 @@ class ControlPanel(wx.Panel):
             self.UpdateToggleButton(self.show_target_button, False)
             Publisher.sendMessage('Target navigation mode', target_mode=self.show_target_button.GetValue())
             Publisher.sendMessage('Enable lock to coil button', enabled=True)
-            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
+
+            # Set robot objective to NONE when target mode is enabled. This ensures that robot does not automatically
+            # start to track the target when target mode is enabled.
+            self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
 
@@ -2462,9 +2459,10 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
-        # Unpress the robot button when a new target is selected. This prevents the robot from
-        # automatically moving to the new target, making robot movement more explicit and predictable.
-        Publisher.sendMessage('Press robot button', pressed=False)
+        # Set robot objective to NONE when a new target is selected. This prevents the robot from
+        # automatically moving to the new target (which would be the case if robot objective was previously
+        # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
+        self.robot.SetObjective(RobotObjective.NONE)
 
         self.__set_marker_as_target(idx)
 
@@ -2635,9 +2633,6 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
         Publisher.sendMessage('Update target', coord=None)
-        if self.robot.IsConnected():
-            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
         self.SaveState()
 
     def OnMenuSetColor(self, evt):
@@ -2722,9 +2717,7 @@ class MarkersPanel(wx.Panel):
 
         if self.__find_target_marker_idx() is not None:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            if self.robot.IsConnected():
-                Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                      target_index=None, target=None)
+            Publisher.sendMessage('Update target', coord=None)
 
         self.markers = []
         Publisher.sendMessage('Remove all markers')
@@ -2760,9 +2753,6 @@ class MarkersPanel(wx.Panel):
         if self.__find_target_marker_idx() in indexes:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
             Publisher.sendMessage('Update target', coord=None)
-            if self.robot.IsConnected():
-                Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                        target_index=None, target=None)
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()
