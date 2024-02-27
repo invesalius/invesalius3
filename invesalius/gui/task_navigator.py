@@ -1950,7 +1950,6 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
-        Publisher.subscribe(self.SetMarkers, 'Set markers')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
@@ -2890,31 +2889,6 @@ class MarkersPanel(wx.Panel):
 
     def AddPeeledSurface(self, flag, actor):
         self.brain_actor = actor
-
-    def SetMarkers(self, markers):
-        """
-        Set all markers, overwriting the previous markers.
-        """
-
-        self.__delete_all_markers()
-
-        for marker in markers:
-            size = marker["size"]
-            colour = marker["colour"]
-            position = marker["position"]
-            orientation = marker["orientation"]
-
-            marker = self.CreateMarker(
-                size=size,
-                colour=colour,
-                position=position,
-                orientation=orientation,
-            )
-            # Note that we don't want to render the markers for each loop iteration.
-            self.AddMarker(marker, render=False)
-
-        Publisher.sendMessage('Render volume viewer')
-        self.SaveState()
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None,
                      session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None):

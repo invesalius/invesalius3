@@ -470,7 +470,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.HighlightMarker, 'Highlight marker')
         Publisher.subscribe(self.UnhighlightMarker, 'Unhighlight marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
-        Publisher.subscribe(self.SetMarkers, 'Set markers')
 
         # Related to UI state
         Publisher.subscribe(self.ShowCoil, 'Show coil in viewer volume')
@@ -892,41 +891,6 @@ class Viewer(wx.Panel):
         """
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
-
-    def SetMarkers(self, markers):
-        """
-        Set all markers, overwriting the previous markers.
-        """
-        self.RemoveAllMarkers()
-
-        target_selected = False
-        for marker in markers:
-
-            ball_id = marker["ball_id"]
-            size = marker["size"]
-            colour = marker["colour"]
-            position = marker["position"]
-            orientation = marker["orientation"]
-            target = marker["target"]
-            arrow_flag = marker["arrow_flag"]
-
-            self.AddMarker(
-                marker_id=ball_id,
-                size=size,
-                colour=colour,
-                position=position,
-                orientation=orientation,
-                arrow_flag=arrow_flag,
-            )
-
-            if target:
-                Publisher.sendMessage('Set target', coord=position + orientation)
-                target_selected = True
-
-        if not target_selected:
-            self.RemoveTarget()
-
-        self.UpdateRender()
 
     def AddMarker(self, marker):
         """

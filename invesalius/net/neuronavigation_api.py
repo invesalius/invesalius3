@@ -248,9 +248,6 @@ class NeuronavigationApi(metaclass=Singleton):
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
 
-    def set_markers(self, markers):
-        wx.CallAfter(Publisher.sendMessage, 'Set markers', markers=markers)
-
     def stimulation_pulse_received(self):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
         wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)
