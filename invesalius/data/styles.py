@@ -545,7 +545,9 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
 
         # Update the pointer in the volume viewer.
-        Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z, None, None, None])
+        #
+        # We are moving from slice coordinates to volume coordinates, so we need to invert the y coordinate.
+        Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z])
 
         # Also update camera in the volume viewer.
         Publisher.sendMessage('Update camera', position=[x, -y, z, None, None, None])
