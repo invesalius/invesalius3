@@ -410,7 +410,7 @@ class ObjectPage(wx.Panel):
                         Publisher.sendMessage('Press track object button', pressed=True)
                         Publisher.sendMessage('Press lock to coil button', pressed=False)
 
-                        Publisher.sendMessage('Disable target mode')
+                        Publisher.sendMessage('Press target mode button', pressed=False)
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -466,8 +466,8 @@ class ObjectPage(wx.Panel):
                 Publisher.sendMessage('Enable track object button', enabled=True)
                 Publisher.sendMessage('Press track object button', pressed=True)
                 Publisher.sendMessage('Press lock to coil button', pressed=False)
+                Publisher.sendMessage('Press target mode button', pressed=False)
 
-                Publisher.sendMessage('Disable target mode')
                 if use_default_object:
                     msg = _("Default object file successfully loaded")
                 else:

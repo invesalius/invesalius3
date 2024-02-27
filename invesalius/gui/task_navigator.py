@@ -1344,16 +1344,16 @@ class ControlPanel(wx.Panel):
         self.efield_checkbox = efield_checkbox
 
         #Toggle Button for Target Mode
-        tooltip = wx.ToolTip(_(u"Control Target Mode"))
+        tooltip = wx.ToolTip(_(u"Target mode"))
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        show_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        show_target_button.SetBackgroundColour(GREY_COLOR)
-        show_target_button.SetBitmap(BMP_TARGET)
-        show_target_button.SetValue(False)
-        show_target_button.Enable(False)
-        show_target_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton))
-        show_target_button.SetToolTip(tooltip)
-        self.show_target_button = show_target_button
+        target_mode_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        target_mode_button.SetBackgroundColour(GREY_COLOR)
+        target_mode_button.SetBitmap(BMP_TARGET)
+        target_mode_button.SetValue(False)
+        target_mode_button.Enable(False)
+        target_mode_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton))
+        target_mode_button.SetToolTip(tooltip)
+        self.target_mode_button = target_mode_button
         self.UpdateTargetButton()
 
         # Toggle button for tracking target with robot during navigation
@@ -1390,7 +1390,7 @@ class ControlPanel(wx.Panel):
         navigation_buttons_sizer.AddMany([
             (tractography_checkbox),
             (lock_to_coil_button),
-            (show_target_button),
+            (target_mode_button),
             (track_object_button),
             (checkbox_serial_port),
             (efield_checkbox),
@@ -1448,7 +1448,7 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.ShowTargetButton, 'Show target button')
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
-        Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
+        Publisher.subscribe(self.PressTargetModeButton, 'Press target mode button')
 
         # Conditions for enabling target button:
         Publisher.subscribe(self.TargetSelected, 'Target selected')
@@ -1553,12 +1553,15 @@ class ControlPanel(wx.Panel):
     def UpdateTarget(self, coord):
         self.navigation.target = coord
 
-        if coord is not None:
-            self.EnableToggleButton(self.lock_to_target_button, 1)
-            self.UpdateToggleButton(self.lock_to_target_button, True)
-            self.navigation.SetLockToTarget(True)
-            self.target_selected = True
-            self.UpdateTargetButton()
+        if coord is None:
+            return
+
+        self.EnableToggleButton(self.lock_to_target_button, 1)
+        self.UpdateToggleButton(self.lock_to_target_button, True)
+        self.navigation.SetLockToTarget(True)
+
+        self.target_selected = True
+        self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
@@ -1733,49 +1736,52 @@ class ControlPanel(wx.Panel):
     def OnEfieldCheckbox(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
 
-    # 'Target Button' 
+    # 'Target mode' button
     def TargetSelected(self, status):
-        if status is not None:
-            self.target_selected = status
-            self.UpdateTargetButton()
-            self.UpdateRobotButtons()
-    
+        if status is None:
+            return
+
+        self.target_selected = status
+        self.UpdateTargetButton()
+        self.UpdateRobotButtons()
+
     def TrackObject(self, enabled):
         self.track_obj = enabled
         self.UpdateTargetButton()
 
     def ShowTargetButton(self):
-        self.show_target_button.Show()
+        self.target_mode_button.Show()
 
     def HideTargetButton(self):
-        self.show_target_button.Hide()
-
-    def DisableTargetMode(self):
-        self.UpdateToggleButton(self.show_target_button, False)
-        self.OnTargetButton(False)
+        self.target_mode_button.Hide()
 
     def UpdateTargetButton(self):
-        if self.target_selected and self.track_obj:
-            self.EnableToggleButton(self.show_target_button, True)
-            self.UpdateToggleButton(self.show_target_button, self.show_target_button.GetValue())
-        else:
-            self.DisableTargetMode()
-            self.EnableToggleButton(self.show_target_button, False)
+        # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
+        enabled = self.target_selected and self.track_obj
 
-    def OnTargetButton(self, evt):
-        if self.show_target_button.GetValue():
-            self.UpdateToggleButton(self.show_target_button, True)
-            Publisher.sendMessage('Target navigation mode', target_mode=self.show_target_button.GetValue())
+        # If enabling target mode, also press it on automatically.
+        pressed = enabled
+
+        self.EnableToggleButton(self.target_mode_button, enabled)
+        self.PressTargetModeButton(pressed)
+
+    def PressTargetModeButton(self, pressed):
+        self.UpdateToggleButton(self.target_mode_button, pressed)
+        self.OnTargetButton()
+
+    def OnTargetButton(self, evt=None):
+        pressed = self.target_mode_button.GetValue()
+        self.UpdateToggleButton(self.target_mode_button, pressed)
+
+        Publisher.sendMessage('Target navigation mode', target_mode=pressed)
+        if pressed:
             Publisher.sendMessage('Press lock to coil button', pressed=False)
             Publisher.sendMessage('Enable lock to coil button', enabled=False)
-        else:
-            self.UpdateToggleButton(self.show_target_button, False)
-            Publisher.sendMessage('Target navigation mode', target_mode=self.show_target_button.GetValue())
-            Publisher.sendMessage('Enable lock to coil button', enabled=True)
 
-            # Set robot objective to NONE when target mode is enabled. This ensures that robot does not automatically
-            # start to track the target when target mode is enabled.
+            # Set robot objective to NONE when target mode is disabled.
             self.robot.SetObjective(RobotObjective.NONE)
+        else:
+            Publisher.sendMessage('Enable lock to coil button', enabled=True)
 
     # Robot-related buttons
 

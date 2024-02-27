@@ -554,8 +554,8 @@ class Viewer(wx.Panel):
         Publisher.sendMessage('Enable track object button', enabled=True)
         Publisher.sendMessage('Press track object button', pressed=True)
         Publisher.sendMessage('Press lock to coil button', pressed=False)
+        Publisher.sendMessage('Press target mode button', pressed=False)
 
-        Publisher.sendMessage('Disable target mode')
         self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
 
     def get_vtk_mouse_position(self):
