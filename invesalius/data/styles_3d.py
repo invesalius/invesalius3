@@ -475,7 +475,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         if self.picker.GetActor():
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
             Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
-            Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
 
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
@@ -514,7 +514,7 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
         if self.picker.GetActor():
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
             Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
-            Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
 
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')

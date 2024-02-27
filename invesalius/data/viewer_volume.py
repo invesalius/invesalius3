@@ -1552,12 +1552,9 @@ class Viewer(wx.Panel):
         When not navigating, update the position of the pointer sphere. It is done
         when the slice planes are moved or a new point is selected from the volume viewer.
         """
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-
         # Update the pointer sphere when not navigating.
         if self.pointer_actor is not None and not self.nav_status:
-            self.pointer_actor.SetPosition(coord_flip)
+            self.pointer_actor.SetPosition(position)
 
             # Update the render window manually, as it is not updated automatically when not navigating.
             self.UpdateRender()
