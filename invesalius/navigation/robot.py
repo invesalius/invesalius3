@@ -168,10 +168,7 @@ class Robot(metaclass=Singleton):
             robot_tracker_flag=True,
             target=m_target.tolist()
         )
-
-    def StopRobot(self):
-        Publisher.sendMessage('Update robot target', robot_tracker_flag=False, target_index=None, target=None)
-
+        
     def SetObjective(self, objective):
         # If the objective is already set to the same value, return early.
         # This is done to avoid sending the same objective to the robot repeatedly.
@@ -206,9 +203,11 @@ class Robot(metaclass=Singleton):
         # Note that target can also be set to None, which means the target is unset.
         self.target = coord
     
-        if self.target is not None:
-            self.SendTargetToRobot()
-
-        # If target is unset, stop the robot.
         if self.target is None:
-            self.StopRobot()#
+            Publisher.sendMessage('Update robot target',
+                robot_tracker_flag=False,
+                target_index=None,
+                target=None,
+            )
+        else:
+            self.SendTargetToRobot()
