@@ -416,15 +416,6 @@ class VolumeToolPanel(wx.Panel):
                                  'Change volume viewer gui colour')
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
-        '''
-        Publisher.subscribe(self.ShowTargetButton, 'Show target button')
-        Publisher.subscribe(self.HideTargetButton, 'Hide target button')
-        Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
-
-        # Conditions for enabling target button:
-        Publisher.subscribe(self.TargetSelected, 'Target selected')
-        Publisher.subscribe(self.TrackObject, 'Track object')
-        '''
 
 
     def DisablePreset(self):
