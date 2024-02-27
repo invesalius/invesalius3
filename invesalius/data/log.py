@@ -1,6 +1,7 @@
 import logging 
 import logging.config 
 from typing import Callable
+import sys
 
 import invesalius.constants as const
 import invesalius.session as sess
@@ -35,7 +36,7 @@ def configureLogging():
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
         # create console handler 
-        ch = logging.StreamHandler('sys.stderr')
+        ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(python_loglevel)
         ch.setFormatter(formatter)
         for handler in logger.handlers:
