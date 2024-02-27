@@ -1422,7 +1422,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.OnStartNavigation, 'Start navigation')
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
-        Publisher.subscribe(self.UpdateTarget, 'Update target')
+        Publisher.subscribe(self.SetTarget, 'Set target')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
         Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
@@ -1550,7 +1550,7 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UpdateTarget(self, coord):
+    def SetTarget(self, coord):
         self.navigation.target = coord
 
         if coord is None:
@@ -2170,12 +2170,12 @@ class MarkersPanel(wx.Panel):
 
         # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
         #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
-        #   subscribers of 'Update target' receive the correctly transformed coordinates.
+        #   subscribers of 'Set target' receive the correctly transformed coordinates.
         coord[1] = -coord[1]
 
         self.control.target_selected = True
 
-        Publisher.sendMessage('Update target', coord=coord)
+        Publisher.sendMessage('Set target', coord=coord)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
 
     @staticmethod
@@ -2389,10 +2389,10 @@ class MarkersPanel(wx.Panel):
 
                 # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
                 #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
-                #   subscribers of 'Update target' receive the correctly transformed coordinates.
+                #   subscribers of 'Set target' receive the correctly transformed coordinates.
                 coord[1] = -coord[1]
 
-                Publisher.sendMessage('Update target', coord=coord)
+                Publisher.sendMessage('Set target', coord=coord)
         else:
             # Allow other key events to be processed.
             event.Skip()
@@ -2616,7 +2616,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
-        Publisher.sendMessage('Update target', coord=None)
+        Publisher.sendMessage('Set target', coord=None)
         self.efield_target_idx = None
 
     def OnMenuRemoveEfieldTargetatCortex(self,evt):
@@ -2638,7 +2638,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
-        Publisher.sendMessage('Update target', coord=None)
+        Publisher.sendMessage('Set target', coord=None)
         self.SaveState()
 
     def OnMenuSetColor(self, evt):
@@ -2723,7 +2723,7 @@ class MarkersPanel(wx.Panel):
 
         if self.__find_target_marker_idx() is not None:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            Publisher.sendMessage('Update target', coord=None)
+            Publisher.sendMessage('Set target', coord=None)
 
         self.markers = []
         Publisher.sendMessage('Remove all markers')
@@ -2758,7 +2758,7 @@ class MarkersPanel(wx.Panel):
         # If current target is removed, handle it as a special case.
         if self.__find_target_marker_idx() in indexes:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            Publisher.sendMessage('Update target', coord=None)
+            Publisher.sendMessage('Set target', coord=None)
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()

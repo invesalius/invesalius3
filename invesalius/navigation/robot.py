@@ -66,7 +66,7 @@ class Robot(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
         Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
-        Publisher.subscribe(self.SetNewTarget, 'Update target')
+        Publisher.subscribe(self.SetTarget, 'Set target')
         Publisher.subscribe(self.GetCurrentObjectiveFromRobot, 'Send current objective from robot to neuronavigation')
 
     def SaveConfig(self):
@@ -199,7 +199,7 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage('Press robot button', pressed=False)
             Publisher.sendMessage('Press move away button', pressed=False)
 
-    def SetNewTarget(self, coord):
+    def SetTarget(self, coord):
         # Note that target can also be set to None, which means the target is unset.
         self.target = coord
     
