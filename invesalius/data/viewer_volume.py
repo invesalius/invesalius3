@@ -255,6 +255,8 @@ class Viewer(wx.Panel):
         self.arrow_actor_list = None
         self.pTarget = [0., 0., 0.]
 
+        self.distance_text = None
+
         # self.obj_axes = None
         self.x_actor = None
         self.y_actor = None
@@ -1140,7 +1142,17 @@ class Viewer(wx.Panel):
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren2)
             self.ren2.SetViewport(0.75, 0, 1, 1)
-            self.CreateTextDistance()
+
+            # Remove the previous actor for 'distance' text
+            if self.distance_text is not None:
+                self.ren.RemoveActor(self.distance_text.actor)
+
+            # Create new actor for 'distance' text
+            distance_text = self.CreateDistanceText()
+            self.ren.AddActor(distance_text.actor)
+
+            # Store the object for 'distance' text so it can be modified when distance changes.
+            self.distance_text = distance_text
 
             obj_polydata = vtku.CreateObjectPolyData(self.obj_name)
 
@@ -1250,7 +1262,7 @@ class Viewer(wx.Panel):
             # self.txt.SetCoilDistanceValue(target_dist)
 
             formatted_distance = "Distance: {: >5.1f} mm".format(target_dist)
-            self.tdist.SetValue(formatted_distance)
+            self.distance_text.SetValue(formatted_distance)
 
             self.ren.ResetCamera()
             self.SetCameraTarget()
@@ -1469,21 +1481,22 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def CreateTextDistance(self):
-        tdist = vtku.Text()
-        tdist.SetSize(const.TEXT_SIZE_DIST_NAV)
-        tdist.SetPosition((const.X, 1.-const.Y))
-        tdist.SetVerticalJustificationToBottom()
-        tdist.BoldOn()
-        self.ren.AddActor(tdist.actor)
-        self.tdist = tdist
+    def CreateDistanceText(self):
+        distance_text = vtku.Text()
+
+        distance_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
+        distance_text.SetPosition((const.X, 1.-const.Y))
+        distance_text.SetVerticalJustificationToBottom()
+        distance_text.BoldOn()
+
+        return distance_text
 
     def DisableCoilTracker(self):
         try:
             self.ren.SetViewport(0, 0, 1, 1)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
             self.SetViewAngle(const.VOL_FRONT)
-            self.ren.RemoveActor(self.tdist.actor)
+            self.ren.RemoveActor(self.distance_text.actor)
             self.CreateTargetAim()
             if not self.nav_status:
                 self.UpdateRender()
@@ -1820,7 +1833,7 @@ class Viewer(wx.Panel):
         return TextLegend
 
     def CreateEfieldSpreadLegend(self):
-        self.SpreadEfieldFactorTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.9))
+        self.SpreadEfieldFactorTextActor = self.CreateTextLegend(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION,(0.4, 0.9))
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
@@ -1890,7 +1903,7 @@ class Viewer(wx.Panel):
                     break
 
     def CreateEfieldmTMSCoorlegend(self):
-        self.mTMSCoordTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.2))
+        self.mTMSCoordTextActor = self.CreateTextLegend(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION,(0.4, 0.2))
         self.ren.AddActor(self.mTMSCoordTextActor.actor)
 
     def GetTargetPathmTMS(self,targeting_file):
@@ -2114,7 +2127,7 @@ class Viewer(wx.Panel):
         self.focal_factor_members = [n_clusters, n_clusters/len(self.Id_list), distances_between_representatives,distances_between_representatives/30, self.distance_efield, self.distance_efield/15,focal_factor]
 
     def CreateClustersEfieldLegend(self):
-        self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.03, 0.99))
+        self.ClusterEfieldTextActor = self.CreateTextLegend(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION,(0.03, 0.99))
         self.ren.AddActor(self.ClusterEfieldTextActor.actor)
 
     def EnableShowEfieldAboveThreshold(self, enable):
@@ -2169,7 +2182,7 @@ class Viewer(wx.Panel):
     def CreateEfieldAtTargetLegend(self):
         if self.EfieldAtTargetLegend is not None:
             self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
-        self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DIST_NAV,(0.4, 0.96))
+        self.EfieldAtTargetLegend = self.CreateTextLegend(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION,(0.4, 0.96))
         self.ren.AddActor(self.EfieldAtTargetLegend.actor)
 
     def FindClosestPointToMesh(self, point,mesh):
