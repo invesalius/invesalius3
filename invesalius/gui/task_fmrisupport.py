@@ -27,6 +27,7 @@ import invesalius.constants as const
 from invesalius.data.slice_ import Slice
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 import invesalius.session as ses
 import invesalius.utils as utils
