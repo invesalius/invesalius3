@@ -42,9 +42,6 @@ def configureLogging():
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
         # create console handler 
-        ch = logging.StreamHandler(sys.stdout)
-        ch.setLevel(python_loglevel)
-        ch.setFormatter(formatter)
         addStreamHandler = True
         for handler in logger.handlers:
             if isinstance(handler, logging.StreamHandler):
@@ -52,6 +49,9 @@ def configureLogging():
                 #logger.removeHandler(handler)
                 logger.info('Stream handler already set')
         if addStreamHandler:
+            ch = logging.StreamHandler(sys.stdout)
+            ch.setLevel(python_loglevel)
+            ch.setFormatter(formatter)
             logger.addHandler(ch)
             logger.info('Added stream handler')
 
@@ -61,9 +61,6 @@ def configureLogging():
         
         if logging_file:
             addFileHandler = True
-            fh = logging.FileHandler(logging_file, 'a', encoding=None)
-            fh.setLevel(python_loglevel)
-            fh.setFormatter(formatter)
             for handler in logger.handlers:
                 if isinstance(handler, logging.FileHandler):
                     if hasattr(handler, 'baseFilename') & \
@@ -76,6 +73,12 @@ def configureLogging():
                         logger.removeHandler(handler)
                     logger.info('Removed existing FILE handler')
             if addFileHandler:
+                if append_log_file:
+                    fh = logging.FileHandler(logging_file, 'a', encoding=None)
+                else:
+                    fh = logging.FileHandler(logging_file, 'w', encoding=None)
+                fh.setLevel(python_loglevel)
+                fh.setFormatter(formatter)
                 logger.addHandler(fh)
                 logger.info('Added FILE handler')
     else:
@@ -90,7 +93,8 @@ def closeLogging():
 def function_call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
         logger = logging.getLogger(__name__)
-        logger.info('Function called ...')
+        msg = 'Function {} called'.format(function)
+        logger.info(msg)
         function(*args)
     return wrapper_accepting_arguments
        
