@@ -251,6 +251,7 @@ class Logging(wx.Panel):
         bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
         self.Layout()
 
+    @log.function_call_tracking_decorator
     def OnModifyButton(self,e):
         logging_file = self.tc_log_file_name.GetValue()
         path, fname = os.path.split(logging_file)

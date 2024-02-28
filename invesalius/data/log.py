@@ -1,7 +1,7 @@
 import logging 
 import logging.config 
 from typing import Callable
-import sys
+import sys, os
 
 import invesalius.constants as const
 import invesalius.session as sess
@@ -14,23 +14,24 @@ def configureLogging():
     logging_file  = session.GetConfig('logging_file')
 
     logger = logging.getLogger(__name__)
-    print('Number of logger handlers: ', len(logger.handlers))
-    print(do_logging,logging_level,append_log_file,logging_file, const.LOGGING_LEVEl_TYPES[logging_level])
+    #print('Number of logger handlers: ', len(logger.handlers))
+    #print(do_logging,logging_level,append_log_file,logging_file, const.LOGGING_LEVEl_TYPES[logging_level])
     
     if do_logging:
-        print('Logging selected')
+        #print('Logging selected')
         python_loglevel = getattr(logging,  const.LOGGING_LEVEl_TYPES[logging_level].upper(), None)
          # set logging level
         msg = 'Loglevel requested {}, Python log level {}'.format( 
              const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
-        print('Printing:', msg)
+        #print('Printing:', msg)
         logging.info(msg)
         
         if not isinstance(python_loglevel, int):
             raise ValueError('Invalid log level to set: %s' % python_loglevel) 
         logger.setLevel(python_loglevel)
-        print('Logging level set to: {}, Python loglevel: {}'.format( \
-            const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel))
+        msg = 'Logging level set to: {}, Python loglevel: {}'.format( \
+            const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
+        logging.info(msg)
 
         # create formatter
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -42,26 +43,34 @@ def configureLogging():
         for handler in logger.handlers:
             if isinstance(handler, logging.StreamHandler):
                 logger.removeHandler(handler)
-                print('Removed existing stream handler')
+                logging.info('Removed existing stream handler')
         logger.addHandler(ch)
-        print('Added stream handler')
+        #print('Added stream handler')
         logger.info('Added stream handler')
 
         # create file handler 
-        msg = 'Logging file {}'.format(logging_file)
+        msg = 'Logging file requested {}'.format(logging_file)
         logging.info(msg)
+        
         if logging_file:
+            addFileHandler = True
             fh = logging.FileHandler(logging_file, 'w+', encoding=None)
             fh.setLevel(python_loglevel)
             fh.setFormatter(formatter)
             for handler in logger.handlers:
                 if isinstance(handler, logging.FileHandler):
-                    logger.removeHandler(handler)
-                    print('Removed existing FILE handler')
-                    logger.error('Removed existing FILE handler')
-            logger.addHandler(fh)
-            print('Added FILE handler')
-            logger.error('Added FILE handler')
+                    if hasattr(handler, 'baseFilename') & \
+                        os.path.samefile(logging_file,handler.baseFilename):
+                        addFileHandler = False
+                    else:
+                        msg = 'Closing current log file {} as new log file {} requested.'.format( \
+                            handler.baseFilename, logging_file)
+                        logger.info(msg)
+                        logger.removeHandler(handler)
+                    logger.info('Removed existing FILE handler')
+            if addFileHandler:
+                logger.addHandler(fh)
+                logger.info('Added FILE handler')
     else:
         closeLogging()
         
@@ -69,4 +78,11 @@ def closeLogging():
     logger = logging.getLogger()
     while logger.hasHandlers():
         logger.removeHandler(logger.handlers[0])    
+
+def function_call_tracking_decorator(function: Callable[[str], None]):
+    def wrapper_accepting_arguments(*args):
+        logger = logging.getLogger()
+        logger.info('Function called ...')
+        function(*args)
+    return wrapper_accepting_arguments
        
