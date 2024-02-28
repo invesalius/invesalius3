@@ -15,6 +15,13 @@ def configureLogging():
 
     logger = logging.getLogger(__name__)
     msg = 'Number of logger handlers: {}'.format(len(logger.handlers))
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            print('StreamHandler:')
+        elif isinstance(handler, logging.FileHandler):
+            print('FileHandler:')
+        else:
+            print('Unknown Handler:')
     logger.info(msg)
     
     if do_logging:
@@ -22,14 +29,14 @@ def configureLogging():
          # set logging level
         msg = 'Loglevel requested {}, Python log level {}'.format( 
              const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
-        logging.info(msg)
+        logger.info(msg)
         
         if not isinstance(python_loglevel, int):
             raise ValueError('Invalid log level to set: %s' % python_loglevel) 
         logger.setLevel(python_loglevel)
         msg = 'Logging level set to: {}, Python loglevel: {}'.format( \
             const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
-        logging.info(msg)
+        logger.info(msg)
 
         # create formatter
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -38,12 +45,15 @@ def configureLogging():
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(python_loglevel)
         ch.setFormatter(formatter)
+        addStreamHandler = True
         for handler in logger.handlers:
             if isinstance(handler, logging.StreamHandler):
-                logger.removeHandler(handler)
-                logging.info('Removed existing stream handler')
-        logger.addHandler(ch)
-        logger.info('Added stream handler')
+                addStreamHandler = False
+                #logger.removeHandler(handler)
+                logger.info('Stream handler already set')
+        if addStreamHandler:
+            logger.addHandler(ch)
+            logger.info('Added stream handler')
 
         # create file handler 
         msg = 'Logging file requested {}'.format(logging_file)
