@@ -23,6 +23,8 @@ import sys
 import wx
 import wx.lib.hyperlink as hl
 
+from invesalius.i18n import tr as _
+
 class TaskPanel(wx.Panel):
     """
     This panel works as a "frame", drawing a white margin arround 

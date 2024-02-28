@@ -30,6 +30,7 @@ import invesalius.gui.dialogs as dialog
 import invesalius.constants as const
 
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)

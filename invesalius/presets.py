@@ -26,7 +26,7 @@ from invesalius.pubsub import pub as Publisher
 
 from invesalius import inv_paths
 from invesalius.utils import TwoWaysDictionary
-
+from invesalius.i18n import tr as _
 
 class Presets():
 

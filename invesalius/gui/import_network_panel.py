@@ -27,6 +27,7 @@ import invesalius.gui.dialogs as dlg
 #import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
 import invesalius.net.dicom as dcm_net
+from invesalius.i18n import tr as _
 
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
 #from dicionario import musicdata

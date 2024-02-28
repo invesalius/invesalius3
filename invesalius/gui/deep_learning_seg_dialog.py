@@ -17,6 +17,7 @@ import invesalius.data.slice_ as slc
 from invesalius.gui import dialogs
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment, utils
+from invesalius.i18n import tr as _
 
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))

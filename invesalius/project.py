@@ -88,6 +88,8 @@ class Project(metaclass=Singleton):
 
         self.raycasting_preset = ''
 
+        # Image fiducials for navigation
+        self.image_fiducials = np.full([3, 3], np.nan)
 
         #self.surface_quality_list = ["Low", "Medium", "High", "Optimal *",
         #                             "Custom"i]
@@ -227,6 +229,7 @@ class Project(metaclass=Singleton):
                    "scalar_range": self.threshold_range,
                    "spacing": self.spacing,
                    "affine": self.affine,
+                   "image_fiducials": self.image_fiducials.tolist()
                   }
 
         # Saving the matrix containing the slices
@@ -333,6 +336,11 @@ class Project(metaclass=Singleton):
         if project.get("affine", ""):
             self.affine = project["affine"]
 
+        try:
+            self.image_fiducials = np.asarray(project["image_fiducials"])
+        except KeyError:
+            pass
+
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
         for index in sorted(project.get("masks", []), key=lambda x: int(x)):
@@ -395,6 +403,7 @@ class Project(metaclass=Singleton):
                    "scalar_range": (int(image.min()), int(image.max())),
                    "spacing": spacing,
                    "affine": affine,
+                   "image_fiducials": np.full([3, 3], np.nan),
 
                    "matrix": matrix,
                   }

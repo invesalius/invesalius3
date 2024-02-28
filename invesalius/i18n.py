@@ -28,6 +28,7 @@ import locale
 import gettext
 import os
 import sys
+from invesalius.session import Session
  
 import invesalius.utils as utl
  
@@ -87,3 +88,23 @@ def InstallLanguage(language):
     except TypeError:
         lang.install()
         return lang.gettext
+
+
+class Translator:
+    def __init__(self):
+        self.gettext = None
+        self._lang_fallback = 'en'
+
+    def __call__(self, message: str) -> str:
+        if self.gettext is None:
+            lang = Session().GetConfig('language')
+            if not lang:
+                lang = self._lang_fallback
+            self.gettext = InstallLanguage(lang)
+        return self.gettext(message)
+
+    def reset(self):
+        self.gettext = None
+
+
+tr = Translator()

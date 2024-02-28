@@ -23,6 +23,7 @@ import time
 
 import invesalius.constants as const
 import invesalius.utils as utils
+from invesalius.i18n import tr as _
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes

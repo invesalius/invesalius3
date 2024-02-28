@@ -23,17 +23,13 @@ except ModuleNotFoundError:
     import wx.lib.foldpanelbar as fpb
 from invesalius.pubsub import pub as Publisher
 
-import invesalius.constants as const
-import invesalius.gui.data_notebook as nb
-import invesalius.session as ses
 import invesalius.gui.task_exporter as exporter
 import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
-import invesalius.gui.task_tools as tools
-import invesalius.gui.task_navigator as navigator
 import invesalius.gui.task_tractography as tractography
 import invesalius.gui.task_efield as efield
+import invesalius.gui.task_fmrisupport as fmrisupport
 
 
 
@@ -186,7 +182,8 @@ class InnerFoldPanel(wx.Panel):
                      (_("Configure 3D surface"), surface.TaskPanel),
                      (_("Export data"), exporter.TaskPanel),
                      (_("Tractography"), tractography.TaskPanel),
-                     (_("E-Field"), efield.TaskPanel)]
+                     (_("E-Field"), efield.TaskPanel),
+                     (_("fMRI support"), fmrisupport.TaskPanel)]
         
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)

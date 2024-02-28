@@ -24,6 +24,7 @@ import wx
 from numpy import array, savetxt, hstack,vstack, asarray
 import invesalius.gui.dialogs as dlg
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 
 class Record(threading.Thread):

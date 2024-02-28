@@ -100,6 +100,7 @@ import invesalius.data.transformations as tr
 import invesalius.data.polydata_utils as pu
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
+from invesalius.i18n import tr as _
 import numpy as np
 
 from invesalius import inv_paths
@@ -3435,9 +3436,9 @@ class MaskDensityDialog(wx.Dialog):
 
 class ObjectCalibrationDialog(wx.Dialog):
 
-    def __init__(self, tracker, pedal_connection, neuronavigation_api):
+    def __init__(self, tracker, pedal_connector, neuronavigation_api):
         self.tracker = tracker
-        self.pedal_connection = pedal_connection
+        self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
         self.tracker_id = tracker.GetTrackerId()
@@ -3459,7 +3460,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.SetObjectFiducial, 'Set object fiducial')
+        pass
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3687,6 +3688,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         #
         def set_fiducial_callback(state):
             if state:
+                self.SetObjectFiducial(index)
                 Publisher.sendMessage('Set object fiducial', fiducial_index=index)
 
                 ctrl.SetValue(False)
@@ -3694,28 +3696,11 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if ctrl.GetValue():
             self.object_fiducial_being_set = index
+            self.pedal_connector.add_callback('fiducial', set_fiducial_callback, remove_when_released=True, panel=self)
 
-            if self.pedal_connection is not None:
-                self.pedal_connection.add_callback(
-                    name='fiducial',
-                    callback=set_fiducial_callback,
-                    remove_when_released=True,
-                )
-
-            if self.neuronavigation_api is not None:
-                self.neuronavigation_api.add_pedal_callback(
-                    name='fiducial',
-                    callback=set_fiducial_callback,
-                    remove_when_released=True,
-                )
         else:
             set_fiducial_callback(True)
-
-            if self.pedal_connection is not None:
-                self.pedal_connection.remove_callback(name='fiducial')
-
-            if self.neuronavigation_api is not None:
-                self.neuronavigation_api.remove_pedal_callback(name='fiducial')
+            self.pedal_connector.remove_callback('fiducial', panel=self)
 
     def SetObjectFiducial(self, fiducial_index):
         coord, coord_raw = self.tracker.GetTrackerCoordinates(
