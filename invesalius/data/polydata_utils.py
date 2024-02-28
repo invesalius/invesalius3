@@ -39,6 +39,7 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
 from invesalius.utils import touch
+from invesalius.i18n import tr as _
 
 
 if sys.platform == 'win32':
@@ -148,7 +149,7 @@ def Export(polydata, filename, bin=False):
 def Import(filename):
     reader = vtkXMLPolyDataReader()
     try:
-        reader.SetFileName(filename.encode(wx.GetDefaultPyEncoding()))
+        reader.SetFileName(filename.encode())
     except AttributeError:
         reader.SetFileName(filename)
     reader.Update()

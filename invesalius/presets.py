@@ -26,7 +26,7 @@ from invesalius.pubsub import pub as Publisher
 
 from invesalius import inv_paths
 from invesalius.utils import TwoWaysDictionary
-
+from invesalius.i18n import tr as _
 
 class Presets():
 
@@ -79,8 +79,6 @@ class Presets():
         for presets in presets_list:
             for key in presets:
                 (t_min, t_max) = presets[key]
-
-                print(key, t_min, t_max)
 
                 if (t_min is None) or (t_max is None): # setting custom preset
                     t_min = thresh_min

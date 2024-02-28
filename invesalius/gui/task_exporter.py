@@ -37,6 +37,7 @@ import invesalius.project as proj
 import invesalius.session as ses
 
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
 from invesalius.data.slice_ import Slice
 
 BTN_MASK = wx.NewId()

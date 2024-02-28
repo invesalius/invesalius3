@@ -24,6 +24,7 @@ import sys
 import wx
 import itertools
 
+from invesalius.i18n import tr as _
 from invesalius import utils
 from invesalius import inv_paths
 
@@ -476,6 +477,8 @@ VTK_WARNING = 0
 
 #----------------------------------------------------------
 
+ID_FRAME = wx.NewId()
+
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
  ID_PROJECT_CLOSE, ID_EXPORT_SLICE, ID_PROJECT_PROPERTIES, ID_EXPORT_MASK, ID_PROJECT_INFO,
  ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET, ID_PRINT_SCREENSHOT,
@@ -680,9 +683,10 @@ ID_COLUMN = 0
 SESSION_COLUMN = 1
 LABEL_COLUMN = 2
 TARGET_COLUMN = 3
-X_COLUMN = 4
-Y_COLUMN = 5
-Z_COLUMN = 6
+EFIELD_TARGET_COLUMN = 4
+X_COLUMN = 5
+Y_COLUMN = 6
+Z_COLUMN = 7
 
 #------------ Navigation defaults -------------------
 
@@ -844,6 +848,8 @@ SEED_RADIUS = 1.5
 
 #Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
+CORTEX_COLOR = 190
+EFIELD_ROI_SIZE = 20
 
 # Increased the default sleep parameter from 0.1 to 0.15 to decrease CPU load during navigation.
 SLEEP_NAVIGATION = 0.1
@@ -881,3 +887,7 @@ PULSE_DURATION_IN_MILLISECONDS = 0.2
 ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
 
 MTMS_RADIUS = 15
+
+#Pedal
+KEYSTROKE_PEDAL_ENABLED = True
+KEYSTROKE_PEDAL_KEY = wx.WXK_F21

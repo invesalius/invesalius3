@@ -33,6 +33,7 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
+from invesalius.i18n import tr as _
 import invesalius.gui.task_imports as imports
 
 FPB_DEFAULT_STYLE = 2621440
@@ -161,6 +162,7 @@ class LowerTaskPanel(wx.Panel):
                                       agwStyle=fpb.FPB_COLLAPSE_TO_BOTTOM)
 
         self.fold_panel = fold_panel
+        fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnCaptionBar)
 
         self.enable_items = []
         self.overwrite = False
@@ -178,7 +180,7 @@ class LowerTaskPanel(wx.Panel):
         image_list.Add(GetCollapsedIconBitmap())
 
         # Fold 1 - Data
-        item = fold_panel.AddFoldPanel(_("Data"), collapsed=True,
+        item = fold_panel.AddFoldPanel(_("Data"), collapsed=False,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -196,6 +198,7 @@ class LowerTaskPanel(wx.Panel):
         gbs.Add(fold_panel, (0, 0), flag=wx.EXPAND)
         gbs.Layout()
         item.ResizePanel()
+        self.ResizeFPB()
 
         sizer.Fit(self)
         self.Fit()
@@ -231,6 +234,10 @@ class LowerTaskPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnEnableState, "Enable state project")
 
+    def OnCaptionBar(self, evt):
+        evt.Skip()
+        wx.CallAfter(self.ResizeFPB)
+
     def OnEnableState(self, state):
         if state:
             self.SetStateProjectOpen()
@@ -246,9 +253,10 @@ class LowerTaskPanel(wx.Panel):
             item.Enable()
 
     def ResizeFPB(self):
-        sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
-        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
-        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
+        y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+        x_current, _ = self.GetSize()
+        self.SetMinSize((x_current, y_needed))
+        self.GetParent().Layout()
 
 # Upper fold panel
 class UpperTaskPanel(wx.Panel):

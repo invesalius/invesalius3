@@ -79,6 +79,7 @@ import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.data.converters import convert_custom_bin_to_vtk
+from invesalius.i18n import tr as _
 
 from invesalius.gui import dialogs
 from invesalius_cy import cy_mesh
@@ -119,9 +120,10 @@ class Surface():
         else:
             filename = u'surface_%d' % self.index
             vtp_filename = filename + u'.vtp'
-            vtp_filepath = tempfile.mktemp()
+            vtp_fd, vtp_filepath = tempfile.mkstemp()
             pu.Export(self.polydata, vtp_filepath, bin=True)
             self.filename = vtp_filepath
+            os.close(vtp_fd)
 
         filelist[vtp_filepath] = vtp_filename
 
@@ -136,11 +138,12 @@ class Surface():
                   }
         plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
-        temp_plist = tempfile.mktemp()
+        temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, 'w+b') as f:
             plistlib.dump(surface, f)
 
         filelist[temp_plist] = plist_filename
+        os.close(temp_fd)
 
         return plist_filename
 
@@ -413,11 +416,15 @@ class SurfaceManager():
 
     def OnImportJsonConfig(self, filename, convert_to_inv):
         import json
+        create_meshes_flag = False
+        self.convert_to_inv = convert_to_inv
+        scalp_index = None
         with open(filename, 'r') as config_file:
             config_dict = json.load(config_file)
         cortex =config_dict['path_meshes']+config_dict['cortex']
         bmeshes = config_dict['bmeshes']
         coil = config_dict['coil']
+        targeting_file = config_dict['targeting csv file']
         dIperdt_list = []
         dIperdt = config_dict['dIperdts']
         for elements in dIperdt:
@@ -427,6 +434,7 @@ class SurfaceManager():
             path_meshes = config_dict['path_meshes_second_computer']
         else:
             path_meshes = config_dict['path_meshes']
+            create_meshes_flag = True
         if 'multilocus_coils' in config_dict:
             multilocus_coil = config_dict['multilocus_coils']
             multilocus_coil_list = []
@@ -436,10 +444,15 @@ class SurfaceManager():
             Publisher.sendMessage('Get multilocus paths from json', multilocus_coil_list= multilocus_coil_list)
         surface_index_cortex = self.OnImportCustomBinFile(cortex)
         if surface_index_cortex is not None:
+            self.convert_to_inv = convert_to_inv
             proj = prj.Project()
             cortex_save_file = path_meshes +'export_inv/'+config_dict['cortex']
             polydata = proj.surface_dict[surface_index_cortex].polydata
-            self.OnWriteCustomBinFile(polydata,cortex_save_file)
+            file_extension = cortex_save_file.split('.')[-1]
+            if file_extension == "stl":
+                cortex_save_file = cortex_save_file.split('.')[0] + ".bin"
+            if create_meshes_flag:
+                self.OnWriteCustomBinFile(polydata,cortex_save_file)
             Publisher.sendMessage('Get Efield actor from json',efield_actor = polydata, surface_index_cortex = surface_index_cortex)
             bmeshes_list = []
             ci_list = []
@@ -451,13 +464,27 @@ class SurfaceManager():
                 co = elements['co']
                 surface_index_bmesh = self.OnImportCustomBinFile(file)
                 if surface_index_bmesh is not None:
+                    if elements['file'] == 'sc.stl':
+                        scalp_index = surface_index_bmesh
                     bmeshes_save_file = path_meshes + 'export_inv/' + elements['file']
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
-                    self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
+                    file_extension = bmeshes_save_file.split('.')[-1]
+                    if file_extension == "stl":
+                        bmeshes_save_file = bmeshes_save_file.split('.')[0] + ".bin"
+                    if create_meshes_flag:
+                        self.OnWriteCustomBinFile(polydata, bmeshes_save_file)
                     bmeshes_list.append(bmeshes_save_file)
                     ci_list.append(ci)
                     co_list.append(co)
-                Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list, dIperdt_list= dIperdt_list)
+            Publisher.sendMessage('Get Efield paths', path_meshes = path_meshes, cortex_file = cortex_save_file, meshes_file = bmeshes_list, coil = coil, ci = ci_list, co = co_list, dIperdt_list= dIperdt_list)
+        if scalp_index is not None:
+            Publisher.sendMessage('Send scalp index', scalp_actor = self.actors_dict[scalp_index])
+        else:
+            self.convert_to_inv = convert_to_inv
+            scalp_path = config_dict['path_meshes'] + config_dict['scalp path']
+            surface_index_bmesh = self.OnImportCustomBinFile(scalp_path)
+            Publisher.sendMessage('Send scalp index', scalp_actor = self.actors_dict[surface_index_bmesh])
+            Publisher.sendMessage('Send targeting file path', targeting_file= targeting_file)
 
     def OnImportSurfaceFile(self, filename):
         """
@@ -1052,12 +1079,12 @@ class SurfaceManager():
             const.FILETYPE_STL_ASCII: '.stl',
         }
         if filetype in ftype_prefix:
-            temp_file = tempfile.mktemp(suffix=ftype_prefix[filetype])
+            temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
 
             if _has_win32api:
-                utl.touch(temp_file)
                 _temp_file = temp_file
                 temp_file = win32api.GetShortPathName(temp_file)
+                os.close(temp_fd)
                 os.remove(_temp_file)
 
             temp_file = utl.decode(temp_file, const.FS_ENCODE)

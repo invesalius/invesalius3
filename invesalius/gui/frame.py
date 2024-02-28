@@ -43,6 +43,7 @@ from invesalius import inv_paths
 from invesalius.gui import project_properties
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -91,7 +92,7 @@ class Frame(wx.Frame):
         """
         Initialize frame, given its parent.
         """
-        wx.Frame.__init__(self, id=-1, name='', parent=prnt,
+        wx.Frame.__init__(self, id=const.ID_FRAME, name='', parent=prnt,
               pos=wx.Point(0, 0),
               size=wx.Size(1024, 748), #size = wx.DisplaySize(),
               style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3')
@@ -1301,7 +1302,6 @@ class MenuBar(wx.MenuBar):
             self._plugins_menu_ids[_new_id] = items[item]
             menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
             menu_item.Enable(items[item]["enable_startup"])
-            print(">>> menu", item)
 
     def OnEnableState(self, state):
         """
@@ -2096,7 +2096,7 @@ class LayoutToolBar(AuiToolBar):
         self.ontool_layout = False
         self.ontool_text = True
         self.ontool_ruler = True
-        self.enable_items = [ID_TEXT, ID_RULER]
+        self.enable_items = [ID_TEXT]
 
         self.Realize()
         self.SetStateProjectClose()
@@ -2243,7 +2243,7 @@ class LayoutToolBar(AuiToolBar):
         Disable menu items (e.g. text) when project is closed.
         """
         self.ontool_text = False
-        self.ontool_ruler = False
+        self.ontool_ruler = True
         self.ToggleText()
         self.ToggleRulers()
         for tool in self.enable_items:

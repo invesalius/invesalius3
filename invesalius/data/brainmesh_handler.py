@@ -352,6 +352,21 @@ class E_field_brain:
         self.efield_scalar_bar.SetTitleTextProperty(text_property)
         #self.lut = CreateLUTTableForEfield(0, 0.005)
 
+class Scalp:
+    def __init__(self, mesh):
+        self.mesh_normals = vtkFloatArray()
+        self.mesh_centers = vtkFloatArray()
+
+        self.locator_Cell = vtkCellLocator()
+        self.locator_Cell.SetDataSet(mesh)
+        self.locator_Cell.BuildLocator()
+
+        self.locator = vtkPointLocator()
+        self.locator.SetDataSet(mesh)
+        self.locator.BuildLocator()
+
+        self.mesh_normals = GetNormals(mesh)
+        self.mesh_centers = GetCenters(mesh)
 
 def GetCenters(mesh):
         # Compute centers of triangles

@@ -13,18 +13,14 @@ from invesalius import inv_paths
 import wx
 from invesalius import utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
+from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
+from invesalius.i18n import tr as _
 
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.navigation.navigation import Navigation
-
-HAS_PEDAL_CONNECTION = True
-try:
-    from invesalius.net.pedal_connection import PedalConnection
-except ImportError:
-    HAS_PEDAL_CONNECTION = False
 
 class Preferences(wx.Dialog):
     def __init__(
@@ -38,10 +34,10 @@ class Preferences(wx.Dialog):
         super().__init__(parent, id_, title, style=style)
         tracker = Tracker()
         robot = Robot()
-        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
         neuronavigation_api = NeuronavigationApi()
+        pedal_connector = PedalConnector(neuronavigation_api, self)
         navigation = Navigation(
-            pedal_connection=pedal_connection,
+            pedal_connector=pedal_connector,
             neuronavigation_api=neuronavigation_api,
         )
 
@@ -57,7 +53,7 @@ class Preferences(wx.Dialog):
         if mode == const.MODE_NAVIGATOR:
             self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
-            self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connection, neuronavigation_api)
+            self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
             self.book.AddPage(self.pnl_navigation, _("Navigation"))
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
@@ -347,13 +343,13 @@ class NavigationPage(wx.Panel):
         Publisher.sendMessage('Update coord sleep', data=self.sleep_coord)
         
 class ObjectPage(wx.Panel):
-    def __init__(self, parent, navigation, tracker, pedal_connection, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
 
         self.coil_list = const.COIL
         
         self.tracker = tracker
-        self.pedal_connection = pedal_connection
+        self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
         self.navigation = navigation
         self.obj_fiducials = None
@@ -494,7 +490,7 @@ class ObjectPage(wx.Panel):
 
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
-            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connection, self.neuronavigation_api)
+            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connector, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     obj_fiducials, obj_orients, obj_ref_mode, obj_name, polydata, use_default_object = dialog.GetValue()

@@ -219,15 +219,19 @@ class SegmentProcess(ctx.Process):
         self._image_dtype = image.dtype
         self._image_shape = image.shape
 
+        fd, fname = tempfile.mkstemp()
         self._probability_array = np.memmap(
-            tempfile.mktemp(), shape=image.shape, dtype=np.float32, mode="w+"
+            filename=fname, shape=image.shape, dtype=np.float32, mode="w+"
         )
         self._prob_array_filename = self._probability_array.filename
+        self._prob_array_fd = fd
 
+        fd, fname = tempfile.mkstemp()
         self._comm_array = np.memmap(
-            tempfile.mktemp(), shape=(1,), dtype=np.float32, mode="w+"
+            filename=fname, shape=(1,), dtype=np.float32, mode="w+"
         )
         self._comm_array_filename = self._comm_array.filename
+        self._comm_array_fd = fd
 
         self.create_new_mask = create_new_mask
         self.backend = backend
@@ -353,9 +357,11 @@ class SegmentProcess(ctx.Process):
 
     def __del__(self):
         del self._comm_array
+        os.close(self._comm_array_fd)
         os.remove(self._comm_array_filename)
 
         del self._probability_array
+        os.close(self._prob_array_fd)
         os.remove(self._prob_array_filename)
 
 

@@ -30,6 +30,7 @@ from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as constants
 import invesalius.constants as const
+from invesalius.i18n import tr as _
 
 ID_BTN_MEASURE_LINEAR = wx.NewId()
 ID_BTN_MEASURE_ANGULAR = wx.NewId()

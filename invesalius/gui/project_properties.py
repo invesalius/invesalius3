@@ -22,6 +22,7 @@ import invesalius.project as prj
 from invesalius.pubsub import pub as Publisher
 from invesalius.gui import utils
 from invesalius import constants as const
+from invesalius.i18n import tr as _
 
 ORIENTATION_LABEL = {
     const.AXIAL: _("Axial"),

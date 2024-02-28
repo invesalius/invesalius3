@@ -26,7 +26,7 @@ import traceback
 import collections.abc
 
 from setuptools.extern.packaging.version import Version
-from functools import wraps
+from functools import wraps, partial
 
 import numpy as np
 
@@ -78,8 +78,8 @@ def debug(error_str):
     """
     from invesalius.session import Session
     session = Session()
-    #if session.GetConfig('debug'):
-    print(error_str)
+    if session.GetConfig('debug'):
+        print(error_str)
 
 def next_copy_name(original_name, names_list):
     """
@@ -400,6 +400,7 @@ def UpdateCheck():
     import invesalius.session as ses
     def _show_update_info():
         from invesalius.gui import dialogs
+        from invesalius.i18n import tr as _
         msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
         title=_("Invesalius Update")
         msgdlg = dialogs.UpdateMessageDialog(url)
@@ -493,7 +494,6 @@ def log_traceback(ex):
     tb_lines = [line.rstrip('\n') for line in
         traceback.format_exception(ex.__class__, ex, ex_traceback)]
     return ''.join(tb_lines)
-
 
 
 def deep_merge_dict(d, u):

@@ -61,6 +61,7 @@ from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
 
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius_cy import floodfill
+from invesalius.i18n import tr as _
 
 # For tracts
 import invesalius.data.tractography as dtr
@@ -1941,7 +1942,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
             #w_algorithm = WALGORITHM[self.config.algorithm]
             bstruct = generate_binary_structure(3, CON3D[self.config.con_3d])
-            tfile = tempfile.mktemp()
+            fd, tfile = tempfile.mkstemp()
             tmp_mask = np.memmap(tfile, shape=mask.shape, dtype=mask.dtype,
                                  mode='w+')
             q = multiprocessing.Queue()
@@ -1951,6 +1952,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                                         self.config.mg_size,
                                         self.config.use_ww_wl, wl, ww, q))
 
+            os.close(fd)
             wp = WatershedProgressWindow(p)
             p.start()
 
