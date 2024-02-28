@@ -82,14 +82,14 @@ def configureLogging():
         closeLogging()
         
 def closeLogging():
-    logger = logging.getLogger()
+    logger = logging.getLogger(__name__)
     while logger.hasHandlers():
         logger.handlers[0].flush()
         logger.removeHandler(logger.handlers[0])    
 
 def function_call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        logger = logging.getLogger()
+        logger = logging.getLogger(__name__)
         logger.info('Function called ...')
         function(*args)
     return wrapper_accepting_arguments
