@@ -14,21 +14,20 @@ def configureLogging():
     logging_file  = session.GetConfig('logging_file')
 
     logger = logging.getLogger(__name__)
-    #print('Number of logger handlers: ', len(logger.handlers))
-    #print(do_logging,logging_level,append_log_file,logging_file, const.LOGGING_LEVEl_TYPES[logging_level])
+    msg = 'Number of logger handlers: {}'.format(len(logger.handlers))
+    logger.info(msg)
     
     if do_logging:
-        #print('Logging selected')
         python_loglevel = getattr(logging,  const.LOGGING_LEVEl_TYPES[logging_level].upper(), None)
          # set logging level
         msg = 'Loglevel requested {}, Python log level {}'.format( 
              const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
-        #print('Printing:', msg)
         logging.info(msg)
         
         if not isinstance(python_loglevel, int):
             raise ValueError('Invalid log level to set: %s' % python_loglevel) 
         logger.setLevel(python_loglevel)
+
         msg = 'Logging level set to: {}, Python loglevel: {}'.format( \
             const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
         logging.info(msg)
@@ -45,12 +44,11 @@ def configureLogging():
                 logger.removeHandler(handler)
                 logging.info('Removed existing stream handler')
         logger.addHandler(ch)
-        #print('Added stream handler')
         logger.info('Added stream handler')
 
         # create file handler 
         msg = 'Logging file requested {}'.format(logging_file)
-        logging.info(msg)
+        logger.info(msg)
         
         if logging_file:
             addFileHandler = True
@@ -77,6 +75,7 @@ def configureLogging():
 def closeLogging():
     logger = logging.getLogger()
     while logger.hasHandlers():
+        logger.handlers[0].flush()
         logger.removeHandler(logger.handlers[0])    
 
 def function_call_tracking_decorator(function: Callable[[str], None]):

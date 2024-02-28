@@ -277,6 +277,16 @@ class Logging(wx.Panel):
             const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
             const.LOGFILE: self.tc_log_file_name.GetValue(),
         }
+        session = ses.Session()
+        do_logging = self.rb_logging.GetSelection()
+        session.SetConfig('do_logging', do_logging)
+        logging_level = self.cb_logging_level.GetSelection()
+        session.SetConfig('logging_level', logging_level)
+        append_log_file = self.rb_append_file.GetSelection()
+        session.SetConfig('append_log_file', append_log_file)
+        logging_file  = self.tc_log_file_name.GetValue()
+        session.SetConfig('logging_file', logging_file)
+        log.configureLogging()
         return options
 
     def LoadSelection(self, values):
