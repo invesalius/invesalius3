@@ -27,7 +27,6 @@ def configureLogging():
         if not isinstance(python_loglevel, int):
             raise ValueError('Invalid log level to set: %s' % python_loglevel) 
         logger.setLevel(python_loglevel)
-
         msg = 'Logging level set to: {}, Python loglevel: {}'.format( \
             const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
         logging.info(msg)
@@ -52,7 +51,7 @@ def configureLogging():
         
         if logging_file:
             addFileHandler = True
-            fh = logging.FileHandler(logging_file, 'w+', encoding=None)
+            fh = logging.FileHandler(logging_file, 'a', encoding=None)
             fh.setLevel(python_loglevel)
             fh.setFormatter(formatter)
             for handler in logger.handlers:
