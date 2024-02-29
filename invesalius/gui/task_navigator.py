@@ -2045,7 +2045,7 @@ class MarkersPanel(wx.Panel):
 
     def __find_efield_target_marker(self):
         for i in range(len(self.markers)):
-            if self.markers[i].is_efield_target:
+            if self.markers[i].marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
                 return i
 
         return None
