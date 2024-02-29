@@ -41,7 +41,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     The owner of the connection object can update the state of InVesalius by implementing
     functions to set callbacks, used then to communicate the new state to InVesalius (see,
-    e.g., set_callback__set_markers below).
+    e.g., one of the callback functions below).
 
     If connection object is not given or it is None, do not do the updates.
     """
@@ -65,7 +65,6 @@ class NeuronavigationApi(metaclass=Singleton):
         assert self._hasmethod(connection, 'update_coil_at_target')
         assert self._hasmethod(connection, 'update_coil_pose')
         assert self._hasmethod(connection, 'update_focus')
-        assert self._hasmethod(connection, 'set_callback__set_markers')
         assert self._hasmethod(connection, 'set_callback__stimulation_pulse_received')
 
     def __bind_events(self):
@@ -229,7 +228,6 @@ class NeuronavigationApi(metaclass=Singleton):
     # Functions for InVesalius to receive updates via callbacks.
 
     def __set_callbacks(self, connection):
-        connection.set_callback__set_markers(self.set_markers)
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
         connection.set_callback__stimulation_pulse_received(self.stimulation_pulse_received)
 
