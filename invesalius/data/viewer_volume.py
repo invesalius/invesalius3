@@ -928,14 +928,11 @@ class Viewer(wx.Panel):
         elif marker_type == MarkerType.COIL_POSE:
             actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=0.3)
 
-        # For 'electric field target' type markers, create an arrow.
-        elif marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
-            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
-            if cortex_marker[0] is not None:
-                Publisher.sendMessage('Add cortex marker actor', position_orientation=cortex_marker, marker_id=marker_id)
-
         else:
             assert False, "Invalid marker type."
+
+        if cortex_marker[0] is not None:
+            Publisher.sendMessage('Add cortex marker actor', position_orientation=cortex_marker, marker_id=marker_id)
 
         # Add marker to the list of all markers.
         self.static_markers.append(
