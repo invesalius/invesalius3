@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-02-22 08:53-0300\n"
-"PO-Revision-Date: 2024-02-29 09:47+0800\n"
+"PO-Revision-Date: 2024-02-29 14:57+0800\n"
 "Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
 "Language-Team: Chinese (China) (http://www.transifex.com/invesalius/"
 "invesalius3/language/zh_CN/)\n"
@@ -50,7 +50,7 @@ msgstr ""
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:200 dicom_preview_panel.py:201 frame.py:935
 msgid "Image"
-msgstr "形象"
+msgstr "图像"
 
 #: bitmap_preview_panel.py:447 bitmap_preview_panel.py:448 constants.py:225
 #: constants.py:313 control.py:496 dialogs.py:1096 dialogs.py:1109
@@ -71,7 +71,7 @@ msgstr "数值：%-6d"
 #: clut_raycasting.py:536
 #, python-format
 msgid "Alpha: %-.3f"
-msgstr "Alpha：%-.3f"
+msgstr "透明度：%-.3f"
 
 #: constants.py:36
 #, python-format
@@ -144,11 +144,11 @@ msgstr "默认"
 
 #: constants.py:176
 msgid "Hue"
-msgstr "颜色"
+msgstr "色调"
 
 #: constants.py:177
 msgid "Saturation"
-msgstr "饱和"
+msgstr "饱和度"
 
 #: constants.py:178
 msgid "Desert"
@@ -156,11 +156,11 @@ msgstr "沙漠"
 
 #: constants.py:179
 msgid "Rainbow"
-msgstr "虹"
+msgstr "彩虹"
 
 #: constants.py:180
 msgid "Ocean"
-msgstr "大海"
+msgstr "海洋"
 
 #: constants.py:181
 msgid "Inverse Gray"
@@ -169,11 +169,11 @@ msgstr "反向灰度"
 #: constants.py:231
 #, python-format
 msgid "Mask %d"
-msgstr "掩码%d"
+msgstr "遮罩 %d"
 
 #: constants.py:287 task_surface.py:50
 msgid "Draw"
-msgstr "画"
+msgstr "绘制"
 
 #: constants.py:287 styles.py:67 task_slice.py:890 task_surface.py:50
 msgid "Erase"
@@ -181,7 +181,7 @@ msgstr "擦除"
 
 #: constants.py:287 data_notebook.py:467 dialogs.py:2948 task_surface.py:50
 msgid "Threshold"
-msgstr "门槛"
+msgstr "阈值"
 
 #: constants.py:299 constants.py:304
 msgid "Low"
@@ -219,7 +219,7 @@ msgstr "脑"
 #: constants.py:316 control.py:498 dialogs.py:1797 dialogs.py:1800
 #: dialogs.py:1808 dialogs.py:1883 slice_menu.py:59 slice_menu.py:71
 msgid "Default"
-msgstr "违约"
+msgstr "默认"
 
 #: constants.py:317
 msgid "Emphysema"
@@ -606,15 +606,15 @@ msgstr "矢状"
 
 #: data_notebook.py:73
 msgid "Masks"
-msgstr "口罩"
+msgstr "遮罩"
 
 #: data_notebook.py:74
 msgid "3D surfaces"
-msgstr "三维曲面"
+msgstr "三维表面"
 
 #: data_notebook.py:75
 msgid "Measures"
-msgstr "措施"
+msgstr "测量"
 
 #: data_notebook.py:171
 msgid "Create a new measure"
@@ -622,11 +622,11 @@ msgstr "创建新度量值"
 
 #: data_notebook.py:178
 msgid "Remove measure"
-msgstr "删除措施"
+msgstr "删除测量"
 
 #: data_notebook.py:184
 msgid "Duplicate measure"
-msgstr "重复度量"
+msgstr "重复测量"
 
 #: data_notebook.py:197 frame.py:1512
 msgid "Measure distance"
@@ -646,7 +646,7 @@ msgstr "移除遮罩"
 
 #: data_notebook.py:301
 msgid "Duplicate mask"
-msgstr "重复掩码"
+msgstr "重复遮罩"
 
 #: data_notebook.py:466 data_notebook.py:818 data_notebook.py:1093
 #: data_notebook.py:1290
@@ -655,11 +655,11 @@ msgstr "名称"
 
 #: data_notebook.py:537 frame.py:936
 msgid "Mask"
-msgstr "面具"
+msgstr "遮罩"
 
 #: data_notebook.py:629
 msgid "Create a new surface"
-msgstr "创建新曲面"
+msgstr "创建新表面"
 
 #: data_notebook.py:635
 msgid "Remove surface"
@@ -667,15 +667,15 @@ msgstr "移除表面"
 
 #: data_notebook.py:641
 msgid "Duplicate surface"
-msgstr "重复曲面"
+msgstr "重复表面"
 
 #: data_notebook.py:647
 msgid "Import a surface file into InVesalius"
-msgstr "将曲面文件导入InVesalius"
+msgstr "将表面文件导入InVesalius"
 
 #: data_notebook.py:675 task_surface.py:162
 msgid "New surface"
-msgstr "新曲面"
+msgstr "新表面"
 
 #: data_notebook.py:819
 msgid "Volume (mm³)"
@@ -691,7 +691,7 @@ msgstr "透明度"
 
 #: data_notebook.py:1094
 msgid "Location"
-msgstr "地方"
+msgstr "位置"
 
 #: data_notebook.py:1095 data_notebook.py:1291 import_bitmap_panel.py:202
 msgid "Type"
@@ -699,7 +699,7 @@ msgstr "类型"
 
 #: data_notebook.py:1096 data_notebook.py:1292
 msgid "Value"
-msgstr "价值"
+msgstr "值"
 
 #: default_tasks.py:154
 msgid "Data"
@@ -715,7 +715,7 @@ msgstr "选择感兴趣的区域"
 
 #: default_tasks.py:248 default_tasks.py:254 default_tasks.py:284
 msgid "Configure 3D surface"
-msgstr "配置三维曲面"
+msgstr "配置三维表面"
 
 #: default_tasks.py:249 default_tasks.py:255
 msgid "Export data"
@@ -764,7 +764,7 @@ msgid ""
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
-"InVesalius在32位操作系统上运行或内存不足。如果要使用三维曲面或体积渲染，建议"
+"InVesalius在32位操作系统上运行或内存不足。如果要使用三维表面或体积渲染，建议"
 "降低医学图像的分辨率。"
 
 #: dialogs.py:161
@@ -805,11 +805,11 @@ msgstr "导入NIFTi 1文件"
 
 #: dialogs.py:405
 msgid "Import PAR/REC file"
-msgstr "导入标准杆数/REC文件"
+msgstr "导入PAR/REC文件"
 
 #: dialogs.py:441
 msgid "Import surface file"
-msgstr "导入曲面文件"
+msgstr "导入表面文件"
 
 #: dialogs.py:476
 msgid "Save project as..."
@@ -899,7 +899,7 @@ msgstr "切片的方向可能错误，函数可能无法正常工作。"
 
 #: dialogs.py:835
 msgid "A mask is needed to create a surface."
-msgstr "创建曲面需要遮罩。"
+msgstr "创建表面需要遮罩。"
 
 #: dialogs.py:846
 msgid "No mask was selected for removal."
@@ -907,7 +907,7 @@ msgstr "没有选择要删除的掩码。"
 
 #: dialogs.py:857
 msgid "No surface was selected for removal."
-msgstr "没有选择要删除的曲面。"
+msgstr "没有选择要删除的表面。"
 
 #: dialogs.py:869
 msgid "No measure was selected for removal."
@@ -919,7 +919,7 @@ msgstr "没有选择要复制的掩码。"
 
 #: dialogs.py:893
 msgid "No surface was selected for duplication."
-msgstr "没有选择要复制的曲面。"
+msgstr "没有选择要复制的表面。"
 
 #: dialogs.py:906
 msgid "Fiducials are invalid. Select all coordinates."
@@ -1038,11 +1038,11 @@ msgstr "将光线投射预设另存为："
 
 #: dialogs.py:1375 dialogs.py:1644
 msgid "New surface name:"
-msgstr "新曲面名称："
+msgstr "新表面名称："
 
 #: dialogs.py:1379 dialogs.py:1648
 msgid "Name the surface to be created"
-msgstr "命名要创建的曲面"
+msgstr "命名要创建的表面"
 
 #: dialogs.py:1386 dialogs.py:1655
 msgid "Mask of reference:"
@@ -1086,19 +1086,19 @@ msgstr "TIFF图像"
 
 #: dialogs.py:1530
 msgid "Surface generation options"
-msgstr "曲面生成选项"
+msgstr "表面生成选项"
 
 #: dialogs.py:1560
 msgid "Surface creation"
-msgstr "曲面创建"
+msgstr "表面创建"
 
 #: dialogs.py:1593
 msgid "Surface creation options"
-msgstr "曲面创建选项"
+msgstr "表面创建选项"
 
 #: dialogs.py:1599
 msgid "Surface creation method"
-msgstr "曲面创建方法"
+msgstr "表面创建方法"
 
 #: dialogs.py:1703 preferences.py:225
 msgid "Fill border holes"
@@ -1159,7 +1159,7 @@ msgstr "布尔运算"
 
 #: dialogs.py:2067 slice_.py:1347
 msgid "Union"
-msgstr "协会"
+msgstr "愈合"
 
 #: dialogs.py:2068
 msgid "Difference"
@@ -1167,7 +1167,7 @@ msgstr "差别"
 
 #: dialogs.py:2069 slice_.py:1349
 msgid "Intersection"
-msgstr "十字路口"
+msgstr "交叉"
 
 #: dialogs.py:2070
 msgid "Exclusive disjunction"
@@ -1175,7 +1175,7 @@ msgstr "互斥析取"
 
 #: dialogs.py:2091
 msgid "Mask 1"
-msgstr "口罩1"
+msgstr "遮罩1"
 
 #: dialogs.py:2093
 msgid "Operation"
@@ -1183,7 +1183,7 @@ msgstr "活动"
 
 #: dialogs.py:2095
 msgid "Mask 2"
-msgstr "口罩2"
+msgstr "遮罩2"
 
 #: dialogs.py:2123
 msgid "Image reorientation"
@@ -1191,7 +1191,7 @@ msgstr "图像重新定向"
 
 #: dialogs.py:2142
 msgid "Nearest Neighbour"
-msgstr "最近的邻居"
+msgstr "最近邻"
 
 #: dialogs.py:2143
 msgid "Trilinear"
@@ -1203,11 +1203,11 @@ msgstr "三元三次"
 
 #: dialogs.py:2145
 msgid "Lanczos (experimental)"
-msgstr "Lanczos（实验）"
+msgstr "兰索斯（实验）"
 
 #: dialogs.py:2155
 msgid "Apply"
-msgstr "申请"
+msgstr "应用"
 
 #: dialogs.py:2161
 msgid "Angle X"
@@ -1313,11 +1313,11 @@ msgstr "参数"
 
 #: dialogs.py:2814 dialogs.py:2817
 msgid "Select mask parts"
-msgstr "选择遮罩零件"
+msgstr "选择遮罩部分"
 
 #: dialogs.py:2844
 msgid "Target mask name"
-msgstr "目标掩码名称"
+msgstr "目标遮罩名称"
 
 #: dialogs.py:2896 styles.py:2305
 msgid "Region growing"
@@ -1329,7 +1329,7 @@ msgstr "动态"
 
 #: dialogs.py:2948
 msgid "Confidence"
-msgstr "信心"
+msgstr "自信"
 
 #: dialogs.py:3101
 msgid "Crop mask"
@@ -1357,7 +1357,7 @@ msgstr "最大孔尺寸"
 
 #: dialogs.py:3269
 msgid "voxels"
-msgstr "体素"
+msgstr "三维图像"
 
 #: dialogs.py:3328 dialogs.py:3331
 msgid "Mask density"
@@ -1369,7 +1369,7 @@ msgstr "计算"
 
 #: dialogs.py:3357
 msgid "Mask:"
-msgstr "面具:"
+msgstr "遮罩:"
 
 #: dialogs.py:3364
 msgid "Mean:"
@@ -1418,15 +1418,15 @@ msgstr "InVesalius未重新配置文件格式"
 #: dialogs.py:3553 dialogs.py:3572 surface.py:315 surface.py:327
 #: viewer_volume.py:1147 viewer_volume.py:1163
 msgid "Import surface error"
-msgstr "导入曲面错误"
+msgstr "导入表面错误"
 
 #: dialogs.py:3572 surface.py:327 viewer_volume.py:1163
 msgid "InVesalius was not able to import this surface"
-msgstr "InVesalius无法导入此曲面"
+msgstr "InVesalius无法导入此表面"
 
 #: dialogs.py:3681
 msgid "Creating 3D surface ..."
-msgstr "正在创建三维曲面..."
+msgstr "正在创建三维表面..."
 
 #: dialogs.py:3706
 msgid "Go to slice ..."
@@ -1481,7 +1481,7 @@ msgstr "NIfTI 1"
 
 #: frame.py:815
 msgid "PAR/REC"
-msgstr "标准杆数/REC"
+msgstr "PAR/REC"
 
 #: frame.py:821
 msgid "Import DICOM...\tCtrl+I"
@@ -1537,7 +1537,7 @@ msgstr "布尔运算\tCtrl+Shift+B"
 
 #: frame.py:877
 msgid "Clean Mask\tCtrl+Shift+A"
-msgstr "清洁遮罩\tCtrl+Shift+A"
+msgstr "清除遮罩\tCtrl+Shift+A"
 
 #: frame.py:882
 msgid "Fill holes manually\tCtrl+Shift+H"
@@ -1629,7 +1629,7 @@ msgstr "插值切片"
 
 #: frame.py:979
 msgid "Preferences..."
-msgstr "偏好..."
+msgstr "首选项..."
 
 #: frame.py:984
 msgid "Transcranial Magnetic Stimulation Mode\tCtrl+T"
@@ -1645,7 +1645,7 @@ msgstr "导航模式"
 
 #: frame.py:997
 msgid "Getting started..."
-msgstr "正在开始..."
+msgstr "开始..."
 
 #: frame.py:1000
 msgid "About..."
@@ -1661,7 +1661,7 @@ msgstr "编辑"
 
 #: frame.py:1010
 msgid "View"
-msgstr "看法"
+msgstr "视图"
 
 #: frame.py:1014
 msgid "Mode"
@@ -1755,7 +1755,7 @@ msgstr "正在生成多平面可视化..."
 
 #: import_bitmap_panel.py:92 import_network_panel.py:101 import_panel.py:94
 msgid "Import"
-msgstr "进口"
+msgstr "导入"
 
 #: import_bitmap_panel.py:201
 msgid "Path"
@@ -2012,7 +2012,7 @@ msgstr "XOR"
 
 #: slice_menu.py:36
 msgid "Normal"
-msgstr "典型的"
+msgstr "普通"
 
 #: slice_menu.py:37
 msgid "MaxIP"
@@ -2024,7 +2024,7 @@ msgstr "最小密度投影"
 
 #: slice_menu.py:39
 msgid "MeanIP"
-msgstr "梅尼普"
+msgstr "平均密度投影"
 
 #: slice_menu.py:40
 msgid "MIDA"
@@ -2032,7 +2032,7 @@ msgstr "MIDA"
 
 #: slice_menu.py:41
 msgid "Contour MaxIP"
-msgstr "轮廓最大IP"
+msgstr "最大密度投影轮廓"
 
 #: slice_menu.py:42
 msgid "Contour MIDA"
@@ -2088,11 +2088,11 @@ msgstr "分段..."
 
 #: surface.py:645
 msgid "InVesalius was not able to create the surface"
-msgstr "InVesalius无法创建曲面"
+msgstr "InVesalius无法创建表面"
 
 #: surface.py:709
 msgid "Creating 3D surface..."
-msgstr "正在创建三维曲面..."
+msgstr "正在创建三维表面..."
 
 #: task_exporter.py:115
 msgid "Export InVesalius screen to an image file"
@@ -2104,27 +2104,27 @@ msgstr "导出图片..."
 
 #: task_exporter.py:128
 msgid "Export 3D surface"
-msgstr "导出三维曲面"
+msgstr "导出三维表面"
 
 #: task_exporter.py:129
 msgid "Export 3D surface..."
-msgstr "导出三维曲面..."
+msgstr "导出三维表面..."
 
 #: task_exporter.py:326
 msgid "Save 3D surface as..."
-msgstr "将三维曲面另存为..."
+msgstr "将三维表面另存为..."
 
 #: task_exporter.py:350
 msgid "It was not possible to save the surface."
-msgstr "无法保存曲面。"
+msgstr "无法保存表面。"
 
 #: task_exporter.py:351
 msgid "Error saving surface"
-msgstr "保存曲面时出错"
+msgstr "保存表面时出错"
 
 #: task_exporter.py:357
 msgid "You need to create a surface and make it "
-msgstr "您需要创建一个曲面并使其"
+msgstr "您需要创建一个表面并使其"
 
 #: task_exporter.py:358
 msgid "visible before exporting it."
@@ -2136,7 +2136,7 @@ msgstr "正在测试..."
 
 #: task_importer.py:71
 msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
-msgstr "选择要重建的DICOM、Analyze、NIfTI或REC/标准杆数文件"
+msgstr "选择要重建的DICOM、Analyze、NIfTI或REC/PAR文件"
 
 #: task_importer.py:72
 msgid "Import medical images..."
@@ -2272,7 +2272,7 @@ msgstr "保存对象注册文件"
 
 #: task_navigator.py:779 task_navigator.py:963 task_navigator.py:1022
 msgid "Save"
-msgstr "拯救"
+msgstr "保存"
 
 #: task_navigator.py:792
 msgid "Angle threshold [degrees]:"
@@ -2344,11 +2344,11 @@ msgstr "创建新遮罩"
 
 #: task_slice.py:128
 msgid "Create surface"
-msgstr "创建曲面"
+msgstr "创建表面"
 
 #: task_slice.py:129
 msgid "Overwrite last surface"
-msgstr "覆盖最后一个曲面"
+msgstr "覆盖最后一个表面"
 
 #: task_slice.py:290
 msgid "Mask properties"
@@ -2368,11 +2368,11 @@ msgstr "选择笔刷类型、大小或操作："
 
 #: task_slice.py:689 task_slice.py:857
 msgid "Circle"
-msgstr "圆圈"
+msgstr "圆形"
 
 #: task_slice.py:693 task_slice.py:861
 msgid "Square"
-msgstr "广场"
+msgstr "正方形"
 
 #: task_slice.py:734
 msgid "Brush threshold range:"
@@ -2388,11 +2388,11 @@ msgstr "将分水岭扩展到三维"
 
 #: task_surface.py:94
 msgid "Create 3D surface based on a mask"
-msgstr "基于遮罩创建三维曲面"
+msgstr "基于遮罩创建三维表面"
 
 #: task_surface.py:95
 msgid "Create new 3D surface"
-msgstr "创建新的三维曲面"
+msgstr "创建新的三维表面"
 
 #: task_surface.py:116
 msgid "Next step"
@@ -2409,25 +2409,25 @@ msgstr "高级选项"
 #: task_surface.py:303
 msgid ""
 "Automatically select largest disconnected region and create new surface"
-msgstr "自动选择最大的断开连接区域并创建新曲面"
+msgstr "自动选择最大的断开连接区域并创建新表面"
 
 #: task_surface.py:304
 msgid "Select largest surface"
-msgstr "选择最大的曲面"
+msgstr "选择最大的表面"
 
 #: task_surface.py:312
 msgid ""
 "Automatically select disconnected regions and create a new surface per "
 "region"
-msgstr "自动选择断开连接的面域并按面域创建新曲面"
+msgstr "自动选择断开连接的面域并按面域创建新表面"
 
 #: task_surface.py:313
 msgid "Split all disconnected surfaces"
-msgstr "拆分所有断开连接的曲面"
+msgstr "拆分所有断开连接的表面"
 
 #: task_surface.py:321
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr "手动插入感兴趣区域的种子并创建新曲面"
+msgstr "手动插入感兴趣区域的种子并创建新表面"
 
 #: task_surface.py:322
 msgid "Select regions of interest..."
