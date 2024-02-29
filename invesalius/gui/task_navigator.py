@@ -1932,8 +1932,8 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
         marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
 
-        marker_list_ctrl.InsertColumn(const.EFIELD_TARGET_COLUMN, 'Efield Target')
-        marker_list_ctrl.SetColumnWidth(const.EFIELD_TARGET_COLUMN,45)
+        marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, 'Efield Target')
+        marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN,45)
 
         if self.session.GetConfig('debug'):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, 'X')
@@ -2027,8 +2027,8 @@ class MarkersPanel(wx.Panel):
             if d['is_target']:
                 self.__set_marker_as_target(len(self.markers) - 1)
 
-            if d['marker_type'] == MarkerType.ELECTRIC_FIELD_TARGET:
-                self.__set_marker_as_efield_target(len(self.markers) - 1)
+            if d['is_point_of_interest']:
+                self.__set_marker_as_point_of_interest(len(self.markers) - 1)
                 Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
                                         orientation=d['orientation'])
 
@@ -2043,9 +2043,9 @@ class MarkersPanel(wx.Panel):
                 
         return None
 
-    def __find_efield_target_marker(self):
+    def __find_point_of_interest_marker(self):
         for i in range(len(self.markers)):
-            if self.markers[i].marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
+            if self.markers[i].is_point_of_interest:
                 return i
 
         return None
@@ -2116,31 +2116,28 @@ class MarkersPanel(wx.Panel):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
         Publisher.sendMessage('Remove multiple markers', indexes=brain_target_index)
 
-    def __set_marker_as_efield_target(self, idx):
+    def __set_marker_as_point_of_interest(self, idx):
         """
-        Set marker indexed by idx as the new target. idx must be a valid index.
+        Set marker indexed by idx as the new point of interest. idx must be a valid index.
         """
-        # Find the previous target
-        prev_idx = self.__find_efield_target_marker()
+        # Find the previous point of interest
+        prev_idx = self.__find_point_of_interest_marker()
 
-        # If the new target is same as the previous do nothing.
+        # If the new point of interest is same as the previous do nothing
         if prev_idx == idx:
             return
 
-        # Unset the previous target
+        # Unset the previous point of interest
         if prev_idx is not None:
-            # TODO: Is this correct? Should it be "brain target"?
-            self.markers[prev_idx].marker_type = MarkerType.LANDMARK
+            self.markers[prev_idx].is_point_of_interest = False
             self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
             Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
-            self.marker_list_ctrl.SetItem(prev_idx, const.EFIELD_TARGET_COLUMN, "")
+            self.marker_list_ctrl.SetItem(prev_idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
 
-        # Set the new target
-        self.markers[idx].marker_type = MarkerType.ELECTRIC_FIELD_TARGET
+        # Set the new point of interest
+        self.markers[idx].is_point_of_interest = True
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'PURPLE')
-        self.marker_list_ctrl.SetItem(idx, const.EFIELD_TARGET_COLUMN, _("Yes"))
-
-        #self.__delete_all_brain_targets()
+        self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, _("Yes"))
 
     def __set_marker_as_target(self, idx):
         """
@@ -2299,7 +2296,7 @@ class MarkersPanel(wx.Panel):
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu_item)
 
         if self.navigation.e_field_loaded:
-            if self.__find_efield_target_marker() == self.marker_list_ctrl.GetFocusedItem():
+            if self.__find_point_of_interest_marker() == self.marker_list_ctrl.GetFocusedItem():
                 create_efield_target = menu_id.Append(12, _('Remove Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target)
             else:
@@ -2503,8 +2500,7 @@ class MarkersPanel(wx.Panel):
             orientation=list(orientation),
             colour=vtk_colors.GetColor3d('Orange'),
             size=2,
-            # TODO: Is this correct?
-            marker_type=MarkerType.ELECTRIC_FIELD_TARGET,
+            marker_type=MarkerType.COIL_TARGET,
         )
         self.AddMarker(marker, render=True)
 
@@ -2570,7 +2566,10 @@ class MarkersPanel(wx.Panel):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         position = self.markers[list_index].position
         orientation =  self.markers[list_index].orientation
-        self.__set_marker_as_efield_target(idx)
+        if all([o is None for o in orientation]):
+            orientation = [0, 0, 0]
+
+        self.__set_marker_as_point_of_interest(idx)
         Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
         self.SaveState()
 
@@ -2626,7 +2625,7 @@ class MarkersPanel(wx.Panel):
 
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
-        self.marker_list_ctrl.SetItem(idx, const.EFIELD_TARGET_COLUMN, "")
+        self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
         Publisher.sendMessage('Clear efield target at cortex')
         self.SaveState()
 
@@ -2825,7 +2824,7 @@ class MarkersPanel(wx.Panel):
                     if marker.is_target:
                         self.__set_marker_as_target(len(self.markers) - 1)
 
-                    if marker.marker_type == MarkerType.ELECTRIC_FIELD_TARGET:
+                    if marker.is_point_of_interest:
                         Publisher.sendMessage('Set as Efield target at cortex', position = marker.position, orientation = marker.orientation)
 
         except Exception as e:

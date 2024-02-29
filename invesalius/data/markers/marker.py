@@ -16,14 +16,12 @@ class MarkerType(Enum):
     COIL_POSE: a point and orientation (= pose) of the coil; otherwise similar to COIL_TARGET,
         but created to store the coil pose after a stimulation pulse is delivered. Visualized
         differently from COIL_TARGET.
-    ELECTRIC_FIELD_TARGET: a target point and orientation for the electric field.
     """
     FIDUCIAL = 0
     LANDMARK = 1
     BRAIN_TARGET = 2
     COIL_TARGET = 3
     COIL_POSE = 4
-    ELECTRIC_FIELD_TARGET = 5
 
     @property
     def human_readable(self):
@@ -35,7 +33,6 @@ class MarkerType(Enum):
             MarkerType.BRAIN_TARGET: "Brain Target",
             MarkerType.COIL_TARGET: "Coil Target",
             MarkerType.COIL_POSE: "Coil Pose",
-            MarkerType.ELECTRIC_FIELD_TARGET: "E-Field Target",
         }
         # Return the human-readable name for the enum member.
         return names[self]
@@ -45,23 +42,24 @@ class MarkerType(Enum):
 class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
-    marker_id : int = 0
-    x : float = 0
-    y : float = 0
-    z : float = 0
-    alpha : float = dataclasses.field(default = None)
-    beta : float = dataclasses.field(default = None)
-    gamma : float = dataclasses.field(default = None)
-    r : float = 0
-    g : float = 1
-    b : float = 0
-    size : float = 2
-    label : str = '*'
-    x_seed : float = 0
-    y_seed : float = 0
-    z_seed : float = 0
-    is_target : bool = False
-    session_id : int = 1
+    marker_id: int = 0
+    x: float = 0
+    y: float = 0
+    z: float = 0
+    alpha: float = dataclasses.field(default = None)
+    beta: float = dataclasses.field(default = None)
+    gamma: float = dataclasses.field(default = None)
+    r: float = 0
+    g: float = 1
+    b: float = 0
+    size: float = 2
+    label: str = '*'
+    x_seed: float = 0
+    y_seed: float = 0
+    z_seed: float = 0
+    is_target: bool = False
+    is_point_of_interest: bool = False
+    session_id: int = 1
     x_cortex: float = 0
     y_cortex: float = 0
     z_cortex: float = 0
@@ -182,6 +180,7 @@ class Marker:
             'size': self.size,
             'label': self.label,
             'is_target': self.is_target,
+            'is_point_of_interest': self.is_point_of_interest,
             'marker_type': self.marker_type.value,
             'seed': self.seed,
             'session_id': self.session_id,
