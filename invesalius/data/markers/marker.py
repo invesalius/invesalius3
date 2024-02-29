@@ -139,22 +139,22 @@ class Marker:
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).
-            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position_world, orientation_world = imagedata_utils.convert_image_space_to_world_space(
                 position=[self.x, self.y, self.z],
                 orientation=[self.alpha, self.beta, self.gamma],
             )
 
         else:
-            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                    position=[self.x, self.y, self.z],
-                    orientation=[0,0,0],
-                )
+            position_world, orientation_world = imagedata_utils.convert_image_space_to_world_space(
+                position=[self.x, self.y, self.z],
+                orientation=[0,0,0],
+            )
 
         res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
         return res
 
     def from_csv_row(self, input_str):
-        """Deserialize from a tab-separated string. If the string is not 
+        """Deserialize from a tab-separated string. If the string is not
         properly formatted, might throw an exception and leave the object
         in an inconsistent state."""
         splitted = input_str.split('\t')

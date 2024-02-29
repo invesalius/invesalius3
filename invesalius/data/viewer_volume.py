@@ -1848,7 +1848,7 @@ class Viewer(wx.Panel):
             if self.efield_coords is not None:
                 import invesalius.data.imagedata_utils as imagedata_utils
 
-                position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                position_world, orientation_world = imagedata_utils.convert_image_space_to_world_space(
                     position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
                     orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
                 )
@@ -2393,7 +2393,7 @@ class Viewer(wx.Panel):
 
         header = ['Marker ID', 'T_rot','Coil center','Coil position in world coordinates', 'InVesalius coordinates', 'Enorm','ID cell max', 'Efield vectors', 'Enorm cell indexes', 'Focal factors', 'Efield threshold', 'Efield ROI size', 'Mtms_coord']
         if self.efield_coords is not None:
-            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+            position_world, orientation_world = imagedata_utils.convert_image_space_to_world_space(
             position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
             orientation=[self.efield_coords[3], self.efield_coords[4], self.efield_coords[5]],
                  )
@@ -3111,4 +3111,3 @@ class SlicePlane:
         del self.plane_x
         del self.plane_y
         del self.plane_z
-
