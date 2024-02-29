@@ -607,26 +607,9 @@ def convert_world_to_voxel(xyz, affine):
     return ijk
 
 
-def convert_invesalius_to_voxel(position):
+def convert_image_space_to_world_space(position, orientation):
     """
-    Convert position from InVesalius space to the voxel space.
-
-    The two spaces are otherwise identical, but InVesalius space has a reverted y-axis
-    (increasing y-coordinate moves posterior in InVesalius space, but anterior in the voxel space).
-
-    For instance, if the size of the voxel image is 256 x 256 x 160, the y-coordinate 0 in
-    InVesalius space corresponds to the y-coordinate 255 in the voxel space.
-
-    :param position: a vector of 3 coordinates (x, y, z) in InVesalius space.
-    :return: a vector of 3 coordinates in the voxel space
-    """
-    slice = sl.Slice()
-    return np.array((position[0], slice.spacing[1]*(slice.matrix.shape[1] - 1) - position[1], position[2]))
-
-
-def convert_invesalius_to_world(position, orientation):
-    """
-    Convert position and orientation from InVesalius space to the world space.
+    Convert position and orientation from image space to the world space.
 
     The axis definition for the Euler angles returned is 'sxyz', see transformations.py for more
     information.
@@ -636,8 +619,8 @@ def convert_invesalius_to_world(position, orientation):
 
     More information: https://nipy.org/nibabel/coordinate_systems.html
 
-    :param position: a vector of 3 coordinates in InVesalius space.
-    :param orientation: a vector of 3 Euler angles in InVesalius space.
+    :param position: a vector of 3 coordinates in image space.
+    :param orientation: a vector of 3 Euler angles in image space.
     :return: a pair consisting of 3 coordinates and 3 Euler angles in the world space, or Nones if
              'affine' matrix is not defined in the project.
     """
@@ -649,17 +632,15 @@ def convert_invesalius_to_world(position, orientation):
 
         return position_world, orientation_world
 
-    position_voxel = convert_invesalius_to_voxel(position)
-
-    M_invesalius = dco.coordinates_to_transformation_matrix(
-        position=position_voxel,
+    m_image = dco.coordinates_to_transformation_matrix(
+        position=position,
         orientation=orientation,
         axes='sxyz',
     )
-    M_world = np.linalg.inv(slice.affine) @ M_invesalius
+    m_world = np.linalg.inv(slice.affine) @ m_image
 
     position_world, orientation_world = dco.transformation_matrix_to_coordinates(
-        M_world,
+        m_world,
         axes='sxyz',
     )
 
