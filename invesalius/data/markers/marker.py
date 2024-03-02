@@ -42,6 +42,7 @@ class MarkerType(Enum):
 class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
+    version: int = 1
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -120,7 +121,7 @@ class Marker:
     @classmethod
     def to_csv_header(cls):
         """Return the string containing tab-separated list of field names (header)."""
-        res = [field.name for field in dataclasses.fields(cls)]
+        res = [field.name for field in dataclasses.fields(cls) if field.name != 'version']
         res.extend(['x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world'])
         return '\t'.join(map(lambda x: '\"%s\"' % x, res))
 
@@ -128,6 +129,10 @@ class Marker:
         """Serialize to excel-friendly tab-separated string"""
         res = ''
         for field in dataclasses.fields(self.__class__):
+            # Skip the version field, as it won't be stored in the file.
+            if field.name == 'version':
+                continue
+
             if field.type is str:
                 res += '\"%s\"\t' % getattr(self, field.name)
             elif field.type is MarkerType:
@@ -155,22 +160,51 @@ class Marker:
         """Deserialize from a tab-separated string. If the string is not 
         properly formatted, might throw an exception and leave the object
         in an inconsistent state."""
+        
+        columns = MARKER_VERSION_COLUMNS[self.version]
         splitted = input_str.split('\t')
-        for field, str_val in zip(dataclasses.fields(self.__class__), splitted):
-            if field.type is float and str_val != 'None':
-                setattr(self, field.name, float(str_val))
-            if field.type is float and str_val == 'None':
-                setattr(self, field.name, None)
-            if field.type is float and str_val != 'None':
-                setattr(self, field.name, float(str_val))
-            if field.type is str:
-                setattr(self, field.name, str_val[1:-1]) # remove the quotation marks
-            if field.type is bool:
-                setattr(self, field.name, str_val=='True')
-            if field.type is int and str_val != 'None':
-                setattr(self, field.name, int(str_val))
-            if field.type is MarkerType:
-                setattr(self, field.name, MarkerType(int(str_val)))
+
+        is_brain_target = False
+        is_efield_target = False
+
+        for field, str_val in zip(columns, splitted):
+            field_name = field[0]
+            var_type = field[1]
+            if var_type is float and str_val != 'None':
+                value = float(str_val)
+            if var_type is float and str_val == 'None':
+                value = None
+            if var_type is str:
+                value = str_val[1:-1] # remove the quotation marks
+            if var_type is bool:
+                value = str_val == 'True'
+            if var_type is int and str_val != 'None':
+                value = int(str_val)
+            if var_type is MarkerType:
+                value = MarkerType(int(str_val))
+
+            if field_name == 'is_brain_target':
+                is_brain_target = value
+
+            elif field_name == 'is_efield_target':
+                is_efield_target = value
+
+            else:
+                setattr(self, field_name, value)
+
+        if self.version in [0, 1]:
+            self.marker_type = MarkerType.LANDMARK if self.orientation == [None, None, None] else MarkerType.COIL_TARGET
+            if self.label in ['LEI', 'REI', 'NAI']:
+                self.marker_type = MarkerType.FIDUCIAL
+
+        if self.version == 0:
+            self.cortex_position_orientation = [None, None, None, None, None, None]
+
+        if is_efield_target:
+            self.is_point_of_interest = True
+
+        if is_brain_target:
+            self.marker_type = MarkerType.BRAIN_TARGET
 
     def to_dict(self):
         return {
@@ -190,3 +224,80 @@ class Marker:
     def duplicate(self):
         """Create a deep copy of this Marker object."""
         return copy.deepcopy(self)
+
+
+# Dictionary mapping marker version to the list of columns in the marker file.
+MARKER_VERSION_COLUMNS = {
+    0: (
+        ('x', float),
+        ('y', float),
+        ('z', float),
+        ('alpha', float),
+        ('beta', float),
+        ('gamma', float),
+        ('r', float),
+        ('g', float),
+        ('b', float),
+        ('size', float),
+        ('label', str),
+        ('x_seed', float),
+        ('y_seed', float),
+        ('z_seed', float),
+        ('is_target', bool),
+        ('session_id', int),
+        ('is_brain_target', bool),
+    ),
+    1: (
+        ('x', float),
+        ('y', float),
+        ('z', float),
+        ('alpha', float),
+        ('beta', float),
+        ('gamma', float),
+        ('r', float),
+        ('g', float),
+        ('b', float),
+        ('size', float),
+        ('label', str),
+        ('x_seed', float),
+        ('y_seed', float),
+        ('z_seed', float),
+        ('is_target', bool),
+        ('session_id', int),
+        ('is_brain_target', bool),
+        ('is_efield_target', bool),
+        ('x_cortex', float),
+        ('y_cortex', float),
+        ('z_cortex', float),
+        ('alpha_cortex', float),
+        ('beta_cortex', float),
+        ('gamma_cortex', float),
+    ),
+    2: (
+        ('marker_id', int),
+        ('x', float),
+        ('y', float),
+        ('z', float),
+        ('alpha', float),
+        ('beta', float),
+        ('gamma', float),
+        ('r', float),
+        ('g', float),
+        ('b', float),
+        ('size', float),
+        ('label', str),
+        ('x_seed', float),
+        ('y_seed', float),
+        ('z_seed', float),
+        ('is_target', bool),
+        ('is_point_of_interest', bool),
+        ('session_id', int),
+        ('x_cortex', float),
+        ('y_cortex', float),
+        ('z_cortex', float),
+        ('alpha_cortex', float),
+        ('beta_cortex', float),
+        ('gamma_cortex', float),
+        ('marker_type', MarkerType),
+    ),
+}

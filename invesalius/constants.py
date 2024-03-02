@@ -892,7 +892,8 @@ TREKKER_CONFIG = {'seed_max': 1,
                   'init_max_est_trials': 100}
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 0
+CURRENT_MARKER_FILE_VERSION = 2
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Serial port
