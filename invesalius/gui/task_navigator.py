@@ -2799,7 +2799,7 @@ class MarkersPanel(wx.Panel):
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
                 version = int(magick_line.split('_')[-1])
-                if version != 0:
+                if version not in const.SUPPORTED_MARKER_FILE_VERSIONS:
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
 
@@ -2808,7 +2808,9 @@ class MarkersPanel(wx.Panel):
                 self.marker_list_ctrl.Hide()
                 # Read the data lines and create markers
                 for line in file.readlines():
-                    marker = Marker()
+                    marker = Marker(
+                        version=version,
+                    )
                     marker.from_csv_row(line)
 
                     # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
