@@ -26,6 +26,9 @@ import sys
 import numpy as np
 import wx
 import queue
+
+import vtk
+
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
@@ -903,30 +906,31 @@ class Viewer(wx.Panel):
         colour = marker.colour
         size = marker.size
         cortex_marker = marker.cortex_position_orientation
-
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
+        
+        print("Marker:")
+        print(position)
+        print(orientation)
         
         # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
         if marker_type == MarkerType.FIDUCIAL:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+            actor = self.actor_factory.CreateBall(position, colour, size)
 
         # For 'landmark' type markers, create a ball.
         elif marker_type == MarkerType.LANDMARK:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+            actor = self.actor_factory.CreateBall(position, colour, size)
 
         # For 'brain target' type markers, create an arrow.
         elif marker_type == MarkerType.BRAIN_TARGET:
-            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
+            actor = self.actor_factory.CreateArrowUsingDirection(position, orientation, colour, const.ARROW_MARKER_SIZE)
 
         # For 'coil target' type markers, create a crosshair.
         elif marker_type == MarkerType.COIL_TARGET:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
+            actor = self.actor_factory.CreateAim(position, orientation, colour)
 
         # For 'coil' type markers, create a smaller crosshair; they are generated when pulses are
         # given; hence, they easily clutter the volume viewer if they are too big.
         elif marker_type == MarkerType.COIL_POSE:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=0.3)
+            actor = self.actor_factory.CreateAim(position, orientation, colour, scale=0.3)
 
         else:
             assert False, "Invalid marker type."
@@ -939,7 +943,7 @@ class Viewer(wx.Panel):
             {
                 "marker_id": marker_id,
                 "actor": actor,
-                "position": position_flipped,
+                "position": position,
                 "orientation": orientation,
                 "colour": colour,
                 "marker_type": marker_type,
@@ -958,20 +962,17 @@ class Viewer(wx.Panel):
         colour = marker["colour"]
         highlighted = marker["highlighted"]
 
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
-
         # XXX: Workaround because modifying the original actor does not seem to work using
         #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
         #   and remove the old one. This only works for coil target markers, as the new actor
         #   created is of a fixed type (aim).
-        new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
+        new_actor = self.actor_factory.CreateAim(position, orientation, colour)
 
         if highlighted:
             self.marker_viewer.UnhighlightMarker()
 
         marker["actor"] = new_actor
-        marker["position"] = position_flipped
+        marker["position"] = position
         marker["orientation"] = orientation
 
         self.ren.RemoveActor(actor)
@@ -1246,9 +1247,7 @@ class Viewer(wx.Panel):
 
             is_under_distance_threshold = distance_to_target <= self.distance_threshold
 
-            m_img_flip = m_img.copy()
-            m_img_flip[1, -1] = -m_img_flip[1, -1]
-            distance_to_target_robot = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img_flip)
+            distance_to_target_robot = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img)
             wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance_to_target_robot)
             distance_to_target = distance_to_target_robot.copy()
             if distance_to_target[3] > const.ARROW_UPPER_LIMIT:
@@ -1561,12 +1560,9 @@ class Viewer(wx.Panel):
         During navigation, update camera position to lock to the coil if enabled in the
         user interface.
         """
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-
         # Lock camera position to the coil if enabled in the user interface.
         if self.lock_to_coil:
-            self.LockToCoil(coord_flip)
+            self.LockToCoil(position)
 
     def AddCoilActor(self, obj_name):
         """
@@ -1575,27 +1571,33 @@ class Viewer(wx.Panel):
         vtk_colors = vtkNamedColors()
         obj_polydata = vtku.CreateObjectPolyData(obj_name)
 
-        transform = vtkTransform()
+        # Create a transform for rotation and flipping
+        transform = vtk.vtkTransform()
         transform.RotateZ(90)
+        # Scale the y-coordinates by -1 to flip along the y-axis
+        transform.Scale(1, -1, 1)
 
-        transform_filt = vtkTransformPolyDataFilter()
+        # Apply the transformation to the polydata
+        transform_filt = vtk.vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(obj_polydata)
         transform_filt.Update()
 
-        normals = vtkPolyDataNormals()
+        # Recalculate normals to ensure correct lighting after flipping
+        normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
+        normals.AutoOrientNormalsOn()  # Ensure normals are oriented consistently after the flip
         normals.Update()
 
-        obj_mapper = vtkPolyDataMapper()
+        # Set up the mapper and actor as before, using the output with recalculated normals
+        obj_mapper = vtk.vtkPolyDataMapper()
         obj_mapper.SetInputData(normals.GetOutput())
         obj_mapper.ScalarVisibilityOff()
-        #obj_mapper.ImmediateModeRenderingOn()  # improve performance
 
-        coil_actor = vtkActor()
+        coil_actor = vtk.vtkActor()
         coil_actor.SetMapper(obj_mapper)
+        vtk_colors = vtkNamedColors()
         coil_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d('GhostWhite'))
         coil_actor.GetProperty().SetSpecular(30)
         coil_actor.GetProperty().SetSpecularPower(80)
@@ -1644,11 +1646,9 @@ class Viewer(wx.Panel):
         # m_img[:3, 1] is from left to right direction of the coil
         # m_img[:3, 2] is from bottom to up direction of the coil
         vec_length = 70
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-        p1 = m_img_flip[:-1, -1]  # coil center
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
+        p1 = m_img[:-1, -1]  # coil center
+        coil_dir = m_img[:-1, 0]
+        coil_face = m_img[:-1, 1]
 
         coil_norm = np.cross(coil_dir, coil_face)
         p2_norm = p1 - vec_length * coil_norm # point normal to the coil away from the center by vec_length
@@ -2113,10 +2113,8 @@ class Viewer(wx.Panel):
     def CreateCortexProjectionOnScalp(self, marker_id, position, orientation):
         self.target_at_cortex = None
         self.scalp_mesh = self.scalp_actor.GetMapper().GetInput()
-        position_flip = position
-        position_flip[1] = -position_flip[1]
-        self.target_at_cortex = position_flip
-        point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
+        self.target_at_cortex = position[:]
+        point_scalp = self.FindClosestPointToMesh(position, self.scalp_mesh)
         self.CreateEfieldAtTargetLegend()
         Publisher.sendMessage('Create Marker from tangential', point = point_scalp, orientation =orientation)
 
@@ -2126,9 +2124,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.EfieldAtTargetLegend.actor)
 
     def SetEfieldTargetAtCortex(self, position, orientation):
-        position_flip = position
-        position_flip[1] = -position_flip[1]
-        self.target_at_cortex = position_flip
+        self.target_at_cortex = position[:]
         self.CreateEfieldAtTargetLegend()
 
 
@@ -2305,16 +2301,15 @@ class Viewer(wx.Panel):
 
     def GetCoilPosition(self, position, orientation):
         m_img = tr.compose_matrix(angles=orientation, translate=position)
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-        cp = m_img_flip[:-1, -1]  # coil center
+        m_img = m_img.copy()
+        cp = m_img[:-1, -1]  # coil center
         cp = cp * 0.001  # convert to meters
         cp = cp.tolist()
 
-        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-        ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
-        coil_dir = m_img_flip[:-1, 0]
-        coil_face = m_img_flip[:-1, 1]
+        ct1 = m_img[:3, 1]  # is from posterior to anterior direction of the coil
+        ct2 = m_img[:3, 0]  # is from left to right direction of the coil
+        coil_dir = m_img[:-1, 0]
+        coil_face = m_img[:-1, 1]
         cn = np.cross(coil_dir, coil_face)
         T_rot = np.append(ct1, ct2, axis=0)
         T_rot = np.append(T_rot, cn, axis=0)  # append
@@ -2507,25 +2502,41 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def UpdateCoilPose(self, m_img, coord):
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-
         # translate coregistered coordinate to display a marker where Trekker seed is computed
-        # coord_offset = m_img_flip[:3, -1] - self.seed_offset * m_img_flip[:3, 2]
+        # coord_offset = m_img[:3, -1] - self.seed_offset * m_img[:3, 2]
 
         # print("m_img copy in viewer_vol: {}".format(m_img_copy))
 
-        # m_img[:3, 0] is from posterior to anterior direction of the coil
+        # m_img[:3, 0] is from anterior to posterior direction of the coil
         # m_img[:3, 1] is from left to right direction of the coil
         # m_img[:3, 2] is from bottom to up direction of the coil
 
-        m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
+        # esko
+
+        m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img)
 
         self.coil_actor.SetUserMatrix(m_img_vtk)
         self.coil_center_actor.SetUserMatrix(m_img_vtk)
         self.x_actor.SetUserMatrix(m_img_vtk)
         self.y_actor.SetUserMatrix(m_img_vtk)
         self.z_actor.SetUserMatrix(m_img_vtk)
+
+        normals = vtk.vtkPolyDataNormals()
+
+        # Assuming self.coil_actor's mapper has vtkPolyData as input
+        polyDataInput = self.coil_actor.GetMapper().GetInput()
+
+        # Set the input data for the normals calculation
+        normals.SetInputData(polyDataInput)
+
+        # Configure the normals calculation
+        normals.ComputePointNormalsOn()
+        normals.ComputeCellNormalsOn()
+        normals.AutoOrientNormalsOn()  # This ensures normals are oriented consistently
+        normals.Update()
+
+        # Set the output of the normals filter as the new input to the actor's mapper
+        self.coil_actor.GetMapper().SetInputData(normals.GetOutput())
 
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
@@ -2669,6 +2680,8 @@ class Viewer(wx.Panel):
         self.camera_show_object = None
 
     def LockToCoil(self, cam_focus):
+        return
+
         # TODO: exclude dependency on initial focus
         # cam_focus = np.array(bases.flip_x(position[:3]))
         # cam_focus = np.array(bases.flip_x(position))

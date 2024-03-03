@@ -534,7 +534,7 @@ class ImagePage(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.SetImageFiducial, 'Set image fiducial')
-        Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
+        Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
         Publisher.subscribe(self._OnStateProject, "Enable state project")
 
@@ -581,13 +581,12 @@ class ImagePage(wx.Panel):
         self.image.SetImageFiducial(fiducial_index, position)
         self.UpdateNextButton()
 
-    def UpdateImageCoordinates(self, position):
+    def SetCrossFocalPoint(self, position):
         self.current_coord = position
-
         for m in [0, 1, 2]:
             if not self.btns_set_fiducial[m].GetValue():
                 for n in [0, 1, 2]:
-                    self.numctrls_fiducial[m][n].SetValue(float(position[n]))
+                    self.numctrls_fiducial[m][n].SetValue(float(self.current_coord[n]))
 
     def OnImageFiducials(self, n, evt):
         fiducial_name = const.IMAGE_FIDUCIALS[n]['fiducial_name']
@@ -1564,11 +1563,7 @@ class ControlPanel(wx.Panel):
         self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
-        if not nav_status:
-            self.nav_status = False
-            self.current_orientation = None, None, None
-        else:
-            self.nav_status = True
+        self.nav_status = nav_status
 
         # Update robot button when navigation status is changed.
         self.UpdateRobotButtons()
@@ -1853,8 +1848,7 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.current_position = [0, 0, 0]
-        self.current_orientation = [None, None, None]
+        self.coil_pose = None
         self.current_seed = 0, 0, 0
         self.cortex_position_orientation = [None, None, None, None, None, None]
         self.markers = []
@@ -1968,7 +1962,7 @@ class MarkersPanel(wx.Panel):
         self.LoadState()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
+        Publisher.subscribe(self.UpdateCoilPose, 'Update coil pose')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
@@ -2164,11 +2158,6 @@ class MarkersPanel(wx.Panel):
 
         coord = self.markers[idx].position + self.markers[idx].orientation
 
-        # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
-        #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
-        #   subscribers of 'Set target' receive the correctly transformed coordinates.
-        coord[1] = -coord[1]
-
         self.control.target_selected = True
 
         Publisher.sendMessage('Set target', coord=coord)
@@ -2179,18 +2168,11 @@ class MarkersPanel(wx.Panel):
         """Return the list of marker labels denoting fiducials."""
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
-    def UpdateCurrentCoord(self, position):
-        self.current_position = list(position[:3])
-        self.current_orientation = list(position[3:])
-        if not self.navigation.track_obj:
-            self.current_orientation = None, None, None
+    def UpdateCoilPose(self, pose):
+        self.coil_pose = list(pose)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
-        if not nav_status:
-            self.nav_status = False
-            self.current_orientation = None, None, None
-        else:
-            self.nav_status = True
+        self.nav_status = nav_status
 
     def UpdateSeedCoordinates(self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)):
         self.current_seed = coord_offset_w
@@ -2383,11 +2365,6 @@ class MarkersPanel(wx.Panel):
             if marker.is_target:
                 coord = marker.position + marker.orientation
 
-                # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
-                #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
-                #   subscribers of 'Set target' receive the correctly transformed coordinates.
-                coord[1] = -coord[1]
-
                 Publisher.sendMessage('Set target', coord=coord)
         else:
             # Allow other key events to be processed.
@@ -2492,11 +2469,10 @@ class MarkersPanel(wx.Panel):
             vtkNamedColors
         )
         vtk_colors = vtkNamedColors()
-        position_flip = list(point)
-        position_flip[1] = -position_flip[1]
+        position = list(point)
 
         marker = self.CreateMarker(
-            position=position_flip,
+            position=position,
             orientation=list(orientation),
             colour=vtk_colors.GetColor3d('Orange'),
             size=2,
@@ -2920,8 +2896,8 @@ class MarkersPanel(wx.Panel):
         """
         marker = Marker()
 
-        marker.position = position or self.current_position
-        marker.orientation = orientation or self.current_orientation
+        marker.position = position or self.coil_pose[:3]
+        marker.orientation = orientation or self.coil_pose[3:]
 
         marker.colour = colour or self.marker_colour
         marker.size = size or self.marker_size

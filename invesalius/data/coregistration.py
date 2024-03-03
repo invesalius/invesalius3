@@ -188,6 +188,9 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
     m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
     m_img = apply_icp(m_img, icp)
 
+    # Invert y coordinate
+    m_img[1, :] = -m_img[1, :]
+
     # compute rotation angles
     angles = tr.euler_from_matrix(m_img, axes='sxyz')
 
@@ -295,12 +298,6 @@ class CoordinateCorregistrate(threading.Thread):
         if self.target is not None:
             self.target = np.array(self.target)
 
-            # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
-            #      in viewer_volume.py, so this makes them match. A better solution would probably be to
-            #      do this transformation only once, and doing it in the correct place.
-            #
-            self.target[1] = -self.target[1]
-
     def run(self):
         coreg_data = self.coreg_data
         view_obj = 1
@@ -317,6 +314,9 @@ class CoordinateCorregistrate(threading.Thread):
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+                
+                print(m_img)
+                print(coord)
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in

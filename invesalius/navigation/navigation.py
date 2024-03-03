@@ -123,7 +123,10 @@ class UpdateNavigationScene(threading.Thread):
 
                 # Update the cross position to the current position of the tracked object, so that, e.g., when a
                 # new marker is created, it is created in the current position of the object.
-                wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
+                wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord[:3])
+
+                # Update the coil pose, e.g., to create markers in the UI with the current position of the coil.
+                wx.CallAfter(Publisher.sendMessage, 'Update coil pose', pose=coord)
 
                 # Update camera in the volume viewer, so it can lock to the new position of the tracked object if
                 # enabled in the user interface.
@@ -288,6 +291,9 @@ class Navigation(metaclass=Singleton):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
         image_fiducials = image.GetImageFiducials()
 
+        image_fiducials_y_reverted = np.copy(image_fiducials)
+        image_fiducials_y_reverted[:, 1] = -image_fiducials_y_reverted[:, 1]
+
         self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 
         self.fre = db.calculate_fre(tracker_fiducials_raw, self.all_fiducials, self.ref_mode_id, self.m_change)
@@ -309,6 +315,9 @@ class Navigation(metaclass=Singleton):
     def EstimateTrackerToInVTransformationMatrix(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
         image_fiducials = image.GetImageFiducials()
+
+        image_fiducials_y_reverted = np.copy(image_fiducials)
+        image_fiducials_y_reverted[:, 1] = -image_fiducials_y_reverted[:, 1]
 
         self.all_fiducials = np.vstack([image_fiducials, tracker_fiducials])
 

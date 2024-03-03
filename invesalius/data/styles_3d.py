@@ -471,10 +471,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             scalp_actor.SetVisibility(True)
 
         x, y, z = self.picker.GetPickPosition()
+        
+        print(f'Picked position: x = {x}, y = {y}, z = {z}')
 
         if self.picker.GetActor():
-            Publisher.sendMessage('Update slices position', position=[x, -y, z])
-            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update slices position', position=[x, y, z])
+            Publisher.sendMessage('Set cross focal point', position=[x, y, z])
             Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
 
             Publisher.sendMessage('Update slice viewer')
@@ -512,8 +514,8 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.picker.GetPickPosition()
 
         if self.picker.GetActor():
-            Publisher.sendMessage('Update slices position', position=[x, -y, z])
-            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update slices position', position=[x, y, z])
+            Publisher.sendMessage('Set cross focal point', position=[x, y, z])
             Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
 
             Publisher.sendMessage('Update slice viewer')

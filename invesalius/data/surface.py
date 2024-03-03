@@ -641,6 +641,8 @@ class SurfaceManager():
             surface.area = area
 
         self.last_surface_index = surface.index
+        
+        print("wot")
 
         Publisher.sendMessage('Load surface actor into viewer', actor=actor)
         Publisher.sendMessage('Update surface info in GUI', surface=surface)
@@ -676,12 +678,24 @@ class SurfaceManager():
         for key in surface_dict:
             surface = surface_dict[key]
 
+            # Create a vtkTransform object that inverts the y-coordinate
+            transform = vtkTransform()
+
+            # Scale y-axis by -1 to invert y-coordinate; this is done to make the axes of the surface
+            # match the slice axes: positive y-axis goes from anterior to posterior.
+            transform.Scale(1, -1, 1)
+
+            # Apply the scaling using vtkTransformPolyDataFilter
+            transformFilter = vtkTransformPolyDataFilter()
+            transformFilter.SetTransform(transform)
+            transformFilter.SetInputData(surface.polydata)
+            transformFilter.Update()
+
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtkPolyDataNormals()
-            normals.SetInputData(surface.polydata)
+            normals.SetInputData(transformFilter.GetOutput())
             normals.SetFeatureAngle(80)
             normals.AutoOrientNormalsOn()
-            #  normals.GetOutput().ReleaseDataFlagOn()
 
             # Improve performance
             stripper = vtkStripper()
@@ -774,6 +788,7 @@ class SurfaceManager():
 
         session.ChangeProject()
 
+        print("nojoo")
         Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
         # Send actor by pubsub to viewer's render
