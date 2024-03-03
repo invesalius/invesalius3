@@ -471,7 +471,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             scalp_actor.SetVisibility(True)
 
         x, y, z = self.picker.GetPickPosition()
-        
+
         print(f'Picked position: x = {x}, y = {y}, z = {z}')
 
         if self.picker.GetActor():

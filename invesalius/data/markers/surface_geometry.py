@@ -59,7 +59,9 @@ class SurfaceGeometry(metaclass=Singleton):
 
         return max(self.surfaces, key=lambda surface: surface['highest_z'])
 
-    def GetClosestPointOnSurface(self, surface_name, point):
+    def GetClosestPointOnScalp(self, point):
+        print("pointti:")
+        print(point)
         surface = self.GetScalpSurface()
 
         polydata = surface['polydata']
@@ -78,4 +80,6 @@ class SurfaceGeometry(metaclass=Singleton):
         normal_data = normals.GetPointData().GetNormals()
         closest_normal = normal_data.GetTuple(closest_point_id)
 
+        print("closest_point")
+        print(closest_point)
         return closest_point, closest_normal

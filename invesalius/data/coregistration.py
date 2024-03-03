@@ -314,9 +314,6 @@ class CoordinateCorregistrate(threading.Thread):
                 # print(f"Set the coordinate")
                 coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
-                
-                print(m_img)
-                print(coord)
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in

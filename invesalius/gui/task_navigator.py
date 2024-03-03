@@ -1849,6 +1849,8 @@ class MarkersPanel(wx.Panel):
         self.session = ses.Session()
 
         self.coil_pose = None
+        self.cross_focal_point = None
+
         self.current_seed = 0, 0, 0
         self.cortex_position_orientation = [None, None, None, None, None, None]
         self.markers = []
@@ -1963,6 +1965,7 @@ class MarkersPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCoilPose, 'Update coil pose')
+        Publisher.subscribe(self.SetCrossFocalPoint, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
@@ -2169,7 +2172,10 @@ class MarkersPanel(wx.Panel):
         return list(itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS)))
 
     def UpdateCoilPose(self, pose):
-        self.coil_pose = list(pose)
+        self.coil_pose = pose[:]
+
+    def SetCrossFocalPoint(self, position):
+        self.cross_focal_point = position[:]
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2896,8 +2902,17 @@ class MarkersPanel(wx.Panel):
         """
         marker = Marker()
 
-        marker.position = position or self.coil_pose[:3]
-        marker.orientation = orientation or self.coil_pose[3:]
+        if position is None:
+            # When navigating, take the marker position from the current coil pose. Otherwise, take it from the cross focal point.
+            if self.nav_status:
+                position = self.coil_pose[:3]
+                orientation = self.coil_pose[3:]
+            else:
+                position = self.cross_focal_point[:3]
+                orientation = [None, None, None]
+
+        marker.position = position
+        marker.orientation = orientation
 
         marker.colour = colour or self.marker_colour
         marker.size = size or self.marker_size

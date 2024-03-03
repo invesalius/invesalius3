@@ -1574,8 +1574,9 @@ class Viewer(wx.Panel):
         # Create a transform for rotation and flipping
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
+
         # Scale the y-coordinates by -1 to flip along the y-axis
-        transform.Scale(1, -1, 1)
+#        transform.Scale(1, -1, 1)
 
         # Apply the transformation to the polydata
         transform_filt = vtk.vtkTransformPolyDataFilter()
@@ -1583,17 +1584,22 @@ class Viewer(wx.Panel):
         transform_filt.SetInputData(obj_polydata)
         transform_filt.Update()
 
-        # Recalculate normals to ensure correct lighting after flipping
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(transform_filt.GetOutput())
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()  # Ensure normals are oriented consistently after the flip
-        normals.Update()
+        # Reverse the sense of the polygons and normals to ensure correct lighting after flipping.
+        reverseSense = vtk.vtkReverseSense()
+        reverseSense.SetInputData(transform_filt.GetOutput())
+        reverseSense.ReverseCellsOn()
+        reverseSense.ReverseNormalsOn()
+        reverseSense.Update()
 
         # Set up the mapper and actor as before, using the output with recalculated normals
         obj_mapper = vtk.vtkPolyDataMapper()
-        obj_mapper.SetInputData(normals.GetOutput())
+        obj_mapper.SetInputData(reverseSense.GetOutput())
         obj_mapper.ScalarVisibilityOff()
+
+        #reverse = vtk.vtkReverseSense()
+        #reverse.SetInputConnection(transform_filt.GetOutputPort())
+        mr=vtk.vtkPolyDataMapper()
+        mr.SetInputConnection(reverseSense.GetOutputPort())
 
         coil_actor = vtk.vtkActor()
         coil_actor.SetMapper(obj_mapper)
@@ -1602,7 +1608,7 @@ class Viewer(wx.Panel):
         coil_actor.GetProperty().SetSpecular(30)
         coil_actor.GetProperty().SetSpecularPower(80)
         coil_actor.GetProperty().SetOpacity(.4)
-        coil_actor.SetVisibility(0)
+        coil_actor.SetVisibility(1)
 
         self.coil_actor = coil_actor
 
@@ -2502,17 +2508,6 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def UpdateCoilPose(self, m_img, coord):
-        # translate coregistered coordinate to display a marker where Trekker seed is computed
-        # coord_offset = m_img[:3, -1] - self.seed_offset * m_img[:3, 2]
-
-        # print("m_img copy in viewer_vol: {}".format(m_img_copy))
-
-        # m_img[:3, 0] is from anterior to posterior direction of the coil
-        # m_img[:3, 1] is from left to right direction of the coil
-        # m_img[:3, 2] is from bottom to up direction of the coil
-
-        # esko
-
         m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img)
 
         self.coil_actor.SetUserMatrix(m_img_vtk)
@@ -2520,23 +2515,6 @@ class Viewer(wx.Panel):
         self.x_actor.SetUserMatrix(m_img_vtk)
         self.y_actor.SetUserMatrix(m_img_vtk)
         self.z_actor.SetUserMatrix(m_img_vtk)
-
-        normals = vtk.vtkPolyDataNormals()
-
-        # Assuming self.coil_actor's mapper has vtkPolyData as input
-        polyDataInput = self.coil_actor.GetMapper().GetInput()
-
-        # Set the input data for the normals calculation
-        normals.SetInputData(polyDataInput)
-
-        # Configure the normals calculation
-        normals.ComputePointNormalsOn()
-        normals.ComputeCellNormalsOn()
-        normals.AutoOrientNormalsOn()  # This ensures normals are oriented consistently
-        normals.Update()
-
-        # Set the output of the normals filter as the new input to the actor's mapper
-        self.coil_actor.GetMapper().SetInputData(normals.GetOutput())
 
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)

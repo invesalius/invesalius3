@@ -18,10 +18,7 @@ class MarkerTransformator:
         """
         Move marker in its local coordinate system by the given displacement.
         """
-        # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
-        position = list(marker.position[:])
-        position[1] = -position[1]
-
+        position = marker.position[:]
         orientation = marker.orientation[:]
 
         # Create transformation matrices for the marker and the displacement.
@@ -38,10 +35,6 @@ class MarkerTransformator:
         m_marker_new = m_marker @ m_displacement
 
         new_position, new_orientation = dco.transformation_matrix_to_coordinates(m_marker_new, 'sxyz')
-
-        # XXX: Invert back to the get to 'marker space'.
-        new_position = list(new_position)
-        new_position[1] = -new_position[1]
 
         marker.position = new_position
         marker.orientation = new_orientation
@@ -115,11 +108,7 @@ class MarkerTransformator:
 
         TODO: This would be more useful if it returned the orthogonal distance to the scalp, instead of the distance to the closest point.
         """
-        # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
-        marker_position = list(marker.position)
-        marker_position[1] = -marker_position[1]
-
-        closest_point, _ = self.surface_geometry.GetClosestPointOnSurface('scalp', marker_position)
+        closest_point, _ = self.surface_geometry.GetClosestPointOnScalp(marker_position)
 
         distance = np.linalg.norm(np.array(marker_position) - np.array(closest_point))
 
@@ -132,19 +121,17 @@ class MarkerTransformator:
         If opposite_side is True, the marker is projected to the other side of the scalp, compared to the original position.
         If projecting from the brain to the scalp, this is done to avoid the marker being inside the scalp, where the normal vectors are not reliable.
         """
-        # XXX: The markers have y-coordinate inverted, compared to the 3d view. Hence, invert the y-coordinate here.
-        marker_position = list(marker.position)
-        marker_position[1] = -marker_position[1]
+        position = marker.position[:]
 
-        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface('scalp', marker_position)
+        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnScalp(position)
 
         if opposite_side:
             # Move to the other side of the scalp by going towards the closest point and then a bit further.
-            direction_vector = np.array(closest_point) - np.array(marker_position)
+            direction_vector = np.array(closest_point) - np.array(position)
             new_position = np.array(closest_point) + 1.1 * direction_vector
 
             # Re-compute the closest point and normal, but now for the new position.
-            closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface('scalp', new_position)
+            closest_point, closest_normal = self.surface_geometry.GetClosestPointOnScalp(new_position)
 
         # The reference direction vector that we want to align the normal to.
         #
@@ -176,9 +163,5 @@ class MarkerTransformator:
         # Convert the Euler angles to degrees.
         euler_angles_deg = np.degrees(euler_angles)
 
-        # XXX: Invert back to the get to 'marker space'.
-        closest_point = list(closest_point)
-        closest_point[1] = -closest_point[1]
-
-        marker.position = closest_point
-        marker.orientation = euler_angles_deg
+        marker.position = closest_point[:]
+        marker.orientation = euler_angles_deg[:]
