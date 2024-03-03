@@ -14,29 +14,36 @@ def configureLogging():
     logging_file  = session.GetConfig('logging_file')
 
     logger = logging.getLogger(__name__)
-    msg = 'Number of logger handlers: {}'.format(len(logger.handlers))
-    for handler in logger.handlers:
-        if isinstance(handler, logging.StreamHandler):
-            print('StreamHandler:')
-        elif isinstance(handler, logging.FileHandler):
-            print('FileHandler:')
-        else:
-            print('Unknown Handler:')
+    '''
+    msg = 'Number of logger handlers: {}], and are as follows:'.format(len(logger.handlers))
     logger.info(msg)
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            logger.info('FileHandler:')
+        elif isinstance(handler, logging.StreamHandler):
+            logger.info('StreamHandler:')
+        else:
+            logger.info('Unknown Handler:')
+    '''
     
     if do_logging:
         python_loglevel = getattr(logging,  const.LOGGING_LEVEl_TYPES[logging_level].upper(), None)
          # set logging level
+        '''
         msg = 'Loglevel requested {}, Python log level {}'.format( 
              const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
         logger.info(msg)
-        
-        if not isinstance(python_loglevel, int):
-            raise ValueError('Invalid log level to set: %s' % python_loglevel) 
-        logger.setLevel(python_loglevel)
-        msg = 'Logging level set to: {}, Python loglevel: {}'.format( \
-            const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
-        logger.info(msg)
+        '''
+        logLevelChanged = False
+        currLogLevel = logging.getLevelName(logger.getEffectiveLevel())
+        if (currLogLevel!=const.LOGGING_LEVEl_TYPES[logging_level]):
+            #if not isinstance(python_loglevel, int):
+            #    raise ValueError('Invalid log level to set: %s' % python_loglevel) 
+            logLevelChanged = True
+            logger.setLevel(python_loglevel)
+            msg = 'Logging level will be set to {} from {}'.format( \
+                const.LOGGING_LEVEl_TYPES[logging_level], currLogLevel)
+            logger.info(msg)
 
         # create formatter
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -46,8 +53,7 @@ def configureLogging():
         for handler in logger.handlers:
             if isinstance(handler, logging.StreamHandler):
                 addStreamHandler = False
-                #logger.removeHandler(handler)
-                logger.info('Stream handler already set')
+                #logger.info('Stream handler already set')
         if addStreamHandler:
             ch = logging.StreamHandler(sys.stdout)
             ch.setLevel(python_loglevel)
@@ -56,8 +62,8 @@ def configureLogging():
             logger.info('Added stream handler')
 
         # create file handler 
-        msg = 'Logging file requested {}'.format(logging_file)
-        logger.info(msg)
+        #msg = 'Logging file requested {}'.format(logging_file)
+        #logger.info(msg)
         
         if logging_file:
             addFileHandler = True
@@ -71,7 +77,7 @@ def configureLogging():
                             handler.baseFilename, logging_file)
                         logger.info(msg)
                         logger.removeHandler(handler)
-                    logger.info('Removed existing FILE handler')
+                        logger.info('Removed existing FILE handler')
             if addFileHandler:
                 if append_log_file:
                     fh = logging.FileHandler(logging_file, 'a', encoding=None)
@@ -90,10 +96,15 @@ def closeLogging():
         logger.handlers[0].flush()
         logger.removeHandler(logger.handlers[0])    
 
+def flushHandlers():
+    logger = logging.getLogger(__name__)
+    for handler in logger.handlers:
+        handler.flush()
+
 def function_call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
         logger = logging.getLogger(__name__)
-        msg = 'Function {} called'.format(function)
+        msg = 'Function {} called'.format(function.__name__)
         logger.info(msg)
         function(*args)
     return wrapper_accepting_arguments
