@@ -982,31 +982,6 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def add_marker(self, coord, color):
-        """Simplified version for creating a spherical marker in the 3D scene
-
-        :param coord:
-        :param color:
-        :return: vtkActor
-        """
-
-        ball_ref = vtkSphereSource()
-        ball_ref.SetRadius(1.5)
-        ball_ref.SetCenter(coord)
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(ball_ref.GetOutputPort())
-
-        prop = vtkProperty()
-        prop.SetColor(color)
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.SetProperty(prop)
-        actor.PickableOff()
-        actor.GetProperty().SetOpacity(1.)
-        return actor
-
     def HideAllMarkers(self, indexes):
         ballid = indexes
         for i in range(0, ballid):
@@ -2504,7 +2479,11 @@ class Viewer(wx.Panel):
     def UpdateMarkerOffsetState(self, create=False):
         if create:
             if not self.mark_actor:
-                self.mark_actor = self.add_marker([0., 0., 0.], color=[0., 1., 1.])
+                self.mark_actor = self.actor_factory.CreateBall(
+                    position=[0., 0., 0.],
+                    colour=[0., 1., 1.],
+                    size=1.5,
+                )
                 self.ren.AddActor(self.mark_actor)
         else:
             if self.mark_actor:
