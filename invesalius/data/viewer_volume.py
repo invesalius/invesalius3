@@ -313,6 +313,7 @@ class Viewer(wx.Panel):
         # extended to handle other marker-related functionality, such as adding and removing markers, etc.
         self.marker_viewer = MarkerViewer(
             renderer=self.ren,
+            interactor=self.interactor,
             actor_factory=self.actor_factory,
         )
 
@@ -462,19 +463,13 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
 
-        # Related to marker creation in navigation tools
-        Publisher.subscribe(self.AddMarker, 'Add marker')
-        Publisher.subscribe(self.UpdateMarker, 'Update marker')
-        Publisher.subscribe(self.HideMarkers, 'Hide markers')
-        Publisher.subscribe(self.ShowMarkers, 'Show markers')
-        Publisher.subscribe(self.DeleteMarkers, 'Delete markers')
-        Publisher.subscribe(self.DeleteMarker, 'Delete marker')
-        Publisher.subscribe(self.HighlightMarker, 'Highlight marker')
-        Publisher.subscribe(self.UnhighlightMarker, 'Unhighlight marker')
-        Publisher.subscribe(self.SetNewColor, 'Set new color')
-
         # Related to UI state
         Publisher.subscribe(self.ShowCoil, 'Show coil in viewer volume')
+
+        # TODO: This shouldn't be here, rather in marker_viewer.py. The problem is that
+        #   e-field-related markers are stored in this class, even though all other marker
+        #   types have been moved to MarkerViewer.
+        Publisher.subscribe(self.DeleteEFieldMarkers, 'Delete markers')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
@@ -489,7 +484,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
         Publisher.subscribe(self.OnSetTarget, 'Set target')
         Publisher.subscribe(self.OnUnsetTarget, 'Unset target')
-        Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
@@ -620,6 +614,12 @@ class Viewer(wx.Panel):
             ren_win.StereoRenderOn()
 
         self.UpdateRender()
+
+    def DeleteEFieldMarkers(self, markers):
+        if len(self.static_markers_efield) > 0:
+            for i in range(len(self.static_markers_efield)):
+                self.ren.RemoveActor(self.static_markers_efield[i][0])
+            self.static_markers_efield= []
 
     def CreatePointer(self):
         """
@@ -893,149 +893,6 @@ class Viewer(wx.Panel):
         """
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
-
-    def AddMarker(self, marker):
-        """
-        Visualize marker and add the visualization to the marker object.
-        """
-        position = marker.position
-        orientation = marker.orientation
-
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
-
-        position = marker.position
-        orientation = marker.orientation
-        marker_id = marker.marker_id
-        marker_type = marker.marker_type
-        colour = marker.colour
-        size = marker.size
-        cortex_marker = marker.cortex_position_orientation
-
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
-
-        # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
-        if marker_type == MarkerType.FIDUCIAL:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
-
-        # For 'landmark' type markers, create a ball.
-        elif marker_type == MarkerType.LANDMARK:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
-
-        # For 'brain target' type markers, create an arrow.
-        elif marker_type == MarkerType.BRAIN_TARGET:
-            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
-
-        # For 'coil target' type markers, create a crosshair.
-        elif marker_type == MarkerType.COIL_TARGET:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
-
-        # For 'coil pose' type markers, create a smaller crosshair; they are generated when pulses are
-        # given; hence, they easily clutter the volume viewer if they are too big.
-        elif marker_type == MarkerType.COIL_POSE:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=0.3)
-
-        else:
-            assert False, "Invalid marker type."
-
-        if cortex_marker[0] is not None:
-            Publisher.sendMessage('Add cortex marker actor', position_orientation=cortex_marker, marker_id=marker_id)
-
-        marker.visualization = {
-            'actor': actor,
-            'position': position_flipped,
-            'orientation': orientation,
-        }
-        self.ren.AddActor(actor)
-
-    def UpdateMarker(self, marker, new_position, new_orientation):
-        """
-        Update the position and orientation of a marker.
-        """
-        actor = marker.visualization['actor']
-        highlighted = marker.visualization['highlighted']
-        colour = marker.colour
-
-        new_position_flipped = list(new_position)
-        new_position_flipped[1] = -new_position_flipped[1]
-
-        # XXX: Workaround because modifying the original actor does not seem to work using
-        #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
-        #   and remove the old one. This only works for coil target markers, as the new actor
-        #   created is of a fixed type (aim).
-        new_actor = self.actor_factory.CreateAim(new_position_flipped, new_orientation, colour)
-
-        if highlighted:
-            self.marker_viewer.UnhighlightMarker()
-
-        marker.visualization = {
-            'actor': new_actor,
-            'position': new_position_flipped,
-            'orientation': new_orientation,
-            'highlighted': False,
-        }
-
-        self.ren.RemoveActor(actor)
-        self.ren.AddActor(new_actor)
-
-        if highlighted:
-            self.marker_viewer.HighlightMarker(marker)
-
-        self.UpdateRender()
-
-    def HideMarkers(self, markers):
-        for marker in markers:
-            actor = marker.visualization["actor"]
-            actor.SetVisibility(0)
-
-        self.UpdateRender()
-
-    def ShowMarkers(self, markers):
-        for marker in markers:
-            actor = marker.visualization["actor"]
-            actor.SetVisibility(1)
-
-        self.UpdateRender()
-
-    def DeleteMarkers(self, markers):
-        for marker in markers:
-            actor = marker.visualization["actor"]
-            self.ren.RemoveActor(actor)
-
-        if len(self.static_markers_efield) > 0:
-            for i in range(len(self.static_markers_efield)):
-                self.ren.RemoveActor(self.static_markers_efield[i][0])
-            self.static_markers_efield= []
-
-        self.UpdateRender()
-
-    def DeleteMarker(self, marker):
-        actor = marker.visualization["actor"]
-        self.ren.RemoveActor(actor)
-        self.UpdateRender()
-
-    def HighlightMarker(self, marker):
-        self.marker_viewer.HighlightMarker(marker)
-        self.UpdateRender()
-
-    def UnhighlightMarker(self):
-        self.marker_viewer.UnhighlightMarker()
-        self.UpdateRender()
-
-    def SetNewColor(self, marker, new_color):
-        actor = marker.visualization["actor"]
-        actor.GetProperty().SetColor([round(s / 255.0, 3) for s in new_color])
-
-        self.UpdateRender()
-
-    def OnTargetMarkerTransparency(self, marker, transparent):
-        actor = marker.visualization["actor"]
-        if transparent:
-            actor.GetProperty().SetOpacity(1)
-            # actor.GetProperty().SetOpacity(0.4)
-        else:
-            actor.GetProperty().SetOpacity(1)
 
     def OnUpdateAngleThreshold(self, angle):
         self.anglethreshold = angle
