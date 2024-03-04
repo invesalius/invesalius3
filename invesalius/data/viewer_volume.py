@@ -1358,7 +1358,13 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
 
-    def OnSetTarget(self, coord):
+    def OnSetTarget(self, marker):
+        coord = marker.position + marker.orientation
+
+        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
+        #   flip wouldn't be needed.
+        coord[1] = -coord[1]
+
         if coord is not None:
             # Store the new target coordinates and create a new transformation matrix for the target.
             self.target_coord = coord
