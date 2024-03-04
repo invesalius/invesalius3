@@ -23,10 +23,11 @@ class MarkerViewer:
 
     def HighlightMarker(self, marker):
         # Unpack relevant fields from the marker.
-        actor = marker["actor"]
-        marker_type = marker["marker_type"]
-        position = marker["position"]
-        orientation = marker["orientation"]
+        actor = marker.visualization['actor']
+
+        marker_type = marker.marker_type
+        position = marker.visualization['position']
+        orientation = marker.visualization['orientation']
 
         # Use color red for highlighting.
         vtk_colors = vtk.vtkNamedColors()
@@ -72,7 +73,7 @@ class MarkerViewer:
         self.highlighted_marker = marker
 
         # Store the 'highlighted' status in the marker.
-        marker["highlighted"] = True
+        marker.visualization['highlighted'] = True
 
     def UnhighlightMarker(self):
         # Return early in case there is no highlighted marker. This shouldn't happen, though.
@@ -81,8 +82,8 @@ class MarkerViewer:
 
         marker = self.highlighted_marker
 
-        actor = marker["actor"]
-        colour = marker["colour"]
+        actor = marker.visualization['actor']
+        colour = marker.colour
 
         # Change the color of the marker back to its original color.
         actor.GetProperty().SetColor(colour)
@@ -94,4 +95,4 @@ class MarkerViewer:
 
         # Reset the highlighted marker.
         self.highlighted_marker = None
-        marker["highlighted"] = False
+        marker.visualization['highlighted'] = False

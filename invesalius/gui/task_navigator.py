@@ -1179,6 +1179,7 @@ class NavigationPanel(wx.Panel):
     def OnCloseProject(self):
         self.tracker.ResetTrackerFiducials()
         self.image.ResetImageFiducials()
+
         Publisher.sendMessage('Disconnect tracker')
         Publisher.sendMessage('Show and track coil', enabled=False)
         Publisher.sendMessage('Delete all markers')
@@ -1401,10 +1402,11 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.OnStopNavigation, 'Stop navigation')
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.SetTarget, 'Set target')
+        Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
         Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
-        Publisher.subscribe(self.OnSetTargetMode, 'Target navigation mode')
+        Publisher.subscribe(self.SetTargetMode, 'Set target mode')
 
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
 
@@ -1428,7 +1430,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.HideTargetButton, 'Hide target button')
         Publisher.subscribe(self.PressTargetModeButton, 'Press target mode button')
 
-        # Conditions for enabling target button:
+        # Conditions for enabling 'target mode' button:
         Publisher.subscribe(self.TargetSelected, 'Target selected')
         Publisher.subscribe(self.TrackObject, 'Track object')
 
@@ -1528,6 +1530,11 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
+    def UnsetTarget(self):
+        self.navigation.target = None
+        self.target_selected = False
+        self.UpdateTargetButton()
+
     def SetTarget(self, marker):
         coord = marker.position + marker.orientation
 
@@ -1536,9 +1543,6 @@ class ControlPanel(wx.Panel):
         coord[1] = -coord[1]
 
         self.navigation.target = coord
-
-        if coord is None:
-            return
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
@@ -1587,14 +1591,14 @@ class ControlPanel(wx.Panel):
         self.EnableRobotTrackTargetButton(enabled=enabled)
         self.EnableRobotMoveAwayButton(enabled=enabled)
 
-    def OnSetTargetMode(self, evt=None, target_mode=None):
-        self.target_mode = target_mode
+    def SetTargetMode(self, enabled=False):
+        self.target_mode = enabled
 
         # Update robot button state when target mode is changed.
         self.UpdateRobotButtons()
 
         # Set robot objective to NONE when target mode is off.
-        if not target_mode:
+        if not enabled:
             self.robot.SetObjective(RobotObjective.NONE)
 
     # Tractography
@@ -1722,9 +1726,6 @@ class ControlPanel(wx.Panel):
 
     # 'Target mode' button
     def TargetSelected(self, status):
-        if status is None:
-            return
-
         self.target_selected = status
         self.UpdateTargetButton()
         self.UpdateRobotButtons()
@@ -1756,8 +1757,8 @@ class ControlPanel(wx.Panel):
     def OnTargetButton(self, evt=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
-
-        Publisher.sendMessage('Target navigation mode', target_mode=pressed)
+        
+        Publisher.sendMessage('Set target mode', enabled=pressed)
         if pressed:
             Publisher.sendMessage('Press lock to coil button', pressed=False)
             Publisher.sendMessage('Enable lock to coil button', enabled=False)
@@ -2077,12 +2078,11 @@ class MarkersPanel(wx.Panel):
         the ascending order.
         """
         for i in reversed(indexes):
+            Publisher.sendMessage('Delete marker', marker=self.markers[i])
             del self.markers[i]
             self.marker_list_ctrl.DeleteItem(i)
             for n in range(0, self.marker_list_ctrl.GetItemCount()):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
-
-        Publisher.sendMessage('Remove multiple markers', indexes=indexes)
 
     def __delete_all_brain_targets(self):
         """
@@ -2093,12 +2093,12 @@ class MarkersPanel(wx.Panel):
             if self.markers[index].marker_type == MarkerType.BRAIN_TARGET:
                 brain_target_index.append(index)
         for index in reversed(brain_target_index):
+            Publisher.sendMessage('Delete marker', marker=self.markers[index])
             self.marker_list_ctrl.SetItemBackgroundColour(index, 'white')
             del self.markers[index]
             self.marker_list_ctrl.DeleteItem(index)
             for n in range(0, self.marker_list_ctrl.GetItemCount()):
                 self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
-        Publisher.sendMessage('Remove multiple markers', indexes=brain_target_index)
 
     def __set_marker_as_point_of_interest(self, idx):
         """
@@ -2115,7 +2115,8 @@ class MarkersPanel(wx.Panel):
         if prev_idx is not None:
             self.markers[prev_idx].is_point_of_interest = False
             self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
-            Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
+            marker = self.markers[prev_idx]
+            Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
             self.marker_list_ctrl.SetItem(prev_idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
 
         # Set the new point of interest
@@ -2138,7 +2139,8 @@ class MarkersPanel(wx.Panel):
         if prev_idx is not None:
             self.markers[prev_idx].is_target = False
             self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
-            Publisher.sendMessage('Set target transparency', status=False, index=prev_idx)
+            marker = self.markers[prev_idx]
+            Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
             self.marker_list_ctrl.SetItem(prev_idx, const.TARGET_COLUMN, "")
 
         # Set the new target
@@ -2152,7 +2154,7 @@ class MarkersPanel(wx.Panel):
         self.control.target_selected = True
 
         Publisher.sendMessage('Set target', marker=marker)
-        Publisher.sendMessage('Set target transparency', status=True, index=idx)
+        Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
 
     @staticmethod
     def __list_fiducial_labels():
@@ -2359,7 +2361,8 @@ class MarkersPanel(wx.Panel):
                     displacement=displacement,
                 )
 
-            Publisher.sendMessage('Update marker', index=focused_marker_idx, position=marker.position, orientation=marker.orientation)
+            marker = self.markers[focused_marker_idx]
+            Publisher.sendMessage('Update marker', marker=marker, new_position=marker.position, new_orientation=marker.orientation)
             if marker.is_target:
                 Publisher.sendMessage('Set target', marker=marker)
         else:
@@ -2368,7 +2371,10 @@ class MarkersPanel(wx.Panel):
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
-        Publisher.sendMessage('Highlight marker', index=self.marker_list_ctrl.GetFocusedItem())
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.markers[idx]
+
+        Publisher.sendMessage('Highlight marker', marker=marker)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
     def OnMarkerUnfocused(self, evt):
@@ -2582,34 +2588,38 @@ class MarkersPanel(wx.Panel):
 
     def OnMenuRemoveEfieldTarget(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        self.markers[idx].is_target = False
+
+        marker = self.markers[idx]
+        marker.is_target = False
+
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
-        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
-        Publisher.sendMessage('Disable or enable coil tracker', status=False)
-        Publisher.sendMessage('Set target', marker=None)
+        Publisher.sendMessage('Unset target')
         self.efield_target_idx = None
 
     def OnMenuRemoveEfieldTargetatCortex(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
 
+        marker = self.markers[idx]
+
         # TODO: Is this correct? Should it be "brain target"?
-        self.markers[idx].marker_type = MarkerType.LANDMARK
+        marker.marker_type = MarkerType.LANDMARK
 
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
-        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
         self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
         Publisher.sendMessage('Clear efield target at cortex')
         self.SaveState()
 
     def OnMenuUnsetTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        self.markers[idx].is_target = False
+        marker = self.markers[idx]
+        marker.is_target = False
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
-        Publisher.sendMessage('Set target transparency', status=False, index=idx)
+        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
-        Publisher.sendMessage('Disable or enable coil tracker', status=False)
-        Publisher.sendMessage('Set target', marker=None)
+        Publisher.sendMessage('Unset target')
         self.SaveState()
 
     def OnMenuSetColor(self, evt):
@@ -2618,21 +2628,23 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
-        color_current = [ch * 255 for ch in self.markers[index].colour]
+        current_color = [ch * 255 for ch in self.markers[index].colour]
 
-        color_new = dlg.ShowColorDialog(color_current=color_current)
+        new_color = dlg.ShowColorDialog(color_current=current_color)
 
-        if not color_new:
+        if not new_color:
             return
 
-        assert len(color_new) == 3
+        assert len(new_color) == 3
+
+        marker = self.markers[index]
 
         # XXX: Seems like a slightly too early point for rounding; better to round only when the value
         #      is printed to the screen or file.
         #
-        self.markers[index].colour = [round(s / 255.0, 3) for s in color_new]
+        marker.colour = [round(s / 255.0, 3) for s in new_color]
 
-        Publisher.sendMessage('Set new color', index=index, color=color_new)
+        Publisher.sendMessage('Set new color', marker=marker, new_color=new_color)
 
         self.SaveState()
 
@@ -2688,16 +2700,16 @@ class MarkersPanel(wx.Panel):
         
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
-            result = dlg.ShowConfirmationDialog(msg=_("Remove all markers? Cannot be undone."))
+            result = dlg.ShowConfirmationDialog(msg=_("Delete all markers? Cannot be undone."))
             if result != wx.ID_OK:
                 return
 
         if self.__find_target_marker_idx() is not None:
-            Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            Publisher.sendMessage('Set target', marker=None)
+            Publisher.sendMessage('Unset target')
+
+        Publisher.sendMessage('Delete markers', markers=self.markers)
 
         self.markers = []
-        Publisher.sendMessage('Remove all markers')
         self.marker_list_ctrl.DeleteAllItems()
 
         self.SaveState()
@@ -2728,8 +2740,7 @@ class MarkersPanel(wx.Panel):
 
         # If current target is removed, handle it as a special case.
         if self.__find_target_marker_idx() in indexes:
-            Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            Publisher.sendMessage('Set target', marker=None)
+            Publisher.sendMessage('Unset target')
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()
@@ -2827,10 +2838,10 @@ class MarkersPanel(wx.Panel):
 
     def OnMarkersVisibility(self, evt, ctrl):
         if ctrl.GetValue():
-            Publisher.sendMessage('Hide all markers',  indexes=self.marker_list_ctrl.GetItemCount())
+            Publisher.sendMessage('Hide markers', markers=self.markers)
             ctrl.SetLabel('Show')
         else:
-            Publisher.sendMessage('Show all markers',  indexes=self.marker_list_ctrl.GetItemCount())
+            Publisher.sendMessage('Show markers', markers=self.markers)
             ctrl.SetLabel('Hide')
 
     def OnSaveMarkers(self, evt):

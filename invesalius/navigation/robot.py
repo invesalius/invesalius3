@@ -67,6 +67,7 @@ class Robot(metaclass=Singleton):
         Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
         Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
         Publisher.subscribe(self.SetTarget, 'Set target')
+        Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.GetCurrentObjectiveFromRobot, 'Send current objective from robot to neuronavigation')
 
     def SaveConfig(self):
@@ -199,6 +200,14 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage('Press robot button', pressed=False)
             Publisher.sendMessage('Press move away button', pressed=False)
 
+    def UnsetTarget(self):
+        self.target = None
+        Publisher.sendMessage('Update robot target',
+            robot_tracker_flag=False,
+            target_index=None,
+            target=None,
+        )
+
     def SetTarget(self, marker):
         coord = marker.position + marker.orientation
 
@@ -206,14 +215,5 @@ class Robot(metaclass=Singleton):
         #   flip wouldn't be needed.
         coord[1] = -coord[1]
 
-        # Note that target can also be set to None, which means the target is unset.
         self.target = coord
-    
-        if self.target is None:
-            Publisher.sendMessage('Update robot target',
-                robot_tracker_flag=False,
-                target_index=None,
-                target=None,
-            )
-        else:
-            self.SendTargetToRobot()
+        self.SendTargetToRobot()

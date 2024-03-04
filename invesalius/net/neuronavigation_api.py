@@ -70,7 +70,7 @@ class NeuronavigationApi(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.start_navigation, 'Start navigation')
         Publisher.subscribe(self.stop_navigation, 'Stop navigation')
-        Publisher.subscribe(self.update_target_mode, 'Target navigation mode')
+        Publisher.subscribe(self.update_target_mode, 'Set target mode')
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         #Publisher.subscribe(self.update_focus, 'Set cross focal point')
         Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
@@ -89,10 +89,10 @@ class NeuronavigationApi(metaclass=Singleton):
                 started=False,
             )
 
-    def update_target_mode(self, target_mode):
+    def update_target_mode(self, enabled):
         if self.connection is not None:
             self.connection.update_target_mode(
-                enabled=target_mode,
+                enabled=enabled,
             )
 
     def update_target_orientation(self, target_id, orientation):
