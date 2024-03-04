@@ -68,6 +68,7 @@ class Marker:
     beta_cortex: float = dataclasses.field(default = None)
     gamma_cortex: float = dataclasses.field(default = None)
     marker_type: MarkerType = MarkerType.LANDMARK
+    visualization: dict = dataclasses.field(default_factory=dict)
 
     # x, y, z can be jointly accessed as position
     @property
@@ -222,8 +223,22 @@ class Marker:
         }
 
     def duplicate(self):
-        """Create a deep copy of this Marker object."""
-        return copy.deepcopy(self)
+        """Create a deep copy of this Marker object, without the visualization. Also unset the is_target attribute."""
+        # Create a new instance of the Marker class.
+        new_marker = Marker()
+
+        # Manually copy all attributes except the visualization.
+        for field in dataclasses.fields(self):
+            if field.name != 'visualization':
+                setattr(new_marker, field.name, copy.deepcopy(getattr(self, field.name)))
+
+        # Set the visualization attribute to an empty dictionary.
+        new_marker.visualization = {}
+
+        # Unset the is_target attribute.
+        new_marker.is_target = False
+
+        return new_marker
 
 
 # Dictionary mapping marker version to the list of columns in the marker file.
