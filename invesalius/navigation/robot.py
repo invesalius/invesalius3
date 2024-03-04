@@ -199,7 +199,13 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage('Press robot button', pressed=False)
             Publisher.sendMessage('Press move away button', pressed=False)
 
-    def SetTarget(self, coord):
+    def SetTarget(self, marker):
+        coord = marker.position + marker.orientation
+
+        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
+        #   flip wouldn't be needed.
+        coord[1] = -coord[1]
+
         # Note that target can also be set to None, which means the target is unset.
         self.target = coord
     

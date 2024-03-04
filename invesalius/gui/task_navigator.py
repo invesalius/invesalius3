@@ -1550,7 +1550,13 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def SetTarget(self, coord):
+    def SetTarget(self, marker):
+        coord = marker.position + marker.orientation
+
+        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
+        #   flip wouldn't be needed.
+        coord[1] = -coord[1]
+
         self.navigation.target = coord
 
         if coord is None:
@@ -2158,20 +2164,16 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItem(prev_idx, const.TARGET_COLUMN, "")
 
         # Set the new target
-        self.markers[idx].is_target = True
+        marker = self.markers[idx]
+        marker.is_target = True
+
+        # Set the marker as the target in the list control.
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'RED')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
-        coord = self.markers[idx].position + self.markers[idx].orientation
-
-        # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
-        #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
-        #   subscribers of 'Set target' receive the correctly transformed coordinates.
-        coord[1] = -coord[1]
-
         self.control.target_selected = True
 
-        Publisher.sendMessage('Set target', coord=coord)
+        Publisher.sendMessage('Set target', marker=marker)
         Publisher.sendMessage('Set target transparency', status=True, index=idx)
 
     @staticmethod
@@ -2381,14 +2383,7 @@ class MarkersPanel(wx.Panel):
 
             Publisher.sendMessage('Update marker', index=focused_marker_idx, position=marker.position, orientation=marker.orientation)
             if marker.is_target:
-                coord = marker.position + marker.orientation
-
-                # TODO: This should be traced back to where the need to flip y-coordinate comes from and fix there.
-                #   The only reason it's done here is that there's a bug somewhere else. Do it here so that all
-                #   subscribers of 'Set target' receive the correctly transformed coordinates.
-                coord[1] = -coord[1]
-
-                Publisher.sendMessage('Set target', coord=coord)
+                Publisher.sendMessage('Set target', marker=marker)
         else:
             # Allow other key events to be processed.
             event.Skip()
@@ -2614,7 +2609,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
-        Publisher.sendMessage('Set target', coord=None)
+        Publisher.sendMessage('Set target', marker=None)
         self.efield_target_idx = None
 
     def OnMenuRemoveEfieldTargetatCortex(self,evt):
@@ -2636,7 +2631,7 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Set target transparency', status=False, index=idx)
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
         Publisher.sendMessage('Disable or enable coil tracker', status=False)
-        Publisher.sendMessage('Set target', coord=None)
+        Publisher.sendMessage('Set target', marker=None)
         self.SaveState()
 
     def OnMenuSetColor(self, evt):
@@ -2721,7 +2716,7 @@ class MarkersPanel(wx.Panel):
 
         if self.__find_target_marker_idx() is not None:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            Publisher.sendMessage('Set target', coord=None)
+            Publisher.sendMessage('Set target', marker=None)
 
         self.markers = []
         Publisher.sendMessage('Remove all markers')
@@ -2756,7 +2751,7 @@ class MarkersPanel(wx.Panel):
         # If current target is removed, handle it as a special case.
         if self.__find_target_marker_idx() in indexes:
             Publisher.sendMessage('Disable or enable coil tracker', status=False)
-            Publisher.sendMessage('Set target', coord=None)
+            Publisher.sendMessage('Set target', marker=None)
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()
