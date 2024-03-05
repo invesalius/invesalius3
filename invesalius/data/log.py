@@ -109,3 +109,14 @@ def function_call_tracking_decorator(function: Callable[[str], None]):
         function(*args)
     return wrapper_accepting_arguments
        
+def error_catching_decorator(function: Callable[[str], None]):
+    def wrapper_accepting_arguments(*args):
+        logger = logging.getLogger(__name__)
+        try:
+            function(*args)
+        except Exception as inst:
+            msg = 'Exception in Function {}: Type {}, Args{}'.format(\
+                function.__name__, type(inst), inst.args)     
+            logger.info(msg)
+            raise
+    return wrapper_accepting_arguments

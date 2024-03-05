@@ -192,11 +192,12 @@ class Viewer3D(wx.Panel):
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
 class Logging(wx.Panel):
+
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
         
-        bsizer_do_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _("Do Logging"))
+        bsizer_do_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _("  Logging"))
         rb_logging = self.rb_logging = wx.RadioBox(
             bsizer_do_logging.GetStaticBox(),
             -1,
