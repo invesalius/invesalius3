@@ -90,6 +90,8 @@ class MarkerViewer:
             'actor': actor,
             'position': position_flipped,
             'orientation': orientation,
+            'highlighted': False,
+            'hidden': False,
         }
         self.renderer.AddActor(actor)
 
@@ -120,6 +122,7 @@ class MarkerViewer:
             'position': new_position_flipped,
             'orientation': new_orientation,
             'highlighted': False,
+            'hidden': False,
         }
 
         self.renderer.RemoveActor(actor)
@@ -132,13 +135,34 @@ class MarkerViewer:
 
     def HideMarkers(self, markers):
         for marker in markers:
-            actor = marker.visualization["actor"]
+            visualization = marker.visualization
+            is_target = marker.is_target
+
+            highlighted = visualization['highlighted']
+            actor = visualization['actor']
+
+            # Mark the marker as 'hidden' regardless of if it's the target or highlighted.
+            #
+            # This is to ensure that the marker will be properly hidden if it stops being the target or is unhighlighted.
+            visualization['hidden'] = True
+
+            # If marker is the target or it is already highlighted, do not actually hide the actor.
+            if is_target or highlighted:
+                continue
+
+            # Hide the actor.
             actor.SetVisibility(0)
+
+        self.interactor.Render()
 
     def ShowMarkers(self, markers):
         for marker in markers:
-            actor = marker.visualization["actor"]
-            actor.SetVisibility(1)
+            visualization = marker.visualization
+
+            visualization['actor'].SetVisibility(1)
+
+            # Mark the marker as not hidden.
+            visualization['hidden'] = False
 
         self.interactor.Render()
 
@@ -182,6 +206,10 @@ class MarkerViewer:
 
         # Change the color of the marker.
         actor.GetProperty().SetColor(colour)
+
+        # Set the marker visible when highlighted even if it's hidden.
+        if marker.visualization['hidden']:
+            actor.SetVisibility(1)
 
         # If the marker is a coil target, create a perpendicular line from the coil to the brain surface.
         if marker_type == MarkerType.COIL_TARGET:
@@ -236,6 +264,14 @@ class MarkerViewer:
 
         # Change the color of the marker back to its original color.
         actor.GetProperty().SetColor(colour)
+
+        # Set the marker invisible if it should be hidden.
+        if marker.visualization['hidden']:
+            actor.SetVisibility(0)
+
+        # However, if it is the target, it should remain visible.
+        if marker.is_target:
+            actor.SetVisibility(1)
 
         # Remove the projection actor if it exists.
         if self.projection_line_actor:
