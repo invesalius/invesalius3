@@ -125,7 +125,7 @@ class MarkerViewer:
         #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
         #   and remove the old one. This only works for coil target markers, as the new actor
         #   created is of a fixed type (aim).
-        new_actor = self.actor_factory.CreateAim(new_position_flipped, new_orientation, colour)
+        new_actor = self.actor_factory.CreateAim(new_position_flipped, new_orientation, colour, scale=self.NORMAL_SCALE)
 
         if highlighted:
             # Unhighlight the marker, but do not render the interactor yet to avoid flickering.
