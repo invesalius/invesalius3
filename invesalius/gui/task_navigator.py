@@ -2291,8 +2291,10 @@ class MarkersPanel(wx.Panel):
         When a key is pressed, move the focused marker in the direction specified by the key.
 
         The marker can be moved in the X- or Y-direction or rotated along the Z-axis using the keys
-        'W', 'A', 'S', 'D', 'PageUp', and 'PageDown'. The marker can also be moved in the Z-direction
-        using the '+' and '-' keys.
+        'W', 'A', 'S', 'D', 'PageUp', and 'PageDown'.
+        
+        The marker can also be moved in the Z-direction using the '+' and '-' keys;
+        '+' moves it closer to the scalp, and '-' moves it away from the scalp.
 
         The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
         """
@@ -2341,11 +2343,11 @@ class MarkersPanel(wx.Panel):
                 
         elif keycode in [WXK_PLUS, WXK_PLUS_NUMPAD]:
             stay_on_scalp = False
-            direction = [0, 0, 1, 0, 0, 0]
+            direction = [0, 0, -1, 0, 0, 0]
 
         elif keycode in [WXK_MINUS, WXK_MINUS_NUMPAD]:
             stay_on_scalp = False
-            direction = [0, 0, -1, 0, 0, 0]
+            direction = [0, 0, 1, 0, 0, 0]
 
         # Allow other key events to be processed normally, such as the arrow keys for
         # navigating the list control.
