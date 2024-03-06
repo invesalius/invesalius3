@@ -1683,7 +1683,7 @@ msgid "Move"
 msgstr "移動"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "視窗與層級"
 
 #: frame.py:1525

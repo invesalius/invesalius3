@@ -1424,8 +1424,8 @@ msgid "Move"
 msgstr "Move"
 
 #: frame.py:1322
-msgid "Constrast"
-msgstr "Constrast"
+msgid "Contrast"
+msgstr "Contrast"
 
 #: frame.py:1480
 msgid "Scroll slices"

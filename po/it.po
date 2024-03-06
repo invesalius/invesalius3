@@ -1689,7 +1689,7 @@ msgid "Move"
 msgstr "Sposta"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "Contrasto"
 
 #: frame.py:1525
