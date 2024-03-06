@@ -8,10 +8,12 @@ import invesalius.session as sess
 
 def configureLogging():
     session = sess.Session()
-    do_logging = session.GetConfig('do_logging')
-    logging_level = session.GetConfig('logging_level')
+    file_logging = session.GetConfig('file_logging')
+    file_logging_level = session.GetConfig('file_logging_level')
     append_log_file = session.GetConfig('append_log_file')
     logging_file  = session.GetConfig('logging_file')
+    console_logging = session.GetConfig('console_logging')
+    console_logging_level = session.GetConfig('console_logging_level')
 
     logger = logging.getLogger(__name__)
     '''
@@ -26,40 +28,27 @@ def configureLogging():
             logger.info('Unknown Handler:')
     '''
     
-    if do_logging:
-        python_loglevel = getattr(logging,  const.LOGGING_LEVEl_TYPES[logging_level].upper(), None)
-         # set logging level
+    if file_logging:
+        python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
+        
         '''
         msg = 'Loglevel requested {}, Python log level {}'.format( 
-             const.LOGGING_LEVEl_TYPES[logging_level], python_loglevel)
+             const.LOGGING_LEVEL_TYPES[file_logging_level], python_loglevel)
         logger.info(msg)
         '''
         logLevelChanged = False
         currLogLevel = logging.getLevelName(logger.getEffectiveLevel())
-        if (currLogLevel!=const.LOGGING_LEVEl_TYPES[logging_level]):
+        if (currLogLevel!=const.LOGGING_LEVEL_TYPES[file_logging_level]):
             #if not isinstance(python_loglevel, int):
             #    raise ValueError('Invalid log level to set: %s' % python_loglevel) 
             logLevelChanged = True
             logger.setLevel(python_loglevel)
             msg = 'Logging level will be set to {} from {}'.format( \
-                const.LOGGING_LEVEl_TYPES[logging_level], currLogLevel)
+                const.LOGGING_LEVEL_TYPES[file_logging_level], currLogLevel)
             logger.info(msg)
 
         # create formatter
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-        # create console handler 
-        addStreamHandler = True
-        for handler in logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                addStreamHandler = False
-                #logger.info('Stream handler already set')
-        if addStreamHandler:
-            ch = logging.StreamHandler(sys.stdout)
-            ch.setLevel(python_loglevel)
-            ch.setFormatter(formatter)
-            logger.addHandler(ch)
-            logger.info('Added stream handler')
 
         # create file handler 
         #msg = 'Logging file requested {}'.format(logging_file)
@@ -88,13 +77,59 @@ def configureLogging():
                 logger.addHandler(fh)
                 logger.info('Added FILE handler')
     else:
-        closeLogging()
-        
-def closeLogging():
+        closeFileLogging()
+
+    if console_logging:
+        python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[console_logging_level].upper(), None)
+        '''
+        msg = 'Loglevel requested {}, Python log level {}'.format( 
+             const.LOGGING_LEVEL_TYPES[console_logging_level], python_loglevel)
+        logger.info(msg)
+        '''
+        logLevelChanged = False
+        currLogLevel = logging.getLevelName(logger.getEffectiveLevel())
+        if (currLogLevel!=const.LOGGING_LEVEL_TYPES[console_logging_level]): 
+            logLevelChanged = True
+            logger.setLevel(python_loglevel)
+            msg = 'Logging level will be set to {} from {}'.format( \
+                const.LOGGING_LEVEL_TYPES[console_logging_level], currLogLevel)
+            logger.info(msg)
+
+        # create formatter
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+        # create console handler 
+        addStreamHandler = True
+        for handler in logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                addStreamHandler = False
+                #logger.info('Stream handler already set')
+        if addStreamHandler:
+            ch = logging.StreamHandler(sys.stdout)
+            ch.setLevel(python_loglevel)
+            ch.setFormatter(formatter)
+            logger.addHandler(ch)
+            logger.info('Added stream handler')
+    else:
+        closeConsoleLogging()
+ 
+def closeFileLogging():
     logger = logging.getLogger(__name__)
-    while logger.hasHandlers():
-        logger.handlers[0].flush()
-        logger.removeHandler(logger.handlers[0])    
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            handler.flush()
+            logger.removeHandler(handler)    
+
+def closeConsoleLogging():
+    logger = logging.getLogger(__name__)
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.flush()
+            logger.removeHandler(handler)    
+
+def closeLogging():
+    closeConsoleLogging()
+    closeFileLogging()  
 
 def flushHandlers():
     logger = logging.getLogger(__name__)

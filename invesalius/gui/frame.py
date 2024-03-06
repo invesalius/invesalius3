@@ -665,19 +665,23 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
-            logging  = values[const.LOGGING]
-            logging_level  = values[const.LOGGING_LEVEL]
+            file_logging  = values[const.FILE_LOGGING]
+            file_logging_level  = values[const.FILE_LOGGING_LEVEL]
             append_log_file  = values[const.APPEND_LOG_FILE]
             logging_file = values[const.LOGFILE]
+            console_logging  = values[const.CONSOLE_LOGGING]
+            console_logging_level  = values[const.CONSOLE_LOGGING_LEVEL]
             
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
             session.SetConfig('language', language)
             session.SetConfig('slice_interpolation', slice_interpolation)
-            session.SetConfig('do_logging', logging)
-            session.SetConfig('logging_level', logging_level)
+            session.SetConfig('file_logging', file_logging)
+            session.SetConfig('file_logging_level', file_logging_level)
             session.SetConfig('append_log_file', append_log_file)
             session.SetConfig('logging_file', logging_file)
+            session.SetConfig('console_logging', console_logging)
+            session.SetConfig('console_logging_level', console_logging_level)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
