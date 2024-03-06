@@ -73,8 +73,8 @@ from invesalius.net.pedal_connection import PedalConnector
 
 from invesalius import inv_paths
 
-BTN_NEW = wx.NewId()
-BTN_IMPORT_LOCAL = wx.NewId()
+BTN_NEW = wx.NewIdRef()
+BTN_IMPORT_LOCAL = wx.NewIdRef()
         
 def GetBitMapForBackground():
     image_file = os.path.join('head.png')

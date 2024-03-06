@@ -54,7 +54,7 @@ except ImportError:
 # Layout tools' IDs - this is used only locally, therefore doesn't
 # need to be defined in constants.py
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] =\
-                                [wx.NewId() for number in range(3)]
+                                [wx.NewIdRef() for number in range(3)]
 
 WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
     "NIfTI 1 (*.nii)|*.nii|" \
@@ -1136,8 +1136,8 @@ class MenuBar(wx.MenuBar):
         swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom")).Enable(False)
         swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom")).Enable(False)
 
-        image_menu.Append(wx.NewId(), _('Flip'), flip_menu)
-        image_menu.Append(wx.NewId(), _('Swap axes'), swap_axes_menu)
+        image_menu.Append(wx.NewIdRef(), _('Flip'), flip_menu)
+        image_menu.Append(wx.NewIdRef(), _('Swap axes'), swap_axes_menu)
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+O'))
@@ -1271,7 +1271,7 @@ class MenuBar(wx.MenuBar):
                 self.plugins_menu.DestroyItem(menu_item)
 
         for item in items:
-            _new_id = wx.NewId()
+            _new_id = wx.NewIdRef()
             self._plugins_menu_ids[_new_id] = items[item]
             menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
             menu_item.Enable(items[item]["enable_startup"])
