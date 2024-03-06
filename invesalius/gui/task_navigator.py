@@ -1453,7 +1453,6 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressTargetModeButton, 'Press target mode button')
 
         # Conditions for enabling 'target mode' button:
-        Publisher.subscribe(self.TargetSelected, 'Target selected')
         Publisher.subscribe(self.TrackObject, 'Track object')
 
         #Tractography
@@ -1572,6 +1571,7 @@ class ControlPanel(wx.Panel):
 
         self.target_selected = True
         self.UpdateTargetButton()
+        self.UpdateRobotButtons()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
@@ -1747,11 +1747,6 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(ctrl)
 
     # 'Target mode' button
-    def TargetSelected(self, status):
-        self.target_selected = status
-        self.UpdateTargetButton()
-        self.UpdateRobotButtons()
-
     def TrackObject(self, enabled):
         self.track_obj = enabled
         self.UpdateTargetButton()

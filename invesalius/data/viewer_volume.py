@@ -263,6 +263,10 @@ class Viewer(wx.Panel):
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
 
+        # A dict to store the current camera settings; used when enabling target mode to store the current
+        # camera. When disabling target mode, the stored camera settings are used to restore the camera.
+        self.stored_camera_settings = None
+
         self.obj_axes = None
         self.obj_name = False
         self.show_coil = False
@@ -905,6 +909,9 @@ class Viewer(wx.Panel):
         return self.target_mode
 
     def EnableTargetMode(self):
+        # Store the current camera settings so that they can be restored when the target mode is disabled.
+        self.stored_camera_settings = self.GetCameraSettings()
+
         # Set the transformation matrix for the target.
         self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
 
@@ -1022,13 +1029,12 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def DisableTargetMode(self):
-        self.ren.SetViewport(0, 0, 1, 1)
+        # Restore the camera settings that were stored when the target mode was enabled.
+        if self.stored_camera_settings is not None:
+            self.ApplyCameraSettings(self.stored_camera_settings)
 
         # Remove target guide actors.
         self.interactor.GetRenderWindow().RemoveRenderer(self.target_guide_renderer)
-
-        # Set view angle back to front.
-        self.SetViewAngle(const.VOL_FRONT)
 
         # Remove the actor for 'distance' text.
         if self.distance_text is not None:
@@ -1190,7 +1196,6 @@ class Viewer(wx.Panel):
         self.target_mode = False
         self.target_coord = None
         self.RemoveTargetCoil()
-        Publisher.sendMessage('Target selected', status=False)
 
     def OnSetTarget(self, marker):
         coord = marker.position + marker.orientation
@@ -1205,7 +1210,6 @@ class Viewer(wx.Panel):
 
         self.CreateTargetCoil()
 
-        Publisher.sendMessage('Target selected', status=True)
         print("Target updated to coordinates {}".format(coord))
 
     def CreateVTKObjectMatrix(self, direction, orientation):
@@ -2482,6 +2486,7 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(new_state)
 
     def ResetCamClippingRange(self):
+        print("testing3")
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
@@ -2623,6 +2628,12 @@ class Viewer(wx.Panel):
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
 
+            # XXX: This is a hack to get some decent initial settings for the camera, needed when
+            #   a session is restored when a target is already set. (When unsetting the target, the
+            #   camera settings will be restored from self.stored_camera_settings, hence we need
+            #   to ensure that these settings can be used.)
+            self.stored_camera_settings = self.GetCameraSettings()
+
         self.UpdateRender()
 
         # make camera projection to parallel
@@ -2707,6 +2718,28 @@ class Viewer(wx.Panel):
 
     def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
+
+    # Methods for getting current camera settings and applying a set of settings.
+    def GetCameraSettings(self):
+        camera = self.ren.GetActiveCamera()
+        settings = {
+            'position': camera.GetPosition(),
+            'focal_point': camera.GetFocalPoint(),
+            'view_up': camera.GetViewUp(),
+            'clipping_range': camera.GetClippingRange(),
+            'view_angle': camera.GetViewAngle(),
+            'parallel_scale': camera.GetParallelScale(),
+        }
+        return settings
+
+    def ApplyCameraSettings(self, settings):
+        camera = self.ren.GetActiveCamera()
+        camera.SetPosition(settings['position'])
+        camera.SetFocalPoint(settings['focal_point'])
+        camera.SetViewUp(settings['view_up'])
+        camera.SetClippingRange(settings['clipping_range'])
+        camera.SetViewAngle(settings['view_angle'])
+        camera.SetParallelScale(settings['parallel_scale'])
 
     def SetViewAngle(self, view):
         cam = self.ren.GetActiveCamera()
