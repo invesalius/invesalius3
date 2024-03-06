@@ -177,8 +177,9 @@ class Viewer(wx.Panel):
         ren = vtkRenderer()
         self.ren = ren
 
-        # TODO: What is this?
-        self.ren2 = None
+        # Render the target guide in a separate renderer, so that it can be
+        # rendered on top of the volume.
+        self.target_guide_renderer = vtkRenderer()
 
         canvas_renderer = vtkRenderer()
         canvas_renderer.SetLayer(1)
@@ -914,10 +915,9 @@ class Viewer(wx.Panel):
 
         # Create a line
         self.ren.SetViewport(0, 0, 0.75, 1)
-        self.ren2 = vtkRenderer()
 
-        self.interactor.GetRenderWindow().AddRenderer(self.ren2)
-        self.ren2.SetViewport(0.75, 0, 1, 1)
+        self.interactor.GetRenderWindow().AddRenderer(self.target_guide_renderer)
+        self.target_guide_renderer.SetViewport(0.75, 0, 1, 1)
 
         # Remove the previous actor for 'distance' text
         if self.distance_text is not None:
@@ -1006,23 +1006,34 @@ class Viewer(wx.Panel):
                                     arrow_pitch_x1, arrow_pitch_x2
 
         for ind in self.coil_actor_list:
-            self.ren2.AddActor(ind)
+            self.target_guide_renderer.AddActor(ind)
 
         for ind in self.arrow_actor_list:
-            self.ren2.AddActor(ind)
+            self.target_guide_renderer.AddActor(ind)
 
         self.ren.ResetCamera()
         self.SetCameraTarget()
         #self.ren.GetActiveCamera().Zoom(4)
 
-        self.ren2.ResetCamera()
-        self.ren2.GetActiveCamera().Zoom(2)
-        self.ren2.InteractiveOff()
+        self.target_guide_renderer.ResetCamera()
+        self.target_guide_renderer.GetActiveCamera().Zoom(2)
+        self.target_guide_renderer.InteractiveOff()
         if not self.nav_status:
             self.UpdateRender()
 
     def DisableTargetMode(self):
-        self.DisableCoilTracker()
+        self.ren.SetViewport(0, 0, 1, 1)
+
+        # Remove target guide actors.
+        self.interactor.GetRenderWindow().RemoveRenderer(self.target_guide_renderer)
+
+        # Set view angle back to front.
+        self.SetViewAngle(const.VOL_FRONT)
+
+        # Remove the actor for 'distance' text.
+        if self.distance_text is not None:
+            self.ren.RemoveActor(self.distance_text.actor)
+
         self.camera_show_object = None
         if self.actor_peel:
             if self.object_orientation_torus_actor:
@@ -1030,7 +1041,8 @@ class Viewer(wx.Panel):
             if self.obj_projection_arrow_actor:
                 self.obj_projection_arrow_actor.SetVisibility(1)
 
-        return
+        if not self.nav_status:
+            self.UpdateRender()
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -1084,7 +1096,7 @@ class Viewer(wx.Panel):
             coordrz_arrow = const.ARROW_SCALE * distance_to_target[5]
 
             for ind in self.arrow_actor_list:
-                self.ren2.RemoveActor(ind)
+                self.target_guide_renderer.RemoveActor(ind)
 
             if self.anglethreshold * const.ARROW_SCALE > coordrx_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 is_under_x_angle_threshold = True
@@ -1170,10 +1182,10 @@ class Viewer(wx.Panel):
                                     arrow_pitch_y1, arrow_pitch_y2
 
             for ind in self.arrow_actor_list:
-                self.ren2.AddActor(ind)
+                self.target_guide_renderer.AddActor(ind)
 
     def OnUnsetTarget(self):
-        self.DisableCoilTracker()
+        self.DisableTargetMode()
 
         self.target_mode = False
         self.target_coord = None
@@ -1273,21 +1285,6 @@ class Viewer(wx.Panel):
         distance_text.BoldOn()
 
         return distance_text
-
-    def DisableCoilTracker(self):
-        self.ren.SetViewport(0, 0, 1, 1)
-
-        # During start-up, self.ren2 has not been initialized yet; hence the check.
-        if self.ren2 is not None:
-            self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
-
-        self.SetViewAngle(const.VOL_FRONT)
-
-        if self.distance_text is not None:
-            self.ren.RemoveActor(self.distance_text.actor)
-
-        if not self.nav_status:
-            self.UpdateRender()
 
     def CenterOfMass(self):
         barycenter = [0.0, 0.0, 0.0]
