@@ -206,6 +206,7 @@ class MarkerViewer:
         colour = marker.colour
 
         actor = marker.visualization['actor']
+        highlighted = marker.visualization['highlighted']
 
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
@@ -213,7 +214,13 @@ class MarkerViewer:
         # Note that the scale is increased to make the target more visible.
         new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.TARGET_SCALE)
 
+        if highlighted:
+            self.UnhighlightMarker(render=False)
+
         marker.visualization['actor'] = new_actor
+
+        if highlighted:
+            self.HighlightMarker(marker, render=False)
 
         self.renderer.RemoveActor(actor)
         self.renderer.AddActor(new_actor)
@@ -229,6 +236,7 @@ class MarkerViewer:
         colour = marker.colour
 
         actor = marker.visualization['actor']
+        highlighted = marker.visualization['highlighted']
 
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
@@ -236,7 +244,13 @@ class MarkerViewer:
         # Note that the scale is decreased back to normal.
         new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.NORMAL_SCALE)
 
+        if highlighted:
+            self.UnhighlightMarker(render=False)
+
         marker.visualization['actor'] = new_actor
+
+        if highlighted:
+            self.HighlightMarker(marker, render=False)
 
         self.renderer.RemoveActor(actor)
         self.renderer.AddActor(new_actor)
@@ -251,7 +265,7 @@ class MarkerViewer:
         else:
             actor.GetProperty().SetOpacity(1)
 
-    def HighlightMarker(self, marker):
+    def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.
         actor = marker.visualization['actor']
 
@@ -302,6 +316,10 @@ class MarkerViewer:
             actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=colour, radius=0.5)
             actor.GetProperty().SetOpacity(0.1)
 
+            # If there is already a projection line actor, remove it.
+            if self.projection_line_actor is not None:
+                self.renderer.RemoveActor(self.projection_line_actor)
+
             self.renderer.AddActor(actor)
 
             # Store the projection line actor so that it can be removed later.
@@ -313,7 +331,8 @@ class MarkerViewer:
         # Store the 'highlighted' status in the marker.
         marker.visualization['highlighted'] = True
 
-        self.interactor.Render()
+        if render:
+            self.interactor.Render()
 
     def UnhighlightMarker(self, render=True):
         # Return early in case there is no highlighted marker. This shouldn't happen, though.
@@ -337,7 +356,7 @@ class MarkerViewer:
             actor.SetVisibility(1)
 
         # Remove the projection actor if it exists.
-        if self.projection_line_actor:
+        if self.projection_line_actor is not None:
             self.renderer.RemoveActor(self.projection_line_actor)
             self.projection_line_actor = None
 
