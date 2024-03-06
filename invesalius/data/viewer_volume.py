@@ -273,9 +273,9 @@ class Viewer(wx.Panel):
         self.distance_text = None
 
         # self.obj_axes = None
-        self.x_actor = None
-        self.y_actor = None
-        self.z_actor = None
+        self.x_axis_actor = None
+        self.y_axis_actor = None
+        self.z_axis_actor = None
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
@@ -1430,9 +1430,9 @@ class Viewer(wx.Panel):
         self.coil_center_actor = coil_center_actor
 
         # Create actors for the x, y, and z-axes.
-        self.x_actor = self.actor_factory.CreateLine([0., 0., 0.], [1., 0., 0.], colour=[.0, .0, 1.0])
-        self.y_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
-        self.z_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
+        self.x_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [1., 0., 0.], colour=[.0, .0, 1.0])
+        self.y_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
+        self.z_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
 
         self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
             position=[0., 0., 0.],
@@ -1448,12 +1448,12 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.coil_actor)
         self.ren.AddActor(self.coil_center_actor)
-        self.ren.AddActor(self.x_actor)
-        self.ren.AddActor(self.y_actor)
-        self.ren.AddActor(self.z_actor)
-        self.x_actor.SetVisibility(0)
-        self.y_actor.SetVisibility(0)
-        self.z_actor.SetVisibility(0)
+        self.ren.AddActor(self.x_axis_actor)
+        self.ren.AddActor(self.y_axis_actor)
+        self.ren.AddActor(self.z_axis_actor)
+        self.x_axis_actor.SetVisibility(0)
+        self.y_axis_actor.SetVisibility(0)
+        self.z_axis_actor.SetVisibility(0)
 
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -2255,7 +2255,7 @@ class Viewer(wx.Panel):
                 point = np.array(self.peel_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
 
-                self.ren.RemoveActor(self.y_actor)
+                self.ren.RemoveActor(self.y_axis_actor)
 
                 if distance < closestDist:
                     closestDist = distance
@@ -2265,10 +2265,10 @@ class Viewer(wx.Panel):
                     #print('the angle:', angle)
 
                     # For debugging
-                    self.y_actor = self.actor_factory.CreateLine(closestPoint, closestPoint + 75 * pointnormal,
+                    self.y_axis_actor = self.actor_factory.CreateLine(closestPoint, closestPoint + 75 * pointnormal,
                                                                      vtk_colors.GetColor3d('Yellow'))
 
-                    #self.ren.AddActor(self.y_actor)# remove comment for testing
+                    #self.ren.AddActor(self.y_axis_actor)# remove comment for testing
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_torus_actor)
@@ -2286,11 +2286,11 @@ class Viewer(wx.Panel):
                         self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
                         self.obj_projection_arrow_actor.GetProperty().SetColor([240/255,146/255,105/255])
                 else:
-                    self.ren.RemoveActor(self.y_actor)
+                    self.ren.RemoveActor(self.y_axis_actor)
         else:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
-            self.ren.RemoveActor(self.x_actor)
+            self.ren.RemoveActor(self.x_axis_actor)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2300,9 +2300,9 @@ class Viewer(wx.Panel):
             self.pTarget = self.CenterOfMass()
             if self.coil_actor:
                 self.coil_actor.SetVisibility(self.show_coil)
-                #self.x_actor.SetVisibility(self.show_coil)
-                #self.y_actor.SetVisibility(self.show_coil)
-                #self.z_actor.SetVisibility(self.show_coil)
+                #self.x_axis_actor.SetVisibility(self.show_coil)
+                #self.y_axis_actor.SetVisibility(self.show_coil)
+                #self.z_axis_actor.SetVisibility(self.show_coil)
                 #self.object_orientation_torus_actor.SetVisibility(self.show_coil)
                 #self.obj_projection_arrow_actor.SetVisibility(self.show_coil)
         self.camera_show_object = None
@@ -2343,16 +2343,16 @@ class Viewer(wx.Panel):
 
         self.coil_actor.SetUserMatrix(m_img_vtk)
         self.coil_center_actor.SetUserMatrix(m_img_vtk)
-        self.x_actor.SetUserMatrix(m_img_vtk)
-        self.y_actor.SetUserMatrix(m_img_vtk)
-        self.z_actor.SetUserMatrix(m_img_vtk)
+        self.x_axis_actor.SetUserMatrix(m_img_vtk)
+        self.y_axis_actor.SetUserMatrix(m_img_vtk)
+        self.z_axis_actor.SetUserMatrix(m_img_vtk)
 
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
 
         if flag:
-            self.ren.RemoveActor(self.x_actor)
-            #self.ren.RemoveActor(self.y_actor)
+            self.ren.RemoveActor(self.x_axis_actor)
+            #self.ren.RemoveActor(self.y_axis_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
@@ -2360,16 +2360,17 @@ class Viewer(wx.Panel):
 
     def RemoveObjectActor(self):
         self.ren.RemoveActor(self.coil_actor)
-        self.ren.RemoveActor(self.x_actor)
-        self.ren.RemoveActor(self.y_actor)
-        self.ren.RemoveActor(self.z_actor)
+        self.ren.RemoveActor(self.coil_center_actor)
+        self.ren.RemoveActor(self.x_axis_actor)
+        self.ren.RemoveActor(self.y_axis_actor)
+        self.ren.RemoveActor(self.z_axis_actor)
         self.ren.RemoveActor(self.mark_actor)
         self.ren.RemoveActor(self.obj_projection_arrow_actor)
         self.ren.RemoveActor(self.object_orientation_torus_actor)
         self.coil_actor = None
-        self.x_actor = None
-        self.y_actor = None
-        self.z_actor = None
+        self.x_axis_actor = None
+        self.y_axis_actor = None
+        self.z_axis_actor = None
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
@@ -2402,9 +2403,9 @@ class Viewer(wx.Panel):
 
         if self.coil_actor:
             self.coil_actor.SetVisibility(state)
-            self.x_actor.SetVisibility(state)
-            self.y_actor.SetVisibility(state)
-            self.z_actor.SetVisibility(state)
+            self.x_axis_actor.SetVisibility(state)
+            self.y_axis_actor.SetVisibility(state)
+            self.z_axis_actor.SetVisibility(state)
 
         if not self.nav_status:
             self.UpdateRender()
