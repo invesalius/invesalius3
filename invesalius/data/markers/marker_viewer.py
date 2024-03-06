@@ -118,7 +118,8 @@ class MarkerViewer:
         new_actor = self.actor_factory.CreateAim(new_position_flipped, new_orientation, colour)
 
         if highlighted:
-            self.UnhighlightMarker()
+            # Unhighlight the marker, but do not render the interactor yet to avoid flickering.
+            self.UnhighlightMarker(render=False)
 
         marker.visualization = {
             'actor': new_actor,
@@ -255,7 +256,7 @@ class MarkerViewer:
 
         self.interactor.Render()
 
-    def UnhighlightMarker(self):
+    def UnhighlightMarker(self, render=True):
         # Return early in case there is no highlighted marker. This shouldn't happen, though.
         if self.highlighted_marker is None:
             return
@@ -285,4 +286,5 @@ class MarkerViewer:
         self.highlighted_marker = None
         marker.visualization['highlighted'] = False
 
-        self.interactor.Render()
+        if render:
+            self.interactor.Render()
