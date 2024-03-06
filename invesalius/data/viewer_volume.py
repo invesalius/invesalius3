@@ -1184,7 +1184,7 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.target_guide_renderer.AddActor(ind)
 
-    def OnUnsetTarget(self):
+    def OnUnsetTarget(self, marker):
         self.DisableTargetMode()
 
         self.target_mode = False
