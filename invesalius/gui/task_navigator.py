@@ -1951,9 +1951,6 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
         
-        # Intercept key-down events to have custom behaviour for the arrow keys (moving markers).
-        marker_list_ctrl.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-
         self.marker_list_ctrl = marker_list_ctrl
 
         # Add all lines into main sizer
@@ -2308,108 +2305,24 @@ class MarkersPanel(wx.Panel):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
-    def OnKeyDown(self, event):
-        """
-        When a key is pressed, move the focused marker in the direction specified by the key.
-
-        The marker can be moved in the X- or Y-direction or rotated along the Z-axis using the keys
-        'W', 'A', 'S', 'D', 'PageUp', and 'PageDown'.
-        
-        The marker can also be moved in the Z-direction using the '+' and '-' keys;
-        '+' moves it closer to the scalp, and '-' moves it away from the scalp.
-
-        The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
-        """
-        keycode = event.GetKeyCode()
-
-        focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.markers[focused_marker_idx]
-
-        # Keycodes for the relevant keys.
-        WXK_PLUS = 43
-        WXK_PLUS_NUMPAD = 388
-        WXK_MINUS = 45
-        WXK_MINUS_NUMPAD = 390
-
-        WXK_KEY_A = 65
-        WXK_KEY_D = 68
-        WXK_KEY_W = 87
-        WXK_KEY_S = 83
-
-        WXK_PAGEUP = 366
-        WXK_PAGEDOWN = 367
-
-        direction = None
-        stay_on_scalp = True
-
-        # Allow moving the marker in X- or Y-direction or rotating along Z-axis only if navigation is off.
-        if keycode == WXK_KEY_S and not self.nav_status:
-            direction = [0, -1, 0, 0, 0, 0]
-
-        elif keycode == WXK_KEY_W and not self.nav_status:
-            direction = [0, 1, 0, 0, 0, 0]
-
-        elif keycode == WXK_KEY_A and not self.nav_status:
-            direction = [-1, 0, 0, 0, 0, 0]
-
-        elif keycode == WXK_KEY_D and not self.nav_status:
-            direction = [1, 0, 0, 0, 0, 0]
-
-        elif keycode == WXK_PAGEUP and not self.nav_status:
-            stay_on_scalp = False
-            direction = [0, 0, 0, 0, 0, 1]
-
-        elif keycode == WXK_PAGEDOWN and not self.nav_status:
-            stay_on_scalp = False
-            direction = [0, 0, 0, 0, 0, -1]
-                
-        elif keycode in [WXK_PLUS, WXK_PLUS_NUMPAD]:
-            stay_on_scalp = False
-            direction = [0, 0, -1, 0, 0, 0]
-
-        elif keycode in [WXK_MINUS, WXK_MINUS_NUMPAD]:
-            stay_on_scalp = False
-            direction = [0, 0, 1, 0, 0, 0]
-
-        # Allow other key events to be processed normally, such as the arrow keys for
-        # navigating the list control.
-        if direction is None:
-            event.Skip()
-            return
-
-        # Only allow moving markers of type 'coil target' using keyboard; otherwise, return early.
-        if marker.marker_type != MarkerType.COIL_TARGET:
-            return
-
-        # Move the marker one unit in the direction specified by the key.
-        displacement = 1 * np.array(direction)
-        if stay_on_scalp:
-            self.marker_transformator.MoveMarkerOnScalp(
-                marker=marker,
-                displacement_along_scalp_tangent=displacement,
-            )
-        else:
-            self.marker_transformator.MoveMarker(
-                marker=marker,
-                displacement=displacement,
-            )
-
-        # Update the marker in the volume viewer.
-        Publisher.sendMessage('Update marker', marker=marker, new_position=marker.position, new_orientation=marker.orientation)
-
-        # Update the target if the marker is the active target.
-        if marker.is_target:
-            Publisher.sendMessage('Set target', marker=marker)
-
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[idx]
 
+        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
+        Publisher.sendMessage('Update selected marker', marker=marker)
+
+        # Highlight marker in viewer volume.
         Publisher.sendMessage('Highlight marker', marker=marker)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
     def OnMarkerUnfocused(self, evt):
+        # Marker transformator needs to know that no marker is selected so it can stop reacting to
+        # keyboard events.
+        Publisher.sendMessage('Update selected marker', marker=None)
+
+        # Unhighlight marker in viewer volume.
         Publisher.sendMessage('Unhighlight marker')
         
     def OnCreateCoilTargetFromLandmark(self, evt):
