@@ -2665,6 +2665,12 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
+        msg = _("Delete marker?") if len(indexes) == 1 else _("Delete markers?")
+
+        result = dlg.ShowConfirmationDialog(msg=msg)
+        if result != wx.ID_OK:
+            return
+
         # If current target is removed, handle it as a special case.
         idx = self.__find_target_marker_idx()
         if idx in indexes:
