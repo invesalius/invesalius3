@@ -300,6 +300,7 @@ class MarkerViewer:
             endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
 
             actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=colour, radius=0.5)
+            actor.GetProperty().SetOpacity(0.1)
 
             self.renderer.AddActor(actor)
 
