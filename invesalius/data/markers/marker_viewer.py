@@ -102,8 +102,6 @@ class MarkerViewer:
 
         marker.visualization = {
             'actor': actor,
-            'position': position_flipped,
-            'orientation': orientation,
             'highlighted': False,
             'hidden': False,
         }
@@ -135,8 +133,6 @@ class MarkerViewer:
 
         marker.visualization = {
             'actor': new_actor,
-            'position': new_position_flipped,
-            'orientation': new_orientation,
             'highlighted': False,
             'hidden': False,
         }
@@ -260,8 +256,11 @@ class MarkerViewer:
         actor = marker.visualization['actor']
 
         marker_type = marker.marker_type
-        position = marker.visualization['position']
-        orientation = marker.visualization['orientation']
+        position = marker.position
+        orientation = marker.orientation
+
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
 
         # Use color red for highlighting.
         vtk_colors = vtk.vtkNamedColors()
@@ -276,7 +275,7 @@ class MarkerViewer:
 
         # If the marker is a coil target, create a perpendicular line from the coil to the brain surface.
         if marker_type == MarkerType.COIL_TARGET:
-            startpoint = position[:]
+            startpoint = position_flipped[:]
 
             # Move the endpoint 30 mm in the direction of the orientation. This should be enough to reach the brain surface.
             dx = 0
@@ -292,7 +291,7 @@ class MarkerViewer:
                 axes='sxyz',
             )
             m_marker = dco.coordinates_to_transformation_matrix(
-                position=position,
+                position=position_flipped,
                 orientation=orientation,
                 axes='sxyz',
             )
