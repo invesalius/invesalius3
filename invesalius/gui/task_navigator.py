@@ -1886,7 +1886,7 @@ class MarkersPanel(wx.Panel):
 
         # Buttons to delete markers
         btn_delete_single = wx.Button(self, -1, label=_('Delete'), size=wx.Size(65, 23))
-        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteMultipleMarkers)
+        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSelectedMarkers)
 
         btn_delete_all = wx.Button(self, -1, label=_('Delete all'), size=wx.Size(135, 23))
         btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
@@ -1947,6 +1947,7 @@ class MarkersPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
         Publisher.subscribe(self.OnDeleteFiducialMarker, 'Delete fiducial marker')
+        Publisher.subscribe(self.OnDeleteSelectedMarkers, 'Delete selected markers')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -2658,7 +2659,7 @@ class MarkersPanel(wx.Panel):
         self.__delete_multiple_markers(indexes)
         self.SaveState()
 
-    def OnDeleteMultipleMarkers(self, evt):
+    def OnDeleteSelectedMarkers(self, evt=None):
         indexes = self.__get_selected_items()
 
         if not indexes:
