@@ -1906,8 +1906,8 @@ class MarkersPanel(wx.Panel):
                             (btn_load, 0, wx.LEFT | wx.RIGHT),
                             (btn_visibility, 0, wx.LEFT)])
 
-        # Buttons to delete or remove markers
-        btn_delete_single = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
+        # Buttons to delete markers
+        btn_delete_single = wx.Button(self, -1, label=_('Delete'), size=wx.Size(65, 23))
         btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteMultipleMarkers)
 
         btn_delete_all = wx.Button(self, -1, label=_('Delete all'), size=wx.Size(135, 23))
@@ -1968,7 +1968,7 @@ class MarkersPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
-        Publisher.subscribe(self.OnDeleteMultipleMarkers, 'Delete fiducial marker')
+        Publisher.subscribe(self.OnDeleteFiducialMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
@@ -2668,28 +2668,23 @@ class MarkersPanel(wx.Panel):
 
         self.SaveState()
 
-    def OnDeleteMultipleMarkers(self, evt=None, label=None):
-        # OnDeleteMultipleMarkers is used for both pubsub and button click events
-        # Pubsub is used for fiducial handle and button click for all others
+    def OnDeleteFiducialMarker(self, label):
+        indexes = []
+        if label and (label in self.__list_fiducial_labels()):
+            for id_n in range(self.marker_list_ctrl.GetItemCount()):
+                item = self.marker_list_ctrl.GetItem(id_n, const.LABEL_COLUMN)
+                if item.GetText() == label:
+                    self.marker_list_ctrl.Focus(item.GetId())
+                    indexes = [self.marker_list_ctrl.GetFocusedItem()]
 
-        if not evt:
-            # Called through pubsub.
+        self.__delete_multiple_markers(indexes)
+        self.SaveState()
 
-            indexes = []
-            if label and (label in self.__list_fiducial_labels()):
-                for id_n in range(self.marker_list_ctrl.GetItemCount()):
-                    item = self.marker_list_ctrl.GetItem(id_n, const.LABEL_COLUMN)
-                    if item.GetText() == label:
-                        self.marker_list_ctrl.Focus(item.GetId())
-                        indexes = [self.marker_list_ctrl.GetFocusedItem()]
-        else:
-            # Called using a button click.
-            indexes = self.__get_selected_items()
+    def OnDeleteMultipleMarkers(self, evt):
+        indexes = self.__get_selected_items()
 
         if not indexes:
-            # Don't show the warning if called through pubsub
-            if evt:
-                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
         # If current target is removed, handle it as a special case.
