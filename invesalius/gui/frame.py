@@ -183,9 +183,15 @@ class Frame(wx.Frame):
         # If the key is a move marker key, publish a message to move the marker.
         if keycode in const.MOVEMENT_KEYCODES:
             Publisher.sendMessage('Move marker by keyboard', keycode=keycode)
-        else:
-            # For all other keys, continue with the normal event handling (propagate the event).
-            event.Skip()
+            return
+
+        # Similarly with 'Del' key; publish a message to delete selected markers.
+        if keycode == wx.WXK_DELETE:
+            Publisher.sendMessage('Delete selected markers')
+            return
+
+        # For all other keys, continue with the normal event handling (propagate the event).
+        event.Skip()
 
     def __init_aui(self):
         """
