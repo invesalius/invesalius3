@@ -244,7 +244,6 @@ class ActorFactory(object):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
-        actor.PickableOff()
 
         return actor
 

@@ -34,7 +34,7 @@ class MarkerViewer:
 
         # The actor representing the projection line of the coil target to the brain surface.
         self.projection_line_actor = None
- 
+
         self.__bind_events()
 
     def __bind_events(self):

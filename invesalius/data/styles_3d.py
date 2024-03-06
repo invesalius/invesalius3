@@ -81,13 +81,17 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
         self.viewer = viewer
 
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        self.viewer.interactor.SetPicker(self.picker)
+
         # Rotate using left button
-        self.AddObserver("LeftButtonPressEvent",self.OnRotateLeftClick)
-        self.AddObserver("LeftButtonReleaseEvent",self.OnRotateLeftRelease)
+        self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
+        self.AddObserver("LeftButtonReleaseEvent",self.OnLeftRelease)
 
         # Zoom using right button
-        self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-        self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
+        self.AddObserver("RightButtonPressEvent",self.OnRightClick)
+        self.AddObserver("RightButtonReleaseEvent",self.OnRightRelease)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
@@ -111,17 +115,40 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
             evt.Pan()
             evt.OnMiddleButtonDown()
 
-    def OnRotateLeftClick(self, evt, obj):
+    def OnLeftClick(self, evt, obj):
         evt.StartRotate()
 
-    def OnRotateLeftRelease(self, evt, obj):
+    def OnLeftRelease(self, evt, obj):
         evt.OnLeftButtonUp()
         evt.EndRotate()
 
-    def OnZoomRightClick(self, evt, obj):
+    def OnRightClick(self, evt, obj):
+        # Pick the actor under the mouse cursor and send it to marker selection.
+        x, y = self.viewer.get_vtk_mouse_position()
+
+        # Get the scalp surface actor to check if it is visible.
+        scalp_surface = self.viewer.surface_geometry.GetScalpSurface()
+        scalp_actor = scalp_surface['actor']
+
+        is_scalp_visible = scalp_actor.GetVisibility()
+
+        # If scalp is visible, hide it to allow the picker to markers on the brain surface.
+        if is_scalp_visible:
+            scalp_actor.SetVisibility(False)
+
+        # Get the actor under the mouse cursor.
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+
+        # Show the scalp again if it was visible before.
+        if is_scalp_visible:
+            scalp_actor.SetVisibility(True)
+
+        actor = self.picker.GetActor()
+        Publisher.sendMessage('Select marker by actor', actor=actor)
+
         evt.StartDolly()
 
-    def OnZoomRightRelease(self, evt, obj):
+    def OnRightRelease(self, evt, obj):
         evt.OnRightButtonUp()
         evt.EndDolly()
 
@@ -452,12 +479,13 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
 
+        # Get the scalp surface actor to check if it is visible.
         scalp_surface = self.viewer.surface_geometry.GetScalpSurface()
         scalp_actor = scalp_surface['actor']
 
         is_scalp_visible = scalp_actor.GetVisibility()
 
-        # If scalp if visible, hide it to allow the picker to pick from the brain surface.
+        # If scalp is visible, hide it to allow the picker to pick from the brain surface.
         if is_scalp_visible:
             scalp_actor.SetVisibility(False)
 

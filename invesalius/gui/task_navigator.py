@@ -1968,6 +1968,10 @@ class MarkersPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
+
+        # Called when selecting a marker in the volume viewer.
+        Publisher.subscribe(self.OnSelectMarkerByActor, 'Select marker by actor')
+
         Publisher.subscribe(self.OnDeleteFiducialMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteSelectedMarkers, 'Delete selected markers')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
@@ -2646,11 +2650,36 @@ class MarkersPanel(wx.Panel):
                 print("The coil is not at the target")
         else:
             print("Target not set")
-    
+
     def OnSessionChanged(self, evt, ctrl):
         value = ctrl.GetValue()
         Publisher.sendMessage('Current session changed', new_session_id=value)
-        
+
+    def OnSelectMarkerByActor(self, actor):
+        """
+        Given an actor, select and focus on the corresponding marker in the list control.
+
+        TODO: This is not in the optimal place. Ideally, information about the 3D view should not
+              be passed to the markers panel. However, currently MarkersPanel is the only
+              place where the list of markers, including information about their visualization, is
+              stored.
+        """
+        for (m, idx) in zip(self.markers, range(len(self.markers))):
+            visualization = m.visualization
+            if visualization is None:
+                continue
+
+            if visualization['actor'] == actor:
+                # Unselect the previously selected item.
+                idx_old = self.marker_list_ctrl.GetFocusedItem()
+                if idx_old != -1:
+                    self.marker_list_ctrl.Select(idx_old, on=False)
+
+                # Focus and select the marker in the list control.
+                self.marker_list_ctrl.Focus(idx)
+                self.marker_list_ctrl.Select(idx, on=True)
+                break
+
     def OnDeleteAllMarkers(self, evt=None):
         if evt is not None:
             result = dlg.ShowConfirmationDialog(msg=_("Delete all markers? Cannot be undone."))
