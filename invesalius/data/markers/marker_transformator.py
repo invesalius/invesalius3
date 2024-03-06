@@ -9,10 +9,34 @@ from invesalius.data.markers.surface_geometry import SurfaceGeometry
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
 
+from invesalius.pubsub import pub as Publisher
+import invesalius.constants as const
+
 
 class MarkerTransformator:
     def __init__(self):
         self.surface_geometry = SurfaceGeometry()
+
+        # Keep track of the marker selected in the marker menu; this is the marker
+        # that will be moved when the user presses a key.
+        self.selected_marker = None
+
+        # Keep track of the navigation status to prevent moving the marker when the
+        # navigation is on.
+        self.is_navigating = False
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.UpdateSelectedMarker, 'Update selected marker')
+        Publisher.subscribe(self.MoveMarkerByKeyboard, 'Move marker by keyboard')
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.is_navigating = nav_status
+
+    def UpdateSelectedMarker(self, marker):
+        self.selected_marker = marker
 
     def MoveMarker(self, marker, displacement):
         """
@@ -182,3 +206,84 @@ class MarkerTransformator:
 
         marker.position = closest_point
         marker.orientation = euler_angles_deg
+
+    def MoveMarkerByKeyboard(self, keycode):
+        """
+        When a key is pressed, move the focused marker in the direction specified by the key.
+
+        The marker can be moved in the X- or Y-direction or rotated along the Z-axis using the keys
+        'W', 'A', 'S', 'D', 'PageUp', and 'PageDown'.
+        
+        The marker can also be moved in the Z-direction using the '+' and '-' keys;
+        '+' moves it closer to the scalp, and '-' moves it away from the scalp.
+
+        The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
+        """
+        marker = self.selected_marker
+        
+        # Return early if no marker is selected.
+        if marker is None:
+            return
+
+        # Return early if keycode is not a movement key.
+        if keycode not in const.MOVEMENT_KEYCODES:
+            return
+
+        # Return early if the marker is not of type 'coil target'.
+        if marker.marker_type != MarkerType.COIL_TARGET:
+            return
+
+        direction = None
+        stay_on_scalp = True
+
+        # Allow moving the marker in X- or Y-direction or rotating along Z-axis only if navigation is off.
+        if keycode == const.MOVE_MARKER_POSTERIOR_KEYCODE and not self.is_navigating:
+            direction = [0, -1, 0, 0, 0, 0]
+
+        elif keycode == const.MOVE_MARKER_ANTERIOR_KEYCODE and not self.is_navigating:
+            direction = [0, 1, 0, 0, 0, 0]
+
+        elif keycode == const.MOVE_MARKER_LEFT_KEYCODE and not self.is_navigating:
+            direction = [-1, 0, 0, 0, 0, 0]
+
+        elif keycode == const.MOVE_MARKER_RIGHT_KEYCODE and not self.is_navigating:
+            direction = [1, 0, 0, 0, 0, 0]
+
+        elif keycode == const.ROTATE_MARKER_CLOCKWISE and not self.is_navigating:
+            stay_on_scalp = False
+            direction = [0, 0, 0, 0, 0, 1]
+
+        elif keycode == const.ROTATE_MARKER_COUNTERCLOCKWISE and not self.is_navigating:
+            stay_on_scalp = False
+            direction = [0, 0, 0, 0, 0, -1]
+                
+        elif keycode in [const.MOVE_MARKER_CLOSER_KEYCODE, const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE]:
+            stay_on_scalp = False
+            direction = [0, 0, -1, 0, 0, 0]
+
+        elif keycode in [const.MOVE_MARKER_AWAY_KEYCODE, const.MOVE_MARKER_AWAY_ALTERNATIVE_KEYCODE]:
+            stay_on_scalp = False
+            direction = [0, 0, 1, 0, 0, 0]
+
+        if direction is None:
+            return
+
+        # Move the marker one unit in the direction specified by the key.
+        displacement = 1 * np.array(direction)
+        if stay_on_scalp:
+            self.MoveMarkerOnScalp(
+                marker=marker,
+                displacement_along_scalp_tangent=displacement,
+            )
+        else:
+            self.MoveMarker(
+                marker=marker,
+                displacement=displacement,
+            )
+
+        # Update the marker in the volume viewer.
+        Publisher.sendMessage('Update marker', marker=marker, new_position=marker.position, new_orientation=marker.orientation)
+
+        # Update the target if the marker is the active target.
+        if marker.is_target:
+            Publisher.sendMessage('Set target', marker=marker)

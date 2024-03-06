@@ -171,6 +171,22 @@ class Frame(wx.Frame):
         # Close InVesalius main window, hence exit the software.
         self.Bind(wx.EVT_CLOSE, self.OnExit)
 
+        # Bind global key events.
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnGlobalKey)
+
+    def OnGlobalKey(self, event):
+        """
+        Handle all key events at a global level.
+        """
+        keycode = event.GetKeyCode()
+
+        # If the key is a move marker key, publish a message to move the marker.
+        if keycode in const.MOVEMENT_KEYCODES:
+            Publisher.sendMessage('Move marker by keyboard', keycode=keycode)
+        else:
+            # For all other keys, continue with the normal event handling (propagate the event).
+            event.Skip()
+
     def __init_aui(self):
         """
         Build AUI manager and all panels inside InVesalius frame.
