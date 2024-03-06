@@ -200,7 +200,7 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage('Press robot button', pressed=False)
             Publisher.sendMessage('Press move away button', pressed=False)
 
-    def UnsetTarget(self):
+    def UnsetTarget(self, marker):
         self.target = None
         Publisher.sendMessage('Update robot target',
             robot_tracker_flag=False,

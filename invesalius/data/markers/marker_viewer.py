@@ -2,6 +2,7 @@ import vtk
 
 import invesalius.data.coordinates as dco
 from invesalius.data.markers.marker import Marker, MarkerType
+import invesalius.constants as const
 
 from invesalius.pubsub import pub as Publisher
 
@@ -11,6 +12,16 @@ class MarkerViewer:
     A class for managing the highlighting of markers in the 3D viewer. Later, this class could be extended to handle other
     marker-related functionality, such as adding and removing markers, etc.
     """
+    # The scale of the coil target marker when it is the target.
+    TARGET_SCALE = 1.0
+
+    # The normal scale of the 'coil target' marker when not the target.
+    NORMAL_SCALE = 0.5
+
+    # The scale of the coil pose marker; they are generated when pulses are given, hence, make them
+    # smaller to avoid cluttering the volume viewer.
+    SMALL_SCALE = 0.2
+
     def __init__(self, renderer, interactor, actor_factory):
         self.renderer = renderer
         self.interactor = interactor
@@ -36,6 +47,8 @@ class MarkerViewer:
         Publisher.subscribe(self.HighlightMarker, 'Highlight marker')
         Publisher.subscribe(self.UnhighlightMarker, 'Unhighlight marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
+        Publisher.subscribe(self.SetTarget, 'Set target')
+        Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.SetTargetTransparency, 'Set target transparency')
 
     def AddMarker(self, marker, render):
@@ -75,12 +88,11 @@ class MarkerViewer:
 
         # For 'coil target' type markers, create a crosshair.
         elif marker_type == MarkerType.COIL_TARGET:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour)
+            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.NORMAL_SCALE)
 
-        # For 'coil pose' type markers, create a smaller crosshair; they are generated when pulses are
-        # given; hence, they easily clutter the volume viewer if they are too big.
+        # For 'coil pose' type markers, create a smaller crosshair.
         elif marker_type == MarkerType.COIL_POSE:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=0.3)
+            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.SMALL_SCALE)
 
         else:
             assert False, "Invalid marker type."
@@ -188,6 +200,53 @@ class MarkerViewer:
 
         self.interactor.Render()
 
+    def SetTarget(self, marker):
+        """
+        When setting a marker as the target, increase the scale of its visualization to highlight
+        that it is the target.
+        """
+        position = marker.position
+        orientation = marker.orientation
+        colour = marker.colour
+
+        actor = marker.visualization['actor']
+
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
+
+        # Note that the scale is increased to make the target more visible.
+        new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.TARGET_SCALE)
+
+        marker.visualization['actor'] = new_actor
+
+        self.renderer.RemoveActor(actor)
+        self.renderer.AddActor(new_actor)
+
+        self.interactor.Render()
+
+    def UnsetTarget(self, marker):
+        """
+        When unsetting a marker as the target, decrease the scale of its visualization back to the normal.
+        """
+        position = marker.position
+        orientation = marker.orientation
+        colour = marker.colour
+
+        actor = marker.visualization['actor']
+
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
+
+        # Note that the scale is decreased back to normal.
+        new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.NORMAL_SCALE)
+
+        marker.visualization['actor'] = new_actor
+
+        self.renderer.RemoveActor(actor)
+        self.renderer.AddActor(new_actor)
+
+        self.interactor.Render()
+
     def SetTargetTransparency(self, marker, transparent):
         actor = marker.visualization["actor"]
         if transparent:
@@ -241,7 +300,7 @@ class MarkerViewer:
 
             endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
 
-            actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=colour)
+            actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=colour, radius=0.5)
 
             self.renderer.AddActor(actor)
 

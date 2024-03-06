@@ -1552,7 +1552,7 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self):
+    def UnsetTarget(self, marker):
         self.navigation.target = None
         self.target_selected = False
         self.UpdateTargetButton()
@@ -2627,10 +2627,13 @@ class MarkersPanel(wx.Panel):
         marker = self.markers[idx]
         marker.is_target = False
 
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
+        Publisher.sendMessage('Unset target', marker=marker)
+
+        # Update the marker list control.
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
-        Publisher.sendMessage('Unset target')
+
         self.efield_target_idx = None
 
     def OnMenuRemoveEfieldTargetatCortex(self,evt):
@@ -2651,10 +2654,14 @@ class MarkersPanel(wx.Panel):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[idx]
         marker.is_target = False
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
+
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
+        Publisher.sendMessage('Unset target', marker=marker)
+
+        # Update the marker list control.
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
-        Publisher.sendMessage('Unset target')
+
         self.SaveState()
 
     def OnMenuSetColor(self, evt):
@@ -2739,8 +2746,10 @@ class MarkersPanel(wx.Panel):
             if result != wx.ID_OK:
                 return
 
-        if self.__find_target_marker_idx() is not None:
-            Publisher.sendMessage('Unset target')
+        idx = self.__find_target_marker_idx()
+        if idx is not None:
+            marker = self.markers[idx]
+            Publisher.sendMessage('Unset target', marker=marker)
 
         Publisher.sendMessage('Delete markers', markers=self.markers)
 
@@ -2774,8 +2783,10 @@ class MarkersPanel(wx.Panel):
             return
 
         # If current target is removed, handle it as a special case.
-        if self.__find_target_marker_idx() in indexes:
-            Publisher.sendMessage('Unset target')
+        idx = self.__find_target_marker_idx()
+        if idx in indexes:
+            marker = self.markers[idx]
+            Publisher.sendMessage('Unset target', marker=marker)
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()
