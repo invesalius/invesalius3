@@ -38,9 +38,11 @@ class MarkerViewer:
         Publisher.subscribe(self.SetNewColor, 'Set new color')
         Publisher.subscribe(self.SetTargetTransparency, 'Set target transparency')
 
-    def AddMarker(self, marker):
+    def AddMarker(self, marker, render):
         """
         Visualize marker and add the visualization to the marker object.
+
+        If 'render' is True, the interactor will be rendered after adding the marker.
         """
         position = marker.position
         orientation = marker.orientation
@@ -95,7 +97,8 @@ class MarkerViewer:
         }
         self.renderer.AddActor(actor)
 
-        self.interactor.Render()
+        if render:
+            self.interactor.Render()
 
     def UpdateMarker(self, marker, new_position, new_orientation):
         """

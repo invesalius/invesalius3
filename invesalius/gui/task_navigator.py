@@ -2955,7 +2955,7 @@ class MarkersPanel(wx.Panel):
         else:
             current_head_robot_target_status = False
 
-        Publisher.sendMessage('Add marker', marker=marker)
+        Publisher.sendMessage('Add marker', marker=marker, render=render)
         self.markers.append(marker)
 
         # Add marker to the marker list in GUI.
@@ -2978,7 +2978,3 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
-
-        # Disable render when adding many markers at once
-        if render and not self.nav_status:
-            Publisher.sendMessage('Render volume viewer')
