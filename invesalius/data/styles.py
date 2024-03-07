@@ -548,9 +548,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         #
         # We are moving from slice coordinates to volume coordinates, so we need to invert the y coordinate.
         Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z])
-
-        # Also update camera in the volume viewer.
-        Publisher.sendMessage('Update camera', position=[x, -y, z, None, None, None])
         Publisher.sendMessage('Update slice viewer')
 
     def OnScrollBar(self, *args, **kwargs):
@@ -560,8 +557,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
-        # Also update camera in the volume viewer.
-        Publisher.sendMessage('Update camera', position=[x, -y, z, None, None, None])
         Publisher.sendMessage('Update slice viewer')
 
 
