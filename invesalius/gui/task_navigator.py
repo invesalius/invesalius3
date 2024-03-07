@@ -626,9 +626,9 @@ class ImagePage(wx.Panel):
             Publisher.sendMessage("Enable style", style=const.STATE_REGISTRATION)
             for button in self.btns_set_fiducial:
                 button.Enable()
-            self.start_button.SetLabel("Stop registration")
+            self.start_button.SetLabel("Stop Registration")
         else:
-            self.start_button.SetLabel("Start registration")
+            self.start_button.SetLabel("Start Registration")
             for button in self.btns_set_fiducial:
                 button.Disable()
             Publisher.sendMessage("Disable style", style=const.STATE_REGISTRATION)
