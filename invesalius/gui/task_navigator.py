@@ -2328,9 +2328,12 @@ class MarkersPanel(wx.Panel):
         # Set marker type to 'coil target'.
         new_marker.marker_type = MarkerType.COIL_TARGET
 
+        # Give the new marker a new label.
+        new_marker.label = self.GetNextMarkerLabel()
+
         # Add the new marker to the marker list and render it.
         self.AddMarker(new_marker, render=True)
-        
+
         self.SaveState()
 
     def OnCreateCoilTargetFromCoilPose(self, evt):
@@ -2710,8 +2713,26 @@ class MarkersPanel(wx.Panel):
         self.__delete_multiple_markers(indexes)
         self.SaveState()
 
-    def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label='*',
+    def GetNextMarkerLabel(self):
+        """
+        Return a label for the next marker that is not already in use, in the form 'New marker N',
+        where N is a number.
+        """
+        current_labels = [m.label for m in self.markers]
+        label = 'New marker'
+        i = 1
+        while label in current_labels:
+            i += 1
+            label = 'New marker ' + str(i)
+
+        return label
+
+    def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label=None,
                        is_target=False, seed=None, session_id=None, marker_type=None, cortex_position_orientation=None):
+
+        if label is None:
+            label = self.GetNextMarkerLabel()
+
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage('Get Cortex position')
 
@@ -2862,11 +2883,14 @@ class MarkersPanel(wx.Panel):
     def AddPeeledSurface(self, flag, actor):
         self.brain_actor = actor
 
-    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label='*', is_target=False, seed=None,
+    def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label=None, is_target=False, seed=None,
                      session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None):
         """
         Create a new marker object.
         """
+        if label is None:
+            label = self.GetNextMarkerLabel()
+
         marker = Marker()
 
         marker.position = position or self.current_position
