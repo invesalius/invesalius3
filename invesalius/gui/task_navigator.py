@@ -319,19 +319,6 @@ class InnerFoldPanel(wx.Panel):
     def OnShowCoil(self, evt=None):
         pressed = self.show_coil_button.GetValue()
         Publisher.sendMessage('Show coil in viewer volume', state=pressed)
-
-    # 'Lock to coil' button
-
-    # Called when the 'Lock to coil' button is pressed elsewhere in code.
-    def PressLockToCoilButton(self, pressed):
-        self.lock_to_coil_button.SetValue(pressed)
-        self.OnLockToCoilButton()
-
-    def OnLockToCoilButton(self, evt=None, status=None):
-        Publisher.sendMessage('Lock to coil', enabled=self.lock_to_coil_button.GetValue())
-
-    def EnableLockToCoilButton(self, enabled):
-        self.lock_to_coil_button.Enable(enabled)
     
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
@@ -1285,20 +1272,6 @@ class ControlPanel(wx.Panel):
         show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
         self.show_coil_button = show_coil_button
 
-        # Toggle button for locking camera to coil during navigation
-        tooltip = wx.ToolTip(_("Lock to coil"))
-        BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("orbit.png")), wx.BITMAP_TYPE_PNG)
-        lock_to_coil_button =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        lock_to_coil_button.SetBitmap(BMP_UPDATE)
-        lock_to_coil_button.SetToolTip(tooltip)
-        lock_to_coil_button.SetValue(const.LOCK_TO_COIL_AS_DEFAULT)
-        if lock_to_coil_button.IsEnabled():
-            lock_to_coil_button.SetBackgroundColour(GREEN_COLOR)
-        else:
-            lock_to_coil_button.SetBackgroundColour(RED_COLOR)
-        lock_to_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnLockToCoilButton)
-        self.lock_to_coil_button = lock_to_coil_button
-
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
@@ -1368,7 +1341,6 @@ class ControlPanel(wx.Panel):
         navigation_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
         navigation_buttons_sizer.AddMany([
             (tractography_checkbox),
-            (lock_to_coil_button),
             (target_mode_button),
             (track_object_button),
             (checkbox_serial_port),
@@ -1413,9 +1385,6 @@ class ControlPanel(wx.Panel):
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowCoilButton, 'Press show-coil button')
         Publisher.subscribe(self.EnableShowCoilButton, 'Enable show-coil button')
-
-        Publisher.subscribe(self.PressLockToCoilButton, 'Press lock to coil button')
-        Publisher.subscribe(self.EnableLockToCoilButton, 'Enable lock to coil button')
 
         Publisher.subscribe(self.PressTrackObjectButton, 'Press track object button')
         Publisher.subscribe(self.EnableTrackObjectButton, 'Enable track object button')
@@ -1687,20 +1656,6 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.show_coil_button)
         pressed = self.show_coil_button.GetValue()
         Publisher.sendMessage('Show coil in viewer volume', state=pressed)
-
-    # 'Lock to coil' button
-    def PressLockToCoilButton(self, pressed):
-        self.UpdateToggleButton(self.lock_to_coil_button, pressed)
-        self.OnLockToCoilButton()
-
-    def OnLockToCoilButton(self, evt=None, status=None):
-        self.UpdateToggleButton(self.lock_to_coil_button)
-        pressed = self.lock_to_coil_button.GetValue()
-        Publisher.sendMessage('Lock to coil', enabled=pressed)
-
-    def EnableLockToCoilButton(self, enabled):
-        self.EnableToggleButton(self.lock_to_coil_button, enabled)
-        self.UpdateToggleButton(self.lock_to_coil_button)
     
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
@@ -1755,13 +1710,8 @@ class ControlPanel(wx.Panel):
         
         Publisher.sendMessage('Set target mode', enabled=pressed)
         if pressed:
-            Publisher.sendMessage('Press lock to coil button', pressed=False)
-            Publisher.sendMessage('Enable lock to coil button', enabled=False)
-
             # Set robot objective to NONE when target mode is disabled.
             self.robot.SetObjective(RobotObjective.NONE)
-        else:
-            Publisher.sendMessage('Enable lock to coil button', enabled=True)
 
     # Robot-related buttons
 

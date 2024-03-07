@@ -2170,10 +2170,6 @@ msgstr "额外的工具"
 msgid "Deep Brain Stimulation"
 msgstr "脑深部刺激"
 
-#: task_navigator.py:186
-msgid "Lock to coil"
-msgstr ""
-
 #: task_navigator.py:187
 msgid "Vol. camera"
 msgstr "体积照相机"

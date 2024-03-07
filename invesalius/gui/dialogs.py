@@ -4818,7 +4818,6 @@ class CreateBrainTargetDialog(wx.Dialog):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
         self.ren.ResetCamera()
-        self.LockToCoil(coord_flip[:3])
         self.interactor.Render()
 
         return obj_actor
@@ -5205,29 +5204,6 @@ class CreateBrainTargetDialog(wx.Dialog):
         rx, ry, rz = RotateTransform.GetOrientation()
 
         return m_img_vtk_rotate, rx, ry, rz
-
-    def LockToCoil(self, cam_focus):
-        cam = self.ren.GetActiveCamera()
-
-        if self.initial_focus is None:
-            self.initial_focus = np.array(cam.GetFocalPoint())
-
-        cam_pos0 = np.array(cam.GetPosition())
-        cam_focus0 = np.array(cam.GetFocalPoint())
-        v0 = cam_pos0 - cam_focus0
-        v0n = np.sqrt(inner1d(v0, v0))
-
-        v1 = cam_focus - self.initial_focus
-
-        v1n = np.sqrt(inner1d(v1, v1))
-        if not v1n:
-            v1n = 1.0
-        cam_pos = (v1/v1n)*v0n + cam_focus
-
-        cam.SetFocalPoint(cam_focus)
-        cam.SetPosition(cam_pos)
-
-        self.ren.GetActiveCamera().Zoom(3)
 
     def GetRotationMatrix(self, v1_start, v2_start, v1_target, v2_target):
         """

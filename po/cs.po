@@ -2146,10 +2146,6 @@ msgstr "Další nástroje"
 msgid "Deep Brain Stimulation"
 msgstr ""
 
-#: task_navigator.py:186
-msgid "Lock to coil"
-msgstr "Obnovit kameru v objemu"
-
 #: task_navigator.py:187
 msgid "Vol. camera"
 msgstr ""

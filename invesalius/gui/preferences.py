@@ -403,7 +403,6 @@ class ObjectPage(wx.Panel):
                         # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
                         Publisher.sendMessage('Enable track object button', enabled=True)
                         Publisher.sendMessage('Press track object button', pressed=True)
-                        Publisher.sendMessage('Press lock to coil button', pressed=False)
 
                         Publisher.sendMessage('Press target mode button', pressed=False)
 
@@ -460,7 +459,6 @@ class ObjectPage(wx.Panel):
                 # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
                 Publisher.sendMessage('Enable track object button', enabled=True)
                 Publisher.sendMessage('Press track object button', pressed=True)
-                Publisher.sendMessage('Press lock to coil button', pressed=False)
                 Publisher.sendMessage('Press target mode button', pressed=False)
 
                 if use_default_object:
