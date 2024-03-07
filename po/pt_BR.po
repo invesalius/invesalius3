@@ -2146,9 +2146,6 @@ msgstr "Ferramentas extras"
 msgid "Deep Brain Stimulation"
 msgstr ""
 
-#: task_navigator.py:186
-msgid "Lock to coil"
-msgstr "Atualizar câmera no volume"
 
 #: task_navigator.py:187
 msgid "Vol. camera"

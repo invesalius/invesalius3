@@ -1863,10 +1863,6 @@ msgstr ""
 msgid "Extra tools"
 msgstr ""
 
-#: task_navigator.py:146
-msgid "Lock to coil"
-msgstr ""
-
 #: task_navigator.py:147
 #, fuzzy
 msgid "Volume camera"

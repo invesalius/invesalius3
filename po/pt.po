@@ -2145,10 +2145,6 @@ msgstr ""
 msgid "Deep Brain Stimulation"
 msgstr ""
 
-#: task_navigator.py:186
-msgid "Lock to coil"
-msgstr ""
-
 #: task_navigator.py:187
 msgid "Vol. camera"
 msgstr ""

@@ -244,7 +244,7 @@ class Viewer(wx.Panel):
         self.repositioned_coronal_plan = 0
         self.surface_added = False
 
-        self.lock_to_coil = const.LOCK_TO_COIL_AS_DEFAULT
+        self.use_volumetric_camera = False
         self.camera_show_object = None
 
         self.nav_status = False
@@ -429,8 +429,6 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
 
-        Publisher.subscribe(self.SetLockToCoil, 'Lock to coil')
-
         Publisher.subscribe(self.enable_style, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
 
@@ -463,7 +461,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdatePointer, 'Update volume viewer pointer')
 
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
-        Publisher.subscribe(self.UpdateCamera, 'Update camera')
 
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
@@ -478,7 +475,7 @@ class Viewer(wx.Panel):
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
-        Publisher.subscribe(self.UpdateCoilPose, 'Update object matrix')
+        Publisher.subscribe(self.UpdateCoilPose, 'Update coil pose')
         Publisher.subscribe(self.UpdateArrowPose, 'Update object arrow matrix')
         Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
         Publisher.subscribe(self.GetEnorm, 'Get enorm')
@@ -486,7 +483,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.TrackObject, 'Track object')
 
         Publisher.subscribe(self.SetTargetMode, 'Set target mode')
-        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
+        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update coil pose')
         Publisher.subscribe(self.OnSetTarget, 'Set target')
         Publisher.subscribe(self.OnUnsetTarget, 'Unset target')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
@@ -563,10 +560,9 @@ class Viewer(wx.Panel):
         self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
         self.use_default_object = use_default_object
 
-        # Automatically enable and press 'Track object' button and unpress 'Lock to coil' button.
+        # Automatically enable and press 'Track object' button.
         Publisher.sendMessage('Enable track object button', enabled=True)
         Publisher.sendMessage('Press track object button', pressed=True)
-        Publisher.sendMessage('Press lock to coil button', pressed=False)
         Publisher.sendMessage('Press target mode button', pressed=False)
 
         self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
@@ -1375,18 +1371,6 @@ class Viewer(wx.Panel):
 
             # Update the render window manually, as it is not updated automatically when not navigating.
             self.UpdateRender()
-
-    def UpdateCamera(self, position):
-        """
-        During navigation, update camera position to lock to the coil if enabled in the
-        user interface.
-        """
-        coord_flip = list(position[:3])
-        coord_flip[1] = -coord_flip[1]
-
-        # Lock camera position to the coil if enabled in the user interface.
-        if self.lock_to_coil:
-            self.LockToCoil(coord_flip)
 
     def AddCoilActor(self, obj_name):
         """
@@ -2331,20 +2315,17 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def UpdateCoilPose(self, m_img, coord):
+        """
+        During navigation, use updated coil pose to perform the following tasks:
+
+        - Update actor positions for coil, coil center, and coil orientation axes.
+        """
         m_img_flip = m_img.copy()
         m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-        # translate coregistered coordinate to display a marker where Trekker seed is computed
-        # coord_offset = m_img_flip[:3, -1] - self.seed_offset * m_img_flip[:3, 2]
-
-        # print("m_img copy in viewer_vol: {}".format(m_img_copy))
-
-        # m_img[:3, 0] is from posterior to anterior direction of the coil
-        # m_img[:3, 1] is from left to right direction of the coil
-        # m_img[:3, 2] is from bottom to up direction of the coil
-
         m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
 
+        # Update actor positions for coil, coil center, and coil orientation axes.
         self.coil_actor.SetUserMatrix(m_img_vtk)
         self.coil_center_actor.SetUserMatrix(m_img_vtk)
         self.x_axis_actor.SetUserMatrix(m_img_vtk)
@@ -2489,11 +2470,13 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
-    def SetLockToCoil(self, enabled):
-        self.lock_to_coil = enabled
+    # Note: Not in use currently, this method is not called from anywhere.
+    def SetVolumetricCamera(self, enabled):
+        self.use_volumetric_camera = enabled
         self.camera_show_object = None
 
-    def LockToCoil(self, cam_focus):
+    # Note: Not in use currently, this method is not called from anywhere.
+    def VolumetricCamera(self, cam_focus):
         # TODO: exclude dependency on initial focus
         # cam_focus = np.array(bases.flip_x(position[:3]))
         # cam_focus = np.array(bases.flip_x(position))
