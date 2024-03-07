@@ -1950,6 +1950,7 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.ChangeLabel)
         
         self.marker_list_ctrl = marker_list_ctrl
 
@@ -2222,11 +2223,11 @@ class MarkersPanel(wx.Panel):
         # Create the context menu.
         menu_id = wx.Menu()
 
-        edit_id = menu_id.Append(0, _('Edit label'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerLabel, edit_id)
+        edit_id = menu_id.Append(0, _('Change label'))
+        menu_id.Bind(wx.EVT_MENU, self.ChangeLabel, edit_id)
 
-        color_id = menu_id.Append(1, _('Edit color'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
+        color_id = menu_id.Append(1, _('Change color'))
+        menu_id.Bind(wx.EVT_MENU, self.ChangeColor, color_id)
 
         # Allow duplicate only for markers that are not fiducials.
         if not is_fiducial:
@@ -2375,7 +2376,7 @@ class MarkersPanel(wx.Panel):
         
         self.SaveState()
 
-    def OnMenuEditMarkerLabel(self, evt):
+    def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -2582,7 +2583,7 @@ class MarkersPanel(wx.Panel):
 
         self.SaveState()
 
-    def OnMenuSetColor(self, evt):
+    def ChangeColor(self, evt):
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))

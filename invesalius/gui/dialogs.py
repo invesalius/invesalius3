@@ -1056,7 +1056,7 @@ def ReportICPDistributionError():
     dlg.Destroy()
 
 def ShowEnterMarkerID(default):
-    msg = _("Edit marker ID")
+    msg = _("Change label")
     if sys.platform == 'darwin':
         dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
     else:
