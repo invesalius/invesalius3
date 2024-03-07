@@ -181,6 +181,8 @@ class Viewer(wx.Panel):
         # rendered on top of the volume.
         self.target_guide_renderer = vtkRenderer()
 
+        self.interactor.GetRenderWindow().AddRenderer(self.target_guide_renderer)
+
         canvas_renderer = vtkRenderer()
         canvas_renderer.SetLayer(1)
         canvas_renderer.SetInteractive(0)
@@ -914,12 +916,11 @@ class Viewer(wx.Panel):
         if self.actor_peel:
             self.object_orientation_torus_actor.SetVisibility(0)
             self.obj_projection_arrow_actor.SetVisibility(0)
+
         self.CreateTargetCoil()
 
-        # Create a line
+        # Set viewports to separate the target guide from the volume.
         self.ren.SetViewport(0, 0, 0.75, 1)
-
-        self.interactor.GetRenderWindow().AddRenderer(self.target_guide_renderer)
         self.target_guide_renderer.SetViewport(0.75, 0, 1, 1)
 
         # Remove the previous actor for 'distance' text
@@ -1029,8 +1030,16 @@ class Viewer(wx.Panel):
         if self.stored_camera_settings is not None:
             self.ApplyCameraSettings(self.stored_camera_settings)
 
-        # Remove target guide actors.
-        self.interactor.GetRenderWindow().RemoveRenderer(self.target_guide_renderer)
+        # Remove all actors from the target guide renderer.
+        actors = self.target_guide_renderer.GetActors()
+        actors.InitTraversal()
+        actor = actors.GetNextItem()
+        while actor:
+            self.target_guide_renderer.RemoveActor(actor)
+            actor = actors.GetNextItem()
+
+        # Reset viewport to show only the volume.
+        self.ren.SetViewport(0, 0, 1, 1)
 
         # Remove the actor for 'distance' text.
         if self.distance_text is not None:
