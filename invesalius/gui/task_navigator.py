@@ -1876,13 +1876,13 @@ class MarkersPanel(wx.Panel):
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        btn_visibility = wx.ToggleButton(self, -1, _("Hide"), size=wx.Size(65, 23))
-        btn_visibility.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnMarkersVisibility, ctrl=btn_visibility))
+        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(65, 23))
+        btn_show_hide_all.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnShowHideAllMarkers, ctrl=btn_show_hide_all))
 
         sizer_btns = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
         sizer_btns.AddMany([(btn_save, 1, wx.RIGHT),
                             (btn_load, 0, wx.LEFT | wx.RIGHT),
-                            (btn_visibility, 0, wx.LEFT)])
+                            (btn_show_hide_all, 0, wx.LEFT)])
 
         # Buttons to delete markers
         btn_delete_single = wx.Button(self, -1, label=_('Delete'), size=wx.Size(65, 23))
@@ -2823,13 +2823,13 @@ class MarkersPanel(wx.Panel):
             filename = dialog.GetPath()
             self.GetMarkersFromFile(filename, overwrite_checkbox.GetValue())
 
-    def OnMarkersVisibility(self, evt, ctrl):
+    def OnShowHideAllMarkers(self, evt, ctrl):
         if ctrl.GetValue():
             Publisher.sendMessage('Hide markers', markers=self.markers)
-            ctrl.SetLabel('Show')
+            ctrl.SetLabel('Show all')
         else:
             Publisher.sendMessage('Show markers', markers=self.markers)
-            ctrl.SetLabel('Hide')
+            ctrl.SetLabel('Hide all')
 
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
