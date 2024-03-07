@@ -21,6 +21,12 @@ class MarkerViewer:
     # The scale of the coil pose marker; they are generated when pulses are given, hence, make them
     # smaller to avoid cluttering the volume viewer.
     SMALL_SCALE = 0.2
+    
+    # Color for highlighting a marker.
+    HIGHLIGHT_COLOR = vtk.vtkNamedColors().GetColor3d('Red')
+
+    # Color for the marker for target when the coil at the target.
+    COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d('Green')
 
     def __init__(self, renderer, interactor, actor_factory):
         self.renderer = renderer
@@ -34,6 +40,12 @@ class MarkerViewer:
 
         # The actor representing the projection line of the coil target to the brain surface.
         self.projection_line_actor = None
+
+        # The currently set target marker object.
+        self.target_marker = None
+
+        # The status of the coil at the target.
+        self.is_coil_at_target = False
 
         self.__bind_events()
 
@@ -50,6 +62,7 @@ class MarkerViewer:
         Publisher.subscribe(self.SetTarget, 'Set target')
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.SetTargetTransparency, 'Set target transparency')
+        Publisher.subscribe(self.SetCoilAtTarget, 'Coil at target')
 
     def AddMarker(self, marker, render):
         """
@@ -201,6 +214,9 @@ class MarkerViewer:
         When setting a marker as the target, increase the scale of its visualization to highlight
         that it is the target.
         """
+        # Store the target marker so that it can be modified, e.g., when the coil is at target.
+        self.target_marker = marker
+
         position = marker.position
         orientation = marker.orientation
         colour = marker.colour
@@ -231,6 +247,8 @@ class MarkerViewer:
         """
         When unsetting a marker as the target, decrease the scale of its visualization back to the normal.
         """
+        self.target_marker = None
+
         position = marker.position
         orientation = marker.orientation
         colour = marker.colour
@@ -257,6 +275,33 @@ class MarkerViewer:
 
         self.interactor.Render()
 
+    def SetCoilAtTarget(self, state):
+        """
+        Set the coil at target, which is a special case of setting a marker as the target.
+        """
+        self.is_coil_at_target = state
+
+        marker = self.target_marker
+
+        if marker is None:
+            return
+
+        actor = marker.visualization['actor']
+        highlighted = marker.visualization['highlighted']
+
+        vtk_colors = vtk.vtkNamedColors()
+        if state:
+            # Change the color of the marker.
+            actor.GetProperty().SetColor(self.COIL_AT_TARGET_COLOR)
+        else:
+            # Change the color of the marker back to its original color, unless it's highlighted,
+            # in which case it should be red.
+            colour = marker.colour if not highlighted else self.HIGHLIGHT_COLOR
+
+            actor.GetProperty().SetColor(colour)
+
+        self.interactor.Render()
+
     def SetTargetTransparency(self, marker, transparent):
         actor = marker.visualization["actor"]
         if transparent:
@@ -266,6 +311,12 @@ class MarkerViewer:
             actor.GetProperty().SetOpacity(1)
 
     def HighlightMarker(self, marker, render=True):
+        # Return early if the marker is a target and the coil is at the target.
+        #
+        # In that case, the marker should not be highlighted, as being at the target overrides the highlighting.
+        if marker.is_target and self.is_coil_at_target:
+            return
+        
         # Unpack relevant fields from the marker.
         actor = marker.visualization['actor']
 
@@ -276,12 +327,8 @@ class MarkerViewer:
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
 
-        # Use color red for highlighting.
-        vtk_colors = vtk.vtkNamedColors()
-        colour = vtk_colors.GetColor3d('Red')
-
         # Change the color of the marker.
-        actor.GetProperty().SetColor(colour)
+        actor.GetProperty().SetColor(self.HIGHLIGHT_COLOR)
 
         # Set the marker visible when highlighted even if it's hidden.
         if marker.visualization['hidden']:
@@ -313,7 +360,7 @@ class MarkerViewer:
 
             endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
 
-            actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=colour, radius=0.5)
+            actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=self.HIGHLIGHT_COLOR, radius=0.5)
             actor.GetProperty().SetOpacity(0.1)
 
             # If there is already a projection line actor, remove it.
@@ -335,11 +382,18 @@ class MarkerViewer:
             self.interactor.Render()
 
     def UnhighlightMarker(self, render=True):
+        marker = self.highlighted_marker
+
         # Return early in case there is no highlighted marker. This shouldn't happen, though.
-        if self.highlighted_marker is None:
+        if marker is None:
             return
 
-        marker = self.highlighted_marker
+        # Return early if the marker is a target and the coil is at the target.
+        #
+        # In that case, the marker should not be unhighlighted, as being at the target overrides the
+        # highlighting.
+        if marker.is_target and self.is_coil_at_target:
+            return
 
         actor = marker.visualization['actor']
         colour = marker.colour
