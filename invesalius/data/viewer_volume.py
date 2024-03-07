@@ -2486,7 +2486,6 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(new_state)
 
     def ResetCamClippingRange(self):
-        print("testing3")
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
