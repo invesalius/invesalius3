@@ -1190,7 +1190,6 @@ class NavigationPanel(wx.Panel):
         self.image.ResetImageFiducials()
 
         Publisher.sendMessage('Disconnect tracker')
-        Publisher.sendMessage('Show and track coil', enabled=False)
         Publisher.sendMessage('Delete all markers')
         Publisher.sendMessage("Update marker offset state", create=False)
         Publisher.sendMessage("Remove tracts")
@@ -1257,8 +1256,8 @@ class ControlPanel(wx.Panel):
         tractography_checkbox.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTractographyCheckbox, ctrl=tractography_checkbox))
         self.tractography_checkbox = tractography_checkbox
 
-        # Toggle Button to track object or simply the stylus
-        tooltip = wx.ToolTip(_(u"Track the object"))
+        # Toggle button to track the coil
+        tooltip = wx.ToolTip(_(u"Track coil"))
         BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
         track_object_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         track_object_button.SetBackgroundColour(GREY_COLOR)
@@ -1270,8 +1269,8 @@ class ControlPanel(wx.Panel):
         track_object_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button))
         self.track_object_button = track_object_button
 
-        # Toggle Button for Lock to Target
-        tooltip = wx.ToolTip(_(u"Allow triggering stimulation pulse only if the coil is at the target"))
+        # Toggle button for allowing triggering only if coil is at target
+        tooltip = wx.ToolTip(_(u"Allow triggering only if the coil is at the target"))
         BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG)
         lock_to_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         lock_to_target_button.SetBackgroundColour(GREY_COLOR)
@@ -1283,7 +1282,7 @@ class ControlPanel(wx.Panel):
         self.lock_to_target_button = lock_to_target_button
 
         # Toggle button for showing coil during navigation
-        tooltip = wx.ToolTip(_("Show and track TMS coil"))
+        tooltip = wx.ToolTip(_("Show coil"))
         BMP_SHOW_COIL = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG)
         show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         show_coil_button.SetBackgroundColour(GREY_COLOR)
