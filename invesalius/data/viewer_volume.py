@@ -109,9 +109,9 @@ import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 from invesalius.data.markers.marker import Marker, MarkerType
-from invesalius.data.markers.marker_viewer import MarkerViewer
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.actor_factory import ActorFactory
+from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
@@ -318,7 +318,7 @@ class Viewer(wx.Panel):
 
         # An object that can be used to manage the highlighting of markers in the 3D viewer. Later this class could be
         # extended to handle other marker-related functionality, such as adding and removing markers, etc.
-        self.marker_viewer = MarkerViewer(
+        self.marker_visualizer = MarkerVisualizer(
             renderer=self.ren,
             interactor=self.interactor,
             actor_factory=self.actor_factory,
@@ -470,7 +470,7 @@ class Viewer(wx.Panel):
         # Related to UI state
         Publisher.subscribe(self.ShowCoil, 'Show coil in viewer volume')
 
-        # TODO: This shouldn't be here, rather in marker_viewer.py. The problem is that
+        # TODO: This shouldn't be here, rather in marker_visualizer.py. The problem is that
         #   e-field-related markers are stored in this class, even though all other marker
         #   types have been moved to MarkerViewer.
         Publisher.subscribe(self.DeleteEFieldMarkers, 'Delete markers')
