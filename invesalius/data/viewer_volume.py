@@ -112,13 +112,12 @@ from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.actor_factory import ActorFactory
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
-import invesalius.data.polydata_utils as pu
+from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
-import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
 
@@ -256,32 +255,20 @@ class Viewer(wx.Panel):
         # right-clicking on it.
         self.pointer_actor = None
 
-        # The actor for showing the actual coil in the volume viewer.
-        self.coil_actor = None
-
-        # The actor for showing the center of the actual coil in the volume viewer.
-        self.coil_center_actor = None
-
-        # The actor for showing the target coil in the volume viewer.
-        self.target_coil_actor = None
-
         # A dict to store the current camera settings; used when enabling target mode to store the current
         # camera. When disabling target mode, the stored camera settings are used to restore the camera.
         self.stored_camera_settings = None
 
         self.obj_axes = None
-        self.obj_name = False
+        self.coil_path = False
         self.show_coil = False
-        self.coil_actor_list = None
-        self.arrow_actor_list = None
+        self.guide_coil_actors = None
+        self.guide_arrow_actors = None
         self.pTarget = [0., 0., 0.]
 
         self.distance_text = None
 
         # self.obj_axes = None
-        self.x_axis_actor = None
-        self.y_axis_actor = None
-        self.z_axis_actor = None
         self.mark_actor = None
         self.obj_projection_arrow_actor = None
         self.object_orientation_torus_actor = None
@@ -299,8 +286,6 @@ class Viewer(wx.Panel):
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
         self.target_mode = False
-        self.polydata = None
-        self.use_default_object = True
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distance_threshold = const.COIL_COORD_THRESHOLD
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
@@ -319,6 +304,12 @@ class Viewer(wx.Panel):
         # An object that can be used to manage the highlighting of markers in the 3D viewer. Later this class could be
         # extended to handle other marker-related functionality, such as adding and removing markers, etc.
         self.marker_visualizer = MarkerVisualizer(
+            renderer=self.ren,
+            interactor=self.interactor,
+            actor_factory=self.actor_factory,
+        )
+
+        self.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
             interactor=self.interactor,
             actor_factory=self.actor_factory,
@@ -350,7 +341,11 @@ class Viewer(wx.Panel):
         self.save_automatically = False
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
-        self.LoadConfig()
+
+        # Automatically enable and press 'Track object' button.
+        Publisher.sendMessage('Enable track object button', enabled=True)
+        Publisher.sendMessage('Press track object button', pressed=True)
+        Publisher.sendMessage('Press target mode button', pressed=False)
 
     def UpdateCanvas(self):
         if self.canvas is not None:
@@ -467,9 +462,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSensors, 'Sensors ID')
         Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
 
-        # Related to UI state
-        Publisher.subscribe(self.ShowCoil, 'Show coil in viewer volume')
-
         # TODO: This shouldn't be here, rather in marker_visualizer.py. The problem is that
         #   e-field-related markers are stored in this class, even though all other marker
         #   types have been moved to MarkerViewer.
@@ -477,13 +469,10 @@ class Viewer(wx.Panel):
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
-        Publisher.subscribe(self.UpdateCoilPose, 'Update coil pose')
         Publisher.subscribe(self.UpdateArrowPose, 'Update object arrow matrix')
         Publisher.subscribe(self.UpdateEfieldPointLocation, 'Update point location for e-field calculation')
         Publisher.subscribe(self.GetEnorm, 'Get enorm')
-        Publisher.subscribe(self.ConfigureObject, 'Configure object')
         Publisher.subscribe(self.TrackObject, 'Track object')
-
         Publisher.subscribe(self.SetTargetMode, 'Set target mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update coil pose')
         Publisher.subscribe(self.OnSetTarget, 'Set target')
@@ -536,38 +525,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetTargetPathmTMS, 'Send targeting file path')
         Publisher.subscribe(self.GetdIsfromCoord,'Send mtms coords')
         Publisher.subscribe(self.EnableSaveAutomaticallyEfieldData, 'Save automatically efield data')
-
-    def SaveConfig(self):
-        object_path = self.obj_name.decode(const.FS_ENCODE) if self.obj_name is not None else None
-        use_default_object = self.use_default_object
-
-        state = {
-            'object_path': object_path,
-            'use_default_object': use_default_object,
-        }
-
-        session = ses.Session()
-        session.SetConfig('viewer', state)
-
-    def LoadConfig(self):
-        session = ses.Session()
-        state = session.GetConfig('viewer')
-
-        if state is None:
-            return
-
-        object_path = state['object_path']
-        use_default_object = state['use_default_object']
-
-        self.obj_name = object_path.encode(const.FS_ENCODE) if object_path is not None else None
-        self.use_default_object = use_default_object
-
-        # Automatically enable and press 'Track object' button.
-        Publisher.sendMessage('Enable track object button', enabled=True)
-        Publisher.sendMessage('Press track object button', pressed=True)
-        Publisher.sendMessage('Press target mode button', pressed=False)
-
-        self.polydata = pu.LoadPolydata(path=object_path) if object_path is not None else None
 
     def get_vtk_mouse_position(self):
         """
@@ -906,35 +863,8 @@ class Viewer(wx.Panel):
     def IsTargetMode(self):
         return self.target_mode
 
-    def EnableTargetMode(self):
-        # Store the current camera settings so that they can be restored when the target mode is disabled.
-        self.stored_camera_settings = self.GetCameraSettings()
-
-        # Set the transformation matrix for the target.
-        self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
-
-        if self.actor_peel:
-            self.object_orientation_torus_actor.SetVisibility(0)
-            self.obj_projection_arrow_actor.SetVisibility(0)
-
-        self.CreateTargetCoil()
-
-        # Set viewports to separate the target guide from the volume.
-        self.ren.SetViewport(0, 0, 0.75, 1)
-        self.target_guide_renderer.SetViewport(0.75, 0, 1, 1)
-
-        # Remove the previous actor for 'distance' text
-        if self.distance_text is not None:
-            self.ren.RemoveActor(self.distance_text.actor)
-
-        # Create new actor for 'distance' text
-        distance_text = self.CreateDistanceText()
-        self.ren.AddActor(distance_text.actor)
-
-        # Store the object for 'distance' text so it can be modified when distance changes.
-        self.distance_text = distance_text
-
-        obj_polydata = vtku.CreateObjectPolyData(self.obj_name)
+    def CreateTargetGuide(self):
+        obj_polydata = vtku.CreateObjectPolyData(self.coil_path)
 
         normals = vtkPolyDataNormals()
         normals.SetInputData(obj_polydata)
@@ -1005,15 +935,45 @@ class Viewer(wx.Panel):
         arrow_pitch_x2.RotateY(90)
         arrow_pitch_x2.RotateZ(180)
 
-        self.coil_actor_list = obj_roll, obj_yaw, obj_pitch
-        self.arrow_actor_list = arrow_roll_z1, arrow_roll_z2, arrow_yaw_y1, arrow_yaw_y2,\
+        self.guide_coil_actors = obj_roll, obj_yaw, obj_pitch
+        self.guide_arrow_actors = arrow_roll_z1, arrow_roll_z2, arrow_yaw_y1, arrow_yaw_y2,\
                                     arrow_pitch_x1, arrow_pitch_x2
 
-        for ind in self.coil_actor_list:
+        for ind in self.guide_coil_actors:
             self.target_guide_renderer.AddActor(ind)
 
-        for ind in self.arrow_actor_list:
+        for ind in self.guide_arrow_actors:
             self.target_guide_renderer.AddActor(ind)
+
+    def EnableTargetMode(self):
+        # Store the current camera settings so that they can be restored when the target mode is disabled.
+        self.stored_camera_settings = self.GetCameraSettings()
+
+        # Set the transformation matrix for the target.
+        self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
+
+        if self.actor_peel:
+            self.object_orientation_torus_actor.SetVisibility(0)
+            self.obj_projection_arrow_actor.SetVisibility(0)
+
+        self.coil_visualizer.AddTargetCoil(self.m_target)
+
+        # Set viewports to separate the target guide from the volume.
+        self.ren.SetViewport(0, 0, 0.75, 1)
+        self.target_guide_renderer.SetViewport(0.75, 0, 1, 1)
+
+        # Remove the previous actor for 'distance' text
+        if self.distance_text is not None:
+            self.ren.RemoveActor(self.distance_text.actor)
+
+        # Create new actor for 'distance' text
+        distance_text = self.CreateDistanceText()
+        self.ren.AddActor(distance_text.actor)
+
+        # Store the object for 'distance' text so it can be modified when distance changes.
+        self.distance_text = distance_text
+
+        self.CreateTargetGuide()
 
         self.ren.ResetCamera()
         self.SetCameraTarget()
@@ -1029,6 +989,9 @@ class Viewer(wx.Panel):
         # Restore the camera settings that were stored when the target mode was enabled.
         if self.stored_camera_settings is not None:
             self.ApplyCameraSettings(self.stored_camera_settings)
+
+        # Remove the target coil.
+        self.coil_visualizer.RemoveTargetCoil()
 
         # Remove all actors from the target guide renderer.
         actors = self.target_guide_renderer.GetActors()
@@ -1068,7 +1031,6 @@ class Viewer(wx.Panel):
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(coord[0:3],
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
-            # self.txt.SetCoilDistanceValue(distance_to_target)
 
             formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
             self.distance_text.SetValue(formatted_distance)
@@ -1106,17 +1068,15 @@ class Viewer(wx.Panel):
                 distance_to_target[5] = -const.ARROW_UPPER_LIMIT
             coordrz_arrow = const.ARROW_SCALE * distance_to_target[5]
 
-            for ind in self.arrow_actor_list:
+            for ind in self.guide_arrow_actors:
                 self.target_guide_renderer.RemoveActor(ind)
 
             if self.anglethreshold * const.ARROW_SCALE > coordrx_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 is_under_x_angle_threshold = True
-                # self.coil_actor_list[0].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
-                self.coil_actor_list[0].GetProperty().SetColor(0, 1, 0)
+                self.guide_coil_actors[0].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_x_angle_threshold = False
-                # self.coil_actor_list[0].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
-                self.coil_actor_list[0].GetProperty().SetColor(1, 1, 1)
+                self.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
 
             offset = 5
 
@@ -1132,12 +1092,10 @@ class Viewer(wx.Panel):
 
             if self.anglethreshold * const.ARROW_SCALE > coordrz_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 is_under_z_angle_threshold = True
-                # self.coil_actor_list[1].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
-                self.coil_actor_list[1].GetProperty().SetColor(0, 1, 0)
+                self.guide_coil_actors[1].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_z_angle_threshold = False
-                # self.coil_actor_list[1].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
-                self.coil_actor_list[1].GetProperty().SetColor(1, 1, 1)
+                self.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
 
             offset = -35
 
@@ -1153,12 +1111,10 @@ class Viewer(wx.Panel):
 
             if self.anglethreshold * const.ARROW_SCALE > coordry_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 is_under_y_angle_threshold = True
-                #self.coil_actor_list[2].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('Green'))
-                self.coil_actor_list[2].GetProperty().SetColor(0, 1, 0)
+                self.guide_coil_actors[2].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_y_angle_threshold = False
-                #self.coil_actor_list[2].GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('GhostWhite'))
-                self.coil_actor_list[2].GetProperty().SetColor(1, 1, 1)
+                self.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
 
             offset = 38
             arrow_pitch_y1 = self.actor_factory.CreateArrow([0, 65, offset], [0, 65, offset + coordry_arrow])
@@ -1182,17 +1138,10 @@ class Viewer(wx.Panel):
 
             wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=coil_at_target)
 
-            # Set the color of the coil actors based on whether the coil is at the target or not.
-            coil_actor_color = vtk_colors.GetColor3d('Green') if coil_at_target else vtk_colors.GetColor3d('DarkOrange')
+            self.guide_arrow_actors = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
+                                      arrow_pitch_y1, arrow_pitch_y2
 
-            # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
-            self.target_coil_actor.GetProperty().SetDiffuseColor(coil_actor_color)
-            self.coil_center_actor.GetProperty().SetDiffuseColor(coil_actor_color)
-
-            self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
-                                    arrow_pitch_y1, arrow_pitch_y2
-
-            for ind in self.arrow_actor_list:
+            for ind in self.guide_arrow_actors:
                 self.target_guide_renderer.AddActor(ind)
 
     def OnUnsetTarget(self, marker):
@@ -1200,7 +1149,6 @@ class Viewer(wx.Panel):
 
         self.target_mode = False
         self.target_coord = None
-        self.RemoveTargetCoil()
 
     def OnSetTarget(self, marker):
         coord = marker.position + marker.orientation
@@ -1213,7 +1161,7 @@ class Viewer(wx.Panel):
         self.target_coord = coord
         self.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
 
-        self.CreateTargetCoil()
+        self.coil_visualizer.AddTargetCoil(self.m_target)
 
         print("Target updated to coordinates {}".format(coord))
 
@@ -1232,58 +1180,6 @@ class Viewer(wx.Panel):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
         return m_img_vtk
-
-    def CreateTargetCoil(self):
-        self.RemoveTargetCoil()
-
-        vtk_colors = vtkNamedColors()
-
-        if self.use_default_object:
-            obj_polydata = vtku.CreateObjectPolyData(os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
-        else:
-            obj_polydata = self.polydata
-
-        transform = vtkTransform()
-        transform.RotateZ(90)
-
-        transform_filt = vtkTransformPolyDataFilter()
-        transform_filt.SetTransform(transform)
-        transform_filt.SetInputData(obj_polydata)
-        transform_filt.Update()
-
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(transform_filt.GetOutput())
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
-
-        obj_mapper = vtkPolyDataMapper()
-        obj_mapper.SetInputData(normals.GetOutput())
-        obj_mapper.ScalarVisibilityOff()
-        #obj_mapper.ImmediateModeRenderingOn()  # improve performance
-
-        self.target_coil_actor = vtkActor()
-        self.target_coil_actor.SetMapper(obj_mapper)
-        self.target_coil_actor.GetProperty().SetDiffuseColor(vtk_colors.GetColor3d('DarkOrange'))
-        self.target_coil_actor.GetProperty().SetSpecular(0.5)
-        self.target_coil_actor.GetProperty().SetSpecularPower(10)
-        self.target_coil_actor.GetProperty().SetOpacity(.3)
-        self.target_coil_actor.SetVisibility(self.show_coil)
-        self.target_coil_actor.SetUserMatrix(self.m_target)
-
-        self.ren.AddActor(self.target_coil_actor)
-        if not self.nav_status:
-            self.UpdateRender()
-
-    def RemoveTargetCoil(self):
-        if self.target_coil_actor is None:
-            return
-
-        self.ren.RemoveActor(self.target_coil_actor)
-        self.target_coil_actor = None
-
-        if not self.nav_status:
-            self.UpdateRender()
 
     def CreateDistanceText(self):
         distance_text = vtku.Text()
@@ -1380,77 +1276,6 @@ class Viewer(wx.Panel):
 
             # Update the render window manually, as it is not updated automatically when not navigating.
             self.UpdateRender()
-
-    def AddCoilActor(self, obj_name):
-        """
-        Add actors for actual coil, coil center, and x, y, and z-axes to the renderer.
-        """
-        vtk_colors = vtkNamedColors()
-        obj_polydata = vtku.CreateObjectPolyData(obj_name)
-
-        transform = vtkTransform()
-        transform.RotateZ(90)
-
-        transform_filt = vtkTransformPolyDataFilter()
-        transform_filt.SetTransform(transform)
-        transform_filt.SetInputData(obj_polydata)
-        transform_filt.Update()
-
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(transform_filt.GetOutput())
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
-
-        obj_mapper = vtkPolyDataMapper()
-        obj_mapper.SetInputData(normals.GetOutput())
-        obj_mapper.ScalarVisibilityOff()
-        #obj_mapper.ImmediateModeRenderingOn()  # improve performance
-
-        coil_actor = vtkActor()
-        coil_actor.SetMapper(obj_mapper)
-        coil_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d('GhostWhite'))
-        coil_actor.GetProperty().SetSpecular(30)
-        coil_actor.GetProperty().SetSpecularPower(80)
-        coil_actor.GetProperty().SetOpacity(.4)
-        coil_actor.SetVisibility(0)
-
-        self.coil_actor = coil_actor
-
-        # Create an actor for the coil center.
-        coil_center_actor = self.actor_factory.CreateTorus(
-            position=[0., 0., 0.],
-            orientation=[0., 0., 0.],
-            colour=vtk_colors.GetColor3d('Red'),
-            scale=0.5,
-        )
-        self.coil_center_actor = coil_center_actor
-
-        # Create actors for the x, y, and z-axes.
-        self.x_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [1., 0., 0.], colour=[.0, .0, 1.0])
-        self.y_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
-        self.z_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
-
-        self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
-            position=[0., 0., 0.],
-            orientation=[0., 0., 0.],
-            colour=vtk_colors.GetColor3d('Red'),
-            size=8
-        )
-        self.object_orientation_torus_actor = self.actor_factory.CreateTorus(
-            position=[0., 0., 0.],
-            orientation=[0., 0., 0.],
-            colour=vtk_colors.GetColor3d('Red')
-        )
-
-        self.ren.AddActor(self.coil_actor)
-        self.ren.AddActor(self.coil_center_actor)
-        self.ren.AddActor(self.x_axis_actor)
-        self.ren.AddActor(self.y_axis_actor)
-        self.ren.AddActor(self.z_axis_actor)
-        self.x_axis_actor.SetVisibility(0)
-        self.y_axis_actor.SetVisibility(0)
-        self.z_axis_actor.SetVisibility(0)
 
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -2252,20 +2077,12 @@ class Viewer(wx.Panel):
                 point = np.array(self.peel_centers.GetPoint(cellId))
                 distance = np.linalg.norm(point - p1)
 
-                self.ren.RemoveActor(self.y_axis_actor)
-
                 if distance < closestDist:
                     closestDist = distance
                     closestPoint = point
                     pointnormal = np.array(self.peel_normals.GetTuple(cellId))
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     #print('the angle:', angle)
-
-                    # For debugging
-                    self.y_axis_actor = self.actor_factory.CreateLine(closestPoint, closestPoint + 75 * pointnormal,
-                                                                     vtk_colors.GetColor3d('Yellow'))
-
-                    #self.ren.AddActor(self.y_axis_actor)# remove comment for testing
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_torus_actor)
@@ -2282,12 +2099,9 @@ class Viewer(wx.Panel):
                     else:
                         self.object_orientation_torus_actor.GetProperty().SetDiffuseColor([240/255,146/255,105/255])
                         self.obj_projection_arrow_actor.GetProperty().SetColor([240/255,146/255,105/255])
-                else:
-                    self.ren.RemoveActor(self.y_axis_actor)
         else:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
-            self.ren.RemoveActor(self.x_axis_actor)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2295,13 +2109,7 @@ class Viewer(wx.Panel):
 
         if self.nav_status:
             self.pTarget = self.CenterOfMass()
-            if self.coil_actor:
-                self.coil_actor.SetVisibility(self.show_coil)
-                #self.x_axis_actor.SetVisibility(self.show_coil)
-                #self.y_axis_actor.SetVisibility(self.show_coil)
-                #self.z_axis_actor.SetVisibility(self.show_coil)
-                #self.object_orientation_torus_actor.SetVisibility(self.show_coil)
-                #self.obj_projection_arrow_actor.SetVisibility(self.show_coil)
+
         self.camera_show_object = None
         self.UpdateRender()
 
@@ -2323,86 +2131,37 @@ class Viewer(wx.Panel):
                 self.mark_actor = None
         self.UpdateRender()
 
-    def UpdateCoilPose(self, m_img, coord):
-        """
-        During navigation, use updated coil pose to perform the following tasks:
-
-        - Update actor positions for coil, coil center, and coil orientation axes.
-        """
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
-
-        m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
-
-        # Update actor positions for coil, coil center, and coil orientation axes.
-        self.coil_actor.SetUserMatrix(m_img_vtk)
-        self.coil_center_actor.SetUserMatrix(m_img_vtk)
-        self.x_axis_actor.SetUserMatrix(m_img_vtk)
-        self.y_axis_actor.SetUserMatrix(m_img_vtk)
-        self.z_axis_actor.SetUserMatrix(m_img_vtk)
-
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
 
         if flag:
-            self.ren.RemoveActor(self.x_axis_actor)
-            #self.ren.RemoveActor(self.y_axis_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
             self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
 
-    def RemoveObjectActor(self):
-        self.ren.RemoveActor(self.coil_actor)
-        self.ren.RemoveActor(self.coil_center_actor)
-        self.ren.RemoveActor(self.x_axis_actor)
-        self.ren.RemoveActor(self.y_axis_actor)
-        self.ren.RemoveActor(self.z_axis_actor)
-        self.ren.RemoveActor(self.mark_actor)
-        self.ren.RemoveActor(self.obj_projection_arrow_actor)
-        self.ren.RemoveActor(self.object_orientation_torus_actor)
-        self.coil_actor = None
-        self.x_axis_actor = None
-        self.y_axis_actor = None
-        self.z_axis_actor = None
-        self.mark_actor = None
-        self.obj_projection_arrow_actor = None
-        self.object_orientation_torus_actor = None
-
-    def ConfigureObject(self, obj_name=None, polydata=None, use_default_object=True):
-        self.obj_name = obj_name
-        self.polydata = polydata
-        self.use_default_object = use_default_object
-
-        self.SaveConfig()
-
     def TrackObject(self, enabled):
         if enabled:
-            if self.obj_name:
-                if self.coil_actor:
-                    self.RemoveObjectActor()
-                self.AddCoilActor(self.obj_name)
+            vtk_colors = vtkNamedColors()
+            self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
+                position=[0., 0., 0.],
+                orientation=[0., 0., 0.],
+                colour=vtk_colors.GetColor3d('Red'),
+                size=8
+            )
+            self.object_orientation_torus_actor = self.actor_factory.CreateTorus(
+                position=[0., 0., 0.],
+                orientation=[0., 0., 0.],
+                colour=vtk_colors.GetColor3d('Red')
+            )
         else:
-            if self.coil_actor:
-                self.RemoveObjectActor()
-        if not self.nav_status:
-            self.UpdateRender()
+            self.ren.RemoveActor(self.mark_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
 
-    # Called when 'show coil' button is pressed in the user interface.
-    def ShowCoil(self, state):
-        self.show_coil = state
-
-        if self.target_coil_actor is not None:
-            self.target_coil_actor.SetVisibility(state)
-
-        if self.coil_actor:
-            self.coil_actor.SetVisibility(state)
-            self.x_axis_actor.SetVisibility(state)
-            self.y_axis_actor.SetVisibility(state)
-            self.z_axis_actor.SetVisibility(state)
-
-        if not self.nav_status:
-            self.UpdateRender()
+            self.mark_actor = None
+            self.obj_projection_arrow_actor = None
+            self.object_orientation_torus_actor = None
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
         mapper = vtkCompositePolyDataMapper2()
@@ -2500,7 +2259,7 @@ class Viewer(wx.Panel):
         v0n = np.sqrt(inner1d(v0, v0))
 
         if self.camera_show_object is None:
-            self.camera_show_object = self.show_coil
+            self.camera_show_object = self.coil_visualizer.show_coil
 
         if self.camera_show_object:
             v1 = np.array([cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2]])

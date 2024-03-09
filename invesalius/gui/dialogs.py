@@ -3443,9 +3443,8 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = tracker.GetTrackerId()
         self.obj_ref_id = 2
-        self.obj_name = None
+        self.coil_path = None
         self.polydata = None
-        self.use_default_object = False
         self.object_fiducial_being_set = None
 
         self.obj_fiducials = np.full([4, 3], np.nan)
@@ -3601,9 +3600,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def ConfigureObject(self):
-        use_default_object = self.ObjectImportDialog()
+        use_default_coil = self.ObjectImportDialog()
 
-        if use_default_object:
+        if use_default_coil:
             path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
         else:
@@ -3622,8 +3621,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         if _has_win32api:
             path = win32api.GetShortPathName(path)
 
-        self.obj_name = path.encode(const.FS_ENCODE)
-        self.use_default_object = use_default_object
+        self.coil_path = path.encode(const.FS_ENCODE)
 
         return True
 
@@ -3631,9 +3629,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         success = self.ConfigureObject()
         if success:
             # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
-            #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
+            #   only where it is needed, and mostly remain as a string in self.coil_path and elsewhere.
             #
-            object_path = self.obj_name.decode(const.FS_ENCODE)
+            object_path = self.coil_path.decode(const.FS_ENCODE)
             self.polydata = pu.LoadPolydata(
                 path=object_path
             )
@@ -3787,7 +3785,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
 
     def GetValue(self):
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata, self.use_default_object
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.coil_path, self.polydata
 
 class ICPCorregistrationDialog(wx.Dialog):
 

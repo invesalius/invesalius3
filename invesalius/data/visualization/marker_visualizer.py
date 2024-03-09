@@ -9,7 +9,7 @@ from invesalius.pubsub import pub as Publisher
 
 class MarkerVisualizer:
     """
-    A class for managing marker-related visualization, such as creating 3d-actors for the markers
+    A class for visualizing markers. Handles, e.g., creating 3d-actors for the markers
     and highlighting a marker in the 3D viewer when it is selected as a target.
     """
     # The scale of the coil target marker when it is the target.
