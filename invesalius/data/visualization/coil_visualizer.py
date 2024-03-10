@@ -19,12 +19,15 @@ class CoilVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d('Green')
 
-    def __init__(self, renderer, interactor, actor_factory):
+    def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
         self.renderer = renderer
         self.interactor = interactor
         
-        # The actor factory is used to create actor for the projection line of the coil target to the brain surface.
+        # The actor factory is used to create actors for the coil and coil center.
         self.actor_factory = actor_factory
+
+        # The vector field visualizer is used to show a vector field relative to the coil.
+        self.vector_field_visualizer = vector_field_visualizer
 
         # The actor for showing the actual coil in the volume viewer.
         self.coil_actor = None
@@ -34,6 +37,9 @@ class CoilVisualizer:
 
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
+
+        # The assembly for showing the vector field relative to the coil in the volume viewer.
+        self.vector_field_assembly = None
 
         self.x_axis_actor = None
         self.y_axis_actor = None
@@ -75,6 +81,9 @@ class CoilVisualizer:
         self.coil_path = coil_path_unencoded.encode(const.FS_ENCODE)
         self.coil_polydata = pu.LoadPolydata(path=coil_path_unencoded)
 
+        print(self.coil_path)
+        print(self.coil_polydata)
+
     def SetCoilAtTarget(self, state):
         self.coil_at_target = state
 
@@ -90,15 +99,17 @@ class CoilVisualizer:
     def RemoveCoilActor(self):
         self.renderer.RemoveActor(self.coil_actor)
         self.renderer.RemoveActor(self.coil_center_actor)
+        self.renderer.RemoveActor(self.vector_field_assembly)
         self.renderer.RemoveActor(self.x_axis_actor)
         self.renderer.RemoveActor(self.y_axis_actor)
         self.renderer.RemoveActor(self.z_axis_actor)
 
         self.coil_actor = None
+        self.coil_center_actor = None
+        self.vector_field_assembly = None
         self.x_axis_actor = None
         self.y_axis_actor = None
         self.z_axis_actor = None
-        self.coil_center_actor = None
 
     def ConfigureCoil(self, coil_path=None, polydata=None):
         self.coil_path = coil_path
@@ -141,6 +152,7 @@ class CoilVisualizer:
             self.interactor.Render()
 
     def AddTargetCoil(self, m_target):
+        print(m_target)
         self.RemoveTargetCoil()
 
         vtk_colors = vtk.vtkNamedColors()
@@ -174,6 +186,7 @@ class CoilVisualizer:
         self.target_coil_actor.SetUserMatrix(m_target)
 
         self.renderer.AddActor(self.target_coil_actor)
+
         if not self.is_navigating:
             self.interactor.Render()
 
@@ -188,6 +201,7 @@ class CoilVisualizer:
         """
         Add actors for actual coil, coil center, and x, y, and z-axes to the renderer.
         """
+        print(coil_path)
         vtk_colors = vtk.vtkNamedColors()
         obj_polydata = vtku.CreateObjectPolyData(coil_path)
 
@@ -234,11 +248,16 @@ class CoilVisualizer:
         self.y_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
         self.z_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
 
+        # Create an assembly for the vector field, presented relative to the coil.
+        self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
+
         self.renderer.AddActor(self.coil_actor)
         self.renderer.AddActor(self.coil_center_actor)
+        self.renderer.AddActor(self.vector_field_assembly)
         self.renderer.AddActor(self.x_axis_actor)
         self.renderer.AddActor(self.y_axis_actor)
         self.renderer.AddActor(self.z_axis_actor)
+
         self.x_axis_actor.SetVisibility(0)
         self.y_axis_actor.SetVisibility(0)
         self.z_axis_actor.SetVisibility(0)
@@ -257,6 +276,7 @@ class CoilVisualizer:
         # Update actor positions for coil, coil center, and coil orientation axes.
         self.coil_actor.SetUserMatrix(m_img_vtk)
         self.coil_center_actor.SetUserMatrix(m_img_vtk)
+        self.vector_field_assembly.SetUserMatrix(m_img_vtk)
         self.x_axis_actor.SetUserMatrix(m_img_vtk)
         self.y_axis_actor.SetUserMatrix(m_img_vtk)
         self.z_axis_actor.SetUserMatrix(m_img_vtk)

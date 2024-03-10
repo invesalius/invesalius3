@@ -28,18 +28,24 @@ class MarkerVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d('Green')
 
-    def __init__(self, renderer, interactor, actor_factory):
+    def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
         self.renderer = renderer
         self.interactor = interactor
-        
+
         # The actor factory is used to create actor for the projection line of the coil target to the brain surface.
         self.actor_factory = actor_factory
+
+        # The vector field visualizer is used to represent a vector field relative to target.
+        self.vector_field_visualizer = vector_field_visualizer
 
         # The currently highlighted marker object.
         self.highlighted_marker = None
 
         # The actor representing the projection line of the coil target to the brain surface.
         self.projection_line_actor = None
+
+        # The assembly for the current vector field, shown relative to the highlighted marker.
+        self.vector_field_assembly = None
 
         # The currently set target marker object.
         self.target_marker = None

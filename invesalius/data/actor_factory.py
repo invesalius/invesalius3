@@ -159,7 +159,7 @@ class ActorFactory(object):
 
     def CreateArrowUsingDirection(self, position, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
         arrow = vtk.vtkArrowSource()
-        arrow.SetArrowOriginToCenter()
+        arrow.SetArrowOriginToDefault()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
         arrow.SetShaftRadius(0.05)
@@ -173,11 +173,10 @@ class ActorFactory(object):
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetLineWidth(5)
-        actor.AddPosition(0, 0, 0)
         actor.SetScale(size)
 
-        m_img_vtk = self.CreateVTKObjectMatrix(position, orientation)
-        actor.SetUserMatrix(m_img_vtk)
+        actor.SetOrientation(orientation)
+        actor.SetPosition(position)
 
         return actor
 
