@@ -189,13 +189,8 @@ class MarkerTransformator:
         # Create a rotation matrix from the axis and angle.
         rotation_matrix = tr.rotation_matrix(rotation_angle, rotation_axis_normalized)
 
-        # Rotate around coil's z-axis an additional 90 degrees to make coil's front-back axis align with anterior-posterior axis of the brain.
-        #
-        # This was figured out by looking at the discrepancy between the coil and the brain in the 3D view.
-        rotation_matrix_align_coil = tr.rotation_matrix(math.pi / 2, [0, 0, 1])
-
         # Convert the rotation matrix to Euler angles.
-        euler_angles = tr.euler_from_matrix(rotation_matrix @ rotation_matrix_align_coil, 'sxyz')
+        euler_angles = tr.euler_from_matrix(rotation_matrix, 'sxyz')
 
         # Convert the Euler angles to degrees.
         euler_angles_deg = np.degrees(euler_angles)
