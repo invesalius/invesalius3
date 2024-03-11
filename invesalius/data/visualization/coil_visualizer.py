@@ -167,7 +167,6 @@ class CoilVisualizer:
             self.interactor.Render()
 
     def AddTargetCoil(self, m_target):
-        print(m_target)
         self.RemoveTargetCoil()
 
         vtk_colors = vtk.vtkNamedColors()
@@ -216,7 +215,6 @@ class CoilVisualizer:
         """
         Add actors for actual coil, coil center, and x, y, and z-axes to the renderer.
         """
-        print(coil_path)
         vtk_colors = vtk.vtkNamedColors()
         obj_polydata = vtku.CreateObjectPolyData(coil_path)
 

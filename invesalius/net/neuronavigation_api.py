@@ -253,6 +253,4 @@ class NeuronavigationApi(metaclass=Singleton):
         wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)
 
     def set_vector_field(self, vector_field):
-        print("asmo")
-        print(vector_field)
         wx.CallAfter(Publisher.sendMessage, 'Set vector field', vector_field=vector_field)
