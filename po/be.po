@@ -1684,7 +1684,7 @@ msgid "Move"
 msgstr "Перамясціць"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "Кантраст"
 
 #: frame.py:1525

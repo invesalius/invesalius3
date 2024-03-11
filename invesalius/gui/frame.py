@@ -1767,7 +1767,7 @@ class ObjectToolBar(AuiToolBar):
                           "",
                           BMP_CONTRAST,
                           wx.NullBitmap,
-                          short_help_string = _("Constrast"),
+                          short_help_string = _("Contrast"),
                           kind = wx.ITEM_CHECK)
         self.AddTool(const.STATE_MEASURE_DISTANCE,
                         "",

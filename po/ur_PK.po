@@ -1330,7 +1330,7 @@ msgid "Move"
 msgstr ""
 
 #: frame.py:1322
-msgid "Constrast"
+msgid "Contrast"
 msgstr ""
 
 #: frame.py:1480

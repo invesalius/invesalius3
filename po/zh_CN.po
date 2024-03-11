@@ -1705,7 +1705,7 @@ msgid "Move"
 msgstr "移动"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "对比度"
 
 #: frame.py:1525
