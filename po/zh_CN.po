@@ -2171,8 +2171,8 @@ msgid "Deep Brain Stimulation"
 msgstr "脑深部刺激"
 
 #: task_navigator.py:186
-msgid "Update camera in volume"
-msgstr "以音量更新相机"
+msgid "Lock to coil"
+msgstr ""
 
 #: task_navigator.py:187
 msgid "Vol. camera"

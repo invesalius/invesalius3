@@ -311,15 +311,15 @@ class InnerFoldPanel(wx.Panel):
 
     # 'Volume camera' checkbox
 
-    def CheckVolumeCameraCheckbox(self, checked):
-        self.checkcamera.SetValue(checked)
-        self.OnVolumeCameraCheckbox()
+    def CheckLockToCoilCheckbox(self, checked):
+        self.lock_to_coil_button.SetValue(checked)
+        self.OnLockToCoilCheckbox()
 
-    def OnVolumeCameraCheckbox(self, evt=None, status=None):
-        Publisher.sendMessage('Lock to coil', enabled=self.checkcamera.GetValue())
+    def OnLockToCoilCheckbox(self, evt=None, status=None):
+        Publisher.sendMessage('Lock to coil', enabled=self.lock_to_coil_button.GetValue())
 
-    def EnableVolumeCameraCheckbox(self, enabled):
-        self.checkcamera.Enable(enabled)
+    def EnableLockToCoilCheckbox(self, enabled):
+        self.lock_to_coil_button.Enable(enabled)
     
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
@@ -1289,18 +1289,18 @@ class ControlPanel(wx.Panel):
         self.checkobj = checkobj
     
         # Toggle Button for camera update in volume rendering during navigation
-        tooltip = wx.ToolTip(_("Update camera in volume"))
+        tooltip = wx.ToolTip(_("Lock to coil"))
         BMP_UPDATE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("orbit.png")), wx.BITMAP_TYPE_PNG)
-        checkcamera =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        checkcamera.SetBitmap(BMP_UPDATE)
-        checkcamera.SetToolTip(tooltip)
-        checkcamera.SetValue(const.LOCK_TO_COIL_AS_DEFAULT)
-        if checkcamera.IsEnabled():
-            checkcamera.SetBackgroundColour(GREEN_COLOR)
+        lock_to_coil_button =  wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        lock_to_coil_button.SetBitmap(BMP_UPDATE)
+        lock_to_coil_button.SetToolTip(tooltip)
+        lock_to_coil_button.SetValue(const.LOCK_TO_COIL_AS_DEFAULT)
+        if lock_to_coil_button.IsEnabled():
+            lock_to_coil_button.SetBackgroundColour(GREEN_COLOR)
         else:
-            checkcamera.SetBackgroundColour(RED_COLOR)
-        checkcamera.Bind(wx.EVT_TOGGLEBUTTON, self.OnVolumeCameraCheckbox)
-        self.checkcamera = checkcamera
+            lock_to_coil_button.SetBackgroundColour(RED_COLOR)
+        lock_to_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnLockToCoilCheckbox)
+        self.lock_to_coil_button = lock_to_coil_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
@@ -1348,7 +1348,7 @@ class ControlPanel(wx.Panel):
         checkbox_sizer = wx.FlexGridSizer(4, 5, 5)
         checkbox_sizer.AddMany([
             (tractography_checkbox),
-            (checkcamera),
+            (lock_to_coil_button),
             (target_checkbox),
             (checkbox_track_object),
             (efield_checkbox),
@@ -1385,10 +1385,10 @@ class ControlPanel(wx.Panel):
 
         # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckShowCoil, 'Check show-coil checkbox')
-        Publisher.subscribe(self.CheckVolumeCameraCheckbox, 'Check volume camera checkbox')
+        Publisher.subscribe(self.CheckLockToCoilCheckbox, 'Check lock to coil checkbox')
 
         Publisher.subscribe(self.EnableShowCoil, 'Enable show-coil checkbox')
-        Publisher.subscribe(self.EnableVolumeCameraCheckbox, 'Enable volume camera checkbox')
+        Publisher.subscribe(self.EnableLockToCoilCheckbox, 'Enable lock to coil checkbox')
 
         # Externally check/uncheck and enable/disable checkboxes.
         Publisher.subscribe(self.CheckTrackObjectCheckbox, 'Check track-object checkbox')
@@ -1629,17 +1629,17 @@ class ControlPanel(wx.Panel):
 
 
     # 'Volume camera' checkbox
-    def CheckVolumeCameraCheckbox(self, checked):
-        self.UpdateToggleButton(self.checkcamera, checked)
-        self.OnVolumeCameraCheckbox()
+    def CheckLockToCoilCheckbox(self, checked):
+        self.UpdateToggleButton(self.lock_to_coil_button, checked)
+        self.OnLockToCoilCheckbox()
 
-    def OnVolumeCameraCheckbox(self, evt=None, status=None):
-        self.UpdateToggleButton(self.checkcamera)
-        Publisher.sendMessage('Lock to coil', enabled=self.checkcamera.GetValue())
+    def OnLockToCoilCheckbox(self, evt=None, status=None):
+        self.UpdateToggleButton(self.lock_to_coil_button)
+        Publisher.sendMessage('Lock to coil', enabled=self.lock_to_coil_button.GetValue())
 
-    def EnableVolumeCameraCheckbox(self, enabled):
-        self.EnableToggleButton(self.checkcamera, enabled)
-        self.UpdateToggleButton(self.checkcamera)
+    def EnableLockToCoilCheckbox(self, enabled):
+        self.EnableToggleButton(self.lock_to_coil_button, enabled)
+        self.UpdateToggleButton(self.lock_to_coil_button)
     
 
     # 'Serial Port Com'
@@ -1698,12 +1698,12 @@ class ControlPanel(wx.Panel):
         if self.target_checkbox.GetValue():
             self.UpdateToggleButton(self.target_checkbox, True)
             Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
-            Publisher.sendMessage('Check volume camera checkbox', checked=False)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=False)
+            Publisher.sendMessage('Check lock to coil checkbox', checked=False)
+            Publisher.sendMessage('Enable lock to coil checkbox', enabled=False)
         else:
             self.UpdateToggleButton(self.target_checkbox, False)
             Publisher.sendMessage('Target navigation mode', target_mode=self.target_checkbox.GetValue())
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
+            Publisher.sendMessage('Enable lock to coil checkbox', enabled=True)
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None) 
 

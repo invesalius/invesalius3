@@ -486,13 +486,13 @@ class VolumeToolPanel(wx.Panel):
         if not self.button_target.IsPressed() and evt is not False:
             self.button_target._pressed = True
             Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Check volume camera checkbox', checked=False)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=False)
+            Publisher.sendMessage('Check lock to coil checkbox', checked=False)
+            Publisher.sendMessage('Enable lock to coil checkbox', enabled=False)
 
         elif self.button_target.IsPressed() or evt is False:
             self.button_target._pressed = False
             Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
+            Publisher.sendMessage('Enable lock to coil checkbox', enabled=True)
             Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
                                   target_index=None, target=None)
     '''

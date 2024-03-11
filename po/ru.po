@@ -2151,7 +2151,7 @@ msgid "Deep Brain Stimulation"
 msgstr ""
 
 #: task_navigator.py:186
-msgid "Update camera in volume"
+msgid "Lock to coil"
 msgstr "Обновить камеру в объеме"
 
 #: task_navigator.py:187
