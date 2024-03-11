@@ -373,12 +373,6 @@ class MarkerVisualizer:
         self.projection_line_actor = actor
 
     def HighlightMarker(self, marker, render=True):
-        # Return early if the marker is a target and the coil is at the target.
-        #
-        # In that case, the marker should not be highlighted, as being at the target overrides the highlighting.
-        if marker.is_target and self.is_coil_at_target:
-            return
-        
         # Unpack relevant fields from the marker.
         actor = marker.visualization['actor']
 
@@ -388,6 +382,22 @@ class MarkerVisualizer:
 
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
+
+        # If the marker is a coil target, show the vector field assembly and update its position and orientation,
+        # otherwise, hide the vector field assembly.
+        if marker_type == MarkerType.COIL_TARGET:
+            self.vector_field_assembly.SetVisibility(1)
+
+            self.vector_field_assembly.SetPosition(position_flipped)
+            self.vector_field_assembly.SetOrientation(orientation)
+        else:
+            self.vector_field_assembly.SetVisibility(0)
+
+        # Return early if the marker is a target and the coil is at the target.
+        #
+        # In that case, the marker should not be highlighted, as being at the target overrides the highlighting.
+        if marker.is_target and self.is_coil_at_target:
+            return
 
         # Change the color of the marker.
         actor.GetProperty().SetColor(self.HIGHLIGHT_COLOR)
@@ -402,16 +412,6 @@ class MarkerVisualizer:
                 startpoint_position=position_flipped,
                 startpoint_orientation=orientation,
             )
-
-        # If the marker is a coil target, show the vector field assembly and update its position and orientation,
-        # otherwise, hide the vector field assembly.
-        if marker_type == MarkerType.COIL_TARGET:
-            self.vector_field_assembly.SetVisibility(1)
-
-            self.vector_field_assembly.SetPosition(position_flipped)
-            self.vector_field_assembly.SetOrientation(orientation)
-        else:
-            self.vector_field_assembly.SetVisibility(0)
 
         # Store the highlighted marker.
         self.highlighted_marker = marker
