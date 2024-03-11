@@ -966,7 +966,7 @@ msgid "Sorry, you cannot use 'TARGET' ID"
 msgstr ""
 
 #: dialogs.py:1029
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr "Editar ID do marcador"
 
 #: dialogs.py:1080

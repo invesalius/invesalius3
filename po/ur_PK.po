@@ -813,7 +813,7 @@ msgid "No data selected"
 msgstr ""
 
 #: dialogs.py:763
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr ""
 
 #: dialogs.py:810

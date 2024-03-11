@@ -970,7 +970,7 @@ msgid "Sorry, you cannot use 'TARGET' ID"
 msgstr "抱歉，您不能使用“TARGET\"ID"
 
 #: dialogs.py:1029
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr "编辑标记ID"
 
 #: dialogs.py:1080
