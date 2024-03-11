@@ -157,9 +157,15 @@ class ActorFactory(object):
         
         return pointer_actor
 
-    def CreateArrowUsingDirection(self, position, orientation, colour=[0.0, 0.0, 1.0], size=const.ARROW_MARKER_SIZE):
+    def CreateArrowUsingDirection(self, position, orientation, colour=[0.0, 0.0, 1.0], length_multiplier=1.0):
+        """
+        Return an actor representing an arrow with the given position and orientation.
+        
+        The zero angle of the arrow is in the positive y-direction (anterior in RAS+ coordinate system,
+        which the volume viewer uses).
+        """
         arrow = vtk.vtkArrowSource()
-        arrow.SetArrowOriginToCenter()
+        arrow.SetArrowOriginToDefault()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
         arrow.SetShaftRadius(0.05)
@@ -173,11 +179,17 @@ class ActorFactory(object):
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetLineWidth(5)
-        actor.AddPosition(0, 0, 0)
-        actor.SetScale(size)
 
-        m_img_vtk = self.CreateVTKObjectMatrix(position, orientation)
-        actor.SetUserMatrix(m_img_vtk)
+        # Scale the arrow in x-direction to the desired length.
+        size = const.ARROW_MARKER_SIZE
+        actor.SetScale(size * length_multiplier, size, size)
+
+        # Adjust the orientation to make the arrow point in the positive y-direction when orientation is zero,
+        # as the default orientation of the arrow is in the positive x-direction.
+        adjusted_orientation = [orientation[0], orientation[1], orientation[2] + 90]
+
+        actor.SetOrientation(adjusted_orientation)
+        actor.SetPosition(position)
 
         return actor
 
@@ -285,3 +297,24 @@ class ActorFactory(object):
 
         # Update the actor's transformation matrix.
         actor.SetUserTransform(transform)
+
+    def ReplaceActor(self, renderer, old_actor, new_actor):
+        """
+        Given a renderer and two actors, replace the old one with the new one, copying
+        the old actor's visibility, position, and orientation to the new actor.
+        """
+        visibility, position, orientation = None, None, None
+
+        visibility = old_actor.GetVisibility()
+        position = old_actor.GetPosition()
+        orientation = old_actor.GetOrientation()
+
+        # Remove the old actor from the renderer.
+        renderer.RemoveActor(old_actor)
+
+        new_actor.SetVisibility(visibility)
+        new_actor.SetPosition(position)
+        new_actor.SetOrientation(orientation)
+
+        # Add the new actor to the renderer
+        renderer.AddActor(new_actor)

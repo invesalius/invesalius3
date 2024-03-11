@@ -28,12 +28,15 @@ class MarkerVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d('Green')
 
-    def __init__(self, renderer, interactor, actor_factory):
+    def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
         self.renderer = renderer
         self.interactor = interactor
-        
+
         # The actor factory is used to create actor for the projection line of the coil target to the brain surface.
         self.actor_factory = actor_factory
+
+        # The vector field visualizer is used to represent a vector field relative to target.
+        self.vector_field_visualizer = vector_field_visualizer
 
         # The currently highlighted marker object.
         self.highlighted_marker = None
@@ -46,6 +49,13 @@ class MarkerVisualizer:
 
         # The status of the coil at the target.
         self.is_coil_at_target = False
+
+        # The assembly for the current vector field, shown relative to the highlighted marker.
+        self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
+
+        # Add the vector field assembly to the renderer, but make it invisible until a marker is highlighted.
+        self.renderer.AddActor(self.vector_field_assembly)
+        self.vector_field_assembly.SetVisibility(0)
 
         self.__bind_events()
 
@@ -63,6 +73,20 @@ class MarkerVisualizer:
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.SetTargetTransparency, 'Set target transparency')
         Publisher.subscribe(self.SetCoilAtTarget, 'Coil at target')
+        Publisher.subscribe(self.UpdateVectorField, 'Update vector field')
+
+    def UpdateVectorField(self):
+        """
+        Update the vector field assembly to reflect the current vector field.
+        """
+        # Create a new vector field assembly.
+        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
+
+        # Replace the old vector field assembly with the new one.
+        self.actor_factory.ReplaceActor(self.renderer, self.vector_field_assembly, new_vector_field_assembly)
+
+        # Store the new vector field assembly.
+        self.vector_field_assembly = new_vector_field_assembly
 
     def AddMarker(self, marker, render):
         """
@@ -97,7 +121,7 @@ class MarkerVisualizer:
 
         # For 'brain target' type markers, create an arrow.
         elif marker_type == MarkerType.BRAIN_TARGET:
-            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour, const.ARROW_MARKER_SIZE)
+            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour)
 
         # For 'coil target' type markers, create a crosshair.
         elif marker_type == MarkerType.COIL_TARGET:
@@ -310,6 +334,44 @@ class MarkerVisualizer:
         else:
             actor.GetProperty().SetOpacity(1)
 
+    def _CreateProjectionLine(self, startpoint_position, startpoint_orientation):
+        """
+        Create a projection line from the coil to the brain surface.
+        """
+        # Move the endpoint 30 mm in the direction of the orientation. This should be enough to reach the brain surface.
+        dx = 0
+        dy = 0
+        dz = -30
+        delta_translation = [dx, dy, dz]
+        delta_orientation = [0, 0, 0]
+
+        # Create transformation matrices for the marker and the movement delta.
+        m_delta = dco.coordinates_to_transformation_matrix(
+            position=delta_translation,
+            orientation=delta_orientation,
+            axes='sxyz',
+        )
+        m_marker = dco.coordinates_to_transformation_matrix(
+            position=startpoint_position,
+            orientation=startpoint_orientation,
+            axes='sxyz',
+        )
+        m_endpoint = m_marker @ m_delta
+
+        endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
+
+        actor = self.actor_factory.CreateTube(startpoint_position, endpoint, colour=self.HIGHLIGHT_COLOR, radius=0.5)
+        actor.GetProperty().SetOpacity(0.1)
+
+        # If there is already a projection line actor, remove it.
+        if self.projection_line_actor is not None:
+            self.renderer.RemoveActor(self.projection_line_actor)
+
+        self.renderer.AddActor(actor)
+
+        # Store the projection line actor so that it can be removed later.
+        self.projection_line_actor = actor
+
     def HighlightMarker(self, marker, render=True):
         # Return early if the marker is a target and the coil is at the target.
         #
@@ -336,41 +398,20 @@ class MarkerVisualizer:
 
         # If the marker is a coil target, create a perpendicular line from the coil to the brain surface.
         if marker_type == MarkerType.COIL_TARGET:
-            startpoint = position_flipped[:]
-
-            # Move the endpoint 30 mm in the direction of the orientation. This should be enough to reach the brain surface.
-            dx = 0
-            dy = 0
-            dz = -30
-            delta_translation = [dx, dy, dz]
-            delta_orientation = [0, 0, 0]
-
-            # Create transformation matrices for the marker and the movement delta.
-            m_delta = dco.coordinates_to_transformation_matrix(
-                position=delta_translation,
-                orientation=delta_orientation,
-                axes='sxyz',
+            self._CreateProjectionLine(
+                startpoint_position=position_flipped,
+                startpoint_orientation=orientation,
             )
-            m_marker = dco.coordinates_to_transformation_matrix(
-                position=position_flipped,
-                orientation=orientation,
-                axes='sxyz',
-            )
-            m_endpoint = m_marker @ m_delta
 
-            endpoint, _ = dco.transformation_matrix_to_coordinates(m_endpoint, 'sxyz')
+        # If the marker is a coil target, show the vector field assembly and update its position and orientation,
+        # otherwise, hide the vector field assembly.
+        if marker_type == MarkerType.COIL_TARGET:
+            self.vector_field_assembly.SetVisibility(1)
 
-            actor = self.actor_factory.CreateTube(startpoint, endpoint, colour=self.HIGHLIGHT_COLOR, radius=0.5)
-            actor.GetProperty().SetOpacity(0.1)
-
-            # If there is already a projection line actor, remove it.
-            if self.projection_line_actor is not None:
-                self.renderer.RemoveActor(self.projection_line_actor)
-
-            self.renderer.AddActor(actor)
-
-            # Store the projection line actor so that it can be removed later.
-            self.projection_line_actor = actor
+            self.vector_field_assembly.SetPosition(position_flipped)
+            self.vector_field_assembly.SetOrientation(orientation)
+        else:
+            self.vector_field_assembly.SetVisibility(0)
 
         # Store the highlighted marker.
         self.highlighted_marker = marker

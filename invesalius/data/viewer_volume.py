@@ -113,6 +113,7 @@ from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.actor_factory import ActorFactory
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
+from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
@@ -301,18 +302,25 @@ class Viewer(wx.Panel):
         # An object that can be used to create actors, such as lines, arrows, and spheres.
         self.actor_factory = ActorFactory()
 
-        # An object that can be used to manage the highlighting of markers in the 3D viewer. Later this class could be
-        # extended to handle other marker-related functionality, such as adding and removing markers, etc.
+        # An object that can be used to create vector fields in the 3D viewer.
+        self.vector_field_visualizer = VectorFieldVisualizer(
+            actor_factory=self.actor_factory,
+        )
+
+        # An object to manage visualizing markers in the 3D viewer.
         self.marker_visualizer = MarkerVisualizer(
             renderer=self.ren,
             interactor=self.interactor,
             actor_factory=self.actor_factory,
+            vector_field_visualizer=self.vector_field_visualizer,
         )
 
+        # An object to manage visualizing coils in the 3D viewer.
         self.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
             interactor=self.interactor,
             actor_factory=self.actor_factory,
+            vector_field_visualizer=self.vector_field_visualizer,
         )
 
         self.seed_offset = const.SEED_OFFSET
@@ -2147,7 +2155,7 @@ class Viewer(wx.Panel):
                 position=[0., 0., 0.],
                 orientation=[0., 0., 0.],
                 colour=vtk_colors.GetColor3d('Red'),
-                size=8
+                length_multiplier=0.8,
             )
             self.object_orientation_torus_actor = self.actor_factory.CreateTorus(
                 position=[0., 0., 0.],
