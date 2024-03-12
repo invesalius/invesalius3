@@ -240,6 +240,7 @@ class Logging(wx.Panel):
             size=(300, -1))
         tc_log_file_name.SetForegroundColour(wx.RED)
         bt_log_file_select = wx.Button(bsizer_file_logging.GetStaticBox(), label="Modify")
+        bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
         bsizer_file_logging.Add(lbl_log_file_label, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
         bsizer_file_logging.Add(tc_log_file_name, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
         bsizer_file_logging.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
@@ -267,8 +268,6 @@ class Logging(wx.Panel):
         border.Add(bsizer_console_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         self.SetSizerAndFit(border)
-
-        bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
         self.Layout()
 
     @log.function_call_tracking_decorator

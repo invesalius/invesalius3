@@ -16,18 +16,32 @@ def configureLogging():
     console_logging_level = session.GetConfig('console_logging_level')
 
     logger = logging.getLogger(__name__)
-    '''
-    msg = 'Number of logger handlers: {}], and are as follows:'.format(len(logger.handlers))
-    print(msg, ', LEVEL: ', logging.getLevelName(logger.getEffectiveLevel()))
-    for handler in logger.handlers:
-        if isinstance(handler, logging.FileHandler):
-            print('FileHandler: Level ', handler.__getattribute__)
-        elif isinstance(handler, logging.StreamHandler):
-            print('StreamHandler: Level ', handler.__getattribute__)
-        else:
-            print('Unknown Handler:')
-    '''
+
+    msg = 'file_logging: {}, console_logging: {}'.format(file_logging, console_logging)
+    print(msg)
+    logger.info(msg)
+    logger.info("configureLogging called ...")
+
+    python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
+    logger.setLevel(python_loglevel)
+
+    if console_logging:
+        logger.info("console_logging called ...")
+        closeConsoleLogging()
+        # create formatter
+        python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[console_logging_level].upper(), None)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch = logging.StreamHandler(sys.stderr)
+        ch.setLevel(python_loglevel)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+        logger.info('Added stream handler')
+    else:
+        closeConsoleLogging()
+
+
     if file_logging:
+        logger.info("file_logging called ...")
         python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
 
         # create formatter
@@ -43,6 +57,8 @@ def configureLogging():
                         os.path.samefile(logging_file,handler.baseFilename):
                         handler.setLevel(python_loglevel)
                         addFileHandler = False
+                        msg = 'No change in log file name {}.'.format(logging_file)
+                        logger.info(msg)
                     else:
                         msg = 'Closing current log file {} as new log file {} requested.'.format( \
                             handler.baseFilename, logging_file)
@@ -62,18 +78,6 @@ def configureLogging():
     else:
         closeFileLogging()
 
-    if console_logging:
-        closeConsoleLogging()
-        # create formatter
-        python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[console_logging_level].upper(), None)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        ch = logging.StreamHandler(sys.stdout)
-        ch.setLevel(python_loglevel)
-        ch.setFormatter(formatter)
-        logger.addHandler(ch)
-        logger.info('Added stream handler')
-    else:
-        closeConsoleLogging()
 
  
 def closeFileLogging():
@@ -82,7 +86,7 @@ def closeFileLogging():
         if isinstance(handler, logging.FileHandler):
             msg = 'Removed file handler {}'.format(handler.baseFilename)
             logger.info(msg)
-            handler.flush()
+            #handler.flush()
             logger.removeHandler(handler)    
 
 def closeConsoleLogging():
@@ -90,7 +94,7 @@ def closeConsoleLogging():
     for handler in logger.handlers:
         if isinstance(handler, logging.StreamHandler):
             logger.info('Removed stream handler')
-            handler.flush()
+            #handler.flush()
             logger.removeHandler(handler)    
 
 def closeLogging():
