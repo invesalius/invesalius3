@@ -183,7 +183,8 @@ class Brain:
     def CreateTransformedVTKAffine(self):
         affine_transformed = self.affine.copy()
         matrix_shape = tuple(self.inv_proj.matrix_shape)
-        affine_transformed[1, -1] -= matrix_shape[1]
+        slic = sl.Slice()
+        affine_transformed[1, -1] -= matrix_shape[1]*slic.spacing[1]
 
         return vtk_utils.numpy_to_vtkMatrix4x4(affine_transformed)
 
