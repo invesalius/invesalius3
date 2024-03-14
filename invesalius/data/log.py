@@ -22,9 +22,6 @@ def configureLogging():
     logger.info(msg)
     logger.info("configureLogging called ...")
 
-    python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
-    logger.setLevel(python_loglevel)
-
     if console_logging:
         logger.info("console_logging called ...")
         closeConsoleLogging()
@@ -77,6 +74,9 @@ def configureLogging():
                 logger.info(msg)
     else:
         closeFileLogging()
+
+    logger.setLevel(logging.INFO)
+
 
 
  
