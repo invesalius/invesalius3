@@ -15,6 +15,7 @@ from invesalius import utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
+from invesalius.gui.network.dicom_server_panel import DicomServerPanel
 from invesalius.i18n import tr as _
 
 from invesalius.navigation.tracker import Tracker
@@ -45,6 +46,7 @@ class Preferences(wx.Dialog):
 
         self.pnl_viewer3d = Viewer3D(self.book)
         self.pnl_language = Language(self.book)
+        self.network = DicomServerPanel(self.book)
 
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
@@ -57,6 +59,7 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
         self.book.AddPage(self.pnl_language, _("Language"))
+        self.book.AddPage(self.network, _("Network"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -78,8 +81,10 @@ class Preferences(wx.Dialog):
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
+        network = self.network.as_dict()
         values.update(lang)
         values.update(viewer)
+        values.update(network)
 
         return values
 
