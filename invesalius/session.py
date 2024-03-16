@@ -73,13 +73,6 @@ class Session(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self._Exit, 'Exit session')
 
-    def __set_default_logfile(self):
-        if self._config['logging_file'] =='':
-            logging_file =  datetime.datetime.now().strftime("log-%Y-%m-%d-%H-%M.txt")
-            self.SetConfig('logging_file', logging_file)
-            print('Setting Default logging_file: ', logging_file)
-        
-
     def CreateConfig(self):
         import invesalius.constants as const
         self._config = {

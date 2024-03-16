@@ -133,3 +133,11 @@ def exception_handler(func):
         except TypeError:
             print(f"{func.__name__} only takes numbers as the argument")
     return inner_function
+
+def __set_default_logfile(self):
+    if self._config['logging_file'] =='':
+        logging_file =  datetime.datetime.now().strftime("log-%Y-%m-%d-%H-%M.txt")
+        self.SetConfig('logging_file', logging_file)
+        print('Setting Default logging_file: ', logging_file)
+        
+
