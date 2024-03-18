@@ -28,30 +28,36 @@ from invesalius.pubsub import pub as Publisher
 class Image:
     def __init__(self):
         self.__bind_events()
-        self.LoadState()
+        self._fiducials = np.full([3, 3], np.nan)
+        self.load_from_state = not ses.Session().ExitedSuccessfullyLastTime()
 
     @property
     def fiducials(self):
-        return prj.Project().image_fiducials
+        return self._fiducials
+
+    @fiducials.setter
+    def fiducials(self, value):
+        self._fiducials = value
 
     def __bind_events(self):
         Publisher.subscribe(self.OnStateProject, 'Enable state project')
-        pass
 
     def SaveState(self):
-        pass
-        # state = {
-        #     'image_fiducials': self.fiducials.tolist(),
-        # }
-        # session = ses.Session()
-        # session.SetState('image', state)
+        state = {
+            'image_fiducials': self.fiducials.tolist()
+        }
+        session = ses.Session()
+        session.SetState('image', state)
+        prj.Project().image_fiducials = self._fiducials
 
     def LoadState(self):
-        pass
-        # session = ses.Session()
-        # state = session.GetState('image')
-        # if state is not None:
-        #     self.fiducials = np.array(state['image_fiducials'])
+        session = ses.Session()
+        state = session.GetState('image')
+        if state is not None:
+            self.fiducials = np.array(state['image_fiducials'])
+
+    def LoadProject(self):
+        self.fiducials = prj.Project().image_fiducials
 
     def SetImageFiducial(self, fiducial_index, position):
         self.fiducials[fiducial_index, :] = position
@@ -65,7 +71,7 @@ class Image:
         return self.fiducials
     
     def ResetImageFiducials(self):
-        prj.Project().image_fiducials = np.full([3, 3], np.nan)
+        self.fiducials = np.full([3, 3], np.nan)
         ses.Session().ChangeProject()
         Publisher.sendMessage("Reset image fiducials")
         self.SaveState()
@@ -105,5 +111,12 @@ class Image:
             self.UpdateFiducialMarker(fiducial_index)
 
     def OnStateProject(self, state):
+        if state:
+            if self.load_from_state:
+                self.LoadState()
+                self.load_from_state = False
+            else:
+                self.LoadProject()
+        self.SaveState()
         self.UpdateFiducialMarkers()
 
