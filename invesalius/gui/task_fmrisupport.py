@@ -63,15 +63,20 @@ class InnerTaskPanel(wx.Panel):
         self.SetBackgroundColour(default_colour)
         self.session = ses.Session()
         self.slc = Slice()
-        self.colormaps = ["twilight","hsv","Set1","Set2","winter","hot","autumn"]
-        self.current_colormap = "twilight"
+        self.colormaps = ["autumn", "hot", "plasma", "cividis",  # sequential
+                          "bwr", "RdBu",  # diverging
+                          "Set3", "tab10",  # categorical
+                          "twilight", "hsv"]   # cyclic
+        self.current_colormap = "autumn"
+        self.number_colors = 10
         self.cluster_volume = None
+        self.zero_value = 0
 
         line0 = wx.StaticText(self, -1,
-                                    _("Select Modalities / File"))
+                              _("Select Modalities / File"))
         
         # Button for import config coil file
-        tooltip = wx.ToolTip(_("Load Modalities"))
+        tooltip = wx.ToolTip(_("Load Nifti image"))
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
@@ -91,20 +96,17 @@ class InnerTaskPanel(wx.Panel):
                                    choices=self.colormaps,
                                    style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
-        combo_thresh.SetSelection(0) # By Default use Twilight
+        # by default use the initial value set in self.current_colormap
+        combo_thresh.SetSelection(self.colormaps.index(self.current_colormap))
 
         self.combo_thresh = combo_thresh
 
         ## LINE 4
         cmap = plt.get_cmap(self.current_colormap)
-        colororder = [(int(255*cmap(i)[0]),
-                       int(255*cmap(i)[1]),
-                       int(255*cmap(i)[2]),
-                       int(100*cmap(i)[3])) for i in np.linspace(0, 1, 100)]
-        
-        gradient = grad.GradientDisp(self, -1, -5000, 5000, -5000, 5000,
-                                     colororder, colortype=self.current_colormap in ['Set1', 'Set2'])
-        self.gradient = gradient
+        colors_gradient = self.GenerateColormapColors(cmap)
+
+        self.gradient = grad.GradientDisp(self, -1, -5000, 5000, -5000, 5000,
+                                          colors_gradient)
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -120,7 +122,7 @@ class InnerTaskPanel(wx.Panel):
         sizer.Add(combo_thresh, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.RIGHT, 5)
 
         sizer.AddSpacer(5)
-        sizer.Add(gradient, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.Add(self.gradient, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         sizer.AddSpacer(7)
 
         sizer.Fit(self)
@@ -128,34 +130,37 @@ class InnerTaskPanel(wx.Panel):
         self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
+        self.UpdateGradient(self.gradient, colors_gradient)
 
     def __bind_events(self):
         pass
 
     def OnSelectColormap(self, event=None):
         self.current_colormap = self.colormaps[self.combo_thresh.GetSelection()]
-        cmap = plt.get_cmap(self.current_colormap)
-        colororder = [(int(255*cmap(i)[0]),
-                       int(255*cmap(i)[1]),
-                       int(255*cmap(i)[2]),
-                       int(100*cmap(i)[3])) for i in np.linspace(0, 1, 20)]
-        
-        self.gradient.SetGradientColours(colororder)
-        self.gradient.colortype = self.current_colormap in ['Set1', 'Set2']
-        self.gradient.gradient_slider.colortype = self.current_colormap in ['Set1', 'Set2']
-        
-        self.gradient.gradient_slider.Refresh()
-        self.gradient.gradient_slider.Update()
-        self.gradient.Refresh()
-        self.gradient.Update()
+        colors = self.GenerateColormapColors(self.current_colormap, self.number_colors)
+
+        self.UpdateGradient(self.gradient, colors)
+
+        if isinstance(self.cluster_volume, np.ndarray):
+            self.apply_colormap(self.current_colormap, self.cluster_volume, self.zero_value)
+
+    def GenerateColormapColors(self, colormap_name, number_colors=10):
+        cmap = plt.get_cmap(colormap_name)
+        colors_gradient = [(int(255*cmap(i)[0]),
+                            int(255*cmap(i)[1]),
+                            int(255*cmap(i)[2]),
+                            int(255*cmap(i)[3])) for i in np.linspace(0, 1, number_colors)]
+
+        return colors_gradient
+
+    def UpdateGradient(self, gradient, colors):
+        gradient.SetGradientColours(colors)
+        gradient.Refresh()
+        gradient.Update()
         
         self.Refresh()
         self.Update()
-        self.Show(False)
         self.Show(True)
-
-        if isinstance(self.cluster_volume, np.ndarray):
-            self.apply_colormap(self.current_colormap, self.cluster_volume)
 
     def OnLoadFmri(self, event=None):
         filename = dlg.ShowImportOtherFilesDialog(id_type=const.ID_NIFTI_IMPORT)
@@ -165,27 +170,41 @@ class InnerTaskPanel(wx.Panel):
         fmri_data = nb.as_closest_canonical(fmri_data)
         fmri_data.update_header()
 
-        self.cluster_volume = fmri_data.get_fdata().T[:, ::-1]
+        cluster_volume_original = fmri_data.get_fdata().T[:, ::-1].copy()
+        # Normalize the data to 0-1 range
+        cluster_volume_normalized = (cluster_volume_original - np.min(cluster_volume_original)) / (
+                    np.max(cluster_volume_original) - np.min(cluster_volume_original))
+        # Convert data to 8-bit integer
+        self.cluster_volume = (cluster_volume_normalized * 255).astype(np.uint8)
 
-        # 1. Create layer of shape first
+        self.zero_value = int((0. - np.min(cluster_volume_original)) / (np.max(cluster_volume_original) - np.min(cluster_volume_original)) * 255)
+
         if self.slc.matrix.shape != self.cluster_volume.shape:
             wx.MessageBox(("The overlay volume does not match the underlying structural volume"), ("InVesalius 3"))
 
         else:
             self.slc.aux_matrices['color_overlay'] = self.cluster_volume
-            self.slc.aux_matrices['color_overlay'] = self.slc.aux_matrices['color_overlay'].astype(int)
             # 3. Show colors
             self.slc.to_show_aux = 'color_overlay'
-            self.apply_colormap(self.current_colormap, self.cluster_volume)
+            self.apply_colormap(self.current_colormap, self.cluster_volume, self.zero_value)
 
-    def apply_colormap(self, colormap, cluster_volume):
+    def apply_colormap(self, colormap, cluster_volume, zero_value):
         # 2. Attribute different hue accordingly
-        cluster_smoothness = int(np.max(list(set(cluster_volume.flatten()))))
         cmap = plt.get_cmap(colormap)
-        colororder = [cmap(i) for i in np.linspace(0, 1, cluster_smoothness)]
 
-        self.slc.aux_matrices_colours['color_overlay'] = {k + 1: colororder[k] for k in range(cluster_smoothness)}
+        # new way
+        # Flatten the data to 1D
+        cluster_volume_unique = np.unique(cluster_volume)
+        # Map the scaled data to colors
+        colors = cmap(cluster_volume_unique / 255)
+        # Create a dictionary where keys are scaled data and values are colors
+        color_dict = {val: color for val, color in zip(cluster_volume_unique, map(tuple, colors))}
+
+        self.slc.aux_matrices_colours['color_overlay'] = color_dict
         # add transparent color for nans and non GM voxels
-        self.slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0)
+        if zero_value in self.slc.aux_matrices_colours['color_overlay']:
+            self.slc.aux_matrices_colours['color_overlay'][zero_value] = (0.0, 0.0, 0.0, 0.0)
+        else:
+            print("Zero value not found in color_overlay. No data is set as transparent.")
 
         Publisher.sendMessage('Reload actual slice')
