@@ -866,9 +866,9 @@ EFIELD_ROI_SIZE = 20
 # selected to be a conservative compromise between frame rate and responsiveness, leaning towards responsiveness even
 # on slower machines. The values are in seconds.
 #
-# Please do not set these to a lower value than 0.15 seconds; it will cause freezing on slower computers.
-SLEEP_NAVIGATION = 0.15
-SLEEP_COORDINATES = 0.15
+# Please do not set these to a lower value than 0.1 seconds; it will cause freezing on slower computers.
+SLEEP_NAVIGATION = 0.1
+SLEEP_COORDINATES = 0.1
 
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
