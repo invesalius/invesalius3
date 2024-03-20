@@ -257,3 +257,6 @@ tags
 ### Patches and diffs ###
 *.patch
 *.diff
+
+# MacOS temporary file
+.DS_Store

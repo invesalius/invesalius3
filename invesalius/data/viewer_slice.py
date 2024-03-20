@@ -1566,6 +1566,8 @@ class Viewer(wx.Panel):
         self.scroll.SetThumbPosition(int(index))
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ReloadActualSlice(self):
         pos = self.scroll.GetThumbPosition()

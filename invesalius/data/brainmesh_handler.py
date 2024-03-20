@@ -39,6 +39,8 @@ from vtkmodules.vtkCommonColor import (
     vtkColorSeries,
     vtkNamedColors
 )
+
+import invesalius.project as prj
 import invesalius.data.slice_ as sl
 from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
@@ -181,11 +183,16 @@ class Brain:
         self.PeelDown(currentPeel)
 
     def CreateTransformedVTKAffine(self):
-        affine_transformed = self.affine.copy()
-        matrix_shape = tuple(self.inv_proj.matrix_shape)
-        affine_transformed[1, -1] -= matrix_shape[1]
+        # Consistent with transformation applied in navigation.py under StartNavigation
+        # accounts for non-unitary pixel spacing and transforms to invesalius 3D viewer
+        # coordinate space
+        prj_data = prj.Project()
+        matrix_shape = tuple(prj_data.matrix_shape)
+        spacing = tuple(prj_data.spacing)
+        affine_inv_space = self.affine.copy()
+        affine_inv_space[1, -1] -= spacing[1] * (matrix_shape[1] - 1)
 
-        return vtk_utils.numpy_to_vtkMatrix4x4(affine_transformed)
+        return vtk_utils.numpy_to_vtkMatrix4x4(affine_inv_space)
 
     def get_actor(self, n):
         return self.GetPeelActor(n)
