@@ -15,13 +15,6 @@ class MarkerVisualizer:
     # The scale of the coil target marker when it is the target.
     TARGET_SCALE = 1.0
 
-    # The normal scale of the 'coil target' marker when not the target.
-    NORMAL_SCALE = 0.5
-
-    # The scale of the coil pose marker; they are generated when pulses are given, hence, make them
-    # smaller to avoid cluttering the volume viewer.
-    SMALL_SCALE = 0.2
-    
     # Color for highlighting a marker.
     HIGHLIGHT_COLOR = vtk.vtkNamedColors().GetColor3d('Red')
 
@@ -129,13 +122,13 @@ class MarkerVisualizer:
         elif marker_type == MarkerType.BRAIN_TARGET:
             actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour)
 
-        # For 'coil target' type markers, create a crosshair.
+        # For 'coil target' type markers, create an arrow.
         elif marker_type == MarkerType.COIL_TARGET:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.NORMAL_SCALE)
+            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour)
 
-        # For 'coil pose' type markers, create a smaller crosshair.
+        # For 'coil pose' type markers, create an arrow.
         elif marker_type == MarkerType.COIL_POSE:
-            actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.SMALL_SCALE)
+            actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour)
 
         else:
             assert False, "Invalid marker type."
@@ -167,8 +160,8 @@ class MarkerVisualizer:
         # XXX: Workaround because modifying the original actor does not seem to work using
         #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
         #   and remove the old one. This only works for coil target markers, as the new actor
-        #   created is of a fixed type (aim).
-        new_actor = self.actor_factory.CreateAim(new_position_flipped, new_orientation, colour, scale=self.NORMAL_SCALE)
+        #   created is of a fixed type (arrow).
+        new_actor = self.actor_factory.CreateArrowUsingDirection(new_position_flipped, new_orientation, colour)
 
         if highlighted:
             # Unhighlight the marker, but do not render the interactor yet to avoid flickering.
@@ -263,7 +256,7 @@ class MarkerVisualizer:
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
 
-        # Note that the scale is increased to make the target more visible.
+        # Replace the arrow with an aim.
         new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.TARGET_SCALE)
 
         if highlighted:
@@ -296,8 +289,8 @@ class MarkerVisualizer:
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
 
-        # Note that the scale is decreased back to normal.
-        new_actor = self.actor_factory.CreateAim(position_flipped, orientation, colour, scale=self.NORMAL_SCALE)
+        # Replace the aim with an arrow.
+        new_actor = self.actor_factory.CreateArrowUsingDirection(position_flipped, orientation, colour)
 
         if highlighted:
             self.UnhighlightMarker(render=False)
