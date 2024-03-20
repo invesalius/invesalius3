@@ -2088,6 +2088,7 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
             marker = self.markers[prev_idx]
             Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
+            Publisher.sendMessage('Unset target', marker=marker)
             self.marker_list_ctrl.SetItem(prev_idx, const.TARGET_COLUMN, "")
 
         # Set the new target

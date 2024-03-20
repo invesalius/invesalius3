@@ -240,7 +240,7 @@ class MarkerVisualizer:
 
     def SetTarget(self, marker):
         """
-        When setting a marker as the target, increase the scale of its visualization to highlight
+        When setting a marker as the target, change the arrow to an aim highlight
         that it is the target.
         """
         # Store the target marker so that it can be modified, e.g., when the coil is at target.
@@ -275,7 +275,7 @@ class MarkerVisualizer:
 
     def UnsetTarget(self, marker):
         """
-        When unsetting a marker as the target, decrease the scale of its visualization back to the normal.
+        When unsetting a marker as the target, change the aim back to an arrow.
         """
         self.target_marker = None
 
