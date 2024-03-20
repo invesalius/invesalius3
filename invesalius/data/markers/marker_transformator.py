@@ -246,11 +246,11 @@ class MarkerTransformator:
 
         elif keycode == const.ROTATE_MARKER_CLOCKWISE:
             stay_on_scalp = False
-            direction = [0, 0, 0, 0, 0, 1]
+            direction = [0, 0, 0, 0, 0, -1]
 
         elif keycode == const.ROTATE_MARKER_COUNTERCLOCKWISE:
             stay_on_scalp = False
-            direction = [0, 0, 0, 0, 0, -1]
+            direction = [0, 0, 0, 0, 0, 1]
                 
         elif keycode in [const.MOVE_MARKER_CLOSER_KEYCODE, const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE]:
             stay_on_scalp = False
