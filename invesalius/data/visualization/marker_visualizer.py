@@ -50,6 +50,8 @@ class MarkerVisualizer:
         # The status of the coil at the target.
         self.is_coil_at_target = False
 
+        self.is_navigating = False
+
         # The assembly for the current vector field, shown relative to the highlighted marker.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
 
@@ -74,6 +76,10 @@ class MarkerVisualizer:
         Publisher.subscribe(self.SetTargetTransparency, 'Set target transparency')
         Publisher.subscribe(self.SetCoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateVectorField, 'Update vector field')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.is_navigating = nav_status
 
     def UpdateVectorField(self):
         """
@@ -180,7 +186,8 @@ class MarkerVisualizer:
         if highlighted:
             self.HighlightMarker(marker)
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def HideMarkers(self, markers):
         for marker in markers:
@@ -202,7 +209,8 @@ class MarkerVisualizer:
             # Hide the actor.
             actor.SetVisibility(0)
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def ShowMarkers(self, markers):
         for marker in markers:
@@ -213,25 +221,29 @@ class MarkerVisualizer:
             # Mark the marker as not hidden.
             visualization['hidden'] = False
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def DeleteMarkers(self, markers):
         for marker in markers:
             actor = marker.visualization["actor"]
             self.renderer.RemoveActor(actor)
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def DeleteMarker(self, marker):
         actor = marker.visualization["actor"]
         self.renderer.RemoveActor(actor)
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def SetNewColor(self, marker, new_color):
         actor = marker.visualization["actor"]
         actor.GetProperty().SetColor([round(s / 255.0, 3) for s in new_color])
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def SetTarget(self, marker):
         """
@@ -265,7 +277,8 @@ class MarkerVisualizer:
         self.renderer.RemoveActor(actor)
         self.renderer.AddActor(new_actor)
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def UnsetTarget(self, marker):
         """
@@ -297,7 +310,8 @@ class MarkerVisualizer:
         self.renderer.RemoveActor(actor)
         self.renderer.AddActor(new_actor)
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def SetCoilAtTarget(self, state):
         """
@@ -324,7 +338,8 @@ class MarkerVisualizer:
 
             actor.GetProperty().SetColor(colour)
 
-        self.interactor.Render()
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def SetTargetTransparency(self, marker, transparent):
         actor = marker.visualization["actor"]

@@ -1283,7 +1283,8 @@ class Viewer(wx.Panel):
             self.pointer_actor.SetPosition(position)
 
             # Update the render window manually, as it is not updated automatically when not navigating.
-            self.UpdateRender()
+            if not self.nav_status:
+                self.UpdateRender()
 
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -2119,7 +2120,8 @@ class Viewer(wx.Panel):
             self.pTarget = self.CenterOfMass()
 
         self.camera_show_object = None
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def UpdateSeedOffset(self, data):
         self.seed_offset = data
@@ -2137,7 +2139,8 @@ class Viewer(wx.Panel):
             if self.mark_actor:
                 self.ren.RemoveActor(self.mark_actor)
                 self.mark_actor = None
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1 ]= self.ObjectArrowLocation(m_img,coord)
@@ -2391,8 +2394,8 @@ class Viewer(wx.Panel):
             #   camera settings will be restored from self.stored_camera_settings, hence we need
             #   to ensure that these settings can be used.)
             self.stored_camera_settings = self.GetCameraSettings()
-
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
         # make camera projection to parallel
         self.ren.GetActiveCamera().ParallelProjectionOn()
@@ -2404,7 +2407,8 @@ class Viewer(wx.Panel):
     def RemoveSurface(self, actor):
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
         # Remove the ruler if visible.
         if self.ruler:
@@ -2412,7 +2416,8 @@ class Viewer(wx.Panel):
 
     def RemoveAllActors(self):
         self.ren.RemoveAllProps()
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def LoadSlicePlane(self):
         self.slice_plane = SlicePlane()
@@ -2439,8 +2444,8 @@ class Viewer(wx.Panel):
         else:
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
-
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
         # make camera projection to parallel
         self.ren.GetActiveCamera().ParallelProjectionOn()
