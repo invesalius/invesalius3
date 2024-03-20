@@ -872,6 +872,10 @@ class Viewer(wx.Panel):
         return self.target_mode
 
     def CreateTargetGuide(self):
+        if self.guide_arrow_actors:
+            for ind in self.guide_arrow_actors:
+                self.target_guide_renderer.RemoveActor(ind)
+
         obj_polydata = vtku.CreateObjectPolyData(self.coil_path)
 
         normals = vtkPolyDataNormals()
