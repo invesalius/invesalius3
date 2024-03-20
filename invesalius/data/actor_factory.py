@@ -184,11 +184,7 @@ class ActorFactory(object):
         size = const.ARROW_MARKER_SIZE
         actor.SetScale(size * length_multiplier, size, size)
 
-        # Adjust the orientation to make the arrow point in the positive y-direction when orientation is zero,
-        # as the default orientation of the arrow is in the positive x-direction.
-        adjusted_orientation = [orientation[0], orientation[1], orientation[2] + 90]
-
-        actor.SetOrientation(adjusted_orientation)
+        actor.SetOrientation(orientation)
         actor.SetPosition(position)
 
         return actor
