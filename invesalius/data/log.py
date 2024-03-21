@@ -2,9 +2,82 @@ import logging
 import logging.config 
 from typing import Callable
 import sys, os
+import wx
 
 import invesalius.constants as const
 import invesalius.session as sess
+
+'''
+class WxLog(logging.Handler):
+   def __init__(self, ctrl):
+      logging.Handler.__init__(self)
+      self.ctrl = ctrl
+   def emit(self, record):
+      self.ctrl.AppendText(self.format(record)+"\n")
+'''
+      
+def getLogger(lname=__name__):
+    logger = logging.getLogger(lname)
+    return logger
+
+def logMessage(level, msg):
+    logger = getLogger()
+
+class CustomConsoleHandler(logging.StreamHandler):
+    def __init__(self, textctrl):
+        logging.StreamHandler.__init__(self)
+        self.textctrl = textctrl
+
+    def emit(self, record):
+        msg = self.format(record)
+        stream = self.stream
+        self.textctrl.WriteText(msg + "\n")
+        self.flush()
+
+class RedirectText(object):
+    def __init__(self, textctrl):
+        self.out = textctrl
+        
+    def write(self, string):
+        self.out.WriteText(string)
+
+class MyPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self.logger = logging.getLogger("wxApp")
+        
+        self.logger.info("Test from MyPanel __init__")
+        
+        logText = wx.TextCtrl(self,
+                              style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+        
+        btn = wx.Button(self, label="Press Me")
+        btn.Bind(wx.EVT_BUTTON, self.onPress)
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
+        sizer.Add(btn, 0, wx.ALL, 5)
+        self.SetSizer(sizer)
+        
+        redir = RedirectText(logText)
+        sys.stdout = redir
+        
+        txtHandler = CustomConsoleHandler(logText)
+        self.logger.addHandler(txtHandler)
+
+    def onPress(self, event):
+        self.logger.info("Informational message")
+    
+class MyFrame(wx.Frame):
+    def __init__(self):
+        wx.Frame.__init__(self, None, title="Log Console")
+        panel = MyPanel(self)
+        self.logger = logging.getLogger("wxApp")
+        self.Show()
+
+def initLogger():
+    #frame = MyFrame()
+    configureLogging()
 
 def configureLogging():
     session = sess.Session()

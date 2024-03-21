@@ -137,7 +137,7 @@ class Frame(wx.Frame):
         self.__bind_events()
         self.__bind_events_wx()
 
-        log.configureLogging()
+        log.initLogger()
 
     def __bind_events(self):
         """
