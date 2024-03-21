@@ -381,11 +381,12 @@ class GradientSlider(wx.Panel):
         )
         self.GetEventHandler().ProcessEvent(evt)
 
+
 class GradientNoSlide(wx.Panel):
     # This widget is formed by a gradient background (black-white)
     # Unlike GradientSlide, here the widget is used as a colorbar to display 
     # the available colors (used in fmri support)
-    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour, colortype=0):
+    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         # minRange: the minimal value
         # maxrange: the maximum value
         # minValue: the least value in the range
@@ -399,7 +400,6 @@ class GradientNoSlide(wx.Panel):
         self.minimun = minValue
         self.maximun = maxValue
         self.selected = 0
-        self.colortype = colortype
 
         self.min_position = 0
         w, h = self.GetSize()        
@@ -424,44 +424,16 @@ class GradientNoSlide(wx.Panel):
         width_transparency = self.max_position - self.min_position
         gc = wx.GraphicsContext.Create(dc)
 
-        points = ((0, PUSH_WIDTH, (255, 255, 255), (255, 255, 255)),
-                  (PUSH_WIDTH, w - PUSH_WIDTH, (255, 255, 255), (255, 255, 255)),
-                  (w - PUSH_WIDTH, w, (255, 255, 255), (255, 255, 255)))
-
-        # Drawing the gradient background
-        for p1, p2, c1, c2 in points:
-            brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
+        lengthcolors = len(self._gradient_colours)
+        for i, c1 in enumerate(self._gradient_colours):
+            p1 = self.min_position + i * width_transparency / lengthcolors
+            p2 = self.min_position + (i + 1) * width_transparency / lengthcolors
+            brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c1)
             gc.SetBrush(brush)
             path = gc.CreatePath()
             path.AddRectangle(p1, 0, p2 - p1, h)
             gc.StrokePath(path)
             gc.FillPath(path)
-
-        # Drawing the transparent coloured overlay
-        if not self.colortype: # Continuous color so linear gradient create    
-            lengthcolors = len(self._gradient_colours)
-            for i, (c1, c2) in enumerate(zip(self._gradient_colours, self._gradient_colours[1:])):
-                p1 = self.min_position + i * width_transparency / lengthcolors
-                p2 = self.min_position + (i + 1) * width_transparency / lengthcolors
-                brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
-                gc.SetBrush(brush)
-                path = gc.CreatePath()
-                path.AddRectangle(p1, 0, p2 - p1, h)
-                gc.StrokePath(path)
-                gc.FillPath(path)
-        else: # Sequential color so bins of colors
-            lengthcolors = len(self._gradient_colours)
-            for i, c1 in enumerate(self._gradient_colours):
-                p1 = self.min_position + i * width_transparency / lengthcolors
-                p2 = self.min_position + (i + 1) * width_transparency / lengthcolors
-                brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c1)
-                gc.SetBrush(brush)
-                path = gc.CreatePath()
-                path.AddRectangle(p1, 0, p2 - p1, h)
-                gc.StrokePath(path)
-                gc.FillPath(path)
-
-
 
     def OnEraseBackGround(self, evt):
         # Only to avoid this widget to flick.
@@ -877,7 +849,7 @@ class GradientCtrl(wx.Panel):
 
 class GradientDisp(wx.Panel):
     # Class for colorbars gradient used in fmri support (showing different colormaps possible)
-    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour, colortype=0):
+    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         super(GradientDisp, self).__init__(parent, id)
         self.min_range = minRange
         self.max_range = maxRange
@@ -885,7 +857,6 @@ class GradientDisp(wx.Panel):
         self.maximun = maxValue
         self.colour = colour
         self.changed = False
-        self.colortype = colortype
         self._draw_controls()
         self._bind_events_wx()
         self.Show()
@@ -898,8 +869,7 @@ class GradientDisp(wx.Panel):
             self.max_range,
             self.minimun,
             self.maximun,
-            self.colour,
-            colortype=self.colortype
+            self.colour
         )
         
         self.gradient_slider.SetGradientColours(self.colour)

@@ -53,6 +53,7 @@ import invesalius.data.tractography as dti
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
+import invesalius.utils as utils
 
 from invesalius import inv_paths
 
@@ -416,13 +417,7 @@ class InnerTaskPanel(wx.Panel):
     def OnLinkFOD(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
         filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import Trekker FOD"))
-        # Juuso
-        # data_dir = os.environ.get('OneDriveConsumer') + '\\data\\dti'
-        # FOD_path = 'sub-P0_dwi_FOD.nii'
-        # Baran
-        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-        # FOD_path = 'Baran_FOD.nii'
-        # filename = os.path.join(data_dir, FOD_path)
+        filename = utils.decode(filename, const.FS_ENCODE)
 
         if not self.affine_vtk:
             slic = sl.Slice()
@@ -486,10 +481,7 @@ class InnerTaskPanel(wx.Panel):
         if self.trekker:
             Publisher.sendMessage('Begin busy cursor')
             filename = dlg.ShowImportOtherFilesDialog(const.ID_NIFTI_IMPORT, msg=_("Import anatomical labels"))
-            # Baran
-            # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
-            # act_path = 'Baran_trekkerACTlabels_inFODspace.nii'
-            # filename = os.path.join(data_dir, act_path)
+            filename = utils.decode(filename, const.FS_ENCODE)
 
             if not self.affine_vtk:
                 slic = sl.Slice()

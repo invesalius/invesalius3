@@ -34,7 +34,8 @@ import invesalius.utils as utl
  
 def GetLocales(): 
     """Return a dictionary which defines supported languages""" 
-    d = utl.TwoWaysDictionary ({'zh_TW': u'中文', 
+    d = utl.TwoWaysDictionary ({'zh_CN': u'简体中文', 
+                                'zh_TW': u'繁体中文', 
                                 'en': u'English', 
                                 'es': u'Español', 
                                 'pt_BR': u'Português (Brasil)', 
