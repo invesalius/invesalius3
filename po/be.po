@@ -964,7 +964,7 @@ msgid "Sorry, you cannot use 'TARGET' ID"
 msgstr "На жаль, вы не можаце выкарыстоўваць «TARGET» ID"
 
 #: dialogs.py:1029
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr "Рэдагаваць ID маркера"
 
 #: dialogs.py:1080
@@ -1684,7 +1684,7 @@ msgid "Move"
 msgstr "Перамясціць"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "Кантраст"
 
 #: frame.py:1525
@@ -2143,10 +2143,6 @@ msgstr "Дадатковыя інструменты"
 #: task_navigator.py:177
 msgid "Deep Brain Stimulation"
 msgstr "Глыбокая стымуляцыя мозгу"
-
-#: task_navigator.py:186
-msgid "Update camera in volume"
-msgstr "Абнавiць камеру ў аб'ёме"
 
 #: task_navigator.py:187
 msgid "Vol. camera"

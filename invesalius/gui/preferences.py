@@ -246,7 +246,7 @@ class ObjectPage(wx.Panel):
         self.obj_fiducials = None
         self.obj_orients = None
         self.obj_ref_mode = None
-        self.obj_name = None
+        self.coil_path = None
         self.__bind_events()
         self.timestamp = const.TIMESTAMP
         self.state = self.LoadConfig()
@@ -276,7 +276,7 @@ class ObjectPage(wx.Panel):
         self.btn_save = btn_save
         
         if self.state:
-            config_txt = wx.StaticText(self, -1, os.path.basename(self.obj_name))
+            config_txt = wx.StaticText(self, -1, os.path.basename(self.coil_path))
         else:
             config_txt = wx.StaticText(self, -1, "None")
 
@@ -376,7 +376,7 @@ class ObjectPage(wx.Panel):
         object_reference_mode = state['object_reference_mode']
         object_name = state['object_name'].encode(const.FS_ENCODE)
 
-        self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = object_fiducials, object_orientations, object_reference_mode, object_name
+        self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.coil_path = object_fiducials, object_orientations, object_reference_mode, object_name
         return True
 
     def OnCreateNewCoil(self, event=None):
@@ -384,28 +384,26 @@ class ObjectPage(wx.Panel):
             dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connector, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    obj_fiducials, obj_orients, obj_ref_mode, obj_name, polydata, use_default_object = dialog.GetValue()
+                    obj_fiducials, obj_orients, obj_ref_mode, coil_path, polydata = dialog.GetValue()
 
                     self.neuronavigation_api.update_coil_mesh(polydata)
 
                     if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         Publisher.sendMessage('Update object registration',
-                                              data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
+                                              data=(obj_fiducials, obj_orients, obj_ref_mode, coil_path))
                         Publisher.sendMessage('Update status text in GUI',
                                               label=_("Ready"))
                         Publisher.sendMessage(
-                            'Configure object',
-                            obj_name=obj_name,
+                            'Configure coil',
+                            coil_path=coil_path,
                             polydata=polydata,
-                            use_default_object=use_default_object,
                         )
 
                         # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
-                        Publisher.sendMessage('Enable track-object checkbox', enabled=True)
-                        Publisher.sendMessage('Check track-object checkbox', checked=True)
-                        Publisher.sendMessage('Check volume camera checkbox', checked=False)
+                        Publisher.sendMessage('Enable track object button', enabled=True)
+                        Publisher.sendMessage('Press track object button', pressed=True)
 
-                        Publisher.sendMessage('Disable target mode')
+                        Publisher.sendMessage('Press target mode button', pressed=False)
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -429,51 +427,41 @@ class ObjectPage(wx.Panel):
                 obj_fiducials = registration_coordinates[:, :3]
                 obj_orients = registration_coordinates[:, 3:]
 
-                obj_name = data[0][1].encode(const.FS_ENCODE)
+                coil_path = data[0][1].encode(const.FS_ENCODE)
                 obj_ref_mode = int(data[0][-1])
 
-                if not os.path.exists(obj_name):
-                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                if not os.path.exists(coil_path):
+                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
-                polydata = vtk_utils.CreateObjectPolyData(obj_name)
+                polydata = vtk_utils.CreateObjectPolyData(coil_path)
                 if polydata:
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
-                    obj_name = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-
-                if os.path.basename(obj_name) == "magstim_fig8_coil.stl":
-                    use_default_object = True
-                else:
-                    use_default_object = False
+                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
                 Publisher.sendMessage('Update object registration',
-                                      data=(obj_fiducials, obj_orients, obj_ref_mode, obj_name))
+                                      data=(obj_fiducials, obj_orients, obj_ref_mode, coil_path))
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Object file successfully loaded"))
                 Publisher.sendMessage(
-                    'Configure object',
-                    obj_name=obj_name,
+                    'Configure coil',
+                    coil_path=coil_path,
                     polydata=polydata,
-                    use_default_object=use_default_object
                 )
 
                 # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
-                Publisher.sendMessage('Enable track-object checkbox', enabled=True)
-                Publisher.sendMessage('Check track-object checkbox', checked=True)
-                Publisher.sendMessage('Check volume camera checkbox', checked=False)
+                Publisher.sendMessage('Enable track object button', enabled=True)
+                Publisher.sendMessage('Press track object button', pressed=True)
+                Publisher.sendMessage('Press target mode button', pressed=False)
 
-                Publisher.sendMessage('Disable target mode')
-                if use_default_object:
-                    msg = _("Default object file successfully loaded")
-                else:
-                    msg = _("Object file successfully loaded")
+                msg = _("Object file successfully loaded")
                 wx.MessageBox(msg, _("InVesalius 3"))
         except:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnSaveCoil(self, evt):
-        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.navigation.GetObjectRegistration()
+        obj_fiducials, obj_orients, obj_ref_mode, coil_path = self.navigation.GetObjectRegistration()
         if np.isnan(obj_fiducials).any() or np.isnan(obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
@@ -482,7 +470,7 @@ class ObjectPage(wx.Panel):
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename="object_registration.obr", save_ext="obr")
             if filename:
-                hdr = 'Object' + "\t" + utils.decode(obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
+                hdr = 'Object' + "\t" + utils.decode(coil_path, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
                 data = np.hstack([obj_fiducials, obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
@@ -640,7 +628,6 @@ class TrackerPage(wx.Panel):
             choice = None
 
         self.tracker.DisconnectTracker()
-        self.robot.DisconnectRobot()
         self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice)
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
@@ -669,7 +656,6 @@ class TrackerPage(wx.Panel):
     
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None:
-            self.robot.DisconnectRobot()
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)

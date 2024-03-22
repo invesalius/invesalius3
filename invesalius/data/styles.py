@@ -472,9 +472,33 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             self.OnScrollBackward(obj, evt)
 
 
+class NavigationInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style used for slice viewers during navigation mode:
+
+    Displays the cross that shows the selected point, but does not allow the user to move it manually
+    by clicking and dragging the mouse.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+        self.viewer = viewer
+
+    def SetUp(self):
+        self.viewer.set_cross_visibility(1)
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        self.viewer.set_cross_visibility(0)
+        Publisher.sendMessage('Toggle toolbar item',
+                              _id=self.state_code, value=False)
+
+
 class CrossInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for the Cross.
+    Interactor style used for slice visualization when the 'cross' icon has been selected from the toolbar.
+
+    The style displays the cross in each slice and allows the user to move the cross in the slices by clicking and dragging the mouse.
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
@@ -516,8 +540,14 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         self.viewer.UpdateSlicesPosition([x, y, z])
-        # This "Set cross" message is needed to update the cross in the other slices
+
+        # Update the position of the cross in other slices.
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
+
+        # Update the pointer in the volume viewer.
+        #
+        # We are moving from slice coordinates to volume coordinates, so we need to invert the y coordinate.
+        Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z])
         Publisher.sendMessage('Update slice viewer')
 
     def OnScrollBar(self, *args, **kwargs):
@@ -525,6 +555,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # the actual orientation.
         x, y, z = self.viewer.cross.GetFocalPoint()
         self.viewer.UpdateSlicesPosition([x, y, z])
+        # This "Set cross" message is needed to update the cross in the other slices
         Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
         Publisher.sendMessage('Update slice viewer')
 
@@ -2872,11 +2903,15 @@ class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        # Use the same style during registration that is used when enabling cross mode on the toolbar;
+        # that is, allow selecting point from the slices using the mouse.
+        const.STATE_REGISTRATION: CrossInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
+        const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,
