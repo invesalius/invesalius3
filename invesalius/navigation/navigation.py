@@ -36,6 +36,7 @@ import invesalius.data.e_field as e_field
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.session as ses
+from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -92,7 +93,6 @@ class UpdateNavigationScene(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
 
     def run(self):
-        # count = 0
         while not self.event.is_set():
             got_coords = False
             object_visible_flag = False
@@ -100,7 +100,6 @@ class UpdateNavigationScene(threading.Thread):
                 coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
                 object_visible_flag = markers_flag[2]
-
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -114,14 +113,18 @@ class UpdateNavigationScene(threading.Thread):
                 if self.serial_port_enabled:
                     trigger_on = self.serial_port_queue.get_nowait()
                     if trigger_on:
-                        wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                        wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)
                     self.serial_port_queue.task_done()
 
-                #TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
+                # TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
                 # see the red cross in the position of the offset marker
+
+                # Update the slice viewers to show the current position of the tracked object.
                 wx.CallAfter(Publisher.sendMessage, 'Update slices position', position=coord[:3])
+
+                # Update the cross position to the current position of the tracked object, so that, e.g., when a
+                # new marker is created, it is created in the current position of the object.
                 wx.CallAfter(Publisher.sendMessage, 'Set cross focal point', position=coord)
-                wx.CallAfter(Publisher.sendMessage, 'Sensor ID', markers_flag=markers_flag)
 
                 if self.e_field_loaded and object_visible_flag:
                     wx.CallAfter(Publisher.sendMessage, 'Update point location for e-field calculation', m_img=m_img,
@@ -134,14 +137,15 @@ class UpdateNavigationScene(threading.Thread):
                             self.e_field_norms_queue.task_done()
 
                 if view_obj:
-                    wx.CallAfter(Publisher.sendMessage, 'Update object matrix', m_img=m_img, coord=coord)
+                    wx.CallAfter(Publisher.sendMessage, 'Update coil pose', m_img=m_img, coord=coord)
                     wx.CallAfter(Publisher.sendMessage, 'Update object arrow matrix', m_img=m_img, coord=coord, flag= self.peel_loaded)
 
+                # Render the volume viewer and the slice viewers.
                 wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
                 wx.CallAfter(Publisher.sendMessage, 'Update slice viewer')
+
                 self.coord_queue.task_done()
-                # print('UpdateScene: done {}'.format(count))
-                # count += 1
+
             except queue.Empty:
                 if got_coords:
                     self.coord_queue.task_done()

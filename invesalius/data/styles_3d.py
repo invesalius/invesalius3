@@ -69,9 +69,11 @@ class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
 
 class DefaultInteractorStyle(Base3DInteractorStyle):
     """
-    Interactor style responsible for Default functionalities:
-    * Zoom moving mouse with right button pressed;
-    * Change the slices with the scroll.
+    Interactor style responsible for navigating 3d volume viewer using three mouse buttons:
+
+    * Rotate by moving mouse with left button pressed.
+    * Pan by moving mouse with middle button pressed.
+    * Zoom by moving mouse with right button pressed.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -79,12 +81,17 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
         self.viewer = viewer
 
-        # Zoom using right button
-        self.AddObserver("LeftButtonPressEvent",self.OnRotateLeftClick)
-        self.AddObserver("LeftButtonReleaseEvent",self.OnRotateLeftRelease)
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        self.viewer.interactor.SetPicker(self.picker)
 
-        self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-        self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
+        # Rotate using left button
+        self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
+        self.AddObserver("LeftButtonReleaseEvent",self.OnLeftRelease)
+
+        # Zoom using right button
+        self.AddObserver("RightButtonPressEvent",self.OnRightClick)
+        self.AddObserver("RightButtonReleaseEvent",self.OnRightRelease)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
@@ -108,17 +115,40 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
             evt.Pan()
             evt.OnMiddleButtonDown()
 
-    def OnRotateLeftClick(self, evt, obj):
+    def OnLeftClick(self, evt, obj):
         evt.StartRotate()
 
-    def OnRotateLeftRelease(self, evt, obj):
+    def OnLeftRelease(self, evt, obj):
         evt.OnLeftButtonUp()
         evt.EndRotate()
 
-    def OnZoomRightClick(self, evt, obj):
+    def OnRightClick(self, evt, obj):
+        # Pick the actor under the mouse cursor and send it to marker selection.
+        x, y = self.viewer.get_vtk_mouse_position()
+
+        # Get the scalp surface actor to check if it is visible.
+        scalp_surface = self.viewer.surface_geometry.GetScalpSurface()
+        scalp_actor = scalp_surface['actor']
+
+        is_scalp_visible = scalp_actor.GetVisibility()
+
+        # If scalp is visible, hide it to allow the picker to markers on the brain surface.
+        if is_scalp_visible:
+            scalp_actor.SetVisibility(False)
+
+        # Get the actor under the mouse cursor.
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+
+        # Show the scalp again if it was visible before.
+        if is_scalp_visible:
+            scalp_actor.SetVisibility(True)
+
+        actor = self.picker.GetActor()
+        Publisher.sendMessage('Select marker by actor', actor=actor)
+
         evt.StartDolly()
 
-    def OnZoomRightRelease(self, evt, obj):
+    def OnRightRelease(self, evt, obj):
         evt.OnRightButtonUp()
         evt.EndDolly()
 
@@ -131,8 +161,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for zoom with movement of the mouse and the
-    left mouse button clicked.
+    Interactor style responsible for zooming by clicking left mouse button and moving the mouse.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -173,7 +202,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
 
 class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
-    Interactor style responsible for zoom by selecting a region.
+    Interactor style responsible for zooming by selecting a region.
     """
     def __init__(self, viewer):
         self.viewer = viewer
@@ -199,7 +228,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for translate the camera.
+    Interactor style responsible for translating the camera by clicking left mouse button and moving the mouse.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -240,7 +269,7 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
 
 class SpinInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for spin the camera.
+    Interactor style responsible for spinning the camera by clicking left mouse button and moving the mouse.
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
@@ -323,7 +352,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
 class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for insert linear measurements.
+    Interactor style responsible for linear measurements by clicking consecutive points in the volume viewer.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -364,7 +393,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for insert linear measurements.
+    Interactor style responsible for angular measurements by clicking consecutive points in the volume viewer.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -403,7 +432,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
 
 class SeedInteractorStyle(DefaultInteractorStyle):
     """
-    Interactor style responsible for select sub surfaces.
+    Interactor style responsible for selecting sub-surfaces.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -425,33 +454,113 @@ class SeedInteractorStyle(DefaultInteractorStyle):
 
 
 class CrossInteractorStyle(DefaultInteractorStyle):
+    """
+    This interactor style is used when the user enables the cross mode from the toolbar.
+
+    When the user clicks on the volume viewer, it picks the position shown in the volume viewer
+    in the location of the mouse click. The picked position is then used to update the position
+    of the slices and the cross pointer.
+    """
     def __init__(self, viewer):
         super().__init__(viewer)
 
-        self.state_code = const.SLICE_STATE_CROSS
         self.picker = vtkCellPicker()
         self.picker.SetTolerance(1e-3)
-        # self.picker.SetUseCells(True)
         self.viewer.interactor.SetPicker(self.picker)
-        self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
+
+        self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
 
     def SetUp(self):
-        self.viewer.check_ball_reference()
+        self.viewer.CreatePointer()
 
     def CleanUp(self):
-        self.viewer.uncheck_ball_reference()
+        self.viewer.DeletePointer()
+
+    def OnCrossMouseClick(self, obj, evt):
+        x, y = self.viewer.get_vtk_mouse_position()
+
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+
+        x, y, z = self.picker.GetPickPosition()
+
+        if self.picker.GetActor():
+            Publisher.sendMessage('Update slices position', position=[x, -y, z])
+            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
+
+            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Render volume viewer')
+
+
+class RegistrationInteractorStyle(DefaultInteractorStyle):
+    """
+    This interactor style is used during registration.
+
+    When performing registration, the user can click on the volume viewer to select points for
+    registration (i.e., left ear, right ear, and nasion).
+ 
+    Similar to CrossInteractorStyle, but does not hide the scalp, so that the picker can pick from
+    the scalp surface, which is needed for registration.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(1e-3)
+        self.viewer.interactor.SetPicker(self.picker)
+
+        self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
+
+    def SetUp(self):
+        self.viewer.CreatePointer()
+
+    def CleanUp(self):
+        self.viewer.DeletePointer()
 
     def OnCrossMouseClick(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.picker.GetPickPosition()
+
         if self.picker.GetActor():
-            self.viewer.set_camera_position=False
             Publisher.sendMessage('Update slices position', position=[x, -y, z])
             Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
+            Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
+
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
-            self.viewer.set_camera_position=True
+
+
+
+class NavigationInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style used for 3d volume viewer during navigation mode. The functions are the same as
+    in the default interactor style: rotating, panning, and zooming.
+    """
+    def __init__(self, viewer):
+        super().__init__(viewer)
+
+    def OnMouseMove(self, evt, obj):
+        # Do not allow to rotate, pan or zoom if the target mode is active.
+        if self.viewer.IsTargetMode():
+            return
+
+        super().OnMouseMove(evt, obj)
+
+    def OnScrollForward(self, evt, obj):
+        # Do not allow to scroll forward with the mouse wheel if the target mode is active.
+        if self.viewer.IsTargetMode():
+            return
+
+        super().OnScrollForward(evt, obj)
+
+    def OnScrollBackward(self, evt, obj):
+        # Do not allow to scroll backward with the mouse wheel if the target mode is active.
+        if self.viewer.IsTargetMode():
+            return
+
+        super().OnScrollBackward(evt, obj)
+
 
 class Styles:
     styles = {
@@ -465,6 +574,8 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        const.STATE_NAVIGATION: NavigationInteractorStyle,
+        const.STATE_REGISTRATION: RegistrationInteractorStyle,
     }
 
     @classmethod
