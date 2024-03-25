@@ -966,7 +966,7 @@ msgid "Sorry, you cannot use 'TARGET' ID"
 msgstr ""
 
 #: dialogs.py:1029
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr "Upravit ID značky"
 
 #: dialogs.py:1080
@@ -1686,7 +1686,7 @@ msgid "Move"
 msgstr "Pohybovat"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "Kontrast"
 
 #: frame.py:1525
@@ -2145,10 +2145,6 @@ msgstr "Další nástroje"
 #: task_navigator.py:177
 msgid "Deep Brain Stimulation"
 msgstr ""
-
-#: task_navigator.py:186
-msgid "Update camera in volume"
-msgstr "Obnovit kameru v objemu"
 
 #: task_navigator.py:187
 msgid "Vol. camera"

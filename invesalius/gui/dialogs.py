@@ -1056,7 +1056,7 @@ def ReportICPDistributionError():
     dlg.Destroy()
 
 def ShowEnterMarkerID(default):
-    msg = _("Edit marker ID")
+    msg = _("Change label")
     if sys.platform == 'darwin':
         dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
     else:
@@ -3443,9 +3443,8 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = tracker.GetTrackerId()
         self.obj_ref_id = 2
-        self.obj_name = None
+        self.coil_path = None
         self.polydata = None
-        self.use_default_object = False
         self.object_fiducial_being_set = None
 
         self.obj_fiducials = np.full([4, 3], np.nan)
@@ -3601,9 +3600,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def ConfigureObject(self):
-        use_default_object = self.ObjectImportDialog()
+        use_default_coil = self.ObjectImportDialog()
 
-        if use_default_object:
+        if use_default_coil:
             path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
         else:
@@ -3622,8 +3621,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         if _has_win32api:
             path = win32api.GetShortPathName(path)
 
-        self.obj_name = path.encode(const.FS_ENCODE)
-        self.use_default_object = use_default_object
+        self.coil_path = path.encode(const.FS_ENCODE)
 
         return True
 
@@ -3631,9 +3629,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         success = self.ConfigureObject()
         if success:
             # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
-            #   only where it is needed, and mostly remain as a string in self.obj_name and elsewhere.
+            #   only where it is needed, and mostly remain as a string in self.coil_path and elsewhere.
             #
-            object_path = self.obj_name.decode(const.FS_ENCODE)
+            object_path = self.coil_path.decode(const.FS_ENCODE)
             self.polydata = pu.LoadPolydata(
                 path=object_path
             )
@@ -3770,7 +3768,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ref_id = 0
 
     def GetValue(self):
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name, self.polydata, self.use_default_object
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.coil_path, self.polydata
 
 class ICPCorregistrationDialog(wx.Dialog):
 
@@ -4334,7 +4332,7 @@ class EfieldConfiguration(wx.Dialog):
          Publisher.sendMessage('Import bin file', filename=filename)
 
 
-class SetCoilOrientationDialog(wx.Dialog):
+class CreateBrainTargetDialog(wx.Dialog):
 
     def __init__(self, marker, mTMS=None, brain_target=False, brain_actor=None):
         import invesalius.project as prj
@@ -4352,7 +4350,7 @@ class SetCoilOrientationDialog(wx.Dialog):
         self.center_brain_target_actor = None
         self.marker_actor = None
         self.dummy_coil_actor = None
-        self.m_img_vtk = None
+        self.m_target = None
 
         self.spinning = False
         self.rotationX = 0
@@ -4790,7 +4788,7 @@ class SetCoilOrientationDialog(wx.Dialog):
             circle_actor.SetMapper(mapper)
             circle_actor.PickableOff()
             circle_actor.GetProperty().SetColor(colors.GetColor3d('Red'))
-            circle_actor.SetUserMatrix(self.m_img_vtk)
+            circle_actor.SetUserMatrix(self.m_target)
             self.ren.AddActor(circle_actor)
             self.marker_actor.PickableOff()
         else:
@@ -4818,7 +4816,6 @@ class SetCoilOrientationDialog(wx.Dialog):
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
         self.ren.ResetCamera()
-        self.SetVolumeCamera(coord_flip[:3])
         self.interactor.Render()
 
         return obj_actor
@@ -4839,11 +4836,11 @@ class SetCoilOrientationDialog(wx.Dialog):
             rx, ry, rz = self.GetEulerAnglesFromVectors([1, 0, 0], coord)
             ry += 90
             m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=True)
-            self.m_img_vtk = m_img_vtk
+            self.m_target = m_img_vtk
         else:
             m_img_vtk, rx, ry, rz = self.CreateVTKObjectMatrix(coord_flip[:3], [rx, ry, rz], new_target=False)
-            if not self.m_img_vtk:
-                self.m_img_vtk = m_img_vtk
+            if not self.m_target:
+                self.m_target = m_img_vtk
 
         coordinate = coord_flip[0], coord_flip[1], coord_flip[2], rx, ry, rz
         marker_actor = self.CreateActorArrow(m_img_vtk, colour=colour)
@@ -5206,29 +5203,6 @@ class SetCoilOrientationDialog(wx.Dialog):
 
         return m_img_vtk_rotate, rx, ry, rz
 
-    def SetVolumeCamera(self, cam_focus):
-        cam = self.ren.GetActiveCamera()
-
-        if self.initial_focus is None:
-            self.initial_focus = np.array(cam.GetFocalPoint())
-
-        cam_pos0 = np.array(cam.GetPosition())
-        cam_focus0 = np.array(cam.GetFocalPoint())
-        v0 = cam_pos0 - cam_focus0
-        v0n = np.sqrt(inner1d(v0, v0))
-
-        v1 = cam_focus - self.initial_focus
-
-        v1n = np.sqrt(inner1d(v1, v1))
-        if not v1n:
-            v1n = 1.0
-        cam_pos = (v1/v1n)*v0n + cam_focus
-
-        cam.SetFocalPoint(cam_focus)
-        cam.SetPosition(cam_pos)
-
-        self.ren.GetActiveCamera().Zoom(3)
-
     def GetRotationMatrix(self, v1_start, v2_start, v1_target, v2_target):
         """
         based on https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
@@ -5543,7 +5517,7 @@ class GoToDialogScannerCoord(wx.Dialog):
             Publisher.sendMessage('Update status text in GUI', label=_("Calculating the transformation ..."))
 
             Publisher.sendMessage('Set Update cross pos')
-            Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
+            Publisher.sendMessage("Toggle toolbar button", id=const.SLICE_STATE_CROSS)
 
             Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         except ValueError:

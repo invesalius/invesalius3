@@ -19,6 +19,7 @@
 
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug
+from invesalius.data.markers.marker import MarkerType
 
 import wx
 
@@ -40,7 +41,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     The owner of the connection object can update the state of InVesalius by implementing
     functions to set callbacks, used then to communicate the new state to InVesalius (see,
-    e.g., set_callback__set_markers below).
+    e.g., one of the callback functions below).
 
     If connection object is not given or it is None, do not do the updates.
     """
@@ -64,13 +65,13 @@ class NeuronavigationApi(metaclass=Singleton):
         assert self._hasmethod(connection, 'update_coil_at_target')
         assert self._hasmethod(connection, 'update_coil_pose')
         assert self._hasmethod(connection, 'update_focus')
-        assert self._hasmethod(connection, 'set_callback__set_markers')
         assert self._hasmethod(connection, 'set_callback__stimulation_pulse_received')
+        assert self._hasmethod(connection, 'set_callback__set_vector_field')
 
     def __bind_events(self):
         Publisher.subscribe(self.start_navigation, 'Start navigation')
         Publisher.subscribe(self.stop_navigation, 'Stop navigation')
-        Publisher.subscribe(self.update_target_mode, 'Target navigation mode')
+        Publisher.subscribe(self.update_target_mode, 'Set target mode')
         Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
         #Publisher.subscribe(self.update_focus, 'Set cross focal point')
         Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
@@ -89,10 +90,10 @@ class NeuronavigationApi(metaclass=Singleton):
                 started=False,
             )
 
-    def update_target_mode(self, target_mode):
+    def update_target_mode(self, enabled):
         if self.connection is not None:
             self.connection.update_target_mode(
-                enabled=target_mode,
+                enabled=enabled,
             )
 
     def update_target_orientation(self, target_id, orientation):
@@ -228,9 +229,9 @@ class NeuronavigationApi(metaclass=Singleton):
     # Functions for InVesalius to receive updates via callbacks.
 
     def __set_callbacks(self, connection):
-        connection.set_callback__set_markers(self.set_markers)
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
         connection.set_callback__stimulation_pulse_received(self.stimulation_pulse_received)
+        connection.set_callback__set_vector_field(self.set_vector_field)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
         if self.connection is not None:
@@ -247,9 +248,9 @@ class NeuronavigationApi(metaclass=Singleton):
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
 
-    def set_markers(self, markers):
-        wx.CallAfter(Publisher.sendMessage, 'Set markers', markers=markers)
-
     def stimulation_pulse_received(self):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
-        wx.CallAfter(Publisher.sendMessage, 'Create marker')
+        wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)
+
+    def set_vector_field(self, vector_field):
+        wx.CallAfter(Publisher.sendMessage, 'Set vector field', vector_field=vector_field)

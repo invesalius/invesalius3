@@ -22,6 +22,7 @@ import numpy as np
 import invesalius.session as ses
 import invesalius.project as prj
 import invesalius.constants as const
+from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 
 
@@ -102,8 +103,16 @@ class Image:
 
         Publisher.sendMessage('Delete fiducial marker', label=label)
         if not np.isnan(position_np).any():
-            Publisher.sendMessage('Create marker', position=position, orientation=orientation, colour=colour, size=size,
-                                  label=label, seed=seed)
+            marker_type = MarkerType.FIDUCIAL
+            Publisher.sendMessage('Create marker',
+                marker_type=marker_type,
+                position=position,
+                orientation=orientation,
+                colour=colour,
+                size=size,
+                label=label,
+                seed=seed
+            )
 
     def UpdateFiducialMarkers(self):
         for fiducial in const.IMAGE_FIDUCIALS:

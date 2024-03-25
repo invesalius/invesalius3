@@ -488,5 +488,11 @@ class Mask():
             del self.matrix
         except AttributeError:
             pass
-        os.close(self.temp_fd)
+
+        # Used for masks not loaded from plist project.
+        try:
+            os.close(self.temp_fd)
+        except AttributeError:
+            pass
+
         os.remove(self.temp_file)

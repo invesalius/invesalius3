@@ -964,7 +964,7 @@ msgid "Sorry, you cannot use 'TARGET' ID"
 msgstr "죄송합니다, 'TARGET' ID를 이용할 수 없습니다"
 
 #: dialogs.py:1029
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr "마커 ID 편집"
 
 #: dialogs.py:1080
@@ -1684,7 +1684,7 @@ msgid "Move"
 msgstr "이동"
 
 #: frame.py:1506
-msgid "Constrast"
+msgid "Contrast"
 msgstr "대조"
 
 #: frame.py:1525
@@ -2144,9 +2144,6 @@ msgstr ""
 msgid "Deep Brain Stimulation"
 msgstr "뇌 심부 자극"
 
-#: task_navigator.py:186
-msgid "Update camera in volume"
-msgstr ""
 
 #: task_navigator.py:187
 msgid "Vol. camera"

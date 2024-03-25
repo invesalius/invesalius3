@@ -83,13 +83,6 @@ class IterativeClosestPoint(metaclass=Singleton):
 
         # TODO: checkbox in the dialog to transfer the icp points to 3D viewer
 
-        #create markers
-        # for i in range(len(point_coord)):
-        #     img_coord = point_coord[i][0],-point_coord[i][1],point_coord[i][2], 0, 0, 0
-        #     transf_coord = transformed_points[i][0],-transformed_points[i][1],transformed_points[i][2], 0, 0, 0
-        #     Publisher.sendMessage('Create marker', coord=img_coord, marker_id=None, colour=(1,0,0))
-        #     Publisher.sendMessage('Create marker', coord=transf_coord, marker_id=None, colour=(0,0,1))
-
         self.use_icp = True
         dlg.ReportICPerror(prev_error, final_error)
 

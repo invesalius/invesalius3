@@ -416,15 +416,6 @@ class VolumeToolPanel(wx.Panel):
                                  'Change volume viewer gui colour')
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
-        '''
-        Publisher.subscribe(self.ShowTargetButton, 'Show target button')
-        Publisher.subscribe(self.HideTargetButton, 'Hide target button')
-        Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
-
-        # Conditions for enabling target button:
-        Publisher.subscribe(self.TargetSelected, 'Target selected')
-        Publisher.subscribe(self.TrackObject, 'Track object')
-        '''
 
 
     def DisablePreset(self):
@@ -452,50 +443,6 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
-    '''
-    def ShowCoilChecked(self, checked):
-        self.show_coil_checked = checked
-        self.UpdateTargetButton()
-
-    def TargetSelected(self, status):
-        self.target_selected = status
-        self.UpdateTargetButton()
-
-    def TrackObject(self, enabled):
-        self.track_obj = enabled
-        self.UpdateTargetButton()
-
-    def ShowTargetButton(self):
-        self.button_target.Show()
-
-    def HideTargetButton(self):
-        self.button_target.Hide()
-
-    def DisableTargetMode(self):
-        self.OnButtonTarget(False)
-        self.button_target._SetState(0)
-
-    def UpdateTargetButton(self):
-        if self.target_selected and self.track_obj:
-            self.button_target.Enable(1)
-        else:
-            self.DisableTargetMode()
-            self.button_target.Enable(0)
-
-    def OnButtonTarget(self, evt):
-        if not self.button_target.IsPressed() and evt is not False:
-            self.button_target._pressed = True
-            Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Check volume camera checkbox', checked=False)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=False)
-
-        elif self.button_target.IsPressed() or evt is False:
-            self.button_target._pressed = False
-            Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
-            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
-    '''
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
         if d.ShowModal() == wx.ID_OK:
