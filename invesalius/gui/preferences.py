@@ -32,14 +32,6 @@ class Preferences(wx.Dialog):
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
     ):
         super().__init__(parent, id_, title, style=style)
-        tracker = Tracker()
-        robot = Robot()
-        neuronavigation_api = NeuronavigationApi()
-        pedal_connector = PedalConnector(neuronavigation_api, self)
-        navigation = Navigation(
-            pedal_connector=pedal_connector,
-            neuronavigation_api=neuronavigation_api,
-        )
 
         self.book = wx.Notebook(self, -1)
 
@@ -50,6 +42,14 @@ class Preferences(wx.Dialog):
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
+            tracker = Tracker()
+            robot = Robot()
+            neuronavigation_api = NeuronavigationApi()
+            pedal_connector = PedalConnector(neuronavigation_api, self)
+            navigation = Navigation(
+                pedal_connector=pedal_connector,
+                neuronavigation_api=neuronavigation_api,
+            )
             self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
             self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
