@@ -33,14 +33,6 @@ class Preferences(wx.Dialog):
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
     ):
         super().__init__(parent, id_, title, style=style)
-        tracker = Tracker()
-        robot = Robot()
-        neuronavigation_api = NeuronavigationApi()
-        pedal_connector = PedalConnector(neuronavigation_api, self)
-        navigation = Navigation(
-            pedal_connector=pedal_connector,
-            neuronavigation_api=neuronavigation_api,
-        )
 
         self.book = wx.Notebook(self, -1)
 
@@ -52,6 +44,14 @@ class Preferences(wx.Dialog):
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
+            tracker = Tracker()
+            robot = Robot()
+            neuronavigation_api = NeuronavigationApi()
+            pedal_connector = PedalConnector(neuronavigation_api, self)
+            navigation = Navigation(
+                pedal_connector=pedal_connector,
+                neuronavigation_api=neuronavigation_api,
+            )
             self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
             self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
@@ -692,7 +692,7 @@ class TrackerPage(wx.Panel):
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose or type the robot IP"))
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
