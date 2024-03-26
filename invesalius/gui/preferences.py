@@ -538,7 +538,7 @@ class TrackerPage(wx.Panel):
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose or type the robot IP"))
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
