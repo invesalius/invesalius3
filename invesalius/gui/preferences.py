@@ -6,7 +6,8 @@ import nibabel as nb
 import numpy as np
 import invesalius.constants as const
 import invesalius.session as ses
-import invesalius.gui.dialogs as dlg
+import invesalius.data.log as log
+import invesalius.gui.dialogs as dlg0
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius import inv_paths
 
@@ -37,6 +38,7 @@ class Preferences(wx.Dialog):
 
         self.pnl_viewer3d = Viewer3D(self.book)
         self.pnl_language = Language(self.book)
+        self.pnl_logging = Logging(self.book)
 
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
@@ -56,7 +58,9 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.pnl_navigation, _("Navigation"))
             self.book.AddPage(self.pnl_tracker, _("Tracker"))
             self.book.AddPage(self.pnl_object, _("Stimulator"))
+
         self.book.AddPage(self.pnl_language, _("Language"))
+        self.book.AddPage(self.pnl_logging, _("Logging"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -78,9 +82,13 @@ class Preferences(wx.Dialog):
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
+        logging = self.pnl_logging.GetSelection()
+
         values.update(lang)
         values.update(viewer)
+        values.update(logging)
 
+        log.configureLogging()
         return values
 
     def LoadPreferences(self):
@@ -90,7 +98,14 @@ class Preferences(wx.Dialog):
         surface_interpolation = session.GetConfig('surface_interpolation')
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
-        session = ses.Session()
+        file_logging = session.GetConfig('file_logging')
+        file_logging_level = session.GetConfig('file_logging_level')
+        append_log_file = session.GetConfig('append_log_file')
+        logging_file  = session.GetConfig('logging_file')
+        console_logging = session.GetConfig('console_logging')
+        console_logging_level = session.GetConfig('console_logging_level')
+
+        #session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
             self.pnl_object.LoadConfig()
@@ -100,10 +115,17 @@ class Preferences(wx.Dialog):
             const.SURFACE_INTERPOLATION: surface_interpolation,
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
+            const.FILE_LOGGING: file_logging,
+            const.FILE_LOGGING_LEVEL: file_logging_level,
+            const.APPEND_LOG_FILE: append_log_file,           
+            const.LOGFILE: logging_file,
+            const.CONSOLE_LOGGING: console_logging,
+            const.CONSOLE_LOGGING_LEVEL: console_logging_level,
         }
 
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
+        self.pnl_logging.LoadSelection(values)
 
 class Viewer3D(wx.Panel):
     def __init__(self, parent):
@@ -162,7 +184,6 @@ class Viewer3D(wx.Panel):
             const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
             const.SLICE_INTERPOLATION: self.rb_inter_sl.GetSelection()
         }
-
         return options
 
     def LoadSelection(self, values):
@@ -173,6 +194,139 @@ class Viewer3D(wx.Panel):
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
+
+class Logging(wx.Panel):
+
+    def __init__(self, parent):
+
+        wx.Panel.__init__(self, parent)
+        
+        bsizer_file_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _(" File Logging "))
+        #lbl_do_file_logging = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Do "))
+        #bsizer_file_logging.Add(lbl_do_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        rb_file_logging = self.rb_file_logging = wx.RadioBox(
+            bsizer_file_logging.GetStaticBox(),
+            -1,
+            choices=["No", "Yes"],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+        )
+        bsizer_file_logging.Add(rb_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        lbl_file_logging_level = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Logging Level "))
+        #bsizer_logging_level = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging level"))
+        cb_file_logging_level = self.cb_file_logging_level = wx.Choice(
+            bsizer_file_logging.GetStaticBox(),
+            -1,
+            choices=const.LOGGING_LEVEL_TYPES, 
+        ) 
+        bsizer_file_logging.Add(lbl_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(cb_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        lbl_append_log_file = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Append File "))
+        #bsizer_append_log_file = wx.StaticBoxSizer(wx.VERTICAL, self, _("Append Log file"))
+        rb_append_file = self.rb_append_file = wx.RadioBox(
+            bsizer_file_logging.GetStaticBox(),
+            -1,
+            choices=["No", "Yes"],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+        )
+        bsizer_file_logging.Add(lbl_append_log_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        lbl_log_file_label = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _("Current file:"))
+        tc_log_file_name = self.tc_log_file_name = wx.TextCtrl(
+            bsizer_file_logging.GetStaticBox(), -1, "", 
+            style = wx.TE_READONLY | wx.TE_LEFT | wx.TE_MULTILINE , 
+            size=(300, -1))
+        tc_log_file_name.SetForegroundColour(wx.RED)
+        bt_log_file_select = wx.Button(bsizer_file_logging.GetStaticBox(), label="Modify")
+        bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
+        bsizer_file_logging.Add(lbl_log_file_label, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(tc_log_file_name, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        bsizer_console_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _(" Console Logging "))
+        rb_console_logging = self.rb_console_logging = wx.RadioBox(
+            bsizer_console_logging.GetStaticBox(),
+            -1,
+            choices=["No", "Yes"],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+        )
+        bsizer_console_logging.Add(rb_console_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        lbl_console_logging_level = wx.StaticText(bsizer_console_logging.GetStaticBox(), -1, _(" Logging Level "))
+        cb_console_logging_level = self.cb_console_logging_level = wx.Choice(
+            bsizer_console_logging.GetStaticBox(),
+            -1,
+            choices=const.LOGGING_LEVEL_TYPES, 
+        ) 
+        bsizer_console_logging.Add(lbl_console_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_console_logging.Add(cb_console_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        border = wx.BoxSizer(wx.VERTICAL)
+        border.Add(bsizer_file_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer_console_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+
+        self.SetSizerAndFit(border)
+        self.Layout()
+
+    @log.function_call_tracking_decorator
+    def OnModifyButton(self,e):
+        logging_file = self.tc_log_file_name.GetValue()
+        path, fname = os.path.split(logging_file)
+        dlg = wx.FileDialog(self, message = "Save Log Contents",
+            defaultDir = path, #os.getcwd(),
+            defaultFile = fname, #default_file,
+            wildcard = "Log files (*.log)|*.log",
+            style = wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            dlg.Destroy()
+            return False
+
+        file_path = dlg.GetPath()
+        self.tc_log_file_name.SetValue(file_path)
+        dlg.Destroy()
+        return True
+
+    def GetSelection(self):
+        options = {
+            const.FILE_LOGGING: self.rb_file_logging.GetSelection(),
+            const.FILE_LOGGING_LEVEL: self.cb_file_logging_level.GetSelection(),
+            const.APPEND_LOG_FILE: self.rb_append_file.GetSelection(),
+            const.LOGFILE: self.tc_log_file_name.GetValue(),
+            const.CONSOLE_LOGGING: self.rb_console_logging.GetSelection(),
+            const.CONSOLE_LOGGING_LEVEL: self.cb_console_logging_level.GetSelection(),
+        }
+        session = ses.Session()
+        file_logging = self.rb_file_logging.GetSelection()
+        session.SetConfig('file_logging', file_logging)
+        file_logging_level = self.cb_file_logging_level.GetSelection()
+        session.SetConfig('file_logging_level', file_logging_level)
+        append_log_file = self.rb_append_file.GetSelection()
+        session.SetConfig('append_log_file', append_log_file)
+        logging_file  = self.tc_log_file_name.GetValue()
+        session.SetConfig('logging_file', logging_file)
+        console_logging = self.rb_console_logging.GetSelection()
+        session.SetConfig('console_logging', console_logging)
+        console_logging_level = self.cb_console_logging_level.GetSelection()
+        session.SetConfig('console_logging_level', console_logging_level)
+        log.configureLogging()
+        return options
+
+    def LoadSelection(self, values):
+        file_logging = values[const.FILE_LOGGING]
+        file_logging_level = values[const.FILE_LOGGING_LEVEL]
+        append_log_file = values[const.APPEND_LOG_FILE]
+        logging_file = values[const.LOGFILE]
+        console_logging = values[const.CONSOLE_LOGGING]
+        console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
+       
+        self.rb_file_logging.SetSelection(int(file_logging))
+        self.cb_file_logging_level.SetSelection(int(file_logging_level))
+        self.rb_append_file.SetSelection(int(append_log_file))
+        self.tc_log_file_name.SetValue(logging_file)
+        self.rb_console_logging.SetSelection(int(console_logging))
+        self.cb_console_logging_level.SetSelection(int(console_logging_level))
 
 class NavigationPage(wx.Panel):
     def __init__(self, parent, navigation):
