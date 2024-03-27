@@ -26,6 +26,8 @@ def logMessage(level, msg):
 class CustomConsoleHandler(logging.StreamHandler):
     def __init__(self, textctrl):
         logging.StreamHandler.__init__(self)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.setFormatter(formatter)
         self.textctrl = textctrl
 
     def emit(self, record):
@@ -44,14 +46,14 @@ class RedirectText(object):
 class MyPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.logger = logging.getLogger("wxApp")
+        self.logger = getLogger() 
         
         self.logger.info("Test from MyPanel __init__")
         
         logText = wx.TextCtrl(self,
                               style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
         
-        btn = wx.Button(self, label="Press Me")
+        btn = wx.Button(self, label="Refresh")
         btn.Bind(wx.EVT_BUTTON, self.onPress)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -72,11 +74,11 @@ class MyFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, title="Log Console")
         panel = MyPanel(self)
-        self.logger = logging.getLogger("wxApp")
+        self.logger = getLogger() 
         self.Show()
 
 def initLogger():
-    #frame = MyFrame()
+    frame = MyFrame()
     configureLogging()
 
 def configureLogging():
@@ -88,13 +90,14 @@ def configureLogging():
     console_logging = session.GetConfig('console_logging')
     console_logging_level = session.GetConfig('console_logging_level')
 
-    logger = logging.getLogger(__name__)
+    logger = getLogger()
 
     msg = 'file_logging: {}, console_logging: {}'.format(file_logging, console_logging)
     print(msg)
     logger.info(msg)
     logger.info("configureLogging called ...")
 
+    '''
     if console_logging:
         logger.info("console_logging called ...")
         closeConsoleLogging()
@@ -108,7 +111,7 @@ def configureLogging():
         logger.info('Added stream handler')
     else:
         closeConsoleLogging()
-
+    '''
 
     if file_logging:
         logger.info("file_logging called ...")
