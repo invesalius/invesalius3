@@ -137,7 +137,7 @@ class Frame(wx.Frame):
         self.__bind_events()
         self.__bind_events_wx()
 
-        log.initLogger()
+        #log.initLogger()
 
     def __bind_events(self):
         """
@@ -451,11 +451,13 @@ class Frame(wx.Frame):
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
 
+        logger = log.Logger()
+
         if not save and answer == wx.ID_YES:
-            log.closeLogging()
+            logger.closeLogging()
             return 1  # Exit and delete session
         elif save and answer == wx.ID_YES:
-            log.closeLogging()
+            logger.closeLogging()
             return 2  # Exit without deleting session
         else:
             return 0  # Don't Exit
