@@ -17,7 +17,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-
 import itertools
 import os
 import random
@@ -5391,6 +5390,29 @@ class SurfaceProgressWindow(object):
     def Close(self):
         self.dlg.Destroy()
 
+class SaveProjectProgressWindow(object):
+    def __init__(self):
+        self.title = "InVesalius 3"
+        self.msg = _("Saving project ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent=None,
+                                     style=self.style,
+                                     maximum=6)
+        self.running = True
+        self.error = None
+        self.dlg.Show()
+
+        Publisher.subscribe(self.update, 'update_progress')
+        Publisher.subscribe(self.destroy, 'destroy_progress')
+
+
+    def update(self, value):
+        self.dlg.Update(value)
+
+    def destroy(self):
+        wx.CallAfter(self.dlg.Destroy)
 
 class GoToDialog(wx.Dialog):
     def __init__(self, title=_("Go to slice ..."), init_orientation=const.AXIAL_STR):
