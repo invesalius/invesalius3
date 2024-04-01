@@ -367,34 +367,52 @@ class Controller():
         self.SaveProject(filepath)
 
     def SaveProject(self, path=None, compress=False):
-        Publisher.sendMessage('Begin busy cursor')
-        session = ses.Session()
-        if path:
-            dirpath, filename = os.path.split(path)
-        else:
-            dirpath, filename = session.GetState('project_path')
+        progress_dialog = dialog.ProgressBarHandler(self.frame, "Saving Project", "Initializing...", max_value=100)
 
-        if isinstance(filename, str):
-            filename = utils.decode(filename, const.FS_ENCODE)
-
-        proj = prj.Project()
         try:
-            prj.Project().SavePlistProject(dirpath, filename, compress)
-        except PermissionError as err:
-            if wx.GetApp() is None:
-                print("Error: Permission denied, you don't have permission to write at {}".format(dirpath))
-            else:
-                dlg = dialogs.ErrorMessageBox(
-                    None,
-                    "Save project error",
-                    "It was not possible to save because you don't have permission to write at {}\n{}".format(dirpath, err)
-                )
-                dlg.ShowModal()
-                dlg.Destroy()
-        else:
-            session.SaveProject((dirpath, filename))
+            session = ses.Session()
 
-        Publisher.sendMessage('End busy cursor')
+            if path:
+                dirpath, filename = os.path.split(path)
+            else:
+                dirpath, filename = session.GetState('project_path')
+
+            if isinstance(filename, str):
+                filename = utils.decode(filename, const.FS_ENCODE)
+
+            proj = prj.Project()
+
+            # Update progress dialog
+            Publisher.sendMessage("Update Progress bar", value=30, msg="Preparing to save project...")
+
+            try:
+                prj.Project().SavePlistProject(dirpath, filename, compress)
+            except PermissionError as err:
+                if wx.GetApp() is None:
+                    print("Error: Permission denied, you don't have permission to write at {}".format(dirpath))
+                else:
+                    dlg = dialogs.ErrorMessageBox(
+                        None,
+                        "Save project error",
+                        "It was not possible to save because you don't have permission to write at {}\n{}".format(dirpath,
+                                                                                                                  err)
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+            else:
+                # Update progress dialog
+                Publisher.sendMessage("Update Progress bar", value=70, msg="Saving project data...")
+
+                session.SaveProject((dirpath, filename))
+
+            # Update progress dialog
+            Publisher.sendMessage("Update Progress bar", value=100, msg="Project saved successfully!")
+
+        except Exception as e:
+            wx.MessageBox(f"Error: {e}", "Error", wx.OK | wx.ICON_ERROR)
+            Publisher.sendMessage("Close Progress bar")
+        finally:
+            Publisher.sendMessage("Close Progress bar")
 
     def CloseProject(self):
         Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
