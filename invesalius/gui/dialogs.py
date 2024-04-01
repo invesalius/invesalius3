@@ -6712,3 +6712,42 @@ class FileSelectionDialog(wx.Dialog):
 
     def GetPath(self):
         return self.path
+
+class ProgressBarHandler(wx.ProgressDialog):
+    def __init__(self, parent, title="Progress Dialog", msg="Initializing...", max_value=None):
+        super(ProgressBarHandler    , self).__init__(title,msg,parent=parent,style=wx.PD_APP_MODAL|wx.PD_CAN_ABORT|wx.PD_AUTO_HIDE)
+
+        self.max_value = max_value
+
+        self.Bind(wx.EVT_CLOSE, self.close)
+
+        # self.Show()
+
+        # Subscribe to the channels
+        Publisher.subscribe(self.update, "Update Progress bar")
+        Publisher.subscribe(self.close, "Close Progress bar")
+
+    def wasCancelled(self):
+       return super().WasCancelled()
+
+    def update(self, value, msg=None):
+        if self.WasCancelled():
+                return
+
+        if self.max_value is None:
+            self.pulse(msg)
+        else:
+            # value must be less than or equal max_value
+            if value > self.max_value: value = self.max_value
+            super().Update(int(value), msg)
+
+    def close(self):
+        if self.IsShown():
+            self.Destroy()
+
+    def pulse(self, msg=None):
+         #if self.IsShown():
+            if msg is None:
+                super().Pulse()
+            else:
+                super().Pulse(msg)
