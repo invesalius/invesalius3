@@ -43,7 +43,6 @@ import invesalius.session as ses
 
 
 import invesalius.utils  as utils
-import invesalius.gui.dialogs as dialogs
 import subprocess
 import sys
 
@@ -384,7 +383,7 @@ class Controller():
             if wx.GetApp() is None:
                 print("Error: Permission denied, you don't have permission to write at {}".format(dirpath))
             else:
-                dlg = dialogs.ErrorMessageBox(
+                dlg = dialog.ErrorMessageBox(
                     None,
                     "Save project error",
                     "It was not possible to save because you don't have permission to write at {}\n{}".format(dirpath, err)
@@ -840,7 +839,7 @@ class Controller():
             self.LoadProject()
             Publisher.sendMessage("Enable state project", state=True)
         else:
-            dialogs.BitmapNotSameSize()
+            dialog.BitmapNotSameSize()
 
     def OpenBitmapFiles(self, bmp_data, rec_data):
        name = rec_data[0]
@@ -1002,7 +1001,7 @@ class Controller():
 
         if gui and (spacing[0] == 0.0 or spacing[1] == 0.0 or spacing[2] == 0.0):
             sx, sy, sz = spacing
-            dlg = dialogs.SetSpacingDialog(wx.GetApp().GetTopWindow(), sx, sy, sz)
+            dlg = dialog.SetSpacingDialog(wx.GetApp().GetTopWindow(), sx, sy, sz)
             if dlg.ShowModal() == wx.ID_OK:
                 spacing = dlg.spacing_new_x, dlg.spacing_new_y, dlg.spacing_new_z
             else:
@@ -1122,7 +1121,7 @@ class Controller():
             plistlib.dump(preset, f)
 
     def ShowBooleanOpDialog(self):
-        dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
+        dlg = dialog.MaskBooleanDialog(prj.Project().mask_dict)
         dlg.Show()
 
     def ApplyReorientation(self):
