@@ -1,30 +1,40 @@
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
-RUN apt-get update
-RUN apt-get install -y \
-    cython \
-    locales \
-    python-concurrent.futures \
-    python-gdcm \
-    python-matplotlib \
-    python-nibabel \
-    python-numpy \
-    python-pil \
-    python-psutil \
-    python-scipy \
-    python-serial \
-    python-skimage \
-    python-vtk6 \
-    python-vtkgdcm \
-    python-wxgtk3.0
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y locales
 
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
+RUN apt-get install -y \
+    freeglut3 \
+    freeglut3-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libgtk-3-dev \
+    libjpeg-dev \
+    libnotify-dev \
+    libsdl2-dev \
+    libsm-dev \
+    libtiff-dev \
+    libwebkit2gtk-4.0-dev \
+    libxtst-dev \
+    python3-dev \
+    libhdf5-dev \
+    build-essential \
+    python3-venv \
+    python3-pip
+
 WORKDIR /usr/local/app
 
 COPY . .
 
-RUN python setup.py build_ext --inplace
+RUN pip install --upgrade pip
+
+RUN pip install -r requirements.txt
+
+RUN python3 setup.py build_ext --inplace
