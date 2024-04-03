@@ -1,3 +1,28 @@
+#!/usr/bin/env python3
+#--------------------------------------------------------------------------
+# Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
+# Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
+# Homepage:     http://www.softwarepublico.gov.br
+# Contact:      invesalius@cti.gov.br
+# License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
+#--------------------------------------------------------------------------
+#    Este programa e software livre; voce pode redistribui-lo e/ou
+#    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
+#    publicada pela Free Software Foundation; de acordo com a versao 2
+#    da Licenca.
+#
+#    Este programa eh distribuido na expectativa de ser util, mas SEM
+#    QUALQUER GARANTIA; sem mesmo a garantia implicita de
+#    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
+#    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
+#    detalhes.
+#-------------------------------------------------------------------------
+
+try:
+    import configparser as ConfigParser
+except ImportError:
+    import ConfigParser
+
 import logging 
 import logging.config 
 from typing import Callable
@@ -33,16 +58,15 @@ class RedirectText(object):
         self.out.WriteText(string)
 
 class MyPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, logger):
         wx.Panel.__init__(self, parent)
-        #self.logger = getLogger() 
-        #self.logger.info("Test from MyPanel __init__")
         
         logText = wx.TextCtrl(self,
                               style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
         
-        btn = wx.Button(self, label="Refresh")
-        btn.Bind(wx.EVT_BUTTON, self.onPress)
+        btn = wx.Button(self, label="Close")
+        btn.Bind(wx.EVT_BUTTON, self.onClose)
+        self.Bind(wx.EVT_CLOSE, self.onClose)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
@@ -53,16 +77,20 @@ class MyPanel(wx.Panel):
         sys.stdout = redir
         
         txtHandler = CustomConsoleHandler(logText)
-        logger = logging.getLogger(__name__)
+
+        #logger = Logger()
+        #logging.getLogger(__name__)
+        #logger.getLogger().addHandler(txtHandler)
         logger.addHandler(txtHandler)
 
-    def onPress(self, event):
+    def onClose(self, event):
+        logger = Logger()
         self.logger.info("Informational message")
      
 class MyFrame(wx.Frame):
-    def __init__(self):
+    def __init__(self, logger):
         wx.Frame.__init__(self, None, title="Log Console")
-        panel = MyPanel(self)
+        panel = MyPanel(self, logger)
         #self.logger = getLogger() 
         self.Show()
         
@@ -71,6 +99,7 @@ LOG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 class Logger(metaclass=Singleton):
     def __init__(self):
         self._frame = None
+        self.CreateConfig()
         self.ReadConfig()
         #atexit.register(self.__exit__)
 
@@ -84,7 +113,6 @@ class Logger(metaclass=Singleton):
             'console_logging': 0,
             'console_logging_level': 0,
         }
-        self.WriteConfigFile()
 
     def SetConfig(self, key, value):
         self._config[key] = value
@@ -96,14 +124,15 @@ class Logger(metaclass=Singleton):
         else:
             return default_value
 
-    def ReadConfig(self):
+    def ReadConfig(self, fPath=LOG_PATH):
         try:
-            print('Looking to read log file ', LOG_PATH)
-            self._read_config_from_json(LOG_PATH)
+            #self._read_config_from_json(fPath) 
+            self._read_config_from_json(r'C:\\Users\\sohan\\.config\\invesalius\\log_config.json')
+            print('Read Log config file ', fPath)
+            print(self._config)
             self.configureLogging()
-        except Exception as e1:
-            print('Log config file not found.')
-            self.CreateConfig()
+        except Exception as e1: 
+            print('Log config file not found:', e1)
         return True
     
     def WriteConfigFile(self):
@@ -114,10 +143,18 @@ class Logger(metaclass=Singleton):
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _read_config_from_json(self, json_filename):
+        '''
         with open(json_filename, 'r') as config_file:
+            config_dict = json.loads(config_file)
+            self._config = deep_merge_dict(self._config.copy(), config_dict)
+        '''
+        try:
+            config_file = open(json_filename, 'r')
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
-
+        except Exception as e1:
+            print('Error in _read_config_from_json:', e1)
+ 
     def getLogger(self, lname=__name__):
         logger = logging.getLogger(lname)
         return logger
@@ -136,9 +173,6 @@ class Logger(metaclass=Singleton):
             logger.info(msg)
 
     def configureLogging(self):
-        if (self._frame == None):
-            self._frame = MyFrame()
-        
         file_logging = self._config['file_logging']
         file_logging_level = self._config['file_logging_level']
         append_log_file = self._config['append_log_file']
@@ -146,8 +180,11 @@ class Logger(metaclass=Singleton):
         console_logging = self._config['console_logging']
         #console_logging_level = self._config['console_logging_level']
 
+        if ((self._frame == None) & (console_logging!=0)):
+            self.closeLogging()
+            self._frame = MyFrame(self.getLogger())
+        
         logger = self.getLogger()
-
         msg = 'file_logging: {}, console_logging: {}'.format(file_logging, console_logging)
         print(msg)
 
@@ -223,7 +260,9 @@ class Logger(metaclass=Singleton):
             if isinstance(handler, logging.StreamHandler):
                 logger.info('Removed stream handler')
                 #handler.flush()
-                logger.removeHandler(handler)    
+                logger.removeHandler(handler)   
+        if (self._frame != None):
+            self._frame = None
 
     def closeLogging(self):
         self.closeConsoleLogging()

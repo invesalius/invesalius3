@@ -37,8 +37,8 @@ class Preferences(wx.Dialog):
         self.book = wx.Notebook(self, -1)
 
         self.pnl_viewer3d = Viewer3D(self.book)
-        self.pnl_language = Language(self.book)
-        self.pnl_logging = Logging(self.book)
+        self.pnl_language = Language(self.book)                                          
+        self.pnl_logging = LoggingPane(self.book)
 
         self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
@@ -196,7 +196,7 @@ class Viewer3D(wx.Panel):
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
-class Logging(wx.Panel):
+class LoggingPane(wx.Panel):
 
     def __init__(self, parent):
 

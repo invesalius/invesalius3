@@ -100,8 +100,6 @@ if session.ReadConfig():
             pass
 
 import invesalius.data.log as log
-logger = log.Logger()
-logger.ReadConfig()
 
 class InVesalius(wx.App):
     """
@@ -134,6 +132,8 @@ class InVesalius(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show()
         self.frame.Raise()
+        logger = log.Logger()
+        logger.configureLogging()
 
 # ------------------------------------------------------------------
 
