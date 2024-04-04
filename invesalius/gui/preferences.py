@@ -98,7 +98,7 @@ class Preferences(wx.Dialog):
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
 
-        logger = log.Logger()
+        logger = log.MyLogger()
         file_logging = logger.GetConfig('file_logging')
         file_logging_level = logger.GetConfig('file_logging_level')
         append_log_file = logger.GetConfig('append_log_file')
@@ -299,7 +299,7 @@ class LoggingPane(wx.Panel):
             const.CONSOLE_LOGGING_LEVEL: self.cb_console_logging_level.GetSelection(),
         }
         #session = ses.Session()
-        logger = log.Logger()
+        logger = log.MyLogger()
         file_logging = self.rb_file_logging.GetSelection()
         logger.SetConfig('file_logging', file_logging)
         file_logging_level = self.cb_file_logging_level.GetSelection()

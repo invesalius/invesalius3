@@ -29,13 +29,12 @@ from typing import Callable
 import sys, os
 import wx
 import json
-import atexit
 
 from invesalius import inv_paths
 import invesalius.constants as const
-import invesalius.session as sess
+#import invesalius.session as sess
 from invesalius.utils import Singleton, deep_merge_dict
-from invesalius.pubsub import pub as Publisher
+#from invesalius.pubsub import pub as Publisher
 
 class CustomConsoleHandler(logging.StreamHandler):
     def __init__(self, textctrl):
@@ -45,9 +44,10 @@ class CustomConsoleHandler(logging.StreamHandler):
         self.textctrl = textctrl
 
     def emit(self, record):
+        print('Came to Emit ...')
         msg = self.format(record)
-        #stream = self.stream
-        self.textctrl.WriteText(msg + "\n")
+        stream = self.stream
+        self.textctrl.WriteText(msg + "He He He\n")
         self.flush()
 
 class RedirectText(object):
@@ -73,6 +73,7 @@ class MyPanel(wx.Panel):
         sizer.Add(btn, 0, wx.ALL, 5)
         self.SetSizer(sizer)
         
+        #Below two lines 
         redir = RedirectText(logText)
         sys.stdout = redir
         
@@ -84,7 +85,7 @@ class MyPanel(wx.Panel):
         logger.addHandler(txtHandler)
 
     def onClose(self, event):
-        logger = Logger()
+        logger = MyLogger()
         self.logger.info("Informational message")
      
 class MyFrame(wx.Frame):
@@ -96,12 +97,21 @@ class MyFrame(wx.Frame):
         
 LOG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 
-class Logger(metaclass=Singleton):
+class MyLogger(metaclass=Singleton):
     def __init__(self):
+        # create logger
+        self._logger = logging.getLogger(__name__)
+        self._logger.setLevel(logging.DEBUG)
         self._frame = None
-        self.CreateConfig()
+        self._config = {
+            'file_logging': 0,
+            'file_logging_level': 0,
+            'append_log_file': 0,
+            'logging_file': '',
+            'console_logging': 0,
+            'console_logging_level': 0,
+        }
         self.ReadConfig()
-        #atexit.register(self.__exit__)
 
     def CreateConfig(self):
         self._frame = None
@@ -156,21 +166,22 @@ class Logger(metaclass=Singleton):
             print('Error in _read_config_from_json:', e1)
  
     def getLogger(self, lname=__name__):
-        logger = logging.getLogger(lname)
-        return logger
+        #logger = logging.getLogger(lname)
+        return self._logger
 
-    def logMessage(level, msg, logger = logging.getLogger(__name__)):
-        #level = level.upper()
+    def logMessage(self,level, msg):
+        level = level.upper()
         if (level=='DEBUG'):
-            logger.debug(msg)
+            self._logger.debug(msg)
         elif (level=='WARNING'):
-            logger.warning(msg)
+            self._logger.warning(msg)
         elif (level=='CRITICAL'):
-            logger.critical(msg)
+            self._logger.critical(msg)
         elif (level=='ERROR'):
-            logger.error(msg)
+            self._logger.error(msg)
         else:  #'info'
-            logger.info(msg)
+            print('Came to info ...')
+            self._logger.info(msg)
 
     def configureLogging(self):
         file_logging = self._config['file_logging']
@@ -181,6 +192,7 @@ class Logger(metaclass=Singleton):
         #console_logging_level = self._config['console_logging_level']
 
         if ((self._frame == None) & (console_logging!=0)):
+            print('Initiating console logging ...')
             self.closeLogging()
             self._frame = MyFrame(self.getLogger())
         
@@ -190,6 +202,7 @@ class Logger(metaclass=Singleton):
 
         logger.info(msg)
         logger.info('configureLogging called ...')
+        self.logMessage('info', msg)
 
         '''
         if console_logging:
@@ -208,6 +221,7 @@ class Logger(metaclass=Singleton):
         '''
 
         if file_logging:
+            print('file_logging called ...')
             logger.info('file_logging called ...')
             python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
 

@@ -451,7 +451,7 @@ class Frame(wx.Frame):
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
 
-        logger = log.Logger()
+        logger = log.MyLogger()
 
         if not save and answer == wx.ID_YES:
             logger.closeLogging()

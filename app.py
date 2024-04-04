@@ -132,7 +132,7 @@ class InVesalius(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show()
         self.frame.Raise()
-        logger = log.Logger()
+        logger = log.MyLogger()
         logger.configureLogging()
 
 # ------------------------------------------------------------------
