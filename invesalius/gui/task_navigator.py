@@ -1907,6 +1907,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
+        Publisher.subscribe(self.UpdateMarker, 'Update marker')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
@@ -2818,6 +2819,12 @@ class MarkersPanel(wx.Panel):
 
     def OnChangeCurrentSession(self, new_session_id):
         self.current_session = new_session_id
+
+    def UpdateMarker(self, marker, new_position, new_orientation):
+        marker_id = marker.marker_id
+        self.markers[marker_id].position = new_position
+        self.markers[marker_id].orientation = new_orientation
+        self.SaveState()
 
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0
