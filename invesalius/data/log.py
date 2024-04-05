@@ -36,6 +36,8 @@ import invesalius.constants as const
 from invesalius.utils import Singleton, deep_merge_dict
 #from invesalius.pubsub import pub as Publisher
 
+LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
+
 class CustomConsoleHandler(logging.StreamHandler):
     def __init__(self, textctrl):
         logging.StreamHandler.__init__(self)
@@ -44,10 +46,10 @@ class CustomConsoleHandler(logging.StreamHandler):
         self.textctrl = textctrl
 
     def emit(self, record):
-        print('Came to Emit ...')
+        #print('Came to Emit ...')
         msg = self.format(record)
         stream = self.stream
-        self.textctrl.WriteText(msg + "He He He\n")
+        self.textctrl.WriteText(msg + "\n")
         self.flush()
 
 class RedirectText(object):
@@ -72,31 +74,24 @@ class MyPanel(wx.Panel):
         sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
         sizer.Add(btn, 0, wx.ALL, 5)
         self.SetSizer(sizer)
-        
-        #Below two lines 
+     
         redir = RedirectText(logText)
         sys.stdout = redir
-        
-        txtHandler = CustomConsoleHandler(logText)
+        #sys.stderr = redir
 
-        #logger = Logger()
-        #logging.getLogger(__name__)
-        #logger.getLogger().addHandler(txtHandler)
+        txtHandler = CustomConsoleHandler(logText)
         logger.addHandler(txtHandler)
 
     def onClose(self, event):
-        logger = MyLogger()
+
         self.logger.info("Informational message")
      
 class MyFrame(wx.Frame):
     def __init__(self, logger):
         wx.Frame.__init__(self, None, title="Log Console")
-        panel = MyPanel(self, logger)
-        #self.logger = getLogger() 
+        self._panel = MyPanel(self, logger)
         self.Show()
         
-LOG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
-
 class MyLogger(metaclass=Singleton):
     def __init__(self):
         # create logger
@@ -113,17 +108,6 @@ class MyLogger(metaclass=Singleton):
         }
         self.ReadConfig()
 
-    def CreateConfig(self):
-        self._frame = None
-        self._config = {
-            'file_logging': 0,
-            'file_logging_level': 0,
-            'append_log_file': 0,
-            'logging_file': '',
-            'console_logging': 0,
-            'console_logging_level': 0,
-        }
-
     def SetConfig(self, key, value):
         self._config[key] = value
         self.WriteConfigFile()
@@ -134,10 +118,11 @@ class MyLogger(metaclass=Singleton):
         else:
             return default_value
 
-    def ReadConfig(self, fPath=LOG_PATH):
+    def ReadConfig(self, fPath=LOG_CONFIG_PATH):
         try:
-            #self._read_config_from_json(fPath) 
-            self._read_config_from_json(r'C:\\Users\\sohan\\.config\\invesalius\\log_config.json')
+            print(fPath, os.path.abspath(fPath))
+            self._read_config_from_json(fPath) 
+            #self._read_config_from_json(r'C:\\Users\\sohan\\.config\\invesalius\\log_config.json')
             print('Read Log config file ', fPath)
             print(self._config)
             self.configureLogging()
@@ -146,7 +131,7 @@ class MyLogger(metaclass=Singleton):
         return True
     
     def WriteConfigFile(self):
-        self._write_to_json(self._config, LOG_PATH)
+        self._write_to_json(self._config, LOG_CONFIG_PATH)
 
     def _write_to_json(self, config_dict, config_filename):
         with open(config_filename, 'w') as config_file:
@@ -180,7 +165,7 @@ class MyLogger(metaclass=Singleton):
         elif (level=='ERROR'):
             self._logger.error(msg)
         else:  #'info'
-            print('Came to info ...')
+            #print('Came to info ...')
             self._logger.info(msg)
 
     def configureLogging(self):
@@ -188,6 +173,7 @@ class MyLogger(metaclass=Singleton):
         file_logging_level = self._config['file_logging_level']
         append_log_file = self._config['append_log_file']
         logging_file  = self._config['logging_file']
+        logging_file = os.path.abspath(logging_file)
         console_logging = self._config['console_logging']
         #console_logging_level = self._config['console_logging_level']
 
@@ -220,6 +206,7 @@ class MyLogger(metaclass=Singleton):
             closeConsoleLogging()
         '''
 
+        print('file_logging:', file_logging)
         if file_logging:
             print('file_logging called ...')
             logger.info('file_logging called ...')
@@ -254,7 +241,7 @@ class MyLogger(metaclass=Singleton):
                     fh.setLevel(python_loglevel)
                     fh.setFormatter(formatter)
                     logger.addHandler(fh)
-                    msg = 'Addeded file handler {}'.format(logging_file)
+                    msg = 'Added file handler {}'.format(logging_file)
                     logger.info(msg)
         else:
             self.closeFileLogging()
