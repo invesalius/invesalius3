@@ -1925,6 +1925,7 @@ class MarkersPanel(wx.Panel):
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, 'Add marker')
         Publisher.subscribe(self._DeleteMarker, 'Delete marker')
+        Publisher.subscribe(self._DeleteMultiple, 'Delete markers')
         Publisher.subscribe(self._SetTarget, 'Set target')
         Publisher.subscribe(self._SetPointOfInterest, 'Set point of interest')
         Publisher.subscribe(self._UnsetTarget, 'Unset target')
@@ -1946,9 +1947,8 @@ class MarkersPanel(wx.Panel):
         return selection
 
     def __delete_multiple_markers(self, indexes):
-        for idx in reversed(indexes):
-            marker_id = self.__get_marker_id(idx)
-            self.markers.DeleteMarker(marker_id)
+        marker_ids = [self.__get_marker_id(idx) for idx in indexes]
+        self.markers.DeleteMultiple(marker_ids)
 
     def _DeleteMarker(self, marker):
         deleted_marker_id = marker.marker_id
@@ -1960,6 +1960,32 @@ class MarkersPanel(wx.Panel):
             m_id = self.__get_marker_id(n)
             if m_id > deleted_marker_id:
                 self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - 1))
+
+    def _DeleteMultiple(self, markers):
+        if len(markers) == self.marker_list_ctrl.GetItemCount():
+            self.marker_list_ctrl.DeleteAllItems()
+            return
+
+        min_for_fast_deletion = 10
+        if len(markers) > min_for_fast_deletion:
+            self.marker_list_ctrl.Hide()
+
+        deleted_ids = []
+        for marker in markers:
+            idx = self.__find_marker_index(marker.marker_id)
+            self.marker_list_ctrl.DeleteItem(idx)
+            deleted_ids.append(marker.marker_id)
+
+        num_items = self.marker_list_ctrl.GetItemCount()
+        for n in range(num_items):
+            m_id = self.__get_marker_id(n)
+            reduction_in_m_id = 0
+            for d_id in deleted_ids:
+                if m_id > d_id:
+                    reduction_in_m_id += 1
+            self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
+
+        self.marker_list_ctrl.Show()
 
     def _SetPointOfInterest(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -2486,9 +2512,6 @@ class MarkersPanel(wx.Panel):
             if result != wx.ID_OK:
                 return
         self.markers.Clear()
-        # Publisher.sendMessage('Delete markers', markers=self.markers.list)
-        # self.markers.list = []
-        # self.marker_list_ctrl.DeleteAllItems()
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -2586,6 +2609,7 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.Show()
         Publisher.sendMessage('Render volume viewer')
         Publisher.sendMessage("Update UI for refine tab")
+        self.markers.SaveState()
 
     def OnLoadMarkers(self, evt):
         """Loads markers from file and appends them to the current marker list.

@@ -65,14 +65,16 @@ class MarkersControl(metaclass=Singleton):
             Publisher.sendMessage('Set as Efield target at cortex', position=marker.position,
                                   orientation=marker.orientation)
 
-        self.SaveState()
+        if render:  # this behavior could be misleading
+            self.SaveState()
 
     def Clear(self):
-        for marker in reversed(self.list):
-            self.DeleteMarker(marker.marker_id)
-        self.SaveState()
+        marker_ids = [marker.marker_id for marker in self.list]
+        self.DeleteMultiple(marker_ids)
 
-    def DeleteMarker(self, marker_id):
+    # Note: Unlike parameter render in AddMarker, for DeleteMarker, render=False should
+    #       currently not be used outside this class.
+    def DeleteMarker(self, marker_id, render=True):
         marker = self.list[marker_id]
 
         if marker.is_target:
@@ -80,8 +82,25 @@ class MarkersControl(metaclass=Singleton):
         if marker.is_point_of_interest:
             self.UnsetPointOfInterest(marker_id)
 
-        Publisher.sendMessage('Delete marker', marker=marker)
+        if render:
+            Publisher.sendMessage('Delete marker', marker=marker)
+
         del self.list[marker_id]
+
+        if render:
+            for idx, m in enumerate(self.list):
+                m.marker_id = idx
+
+            self.SaveState()
+
+    def DeleteMultiple(self, marker_ids):
+        markers = []
+        for m_id in sorted(marker_ids, reverse=True):
+            markers.append(self.list[m_id])
+            self.DeleteMarker(m_id, render=False)
+
+        Publisher.sendMessage('Delete markers', markers=markers)
+
         for idx, m in enumerate(self.list):
             m.marker_id = idx
 
