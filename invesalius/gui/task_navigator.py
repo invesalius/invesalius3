@@ -53,14 +53,7 @@ from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 
-import invesalius.data.coregistration as dcr
-import invesalius.data.slice_ as sl
-import invesalius.data.tractography as dti
-import invesalius.data.record_coords as rec
-import invesalius.data.vtk_utils as vtk_utils
-import invesalius.data.bases as db
 from invesalius.data.markers.marker import MarkerType, Marker
-import invesalius.data.markers.marker_transformator
 
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
