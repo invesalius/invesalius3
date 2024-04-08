@@ -1782,8 +1782,6 @@ class MarkersPanel(wx.Panel):
         else:
             self.mTMS = None
 
-        self.marker_transformator = invesalius.data.markers.marker_transformator.MarkerTransformator()
-
         self.__bind_events()
 
         self.session = ses.Session()
@@ -2140,65 +2138,35 @@ class MarkersPanel(wx.Panel):
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.__get_marker(idx)
 
-        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
-        Publisher.sendMessage('Update selected marker', marker=marker)
+        # Selection of more than 1 marker not supported by MarkerTransformator
+        if idx == -1:
+            return
 
-        # Highlight marker in viewer volume.
-        Publisher.sendMessage('Highlight marker', marker=marker)
+        marker_id = self.__get_marker_id(idx)
+        self.markers.SelectMarker(marker_id)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
     def OnMarkerUnfocused(self, evt):
-        # Marker transformator needs to know that no marker is selected so it can stop reacting to
-        # keyboard events.
-        Publisher.sendMessage('Update selected marker', marker=None)
-
-        # Unhighlight marker in viewer volume.
-        Publisher.sendMessage('Unhighlight marker')
+        self.markers.DeselectMarker()
         
     def OnCreateCoilTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-
-        # Create a duplicate of the selected marker.
         marker = self.__get_marker(list_index)
-        new_marker = marker.duplicate()
 
-        # Project to the scalp.        
-        self.marker_transformator.ProjectToScalp(
-            marker=new_marker,
-            # We are projecting the marker that is on the brain surface; hence, project to the opposite side
-            # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
-            opposite_side=True,
-        )
-
-        # Set marker type to 'coil target'.
-        new_marker.marker_type = MarkerType.COIL_TARGET
-
-        # Give the new marker a new label.
-        new_marker.label = self.GetNextMarkerLabel()
-
-        # Add the new marker to the marker list and render it.
-        self.markers.AddMarker(new_marker, render=True)
+        self.markers.CreateCoilTargetFromLandmark(marker)
 
     def OnCreateCoilTargetFromCoilPose(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-
-        # Create a duplicate of the selected marker.
         marker = self.__get_marker(list_index)
-        new_marker = marker.duplicate()
 
-        # Set marker type to 'coil target'.
-        new_marker.marker_type = MarkerType.COIL_TARGET
-
-        # Add the new marker to the marker list and render it.
-        self.markers.AddMarker(new_marker, render=True)
+        self.markers.CreateCoilTargetFromCoilPose(marker)
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()

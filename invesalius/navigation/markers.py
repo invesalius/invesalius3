@@ -20,6 +20,7 @@
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from invesalius.data.markers.marker import MarkerType, Marker
+from invesalius.data.markers.marker_transformator import MarkerTransformator
 from invesalius.utils import Singleton
 from invesalius.navigation.robot import Robot, RobotObjective
 
@@ -28,6 +29,7 @@ class MarkersControl(metaclass=Singleton):
     def __init__(self):
         self.list = []
         self.nav_status = False
+        self.transformator = MarkerTransformator()
         self.robot = None
         self.control = None
 
@@ -234,3 +236,42 @@ class MarkersControl(metaclass=Singleton):
                 self.DeleteMarker(brain_target.marker_id)
             else:
                 condition = False
+
+    # Note: these functions only support selection of a single marker at the moment.
+    def SelectMarker(self, marker_id):
+        marker = self.list[marker_id]
+
+        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
+        self.transformator.UpdateSelectedMarker(marker)
+
+        # Highlight marker in viewer volume.
+        Publisher.sendMessage('Highlight marker', marker=marker)
+
+    def DeselectMarker(self):
+        # Marker transformator needs to know that no marker is selected so it can stop reacting to
+        # keyboard events.
+        self.transformator.UpdateSelectedMarker(None)
+
+        # Unhighlight marker in viewer volume.
+        Publisher.sendMessage('Unhighlight marker')
+
+    def CreateCoilTargetFromLandmark(self, marker):
+        new_marker = marker.duplicate()
+
+        self.transformator.ProjectToScalp(
+            marker=new_marker,
+            # We are projecting the marker that is on the brain surface; hence, project to the opposite side
+            # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
+            opposite_side=True,
+        )
+        new_marker.marker_type = MarkerType.COIL_TARGET
+        new_marker.label = self.GetNextMarkerLabel()
+
+        self.AddMarker(new_marker)
+
+    def CreateCoilTargetFromCoilPose(self, marker):
+        new_marker = marker.duplicate()
+
+        new_marker.marker_type = MarkerType.COIL_TARGET
+
+        self.AddMarker(new_marker)
