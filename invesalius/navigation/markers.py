@@ -26,12 +26,11 @@ from invesalius.navigation.robot import Robot, RobotObjective
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self):
+    def __init__(self, robot):
         self.list = []
         self.nav_status = False
         self.transformator = MarkerTransformator()
-        self.robot = None
-        self.control = None
+        self.robot = robot
 
     def SaveState(self):
         state = [marker.to_dict() for marker in self.list]
@@ -128,7 +127,6 @@ class MarkersControl(metaclass=Singleton):
         # Set new target
         marker = self.list[marker_id]
         marker.is_target = True
-        self.control.target_selected = True
 
         Publisher.sendMessage('Set target', marker=marker)
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
