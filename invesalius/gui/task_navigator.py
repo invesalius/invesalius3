@@ -24,12 +24,6 @@ import time
 
 import numpy as np
 try:
-    import Trekker
-    has_trekker = True
-except ImportError:
-    has_trekker = False
-
-try:
     #TODO: the try-except could be done inside the mTMS() method call
     from invesalius.navigation.mtms import mTMS
     mTMS()
