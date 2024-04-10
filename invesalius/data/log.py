@@ -63,8 +63,7 @@ class MyPanel(wx.Panel):
     def __init__(self, parent, logger):
         wx.Panel.__init__(self, parent)
         
-        logText = wx.TextCtrl(self,
-                              style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+        logText = wx.TextCtrl(self, style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
         
         btn = wx.Button(self, label="Close")
         btn.Bind(wx.EVT_BUTTON, self.onClose)
@@ -79,12 +78,12 @@ class MyPanel(wx.Panel):
         sys.stdout = redir
         #sys.stderr = redir
 
+        self._logger = logger
         txtHandler = CustomConsoleHandler(logText)
-        logger.addHandler(txtHandler)
+        self._logger.addHandler(txtHandler)
 
     def onClose(self, event):
-
-        self.logger.info("Informational message")
+        self._logger.info("Informational message")
      
 class MyFrame(wx.Frame):
     def __init__(self, logger):
@@ -107,6 +106,7 @@ class MyLogger(metaclass=Singleton):
             'console_logging_level': 0,
         }
         self.ReadConfig()
+        self._logger.setLevel(logging.DEBUG)
 
     def SetConfig(self, key, value):
         self._config[key] = value
@@ -127,7 +127,7 @@ class MyLogger(metaclass=Singleton):
             print(self._config)
             self.configureLogging()
         except Exception as e1: 
-            print('Log config file not found:', e1)
+            print('ReadConfig:', e1)
         return True
     
     def WriteConfigFile(self):
@@ -174,6 +174,7 @@ class MyLogger(metaclass=Singleton):
         append_log_file = self._config['append_log_file']
         logging_file  = self._config['logging_file']
         logging_file = os.path.abspath(logging_file)
+        print('logging_file:', logging_file)
         console_logging = self._config['console_logging']
         #console_logging_level = self._config['console_logging_level']
 
@@ -181,13 +182,15 @@ class MyLogger(metaclass=Singleton):
             print('Initiating console logging ...')
             self.closeLogging()
             self._frame = MyFrame(self.getLogger())
-        
-        logger = self.getLogger()
+            print('Initiated console logging ...')
+            self._logger.info('Initiated console logging ...')
+       
+        #logger = self.getLogger()
         msg = 'file_logging: {}, console_logging: {}'.format(file_logging, console_logging)
         print(msg)
 
-        logger.info(msg)
-        logger.info('configureLogging called ...')
+        self._logger.info(msg)
+        self._logger.info('configureLogging called ...')
         self.logMessage('info', msg)
 
         '''
@@ -209,76 +212,76 @@ class MyLogger(metaclass=Singleton):
         print('file_logging:', file_logging)
         if file_logging:
             print('file_logging called ...')
-            logger.info('file_logging called ...')
+            self._logger.info('file_logging called ...')
             python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
 
             # create formatter
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
             # create file handler 
-            logger = self.getLogger()
+            #logger = self.getLogger()
             if logging_file:
                 addFileHandler = True
-                for handler in logger.handlers:
+                for handler in self._logger.handlers:
                     if isinstance(handler, logging.FileHandler):
                         if hasattr(handler, 'baseFilename') & \
                             os.path.samefile(logging_file,handler.baseFilename):
                             handler.setLevel(python_loglevel)
                             addFileHandler = False
                             msg = 'No change in log file name {}.'.format(logging_file)
-                            logger.info(msg)
+                            self._logger.info(msg)
                         else:
                             msg = 'Closing current log file {} as new log file {} requested.'.format( \
                                 handler.baseFilename, logging_file)
-                            logger.info(msg)
-                            logger.removeHandler(handler)
-                            logger.info('Removed existing FILE handler')
+                            self._logger.info(msg)
+                            self._logger.removeHandler(handler)
+                            self._logger.info('Removed existing FILE handler')
                 if addFileHandler:
                     if append_log_file:
-                        fh = logging.FileHandler(logging_file, 'a', encoding=None)
+                        fh = logging.FileHandler(os.path.abspath(logging_file), 'a', encoding=None)
                     else:
-                        fh = logging.FileHandler(logging_file, 'w', encoding=None)
-                    fh.setLevel(python_loglevel)
+                        fh = logging.FileHandler(os.path.abspath(logging_file), 'w', encoding=None)
+                    #fh.setLevel(python_loglevel)
                     fh.setFormatter(formatter)
-                    logger.addHandler(fh)
+                    self._logger.addHandler(fh)
                     msg = 'Added file handler {}'.format(logging_file)
-                    logger.info(msg)
+                    self._logger.info(msg)
         else:
             self.closeFileLogging()
 
     def closeFileLogging(self):
-        logger = logging.getLogger(__name__)
-        for handler in logger.handlers:
+        #logger = logging.getLogger(__name__)
+        for handler in self._logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 msg = 'Removed file handler {}'.format(handler.baseFilename)
-                logger.info(msg)
+                self._logger.info(msg)
                 #handler.flush()
-                logger.removeHandler(handler)    
+                self._logger.removeHandler(handler)    
 
     def closeConsoleLogging(self):
-        logger = logging.getLogger(__name__)
-        for handler in logger.handlers:
+        #logger = logging.getLogger(__name__)
+        for handler in self._logger.handlers:
             if isinstance(handler, logging.StreamHandler):
-                logger.info('Removed stream handler')
+                self._logger.info('Removed stream handler')
                 #handler.flush()
-                logger.removeHandler(handler)   
+                self._logger.removeHandler(handler)   
         if (self._frame != None):
             self._frame = None
 
     def closeLogging(self):
-        self.closeConsoleLogging()
         self.closeFileLogging()  
+        self.closeConsoleLogging()
 
     def flushHandlers(self):
-        logger = logging.getLogger(__name__)
-        for handler in logger.handlers:
+        #logger = logging.getLogger(__name__)
+        for handler in self._logger.handlers:
             handler.flush()
 
 def function_call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        logger = logging.getLogger(__name__)
+        logger = MyLogger() #logging.getLogger(__name__)
         msg = 'Function {} called'.format(function.__name__)
-        logger.info(msg)
+        logger._logger.info(msg)
         function(*args)
     return wrapper_accepting_arguments
 
