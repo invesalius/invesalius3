@@ -1379,7 +1379,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
-        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
         Publisher.subscribe(self.SetTargetMode, 'Set target mode')
 
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')

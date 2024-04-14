@@ -602,8 +602,8 @@ class TrackerPage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
-        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
-        Publisher.subscribe(self.OnTransformationMatrix, "Load robot transformation matrix")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
+        Publisher.subscribe(self.OnTransformationMatrix, "Neuronavigation to Robot: Set robot transformation matrix")
     
     def LoadConfig(self):
         session = ses.Session()
@@ -659,7 +659,7 @@ class TrackerPage(wx.Panel):
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
-            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+            Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobotRegister(self, evt):
         self.HideParent()

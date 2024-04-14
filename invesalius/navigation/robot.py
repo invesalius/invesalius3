@@ -69,11 +69,13 @@ class Robot(metaclass=Singleton):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
-        Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
+        Publisher.subscribe(self.AbortRobotConfiguration, 'Robot to Neuronavigation: Close robot dialog')
+        Publisher.subscribe(self.OnRobotStatus, 'Robot to Neuronavigation: Robot connection status')
+        Publisher.subscribe(self.SetObjectiveByRobot, 'Robot to Neuronavigation: Set objective')
+
         Publisher.subscribe(self.SetTarget, 'Set target')
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
-        Publisher.subscribe(self.GetCurrentObjectiveFromRobot, 'Send current objective from robot to neuronavigation')
+
         Publisher.subscribe(self.TrackerFiducialsSet, 'Tracker fiducials set')
 
     def SaveConfig(self):
@@ -140,11 +142,11 @@ class Robot(metaclass=Singleton):
             self.robot_ip = data
 
     def ConnectToRobot(self):
-        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+        Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
         print("Connected to robot")
 
     def InitializeRobot(self):
-        Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+        Publisher.sendMessage('Neuronavigation to Robot: Set robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
         print("Robot initialized")
 
     def SendTargetToRobot(self):
@@ -183,7 +185,7 @@ class Robot(metaclass=Singleton):
         if objective == RobotObjective.TRACK_TARGET:
             self.SendTargetToRobot()
 
-    def GetCurrentObjectiveFromRobot(self, objective):
+    def SetObjectiveByRobot(self, objective):
         if objective is None:
             return
 
