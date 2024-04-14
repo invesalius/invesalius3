@@ -150,6 +150,10 @@ class Robot(metaclass=Singleton):
         print("Robot initialized")
 
     def SendTargetToRobot(self):
+        # If the target is not set, return early.
+        if self.target is None:
+            return False
+
         # Compute the target in tracker coordinate system.
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
 

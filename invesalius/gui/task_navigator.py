@@ -1476,6 +1476,9 @@ class ControlPanel(wx.Panel):
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
             self.navigation.StartNavigation(self.tracker, self.icp)
 
+            # Ensure that the target is sent to robot when navigation starts.
+            self.robot.SendTargetToRobot()
+
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
         if not nav_id:
