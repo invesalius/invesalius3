@@ -790,6 +790,9 @@ class TrackerPage(wx.Panel):
 
         self.ResetICP()
         if self.tracker.AreTrackerFiducialsSet():
+            # All tracker fiducials are set; publish a message to pass the fiducials to, e.g., robot.
+            Publisher.sendMessage("Tracker fiducials set")
+
             self.OnNextEnable()
             self.OnRegisterDisable()
         else:
