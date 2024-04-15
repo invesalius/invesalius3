@@ -51,7 +51,8 @@ def GetLocales():
                                 'ro': u'Română',
                                 'ru': u'Русский',
                                 'ja': u'日本語',
-                                'be': u'Беларуская',}) 
+                                'be': u'Беларуская',
+                                'uz': u'O‘zbek',}) 
     return d 
  
 def GetLocaleOS(): 
