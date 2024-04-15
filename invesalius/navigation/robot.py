@@ -186,9 +186,6 @@ class Robot(metaclass=Singleton):
         self.objective = objective
         Publisher.sendMessage('Neuronavigation to Robot: Set objective', objective=objective.value)
 
-        if objective == RobotObjective.TRACK_TARGET:
-            self.SendTargetToRobot()
-
     def SetObjectiveByRobot(self, objective):
         if objective is None:
             return
