@@ -876,7 +876,8 @@ class Viewer(wx.Panel):
             for ind in self.guide_arrow_actors:
                 self.target_guide_renderer.RemoveActor(ind)
 
-        obj_polydata = vtku.CreateObjectPolyData(self.coil_path)
+        coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+        obj_polydata = vtku.CreateObjectPolyData(coil_path)
 
         normals = vtkPolyDataNormals()
         normals.SetInputData(obj_polydata)
