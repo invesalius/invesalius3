@@ -876,6 +876,7 @@ class Viewer(wx.Panel):
             for ind in self.guide_arrow_actors:
                 self.target_guide_renderer.RemoveActor(ind)
 
+        # Using default coil for target guide model as using self.coil_path can cause custom models to overlap.
         coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
         obj_polydata = vtku.CreateObjectPolyData(coil_path)
 
