@@ -1345,6 +1345,7 @@ def ShowAboutDialog(parent):
                         u"Andreas Loupasakis",
                         u"Angelo Pucillo",
                         u"Annalisa Manenti",
+                        u"Baymuratova Irina",
                         u"Cheng-Chia Tseng",
                         u"Dan",
                         u"DCamer",
