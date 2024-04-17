@@ -18,11 +18,6 @@
 #    detalhes.
 #-------------------------------------------------------------------------
 
-try:
-    import configparser as ConfigParser
-except ImportError:
-    import ConfigParser
-
 import logging 
 import logging.config 
 from typing import Callable
