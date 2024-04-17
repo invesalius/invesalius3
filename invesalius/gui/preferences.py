@@ -603,7 +603,7 @@ class TrackerPage(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
         Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
-        Publisher.subscribe(self.OnTransformationMatrix, "Neuronavigation to Robot: Set robot transformation matrix")
+        Publisher.subscribe(self.OnSetRobotTransformationMatrix, "Neuronavigation to Robot: Set robot transformation matrix")
     
     def LoadConfig(self):
         session = ses.Session()
@@ -671,7 +671,7 @@ class TrackerPage(wx.Panel):
             self.status_text.SetLabelText("Setup robot transformation matrix:")
             self.btn_rob_con.Show()
 
-    def OnTransformationMatrix(self, data):
+    def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")
