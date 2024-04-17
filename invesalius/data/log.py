@@ -83,14 +83,28 @@ class MyPanel(wx.Panel):
         self._logger.addHandler(txtHandler)
 
     def onClose(self, event):
-        self._logger.info("Informational message")
+        self._logger.info("MyPanel window close selected.")
+        logger = MyLogger()
+        logger._frame = None
+        self.Destroy()
+        logger.configureLogging()
      
 class MyFrame(wx.Frame):
     def __init__(self, logger):
         wx.Frame.__init__(self, None, title="Log Console")
         self._panel = MyPanel(self, logger)
+        self.Bind(wx.EVT_CLOSE, self.onClose)
         self.Show()
         
+    #To be tested
+    def onClose(self, event):
+        #self._logger.info("MyFrame window close selected.")
+        logger = MyLogger()
+        logger.logMessage('info', "MyFrame window close selected.")
+        logger._frame = None
+        self.Destroy()
+        #logger.configureLogging()
+
 class MyLogger(metaclass=Singleton):
     def __init__(self):
         # create logger
@@ -155,6 +169,9 @@ class MyLogger(metaclass=Singleton):
         return self._logger
 
     def logMessage(self,level, msg):
+        if (self._frame == None):
+            self.configureLogging()
+
         level = level.upper()
         if (level=='DEBUG'):
             self._logger.debug(msg)
