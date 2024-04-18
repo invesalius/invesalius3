@@ -87,6 +87,10 @@ class MarkerVisualizer:
         # Store the new vector field assembly.
         self.vector_field_assembly = new_vector_field_assembly
 
+        # If not navigating, render the scene.
+        if not self.is_navigating:
+            self.interactor.Render()
+
     def AddMarker(self, marker, render):
         """
         Visualize marker and add the visualization to the marker object.
