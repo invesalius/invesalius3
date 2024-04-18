@@ -1039,10 +1039,25 @@ class Controller():
         hdr = group.header
         hdr.set_data_dtype('int16')
 
-        wl = float((scalar_range[0] + scalar_range[1]) * 0.5)
-        ww = float((scalar_range[1] - scalar_range[0]))
+        # Calculate the 2% and 98% percentile
+        percentile_2 = np.percentile(self.matrix, 2)
+        percentile_98 = np.percentile(self.matrix, 98)
 
-        self.Slice = sl.Slice()
+        # define ww and wl based on 2-98 percentiles saturates
+        # the high pixel intensities that usually cause the image to
+        # and makes the brightness and contrast more similar across
+        # different types of scanners
+        # this solves the visualization issue only for MRIs imported with NIfTI, but not
+        # with DICOM
+        wl = float((percentile_2 + percentile_98) * 0.5)
+        ww = float((percentile_98 - percentile_2))
+
+        # Set wl and ww based on full scalar range. This causes some mri to be visualized
+        # very dark due to presence of high pixel intensities
+        # wl = float((scalar_range[0] + scalar_range[1]) * 0.5)
+        # ww = float((scalar_range[1] - scalar_range[0]))
+
+        self.Slice = sl.Slice()ßß
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
         # even though the axes 0 and 2 are swapped when creating self.matrix
