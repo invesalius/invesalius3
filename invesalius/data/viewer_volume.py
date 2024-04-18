@@ -1154,7 +1154,7 @@ class Viewer(wx.Panel):
                              is_under_z_angle_threshold
 
             wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=coil_at_target)
-            wx.CallAfter(Publisher.sendMessage, 'Neuronavigation to Robot: Coil at target', state=coil_at_target)
+            wx.CallAfter(Publisher.sendMessage, 'From Neuronavigation: Coil at target', state=coil_at_target)
 
             self.guide_arrow_actors = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                       arrow_pitch_y1, arrow_pitch_y2

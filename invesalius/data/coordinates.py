@@ -47,7 +47,7 @@ class TrackerCoordinates():
         self.coord = coord
         self.markers_flag = markers_flag
         if not self.nav_status:
-            wx.CallAfter(Publisher.sendMessage, 'Neuronavigation to Robot: Update tracker poses',
+            wx.CallAfter(Publisher.sendMessage, 'From Neuronavigation: Update tracker poses',
                          poses=self.coord.tolist(), visibilities=self.markers_flag)
             if self.previous_markers_flag != self.markers_flag:
                 wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
@@ -56,7 +56,7 @@ class TrackerCoordinates():
 
     def GetCoordinates(self):
         if self.nav_status:
-            wx.CallAfter(Publisher.sendMessage, 'Neuronavigation to Robot: Update tracker poses',
+            wx.CallAfter(Publisher.sendMessage, 'From Neuronavigation: Update tracker poses',
                          poses=self.coord.tolist(), visibilities=self.markers_flag)
             if self.previous_markers_flag != self.markers_flag:
                 wx.CallAfter(Publisher.sendMessage, 'Sensors ID', markers_flag=self.markers_flag)
