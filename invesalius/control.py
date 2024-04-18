@@ -1057,7 +1057,7 @@ class Controller():
         # wl = float((scalar_range[0] + scalar_range[1]) * 0.5)
         # ww = float((scalar_range[1] - scalar_range[0]))
 
-        self.Slice = sl.Slice()ßß
+        self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
         # even though the axes 0 and 2 are swapped when creating self.matrix
