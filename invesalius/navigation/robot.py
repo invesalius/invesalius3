@@ -156,7 +156,7 @@ class Robot(metaclass=Singleton):
             return False
 
         # Compute the target in tracker coordinate system.
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
         # TODO: This is done here for now because the robot code expects the y-coordinate to be flipped. When this
         #   is removed, the robot code should be updated similarly, and vice versa. Create a copy of self.target by

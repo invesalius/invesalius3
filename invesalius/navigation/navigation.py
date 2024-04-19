@@ -128,9 +128,9 @@ class UpdateNavigationScene(threading.Thread):
             got_coords = False
             object_visible_flag = False
             try:
-                coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
+                coord, marker_visibilities, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
-                object_visible_flag = markers_flag[2]
+                object_visible_flag = marker_visibilities[2]
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -370,7 +370,7 @@ class Navigation(metaclass=Singleton):
                 coreg_data = [self.m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
-                    coord_raw, markers_flag = tracker.TrackerCoordinates.GetCoordinates()
+                    coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
                 else:
                     coord_raw = np.array([None])
 
