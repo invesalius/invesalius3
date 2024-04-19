@@ -408,7 +408,11 @@ def DebugCoordRandom(tracker_connection, tracker_id, ref_mode):
     # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
     #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    return np.vstack([coord1, coord2, coord3, coord4]), [int(uniform(0, 5)), int(uniform(0, 5)), int(uniform(0, 5))]
+    # Always make the markers visible when using debug tracker; this enables registration, as it
+    # is not possible to registering without markers.
+    marker_visibilities = [True, True, True]
+
+    return np.vstack([coord1, coord2, coord3, coord4]), marker_visibilities
 
 
 def coordinates_to_transformation_matrix(position, orientation, axes='sxyz'):
