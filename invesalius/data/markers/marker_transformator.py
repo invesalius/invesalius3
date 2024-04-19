@@ -201,6 +201,13 @@ class MarkerTransformator:
         marker.position = closest_point
         marker.orientation = euler_angles_deg
 
+        # XXX: This rotation is done apparently to account for the fact that in coil coordinate
+        #   system, y-axis is along the left-right axis of the coil, but in the world coordinates,
+        #   (the ones that volume viewer shows) left-right axis is the x-axis. The right solution
+        #   here would be to fix the coil coordinate system to match the world coordinates.
+        displacement = [0, 0, 0, 0, 0, 90]
+        self.MoveMarker(marker, displacement)
+
     def MoveMarkerByKeyboard(self, keycode):
         """
         When a key is pressed, move the focused marker in the direction specified by the key.
