@@ -1459,8 +1459,13 @@ class ControlPanel(wx.Panel):
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
         else:
             ctrl.SetBackgroundColour(self.RED_COLOR)
-    
+
     def EnableToggleButton(self, ctrl, state):
+        # Check if the button state is not changed, if so, return early. This is to prevent
+        # unnecessary updates to the button.
+        if ctrl.IsEnabled() == state:
+            return
+
         ctrl.Enable(state)
         ctrl.SetBackgroundColour(self.GREY_COLOR)
 
@@ -1703,14 +1708,13 @@ class ControlPanel(wx.Panel):
     def UpdateTargetButton(self):
         # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
         enabled = self.target_selected and self.track_obj
-
-        # If enabling target mode, also press it on automatically.
-        pressed = enabled
-
         self.EnableToggleButton(self.target_mode_button, enabled)
-        self.PressTargetModeButton(pressed)
 
     def PressTargetModeButton(self, pressed):
+        # If pressed, ensure that the button is also enabled.
+        if pressed:
+            self.EnableToggleButton(self.target_mode_button, True)
+
         self.UpdateToggleButton(self.target_mode_button, pressed)
         self.OnTargetButton()
 
@@ -2339,6 +2343,9 @@ class MarkersPanel(wx.Panel):
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
         self.robot.SetObjective(RobotObjective.NONE)
 
+        # When setting a new target, automatically move into target mode.
+        Publisher.sendMessage('Press target mode button', pressed=True)
+
         self.__set_marker_as_target(idx)
 
         self.SaveState()
@@ -2516,6 +2523,9 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
         Publisher.sendMessage('Unset target', marker=marker)
+
+        # When unsetting a target, automatically unpress the target mode button.
+        Publisher.sendMessage('Press target mode button', pressed=False)
 
         # Update the marker list control.
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
