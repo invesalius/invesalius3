@@ -1047,7 +1047,9 @@ class Viewer(wx.Panel):
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
 
             formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
-            self.distance_text.SetValue(formatted_distance)
+
+            if self.distance_text is not None:
+                self.distance_text.SetValue(formatted_distance)
 
             self.ren.ResetCamera()
             self.SetCameraTarget()
