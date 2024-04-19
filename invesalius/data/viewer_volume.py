@@ -613,8 +613,8 @@ class Viewer(wx.Panel):
             self.pointer_actor = None
         self.UpdateRender()
 
-    def OnSensors(self, markers_flag):
-        probe_id, ref_id, obj_id = markers_flag
+    def OnSensors(self, marker_visibilities):
+        probe_id, ref_id, obj_id = marker_visibilities
 
         if not self.probe:
             self.probe = True

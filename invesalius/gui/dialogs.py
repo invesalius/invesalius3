@@ -952,6 +952,12 @@ def ShowNavigationTrackerWarning(trck_id, lib_mode):
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
+    elif lib_mode == 'probe marker not visible':
+        msg = _('Probe marker is not visible.')
+    elif lib_mode == 'coil marker not visible':
+        msg = _('Coil marker is not visible.')
+    elif lib_mode == 'head marker not visible':
+        msg = _('Head marker is not visible.')
     elif lib_mode == 'error':
         msg = trck[trck_id] + _(' is not installed.')
     elif lib_mode == 'disconnect':
@@ -3701,7 +3707,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.pedal_connector.remove_callback('fiducial', panel=self)
 
     def SetObjectFiducial(self, fiducial_index):
-        coord, coord_raw = self.tracker.GetTrackerCoordinates(
+        marker_visibilities, coord, coord_raw = self.tracker.GetTrackerCoordinates(
             # XXX: Always use static reference mode when getting the coordinates. This is what the
             #      code did previously, as well. At some point, it should probably be thought through
             #      if this is actually what we want or if it should be changed somehow.
@@ -3709,6 +3715,17 @@ class ObjectCalibrationDialog(wx.Dialog):
             ref_mode_id=const.STATIC_REF,
             n_samples=const.CALIBRATION_TRACKER_SAMPLES,
         )
+
+        # If coil or probe markers are not visible, show a warning and return early.
+        probe_visible, _, coil_visible = marker_visibilities
+
+        if not probe_visible:
+            ShowNavigationTrackerWarning(0, 'probe marker not visible')
+            return
+
+        if not coil_visible:
+            ShowNavigationTrackerWarning(0, 'coil marker not visible')
+            return
 
         # XXX: The condition below happens when setting the "fixed" coordinate in the object calibration.
         #      The case is not handled by GetTrackerCoordinates function, therefore redo some computation
@@ -3950,9 +3967,9 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.interactor.Render()
 
     def GetCurrentCoord(self):
-        coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic((self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None])
-        return coord[:3], markers_flag
+        return coord[:3], marker_visibilities
 
     def AddMarker(self, size, colour, coord):
         """
@@ -4115,8 +4132,11 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.CreatePoint()
 
     def CreatePoint(self, evt=None):
-        current_coord, markers_flag = self.GetCurrentCoord()
-        if markers_flag[:2] >= [1, 1]:
+        current_coord, marker_visibilities = self.GetCurrentCoord()
+
+        probe_visible, head_visible, _ = marker_visibilities
+
+        if probe_visible and head_visible:
             self.AddMarker(3, (1, 0, 0), current_coord)
             self.txt_markers_not_detected.VisibilityOff()
             if self.DistanceBetweenPointAndSurface(self.surface, self.point_coord[-1]) >= 20:

@@ -315,7 +315,7 @@ class CoordinateCorregistrate(threading.Thread):
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
                 # print(f"Set the coordinate")
-                coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+                coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
@@ -342,7 +342,7 @@ class CoordinateCorregistrate(threading.Thread):
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
 
-                self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
+                self.coord_queue.put_nowait([coord, marker_visibilities, m_img, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
 
@@ -388,13 +388,13 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                     self.use_icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
                 #print(self.icp, self.m_icp)
-                coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
+                coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
                 coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                self.coord_queue.put_nowait([coord, markers_flag, m_img, view_obj])
+                self.coord_queue.put_nowait([coord, marker_visibilities, m_img, view_obj])
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)

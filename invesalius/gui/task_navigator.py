@@ -786,7 +786,12 @@ class TrackerPage(wx.Panel):
         #      is more concerned with the calibration than the navigation.
         #
         ref_mode_id = self.navigation.GetReferenceMode()
-        self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+        success = self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+
+        # Setting the fiducial is not successful if head or probe markers are not visible.
+        # In that case, return early and do not move to the next fiducial.
+        if not success:
+            return
 
         self.ResetICP()
         if self.tracker.AreTrackerFiducialsSet():
