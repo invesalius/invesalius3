@@ -2030,21 +2030,15 @@ class MarkersPanel(wx.Panel):
 
         return selection
 
-    def __delete_all_markers(self):
-        """
-        Delete all markers
-        """
-        for i in reversed(range(len(self.markers))):
-            del self.markers[i]
-            self.marker_list_ctrl.DeleteItem(i)
-
     def __delete_multiple_markers(self, indexes):
         """
         Delete multiple markers indexed by 'indexes'. Indexes must be sorted in
         the ascending order.
         """
+        markers_to_delete = [self.markers[i] for i in indexes]
+        Publisher.sendMessage('Delete markers', markers=markers_to_delete)
+
         for i in reversed(indexes):
-            Publisher.sendMessage('Delete marker', marker=self.markers[i])
             del self.markers[i]
             self.marker_list_ctrl.DeleteItem(i)
             for n in range(0, self.marker_list_ctrl.GetItemCount()):
