@@ -140,7 +140,7 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 600), 0, fpb.FPB_SINGLE_FOLD)
+                                      (10, 800), 0, fpb.FPB_SINGLE_FOLD)
         gbs = wx.GridBagSizer(5,5)
         gbs.AddGrowableCol(0, 1)
         self.gbs = gbs
@@ -1806,7 +1806,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                               (btn_delete_all, 0, wx.LEFT)])
 
         # List of markers
-        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
+        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0, 240))
         marker_list_ctrl.InsertColumn(const.ID_COLUMN, '#')
         marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
 
