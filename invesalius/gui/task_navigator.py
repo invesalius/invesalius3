@@ -1800,7 +1800,7 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
-        self.currently_focused_marker_idx = None
+        self.currently_focused_marker = None
         self.current_position = [0, 0, 0]
         self.current_orientation = [None, None, None]
         self.current_seed = 0, 0, 0
@@ -1993,6 +1993,16 @@ class MarkersPanel(wx.Panel):
             if self.markers[i].is_target:
                 return i
                 
+        return None
+
+    def __find_marker_idx(self, marker):
+        """
+        Return the index of the marker in the list of markers. If the marker is not found, return None.
+        """
+        for i in range(len(self.markers)):
+            if self.markers[i] == marker:
+                return i
+
         return None
 
     def __find_point_of_interest_marker(self):
@@ -2254,27 +2264,32 @@ class MarkersPanel(wx.Panel):
         menu_id.Destroy()
 
     # Programmatically set the focus on the marker with the given index, simulating left click.
-    def FocusOnMarker(self, item_index):
+    def FocusOnMarker(self, idx):
         # Deselect the previously focused marker.
-        if self.currently_focused_marker_idx is not None:
-            self.marker_list_ctrl.SetItemState(self.currently_focused_marker_idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+        if self.currently_focused_marker is not None:
+            current_marker_idx = self.__find_marker_idx(self.currently_focused_marker)
 
-            # Trigger EVT_LIST_ITEM_DESELECTED event manually for the old item.
-            event_deselect = wx.ListEvent(wx.EVT_LIST_ITEM_DESELECTED.typeId, self.marker_list_ctrl.GetId())
-            event_deselect.SetIndex(self.currently_focused_marker_idx)
-            event_deselect.SetEventObject(self.marker_list_ctrl)
-            self.marker_list_ctrl.GetEventHandler().ProcessEvent(event_deselect)
+            # If the marker has been deleted, it might not be found in the list of markers. In that case,
+            # do not try to deselect it.
+            if current_marker_idx is not None:
+                self.marker_list_ctrl.SetItemState(current_marker_idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+
+                # Trigger EVT_LIST_ITEM_DESELECTED event manually for the old item.
+                event_deselect = wx.ListEvent(wx.EVT_LIST_ITEM_DESELECTED.typeId, self.marker_list_ctrl.GetId())
+                event_deselect.SetIndex(current_marker_idx)
+                event_deselect.SetEventObject(self.marker_list_ctrl)
+                self.marker_list_ctrl.GetEventHandler().ProcessEvent(event_deselect)
 
         # Select the item.
-        self.marker_list_ctrl.SetItemState(item_index, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+        self.marker_list_ctrl.SetItemState(idx, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
 
         # Focus on the item.
-        self.marker_list_ctrl.SetItemState(item_index, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
-        self.marker_list_ctrl.EnsureVisible(item_index)
+        self.marker_list_ctrl.SetItemState(idx, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
+        self.marker_list_ctrl.EnsureVisible(idx)
 
         # Trigger EVT_LIST_ITEM_SELECTED event manually.
         event = wx.ListEvent(wx.EVT_LIST_ITEM_SELECTED.typeId, self.marker_list_ctrl.GetId())
-        event.SetIndex(item_index)
+        event.SetIndex(idx)
         event.SetEventObject(self.marker_list_ctrl)
         self.marker_list_ctrl.GetEventHandler().ProcessEvent(event)
 
@@ -2287,7 +2302,7 @@ class MarkersPanel(wx.Panel):
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
         #   is triggered repeatedly for the same item (the one that was first selected). This is a
         #   workaround to prevent the event from being triggered repeatedly for the same item.
-        if self.currently_focused_marker_idx is not None and idx == self.currently_focused_marker_idx:
+        if self.currently_focused_marker is not None and idx == self.currently_focused_marker:
             return
 
         # When selecting multiple markers, e.g., by pressing ctrl while clicking on the markers, EVT_LIST_ITEM_SELECTED
@@ -2296,11 +2311,11 @@ class MarkersPanel(wx.Panel):
         # at a time.
         #
         # TODO: Support multiple highlighted markers at the same time.
-        if self.currently_focused_marker_idx is not None:
+        if self.currently_focused_marker is not None:
             # Unhighlight the previously focused marker in the viewer volume.
             Publisher.sendMessage('Unhighlight marker')
 
-        self.currently_focused_marker_idx = idx
+        self.currently_focused_marker = marker
 
         # Marker transformator needs to know which marker is selected so it can react to keyboard events.
         Publisher.sendMessage('Update selected marker', marker=marker)
@@ -2727,6 +2742,13 @@ class MarkersPanel(wx.Panel):
 
         self.__delete_multiple_markers(indexes)
         self.SaveState()
+
+        # Re-focus on the marker with the same index as the first marker that was selected before deletion.
+        if self.currently_focused_marker is not None:
+            first_deleted_index = indexes[0]
+            first_existing_index = first_deleted_index if first_deleted_index < len(self.markers) else len(self.markers) - 1
+
+            self.FocusOnMarker(first_existing_index)
 
     def GetNextMarkerLabel(self):
         """
