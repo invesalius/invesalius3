@@ -5777,7 +5777,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.LoadRegistration)
         
-        if not self.robot.robot_status:
+        if not self.robot.IsConnected():
             btn_load.Enable(False)
         else:
             btn_load.Enable(True)
@@ -5874,7 +5874,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.SetAcquiredPoints(num_points)
 
         # Enable 'Apply registration' button only when the robot connection is ok and there are enough acquired points.
-        if self.robot.robot_status and num_points >= 3:
+        if self.robot.IsConnected() and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
     def ResetPoints(self, evt):
@@ -5942,7 +5942,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage('Neuronavigation to Robot: Set robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
 
         # Enable 'Ok' button if connection to robot is ok.
-        if self.robot.robot_status:
+        if self.robot.IsConnected():
             self.btn_ok.Enable(True)
 
     def GetValue(self):

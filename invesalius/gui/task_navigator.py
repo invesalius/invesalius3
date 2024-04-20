@@ -1336,6 +1336,7 @@ class ControlPanel(wx.Panel):
         robot_move_away_button.SetToolTip(tooltip)
         robot_move_away_button.SetValue(False)
         robot_move_away_button.Enable(False)
+
         robot_move_away_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotMoveAwayButton, ctrl=robot_move_away_button))
         self.robot_move_away_button = robot_move_away_button
 
@@ -1563,17 +1564,19 @@ class ControlPanel(wx.Panel):
         if data:
             self.Layout()
 
-    # Enable robot buttons if:
-    #
-    #   - Navigation is on
-    #   - Target is set
-    #   - Target mode is on
-    #   - Robot is connected
-    #
     def UpdateRobotButtons(self):
-        enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
-        self.EnableRobotTrackTargetButton(enabled=enabled)
-        self.EnableRobotMoveAwayButton(enabled=enabled)
+        # Enable 'track target' robot button if:
+        #
+        #   - Navigation is on
+        #   - Target is set
+        #   - Target mode is on
+        #   - Robot is connected
+        track_target_button_enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
+        self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
+        
+        # Enable 'move away' robot button if robot is connected.
+        move_away_button_enabled = self.robot.IsConnected()
+        self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
