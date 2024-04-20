@@ -66,7 +66,18 @@ class SurfaceGeometry(metaclass=Singleton):
         # Compute normals for the surface.
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
+
+        # Enable point normals to average normals at vertices.
         normals.ComputePointNormalsOn()
+
+        # Enable smoothing.
+        normals.SetFeatureAngle(60.0)
+        normals.SplittingOff()
+
+        # Enable consistency check.
+        normals.ConsistencyOn()
+
+        # Update the vtkPolyDataNormals object to process the input.
         normals.Update()
 
         return normals.GetOutput()
