@@ -1089,8 +1089,9 @@ class Viewer(wx.Panel):
                 distance_to_target[5] = -const.ARROW_UPPER_LIMIT
             coordrz_arrow = const.ARROW_SCALE * distance_to_target[5]
 
-            for ind in self.guide_arrow_actors:
-                self.target_guide_renderer.RemoveActor(ind)
+            if self.guide_arrow_actors is not None:
+                for actor in self.guide_arrow_actors:
+                    self.target_guide_renderer.RemoveActor(actor)
 
             if self.anglethreshold * const.ARROW_SCALE > coordrx_arrow > -self.anglethreshold * const.ARROW_SCALE:
                 is_under_x_angle_threshold = True
