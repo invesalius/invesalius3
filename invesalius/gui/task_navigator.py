@@ -1896,7 +1896,7 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
-        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.ChangeLabel)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
         
         self.marker_list_ctrl = marker_list_ctrl
 
@@ -2331,6 +2331,11 @@ class MarkersPanel(wx.Panel):
 
         # Unhighlight marker in viewer volume.
         Publisher.sendMessage('Unhighlight marker')
+
+    def SetCameraToFocusOnMarker(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.markers[idx]
+        Publisher.sendMessage('Set camera to focus on marker', marker=marker)
 
     def OnCreateCoilTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
