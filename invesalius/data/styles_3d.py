@@ -74,6 +74,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     * Rotate by moving mouse with left button pressed.
     * Pan by moving mouse with middle button pressed.
     * Zoom by moving mouse with right button pressed.
+    * Select marker by clicking right button on the marker.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -85,13 +86,18 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.picker.SetTolerance(1e-3)
         self.viewer.interactor.SetPicker(self.picker)
 
+        # Keep track of whether a marker was found under the mouse cursor.
+        self.marker_found = False
+
         # Rotate using left button
         self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
         self.AddObserver("LeftButtonReleaseEvent",self.OnLeftRelease)
 
-        # Zoom using right button
-        self.AddObserver("RightButtonPressEvent",self.OnRightClick)
-        self.AddObserver("RightButtonReleaseEvent",self.OnRightRelease)
+        # Zoom and select markers using right button
+        self.AddObserver("RightButtonPressEvent",self.ZoomStart)
+        self.AddObserver("RightButtonReleaseEvent",self.ZoomStop)
+
+        self.AddObserver("RightButtonPressEvent",self.PickMarker)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
@@ -122,33 +128,29 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         evt.OnLeftButtonUp()
         evt.EndRotate()
 
-    def OnRightClick(self, evt, obj):
-        # Pick the actor under the mouse cursor and send it to marker selection.
+    def PickMarker(self, evt, obj):
+        # Get the mouse position in the viewer.
         x, y = self.viewer.get_vtk_mouse_position()
 
-        # Get the scalp surface actor to check if it is visible.
-        scalp_surface = self.viewer.surface_geometry.GetScalpSurface()
-        scalp_actor = scalp_surface['actor']
+        # Temporarily hide all surfaces to allow the picker to pick markers without interference.
+        self.viewer.surface_geometry.HideAllSurfaces()
 
-        is_scalp_visible = scalp_actor.GetVisibility()
-
-        # If scalp is visible, hide it to allow the picker to markers on the brain surface.
-        if is_scalp_visible:
-            scalp_actor.SetVisibility(False)
-
-        # Get the actor under the mouse cursor.
+        # Pick the actor under the mouse cursor.
         self.picker.Pick(x, y, 0, self.viewer.ren)
 
-        # Show the scalp again if it was visible before.
-        if is_scalp_visible:
-            scalp_actor.SetVisibility(True)
+        # Show the surfaces again.
+        self.viewer.surface_geometry.ShowAllSurfaces()
 
         actor = self.picker.GetActor()
-        Publisher.sendMessage('Select marker by actor', actor=actor)
+        self.marker_found = actor is not None
 
+        if self.marker_found:
+            Publisher.sendMessage('Select marker by actor', actor=actor)
+
+    def ZoomStart(self, evt, obj):
         evt.StartDolly()
 
-    def OnRightRelease(self, evt, obj):
+    def ZoomStop(self, evt, obj):
         evt.OnRightButtonUp()
         evt.EndDolly()
 
@@ -468,7 +470,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.picker.SetTolerance(1e-3)
         self.viewer.interactor.SetPicker(self.picker)
 
-        self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
+        self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
 
     def SetUp(self):
         self.viewer.CreatePointer()
@@ -476,7 +478,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def CleanUp(self):
         self.viewer.DeletePointer()
 
-    def OnCrossMouseClick(self, obj, evt):
+    def UpdatePointer(self, obj, evt):
+        # Primarily pick markers with right mouse click; only if marker is not found, update the pointer in the volume viewer.
+        # Hence, check first if a marker was found under the mouse cursor.
+        if self.marker_found:
+            return
+
         x, y = self.viewer.get_vtk_mouse_position()
 
         self.picker.Pick(x, y, 0, self.viewer.ren)

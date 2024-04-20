@@ -13,6 +13,9 @@ class SurfaceGeometry(metaclass=Singleton):
 
         self.surfaces = []
 
+    def __bind_events(self):
+        Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
+
     def LoadActor(self, actor):
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
@@ -27,8 +30,23 @@ class SurfaceGeometry(metaclass=Singleton):
             'highest_z': highest_z,
         })
 
-    def __bind_events(self):
-        Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
+    def HideAllSurfaces(self):
+        """
+        Forcibly hide all surfaces in the viewer, overriding the user-set visibility state of each surface.
+        This is useful, e.g., when we want to pick a marker without any of the surfaces getting in the way.
+        """
+        for surface in self.surfaces:
+            surface['visible'] = surface['actor'].GetVisibility() 
+            surface['actor'].VisibilityOff()
+
+    def ShowAllSurfaces(self):
+        """
+        Show all surfaces in the viewer, restoring the visibility state of each surface to what it was before
+        HideAllSurfaces was called.
+        """
+        for surface in self.surfaces:
+            visible = surface['visible'] if 'visible' in surface else True
+            surface['actor'].SetVisibility(visible)
 
     def GetSurfaceNormals(self, actor):
         # Get the polydata from the actor.
