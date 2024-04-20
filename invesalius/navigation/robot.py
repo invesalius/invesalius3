@@ -49,7 +49,7 @@ class Robot(metaclass=Singleton):
 
         self.enabled_in_gui = False
 
-        self.robot_status = False
+        self.is_robot_connected = False
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
@@ -72,7 +72,7 @@ class Robot(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.AbortRobotConfiguration, 'Robot to Neuronavigation: Close robot dialog')
-        Publisher.subscribe(self.OnRobotStatus, 'Robot to Neuronavigation: Robot connection status')
+        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot to Neuronavigation: Robot connection status')
         Publisher.subscribe(self.SetObjectiveByRobot, 'Robot to Neuronavigation: Set objective')
 
         Publisher.subscribe(self.SetTarget, 'Set target')
@@ -101,14 +101,19 @@ class Robot(metaclass=Singleton):
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
 
         return True
-        
-    def OnRobotStatus(self, data):
-        if data:
-            self.robot_status = data
+
+    def OnRobotConnectionStatus(self, data):
+        # TODO: Is this check necessary?
+        if not data:
+            return
+
+        self.is_robot_connected = data
+        if self.is_robot_connected:
+            Publisher.sendMessage('Enable move away button', enabled=True)
 
     def RegisterRobot(self):
         Publisher.sendMessage('End busy cursor')
-        if not self.robot_status:
+        if not self.is_robot_connected:
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
             return
 
@@ -137,7 +142,7 @@ class Robot(metaclass=Singleton):
             self.robot_coregistration_dialog.Destroy()
 
     def IsConnected(self):
-        return self.robot_status
+        return self.is_robot_connected
     
     def SetRobotIP(self, data):
         if data is not None:
