@@ -91,7 +91,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def AddMarker(self, marker, render):
+    def AddMarker(self, marker, render, focus):
         """
         Visualize marker and add the visualization to the marker object.
 
