@@ -48,6 +48,17 @@ class SurfaceGeometry(metaclass=Singleton):
             visible = surface['visible'] if 'visible' in surface else True
             surface['actor'].SetVisibility(visible)
 
+    def GetSurfaceCenter(self, actor):
+        # Get the bounding box of the actor.
+        bounds = actor.GetBounds()
+
+        # Calculate center for each dimension.
+        center_x = (bounds[0] + bounds[1]) / 2
+        center_y = (bounds[2] + bounds[3]) / 2
+        center_z = (bounds[4] + bounds[5]) / 2
+
+        return (center_x, center_y, center_z)
+
     def GetSurfaceNormals(self, actor):
         # Get the polydata from the actor.
         polydata = actor.GetMapper().GetInput()
