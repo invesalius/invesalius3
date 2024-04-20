@@ -245,10 +245,10 @@ class MarkerTransformator:
             direction = [1, 0, 0, 0, 0, 0]
 
         elif keycode == const.MOVE_MARKER_LEFT_KEYCODE and not self.is_navigating:
-            direction = [0, -1, 0, 0, 0, 0]
+            direction = [0, 1, 0, 0, 0, 0]
 
         elif keycode == const.MOVE_MARKER_RIGHT_KEYCODE and not self.is_navigating:
-            direction = [0, 1, 0, 0, 0, 0]
+            direction = [0, -1, 0, 0, 0, 0]
 
         elif keycode == const.ROTATE_MARKER_CLOCKWISE_15 and not self.is_navigating:
             stay_on_scalp = False
