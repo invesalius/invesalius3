@@ -1800,6 +1800,7 @@ class MarkersPanel(wx.Panel):
 
         self.session = ses.Session()
 
+        self.currently_focused_marker_idx = None
         self.current_position = [0, 0, 0]
         self.current_orientation = [None, None, None]
         self.current_seed = 0, 0, 0
@@ -2256,6 +2257,15 @@ class MarkersPanel(wx.Panel):
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[idx]
+
+        # XXX: There seems to be a bug in WxPython when selecting multiple items on the list using,
+        #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
+        #   is triggered repeatedly for the same item (the one that was first selected). This is a
+        #   workaround to prevent the event from being triggered repeatedly for the same item.
+        if self.currently_focused_marker_idx is not None and idx == self.currently_focused_marker_idx:
+            return
+
+        self.currently_focused_marker_idx = idx
 
         # Marker transformator needs to know which marker is selected so it can react to keyboard events.
         Publisher.sendMessage('Update selected marker', marker=marker)
