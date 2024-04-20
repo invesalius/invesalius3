@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import wx
+import time
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
@@ -80,6 +81,9 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         super().__init__(viewer)
         self.state_code = const.STATE_DEFAULT
 
+        self.last_click_time = 0
+        self.double_click_max_interval = 1.0  # in seconds
+
         self.viewer = viewer
 
         self.picker = vtkCellPicker()
@@ -90,23 +94,24 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.marker_found = False
 
         # Rotate using left button
-        self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
-        self.AddObserver("LeftButtonReleaseEvent",self.OnLeftRelease)
+        self.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
 
-        # Zoom and select markers using right button
-        self.AddObserver("RightButtonPressEvent",self.ZoomStart)
-        self.AddObserver("RightButtonReleaseEvent",self.ZoomStop)
+        # Select markers, update pointer, set camera focus, and zoom using right button.
+        #
+        # Note that the order of the following observers is important. The observers are executed in the order they are added,
+        # and we don't want to reset the camera focus before picking a marker or updating the pointer.
+        self.AddObserver("RightButtonPressEvent", self.PickMarker)
+        self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
+        self.AddObserver("RightButtonPressEvent", self.SetCameraFocus)
+        self.AddObserver("RightButtonPressEvent", self.StartZoom)
 
-        self.AddObserver("RightButtonPressEvent",self.PickMarker)
+        self.AddObserver("RightButtonReleaseEvent", self.EndZoom)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
         self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
-        self.AddObserver("EnterEvent", self.OnFocus)
-
-    def OnFocus(self, evt, obj):
-        self.viewer.SetFocus()
 
     def OnMouseMove(self, evt, obj):
         if self.left_pressed:
@@ -125,7 +130,6 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         evt.StartRotate()
 
     def OnLeftRelease(self, evt, obj):
-        evt.OnLeftButtonUp()
         evt.EndRotate()
 
     def PickMarker(self, evt, obj):
@@ -142,15 +146,47 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.viewer.surface_geometry.ShowAllSurfaces()
 
         actor = self.picker.GetActor()
-        self.marker_found = actor is not None
+        self.marker_found = actor
 
-        if self.marker_found:
+        if self.marker_found is not None:
             Publisher.sendMessage('Select marker by actor', actor=actor)
 
-    def ZoomStart(self, evt, obj):
+    # This method is overridden in the CrossInteractorStyle class.
+    def UpdatePointer(self, evt, obj):
+        pass
+
+    def SetCameraFocus(self, evt, obj):
+        # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
+        # pick the actor under the mouse cursor, this time without hiding the surfaces.
+        if self.marker_found:
+            actor = self.marker_found
+        else:
+            # Get the mouse position in the viewer.
+            x, y = self.viewer.get_vtk_mouse_position()
+
+            # Pick the actor under the mouse cursor.
+            self.picker.Pick(x, y, 0, self.viewer.ren)
+
+            actor = self.picker.GetActor()
+
+            # If no actor was found, return early.
+            if actor is None:
+                return
+
+        center = self.viewer.surface_geometry.GetSurfaceCenter(actor)
+
+        renderer = self.viewer.ren
+        camera = renderer.GetActiveCamera()
+        camera.SetFocalPoint(center)
+        renderer.ResetCameraClippingRange()
+
+        renderer.Render()
+        self.viewer.interactor.GetRenderWindow().Render()
+
+    def StartZoom(self, evt, obj):
         evt.StartDolly()
 
-    def ZoomStop(self, evt, obj):
+    def EndZoom(self, evt, obj):
         evt.OnRightButtonUp()
         evt.EndDolly()
 
@@ -466,12 +502,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         super().__init__(viewer)
 
-        self.picker = vtkCellPicker()
-        self.picker.SetTolerance(1e-3)
-        self.viewer.interactor.SetPicker(self.picker)
-
-        self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
-
     def SetUp(self):
         self.viewer.CreatePointer()
 
@@ -506,17 +536,10 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
     When performing registration, the user can click on the volume viewer to select points for
     registration (i.e., left ear, right ear, and nasion).
  
-    Similar to CrossInteractorStyle, but does not hide the scalp, so that the picker can pick from
-    the scalp surface, which is needed for registration.
+    Similar to CrossInteractorStyle, but does not allow selecting markers or resetting camera focus.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
-
-        self.picker = vtkCellPicker()
-        self.picker.SetTolerance(1e-3)
-        self.viewer.interactor.SetPicker(self.picker)
-
-        self.AddObserver("RightButtonPressEvent", self.OnCrossMouseClick)
 
     def SetUp(self):
         self.viewer.CreatePointer()
@@ -524,9 +547,14 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
     def CleanUp(self):
         self.viewer.DeletePointer()
 
-    def OnCrossMouseClick(self, obj, evt):
+    def PickMarker(self, obj, evt):
+        pass
+
+    def UpdatePointer(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
+
         self.picker.Pick(x, y, 0, self.viewer.ren)
+
         x, y, z = self.picker.GetPickPosition()
 
         if self.picker.GetActor():
@@ -537,6 +565,8 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
 
+    def SetCameraFocus(self, obj, evt):
+        pass
 
 
 class NavigationInteractorStyle(DefaultInteractorStyle):
