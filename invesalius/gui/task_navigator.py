@@ -2190,6 +2190,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if self.currently_focused_marker_idx is not None and idx == self.currently_focused_marker_idx:
             return
 
+        # When selecting multiple markers, e.g., by pressing ctrl while clicking on the markers, EVT_LIST_ITEM_SELECTED
+        # event is triggered for each selected item, without triggering EVT_LIST_ITEM_DESELECTED event for the previously
+        # selected item. By unhighlighting the previously focused marker here, we ensure that only one marker is highlighted
+        # at a time.
+        #
+        # TODO: Support multiple highlighted markers at the same time.
+        if self.currently_focused_marker_idx is not None:
+            # Unhighlight the previously focused marker in the viewer volume.
+            Publisher.sendMessage('Unhighlight marker')
+
         self.currently_focused_marker_idx = idx
 
         marker_id = self.__get_marker_id(idx)
