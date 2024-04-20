@@ -2150,6 +2150,31 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
+    # Programmatically set the focus on the marker with the given index, simulating left click.
+    def FocusOnMarker(self, item_index):
+        # Deselect the previously focused marker.
+        if self.currently_focused_marker_idx is not None:
+            self.marker_list_ctrl.SetItemState(self.currently_focused_marker_idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+
+            # Trigger EVT_LIST_ITEM_DESELECTED event manually for the old item.
+            event_deselect = wx.ListEvent(wx.EVT_LIST_ITEM_DESELECTED.typeId, self.marker_list_ctrl.GetId())
+            event_deselect.SetIndex(self.currently_focused_marker_idx)
+            event_deselect.SetEventObject(self.marker_list_ctrl)
+            self.marker_list_ctrl.GetEventHandler().ProcessEvent(event_deselect)
+
+        # Select the item.
+        self.marker_list_ctrl.SetItemState(item_index, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+
+        # Focus on the item.
+        self.marker_list_ctrl.SetItemState(item_index, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
+        self.marker_list_ctrl.EnsureVisible(item_index)
+
+        # Trigger EVT_LIST_ITEM_SELECTED event manually.
+        event = wx.ListEvent(wx.EVT_LIST_ITEM_SELECTED.typeId, self.marker_list_ctrl.GetId())
+        event.SetIndex(item_index)
+        event.SetEventObject(self.marker_list_ctrl)
+        self.marker_list_ctrl.GetEventHandler().ProcessEvent(event)
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2230,7 +2255,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Create a duplicate of the selected marker.
         new_marker = self.__get_marker(idx).duplicate()
-        self.AddMarker(new_marker, render=True)
+        self.markers.AddMarker(new_marker, render=True, focus=True)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.indexes_saved_lists= []
@@ -2252,7 +2277,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             size=2,
             marker_type=MarkerType.COIL_TARGET,
         )
-        self.markers.AddMarker(marker, render=True)
+        self.markers.AddMarker(marker, render=True, focus=True)
 
     def OnMenuShowVectorField(self, evt):
         session = ses.Session()
@@ -2342,13 +2367,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker = self.CreateMarker(
                 position=position,
                 orientation=orientation,
-                # XXX: Setting the marker type to 'brain traget' is inconsistent with the variable names above ('coil_position_list' etc.);
+                # XXX: Setting the marker type to 'brain target' is inconsistent with the variable names above ('coil_position_list' etc.);
                 #   however, the dialog shown to the user by this function should be used exclusively for creating brain targets, hence the
                 #   variable naming (and the internal logic of the dialog where it currently returns both coil targets and brain targets)
                 #   should probably be modified to reflect that.
                 marker_type=MarkerType.BRAIN_TARGET,
             )
-            self.markers.AddMarker(marker, render=True)
+            self.markers.AddMarker(marker, render=True, focus=True)
 
             for (position, orientation) in zip(brain_position_list, brain_orientation_list):
                 marker = self.CreateMarker(
@@ -2356,7 +2381,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     orientation=list(orientation),
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.markers.AddMarker(marker, render=True)
+                self.markers.AddMarker(marker, render=True, focus=False)
 
         dialog.Destroy()
 
@@ -2462,8 +2487,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     size=0.05,
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.markers.AddMarker(new_marker, render=True)
-                
+                self.markers.AddMarker(new_marker, render=True, focus=True)
+
         dialog.Destroy()
 
     def OnSendBrainTarget(self, evt):
@@ -2585,7 +2610,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
         )
-        self.AddMarker(marker, render=True)
+        self.markers.AddMarker(marker, render=True, focus=True)
 
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
@@ -2737,10 +2762,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         return marker
 
-    def AddMarker(self, marker, render=True):
-        self.markers.AddMarker(marker, render)
-
-    def _AddMarker(self, marker, render):
+    def _AddMarker(self, marker, render, focus):
 
         # Add marker to the marker list in GUI and to the itemDataMap.
         num_items = self.marker_list_ctrl.GetItemCount()
@@ -2775,3 +2797,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
+
+        # Focus on the added marker.
+        if focus:
+            self.FocusOnMarker(num_items)

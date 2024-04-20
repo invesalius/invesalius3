@@ -50,9 +50,11 @@ class MarkersControl(metaclass=Singleton):
             marker = Marker().from_dict(d)
             self.AddMarker(marker, render=False)
 
-    def AddMarker(self, marker, render=True):
+    def AddMarker(self, marker, render=True, focus=False):
         """
         Given a marker object, add it to the list of markers and render the new marker.
+        
+        If focus is True, the the new marker will get the focus on the marker list.
         """
         if marker.marker_uuid == '':
             marker.marker_uuid = str(uuid.uuid4())
@@ -60,7 +62,7 @@ class MarkersControl(metaclass=Singleton):
         marker.marker_id = len(self.list)
         self.list.append(marker)
 
-        Publisher.sendMessage('Add marker', marker=marker, render=render)
+        Publisher.sendMessage('Add marker', marker=marker, render=render, focus=focus)
 
         if marker.is_target:
             self.SetTarget(marker.marker_id, check_for_previous=False)
