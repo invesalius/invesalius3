@@ -53,6 +53,7 @@ class Robot(metaclass=Singleton):
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
+        self.target = None
 
         self.objective = RobotObjective.NONE
         self.target = None
