@@ -49,7 +49,12 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
+        self.__bind_events()
+
         self.LoadState()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.ReconnectToTracker, 'Reconnect to tracker')
 
     def SaveState(self):
         tracker_id = self.tracker_id
@@ -130,12 +135,11 @@ class Tracker(metaclass=Singleton):
                 self.thread_coord.start()
 
             self.SaveState()
-        
 
     def DisconnectTracker(self):
         if self.tracker_connected:
             Publisher.sendMessage('Update status text in GUI',
-                                    label=_("Disconnecting tracker ..."))
+                                    label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
 
@@ -158,6 +162,12 @@ class Tracker(metaclass=Singleton):
                 Publisher.sendMessage('Update status text in GUI',
                                         label=_("Tracker still connected"))
                 print("Tracker still connected!")
+
+    def ReconnectToTracker(self):
+        print("Reconnecting to tracker...")
+
+        self.tracker_connection.Disconnect()
+        self.tracker_connection.Connect()
 
     def IsTrackerInitialized(self):
         return self.tracker_connection and self.tracker_id and self.tracker_connected

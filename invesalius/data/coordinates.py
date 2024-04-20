@@ -26,16 +26,19 @@ import invesalius.data.transformations as tr
 import invesalius.constants as const
 
 from time import sleep
-from random import uniform
+import random
 from invesalius.pubsub import pub as Publisher
 
 class TrackerCoordinates():
     def __init__(self):
         self.coord = None
+
         self.marker_visibilities = [False, False, False]
         self.previous_marker_visibilities = self.marker_visibilities
         self.nav_status = False
         self.__bind_events()
+
+        self.consecutive_same_coordinates = 0
 
     def __bind_events(self):
         Publisher.subscribe(self.OnUpdateNavigationStatus, 'Navigation status')
@@ -44,6 +47,24 @@ class TrackerCoordinates():
         self.nav_status = nav_status
 
     def SetCoordinates(self, coord, marker_visibilities):
+        # XXX: Check if the coordinates have changed. This is due to OptiTrack
+        #   sometimes entering an error state where it does not update the
+        #   coordinates. This is used to detect that.
+        #
+        #   Note that right after initialization, OptiTrack keeps sending the same
+        #   coordinates for a while. This is why we check for several consecutive same
+        #   coordinates.
+        if self.coord is not None:
+            is_changed = coord.tobytes() != self.coord.tobytes()
+
+            if not is_changed:
+                self.consecutive_same_coordinates += 1
+            else:
+                self.consecutive_same_coordinates = 0
+
+            if self.consecutive_same_coordinates >= 8:
+                return False
+
         self.coord = coord
         self.marker_visibilities = marker_visibilities
         if not self.nav_status:
@@ -53,6 +74,8 @@ class TrackerCoordinates():
                 wx.CallAfter(Publisher.sendMessage, 'Sensors ID', marker_visibilities=self.marker_visibilities)
                 wx.CallAfter(Publisher.sendMessage, 'Render volume viewer')
                 self.previous_marker_visibilities = self.marker_visibilities
+
+        return True
 
     def GetCoordinates(self):
         if self.nav_status:
@@ -385,28 +408,28 @@ def DebugCoordRandom(tracker_connection, tracker_id, ref_mode):
     dx = [-30, 30]
     dt = [-180, 180]
 
-    coord1 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-                      uniform(*dt), uniform(*dt), uniform(*dt)])
-    coord2 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-                      uniform(*dt), uniform(*dt), uniform(*dt)])
-    coord3 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-                       uniform(*dt), uniform(*dt), uniform(*dt)])
-    coord4 = np.array([uniform(*dx), uniform(*dx), uniform(*dx),
-                       uniform(*dt), uniform(*dt), uniform(*dt)])
+    coord1 = np.array([random.uniform(*dx), random.uniform(*dx), random.uniform(*dx),
+                      random.uniform(*dt), random.uniform(*dt), random.uniform(*dt)])
+    coord2 = np.array([random.uniform(*dx), random.uniform(*dx), random.uniform(*dx),
+                      random.uniform(*dt), random.uniform(*dt), random.uniform(*dt)])
+    coord3 = np.array([random.uniform(*dx), random.uniform(*dx), random.uniform(*dx),
+                       random.uniform(*dt), random.uniform(*dt), random.uniform(*dt)])
+    coord4 = np.array([random.uniform(*dx), random.uniform(*dx), random.uniform(*dx),
+                       random.uniform(*dt), random.uniform(*dt), random.uniform(*dt)])
 
     sleep(0.15)
 
-    # coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    # coord1 = np.array([random.uniform(1, 200), random.uniform(1, 200), random.uniform(1, 200),
+    #                    random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0)])
     #
-    # coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    # coord2 = np.array([random.uniform(1, 200), random.uniform(1, 200), random.uniform(1, 200),
+    #                    random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0)])
     #
-    # coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    # coord3 = np.array([random.uniform(1, 200), random.uniform(1, 200), random.uniform(1, 200),
+    #                    random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0)])
     #
-    # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+    # coord4 = np.array([random.uniform(1, 200), random.uniform(1, 200), random.uniform(1, 200),
+    #                    random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0), random.uniform(-180.0, 180.0)])
 
     # Always make the markers visible when using debug tracker; this enables registration, as it
     # is not possible to registering without markers.
@@ -583,6 +606,7 @@ class ReceiveCoordinates(threading.Thread):
         self.__bind_events()
         self.sleep_coord = const.SLEEP_COORDINATES
         self.tracker_connection = tracker_connection
+        self.asko = 0
         self.tracker_id = tracker_id
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
@@ -596,5 +620,9 @@ class ReceiveCoordinates(threading.Thread):
     def run(self):
         while not self.event.is_set():
             coord_raw, marker_visibilities = GetCoordinatesForThread(self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE)
-            self.TrackerCoordinates.SetCoordinates(coord_raw, marker_visibilities)
+            success = self.TrackerCoordinates.SetCoordinates(coord_raw, marker_visibilities)
+            if not success:
+                print("Error: Invalid coordinates received from tracking device.")
+                Publisher.sendMessage('Reconnect to tracker')
+
             sleep(self.sleep_coord)
