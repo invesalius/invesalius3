@@ -294,6 +294,9 @@ class MarkerTransformator:
         # Update the marker in the volume viewer.
         Publisher.sendMessage('Update marker', marker=marker, new_position=marker.position, new_orientation=marker.orientation)
 
+        # Update the camera to focus on the marker.
+        Publisher.sendMessage('Set camera to focus on marker', marker=marker)
+
         # Update the target if the marker is the active target.
         if marker.is_target:
             Publisher.sendMessage('Set target', marker=marker)
