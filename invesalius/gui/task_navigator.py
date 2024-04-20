@@ -1970,8 +1970,8 @@ class MarkersPanel(wx.Panel):
                 session_id=d['session_id'],
                 cortex_position_orientation=cortex_position_orientation,
             )
-            # Note that we don't want to render the markers here for each loop iteration.
-            self.AddMarker(marker, render=False)
+            # Note that we don't want to render or focus on the markers here for each loop iteration.
+            self.AddMarker(marker, render=False, focus=False)
 
             # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
             # then set as target if needed. This could be refactored so that a CreateMarker call would
@@ -2253,6 +2253,31 @@ class MarkersPanel(wx.Panel):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
+    # Programmatically set the focus on the marker with the given index, simulating left click.
+    def FocusOnMarker(self, item_index):
+        # Deselect the previously focused marker.
+        if self.currently_focused_marker_idx is not None:
+            self.marker_list_ctrl.SetItemState(self.currently_focused_marker_idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+
+            # Trigger EVT_LIST_ITEM_DESELECTED event manually for the old item.
+            event_deselect = wx.ListEvent(wx.EVT_LIST_ITEM_DESELECTED.typeId, self.marker_list_ctrl.GetId())
+            event_deselect.SetIndex(self.currently_focused_marker_idx)
+            event_deselect.SetEventObject(self.marker_list_ctrl)
+            self.marker_list_ctrl.GetEventHandler().ProcessEvent(event_deselect)
+
+        # Select the item.
+        self.marker_list_ctrl.SetItemState(item_index, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+
+        # Focus on the item.
+        self.marker_list_ctrl.SetItemState(item_index, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
+        self.marker_list_ctrl.EnsureVisible(item_index)
+
+        # Trigger EVT_LIST_ITEM_SELECTED event manually.
+        event = wx.ListEvent(wx.EVT_LIST_ITEM_SELECTED.typeId, self.marker_list_ctrl.GetId())
+        event.SetIndex(item_index)
+        event.SetEventObject(self.marker_list_ctrl)
+        self.marker_list_ctrl.GetEventHandler().ProcessEvent(event)
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2281,7 +2306,7 @@ class MarkersPanel(wx.Panel):
 
         # Unhighlight marker in viewer volume.
         Publisher.sendMessage('Unhighlight marker')
-        
+
     def OnCreateCoilTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
@@ -2305,8 +2330,8 @@ class MarkersPanel(wx.Panel):
         # Give the new marker a new label.
         new_marker.label = self.GetNextMarkerLabel()
 
-        # Add the new marker to the marker list and render it.
-        self.AddMarker(new_marker, render=True)
+        # Add the new marker to the marker list, render it, and focus on it.
+        self.AddMarker(new_marker, render=True, focus=True)
 
         self.SaveState()
 
@@ -2322,9 +2347,9 @@ class MarkersPanel(wx.Panel):
         # Set marker type to 'coil target'.
         new_marker.marker_type = MarkerType.COIL_TARGET
 
-        # Add the new marker to the marker list and render it.
-        self.AddMarker(new_marker, render=True)
-        
+        # Add the new marker to the marker list, render it, and focus on it.
+        self.AddMarker(new_marker, render=True, focus=True)
+
         self.SaveState()
 
     def ChangeLabel(self, evt):
@@ -2365,7 +2390,7 @@ class MarkersPanel(wx.Panel):
 
         # Create a duplicate of the selected marker.
         new_marker = self.markers[idx].duplicate()
-        self.AddMarker(new_marker, render=True)
+        self.AddMarker(new_marker, render=True, focus=True)
 
         self.SaveState()
 
@@ -2389,7 +2414,7 @@ class MarkersPanel(wx.Panel):
             size=2,
             marker_type=MarkerType.COIL_TARGET,
         )
-        self.AddMarker(marker, render=True)
+        self.AddMarker(marker, render=True, focus=True)
 
     def OnMenuShowVectorField(self, evt):
         session = ses.Session()
@@ -2474,13 +2499,13 @@ class MarkersPanel(wx.Panel):
             marker = self.CreateMarker(
                 position=position,
                 orientation=orientation,
-                # XXX: Setting the marker type to 'brain traget' is inconsistent with the variable names above ('coil_position_list' etc.);
+                # XXX: Setting the marker type to 'brain target' is inconsistent with the variable names above ('coil_position_list' etc.);
                 #   however, the dialog shown to the user by this function should be used exclusively for creating brain targets, hence the
                 #   variable naming (and the internal logic of the dialog where it currently returns both coil targets and brain targets)
                 #   should probably be modified to reflect that.
                 marker_type=MarkerType.BRAIN_TARGET,
             )
-            self.AddMarker(marker, render=True)
+            self.AddMarker(marker, render=True, focus=True)
 
             for (position, orientation) in zip(brain_position_list, brain_orientation_list):
                 marker = self.CreateMarker(
@@ -2488,7 +2513,7 @@ class MarkersPanel(wx.Panel):
                     orientation=list(orientation),
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.AddMarker(marker, render=True)
+                self.AddMarker(marker, render=True, focus=False)
 
         dialog.Destroy()
 
@@ -2587,8 +2612,8 @@ class MarkersPanel(wx.Panel):
                     size=0.05,
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.AddMarker(marker, render=True)
-                
+                self.AddMarker(marker, render=True, focus=False)
+
         dialog.Destroy()
 
         self.SaveState()
@@ -2739,7 +2764,7 @@ class MarkersPanel(wx.Panel):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
         )
-        self.AddMarker(marker, render=True)
+        self.AddMarker(marker, render=True, focus=True)
 
         self.SaveState()
 
@@ -2766,8 +2791,8 @@ class MarkersPanel(wx.Panel):
                     # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
                     marker.is_target = False
 
-                    # Note that we don't want to render the markers here for each loop iteration.
-                    self.AddMarker(marker, render=False)
+                    # Note that we don't want to render or focus on the markers here for each loop iteration.
+                    self.AddMarker(marker, render=False, focus=False)
 
                     if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
                         Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
@@ -2899,9 +2924,9 @@ class MarkersPanel(wx.Panel):
 
         return marker
 
-    def AddMarker(self, marker, render=True):
+    def AddMarker(self, marker, render=True, focus=True):
         """
-        Given a marker object, add it to the list of markers and render the new marker.
+        Given a marker object, add it to the list of markers, render the new marker, and focus on it.
         """
         if self.robot.IsConnected() and self.nav_status:
             current_head_robot_target_status = True
@@ -2931,3 +2956,7 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
+
+        # Focus on the new marker.
+        if focus:
+            self.FocusOnMarker(num_items)
