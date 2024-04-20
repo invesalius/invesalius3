@@ -5548,8 +5548,8 @@ class GoToDialogScannerCoord(wx.Dialog):
         wx.Dialog.Close(self)
         self.Destroy()
 
-class SetOptitrackconfigs(wx.Dialog):
-    def __init__(self, title=_("Setting Optitrack configs:")):
+class ConfigureOptitrackDialog(wx.Dialog):
+    def __init__(self, title=_("Configure Optitrack")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         self._init_gui()
@@ -5565,16 +5565,16 @@ class SetOptitrackconfigs(wx.Dialog):
             last_optitrack_User_Profile_dir = inv_paths.OPTITRACK_USERPROFILE_DIR
 
         self.dir_cal = wx.FilePickerCtrl(self, path=last_optitrack_cal_dir, style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
-                                         wildcard="Cal files (*.cal)|*.cal", message="Select Calibration file")
+                                         wildcard="Cal files (*.cal)|*.cal", message="Select the calibration file", size=(700, -1))
         row_cal = wx.BoxSizer(wx.VERTICAL)
-        row_cal.Add(wx.StaticText(self, wx.ID_ANY, "Select Calibration file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_cal.Add(wx.StaticText(self, wx.ID_ANY, "Calibration:"), 0, wx.TOP | wx.RIGHT, 5)
         row_cal.Add(self.dir_cal, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         self.dir_UserProfile = wx.FilePickerCtrl(self, path=last_optitrack_User_Profile_dir, style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
-                                         wildcard="User Profile files (*.motive)|*.motive", message="Select User Profile file")
+                                         wildcard="User Profile files (*.motive)|*.motive", message="Select the user profile file", size=(700, -1))
 
         row_userprofile = wx.BoxSizer(wx.VERTICAL)
-        row_userprofile.Add(wx.StaticText(self, wx.ID_ANY, "Select User Profile file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_userprofile.Add(wx.StaticText(self, wx.ID_ANY, "User profile:"), 0, wx.TOP | wx.RIGHT, 5)
         row_userprofile.Add(self.dir_UserProfile, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         btn_ok = wx.Button(self, wx.ID_OK)
@@ -5620,7 +5620,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
     Robot navigation requires a tracker device to tracker the head position and the object (coil) position.
     A dialog pops up showing a combobox with all trackers but debugs and the robot itself (const.TRACKERS[:-3])
     """
-    def __init__(self, title=_("Setting tracker device:")):
+    def __init__(self, title=_("Set tracker device")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         self.tracker_id = const.DEFAULT_TRACKER
@@ -5675,7 +5675,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         return self.tracker_id
 
 class SetRobotIP(wx.Dialog):
-    def __init__(self, title=_("Setting Robot IP")):
+    def __init__(self, title=_("Set Robot IP")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         self.robot_ip = None
@@ -5949,8 +5949,8 @@ class RobotCoregistrationDialog(wx.Dialog):
         return self.matrix_tracker_to_robot
 
 
-class SetNDIconfigs(wx.Dialog):
-    def __init__(self, title=_("Setting NDI polaris configs:")):
+class ConfigurePolarisDialog(wx.Dialog):
+    def __init__(self, title=_("Configure NDI Polaris")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
                            style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP|wx.RESIZE_BORDER)
         self._init_gui()
@@ -5983,7 +5983,7 @@ class SetNDIconfigs(wx.Dialog):
         com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
         com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
         row_com = wx.BoxSizer(wx.VERTICAL)
-        row_com.Add(wx.StaticText(self, wx.ID_ANY, "Select the COM port or IP"), 0, wx.TOP|wx.RIGHT,5)
+        row_com.Add(wx.StaticText(self, wx.ID_ANY, "COM port or IP:"), 0, wx.TOP|wx.RIGHT,5)
         row_com.Add(com_ports, 0, wx.EXPAND)
 
         port_list, port_selec = self.serial_ports()
@@ -6009,22 +6009,22 @@ class SetNDIconfigs(wx.Dialog):
             last_ndi_obj_marker = inv_paths.NDI_MAR_DIR_OBJ
 
         self.dir_probe = wx.FilePickerCtrl(self, path=last_ndi_probe_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                           wildcard="Rom files (*.rom)|*.rom", message="Select probe's rom file")
+                                           wildcard="Rom files (*.rom)|*.rom", message="Select the ROM file of the probe", size=(700, -1))
         row_probe = wx.BoxSizer(wx.VERTICAL)
-        row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Set probe's rom file"), 0, wx.TOP|wx.RIGHT, 5)
+        row_probe.Add(wx.StaticText(self, wx.ID_ANY, "Probe ROM file:"), 0, wx.TOP|wx.RIGHT, 5)
         row_probe.Add(self.dir_probe, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         self.dir_ref = wx.FilePickerCtrl(self, path=last_ndi_ref_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                         wildcard="Rom files (*.rom)|*.rom", message="Select reference's rom file")
+                                         wildcard="Rom files (*.rom)|*.rom", message="Select the ROM file of the reference", size=(700, -1))
         row_ref = wx.BoxSizer(wx.VERTICAL)
-        row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Set reference's rom file"), 0, wx.TOP | wx.RIGHT, 5)
+        row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Reference ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
         row_ref.Add(self.dir_ref, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         self.dir_obj = wx.FilePickerCtrl(self, path=last_ndi_obj_marker, style=wx.FLP_USE_TEXTCTRL|wx.FLP_SMALL,
-                                         wildcard="Rom files (*.rom)|*.rom", message="Select object's rom file")
+                                         wildcard="Rom files (*.rom)|*.rom", message="Select the ROM file of the object", size=(700, -1))
         #self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
         row_obj = wx.BoxSizer(wx.VERTICAL)
-        row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Set object's rom file"), 0, wx.TOP|wx.RIGHT, 5)
+        row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Coil ROM file:"), 0, wx.TOP|wx.RIGHT, 5)
         row_obj.Add(self.dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
         btn_ok = wx.Button(self, wx.ID_OK)
@@ -6398,7 +6398,7 @@ class PeelsCreationDlg(wx.Dialog):
         from_files_stbox = wx.StaticBoxSizer(files_box, wx.VERTICAL)
 
         self.mask_file_browse = filebrowse.FileBrowseButton(self, -1, labelText=_("Mask file"),
-                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose Mask file"), startDirectory = last_directory,
+                fileMask=WILDCARD_NIFTI, dialogTitle=_("Choose mask file"), startDirectory = last_directory,
                 changeCallback=lambda evt: self._set_files_callback(mask_path=evt.GetString()))
         self.from_files_rb = wx.RadioButton(self, -1, "")
 
@@ -6508,6 +6508,8 @@ class FileSelectionDialog(wx.Dialog):
         file_browse = filebrowse.FileBrowseButton(self, -1, labelText='', fileMask=self.wildcard,
                                                   dialogTitle=_("Choose file"), startDirectory=self.default_dir,
                                                   changeCallback=callback)
+
+        file_browse.SetMinSize(wx.Size(500, -1))
 
         internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
         internal_sizer.Add(file_browse, 0, wx.ALL | wx.EXPAND, 5)

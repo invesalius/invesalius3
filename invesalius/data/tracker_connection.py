@@ -83,7 +83,7 @@ class OptitrackTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.SetOptitrackconfigs()
+        dialog = dlg.ConfigureOptitrackDialog()
 
         status = dialog.ShowModal()
         success = status == ID_OK
@@ -381,7 +381,7 @@ class PolarisTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.SetNDIconfigs()
+        dialog = dlg.ConfigurePolarisDialog()
         status = dialog.ShowModal()
 
         success = status == ID_OK
@@ -443,7 +443,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.SetNDIconfigs()
+        dialog = dlg.ConfigurePolarisDialog()
         status = dialog.ShowModal()
 
         success = status == ID_OK
