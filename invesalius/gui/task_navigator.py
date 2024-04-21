@@ -2553,7 +2553,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if visualization['actor'] == actor:
                 # Unselect the previously selected item.
                 idx_old = self.marker_list_ctrl.GetFocusedItem()
-                if idx_old != -1:
+                if idx_old != -1 and idx_old != idx:
                     self.marker_list_ctrl.Select(idx_old, on=False)
 
                 # Focus and select the marker in the list control.
