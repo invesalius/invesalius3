@@ -177,9 +177,7 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
         evt.StartDolly()
 
     def OnZoomRightRelease(self, evt, obj):
-        print('EndDolly')
         evt.OnRightButtonUp()
-        #  evt.EndDolly()
         self.right_pressed = False
 
     def OnScrollForward(self, evt, obj):
