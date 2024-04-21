@@ -97,13 +97,14 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
 
-        # Select markers, update pointer, set camera focus, and zoom using right button.
-        self.AddObserver("RightButtonPressEvent", self.PickMarker)
-        self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
+        # Pick marker using left button.
+        self.AddObserver("LeftButtonPressEvent", self.PickMarker)
+
+        # Zoom using right button.
         self.AddObserver("RightButtonPressEvent", self.StartZoom)
 
-        # Reset camera focus using double right click.
-        self.viewer.interactor.Bind(wx.EVT_RIGHT_DCLICK, self.SetCameraFocus)
+        # Set camera focus using double right click.
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.SetCameraFocus)
 
         self.AddObserver("RightButtonReleaseEvent", self.EndZoom)
 
@@ -149,10 +150,6 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
         if self.marker_found is not None:
             Publisher.sendMessage('Select marker by actor', actor=actor)
-
-    # This method is overridden in the CrossInteractorStyle class.
-    def UpdatePointer(self, evt, obj):
-        pass
 
     def SetCameraFocus(self, evt):
         # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
@@ -504,6 +501,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     """
     def __init__(self, viewer):
         super().__init__(viewer)
+        self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
 
     def SetUp(self):
         self.viewer.CreatePointer()
@@ -512,11 +510,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
-        # Primarily pick markers with right mouse click; only if marker is not found, update the pointer in the volume viewer.
-        # Hence, check first if a marker was found under the mouse cursor.
-        if self.marker_found:
-            return
-
         x, y = self.viewer.get_vtk_mouse_position()
 
         self.picker.Pick(x, y, 0, self.viewer.ren)
@@ -538,20 +531,18 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
 
     When performing registration, the user can click on the volume viewer to select points for
     registration (i.e., left ear, right ear, and nasion).
- 
-    Similar to CrossInteractorStyle, but does not allow selecting markers or resetting camera focus.
+
+    Identical to CrossInteractorStyle for now, but may be extended in the future.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
+        self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
 
     def SetUp(self):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
         self.viewer.DeletePointer()
-
-    def PickMarker(self, obj, evt):
-        pass
 
     def UpdatePointer(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
@@ -567,9 +558,6 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
 
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
-
-    def SetCameraFocus(self, obj, evt):
-        pass
 
 
 class NavigationInteractorStyle(DefaultInteractorStyle):
