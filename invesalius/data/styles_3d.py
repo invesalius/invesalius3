@@ -98,13 +98,12 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
 
         # Select markers, update pointer, set camera focus, and zoom using right button.
-        #
-        # Note that the order of the following observers is important. The observers are executed in the order they are added,
-        # and we don't want to reset the camera focus before picking a marker or updating the pointer.
         self.AddObserver("RightButtonPressEvent", self.PickMarker)
         self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
-        self.AddObserver("RightButtonPressEvent", self.SetCameraFocus)
         self.AddObserver("RightButtonPressEvent", self.StartZoom)
+
+        # Reset camera focus using double right click.
+        self.viewer.interactor.Bind(wx.EVT_RIGHT_DCLICK, self.SetCameraFocus)
 
         self.AddObserver("RightButtonReleaseEvent", self.EndZoom)
 
@@ -155,7 +154,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     def UpdatePointer(self, evt, obj):
         pass
 
-    def SetCameraFocus(self, evt, obj):
+    def SetCameraFocus(self, evt):
         # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
         # pick the actor under the mouse cursor, this time without hiding the surfaces.
         if self.marker_found:
@@ -214,7 +213,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
-        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.ResetCamera)
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
@@ -231,11 +230,13 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     def OnReleaseLeftButton(self, obj, evt):
         self.right_pressed = False
 
-    def OnUnZoom(self, evt):
-        ren = self.viewer.ren
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        self.viewer.interactor.Render()
+    def ResetCamera(self, evt):
+        renderer = self.viewer.ren
+        interactor = self.viewer.interactor
+
+        renderer.ResetCamera()
+        renderer.ResetCameraClippingRange()
+        interactor.Render()
 
 
 class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
@@ -244,7 +245,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
     def __init__(self, viewer):
         self.viewer = viewer
-        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.ResetCamera)
 
         self.state_code = const.STATE_ZOOM_SL
 
@@ -257,11 +258,13 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
         Publisher.sendMessage('Toggle toolbar item',
                               _id=self.state_code, value=False)
 
-    def OnUnZoom(self, evt):
-        ren = self.viewer.ren
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        self.viewer.interactor.Render()
+    def ResetCamera(self, evt):
+        renderer = self.viewer.ren
+        interactor = self.viewer.interactor
+
+        renderer.ResetCamera()
+        renderer.ResetCameraClippingRange()
+        interactor.Render()
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
