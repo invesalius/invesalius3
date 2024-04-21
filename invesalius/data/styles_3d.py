@@ -74,8 +74,9 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
     * Rotate by moving mouse with left button pressed.
     * Pan by moving mouse with middle button pressed.
-    * Zoom by moving mouse with right button pressed.
+    * Spin by moving mouse with right button pressed.
     * Select marker by clicking right button on the marker.
+    * Focus camera by double clicking right button.
     """
     def __init__(self, viewer):
         super().__init__(viewer)
@@ -100,18 +101,21 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         # Pick marker using left button.
         self.AddObserver("LeftButtonPressEvent", self.PickMarker)
 
-        # Zoom using right button.
-        self.AddObserver("RightButtonPressEvent", self.StartZoom)
+        # Spin using right button.
+        self.AddObserver("RightButtonPressEvent", self.OnRightClick)
+        self.AddObserver("RightButtonReleaseEvent", self.OnRightRelease)
 
-        # Set camera focus using double right click.
-        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.SetCameraFocus)
-
-        self.AddObserver("RightButtonReleaseEvent", self.EndZoom)
+        # Zoom using mouse wheel.
+        self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
-        self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
-        self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+        # Set camera focus using left double-click.
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.SetCameraFocus)
+
+        # Reset camera using right double-click.
+        self.viewer.interactor.Bind(wx.EVT_RIGHT_DCLICK, self.ResetCamera)
 
     def OnMouseMove(self, evt, obj):
         if self.left_pressed:
@@ -119,18 +123,30 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
             evt.OnLeftButtonDown()
 
         elif self.right_pressed:
-            evt.Dolly()
+            evt.Spin()
             evt.OnRightButtonDown()
 
         elif self.middle_pressed:
             evt.Pan()
             evt.OnMiddleButtonDown()
 
+    def OnRightClick(self, evt, obj):
+        self.viewer.interactor.InvokeEvent('StartSpinEvent')
+
+    def OnRightRelease(self, evt, obj):
+        self.viewer.interactor.InvokeEvent('EndSpinEvent')
+
     def OnLeftClick(self, evt, obj):
         evt.StartRotate()
 
     def OnLeftRelease(self, evt, obj):
         evt.EndRotate()
+
+    def OnScrollForward(self, evt, obj):
+        self.OnMouseWheelForward()
+
+    def OnScrollBackward(self, evt, obj):
+        self.OnMouseWheelBackward()
 
     def PickMarker(self, evt, obj):
         # Get the mouse position in the viewer.
@@ -179,18 +195,13 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         renderer.Render()
         self.viewer.interactor.GetRenderWindow().Render()
 
-    def StartZoom(self, evt, obj):
-        evt.StartDolly()
+    def ResetCamera(self, evt):
+        renderer = self.viewer.ren
+        interactor = self.viewer.interactor
 
-    def EndZoom(self, evt, obj):
-        evt.OnRightButtonUp()
-        evt.EndDolly()
-
-    def OnScrollForward(self, evt, obj):
-        self.OnMouseWheelForward()
-
-    def OnScrollBackward(self, evt, obj):
-        self.OnMouseWheelBackward()
+        renderer.ResetCamera()
+        renderer.ResetCameraClippingRange()
+        interactor.Render()
 
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
@@ -207,8 +218,12 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         self.RemoveObservers("LeftButtonPressEvent")
         self.RemoveObservers("LeftButtonReleaseEvent")
 
+        self.AddObserver("MouseMoveEvent", self.OnMouseMoveZoom)
+
         self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+        
+        self.zoom_started = False
 
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.ResetCamera)
 
@@ -221,11 +236,18 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Toggle toolbar item',
                               _id=self.state_code, value=False)
 
-    def OnPressLeftButton(self, evt, obj):
-        self.right_pressed = True
+    def OnMouseMoveZoom(self, evt, obj):
+        if self.zoom_started:
+            evt.Dolly()
+            evt.OnLeftButtonDown()
 
-    def OnReleaseLeftButton(self, obj, evt):
-        self.right_pressed = False
+    def OnPressLeftButton(self, evt, obj):
+        evt.StartDolly()
+        self.zoom_started = True
+
+    def OnReleaseLeftButton(self, evt, obj):
+        evt.EndDolly()
+        self.zoom_started = False
 
     def ResetCamera(self, evt):
         renderer = self.viewer.ren
