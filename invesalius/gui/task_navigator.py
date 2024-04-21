@@ -2302,7 +2302,7 @@ class MarkersPanel(wx.Panel):
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
         #   is triggered repeatedly for the same item (the one that was first selected). This is a
         #   workaround to prevent the event from being triggered repeatedly for the same item.
-        if self.currently_focused_marker is not None and idx == self.currently_focused_marker:
+        if self.currently_focused_marker is not None and marker == self.currently_focused_marker:
             return
 
         # When selecting multiple markers, e.g., by pressing ctrl while clicking on the markers, EVT_LIST_ITEM_SELECTED
