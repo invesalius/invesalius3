@@ -1822,6 +1822,9 @@ class MarkersPanel(wx.Panel):
         
         self.marker_list_ctrl = marker_list_ctrl
 
+        # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
+        self.markers.LoadState()
+
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
