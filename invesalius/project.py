@@ -77,9 +77,7 @@ class Project(metaclass=Singleton):
 
         self.compress = False
 
-        # InVesalius related data
-        # So we can find bugs and reproduce user-related problems
-        self.invesalius_version = version.get_svn_revision()    
+        self.invesalius_version = const.INVESALIUS_VERSION
 
         self.presets = Presets()
 

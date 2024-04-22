@@ -56,6 +56,11 @@ class Robot(metaclass=Singleton):
 
         self.objective = RobotObjective.NONE
 
+        # If tracker already has fiducials set, send them to the robot; this can happen, e.g.,
+        # when a pre-existing state is loaded at start-up.
+        if self.tracker.AreTrackerFiducialsSet():
+            self.TrackerFiducialsSet()
+
         success = self.LoadConfig()
         if success:
             self.ConnectToRobot()
@@ -64,11 +69,14 @@ class Robot(metaclass=Singleton):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
-        Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
+        Publisher.subscribe(self.AbortRobotConfiguration, 'Robot to Neuronavigation: Close robot dialog')
+        Publisher.subscribe(self.OnRobotStatus, 'Robot to Neuronavigation: Robot connection status')
+        Publisher.subscribe(self.SetObjectiveByRobot, 'Robot to Neuronavigation: Set objective')
+
         Publisher.subscribe(self.SetTarget, 'Set target')
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
-        Publisher.subscribe(self.GetCurrentObjectiveFromRobot, 'Send current objective from robot to neuronavigation')
+
+        Publisher.subscribe(self.TrackerFiducialsSet, 'Tracker fiducials set')
 
     def SaveConfig(self):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
@@ -134,19 +142,17 @@ class Robot(metaclass=Singleton):
             self.robot_ip = data
 
     def ConnectToRobot(self):
-        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+        Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
         print("Connected to robot")
 
     def InitializeRobot(self):
-        Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+        Publisher.sendMessage('Neuronavigation to Robot: Set robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
         print("Robot initialized")
 
     def SendTargetToRobot(self):
-        matrix_tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
-
-        Publisher.sendMessage('Reset robot process', data=None)
-        Publisher.sendMessage('Update tracker fiducials matrix',
-                              matrix_tracker_fiducials=matrix_tracker_fiducials)
+        # If the target is not set, return early.
+        if self.target is None:
+            return False
 
         # Compute the target in tracker coordinate system.
         coord_raw, markers_flag = self.tracker.TrackerCoordinates.GetCoordinates()
@@ -163,26 +169,24 @@ class Robot(metaclass=Singleton):
 
         m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, target, self.icp, self.navigation.obj_data)
 
-        Publisher.sendMessage('Update robot target',
-            # TODO: 'robot_tracker_flag' indicates if the target has been set. The name is not very clear. Changing
-            #   it would require changes on both robot control and InVesalius side.
-            robot_tracker_flag=True,
-            target=m_target.tolist()
+        Publisher.sendMessage('Neuronavigation to Robot: Set target',
+            target=m_target.tolist(),
         )
+
+    def TrackerFiducialsSet(self):
+        tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
+        Publisher.sendMessage('Neuronavigation to Robot: Set tracker fiducials', tracker_fiducials=tracker_fiducials)
         
     def SetObjective(self, objective):
         # If the objective is already set to the same value, return early.
         # This is done to avoid sending the same objective to the robot repeatedly.
         if self.objective == objective:
             return
-        
+
         self.objective = objective
-        Publisher.sendMessage('Send objective from neuronavigation to robot', objective=objective.value)
+        Publisher.sendMessage('Neuronavigation to Robot: Set objective', objective=objective.value)
 
-        if objective == RobotObjective.TRACK_TARGET:
-            self.SendTargetToRobot()
-
-    def GetCurrentObjectiveFromRobot(self, objective):
+    def SetObjectiveByRobot(self, objective):
         if objective is None:
             return
 
@@ -202,11 +206,7 @@ class Robot(metaclass=Singleton):
 
     def UnsetTarget(self, marker):
         self.target = None
-        Publisher.sendMessage('Update robot target',
-            robot_tracker_flag=False,
-            target_index=None,
-            target=None,
-        )
+        Publisher.sendMessage('Neuronavigation to Robot: Unset target')
 
     def SetTarget(self, marker):
         coord = marker.position + marker.orientation

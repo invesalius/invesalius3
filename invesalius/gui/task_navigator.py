@@ -790,6 +790,9 @@ class TrackerPage(wx.Panel):
 
         self.ResetICP()
         if self.tracker.AreTrackerFiducialsSet():
+            # All tracker fiducials are set; publish a message to pass the fiducials to, e.g., robot.
+            Publisher.sendMessage("Tracker fiducials set")
+
             self.OnNextEnable()
             self.OnRegisterDisable()
         else:
@@ -1376,7 +1379,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
-        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
         Publisher.subscribe(self.SetTargetMode, 'Set target mode')
 
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
@@ -1472,6 +1475,9 @@ class ControlPanel(wx.Panel):
 
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
             self.navigation.StartNavigation(self.tracker, self.icp)
+
+            # Ensure that the target is sent to robot when navigation starts.
+            self.robot.SendTargetToRobot()
 
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
@@ -1907,6 +1913,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
+        Publisher.subscribe(self.UpdateMarker, 'Update marker')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
@@ -2818,6 +2825,12 @@ class MarkersPanel(wx.Panel):
 
     def OnChangeCurrentSession(self, new_session_id):
         self.current_session = new_session_id
+
+    def UpdateMarker(self, marker, new_position, new_orientation):
+        marker_id = marker.marker_id
+        self.markers[marker_id].position = new_position
+        self.markers[marker_id].orientation = new_orientation
+        self.SaveState()
 
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0

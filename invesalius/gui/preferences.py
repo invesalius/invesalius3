@@ -32,14 +32,6 @@ class Preferences(wx.Dialog):
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
     ):
         super().__init__(parent, id_, title, style=style)
-        tracker = Tracker()
-        robot = Robot()
-        neuronavigation_api = NeuronavigationApi()
-        pedal_connector = PedalConnector(neuronavigation_api, self)
-        navigation = Navigation(
-            pedal_connector=pedal_connector,
-            neuronavigation_api=neuronavigation_api,
-        )
 
         self.book = wx.Notebook(self, -1)
 
@@ -50,6 +42,14 @@ class Preferences(wx.Dialog):
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
+            tracker = Tracker()
+            robot = Robot()
+            neuronavigation_api = NeuronavigationApi()
+            pedal_connector = PedalConnector(neuronavigation_api, self)
+            navigation = Navigation(
+                pedal_connector=pedal_connector,
+                neuronavigation_api=neuronavigation_api,
+            )
             self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
             self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
@@ -538,7 +538,7 @@ class TrackerPage(wx.Panel):
 
         # ComboBox for spatial tracker device selection
         tooltip = wx.ToolTip(_("Choose or type the robot IP"))
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
@@ -602,8 +602,8 @@ class TrackerPage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
-        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
-        Publisher.subscribe(self.OnTransformationMatrix, "Load robot transformation matrix")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
+        Publisher.subscribe(self.OnSetRobotTransformationMatrix, "Neuronavigation to Robot: Set robot transformation matrix")
     
     def LoadConfig(self):
         session = ses.Session()
@@ -659,7 +659,7 @@ class TrackerPage(wx.Panel):
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
-            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+            Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobotRegister(self, evt):
         self.HideParent()
@@ -671,7 +671,7 @@ class TrackerPage(wx.Panel):
             self.status_text.SetLabelText("Setup robot transformation matrix:")
             self.btn_rob_con.Show()
 
-    def OnTransformationMatrix(self, data):
+    def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")

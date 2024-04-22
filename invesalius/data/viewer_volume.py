@@ -517,7 +517,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RecolorEfieldActor, 'Recolor efield actor')
         Publisher.subscribe(self.GetScalpEfield, 'Send scalp index')
         # Related to robot tracking during neuronavigation
-        Publisher.subscribe(self.OnUpdateRobotStatus, 'Update robot status')
+        Publisher.subscribe(self.OnUpdateRobotStatus, 'Robot to Neuronavigation: Update robot status')
         Publisher.subscribe(self.GetCoilPosition, 'Calculate position and rotation')
         Publisher.subscribe(self.CreateCortexProjectionOnScalp, 'Send efield target position on brain')
         Publisher.subscribe(self.UpdateEfieldThreshold, 'Update Efield Threshold')
@@ -876,7 +876,9 @@ class Viewer(wx.Panel):
             for ind in self.guide_arrow_actors:
                 self.target_guide_renderer.RemoveActor(ind)
 
-        obj_polydata = vtku.CreateObjectPolyData(self.coil_path)
+        # Using default coil for target guide model as using self.coil_path can cause custom models to overlap.
+        coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+        obj_polydata = vtku.CreateObjectPolyData(coil_path)
 
         normals = vtkPolyDataNormals()
         normals.SetInputData(obj_polydata)
@@ -1059,9 +1061,14 @@ class Viewer(wx.Panel):
 
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
-            distance_to_target_robot = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img_flip)
-            wx.CallAfter(Publisher.sendMessage, 'Distance to the target', distance=distance_to_target_robot)
-            distance_to_target = distance_to_target_robot.copy()
+
+            # Send displacement to the robot.
+            #
+            # TODO: Unify naming; displacement is more correct term than distance, it should be used consistently.
+            displacement_to_target_robot = dcr.ComputeRelativeDistanceToTarget(target_coord=self.target_coord, m_img=m_img_flip)
+            wx.CallAfter(Publisher.sendMessage, 'Neuronavigation to Robot: Update displacement to target', displacement=displacement_to_target_robot)
+
+            distance_to_target = displacement_to_target_robot.copy()
             if distance_to_target[3] > const.ARROW_UPPER_LIMIT:
                 distance_to_target[3] = const.ARROW_UPPER_LIMIT
             elif distance_to_target[3] < -const.ARROW_UPPER_LIMIT:
@@ -1149,6 +1156,7 @@ class Viewer(wx.Panel):
                              is_under_z_angle_threshold
 
             wx.CallAfter(Publisher.sendMessage, 'Coil at target', state=coil_at_target)
+            wx.CallAfter(Publisher.sendMessage, 'From Neuronavigation: Coil at target', state=coil_at_target)
 
             self.guide_arrow_actors = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
                                       arrow_pitch_y1, arrow_pitch_y2
