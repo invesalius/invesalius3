@@ -16,19 +16,59 @@ class SurfaceGeometry(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
 
-    def LoadActor(self, actor):
+    def PrecalculateSurfaceData(self, actor):
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
-
-        # Get the polydata from the actor.
         polydata = actor.GetMapper().GetInput()
-
-        self.surfaces.append({
+        return {
             'actor': actor,
             'polydata': polydata,
             'normals': normals,
             'highest_z': highest_z,
+        }
+
+    def LoadActor(self, actor):
+        # Create a smoothed version of the actor.
+        smoothed_actor = self.SmoothSurface(actor)
+
+        # Maintain a list of surfaces and their smoothed versions.
+        #
+        # The original versions are used for visualization, while the smoothed
+        # versions are used for calculations.
+        self.surfaces.append({
+            'original': self.PrecalculateSurfaceData(actor),
+            'smoothed': self.PrecalculateSurfaceData(smoothed_actor),
         })
+
+    def SmoothSurface(self, actor):
+        mapper = actor.GetMapper()
+        polydata = mapper.GetInput()
+
+        # Create the smoothing filter.
+        smoother = vtk.vtkSmoothPolyDataFilter()
+        smoother.SetInputData(polydata)
+        # TODO: Having this many iterations is slow and should be probably computed
+        #   only once and then stored on the disk - not re-computed every time InVesalius
+        #   is started. For instance, setting number of iterations to 100 does not provide
+        #   good enough results.
+        smoother.SetNumberOfIterations(400)
+        smoother.SetRelaxationFactor(0.9)
+        smoother.FeatureEdgeSmoothingOff()
+        smoother.BoundarySmoothingOn()
+        smoother.Update()
+
+        # Create a new mapper for the smoothed data.
+        smoothed_mapper = vtk.vtkPolyDataMapper()
+        smoothed_mapper.SetInputData(smoother.GetOutput())
+
+        # Create a new actor using the smoothed mapper.
+        smoothed_actor = vtk.vtkActor()
+        smoothed_actor.SetMapper(smoothed_mapper)
+
+        # Copy visual properties from the original actor to the new one.
+        smoothed_actor.GetProperty().DeepCopy(actor.GetProperty())
+
+        return smoothed_actor
 
     def HideAllSurfaces(self):
         """
@@ -36,8 +76,10 @@ class SurfaceGeometry(metaclass=Singleton):
         This is useful, e.g., when we want to pick a marker without any of the surfaces getting in the way.
         """
         for surface in self.surfaces:
-            surface['visible'] = surface['actor'].GetVisibility() 
-            surface['actor'].VisibilityOff()
+            # Only the original actor is used for visualization, so we only need to hide that one.
+            actor = surface['original']['actor']
+            surface['visible'] = actor.GetVisibility() 
+            actor.VisibilityOff()
 
     def ShowAllSurfaces(self):
         """
@@ -45,8 +87,10 @@ class SurfaceGeometry(metaclass=Singleton):
         HideAllSurfaces was called.
         """
         for surface in self.surfaces:
+            # Only the original actor is used for visualization, so we only need to show that one.
+            actor = surface['original']['actor']
             visible = surface['visible'] if 'visible' in surface else True
-            surface['actor'].SetVisibility(visible)
+            actor.SetVisibility(visible)
 
     def GetSurfaceCenter(self, actor):
         # Get the bounding box of the actor.
@@ -92,15 +136,18 @@ class SurfaceGeometry(metaclass=Singleton):
 
         return highest_z
 
-    def GetScalpSurface(self):
+    def GetSmoothedScalpSurface(self):
         # Retrieve the surface with the highest z-coordinate.
         if not self.surfaces:
             return None
 
-        return max(self.surfaces, key=lambda surface: surface['highest_z'])
+        # Find the surface with the highest z-coordinate.
+        highest_surface = max(self.surfaces, key=lambda surface: surface['smoothed']['highest_z'])
+
+        return highest_surface['smoothed']
 
     def GetClosestPointOnSurface(self, surface_name, point):
-        surface = self.GetScalpSurface()
+        surface = self.GetSmoothedScalpSurface()
 
         polydata = surface['polydata']
         normals = surface['normals']
