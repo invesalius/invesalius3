@@ -482,7 +482,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetEnorm, 'Get enorm')
         Publisher.subscribe(self.TrackObject, 'Track object')
         Publisher.subscribe(self.SetTargetMode, 'Set target mode')
-        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update coil pose')
+        Publisher.subscribe(self.OnUpdateCoilPose, 'Update coil pose')
         Publisher.subscribe(self.OnSetTarget, 'Set target')
         Publisher.subscribe(self.OnUnsetTarget, 'Unset target')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
@@ -1031,14 +1031,18 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def SetTargetMode(self, enabled=False):
+        # If target is not set before attempting to enable target mode, return without enabling it.
+        if self.target_coord is None:
+            return
+
         self.target_mode = enabled
 
-        if enabled and self.target_coord:
+        if enabled:
             self.EnableTargetMode()
         else:
             self.DisableTargetMode()
 
-    def OnUpdateObjectTargetGuide(self, m_img, coord):
+    def OnUpdateCoilPose(self, m_img, coord):
         vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(coord[0:3],

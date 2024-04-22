@@ -1724,10 +1724,10 @@ class ControlPanel(wx.Panel):
     def OnTargetButton(self, evt=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
-        
+
         Publisher.sendMessage('Set target mode', enabled=pressed)
         if pressed:
-            # Set robot objective to NONE when target mode is disabled.
+            # Set robot objective to NONE when target mode is enabled.
             self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
@@ -2405,10 +2405,11 @@ class MarkersPanel(wx.Panel):
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
         self.robot.SetObjective(RobotObjective.NONE)
 
-        # When setting a new target, automatically move into target mode.
-        Publisher.sendMessage('Press target mode button', pressed=True)
-
         self.__set_marker_as_target(idx)
+
+        # When setting a new target, automatically move into target mode. Note that the order is important here: 
+        # first set the target, then move into target mode.
+        Publisher.sendMessage('Press target mode button', pressed=True)
 
         self.SaveState()
 
