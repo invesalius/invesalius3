@@ -2577,9 +2577,9 @@ class MarkersPanel(wx.Panel):
 
     def UpdateMarker(self, marker, new_position, new_orientation):
         marker_id = marker.marker_id
-        self.markers[marker_id].position = new_position
-        self.markers[marker_id].orientation = new_orientation
-        self.SaveState()
+        self.markers.list[marker_id].position = new_position
+        self.markers.list[marker_id].orientation = new_orientation
+        self.markers.SaveState()
 
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0
