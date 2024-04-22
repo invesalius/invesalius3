@@ -258,16 +258,16 @@ class MarkerTransformator:
 
         # Allow moving the marker in X- or Y-direction or rotating along Z-axis only if navigation is off.
         if keycode == const.MOVE_MARKER_POSTERIOR_KEYCODE and not self.is_navigating:
-            direction = [-1, 0, 0, 0, 0, 0]
+            direction = [-0.1, 0, 0, 0, 0, 0]
 
         elif keycode == const.MOVE_MARKER_ANTERIOR_KEYCODE and not self.is_navigating:
-            direction = [1, 0, 0, 0, 0, 0]
+            direction = [0.1, 0, 0, 0, 0, 0]
 
         elif keycode == const.MOVE_MARKER_LEFT_KEYCODE and not self.is_navigating:
-            direction = [0, 1, 0, 0, 0, 0]
+            direction = [0, 0.1, 0, 0, 0, 0]
 
         elif keycode == const.MOVE_MARKER_RIGHT_KEYCODE and not self.is_navigating:
-            direction = [0, -1, 0, 0, 0, 0]
+            direction = [0, -0.1, 0, 0, 0, 0]
 
         elif keycode == const.ROTATE_MARKER_CLOCKWISE_15 and not self.is_navigating:
             stay_on_scalp = False
@@ -279,11 +279,11 @@ class MarkerTransformator:
 
         elif keycode == const.ROTATE_MARKER_CLOCKWISE:
             stay_on_scalp = False
-            direction = [0, 0, 0, 0, 0, -1]
+            direction = [0, 0, 0, 0, 0, -5]
 
         elif keycode == const.ROTATE_MARKER_COUNTERCLOCKWISE:
             stay_on_scalp = False
-            direction = [0, 0, 0, 0, 0, 1]
+            direction = [0, 0, 0, 0, 0, 5]
                 
         elif keycode in [const.MOVE_MARKER_CLOSER_KEYCODE, const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE]:
             stay_on_scalp = False
