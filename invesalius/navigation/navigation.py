@@ -40,6 +40,37 @@ from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
+from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
+from invesalius.navigation.image import Image
+from invesalius.navigation.tracker import Tracker
+from invesalius.navigation.markers import MarkersControl
+from invesalius.navigation.robot import Robot
+from invesalius.net.neuronavigation_api import NeuronavigationApi
+from invesalius.net.pedal_connection import PedalConnector
+
+
+class NavigationHub(metaclass=Singleton):
+    """
+    Class to initialize and store references to navigation components.
+    """
+    def __init__(self, window=None):
+        self.tracker = Tracker()
+        self.image = Image()
+        self.icp = IterativeClosestPoint()
+        self.neuronavigation_api = NeuronavigationApi()
+        self.pedal_connector = PedalConnector(self.neuronavigation_api, window)
+        self.navigation = Navigation(
+            pedal_connector=self.pedal_connector,
+            neuronavigation_api=self.neuronavigation_api
+        )
+        self.robot = Robot(
+            tracker=self.tracker,
+            navigation=self.navigation,
+            icp=self.icp,
+        )
+        self.markers = MarkersControl(robot=self.robot)
+
+
 class QueueCustom(queue.Queue):
     """
     A custom queue subclass that provides a :meth:`clear` method.
