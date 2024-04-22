@@ -2420,6 +2420,10 @@ class MarkersPanel(wx.Panel):
 
         # Create a duplicate of the selected marker.
         new_marker = self.markers[idx].duplicate()
+
+        # Add suffix to marker name.
+        new_marker.label = new_marker.label + ' (copy)'
+
         self.AddMarker(new_marker, render=True, focus=True)
 
         self.SaveState()
