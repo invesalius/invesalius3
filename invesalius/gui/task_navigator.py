@@ -2324,13 +2324,12 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Highlight marker', marker=marker)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
+    #
+    # Note: This is called also when re-clicking on the same marker that is already focused.
     def OnMarkerUnfocused(self, evt):
         # Marker transformator needs to know that no marker is selected so it can stop reacting to
         # keyboard events.
         Publisher.sendMessage('Update selected marker', marker=None)
-
-        # Unhighlight marker in viewer volume.
-        Publisher.sendMessage('Unhighlight marker')
 
     def SetCameraToFocusOnMarker(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
