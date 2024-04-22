@@ -2298,6 +2298,9 @@ class MarkersPanel(wx.Panel):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.markers[idx]
 
+        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
+        Publisher.sendMessage('Update selected marker', marker=marker)
+
         # XXX: There seems to be a bug in WxPython when selecting multiple items on the list using,
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
         #   is triggered repeatedly for the same item (the one that was first selected). This is a
@@ -2316,9 +2319,6 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Unhighlight marker')
 
         self.currently_focused_marker = marker
-
-        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
-        Publisher.sendMessage('Update selected marker', marker=marker)
 
         # Highlight marker in viewer volume.
         Publisher.sendMessage('Highlight marker', marker=marker)
