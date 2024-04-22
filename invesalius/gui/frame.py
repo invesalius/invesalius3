@@ -1209,10 +1209,6 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         #tools_menu = wx.Menu()
 
-        # OPTIONS
-        options_menu = wx.Menu()
-        options_menu.Append(const.ID_PREFERENCES, _("Preferences..."))
-
         #Mode
         self.mode_menu = mode_menu = wx.Menu()
         nav_menu = wx.Menu()
@@ -1250,7 +1246,6 @@ class MenuBar(wx.MenuBar):
         self.Append(tools_menu, _(u"Tools"))
         self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
-        self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
@@ -1559,6 +1554,9 @@ class ProjectToolBar(AuiToolBar):
             path = d.joinpath("file_save_original.png")
             BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
+            path = d.joinpath("preferences_32.png")
+            BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
             path = d.joinpath("print_original.png")
             BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
@@ -1576,6 +1574,9 @@ class ProjectToolBar(AuiToolBar):
 
             path = d.joinpath("file_save.png")
             BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+            path = d.joinpath("preferences_24.png")
+            BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
             path = d.joinpath("print.png")
             BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
@@ -1605,6 +1606,12 @@ class ProjectToolBar(AuiToolBar):
                           wx.NullBitmap,
                           wx.ITEM_NORMAL,
                           short_help_string = _("Save InVesalius project"))
+        self.AddTool(const.ID_PREFERENCES,
+                          "",
+                          BMP_PREFERENCES,
+                          wx.NullBitmap,
+                          wx.ITEM_NORMAL,
+                          short_help_string = _("Preferences"))
         #self.AddLabelTool(const.ID_SAVE_SCREENSHOT,
         #                   "Take photo of screen",
         #                   BMP_PHOTO)
