@@ -159,10 +159,6 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
 
         self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
-        self.AddObserver("EnterEvent",self.OnFocus)
-
-    def OnFocus(self, evt, obj):
-        self.viewer.SetFocus()
 
     def OnZoomRightMove(self, evt, obj):
         if (self.right_pressed):
