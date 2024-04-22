@@ -222,36 +222,35 @@ class ActorFactory(object):
 
         reader = vtk.vtkSTLReader()
         reader.SetFileName(path)
+        reader.Update()
 
-        # Create the transformation for scaling
-        scale_transform = vtk.vtkTransform()
-        scale_transform.Scale(scale, scale, scale)
-
-        # Apply the scaling to the polydata
-        scaled_polydata = vtk.vtkTransformPolyDataFilter()
-        scaled_polydata.SetTransform(scale_transform)
-        scaled_polydata.SetInputConnection(reader.GetOutputPort())
-        scaled_polydata.Update()
-
-        m_img_vtk = self.CreateVTKObjectMatrix(position, orientation)
-
-        # Transform the polydata with position and orientation
+        # Create the main transformation for the aim.
         transform = vtk.vtkTransform()
-        transform.SetMatrix(m_img_vtk)
-        transformed_polydata = vtk.vtkTransformPolyDataFilter()
-        transformed_polydata.SetTransform(transform)
-        transformed_polydata.SetInputConnection(scaled_polydata.GetOutputPort())
-        transformed_polydata.Update()
+        transform.Identity()
 
+        # Apply translation first.
+        transform.Translate(position)
+
+        # Then, apply rotation.
+        transform.RotateZ(orientation[2])
+        transform.RotateY(orientation[1])
+        transform.RotateX(orientation[0])
+
+        # Apply scaling last to ensure it does not affect position or orientation
+        transform.Scale(scale, scale, scale)
+
+        # Create a mapper for the STL data
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(transformed_polydata.GetOutputPort())
+        mapper.SetInputConnection(reader.GetOutputPort())
 
+        # Create the actor and apply the transformation
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetDiffuseColor(colour)
         actor.GetProperty().SetSpecular(.2)
         actor.GetProperty().SetSpecularPower(100)
         actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
+        actor.SetUserTransform(transform)
 
         return actor
 
