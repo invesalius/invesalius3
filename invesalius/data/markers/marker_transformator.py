@@ -25,17 +25,33 @@ class MarkerTransformator:
         # navigation is on.
         self.is_navigating = False
 
+        # Keep track of the current target and whether the target mode is on.
+        self.target = None
+        self.is_target_mode = False
+
         self.__bind_events()
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.MoveMarkerByKeyboard, 'Move marker by keyboard')
+        Publisher.subscribe(self.SetTarget, 'Set target')
+        Publisher.subscribe(self.UnsetTarget, 'Unset target')
+        Publisher.subscribe(self.SetTargetMode, 'Set target mode')
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 
     def UpdateSelectedMarker(self, marker):
         self.selected_marker = marker
+
+    def SetTarget(self, marker):
+        self.target = marker
+
+    def UnsetTarget(self, marker):
+        self.target = None
+
+    def SetTargetMode(self, enabled):
+        self.is_target_mode = enabled
 
     def MoveMarker(self, marker, displacement):
         """
@@ -210,7 +226,10 @@ class MarkerTransformator:
 
     def MoveMarkerByKeyboard(self, keycode):
         """
-        When a key is pressed, move the focused marker in the direction specified by the key.
+        When a key is pressed, move the target marker or the selected marker in the direction specified
+        by the key.
+
+        If in target mode, move the target marker, otherwise move the marker selected in the marker list.
 
         The marker can be moved in the X- or Y-direction or rotated along the Z-axis using the keys
         'W', 'A', 'S', 'D', 'PageUp', and 'PageDown'.
@@ -220,8 +239,8 @@ class MarkerTransformator:
 
         The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
         """
-        marker = self.selected_marker
-        
+        marker = self.target if self.is_target_mode and self.target is not None else self.selected_marker
+
         # Return early if no marker is selected.
         if marker is None:
             return
