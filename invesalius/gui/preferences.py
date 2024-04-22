@@ -22,6 +22,7 @@ from invesalius.navigation.robot import Robot
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.navigation.navigation import Navigation
 
+
 class Preferences(wx.Dialog):
     def __init__(
         self,
@@ -35,10 +36,11 @@ class Preferences(wx.Dialog):
 
         self.book = wx.Notebook(self, -1)
 
-        self.pnl_viewer3d = Viewer3D(self.book)
-        self.pnl_language = Language(self.book)
+        self.visualization_tab = VisualizationTab(self.book)
+        self.language_tab = LanguageTab(self.book)
 
-        self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
+        self.book.AddPage(self.visualization_tab, _("Visualization"))
+
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
@@ -50,13 +52,15 @@ class Preferences(wx.Dialog):
                 pedal_connector=pedal_connector,
                 neuronavigation_api=neuronavigation_api,
             )
-            self.pnl_navigation = NavigationPage(self.book, navigation)
-            self.pnl_tracker = TrackerPage(self.book, tracker, robot)
-            self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
-            self.book.AddPage(self.pnl_navigation, _("Navigation"))
-            self.book.AddPage(self.pnl_tracker, _("Tracker"))
-            self.book.AddPage(self.pnl_object, _("Stimulator"))
-        self.book.AddPage(self.pnl_language, _("Language"))
+            self.navigation_tab = NavigationTab(self.book, navigation)
+            self.tracker_tab = TrackerTab(self.book, tracker, robot)
+            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
+
+            self.book.AddPage(self.navigation_tab, _("Navigation"))
+            self.book.AddPage(self.tracker_tab, _("Tracker"))
+            self.book.AddPage(self.object_tab, _("Stimulator"))
+
+        self.book.AddPage(self.language_tab, _("Language"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -64,6 +68,7 @@ class Preferences(wx.Dialog):
         if sys.platform.startswith("linux"):
             self.book.SetMinClientSize((min_width * 2, min_height * 2))
         self.book.SetSelection(page)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
@@ -76,8 +81,8 @@ class Preferences(wx.Dialog):
 
     def GetPreferences(self):
         values = {}
-        lang = self.pnl_language.GetSelection()
-        viewer = self.pnl_viewer3d.GetSelection()
+        lang = self.language_tab.GetSelection()
+        viewer = self.visualization_tab.GetSelection()
         values.update(lang)
         values.update(viewer)
 
@@ -90,10 +95,10 @@ class Preferences(wx.Dialog):
         surface_interpolation = session.GetConfig('surface_interpolation')
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
-        session = ses.Session()
         mode = session.GetConfig('mode')
+
         if mode == const.MODE_NAVIGATOR:
-            self.pnl_object.LoadConfig()
+            self.object_tab.LoadConfig()
 
         values = {
             const.RENDERING: rendering,
@@ -102,10 +107,11 @@ class Preferences(wx.Dialog):
             const.SLICE_INTERPOLATION: slice_interpolation,
         }
 
-        self.pnl_viewer3d.LoadSelection(values)
-        self.pnl_language.LoadSelection(values)
+        self.visualization_tab.LoadSelection(values)
+        self.language_tab.LoadSelection(values)
 
-class Viewer3D(wx.Panel):
+
+class VisualizationTab(wx.Panel):
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
@@ -174,12 +180,17 @@ class Viewer3D(wx.Panel):
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
-class NavigationPage(wx.Panel):
+
+class NavigationTab(wx.Panel):
     def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
+        
+        self.session = ses.Session()
         self.navigation = navigation
         self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
+
+        self.LoadConfig()
 
         text_note = wx.StaticText(self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
         # Change sleep pause between navigation loops
@@ -229,11 +240,26 @@ class NavigationPage(wx.Panel):
         self.sleep_nav = ctrl.GetValue()
         self.navigation.UpdateNavSleep(self.sleep_nav)
 
+        self.session.SetConfig('sleep_nav', self.sleep_nav)
+
     def OnSelectCoordSleep(self, evt, ctrl):
         self.sleep_coord = ctrl.GetValue()
         Publisher.sendMessage('Update coord sleep', data=self.sleep_coord)
+
+        self.session.SetConfig('sleep_coord', self.sleep_nav)
+
+    def LoadConfig(self):
+        sleep_nav = self.session.GetConfig('sleep_nav')
+        sleep_coord = self.session.GetConfig('sleep_coord')
+
+        if sleep_nav is not None:
+            self.sleep_nav = sleep_nav
         
-class ObjectPage(wx.Panel):
+        if sleep_coord is not None:
+            self.sleep_coord = sleep_coord
+
+
+class ObjectTab(wx.Panel):
     def __init__(self, parent, navigation, tracker, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
 
@@ -487,7 +513,8 @@ class ObjectPage(wx.Panel):
     def OnObjectUpdate(self, data=None):
         self.config_txt.SetLabel(os.path.basename(data[-1]))
 
-class TrackerPage(wx.Panel):
+
+class TrackerTab(wx.Panel):
     def __init__(self, parent, tracker, robot):
         wx.Panel.__init__(self, parent)
 
@@ -679,7 +706,8 @@ class TrackerPage(wx.Panel):
             self.btn_rob_con.Layout()
             self.Parent.Update()
 
-class Language(wx.Panel):
+
+class LanguageTab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -711,64 +739,3 @@ class Language(wx.Panel):
         locales = self.lg.GetLocalesKey()
         selection = locales.index(language)
         self.cmb_lang.SetSelection(int(selection))
-
-
-'''
-Deprecated code
-
-class SurfaceCreation(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        self.rb_fill_border = wx.RadioBox(
-            self,
-            -1,
-            _("Fill border holes"),
-            choices=[_("Yes"), _("No")],
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-        )
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.rb_fill_border)
-
-        self.SetSizerAndFit(sizer)
-
-    def GetSelection(self):
-        return {}
-
-    def LoadSelection(self, values):
-        pass
-
-class Viewer2D(wx.Panel):
-    def __init__(self, parent):
-
-        wx.Panel.__init__(self, parent)
-
-        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Slices"))
-        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Interpolated "))
-        rb_inter = self.rb_inter = wx.RadioBox(
-            bsizer.GetStaticBox(),
-            -1,
-            choices=[_("Yes"), _("No")],
-            majorDimension=3,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-        )
-
-        bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT, 10)
-        bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT, 0)
-
-        border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer, 1, wx.EXPAND | wx.ALL, 10)
-        self.SetSizerAndFit(border)
-        self.Layout()
-
-    def GetSelection(self):
-
-        options = {const.SLICE_INTERPOLATION: self.rb_inter.GetSelection()}
-
-        return options
-
-    def LoadSelection(self, values):
-        value = values[const.SLICE_INTERPOLATION]
-        self.rb_inter.SetSelection(int(value))
-
-'''
