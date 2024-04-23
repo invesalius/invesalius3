@@ -193,9 +193,17 @@ class Navigation(metaclass=Singleton):
         self.enable_act = False
         self.act_data = None
         self.n_tracts = const.N_TRACTS
+        
+        # Sleep parameters
+        session = ses.Session()
+        sleep_nav = session.GetConfig('sleep_nav', const.SLEEP_NAVIGATION)
+        
+        print("Navigation sleep time: ", sleep_nav)
+
+        self.sleep_nav = sleep_nav
+
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
-        self.sleep_nav = const.SLEEP_NAVIGATION
 
         # Serial port
         self.serial_port_in_use = False
