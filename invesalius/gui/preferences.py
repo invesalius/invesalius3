@@ -263,6 +263,8 @@ class ObjectTab(wx.Panel):
     def __init__(self, parent, navigation, tracker, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
 
+        self.session = ses.Session()
+
         self.coil_list = const.COIL
         
         self.tracker = tracker
@@ -327,23 +329,23 @@ class ObjectTab(wx.Panel):
         ])
         load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
         # Change angles threshold
-        text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
+        text_angles = wx.StaticText(self, -1, _("Angle threshold (degrees):"))
         spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_angles.SetRange(0.1, 99)
-        spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
+        spin_size_angles.SetValue(self.angle_threshold)
         spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
         spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
 
         # Change dist threshold
-        text_dist = wx.StaticText(self, -1, _("Distance threshold [mm]:"))
+        text_dist = wx.StaticText(self, -1, _("Distance threshold (mm):"))
         spin_size_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_dist.SetRange(0.1, 99)
-        spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
-        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
-        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+        spin_size_dist.SetValue(self.distance_threshold)
+        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
+        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
 
         # Change timestamp interval
-        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval [s]:"))
+        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval (s):"))
         spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
         spin_timestamp_dist.SetRange(0.5, 60.0)
         spin_timestamp_dist.SetValue(self.timestamp)
@@ -391,19 +393,18 @@ class ObjectTab(wx.Panel):
         Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
 
     def LoadConfig(self):
-        session = ses.Session()
-        state = session.GetConfig('navigation')
+        self.angle_threshold = self.session.GetConfig('angle_threshold') or const.DEFAULT_ANGLE_THRESHOLD
+        self.distance_threshold = self.session.GetConfig('distance_threshold') or const.DEFAULT_DISTANCE_THRESHOLD
 
-        if state is None:
-            return False
+        state = self.session.GetConfig('navigation')
 
-        object_fiducials = np.array(state['object_fiducials'])
-        object_orientations = np.array(state['object_orientations'])
-        object_reference_mode = state['object_reference_mode']
-        object_name = state['object_name'].encode(const.FS_ENCODE)
+        if state is not None:
+            object_fiducials = np.array(state['object_fiducials'])
+            object_orientations = np.array(state['object_orientations'])
+            object_reference_mode = state['object_reference_mode']
+            object_name = state['object_name'].encode(const.FS_ENCODE)
 
-        self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.coil_path = object_fiducials, object_orientations, object_reference_mode, object_name
-        return True
+            self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.coil_path = object_fiducials, object_orientations, object_reference_mode, object_name
 
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
@@ -502,10 +503,16 @@ class ObjectTab(wx.Panel):
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
     def OnSelectAngleThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
+        self.angle_threshold = ctrl.GetValue()
+        Publisher.sendMessage('Update angle threshold', angle=self.angle_threshold)
 
-    def OnSelectDistThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update dist threshold', dist_threshold=ctrl.GetValue())
+        self.session.SetConfig('angle_threshold', self.angle_threshold)
+
+    def OnSelectDistanceThreshold(self, evt, ctrl):
+        self.distance_threshold = ctrl.GetValue()
+        Publisher.sendMessage('Update distance threshold', dist_threshold=self.distance_threshold)
+
+        self.session.SetConfig('distance_threshold', self.distance_threshold)
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()

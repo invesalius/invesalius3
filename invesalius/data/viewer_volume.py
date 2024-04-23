@@ -119,6 +119,7 @@ import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
+import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
 
@@ -287,8 +288,18 @@ class Viewer(wx.Panel):
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
         self.target_mode = False
-        self.anglethreshold = const.COIL_ANGLES_THRESHOLD
-        self.distance_threshold = const.COIL_COORD_THRESHOLD
+
+        # Set the angle and distance thresholds.
+        session = ses.Session()
+        angle_threshold = session.GetConfig('angle_threshold', const.DEFAULT_ANGLE_THRESHOLD)
+        distance_threshold = session.GetConfig('distance_threshold', const.DEFAULT_DISTANCE_THRESHOLD)
+
+        self.angle_threshold = angle_threshold
+        self.distance_threshold = distance_threshold
+        
+        print("Angle threshold: ", self.angle_threshold)
+        print("Distance threshold: ", self.distance_threshold)
+
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
 
         self.actor_tracts = None
@@ -486,7 +497,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSetTarget, 'Set target')
         Publisher.subscribe(self.OnUnsetTarget, 'Unset target')
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
-        Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
+        Publisher.subscribe(self.OnUpdateDistanceThreshold, 'Update distance threshold')
         Publisher.subscribe(self.OnUpdateTracts, 'Update tracts')
         Publisher.subscribe(self.OnUpdateEfieldvis, 'Update efield vis')
         Publisher.subscribe(self.InitializeColorArray, 'Initialize color array')
@@ -863,9 +874,10 @@ class Viewer(wx.Panel):
         self.ren.RemoveActor(actor)
 
     def OnUpdateAngleThreshold(self, angle):
-        self.anglethreshold = angle
+        self.angle_threshold = angle
 
-    def OnUpdateDistThreshold(self, dist_threshold):
+    def OnUpdateDistanceThreshold(self, dist_threshold):
+        print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
     def IsTargetMode(self):
@@ -1097,7 +1109,7 @@ class Viewer(wx.Panel):
                 for actor in self.guide_arrow_actors:
                     self.target_guide_renderer.RemoveActor(actor)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordrx_arrow > -self.anglethreshold * const.ARROW_SCALE:
+            if self.angle_threshold * const.ARROW_SCALE > coordrx_arrow > -self.angle_threshold * const.ARROW_SCALE:
                 is_under_x_angle_threshold = True
                 self.guide_coil_actors[0].GetProperty().SetColor(0, 1, 0)
             else:
@@ -1116,7 +1128,7 @@ class Viewer(wx.Panel):
             arrow_roll_x2.RotateZ(180)
             arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordrz_arrow > -self.anglethreshold * const.ARROW_SCALE:
+            if self.angle_threshold * const.ARROW_SCALE > coordrz_arrow > -self.angle_threshold * const.ARROW_SCALE:
                 is_under_z_angle_threshold = True
                 self.guide_coil_actors[1].GetProperty().SetColor(0, 1, 0)
             else:
@@ -1135,7 +1147,7 @@ class Viewer(wx.Panel):
             arrow_yaw_z2.RotateZ(180)
             arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordry_arrow > -self.anglethreshold * const.ARROW_SCALE:
+            if self.angle_threshold * const.ARROW_SCALE > coordry_arrow > -self.angle_threshold * const.ARROW_SCALE:
                 is_under_y_angle_threshold = True
                 self.guide_coil_actors[2].GetProperty().SetColor(0, 1, 0)
             else:
