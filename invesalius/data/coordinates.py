@@ -24,6 +24,7 @@ import wx
 
 import invesalius.data.transformations as tr
 import invesalius.constants as const
+import invesalius.session as ses
 
 from time import sleep
 import random
@@ -604,7 +605,13 @@ class ReceiveCoordinates(threading.Thread):
     def __init__(self, tracker_connection, tracker_id, TrackerCoordinates, event):
         threading.Thread.__init__(self, name='ReceiveCoordinates')
         self.__bind_events()
-        self.sleep_coord = const.SLEEP_COORDINATES
+        
+        session = ses.Session()
+        sleep_coord = session.GetConfig('sleep_coord', const.SLEEP_COORDINATES)
+        
+        print("Coordinate sleep time: ", sleep_coord)
+
+        self.sleep_coord = sleep_coord
         self.tracker_connection = tracker_connection
         self.asko = 0
         self.tracker_id = tracker_id
