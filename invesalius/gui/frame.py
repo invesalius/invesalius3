@@ -1546,48 +1546,27 @@ class ProjectToolBar(AuiToolBar):
         """
         # Load bitmaps
         d = inv_paths.ICON_DIR
-        if sys.platform == 'darwin':
-            path = d.joinpath("file_from_internet_original.png")
-            BMP_NET = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("file_import_original.png")
-            BMP_IMPORT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("file_from_internet_original.png")
+        BMP_NET = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("file_open_original.png")
-            BMP_OPEN = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("file_import_original.png")
+        BMP_IMPORT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("file_save_original.png")
-            BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("file_open_original.png")
+        BMP_OPEN = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("preferences_32.png")
-            BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("file_save_original.png")
+        BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("print_original.png")
-            BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("preferences_32.png")
+        BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("tool_photo_original.png")
-            BMP_PHOTO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-        else:
-            path = d.joinpath("file_from_internet.png")
-            BMP_NET = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("print_original.png")
+        BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = d.joinpath("file_import.png")
-            BMP_IMPORT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = d.joinpath("file_open.png")
-            BMP_OPEN = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = d.joinpath("file_save.png")
-            BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = d.joinpath("preferences_24.png")
-            BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = d.joinpath("print.png")
-            BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = d.joinpath("tool_photo.png")
-            BMP_PHOTO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = d.joinpath("tool_photo_original.png")
+        BMP_PHOTO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddTool(const.ID_DICOM_IMPORT,
@@ -1710,67 +1689,33 @@ class ObjectToolBar(AuiToolBar):
         Add tools into toolbar.
         """
         d = inv_paths.ICON_DIR
-        if sys.platform == 'darwin':
-            path = os.path.join(d, "tool_rotate_original.png")
-            BMP_ROTATE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_translate_original.png")
-            BMP_MOVE =wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "tool_rotate_original.png")
+        BMP_ROTATE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_zoom_original.png")
-            BMP_ZOOM = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "tool_translate_original.png")
+        BMP_MOVE =wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_zoom_select_original.png")
-            BMP_ZOOM_SELECT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "tool_zoom_original.png")
+        BMP_ZOOM = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_contrast_original.png")
-            BMP_CONTRAST = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "tool_zoom_select_original.png")
+        BMP_ZOOM_SELECT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "measure_line_original.png")
-            BMP_DISTANCE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "tool_contrast_original.png")
+        BMP_CONTRAST = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "measure_angle_original.png")
-            BMP_ANGLE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "measure_line_original.png")
+        BMP_DISTANCE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "measure_density_ellipse32px.png")
-            BMP_ELLIPSE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "measure_angle_original.png")
+        BMP_ANGLE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "measure_density_polygon32px.png")
-            BMP_POLYGON = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "measure_density_ellipse32px.png")
+        BMP_ELLIPSE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            #path = os.path.join(d, "tool_annotation_original.png")
-            #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
-
-        else:
-            path = os.path.join(d, "tool_rotate.png")
-            BMP_ROTATE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "tool_translate.png")
-            BMP_MOVE =wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "tool_zoom.png")
-            BMP_ZOOM = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "tool_zoom_select.png")
-            BMP_ZOOM_SELECT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "tool_contrast.png")
-            BMP_CONTRAST = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "measure_line.png")
-            BMP_DISTANCE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "measure_angle.png")
-            BMP_ANGLE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "measure_density_ellipse28px.png")
-            BMP_ELLIPSE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "measure_density_polygon28px.png")
-            BMP_POLYGON = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-            #path = os.path.join(d, "tool_annotation.png")
-            #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "measure_density_polygon32px.png")
+        BMP_POLYGON = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddTool(const.STATE_ZOOM,
@@ -1960,18 +1905,12 @@ class SliceToolBar(AuiToolBar):
         Add tools into toolbar.
         """
         d = inv_paths.ICON_DIR
-        if sys.platform == 'darwin':
-            path = os.path.join(d, "slice_original.png")
-            BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d,"cross_original.png")
-            BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-        else:
-            path = os.path.join(d, "slice.png")
-            BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "slice_original.png")
+        BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d,"cross.png")
-            BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d,"cross_original.png")
+        BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         self.sst = self.AddToggleTool(const.SLICE_STATE_SCROLL,
                           BMP_SLICE,#, kind=wx.ITEM_CHECK)
@@ -2129,48 +2068,27 @@ class LayoutToolBar(AuiToolBar):
         Add tools into toolbar.
         """
         d = inv_paths.ICON_DIR
-        if sys.platform == 'darwin':
-            # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only_original.png")
-            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "layout_full_original.png")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for show/hide task panel item
+        p = os.path.join(d, "layout_data_only_original.png")
+        self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            # Bitmaps for show/hide task item
-            p = os.path.join(d, "text_inverted_original.png")
-            self.BMP_WITHOUT_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "layout_full_original.png")
+        self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "text_original.png")
-            self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for show/hide task item
+        p = os.path.join(d, "text_inverted_original.png")
+        self.BMP_WITHOUT_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            # Bitmaps for showing/hiding the ruler.
-            p = os.path.join(d, "ruler_original_disabled.png")
-            self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "text_original.png")
+        self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "ruler_original_enabled.png")
-            self.BMP_WITH_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
-        else:
-            # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "layout_data_only.png")
-            self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for showing/hiding the ruler.
+        p = os.path.join(d, "ruler_original_disabled.png")
+        self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "layout_full.png")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
-
-            # Bitmaps for show/hide task item
-            p = os.path.join(d, "text_inverted.png")
-            self.BMP_WITHOUT_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
-
-            p = os.path.join(d, "text.png")
-            self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
-
-            # Bitmaps for show/hide task item
-            p = os.path.join(d, "ruler_disabled.png")
-            self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
-
-            p = os.path.join(d, "ruler_enabled.png")
-            self.BMP_WITH_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "ruler_original_enabled.png")
+        self.BMP_WITH_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
         self.AddTool(ID_LAYOUT,
                           "",
@@ -2358,21 +2276,14 @@ class HistoryToolBar(AuiToolBar):
         Add tools into toolbar.
         """
         d = inv_paths.ICON_DIR
-        if sys.platform == 'darwin':
-            # Bitmaps for undo/redo buttons
-            p = os.path.join(d, "undo_original.png")
-            self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "redo_original.png")
-            self.BMP_REDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for undo/redo buttons
+        p = os.path.join(d, "undo_original.png")
+        self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        else:
-            # Bitmaps for undo/redo buttons
-            p = os.path.join(d, "undo_small.png")
-            self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "redo_original.png")
+        self.BMP_REDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "redo_small.png")
-            self.BMP_REDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
         self.AddTool(wx.ID_UNDO,
                           "",
