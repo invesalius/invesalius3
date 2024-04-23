@@ -51,7 +51,7 @@ class SurfaceGeometry(metaclass=Singleton):
         #   only once and then stored on the disk - not re-computed every time InVesalius
         #   is started. For instance, setting number of iterations to 100 does not provide
         #   good enough results.
-        smoother.SetNumberOfIterations(400)
+        smoother.SetNumberOfIterations(1)
         smoother.SetRelaxationFactor(0.9)
         smoother.FeatureEdgeSmoothingOff()
         smoother.BoundarySmoothingOn()
