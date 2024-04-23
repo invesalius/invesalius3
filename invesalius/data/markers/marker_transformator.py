@@ -50,7 +50,7 @@ class MarkerTransformator:
     def UnsetTarget(self, marker):
         self.target = None
 
-    def SetTargetMode(self, enabled):
+    def SetTargetMode(self, enabled=False):
         self.is_target_mode = enabled
 
     def MoveMarker(self, marker, displacement):
