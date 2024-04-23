@@ -321,7 +321,7 @@ import wx.lib.buttons as btn
 from invesalius.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
-RAYCASTING_TOOLS = wx.NewId()
+RAYCASTING_TOOLS = wx.NewIdRef()
 
 ID_TO_NAME = {}
 ID_TO_TOOL = {}
@@ -456,7 +456,7 @@ class VolumeToolPanel(wx.Panel):
         #print ">>>>", const.RAYCASTING_TYPES.sort()
         #print "\n\n"
         for name in const.RAYCASTING_TYPES:
-            id = wx.NewId()
+            id = wx.NewIdRef()
             item = menu.Append(id, name, kind=wx.ITEM_RADIO)
             if name == const.RAYCASTING_OFF_LABEL:
                 self.off_item = item
@@ -468,7 +468,7 @@ class VolumeToolPanel(wx.Panel):
         self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
-           id = wx.NewId()
+           id = wx.NewIdRef()
            if not(self.id_cutplane):
                self.id_cutplane = id
            item = submenu.Append(id, name, kind=wx.ITEM_CHECK)
@@ -501,7 +501,7 @@ class VolumeToolPanel(wx.Panel):
         itens = ["Axial", "Coronal", "Sagital"]
 
         for value in itens:
-            new_id = wx.NewId()
+            new_id = wx.NewIdRef()
 
             item = slice_plane_menu.Append(new_id, value, kind = wx.ITEM_CHECK)
             ID_TO_ITEMSLICEMENU[new_id] = item
@@ -516,7 +516,7 @@ class VolumeToolPanel(wx.Panel):
                  const.STEREO_CHECKBOARD]
 
         for value in itens:
-            new_id = wx.NewId()
+            new_id = wx.NewIdRef()
             item = stereo_menu.Append(new_id, value, kind = wx.ITEM_RADIO)
             ID_TO_ITEM_3DSTEREO[new_id] = item
             ID_TO_STEREO_NAME[new_id] = value

@@ -34,10 +34,10 @@ import invesalius.gui.dialogs as dlg
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 
-BTN_IMPORT_LOCAL = wx.NewId()
-BTN_IMPORT_PACS = wx.NewId()
-BTN_OPEN_PROJECT = wx.NewId()
-BTN_IMPORT_NIFTI = wx.NewId()
+BTN_IMPORT_LOCAL = wx.NewIdRef()
+BTN_IMPORT_PACS = wx.NewIdRef()
+BTN_OPEN_PROJECT = wx.NewIdRef()
+BTN_IMPORT_NIFTI = wx.NewIdRef()
 
 
 

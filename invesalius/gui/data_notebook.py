@@ -44,7 +44,7 @@ from invesalius import inv_paths
 from invesalius.i18n import tr as _
 
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in range(4)]
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewIdRef() for i in range(4)]
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),

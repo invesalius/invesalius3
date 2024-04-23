@@ -190,13 +190,13 @@ RED_COLOR_RGB = (252, 141, 98)
 GREEN_COLOR_RGB = (102, 194, 165)
 
 # Volume view angle
-VOL_FRONT = wx.NewId()
-VOL_BACK = wx.NewId()
-VOL_RIGHT = wx.NewId()
-VOL_LEFT = wx.NewId()
-VOL_TOP = wx.NewId()
-VOL_BOTTOM = wx.NewId()
-VOL_ISO = wx.NewId()
+VOL_FRONT = wx.NewIdRef()
+VOL_BACK = wx.NewIdRef()
+VOL_RIGHT = wx.NewIdRef()
+VOL_LEFT = wx.NewIdRef()
+VOL_TOP = wx.NewIdRef()
+VOL_BOTTOM = wx.NewIdRef()
+VOL_ISO = wx.NewIdRef()
 
 # Camera according to volume's orientation
 AXIAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,0,1), VOL_BACK:(0,0,1), VOL_RIGHT:(0,0,1),\
@@ -444,24 +444,24 @@ MODE_SLICE_CROSS = -3
 ############
 
 
-FILETYPE_IV = wx.NewId()
-FILETYPE_RIB = wx.NewId()
-FILETYPE_STL = wx.NewId()
-FILETYPE_STL_ASCII = wx.NewId()
-FILETYPE_VRML = wx.NewId()
-FILETYPE_OBJ = wx.NewId()
-FILETYPE_VTP = wx.NewId()
-FILETYPE_PLY = wx.NewId()
-FILETYPE_X3D = wx.NewId()
+FILETYPE_IV = wx.NewIdRef()
+FILETYPE_RIB = wx.NewIdRef()
+FILETYPE_STL = wx.NewIdRef()
+FILETYPE_STL_ASCII = wx.NewIdRef()
+FILETYPE_VRML = wx.NewIdRef()
+FILETYPE_OBJ = wx.NewIdRef()
+FILETYPE_VTP = wx.NewIdRef()
+FILETYPE_PLY = wx.NewIdRef()
+FILETYPE_X3D = wx.NewIdRef()
 
-FILETYPE_IMAGEDATA = wx.NewId()
+FILETYPE_IMAGEDATA = wx.NewIdRef()
 
-FILETYPE_BMP = wx.NewId()
-FILETYPE_JPG = wx.NewId()
-FILETYPE_PNG = wx.NewId()
-FILETYPE_PS = wx.NewId()
-FILETYPE_POV = wx.NewId()
-FILETYPE_TIF = wx.NewId()
+FILETYPE_BMP = wx.NewIdRef()
+FILETYPE_JPG = wx.NewIdRef()
+FILETYPE_PNG = wx.NewIdRef()
+FILETYPE_PS = wx.NewIdRef()
+FILETYPE_POV = wx.NewIdRef()
+FILETYPE_TIF = wx.NewIdRef()
 
 IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
                 "1 x 3":(1,3), "1 x 4":(1,4),
@@ -477,73 +477,73 @@ VTK_WARNING = 0
 
 #----------------------------------------------------------
 
-ID_FRAME = wx.NewId()
+ID_FRAME = wx.NewIdRef()
 
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
  ID_PROJECT_CLOSE, ID_EXPORT_SLICE, ID_PROJECT_PROPERTIES, ID_EXPORT_MASK, ID_PROJECT_INFO,
  ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET, ID_PRINT_SCREENSHOT,
- ID_IMPORT_OTHERS_FILES, ID_PREFERENCES, ID_DICOM_NETWORK, ID_TIFF_JPG_PNG,
+ ID_IMPORT_OTHERS_FILES, ID_PREFERENCES, ID_PREFERENCES_TOOLBAR, ID_DICOM_NETWORK, ID_TIFF_JPG_PNG,
  ID_VIEW_INTERPOLATED, ID_MODE_NAVIGATION, ID_ANALYZE_IMPORT, ID_NIFTI_IMPORT,
- ID_PARREC_IMPORT, ID_MODE_DBS] = [wx.NewId() for number in range(22)]
+ ID_PARREC_IMPORT, ID_MODE_DBS] = [wx.NewIdRef() for number in range(23)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
 
 [ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] =\
-    [wx.NewId() for number in range(3)]
+    [wx.NewIdRef() for number in range(3)]
 [ID_TOOL_PROJECT, ID_TOOL_LAYOUT, ID_TOOL_OBJECT, ID_TOOL_SLICE] =\
-    [wx.NewId() for number in range(4)]
+    [wx.NewIdRef() for number in range(4)]
 [ID_TASK_BAR, ID_VIEW_FOUR] =\
-    [wx.NewId() for number in range(2)]
+    [wx.NewIdRef() for number in range(2)]
 [ID_VIEW_FULL, ID_VIEW_TEXT, ID_VIEW_3D_BACKGROUND] =\
-    [wx.NewId() for number in range(3)]
+    [wx.NewIdRef() for number in range(3)]
 
-ID_START = wx.NewId()
-ID_PLUGINS_SHOW_PATH = wx.NewId()
+ID_START = wx.NewIdRef()
+ID_PLUGINS_SHOW_PATH = wx.NewIdRef()
 
-ID_FLIP_X = wx.NewId()
-ID_FLIP_Y = wx.NewId()
-ID_FLIP_Z = wx.NewId()
+ID_FLIP_X = wx.NewIdRef()
+ID_FLIP_Y = wx.NewIdRef()
+ID_FLIP_Z = wx.NewIdRef()
 
-ID_SWAP_XY = wx.NewId()
-ID_SWAP_XZ = wx.NewId()
-ID_SWAP_YZ = wx.NewId()
+ID_SWAP_XY = wx.NewIdRef()
+ID_SWAP_XZ = wx.NewIdRef()
+ID_SWAP_YZ = wx.NewIdRef()
 
-ID_BOOLEAN_MASK = wx.NewId()
-ID_CLEAN_MASK = wx.NewId()
+ID_BOOLEAN_MASK = wx.NewIdRef()
+ID_CLEAN_MASK = wx.NewIdRef()
 
-ID_REORIENT_IMG = wx.NewId()
-ID_FLOODFILL_MASK = wx.NewId()
-ID_FILL_HOLE_AUTO = wx.NewId()
-ID_REMOVE_MASK_PART = wx.NewId()
-ID_SELECT_MASK_PART = wx.NewId()
-ID_MANUAL_SEGMENTATION = wx.NewId()
-ID_WATERSHED_SEGMENTATION = wx.NewId()
-ID_THRESHOLD_SEGMENTATION = wx.NewId()
-ID_FLOODFILL_SEGMENTATION = wx.NewId()
-ID_FLOODFILL_SEGMENTATION = wx.NewId()
-ID_SEGMENTATION_BRAIN = wx.NewId()
-ID_SEGMENTATION_TRACHEA = wx.NewId()
-ID_SEGMENTATION_MANDIBLE_CT = wx.NewId()
-ID_CROP_MASK = wx.NewId()
-ID_DENSITY_MEASURE = wx.NewId()
-ID_MASK_DENSITY_MEASURE = wx.NewId()
-ID_CREATE_SURFACE = wx.NewId()
-ID_CREATE_MASK = wx.NewId()
-ID_MASK_3D_PREVIEW = wx.NewId()
-ID_MASK_3D_RELOAD = wx.NewId()
-ID_MASK_3D_AUTO_RELOAD = wx.NewId()
+ID_REORIENT_IMG = wx.NewIdRef()
+ID_FLOODFILL_MASK = wx.NewIdRef()
+ID_FILL_HOLE_AUTO = wx.NewIdRef()
+ID_REMOVE_MASK_PART = wx.NewIdRef()
+ID_SELECT_MASK_PART = wx.NewIdRef()
+ID_MANUAL_SEGMENTATION = wx.NewIdRef()
+ID_WATERSHED_SEGMENTATION = wx.NewIdRef()
+ID_THRESHOLD_SEGMENTATION = wx.NewIdRef()
+ID_FLOODFILL_SEGMENTATION = wx.NewIdRef()
+ID_FLOODFILL_SEGMENTATION = wx.NewIdRef()
+ID_SEGMENTATION_BRAIN = wx.NewIdRef()
+ID_SEGMENTATION_TRACHEA = wx.NewIdRef()
+ID_SEGMENTATION_MANDIBLE_CT = wx.NewIdRef()
+ID_CROP_MASK = wx.NewIdRef()
+ID_DENSITY_MEASURE = wx.NewIdRef()
+ID_MASK_DENSITY_MEASURE = wx.NewIdRef()
+ID_CREATE_SURFACE = wx.NewIdRef()
+ID_CREATE_MASK = wx.NewIdRef()
+ID_MASK_3D_PREVIEW = wx.NewIdRef()
+ID_MASK_3D_RELOAD = wx.NewIdRef()
+ID_MASK_3D_AUTO_RELOAD = wx.NewIdRef()
 
-ID_GOTO_SLICE = wx.NewId()
-ID_GOTO_COORD = wx.NewId()
+ID_GOTO_SLICE = wx.NewIdRef()
+ID_GOTO_COORD = wx.NewIdRef()
 
-ID_MANUAL_WWWL = wx.NewId()
+ID_MANUAL_WWWL = wx.NewIdRef()
 
 # Tractography with Trekker
-ID_TREKKER_MASK = wx.NewId()
-ID_TREKKER_IMG = wx.NewId()
-ID_TREKKER_FOD = wx.NewId()
-ID_TREKKER_ACT = wx.NewId()
+ID_TREKKER_MASK = wx.NewIdRef()
+ID_TREKKER_IMG = wx.NewIdRef()
+ID_TREKKER_FOD = wx.NewIdRef()
+ID_TREKKER_ACT = wx.NewIdRef()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
@@ -741,13 +741,13 @@ DEFAULT_COIL = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
            _("Magstim 70 mm"), _("Nexstim")]
 
-IR1 = wx.NewId()
-IR2 = wx.NewId()
-IR3 = wx.NewId()
-TR1 = wx.NewId()
-TR2 = wx.NewId()
-TR3 = wx.NewId()
-SET = wx.NewId()
+IR1 = wx.NewIdRef()
+IR2 = wx.NewIdRef()
+IR3 = wx.NewIdRef()
+TR1 = wx.NewIdRef()
+TR2 = wx.NewIdRef()
+TR3 = wx.NewIdRef()
+SET = wx.NewIdRef()
 
 FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
 IMAGE_FIDUCIALS = [
@@ -802,10 +802,10 @@ BTNS_IMG_MARKERS = {IR1: {0: 'LEI'},
                     IR2: {1: 'REI'},
                     IR3: {2: 'NAI'}}
 
-OBJL = wx.NewId()
-OBJR = wx.NewId()
-OBJA = wx.NewId()
-OBJF = wx.NewId()
+OBJL = wx.NewIdRef()
+OBJR = wx.NewIdRef()
+OBJA = wx.NewIdRef()
+OBJF = wx.NewIdRef()
 
 OBJECT_FIDUCIALS = [
     {

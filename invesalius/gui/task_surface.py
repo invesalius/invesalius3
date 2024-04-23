@@ -48,9 +48,9 @@ MIN_TRANSPARENCY = 0
 MAX_TRANSPARENCY = 100
 
 #############
-BTN_NEW = wx.NewId()
-MENU_SQUARE = wx.NewId()
-MENU_CIRCLE = wx.NewId()
+BTN_NEW = wx.NewIdRef()
+MENU_SQUARE = wx.NewIdRef()
+MENU_CIRCLE = wx.NewIdRef()
 
 OP_LIST = [_("Draw"), _("Erase"), _("Threshold")]
 
@@ -295,9 +295,9 @@ class InnerFoldPanel(wx.Panel):
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
-BTN_LARGEST = wx.NewId()
-BTN_SPLIT = wx.NewId()
-BTN_SEEDS = wx.NewId()
+BTN_LARGEST = wx.NewIdRef()
+BTN_SPLIT = wx.NewIdRef()
+BTN_SEEDS = wx.NewIdRef()
 class SurfaceTools(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
