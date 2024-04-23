@@ -54,7 +54,7 @@ except ImportError:
 # Layout tools' IDs - this is used only locally, therefore doesn't
 # need to be defined in constants.py
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] =\
-                                [wx.NewId() for number in range(3)]
+                                [wx.NewIdRef() for number in range(3)]
 
 WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
     "NIfTI 1 (*.nii)|*.nii|" \
@@ -507,7 +507,7 @@ class Frame(wx.Frame):
             self.ShowAbout()
         elif id == const.ID_START:
             self.ShowGettingStarted()
-        elif id == const.ID_PREFERENCES:
+        elif id == const.ID_PREFERENCES or id == const.ID_PREFERENCES_TOOLBAR:
             self.ShowPreferences()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
@@ -1158,8 +1158,8 @@ class MenuBar(wx.MenuBar):
         swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom")).Enable(False)
         swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom")).Enable(False)
 
-        image_menu.Append(wx.NewId(), _('Flip'), flip_menu)
-        image_menu.Append(wx.NewId(), _('Swap axes'), swap_axes_menu)
+        image_menu.Append(wx.NewIdRef(), _('Flip'), flip_menu)
+        image_menu.Append(wx.NewIdRef(), _('Swap axes'), swap_axes_menu)
 
         mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+O'))
@@ -1211,7 +1211,7 @@ class MenuBar(wx.MenuBar):
 
         # OPTIONS
         options_menu = wx.Menu()
-        options_menu.Append(const.ID_PREFERENCES, _("Preferences..."))
+        options_menu.Append(const.ID_PREFERENCES, _("Preferences"))
 
         #Mode
         self.mode_menu = mode_menu = wx.Menu()
@@ -1293,7 +1293,7 @@ class MenuBar(wx.MenuBar):
                 self.plugins_menu.DestroyItem(menu_item)
 
         for item in items:
-            _new_id = wx.NewId()
+            _new_id = wx.NewIdRef()
             self._plugins_menu_ids[_new_id] = items[item]
             menu_item = self.plugins_menu.Append(_new_id, item, items[item]["description"])
             menu_item.Enable(items[item]["enable_startup"])
@@ -1559,6 +1559,9 @@ class ProjectToolBar(AuiToolBar):
             path = d.joinpath("file_save_original.png")
             BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
+            path = d.joinpath("preferences_32.png")
+            BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
             path = d.joinpath("print_original.png")
             BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
@@ -1576,6 +1579,9 @@ class ProjectToolBar(AuiToolBar):
 
             path = d.joinpath("file_save.png")
             BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+            path = d.joinpath("preferences_24.png")
+            BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
             path = d.joinpath("print.png")
             BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
@@ -1605,6 +1611,12 @@ class ProjectToolBar(AuiToolBar):
                           wx.NullBitmap,
                           wx.ITEM_NORMAL,
                           short_help_string = _("Save InVesalius project"))
+        self.AddTool(const.ID_PREFERENCES_TOOLBAR,
+                          "",
+                          BMP_PREFERENCES,
+                          wx.NullBitmap,
+                          wx.ITEM_NORMAL,
+                          short_help_string = _("Preferences"))
         #self.AddLabelTool(const.ID_SAVE_SCREENSHOT,
         #                   "Take photo of screen",
         #                   BMP_PHOTO)

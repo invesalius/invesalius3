@@ -207,7 +207,7 @@ class LoadBitmap:
 
             vtk_error = False
 
-        id = wx.NewId()
+        id = wx.NewIdRef()
 
         bmp_item = [
             self.filepath,

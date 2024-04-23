@@ -40,11 +40,11 @@ from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.data.slice_ import Slice
 
-BTN_MASK = wx.NewId()
-BTN_PICTURE = wx.NewId()
-BTN_SURFACE = wx.NewId()
-BTN_REPORT = wx.NewId()
-BTN_REQUEST_RP = wx.NewId()
+BTN_MASK = wx.NewIdRef()
+BTN_PICTURE = wx.NewIdRef()
+BTN_SURFACE = wx.NewIdRef()
+BTN_REPORT = wx.NewIdRef()
+BTN_REQUEST_RP = wx.NewIdRef()
 
 WILDCARD_SAVE_3D = "Inventor (*.iv)|*.iv|"\
                    "PLY (*.ply)|*.ply|"\

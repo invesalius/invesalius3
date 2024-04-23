@@ -32,9 +32,9 @@ import invesalius.constants as constants
 import invesalius.constants as const
 from invesalius.i18n import tr as _
 
-ID_BTN_MEASURE_LINEAR = wx.NewId()
-ID_BTN_MEASURE_ANGULAR = wx.NewId()
-ID_BTN_ANNOTATION = wx.NewId()
+ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
+ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
+ID_BTN_ANNOTATION = wx.NewIdRef()
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
