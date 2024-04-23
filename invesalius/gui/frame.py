@@ -507,7 +507,7 @@ class Frame(wx.Frame):
             self.ShowAbout()
         elif id == const.ID_START:
             self.ShowGettingStarted()
-        elif id == const.ID_PREFERENCES:
+        elif id == const.ID_PREFERENCES or id == const.ID_PREFERENCES_TOOLBAR:
             self.ShowPreferences()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
@@ -1209,6 +1209,10 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         #tools_menu = wx.Menu()
 
+        # OPTIONS
+        options_menu = wx.Menu()
+        options_menu.Append(const.ID_PREFERENCES, _("Preferences"))
+
         #Mode
         self.mode_menu = mode_menu = wx.Menu()
         nav_menu = wx.Menu()
@@ -1246,6 +1250,7 @@ class MenuBar(wx.MenuBar):
         self.Append(tools_menu, _(u"Tools"))
         self.Append(plugins_menu, _(u"Plugins"))
         #self.Append(tools_menu, "Tools")
+        self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
@@ -1606,7 +1611,7 @@ class ProjectToolBar(AuiToolBar):
                           wx.NullBitmap,
                           wx.ITEM_NORMAL,
                           short_help_string = _("Save InVesalius project"))
-        self.AddTool(const.ID_PREFERENCES,
+        self.AddTool(const.ID_PREFERENCES_TOOLBAR,
                           "",
                           BMP_PREFERENCES,
                           wx.NullBitmap,
