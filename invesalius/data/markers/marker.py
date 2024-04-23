@@ -102,6 +102,15 @@ class Marker:
     def colour(self, new_colour):
         self.r, self.g, self.b = new_colour
 
+    # access colour in digital 8-bit per channel rgb format
+    @property
+    def colour8bit(self):
+        return [ch * 255 for ch in self.colour]
+
+    @colour8bit.setter
+    def colour8bit(self, new_colour):
+        self.colour = [s / 255.0 for s in new_colour]
+
     # x_seed, y_seed, z_seed can be jointly accessed as seed
     @property
     def seed(self):
@@ -221,6 +230,19 @@ class Marker:
             'session_id': self.session_id,
             'cortex_position_orientation': self.cortex_position_orientation,
         }
+
+    def from_dict(self, d):
+        self.position = d['position']
+        self.orientation = d['orientation']
+        self.colour = d['colour']
+        self.size = d['size']
+        self.label = d['label']
+        self.is_target = d['is_target']
+        self.marker_type = MarkerType(d['marker_type'])
+        self.seed = d['seed']
+        self.session_id = d['session_id']
+        self.cortex_position_orientation = d.get('cortex_position_orientation', None) # [None] * 6)
+        return self
 
     def duplicate(self):
         """Create a deep copy of this Marker object, without the visualization. Also unset the is_target attribute."""

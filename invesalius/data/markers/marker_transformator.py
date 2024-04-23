@@ -29,7 +29,6 @@ class MarkerTransformator:
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
-        Publisher.subscribe(self.UpdateSelectedMarker, 'Update selected marker')
         Publisher.subscribe(self.MoveMarkerByKeyboard, 'Move marker by keyboard')
 
     def UpdateNavigationStatus(self, nav_status, vis_status):

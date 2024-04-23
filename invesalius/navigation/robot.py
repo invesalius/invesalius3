@@ -55,6 +55,7 @@ class Robot(metaclass=Singleton):
         self.robot_coregistration_dialog = None
 
         self.objective = RobotObjective.NONE
+        self.target = None
 
         # If tracker already has fiducials set, send them to the robot; this can happen, e.g.,
         # when a pre-existing state is loaded at start-up.
