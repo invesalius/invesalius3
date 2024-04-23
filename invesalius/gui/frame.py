@@ -1045,26 +1045,9 @@ class MenuBar(wx.MenuBar):
         app(const.ID_EXIT, _("Exit\tCtrl+Q"))
 
         file_edit = wx.Menu()
-        d = inv_paths.ICON_DIR
-        if not(sys.platform == 'darwin'):
-            # Bitmaps for show/hide task panel item
-            p = os.path.join(d, "undo_menu.png")
-            self.BMP_UNDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
 
-            p = os.path.join(d, "redo_menu.png")
-            self.BMP_REDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
-
-            file_edit_item_undo = file_edit.Append(wx.WindowIDRef(wx.ID_UNDO),  _("Undo\tCtrl+Z"))
-            file_edit_item_undo.SetBitmap(self.BMP_UNDO)
-            file_edit_item_undo.Enable(False)
-
-            file_edit_item_redo = file_edit.Append(wx.ID_REDO,  _("Redo\tCtrl+Y"))
-            file_edit_item_redo.SetBitmap(self.BMP_REDO)
-            file_edit.Append(file_edit_item_redo)
-            file_edit_item_redo.Enable(False)
-        else:
-            file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
-            file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
+        file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
+        file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
         file_edit.Append(const.ID_GOTO_SLICE, _("Go to slice ...\tCtrl+G"))
         file_edit.Append(const.ID_GOTO_COORD, _("Go to scanner coord ...\t")).Enable(False)
 
