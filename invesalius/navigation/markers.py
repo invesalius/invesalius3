@@ -59,7 +59,7 @@ class MarkersControl(metaclass=Singleton):
         Publisher.sendMessage('Add marker', marker=marker, render=render)
 
         if marker.is_target:
-            self.SetTarget(marker.marker_id)
+            self.SetTarget(marker.marker_id, check_for_previous=False)
 
         if marker.is_point_of_interest:
             self.SetPointOfInterest(marker.marker_id)
@@ -107,22 +107,23 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id):
+    def SetTarget(self, marker_id, check_for_previous=True):
 
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
         self.robot.SetObjective(RobotObjective.NONE)
 
-        prev_target = self.FindTarget()
+        if check_for_previous:
+            prev_target = self.FindTarget()
 
-        # If the new target is same as the previous do nothing.
-        if prev_target and prev_target.marker_id == marker_id:
-            return
+            # If the new target is same as the previous do nothing.
+            if prev_target and prev_target.marker_id == marker_id:
+                return
 
-        # Unset the previous target
-        if prev_target is not None:
-            self.UnsetTarget(prev_target.marker_id)
+            # Unset the previous target
+            if prev_target is not None:
+                self.UnsetTarget(prev_target.marker_id)
 
         # Set new target
         marker = self.list[marker_id]
