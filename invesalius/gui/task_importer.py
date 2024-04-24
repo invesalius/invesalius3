@@ -118,24 +118,17 @@ class InnerTaskPanel(wx.Panel):
         BMP_IMPORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_import_original.png")), wx.BITMAP_TYPE_PNG)
         BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open_original.png")), wx.BITMAP_TYPE_PNG)
 
-        bmp_list = [BMP_IMPORT, BMP_OPEN_PROJECT]
-        resized_bmp_list = []
-        for bmp in bmp_list:
-            img = bmp.ConvertToImage()
-            img = img.Scale(23, 23, wx.IMAGE_QUALITY_HIGH)
-            resized_bmp_list.append(wx.Bitmap(img))
-
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
-                                               resized_bmp_list[0], style=button_style)
+                                               BMP_IMPORT, style=button_style)
         button_import_local.SetBackgroundColour(self.GetBackgroundColour())
         button_import_nifti = pbtn.PlateButton(self, BTN_IMPORT_NIFTI, "",
-                                               resized_bmp_list[0], style=button_style)
+                                               BMP_IMPORT, style=button_style)
         button_import_nifti.SetBackgroundColour(self.GetBackgroundColour())
         button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
-                                            resized_bmp_list[1], style=button_style)
+                                            BMP_OPEN_PROJECT, style=button_style)
         button_open_proj.SetBackgroundColour(self.GetBackgroundColour())
 
         # When using PlaneButton, it is necessary to bind events from parent win
