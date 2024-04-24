@@ -68,6 +68,7 @@ class MyPanel(wx.Panel):
         sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
         sizer.Add(btn, 0, wx.ALL, 5)
         self.SetSizer(sizer)
+        self._parent = parent
      
         redir = RedirectText(logText)
         sys.stdout = redir
@@ -79,25 +80,28 @@ class MyPanel(wx.Panel):
 
     def onClose(self, event):
         self._logger.info("MyPanel window close selected.")
-        logger = MyLogger()
-        logger._frame = None
-        self.Destroy()
-        logger.configureLogging()
+        self._parent.Hide()
+        #logger = MyLogger()
+        #logger._frame = None
+        #self.Destroy()
+        #logger.configureLogging()
      
 class MyFrame(wx.Frame):
     def __init__(self, logger):
-        wx.Frame.__init__(self, None, title="Log Console")
+        wx.Frame.__init__(self, None, title="Log Console", 
+                    style=wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX))
         self._panel = MyPanel(self, logger)
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.Show()
         
     #To be tested
     def onClose(self, event):
-        #self._logger.info("MyFrame window close selected.")
-        logger = MyLogger()
-        logger.logMessage('info', "MyFrame window close selected.")
-        logger._frame = None
-        self.Destroy()
+        self._logger.info("MyFrame window close selected.")
+        #logger = MyLogger()
+        #logger.logMessage('info', "MyFrame window close selected.")
+        #logger._frame = None
+        self.hide()
+        #self.Destroy()
         #logger.configureLogging()
 
 class MyLogger(metaclass=Singleton):
