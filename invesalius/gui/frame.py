@@ -1542,7 +1542,7 @@ class ProjectToolBar(AuiToolBar):
         path = d.joinpath("file_save_original.png")
         BMP_SAVE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-        path = d.joinpath("preferences_32.png")
+        path = d.joinpath("preferences.png")
         BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = d.joinpath("print_original.png")

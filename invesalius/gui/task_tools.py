@@ -79,8 +79,8 @@ class InnerTaskPanel(wx.Panel):
 
         # Image(s) for buttons
         BMP_ANNOTATE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "annotation.png"), wx.BITMAP_TYPE_PNG)
-        BMP_ANGLE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_angle.png"), wx.BITMAP_TYPE_PNG)
-        BMP_DISTANCE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_line.png"), wx.BITMAP_TYPE_PNG)
+        BMP_ANGLE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_angle_original.png"), wx.BITMAP_TYPE_PNG)
+        BMP_DISTANCE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_line_original.png"), wx.BITMAP_TYPE_PNG)
         BMP_ANNOTATE.SetWidth(25)
         BMP_ANNOTATE.SetHeight(25)
         BMP_ANGLE.SetWidth(25)

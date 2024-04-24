@@ -174,29 +174,14 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Image(s) for buttons
-        if sys.platform == 'darwin':
-            BMP_EXPORT_SURFACE = wx.Bitmap(\
-                                  os.path.join(inv_paths.ICON_DIR, "surface_export_original.png"),
-                                  wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-            BMP_TAKE_PICTURE = wx.Bitmap(\
-                                 os.path.join(inv_paths.ICON_DIR, "tool_photo_original.png"),
-                                 wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-
-            #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask.png",
-            #                            wx.BITMAP_TYPE_PNG)
-        else:
-            BMP_EXPORT_SURFACE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "surface_export.png"),
-                                        wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-
-            BMP_TAKE_PICTURE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "tool_photo.png"),
-                                     wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-
-            #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask_small.png",
-            #                            wx.BITMAP_TYPE_PNG)
+        BMP_EXPORT_SURFACE = wx.Bitmap(\
+                                os.path.join(inv_paths.ICON_DIR, "surface_export_original.png"),
+                                wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                        .Rescale(25, 25).ConvertToBitmap()
+        BMP_TAKE_PICTURE = wx.Bitmap(\
+                                os.path.join(inv_paths.ICON_DIR, "tool_photo_original.png"),
+                                wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                        .Rescale(25, 25).ConvertToBitmap()
 
 
 
