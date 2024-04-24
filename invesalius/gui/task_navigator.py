@@ -1979,7 +1979,8 @@ class MarkersPanel(wx.Panel):
             if d['is_target']:
                 self.__set_marker_as_target(len(self.markers) - 1)
 
-            if d['is_point_of_interest']:
+            is_point_of_interest = d['is_point_of_interest'] if 'is_point_of_interest' in d else False
+            if is_point_of_interest:
                 self.__set_marker_as_point_of_interest(len(self.markers) - 1)
                 Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
                                         orientation=d['orientation'])
