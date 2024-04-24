@@ -356,7 +356,6 @@ class VolumeToolPanel(wx.Panel):
         BMP_SLICE_PLANE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("slice_plane.png")), wx.BITMAP_TYPE_PNG)
         BMP_3D_STEREO = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG)
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        BMP_3D_MASK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(self, -1,"", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         self.button_raycasting.SetToolTip("Raycasting view")
@@ -366,7 +365,6 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.SetToolTip("Slices into 3D")
         #self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         #self.button_target.Enable(0)
-        #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)

@@ -115,20 +115,12 @@ class InnerTaskPanel(wx.Panel):
         link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
 
         # Image(s) for buttons
-        BMP_IMPORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_import.png")), wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
-        BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open.png")), wx.BITMAP_TYPE_PNG)
-
-        bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
-        #for bmp in bmp_list:
-            #bmp.SetWidth(25)
-            #bmp.SetHeight(25)
+        BMP_IMPORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_import_original.png")), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open_original.png")), wx.BITMAP_TYPE_PNG)
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
-        #button_import_pacs = pbtn.PlateButton(self, BTN_IMPORT_PACS, "", BMP_NET,
-        #                                      style=button_style)
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
                                                BMP_IMPORT, style=button_style)
         button_import_local.SetBackgroundColour(self.GetBackgroundColour())
