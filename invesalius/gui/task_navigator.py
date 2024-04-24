@@ -226,7 +226,7 @@ class InnerFoldPanel(wx.Panel):
     def OnEnableState(self, state):
         if not state:
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
-            Publisher.sendMessage('Back to image fiducials')
+            Publisher.sendMessage('Move to image page')
 
     def OnShowDbs(self):
         self.dbs_item.Show()
@@ -332,13 +332,13 @@ class CoregistrationPanel(wx.Panel):
     
     def __bind_events(self):
         Publisher.subscribe(self._FoldTracker,
-                                 'Next to tracker fiducials')
+                                 'Move to tracker page')
         Publisher.subscribe(self._FoldRefine,
-                                 'Next to refine fiducials')
+                                 'Move to refine page')
         Publisher.subscribe(self._FoldStimulator,
-                                 'Next to stimulator fiducials')
+                                 'Move to stimulator page')
         Publisher.subscribe(self._FoldImage,
-                                 'Back to image fiducials')
+                                 'Move to image page')
 
     def OnPageChanging(self, evt):
         page = evt.GetOldSelection()
@@ -530,7 +530,7 @@ class ImagePage(wx.Panel):
         Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
     def OnNext(self, evt):
-        Publisher.sendMessage("Next to tracker fiducials")
+        Publisher.sendMessage("Move to tracker page")
 
     def UpdateNextButton(self):
         self.next_button.Enable(self.image.AreImageFiducialsSet())
@@ -807,10 +807,10 @@ class TrackerPage(wx.Panel):
         self.OnStartRegistration(self.start_button, self.start_button)
 
     def OnNext(self, evt):
-        Publisher.sendMessage("Next to refine fiducials")
+        Publisher.sendMessage("Move to refine page")
     
     def OnBack(self, evt):
-        Publisher.sendMessage('Back to image fiducials')
+        Publisher.sendMessage('Move to image page')
     
     def OnPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu", page=2)
@@ -987,10 +987,10 @@ class RefinePage(wx.Panel):
                 self.numctrls_fiducial[m + 3][n].SetValue(value)
 
     def OnBack(self, evt):
-        Publisher.sendMessage('Back to image fiducials')
+        Publisher.sendMessage('Move to tracker page')
     
     def OnNext(self, evt):
-        Publisher.sendMessage('Next to stimulator fiducials')
+        Publisher.sendMessage('Move to stimulator page')
 
     def OnRefine(self, evt):
         self.icp.RegisterICP(self.navigation, self.tracker)
