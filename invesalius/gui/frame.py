@@ -1530,9 +1530,6 @@ class ProjectToolBar(AuiToolBar):
         # Load bitmaps
         d = inv_paths.ICON_DIR
 
-        path = d.joinpath("file_from_internet_original.png")
-        BMP_NET = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
         path = d.joinpath("file_import_original.png")
         BMP_IMPORT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
