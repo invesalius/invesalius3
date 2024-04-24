@@ -339,7 +339,6 @@ class CoregistrationPanel(wx.Panel):
                                  'Next to stimulator fiducials')
         Publisher.subscribe(self._FoldImage,
                                  'Back to image fiducials')
-        
 
     def OnPageChanging(self, evt):
         page = evt.GetOldSelection()
@@ -353,7 +352,7 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs if image fiducials not done.
             if not self.image.AreImageFiducialsSet():
                 self.book.SetSelection(0)
-                wx.MessageBox(_("Select image fiducials first"), _("InVesalius 3"))
+                wx.MessageBox(_("Please do the image registration first."), _("InVesalius 3"))
         if old_page != 2:
             # Load data into refine tab
             Publisher.sendMessage("Update UI for refine tab")
@@ -363,7 +362,7 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
                 self.book.SetSelection(1)
-                wx.MessageBox(_("Select tracker fiducials first"), _("InVesalius 3"))
+                wx.MessageBox(_("Please do the tracker registration first."), _("InVesalius 3"))
 
     def _FoldImage(self):
         """
@@ -649,7 +648,7 @@ class TrackerPage(wx.Panel):
         tracker_status = self.tracker.IsTrackerInitialized()
         current_label = wx.StaticText(self, -1, _("Current tracker: "))
         current_label.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        main_label = wx.StaticText(self, -1, _("No tracker selected!"))
+        main_label = wx.StaticText(self, -1, _("No tracker selected"))
 
         if tracker_status:
             main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
@@ -854,7 +853,7 @@ class TrackerPage(wx.Panel):
         if self.tracker.GetTrackerId() != const.DEFAULT_TRACKER:
             self.main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
         else:
-            self.main_label.SetLabel(_("No tracker selected!"))
+            self.main_label.SetLabel(_("No tracker selected"))
 
 class RefinePage(wx.Panel):
     def __init__(self, parent, nav_hub):
