@@ -296,9 +296,6 @@ class Viewer(wx.Panel):
 
         self.angle_threshold = angle_threshold
         self.distance_threshold = distance_threshold
-        
-        print("Angle threshold: ", self.angle_threshold)
-        print("Distance threshold: ", self.distance_threshold)
 
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
 

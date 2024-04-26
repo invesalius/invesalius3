@@ -608,8 +608,6 @@ class ReceiveCoordinates(threading.Thread):
         
         session = ses.Session()
         sleep_coord = session.GetConfig('sleep_coord', const.SLEEP_COORDINATES)
-        
-        print("Coordinate sleep time: ", sleep_coord)
 
         self.sleep_coord = sleep_coord
         self.tracker_connection = tracker_connection
