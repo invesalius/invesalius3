@@ -197,8 +197,6 @@ class Navigation(metaclass=Singleton):
         # Sleep parameters
         session = ses.Session()
         sleep_nav = session.GetConfig('sleep_nav', const.SLEEP_NAVIGATION)
-        
-        print("Navigation sleep time: ", sleep_nav)
 
         self.sleep_nav = sleep_nav
 
