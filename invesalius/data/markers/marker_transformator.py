@@ -222,7 +222,7 @@ class MarkerTransformator:
         #   system, y-axis is along the left-right axis of the coil, but in the world coordinates,
         #   (the ones that volume viewer shows) left-right axis is the x-axis. The right solution
         #   here would be to fix the coil coordinate system to match the world coordinates.
-        displacement = [0, 0, 0, 0, 0, 90]
+        displacement = [0, 0, 0, 0, 0, 90 + marker.z_rotation]
         self.MoveMarker(marker, displacement)
 
     def MoveMarkerByKeyboard(self, keycode):
@@ -273,18 +273,22 @@ class MarkerTransformator:
         elif keycode == const.ROTATE_MARKER_CLOCKWISE_15 and not self.is_navigating:
             stay_on_scalp = False
             direction = [0, 0, 0, 0, 0, -15]
+            marker.z_rotation -= 15
 
         elif keycode == const.ROTATE_MARKER_COUNTERCLOCKWISE_15 and not self.is_navigating:
             stay_on_scalp = False
             direction = [0, 0, 0, 0, 0, 15]
+            marker.z_rotation += 15
 
         elif keycode == const.ROTATE_MARKER_CLOCKWISE:
             stay_on_scalp = False
             direction = [0, 0, 0, 0, 0, -5]
+            marker.z_rotation -= 5
 
         elif keycode == const.ROTATE_MARKER_COUNTERCLOCKWISE:
             stay_on_scalp = False
             direction = [0, 0, 0, 0, 0, 5]
+            marker.z_rotation += 5
                 
         elif keycode in [const.MOVE_MARKER_CLOSER_KEYCODE, const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE]:
             stay_on_scalp = False
@@ -297,8 +301,8 @@ class MarkerTransformator:
         if direction is None:
             return
 
-        # Move the marker one unit in the direction specified by the key.
-        displacement = 1 * np.array(direction)
+        # Move the marker in the direction specified by the key.
+        displacement = np.array(direction)
         if stay_on_scalp:
             self.MoveMarkerOnScalp(
                 marker=marker,
