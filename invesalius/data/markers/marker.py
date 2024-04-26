@@ -61,6 +61,7 @@ class Marker:
     z_seed: float = 0
     is_target: bool = False
     is_point_of_interest: bool = False
+    z_rotation: float = 0
     session_id: int = 1
     x_cortex: float = 0
     y_cortex: float = 0
