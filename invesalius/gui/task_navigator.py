@@ -1879,6 +1879,9 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
         marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, 'Z-offset')
+        marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
+
         marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, 'Efield Target')
         marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN,45)
 
@@ -1968,6 +1971,8 @@ class MarkersPanel(wx.Panel):
                 seed=d['seed'],
                 session_id=d['session_id'],
                 cortex_position_orientation=cortex_position_orientation,
+                z_offset=d['z_offset'] if 'z_offset' in d else 0.0,
+                z_rotation=d['z_rotation'] if 'z_rotation' in d else 0.0,
             )
             # Note that we don't want to render or focus on the markers here for each loop iteration.
             self.AddMarker(marker, render=False, focus=False)
@@ -2810,44 +2815,40 @@ class MarkersPanel(wx.Panel):
         self.SaveState()
 
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
-        try:
-            with open(filename, 'r') as file:
-                magick_line = file.readline()
-                assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
-                version = int(magick_line.split('_')[-1])
-                if version not in const.SUPPORTED_MARKER_FILE_VERSIONS:
-                    wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
-                    return
+        with open(filename, 'r') as file:
+            magick_line = file.readline()
+            assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
+            version = int(magick_line.split('_')[-1])
+            if version not in const.SUPPORTED_MARKER_FILE_VERSIONS:
+                wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
+                return
 
-                file.readline() # skip the header line
+            file.readline() # skip the header line
 
-                self.marker_list_ctrl.Hide()
-                # Read the data lines and create markers
-                for line in file.readlines():
-                    marker = Marker(
-                        version=version,
-                    )
-                    marker.from_csv_row(line)
+            self.marker_list_ctrl.Hide()
+            # Read the data lines and create markers
+            for line in file.readlines():
+                marker = Marker(
+                    version=version,
+                )
+                marker.from_csv_row(line)
 
-                    # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
-                    marker.is_target = False
+                # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
+                marker.is_target = False
 
-                    # Note that we don't want to render or focus on the markers here for each loop iteration.
-                    self.AddMarker(marker, render=False, focus=False)
+                # Note that we don't want to render or focus on the markers here for each loop iteration.
+                self.AddMarker(marker, render=False, focus=False)
 
-                    if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
-                        Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
+                if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
+                    Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
-                    # Separately set the marker as target if needed.
-                    if marker.is_target:
-                        self.__set_marker_as_target(len(self.markers) - 1)
+                # Separately set the marker as target if needed.
+                if marker.is_target:
+                    self.__set_marker_as_target(len(self.markers) - 1)
 
-                    if marker.is_point_of_interest:
-                        Publisher.sendMessage('Set as Efield target at cortex', position = marker.position, orientation = marker.orientation)
+                if marker.is_point_of_interest:
+                    Publisher.sendMessage('Set as Efield target at cortex', position = marker.position, orientation = marker.orientation)
 
-        except Exception as e:
-            wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
-            utils.debug(e)
 
         self.marker_list_ctrl.Show()
         Publisher.sendMessage('Render volume viewer')
@@ -2915,10 +2916,18 @@ class MarkersPanel(wx.Panel):
         self.current_session = new_session_id
 
     def UpdateMarker(self, marker, new_position, new_orientation):
-        marker_id = marker.marker_id
-        self.markers[marker_id].position = new_position
-        self.markers[marker_id].orientation = new_orientation
+        marker.position = new_position
+        marker.orientation = new_orientation
+        self.UpdateMarkerInList(marker)
         self.SaveState()
+
+    def UpdateMarkerInList(self, marker):
+        idx = self.__find_marker_idx(marker)
+        if idx is None:
+            return
+
+        z_offset_str = str(marker.z_offset) if marker.z_offset != 0.0 else ""
+        self.marker_list_ctrl.SetItem(idx, const.Z_OFFSET_COLUMN, z_offset_str)
 
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0
@@ -2936,7 +2945,8 @@ class MarkersPanel(wx.Panel):
         self.brain_actor = actor
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label=None, is_target=False, seed=None,
-                     session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None):
+                     session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None,
+                     z_offset=0.0, z_rotation=0.0):
         """
         Create a new marker object.
         """
@@ -2956,6 +2966,8 @@ class MarkersPanel(wx.Panel):
         marker.session_id = session_id or self.current_session
         marker.marker_type = marker_type
         marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
+        marker.z_offset = z_offset
+        marker.z_rotation = z_rotation
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers)
@@ -2980,11 +2992,13 @@ class MarkersPanel(wx.Panel):
         # Add marker to the marker list in GUI.
         num_items = self.marker_list_ctrl.GetItemCount()
 
-        list_entry = ["" for _ in range(0, const.TARGET_COLUMN)]
-        list_entry[const.ID_COLUMN] = num_items
-        list_entry[const.SESSION_COLUMN] = str(marker.session_id)
-        list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
-        list_entry[const.LABEL_COLUMN] = marker.label
+        list_entry = []
+        list_entry.append(num_items)
+        list_entry.append(str(marker.session_id))
+        list_entry.append(marker.marker_type.human_readable)
+        list_entry.append(marker.label)
+        list_entry.append("")
+        list_entry.append(str(marker.z_offset) if marker.z_offset != 0.0 else "")
 
         self.marker_list_ctrl.Append(list_entry)
 

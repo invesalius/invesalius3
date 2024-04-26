@@ -42,7 +42,7 @@ class MarkerType(Enum):
 class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
-    version: int = 1
+    version: int = 3
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -60,7 +60,6 @@ class Marker:
     z_seed: float = 0
     is_target: bool = False
     is_point_of_interest: bool = False
-    z_rotation: float = 0
     session_id: int = 1
     x_cortex: float = 0
     y_cortex: float = 0
@@ -69,6 +68,8 @@ class Marker:
     beta_cortex: float = dataclasses.field(default = None)
     gamma_cortex: float = dataclasses.field(default = None)
     marker_type: MarkerType = MarkerType.LANDMARK
+    z_rotation: float = 0.0
+    z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
 
     # x, y, z can be jointly accessed as position
@@ -221,6 +222,8 @@ class Marker:
             'seed': self.seed,
             'session_id': self.session_id,
             'cortex_position_orientation': self.cortex_position_orientation,
+            'z_rotation': self.z_rotation,
+            'z_offset': self.z_offset,
         }
 
     def duplicate(self):
@@ -315,5 +318,34 @@ MARKER_VERSION_COLUMNS = {
         ('beta_cortex', float),
         ('gamma_cortex', float),
         ('marker_type', MarkerType),
+    ),
+    3: (
+        ('marker_id', int),
+        ('x', float),
+        ('y', float),
+        ('z', float),
+        ('alpha', float),
+        ('beta', float),
+        ('gamma', float),
+        ('r', float),
+        ('g', float),
+        ('b', float),
+        ('size', float),
+        ('label', str),
+        ('x_seed', float),
+        ('y_seed', float),
+        ('z_seed', float),
+        ('is_target', bool),
+        ('is_point_of_interest', bool),
+        ('session_id', int),
+        ('x_cortex', float),
+        ('y_cortex', float),
+        ('z_cortex', float),
+        ('alpha_cortex', float),
+        ('beta_cortex', float),
+        ('gamma_cortex', float),
+        ('marker_type', MarkerType),
+        ('z_rotation', float),
+        ('z_offset', float),
     ),
 }
