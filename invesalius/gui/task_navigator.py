@@ -2136,7 +2136,7 @@ class MarkersPanel(wx.Panel):
             return
 
         # Create a duplicate of the selected marker.
-        new_marker = self.__get_marker(idx)
+        new_marker = self.__get_marker(idx).duplicate()
         self.AddMarker(new_marker, render=True)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
