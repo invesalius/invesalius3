@@ -60,13 +60,12 @@ class MyPanel(wx.Panel):
         
         logText = wx.TextCtrl(self, style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
         
-        btn = wx.Button(self, label="Close")
-        btn.Bind(wx.EVT_BUTTON, self.onClose)
-        self.Bind(wx.EVT_CLOSE, self.onClose)
+        #btn = wx.Button(self, label="Close")
+        #btn.Bind(wx.EVT_BUTTON, self.onClose)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
-        sizer.Add(btn, 0, wx.ALL, 5)
+        #sizer.Add(btn, 0, wx.ALL, 5)
         self.SetSizer(sizer)
         self._parent = parent
      
@@ -80,11 +79,8 @@ class MyPanel(wx.Panel):
 
     def onClose(self, event):
         self._logger.info("MyPanel window close selected.")
-        self._parent.Hide()
-        #logger = MyLogger()
-        #logger._frame = None
-        #self.Destroy()
-        #logger.configureLogging()
+        self._parent.Iconify()
+        
      
 class MyFrame(wx.Frame):
     def __init__(self, logger):
@@ -97,12 +93,7 @@ class MyFrame(wx.Frame):
     #To be tested
     def onClose(self, event):
         self._logger.info("MyFrame window close selected.")
-        #logger = MyLogger()
-        #logger.logMessage('info', "MyFrame window close selected.")
-        #logger._frame = None
-        self.hide()
-        #self.Destroy()
-        #logger.configureLogging()
+        self.Hide()
 
 class MyLogger(metaclass=Singleton):
     def __init__(self):
