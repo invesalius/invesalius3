@@ -131,7 +131,7 @@ class MyLogger(metaclass=Singleton):
             print(self._config)
             self.configureLogging()
         except Exception as e1: 
-            print('ReadConfig:', e1)
+            print('Error reading config file in ReadConfig:', e1)
         return True
     
     def WriteConfigFile(self):
@@ -159,8 +159,8 @@ class MyLogger(metaclass=Singleton):
         return self._logger
 
     def logMessage(self,level, msg):
-        if (self._frame == None):
-            self.configureLogging()
+        #if (self._frame == None):
+        #    self.configureLogging()
 
         level = level.upper()
         if (level=='DEBUG'):
@@ -187,7 +187,7 @@ class MyLogger(metaclass=Singleton):
 
         if ((self._frame == None) & (console_logging!=0)):
             print('Initiating console logging ...')
-            self.closeLogging()
+            #self.closeLogging()
             self._frame = MyFrame(self.getLogger())
             print('Initiated console logging ...')
             self._logger.info('Initiated console logging ...')
