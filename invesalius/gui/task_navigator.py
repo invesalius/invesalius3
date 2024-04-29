@@ -33,6 +33,7 @@ except:
 
 import wx
 import sys
+import uuid
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -2623,6 +2624,9 @@ class MarkersPanel(wx.Panel):
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)
+
+        # Create an uuid for the marker
+        marker.marker_uuid = str(uuid.uuid4())
 
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             marker.colour = [0, 0, 1]
