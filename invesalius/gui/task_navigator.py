@@ -2619,10 +2619,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             Publisher.sendMessage('Show markers', markers=self.markers.list)
             ctrl.SetLabel('Hide all')
 
-        for i, m in enumerate(self.markers.list):
-            print(m.marker_id, " - ", m.marker_uuid)
-        print("\n")
-
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
         timestamp = time.localtime(time.time())
