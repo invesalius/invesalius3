@@ -1,9 +1,10 @@
 import vtk
 import numpy as np
+import wx
 
-from invesalius.utils import Singleton
-
+from invesalius.gui import dialogs
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 import invesalius.data.coordinates as dco
 
 
@@ -28,16 +29,14 @@ class SurfaceGeometry(metaclass=Singleton):
         }
 
     def LoadActor(self, actor):
-        # Create a smoothed version of the actor.
-        smoothed_actor = self.SmoothSurface(actor)
-
-        # Maintain a list of surfaces and their smoothed versions.
+        # Maintain a list of surfaces and their smoothed versions. However,
+        # do not compute the smoothed surface until it is needed.
         #
         # The original versions are used for visualization, while the smoothed
         # versions are used for calculations.
         self.surfaces.append({
             'original': self.PrecalculateSurfaceData(actor),
-            'smoothed': self.PrecalculateSurfaceData(smoothed_actor),
+            'smoothed': None,
         })
 
     def SmoothSurface(self, actor):
@@ -49,8 +48,8 @@ class SurfaceGeometry(metaclass=Singleton):
         smoother.SetInputData(polydata)
         # TODO: Having this many iterations is slow and should be probably computed
         #   only once and then stored on the disk - not re-computed every time InVesalius
-        #   is started. For instance, setting number of iterations to 100 does not provide
-        #   good enough results.
+        #   is started. Decreasing the number of iterations, e.g., to 100, does not seem to
+        #   provide that good results.
         smoother.SetNumberOfIterations(400)
         smoother.SetRelaxationFactor(0.9)
         smoother.FeatureEdgeSmoothingOff()
@@ -141,9 +140,22 @@ class SurfaceGeometry(metaclass=Singleton):
         if not self.surfaces:
             return None
 
-        # Find the surface with the highest z-coordinate.
-        highest_surface = max(self.surfaces, key=lambda surface: surface['smoothed']['highest_z'])
+        # Find the (non-smoothed) surface with the highest z-coordinate, corresponding to the scalp.
+        highest_surface = max(self.surfaces, key=lambda surface: surface['original']['highest_z'])
 
+        # Compute smoothed surface if it has not been computed yet.
+        if highest_surface['smoothed'] is None:
+            progress_window = dialogs.SurfaceSmoothingProgressWindow()
+
+            actor = highest_surface['original']['actor']
+
+            # Create a smoothed version of the actor.
+            smoothed_actor = self.SmoothSurface(actor)
+
+            highest_surface['smoothed'] = self.PrecalculateSurfaceData(smoothed_actor)
+
+            progress_window.Close()
+        
         return highest_surface['smoothed']
 
     def GetClosestPointOnSurface(self, surface_name, point):

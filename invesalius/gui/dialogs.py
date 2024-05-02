@@ -5360,6 +5360,24 @@ class TractographyProgressWindow(object):
     def Close(self):
         self.dlg.Destroy()
 
+
+class SurfaceSmoothingProgressWindow(object):
+    def __init__(self):
+        title = "InVesalius 3"
+        message = _("Smoothing the surface...")
+        style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        parent = wx.GetApp().GetTopWindow()
+
+        self.dlg = wx.ProgressDialog(title,
+                                     message,
+                                     parent=parent,
+                                     style=style)
+        self.dlg.Show()
+
+    def Close(self):
+        self.dlg.Destroy()
+
+
 class SurfaceProgressWindow(object):
     def __init__(self):
         self.title = "InVesalius 3"
