@@ -1943,7 +1943,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 current_uuid = data[-1]
 
                 if current_uuid == deleted_uuid:
-                    print("Deleting marker:", self.itemDataMap[key])
                     deleted_keys.append(key)
 
             self.marker_list_ctrl.DeleteItem(idx)
