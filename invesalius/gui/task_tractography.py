@@ -105,29 +105,26 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
         self.__bind_events()
 
-        # Button for import config coil file
+        # Button for loading Trekker FOD
         tooltip = wx.ToolTip(_("Load FOD"))
         btn_load = wx.Button(self, -1, _("FOD"), size=wx.Size(50, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLinkFOD)
-        # self.btn_load = btn_load
 
-        # Save button for object registration
+        # Button for loading Trekker configuration
         tooltip = wx.ToolTip(_(u"Load Trekker configuration parameters"))
         btn_load_cfg = wx.Button(self, -1, _(u"Configure"), size=wx.Size(65, 23))
         btn_load_cfg.SetToolTip(tooltip)
         btn_load_cfg.Enable(1)
         btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
-        # self.btn_load_cfg = btn_load_cfg
 
-        # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load brain visualization"))
-        btn_mask = wx.Button(self, -1, _("Brain"), size=wx.Size(50, 23))
+        # Button for creating peel
+        tooltip = wx.ToolTip(_("Create peel"))
+        btn_mask = wx.Button(self, -1, _("Peel"), size=wx.Size(50, 23))
         btn_mask.SetToolTip(tooltip)
         btn_mask.Enable(1)
-        btn_mask.Bind(wx.EVT_BUTTON, self.OnLinkBrain)
-        # self.btn_new = btn_new
+        btn_mask.Bind(wx.EVT_BUTTON, self.OnCreatePeel)
 
         # Button for creating new coil
         tooltip = wx.ToolTip(_("Load anatomical labels"))
@@ -135,7 +132,6 @@ class InnerTaskPanel(wx.Panel):
         btn_act.SetToolTip(tooltip)
         btn_act.Enable(1)
         btn_act.Bind(wx.EVT_BUTTON, self.OnLoadACT)
-        # self.btn_new = btn_new
 
         # Create a horizontal sizer to represent button save
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
@@ -347,7 +343,7 @@ class InnerTaskPanel(wx.Panel):
                 break
             wx.Yield()
 
-    def OnLinkBrain(self, event=None):
+    def OnCreatePeel(self, event=None):
         Publisher.sendMessage('Begin busy cursor')
         inv_proj = prj.Project()
         peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
@@ -355,7 +351,7 @@ class InnerTaskPanel(wx.Panel):
         method = peels_dlg.method
         if ret == wx.ID_OK:
             t_init = time.time()
-            msg = "Setting up Brain..."
+            msg = "Creating peeled surface..."
             self.tp = dlg.TractographyProgressWindow(msg)
 
             slic = sl.Slice()
@@ -404,7 +400,7 @@ class InnerTaskPanel(wx.Panel):
             self.peel_loaded = True
             Publisher.sendMessage('Update peel visualization', data= self.peel_loaded)
             del self.tp
-            wx.MessageBox(_("Brain Import successful"), _("InVesalius 3"))
+            wx.MessageBox(_("Peeled surface created"), _("InVesalius 3"))
         peels_dlg.Destroy()
         Publisher.sendMessage('End busy cursor')
 
@@ -601,4 +597,3 @@ class InnerTaskPanel(wx.Panel):
         self.n_tracts = const.N_TRACTS
 
         Publisher.sendMessage('Remove tracts')
-
