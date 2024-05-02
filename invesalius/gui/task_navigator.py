@@ -57,6 +57,7 @@ import invesalius.session as ses
 from invesalius import utils
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
+from wx.lib.mixins.listctrl import ColumnSorterMixin
 
 from invesalius import inv_paths
 
@@ -1702,7 +1703,7 @@ class ControlPanel(wx.Panel):
                 self.robot.SetObjective(RobotObjective.NONE)
 
 
-class MarkersPanel(wx.Panel):
+class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
         try:
@@ -1737,6 +1738,12 @@ class MarkersPanel(wx.Panel):
         self.marker_size = const.MARKER_SIZE
         self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
+
+        """ 
+        Stores all the marker data that is visible in the GUI, as well as the marker UUID.
+        Sorting the marker list in the GUI by column is based on values stored here. 
+        """
+        self.itemDataMap = {}
 
         self.brain_actor = None
         # Change session
@@ -1822,6 +1829,7 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.ChangeLabel)
         
         self.marker_list_ctrl = marker_list_ctrl
+        self.column_sorter = ColumnSorterMixin.__init__(self, self.marker_list_ctrl.GetColumnCount())
 
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         self.markers.LoadState()
@@ -1836,6 +1844,15 @@ class MarkersPanel(wx.Panel):
 
         self.SetSizer(group_sizer)
         self.Update()
+
+    # Required function for sorting the marker list
+    def GetListCtrl(self):
+        return self.marker_list_ctrl
+
+    # Show ascending or descending indicator in the column after sorting
+    def OnSortOrderChanged(self):
+        column, ascending = self.GetSortState()
+        self.marker_list_ctrl.ShowSortIndicator(column, ascending)
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
@@ -1889,8 +1906,17 @@ class MarkersPanel(wx.Panel):
 
     def _DeleteMarker(self, marker):
         deleted_marker_id = marker.marker_id
+        deleted_marker_uuid = marker.marker_uuid
         idx = self.__find_marker_index(deleted_marker_id)
         self.marker_list_ctrl.DeleteItem(idx)
+        print("_DeleteMarker:", deleted_marker_uuid)
+
+        # Delete the marker from itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == deleted_marker_uuid:
+                self.itemDataMap.pop(key)
+
 
         num_items = self.marker_list_ctrl.GetItemCount()
         for n in range(num_items):
@@ -1901,6 +1927,7 @@ class MarkersPanel(wx.Panel):
     def _DeleteMultiple(self, markers):
         if len(markers) == self.marker_list_ctrl.GetItemCount():
             self.marker_list_ctrl.DeleteAllItems()
+            self.itemDataMap.clear()
             return
 
         min_for_fast_deletion = 10
@@ -1908,10 +1935,26 @@ class MarkersPanel(wx.Panel):
             self.marker_list_ctrl.Hide()
 
         deleted_ids = []
+        deleted_keys = []
         for marker in markers:
             idx = self.__find_marker_index(marker.marker_id)
+            deleted_uuid = marker.marker_uuid
+            for key, data in self.itemDataMap.items():
+                current_uuid = data[-1]
+
+                if current_uuid == deleted_uuid:
+                    print("Deleting marker:", self.itemDataMap[key])
+                    deleted_keys.append(key)
+
             self.marker_list_ctrl.DeleteItem(idx)
             deleted_ids.append(marker.marker_id)
+
+        # Remove all the deleted markers from itemDataMap
+        for key in deleted_keys:
+            try:
+                self.itemDataMap.pop(key)
+            except KeyError:
+                print("Invalid itemDataMap key:", key)
 
         num_items = self.marker_list_ctrl.GetItemCount()
         for n in range(num_items):
@@ -1928,16 +1971,37 @@ class MarkersPanel(wx.Panel):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'PURPLE')
         self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, _("Yes"))
+        uuid = marker.marker_uuid
+
+        # Set the point of interest in itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.POINT_OF_INTEREST_TARGET_COLUMN] = "Yes"
 
     def _UnsetPointOfInterest(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
 
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
+        uuid = marker.marker_uuid
+
+        # Unset the point of interest in itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.POINT_OF_INTEREST_TARGET_COLUMN] = ""
 
     def _UpdateMarkerLabel(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItem(idx, const.LABEL_COLUMN, marker.label)
+
+        # Update the marker label in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.LABEL_COLUMN] = marker.label
 
     @staticmethod
     def __list_fiducial_labels():
@@ -2129,6 +2193,13 @@ class MarkersPanel(wx.Panel):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'RED')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
+        target_uuid = marker.marker_uuid
+
+        # Set the target column to "Yes" in itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == target_uuid:
+                self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
 
     def OnMenuDuplicateMarker(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2137,7 +2208,7 @@ class MarkersPanel(wx.Panel):
             return
 
         # Create a duplicate of the selected marker.
-        new_marker = self.__get_marker(idx)
+        new_marker = self.__get_marker(idx).duplicate()
         self.AddMarker(new_marker, render=True)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
@@ -2297,6 +2368,13 @@ class MarkersPanel(wx.Panel):
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
 
+        # Unset the target in itemDataMap
+        target_uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == target_uuid:
+                self.itemDataMap[key][const.TARGET_COLUMN] = ""
+
     def __find_marker_index(self, marker_id):
         """
         For a marker_id, returns the corresponding index in self.marker_list_ctrl.
@@ -2419,6 +2497,7 @@ class MarkersPanel(wx.Panel):
             if result != wx.ID_OK:
                 return
         self.markers.Clear()
+        self.itemDataMap.clear()
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -2540,6 +2619,10 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Show markers', markers=self.markers.list)
             ctrl.SetLabel('Hide all')
 
+        for i, m in enumerate(self.markers.list):
+            print(m.marker_id, " - ", m.marker_uuid)
+        print("\n")
+
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
         timestamp = time.localtime(time.time())
@@ -2638,23 +2721,36 @@ class MarkersPanel(wx.Panel):
 
     def _AddMarker(self, marker, render):
 
-        # Add marker to the marker list in GUI.
+        # Add marker to the marker list in GUI and to the itemDataMap.
         num_items = self.marker_list_ctrl.GetItemCount()
 
-        list_entry = ["" for _ in range(0, const.TARGET_COLUMN)]
+        key = 0
+        if len(self.itemDataMap) > 0:
+            # If itemDataMap is not empty, set the new key as last key + 1
+            key = list(self.itemDataMap.keys())[-1] + 1
+
+        list_entry = ["" for _ in range(0, const.X_COLUMN)]
         list_entry[const.ID_COLUMN] = num_items
         list_entry[const.SESSION_COLUMN] = str(marker.session_id)
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
         list_entry[const.LABEL_COLUMN] = marker.label
+        list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
+        list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = "Yes" if marker.is_point_of_interest else ""
+
+        if self.session.GetConfig('debug'):
+            list_entry.append(round(marker.x, 1))
+            list_entry.append(round(marker.y, 1))
+            list_entry.append(round(marker.z, 1))
 
         self.marker_list_ctrl.Append(list_entry)
+        self.marker_list_ctrl.SetItemData(num_items, key)
+        data_map_entry = list_entry.copy()
+
+        # Add the UUID to the entry in itemDataMap
+        data_map_entry.append(marker.marker_uuid)
+        self.itemDataMap[key] = data_map_entry
 
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
-
-        if self.session.GetConfig('debug'):
-            self.marker_list_ctrl.SetItem(num_items, const.X_COLUMN, str(round(marker.x, 1)))
-            self.marker_list_ctrl.SetItem(num_items, const.Y_COLUMN, str(round(marker.y, 1)))
-            self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(marker.z, 1)))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
