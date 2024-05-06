@@ -292,10 +292,12 @@ class MarkerTransformator:
         elif keycode in [const.MOVE_MARKER_CLOSER_KEYCODE, const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE]:
             stay_on_scalp = False
             direction = [0, 0, -1, 0, 0, 0]
+            marker.z_offset += 1
 
         elif keycode in [const.MOVE_MARKER_AWAY_KEYCODE, const.MOVE_MARKER_AWAY_ALTERNATIVE_KEYCODE]:
             stay_on_scalp = False
             direction = [0, 0, 1, 0, 0, 0]
+            marker.z_offset -= 1
 
         if direction is None:
             return

@@ -695,10 +695,11 @@ SESSION_COLUMN = 1
 MARKER_TYPE_COLUMN = 2
 LABEL_COLUMN = 3
 TARGET_COLUMN = 4
-POINT_OF_INTEREST_TARGET_COLUMN = 5
-X_COLUMN = 6
-Y_COLUMN = 7
-Z_COLUMN = 8
+Z_OFFSET_COLUMN = 5
+POINT_OF_INTEREST_TARGET_COLUMN = 6
+X_COLUMN = 7
+Y_COLUMN = 8
+Z_COLUMN = 9
 
 #------------ Navigation defaults -------------------
 
@@ -889,8 +890,8 @@ TREKKER_CONFIG = {'seed_max': 1,
                   'init_max_est_trials': 100}
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 2
-SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2]
+CURRENT_MARKER_FILE_VERSION = 3
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Keycodes for moving markers using the keyboard

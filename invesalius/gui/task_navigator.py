@@ -1822,6 +1822,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
         marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, 'Z-offset')
+        marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
+
         marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, 'Efield Target')
         marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN,45)
 
@@ -1897,6 +1900,49 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetTarget, 'Unset target')
         Publisher.subscribe(self._UnsetPointOfInterest, 'Unset point of interest')
         Publisher.subscribe(self._UpdateMarkerLabel, 'Update marker label')
+
+    def __find_target_marker_idx(self):
+        """
+        Return the index of the marker currently selected as target (there
+        should be at most one). If there is no such marker, return None.
+        """
+        for i in range(len(self.markers)):
+            if self.markers[i].is_target:
+                return i
+                
+        return None
+
+    def __find_marker_idx(self, marker):
+        """
+        Return the index of the marker in the list of markers. If the marker is not found, return None.
+        """
+        for i in range(len(self.markers)):
+            if self.markers[i] == marker:
+                return i
+
+        return None
+
+    def __find_point_of_interest_marker(self):
+        for i in range(len(self.markers)):
+            if self.markers[i].is_point_of_interest:
+                return i
+
+        return None
+
+    def __get_brain_target_markers(self):
+        """
+        Return the index of the marker currently selected as target (there
+        should be at most one). If there is no such marker, return None.
+        """
+        brain_target_list = []
+        for i in range(len(self.markers)):
+            if self.markers[i].marker_type == MarkerType.BRAIN_TARGET:
+                brain_target_list.append(self.markers[i].coordinate)
+
+        if brain_target_list:
+            return brain_target_list
+
+        return None
 
     def __get_selected_items(self):
         """    
@@ -2667,7 +2713,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     )
                     marker.from_csv_row(line)
 
-                    # Note that we don't want to render the markers here for each loop iteration.
+                    # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
+                    marker.is_target = False
+
+                    # Note that we don't want to render or focus on the markers here for each loop iteration.
                     self.markers.AddMarker(marker, render=False)
 
                     if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
@@ -2747,7 +2796,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_id = marker.marker_id
         self.markers.list[marker_id].position = new_position
         self.markers.list[marker_id].orientation = new_orientation
+        self.UpdateMarkerInList(marker)
         self.markers.SaveState()
+
+    def UpdateMarkerInList(self, marker):
+        idx = self.__find_marker_idx(marker)
+        if idx is None:
+            return
+
+        z_offset_str = str(marker.z_offset) if marker.z_offset != 0.0 else ""
+        self.marker_list_ctrl.SetItem(idx, const.Z_OFFSET_COLUMN, z_offset_str)
 
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0
@@ -2765,7 +2823,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.brain_actor = actor
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label=None, is_target=False, seed=None,
-                     session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None):
+                     session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None,
+                     z_offset=0.0, z_rotation=0.0):
         """
         Create a new marker object.
         """
@@ -2785,6 +2844,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.session_id = session_id or self.current_session
         marker.marker_type = marker_type
         marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
+        marker.z_offset = z_offset
+        marker.z_rotation = z_rotation
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)
@@ -2812,6 +2873,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         list_entry[const.SESSION_COLUMN] = str(marker.session_id)
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
         list_entry[const.LABEL_COLUMN] = marker.label
+        list_entry[const.Z_OFFSET_COLUMN] = str(marker.z_offset) if marker.z_offset != 0.0 else ""
         list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
         list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = "Yes" if marker.is_point_of_interest else ""
 
