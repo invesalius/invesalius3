@@ -2211,6 +2211,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.markers.SelectMarker(marker_id)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
+    #
+    # Note: This is called also when re-clicking on the same marker that is already focused.
     def OnMarkerUnfocused(self, evt):
         self.markers.DeselectMarker()
 
