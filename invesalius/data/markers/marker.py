@@ -55,7 +55,7 @@ class Marker:
     g: float = 1
     b: float = 0
     size: float = 2
-    label: str = '*'
+    label: str = ''
     x_seed: float = 0
     y_seed: float = 0
     z_seed: float = 0

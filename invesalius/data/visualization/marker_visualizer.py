@@ -18,6 +18,12 @@ class MarkerVisualizer:
     # Color for highlighting a marker.
     HIGHLIGHT_COLOR = vtk.vtkNamedColors().GetColor3d('Red')
 
+    # Scaling factor for the marker when it is highlighted.
+    #
+    # This is done to make the highlighted marker visible if there are other markers with
+    # identical positions, which happens, e.g., when duplicating a marker.
+    HIGHLIGHTED_MARKER_SCALING_FACTOR = 1.01
+
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d('Green')
 
@@ -431,6 +437,9 @@ class MarkerVisualizer:
         # Change the color of the marker.
         actor.GetProperty().SetColor(self.HIGHLIGHT_COLOR)
 
+        # Increase the scale of the marker.
+        self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
+
         # Set the marker visible when highlighted even if it's hidden.
         if marker.visualization['hidden']:
             actor.SetVisibility(1)
@@ -470,6 +479,9 @@ class MarkerVisualizer:
 
         # Change the color of the marker back to its original color.
         actor.GetProperty().SetColor(colour)
+
+        # Decrease back the scale of the marker.
+        self.actor_factory.ScaleActor(actor, 1 / self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker invisible if it should be hidden.
         if marker.visualization['hidden']:

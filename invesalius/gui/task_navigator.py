@@ -2277,6 +2277,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Create a duplicate of the selected marker.
         new_marker = self.__get_marker(idx).duplicate()
+
+        # Add suffix to marker name.
+        new_marker.label = new_marker.label + ' (copy)'
+
         self.markers.AddMarker(new_marker, render=True, focus=True)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):

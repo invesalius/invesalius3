@@ -161,8 +161,9 @@ class ActorFactory(object):
         """
         Return an actor representing an arrow with the given position and orientation.
         
-        The zero angle of the arrow is in the positive y-direction (anterior in RAS+ coordinate system,
-        which the volume viewer uses).
+        The zero angle of the arrow is in the positive x-direction (right in RAS+ coordinate system,
+        which the volume viewer uses). Note that it corresponds to the anterior of the coil, as the
+        coil has a coordinate system where x-axis is the anterior-posterior axis.
         """
         arrow = vtk.vtkArrowSource()
         arrow.SetArrowOriginToDefault()
@@ -180,12 +181,28 @@ class ActorFactory(object):
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetLineWidth(5)
 
-        # Scale the arrow in x-direction to the desired length.
+        # Apply scaling to adjust the arrow's size.
         size = const.ARROW_MARKER_SIZE
         actor.SetScale(size * length_multiplier, size, size)
 
-        actor.SetOrientation(orientation)
-        actor.SetPosition(position)
+        # Create a vtkTransform object to handle transformations.
+        transform = vtk.vtkTransform()
+
+        # Reset the transform to identity matrix.
+        transform.Identity()
+
+        # Apply translation to set the position.
+        #
+        # Note that translation is applied first, then rotation.
+        transform.Translate(position)
+
+        # Apply the rotation transformations for Euler angles.
+        transform.RotateZ(orientation[2])
+        transform.RotateY(orientation[1])
+        transform.RotateX(orientation[0])
+
+        # Apply the transform to the actor.
+        actor.SetUserTransform(transform)
 
         return actor
 
@@ -241,7 +258,7 @@ class ActorFactory(object):
     def CreateBall(self, position, colour=[0.0, 0.0, 1.0], size=2):
         ball_ref = vtk.vtkSphereSource()
         ball_ref.SetRadius(size)
-        ball_ref.SetCenter(position)
+        ball_ref.SetCenter(0, 0, 0)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
@@ -252,6 +269,10 @@ class ActorFactory(object):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
+
+        transform = vtk.vtkTransform()
+        transform.Translate(position)
+        actor.SetUserTransform(transform)
 
         return actor
 
@@ -278,6 +299,14 @@ class ActorFactory(object):
         return torusActor
 
     # Manipulate actors
+
+    def ScaleActor(self, actor, scaling_factor):
+        """
+        Scale an actor by a given factor.
+        """
+        old_scale = actor.GetScale()
+        new_scale = [old_scale[i] * scaling_factor for i in range(3)]
+        actor.SetScale(new_scale)
 
     # XXX: Do not use, does not seem to work correctly.
     def UpdatePositionAndOrientation(self, actor, new_position, new_orientation):
