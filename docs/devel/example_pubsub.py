@@ -21,18 +21,18 @@ class Student:
         Publisher.subscribe(self.ReceiveGrade, "Set Student Grade")
 
     def ReceiveProject(self, pubsub_evt):
-        projects_dict = pubsub_evt.data
+        projects_dict = pubsub_evt
         self.project = projects_dict[self.name]
-        print "%s: I've received the project %s" % (self.name, self.project)
+        print(f"{self.name}: I've received the project {self.project}")
 
     def ReceiveGrade(self, pubsub_evt):
-        grades_dict = pubsub_evt.data
+        grades_dict = pubsub_evt
         self.grade = grades_dict[self.name]
         if self.grade > 6:
             self.mood = ":)"
         else:
             self.mood = ":("
-        print "%s: I've received the grade %d %s" % (self.name, self.grade, self.mood)
+        print(f"{self.name}: I've received the grade {self.grade} {self.mood}")
 
 
 class Teacher:
@@ -41,11 +41,11 @@ class Teacher:
         self.course = course
 
     def SendMessage(self):
-        print "%s: Telling students the projects" % (self.name)
-        Publisher.sendMessage("Set Student Project", self.course.projects_dict)
+        print(f"{self.name}: Telling students the projects")
+        Publisher.sendMessage("Set Student Project", pubsub_evt=self.course.projects_dict)
 
-        print "\n%s: Telling students the grades" % (self.name)
-        Publisher.sendMessage("Set Student Grade", self.course.grades_dict)
+        print(f"\n{self.name}: Telling students the grades")
+        Publisher.sendMessage("Set Student Grade", pubsub_evt=self.course.grades_dict)
 
 
 class Course:
@@ -67,6 +67,5 @@ cs102.grades_dict = {"Coelho": 7, "Victor": 6.5, "Thomaz": 4}
 
 # Create teacher:
 andre = Teacher("Andre", cs102)
-
 
 andre.SendMessage()
