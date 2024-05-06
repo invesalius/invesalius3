@@ -1,4 +1,5 @@
 import copy
+import uuid
 import dataclasses
 from enum import Enum
 
@@ -69,6 +70,7 @@ class Marker:
     gamma_cortex: float = dataclasses.field(default = None)
     marker_type: MarkerType = MarkerType.LANDMARK
     visualization: dict = dataclasses.field(default_factory=dict)
+    marker_uuid: str = ''
 
     # x, y, z can be jointly accessed as position
     @property
@@ -131,7 +133,7 @@ class Marker:
     @classmethod
     def to_csv_header(cls):
         """Return the string containing tab-separated list of field names (header)."""
-        res = [field.name for field in dataclasses.fields(cls) if field.name != 'version']
+        res = [field.name for field in dataclasses.fields(cls) if (field.name != 'version' and field.name != 'marker_uuid')]
         res.extend(['x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world'])
         return '\t'.join(map(lambda x: '\"%s\"' % x, res))
 
@@ -139,8 +141,8 @@ class Marker:
         """Serialize to excel-friendly tab-separated string"""
         res = ''
         for field in dataclasses.fields(self.__class__):
-            # Skip the version field, as it won't be stored in the file.
-            if field.name == 'version':
+            # Skip version and uuid fields, as they won't be stored in the file.
+            if field.name == 'version' or field.name == 'marker_uuid':
                 continue
 
             if field.type is str:
@@ -216,6 +218,9 @@ class Marker:
         if is_brain_target:
             self.marker_type = MarkerType.BRAIN_TARGET
 
+        if self.marker_uuid == '':
+            self.marker_uuid = str(uuid.uuid4())
+
     def to_dict(self):
         return {
             'position': self.position,
@@ -249,10 +254,13 @@ class Marker:
         # Create a new instance of the Marker class.
         new_marker = Marker()
 
-        # Manually copy all attributes except the visualization.
+        # Manually copy all attributes except the visualization and the marker_uuid.
         for field in dataclasses.fields(self):
-            if field.name != 'visualization':
+            if field.name != 'visualization' and field.name != 'marker_uuid':
                 setattr(new_marker, field.name, copy.deepcopy(getattr(self, field.name)))
+
+        # Give the duplicate marker unique uuid
+        new_marker.marker_uuid = str(uuid.uuid4())
 
         # Set the visualization attribute to an empty dictionary.
         new_marker.visualization = {}

@@ -23,6 +23,7 @@ from invesalius.data.markers.marker import MarkerType, Marker
 from invesalius.data.markers.marker_transformator import MarkerTransformator
 from invesalius.utils import Singleton
 from invesalius.navigation.robot import Robot, RobotObjective
+import uuid
 
 
 class MarkersControl(metaclass=Singleton):
@@ -53,6 +54,9 @@ class MarkersControl(metaclass=Singleton):
         """
         Given a marker object, add it to the list of markers and render the new marker.
         """
+        if marker.marker_uuid == '':
+            marker.marker_uuid = str(uuid.uuid4())
+
         marker.marker_id = len(self.list)
         self.list.append(marker)
 
