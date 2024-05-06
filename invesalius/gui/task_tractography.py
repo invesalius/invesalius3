@@ -106,28 +106,28 @@ class InnerTaskPanel(wx.Panel):
         self.__bind_events()
 
         # Button for loading Trekker FOD
-        tooltip = wx.ToolTip(_("Load FOD"))
+        tooltip = _("Load FOD")
         btn_load = wx.Button(self, -1, _("FOD"), size=wx.Size(50, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLinkFOD)
 
         # Button for loading Trekker configuration
-        tooltip = wx.ToolTip(_(u"Load Trekker configuration parameters"))
+        tooltip = _(u"Load Trekker configuration parameters")
         btn_load_cfg = wx.Button(self, -1, _(u"Configure"), size=wx.Size(65, 23))
         btn_load_cfg.SetToolTip(tooltip)
         btn_load_cfg.Enable(1)
         btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
 
         # Button for creating peel
-        tooltip = wx.ToolTip(_("Create peel"))
+        tooltip = _("Create peel")
         btn_mask = wx.Button(self, -1, _("Peel"), size=wx.Size(50, 23))
         btn_mask.SetToolTip(tooltip)
         btn_mask.Enable(1)
         btn_mask.Bind(wx.EVT_BUTTON, self.OnCreatePeel)
 
         # Button for creating new coil
-        tooltip = wx.ToolTip(_("Load anatomical labels"))
+        tooltip = _("Load anatomical labels")
         btn_act = wx.Button(self, -1, _("ACT"), size=wx.Size(50, 23))
         btn_act.SetToolTip(tooltip)
         btn_act.Enable(1)

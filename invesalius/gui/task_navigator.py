@@ -407,7 +407,7 @@ class ImagePage(wx.Panel):
             tip = fiducial['tip']
 
             ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
-            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.SetToolTip(tip)
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
             ctrl.Disable()
 
@@ -594,7 +594,7 @@ class TrackerPage(wx.Panel):
             tip = fiducial['tip']
 
             # ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
-            # ctrl.SetToolTip(wx.ToolTip(tip))
+            # ctrl.SetToolTip(tip)
             # ctrl.SetBackgroundColour((255, 0, 0))
             # ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
             # ctrl.SetValue(self.tracker.IsTrackerFiducialSet(n))
@@ -602,7 +602,7 @@ class TrackerPage(wx.Panel):
             w, h = wx.ScreenDC().GetTextExtent("M"*len(label))
             ctrl = wx.StaticText(self, button_id, label='', style=wx.TE_READONLY | wx.ALIGN_CENTER| wx.ST_NO_AUTORESIZE, size=(55, h+5))
             ctrl.SetLabel(label)
-            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.SetToolTip(tip)
             if self.tracker.IsTrackerFiducialSet(n):
                 ctrl.SetBackgroundColour(GREEN_COLOR)
             else:
@@ -903,14 +903,14 @@ class RefinePage(wx.Panel):
 
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
         tooltip = _("Fiducial registration error")
-        txt_fre.SetToolTip(wx.ToolTip(tooltip))
+        txt_fre.SetToolTip(tooltip)
 
         value = self.icp.GetFreForUI()
         txtctrl_fre = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
         txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         txtctrl_fre.SetBackgroundColour('WHITE')
         txtctrl_fre.SetEditable(0)
-        txtctrl_fre.SetToolTip(wx.ToolTip(tooltip))
+        txtctrl_fre.SetToolTip(tooltip)
         self.txtctrl_fre = txtctrl_fre
 
         self.OnUpdateUI()
@@ -1155,7 +1155,7 @@ class ControlPanel(wx.Panel):
         self.target_selected = False
 
         # Toggle button for neuronavigation
-        tooltip = wx.ToolTip(_("Start navigation"))
+        tooltip = _("Start navigation")
         btn_nav = wx.ToggleButton(self, -1, _("Start neuronavigation"), size=wx.Size(80, -1))
         btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
@@ -1172,7 +1172,7 @@ class ControlPanel(wx.Panel):
         self.GREY_COLOR = GREY_COLOR
 
         # Toggle Button for Tractography
-        tooltip = wx.ToolTip(_(u"Control Tractography"))
+        tooltip = _(u"Control Tractography")
         BMP_TRACT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("tract.png")), wx.BITMAP_TYPE_PNG)
         tractography_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         tractography_checkbox.SetBackgroundColour(GREY_COLOR)
@@ -1184,7 +1184,7 @@ class ControlPanel(wx.Panel):
         self.tractography_checkbox = tractography_checkbox
 
         # Toggle button to track the coil
-        tooltip = wx.ToolTip(_(u"Track coil"))
+        tooltip = _(u"Track coil")
         BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
         track_object_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         track_object_button.SetBackgroundColour(GREY_COLOR)
@@ -1197,7 +1197,7 @@ class ControlPanel(wx.Panel):
         self.track_object_button = track_object_button
 
         # Toggle button for allowing triggering only if coil is at target
-        tooltip = wx.ToolTip(_(u"Allow triggering only if the coil is at the target"))
+        tooltip = _(u"Allow triggering only if the coil is at the target")
         BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG)
         lock_to_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         lock_to_target_button.SetBackgroundColour(GREY_COLOR)
@@ -1209,7 +1209,7 @@ class ControlPanel(wx.Panel):
         self.lock_to_target_button = lock_to_target_button
 
         # Toggle button for showing coil during navigation
-        tooltip = wx.ToolTip(_("Show coil"))
+        tooltip = _("Show coil")
         BMP_SHOW_COIL = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG)
         show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         show_coil_button.SetBackgroundColour(GREY_COLOR)
@@ -1221,7 +1221,7 @@ class ControlPanel(wx.Panel):
         self.show_coil_button = show_coil_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
-        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
+        tooltip = _("Enable serial port communication to trigger pulse and create markers")
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
         checkbox_serial_port = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkbox_serial_port.SetBackgroundColour(RED_COLOR)
@@ -1232,7 +1232,7 @@ class ControlPanel(wx.Panel):
         self.checkbox_serial_port = checkbox_serial_port
 
         #Toggle Button for Efield
-        tooltip = wx.ToolTip(_(u"Control E-Field"))
+        tooltip = _(u"Control E-Field")
         BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
         efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         efield_checkbox.SetBackgroundColour(GREY_COLOR)
@@ -1244,7 +1244,7 @@ class ControlPanel(wx.Panel):
         self.efield_checkbox = efield_checkbox
 
         #Toggle Button for Target Mode
-        tooltip = wx.ToolTip(_(u"Target mode"))
+        tooltip = _(u"Target mode")
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
         target_mode_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         target_mode_button.SetBackgroundColour(GREY_COLOR)
@@ -1257,7 +1257,7 @@ class ControlPanel(wx.Panel):
         self.UpdateTargetButton()
 
         # Toggle button for tracking target with robot during navigation
-        tooltip = wx.ToolTip(_("Track target with robot"))
+        tooltip = _("Track target with robot")
         BMP_TRACK_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot_track_target.png")), wx.BITMAP_TYPE_PNG)
         robot_track_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         robot_track_target_button.SetBackgroundColour(GREY_COLOR)
@@ -1269,7 +1269,7 @@ class ControlPanel(wx.Panel):
         self.robot_track_target_button = robot_track_target_button
 
         # Toggle button for moving robot away from head
-        tooltip = wx.ToolTip(_("Move robot away from head"))
+        tooltip = _("Move robot away from head")
         BMP_ENABLE_MOVE_AWAY = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot_move_away.png")), wx.BITMAP_TYPE_PNG)
         robot_move_away_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         robot_move_away_button.SetBackgroundColour(GREY_COLOR)
@@ -1435,13 +1435,13 @@ class ControlPanel(wx.Panel):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
-            tooltip = wx.ToolTip(_("Start neuronavigation"))
+            tooltip = _("Start neuronavigation")
             btn_nav.SetToolTip(tooltip)
             btn_nav.SetLabelText(_("Start neuronavigation"))
         else:
             Publisher.sendMessage("Start navigation")
             if self.nav_status:
-                tooltip = wx.ToolTip(_("Stop neuronavigation"))
+                tooltip = _("Stop neuronavigation")
                 btn_nav.SetToolTip(tooltip)
                 btn_nav.SetLabelText(_("Stop neuronavigation"))
             else:

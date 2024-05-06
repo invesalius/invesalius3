@@ -280,7 +280,7 @@ class ObjectTab(wx.Panel):
         self.state = self.LoadConfig()
 
         # Button for creating new stimulator
-        tooltip = wx.ToolTip(_("Create new stimulator"))
+        tooltip = _("Create new stimulator")
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
@@ -288,7 +288,7 @@ class ObjectTab(wx.Panel):
         self.btn_new = btn_new
 
         # Button for loading stimulator config file
-        tooltip = wx.ToolTip(_("Load stimulator configuration file"))
+        tooltip = _("Load stimulator configuration file")
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
@@ -296,7 +296,7 @@ class ObjectTab(wx.Panel):
         self.btn_load = btn_load
 
         # Save button for saving stimulator config file
-        tooltip = wx.ToolTip(_(u"Save stimulator configuration file"))
+        tooltip = _(u"Save stimulator configuration file")
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
@@ -537,7 +537,7 @@ class TrackerTab(wx.Panel):
         tracker_options = [_("Select")] + self.tracker.get_trackers()
         select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
                                           choices=tracker_options, style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        tooltip = wx.ToolTip(_("Choose the tracking device"))
+        tooltip = _("Choose the tracking device")
         select_tracker_elem.SetToolTip(tooltip)
         select_tracker_elem.SetSelection(self.tracker.tracker_id)
         select_tracker_elem.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem))
@@ -546,7 +546,7 @@ class TrackerTab(wx.Panel):
         select_tracker_label = wx.StaticText(self, -1, _('Choose the tracking device: '))
 
         # ComboBox for tracker reference mode
-        tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
+        tooltip = _("Choose the navigation reference mode")
         choice_ref = wx.ComboBox(self, -1, "", size=(145, -1),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
@@ -571,7 +571,7 @@ class TrackerTab(wx.Panel):
         lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
-        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        tooltip = _("Choose or type the robot IP")
         robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
