@@ -2188,6 +2188,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if idx == -1:
             return
 
+        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
+        Publisher.sendMessage('Update selected marker', marker=marker)
+
         # XXX: There seems to be a bug in WxPython when selecting multiple items on the list using,
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
         #   is triggered repeatedly for the same item (the one that was first selected). This is a
