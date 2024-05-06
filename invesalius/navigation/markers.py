@@ -138,7 +138,8 @@ class MarkersControl(metaclass=Singleton):
         Publisher.sendMessage('Set target', marker=marker)
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
 
-        # When setting a new target, automatically switch into target mode.
+        # When setting a new target, automatically switch into target mode. Note that the order is important here: 
+        # first set the target, then move into target mode.
         Publisher.sendMessage('Press target mode button', pressed=True)
 
         self.SaveState()
