@@ -61,6 +61,7 @@ class MarkerVisualizer:
         Publisher.subscribe(self.ShowMarkers, 'Show markers')
         Publisher.subscribe(self.DeleteMarkers, 'Delete markers')
         Publisher.subscribe(self.DeleteMarker, 'Delete marker')
+        Publisher.subscribe(self.SetCameraToFocusOnMarker, 'Set camera to focus on marker')
         Publisher.subscribe(self.HighlightMarker, 'Highlight marker')
         Publisher.subscribe(self.UnhighlightMarker, 'Unhighlight marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
@@ -383,6 +384,22 @@ class MarkerVisualizer:
 
         # Store the projection line actor so that it can be removed later.
         self.projection_line_actor = actor
+
+    def SetCameraToFocusOnMarker(self, marker):
+        """
+        Set the camera focal point to the marker, making the marker the center of the view.
+        """
+        position = marker.position
+
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
+
+        camera = self.renderer.GetActiveCamera()
+        camera.SetFocalPoint(position_flipped)
+        self.renderer.ResetCameraClippingRange()
+
+        self.renderer.Render()
+        self.interactor.GetRenderWindow().Render()
 
     def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.

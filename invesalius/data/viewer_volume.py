@@ -2740,4 +2740,3 @@ class SlicePlane:
         del self.plane_x
         del self.plane_y
         del self.plane_z
-
