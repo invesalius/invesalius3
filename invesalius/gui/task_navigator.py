@@ -1895,54 +1895,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._AddMarker, 'Add marker')
         Publisher.subscribe(self._DeleteMarker, 'Delete marker')
         Publisher.subscribe(self._DeleteMultiple, 'Delete markers')
-        Publisher.subscribe(self._SetTarget, 'Set target')
         Publisher.subscribe(self._SetPointOfInterest, 'Set point of interest')
         Publisher.subscribe(self._UnsetTarget, 'Unset target')
         Publisher.subscribe(self._UnsetPointOfInterest, 'Unset point of interest')
         Publisher.subscribe(self._UpdateMarkerLabel, 'Update marker label')
-
-    def __find_target_marker_idx(self):
-        """
-        Return the index of the marker currently selected as target (there
-        should be at most one). If there is no such marker, return None.
-        """
-        for i in range(len(self.markers)):
-            if self.markers[i].is_target:
-                return i
-                
-        return None
-
-    def __find_marker_idx(self, marker):
-        """
-        Return the index of the marker in the list of markers. If the marker is not found, return None.
-        """
-        for i in range(len(self.markers)):
-            if self.markers[i] == marker:
-                return i
-
-        return None
-
-    def __find_point_of_interest_marker(self):
-        for i in range(len(self.markers)):
-            if self.markers[i].is_point_of_interest:
-                return i
-
-        return None
-
-    def __get_brain_target_markers(self):
-        """
-        Return the index of the marker currently selected as target (there
-        should be at most one). If there is no such marker, return None.
-        """
-        brain_target_list = []
-        for i in range(len(self.markers)):
-            if self.markers[i].marker_type == MarkerType.BRAIN_TARGET:
-                brain_target_list.append(self.markers[i].coordinate)
-
-        if brain_target_list:
-            return brain_target_list
-
-        return None
 
     def __get_selected_items(self):
         """    
@@ -2233,8 +2189,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if idx == -1:
             return
 
-        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
-        Publisher.sendMessage('Update selected marker', marker=marker)
+        marker_id = self.__get_marker_id(idx)
+        marker = self.markers.list[marker_id]
 
         # XXX: There seems to be a bug in WxPython when selecting multiple items on the list using,
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
@@ -2253,9 +2209,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             # Unhighlight the previously focused marker in the viewer volume.
             Publisher.sendMessage('Unhighlight marker')
 
-        marker_id = self.__get_marker_id(idx)
-
-        self.currently_focused_marker = self.markers.list[marker_id]
+        self.currently_focused_marker = marker
         self.markers.SelectMarker(marker_id)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
@@ -2266,7 +2220,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def SetCameraToFocusOnMarker(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.markers[idx]
+        marker = self.markers.list[idx]
         Publisher.sendMessage('Set camera to focus on marker', marker=marker)
 
     def OnCreateCoilTargetFromLandmark(self, evt):
@@ -2800,7 +2754,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.markers.SaveState()
 
     def UpdateMarkerInList(self, marker):
-        idx = self.__find_marker_idx(marker)
+        idx = self.__find_marker_index(marker.marker_id)
         if idx is None:
             return
 
