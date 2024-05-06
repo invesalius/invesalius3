@@ -136,6 +136,9 @@ class MarkersControl(metaclass=Singleton):
         Publisher.sendMessage('Set target', marker=marker)
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
 
+        # When setting a new target, automatically switch into target mode.
+        Publisher.sendMessage('Press target mode button', pressed=True)
+
         self.SaveState()
 
     def SetPointOfInterest(self, marker_id):
