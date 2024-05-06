@@ -902,15 +902,15 @@ class RefinePage(wx.Panel):
                     self.numctrls_fiducial[m][n].SetEditable(False)
 
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
-        tooltip = wx.ToolTip(_("Fiducial registration error"))
-        txt_fre.SetToolTip(tooltip)
+        tooltip = _("Fiducial registration error")
+        txt_fre.SetToolTip(wx.ToolTip(tooltip))
 
         value = self.icp.GetFreForUI()
         txtctrl_fre = wx.TextCtrl(self, value=value, size=wx.Size(60, -1), style=wx.TE_CENTRE)
         txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         txtctrl_fre.SetBackgroundColour('WHITE')
         txtctrl_fre.SetEditable(0)
-        txtctrl_fre.SetToolTip(tooltip)
+        txtctrl_fre.SetToolTip(wx.ToolTip(tooltip))
         self.txtctrl_fre = txtctrl_fre
 
         self.OnUpdateUI()
