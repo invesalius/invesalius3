@@ -270,6 +270,16 @@ class MarkersControl(metaclass=Singleton):
             # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
             opposite_side=True,
         )
+
+        # Move marker 10 mm away from the scalp by default.
+        displacement = [0, 0, 10, 0, 0, 0]
+        new_marker.z_offset = -10
+
+        self.transformator.MoveMarker(
+            marker=new_marker,
+            displacement=displacement,
+        )
+
         new_marker.marker_type = MarkerType.COIL_TARGET
         new_marker.label = self.GetNextMarkerLabel()
 
