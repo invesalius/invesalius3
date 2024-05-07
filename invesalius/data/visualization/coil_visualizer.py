@@ -45,10 +45,6 @@ class CoilVisualizer:
         self.renderer.AddActor(self.vector_field_assembly)
         self.vector_field_assembly.SetVisibility(0)
 
-        self.x_axis_actor = None
-        self.y_axis_actor = None
-        self.z_axis_actor = None
-
         self.coil_at_target = False
 
         self.coil_path = None
@@ -120,15 +116,9 @@ class CoilVisualizer:
         self.renderer.RemoveActor(self.coil_center_actor)
         # TODO: Vector field assembly follows a different pattern for removal, should unify.
         self.vector_field_assembly.SetVisibility(0)
-        self.renderer.RemoveActor(self.x_axis_actor)
-        self.renderer.RemoveActor(self.y_axis_actor)
-        self.renderer.RemoveActor(self.z_axis_actor)
 
         self.coil_actor = None
         self.coil_center_actor = None
-        self.x_axis_actor = None
-        self.y_axis_actor = None
-        self.z_axis_actor = None
 
     def ConfigureCoil(self, coil_path=None, polydata=None):
         self.coil_path = coil_path
@@ -163,9 +153,6 @@ class CoilVisualizer:
 
         if self.coil_actor:
             self.coil_actor.SetVisibility(state)
-            self.x_axis_actor.SetVisibility(state)
-            self.y_axis_actor.SetVisibility(state)
-            self.z_axis_actor.SetVisibility(state)
 
         if not self.is_navigating:
             self.interactor.Render()
@@ -260,22 +247,10 @@ class CoilVisualizer:
         )
         self.coil_center_actor = coil_center_actor
 
-        # Create actors for the x, y, and z-axes.
-        self.x_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [1., 0., 0.], colour=[.0, .0, 1.0])
-        self.y_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
-        self.z_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
-
         self.renderer.AddActor(self.coil_actor)
         self.renderer.AddActor(self.coil_center_actor)
         # TODO: Vector field assembly follows a different pattern for addition, should unify.
         self.vector_field_assembly.SetVisibility(1)
-        self.renderer.AddActor(self.x_axis_actor)
-        self.renderer.AddActor(self.y_axis_actor)
-        self.renderer.AddActor(self.z_axis_actor)
-
-        self.x_axis_actor.SetVisibility(0)
-        self.y_axis_actor.SetVisibility(0)
-        self.z_axis_actor.SetVisibility(0)
 
     def UpdateCoilPose(self, m_img, coord):
         """
@@ -292,6 +267,3 @@ class CoilVisualizer:
         self.coil_actor.SetUserMatrix(m_img_vtk)
         self.coil_center_actor.SetUserMatrix(m_img_vtk)
         self.vector_field_assembly.SetUserMatrix(m_img_vtk)
-        self.x_axis_actor.SetUserMatrix(m_img_vtk)
-        self.y_axis_actor.SetUserMatrix(m_img_vtk)
-        self.z_axis_actor.SetUserMatrix(m_img_vtk)
