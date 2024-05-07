@@ -1,3 +1,5 @@
+import os
+
 import vtk
 
 import invesalius.data.coordinates as dco
@@ -161,13 +163,23 @@ class CoilVisualizer:
         self.RemoveTargetCoil()
 
         vtk_colors = vtk.vtkNamedColors()
-            
+
+        decoded_path = self.coil_path.decode('utf-8')
+
+        coil_filename = os.path.basename(decoded_path)
+        coil_dir = os.path.dirname(decoded_path)
+
+        # A hack to load the coil without the handle for the Magstim figure-8 coil.
+        coil_path = os.path.join(coil_dir, coil_filename) if coil_filename != 'magstim_fig8_coil.stl' else os.path.join(coil_dir, 'magstim_fig8_coil_no_handle.stl')
+
+        obj_polydata = vtku.CreateObjectPolyData(coil_path)
+
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
 
         transform_filt = vtk.vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
-        transform_filt.SetInputData(self.coil_polydata)
+        transform_filt.SetInputData(obj_polydata)
         transform_filt.Update()
 
         normals = vtk.vtkPolyDataNormals()
