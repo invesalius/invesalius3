@@ -668,9 +668,15 @@ class TrackerPage(wx.Panel):
             Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobotRegister(self, evt):
-        self.HideParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Hide)
+        else:
+            self.HideParent()
         self.robot.RegisterRobot()
-        self.ShowParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Show)
+        else:
+            self.ShowParent()
     
     def OnRobotStatus(self, data):
         if data:
