@@ -1902,6 +1902,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._DeleteMarker, 'Delete marker')
         Publisher.subscribe(self._DeleteMultiple, 'Delete markers')
         Publisher.subscribe(self._SetPointOfInterest, 'Set point of interest')
+        Publisher.subscribe(self._SetTarget, 'Set target')
         Publisher.subscribe(self._UnsetTarget, 'Unset target')
         Publisher.subscribe(self._UnsetPointOfInterest, 'Unset point of interest')
         Publisher.subscribe(self._UpdateMarkerLabel, 'Update marker label')
@@ -2269,6 +2270,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'RED')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
+
         target_uuid = marker.marker_uuid
 
         # Set the target column to "Yes" in itemDataMap
