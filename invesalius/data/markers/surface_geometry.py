@@ -46,11 +46,16 @@ class SurfaceGeometry(metaclass=Singleton):
         # Create the smoothing filter.
         smoother = vtk.vtkSmoothPolyDataFilter()
         smoother.SetInputData(polydata)
-        # TODO: Having this many iterations is slow and should be probably computed
+        # TODO: Having many iterations is slow and should be probably computed
         #   only once and then stored on the disk - not re-computed every time InVesalius
-        #   is started. Decreasing the number of iterations, e.g., to 100, does not seem to
-        #   provide that good results.
-        smoother.SetNumberOfIterations(400)
+        #   is started. Setting the number of iterations, e.g., to a relatively small value such
+        #   as 100 does not seem to provide that good results.
+        #
+        # TODO: The smoothing filter is effectively disabled for now by setting the number of iterations
+        #   to 0, as it does not seem to work consistently with all surfaces. Investigate more on how
+        #   this should be used. An initial value that seemed to work with some, but not all surfaces
+        #   was 400.
+        smoother.SetNumberOfIterations(0)
         smoother.SetRelaxationFactor(0.9)
         smoother.FeatureEdgeSmoothingOff()
         smoother.BoundarySmoothingOn()
