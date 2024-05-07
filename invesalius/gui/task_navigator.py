@@ -1102,7 +1102,7 @@ class NavigationPanel(wx.Panel):
         top_sizer.Add(self.marker_panel, 1, wx.GROW | wx.EXPAND )
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.TOP, 20)
+        bottom_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.TOP, 5)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([(top_sizer, 1, wx.EXPAND | wx.GROW),
@@ -1307,8 +1307,8 @@ class ControlPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
             (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-            (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM , 20),
-            (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM , 20)
+            (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, 10),
+            (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 5)
         ])
 
         self.sizer = main_sizer
@@ -1805,8 +1805,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT),
                               (btn_delete_all, 0, wx.LEFT)])
 
-        # List of markers
-        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0, 240))
+        screen_width, screen_height = wx.DisplaySize()
+
+        # The marker list height is set to 120 pixels (accommodating 4 markers) if the screen height is
+        # at most 1080 pixels (a commonly used height in laptops). Otherwise, the height grows linearly with
+        # the screen height.
+        marker_list_height = max(120, screen_height - 960)
+
+        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0, marker_list_height))
         marker_list_ctrl.InsertColumn(const.ID_COLUMN, '#')
         marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
 
