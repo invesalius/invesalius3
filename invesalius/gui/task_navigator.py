@@ -2030,6 +2030,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         focused_marker = self.__get_marker(focused_marker_idx)
         marker_type = focused_marker.marker_type
+        unique_menu_id = 1
 
         # Check if the currently focused marker is the active target.
         is_active_target = focused_marker.is_target
@@ -2049,15 +2050,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Create the context menu.
         menu_id = wx.Menu()
 
-        edit_id = menu_id.Append(0, _('Change label'))
+        edit_id = menu_id.Append(unique_menu_id, _('Change label'))  # Use non-zero ID
         menu_id.Bind(wx.EVT_MENU, self.ChangeLabel, edit_id)
 
-        color_id = menu_id.Append(1, _('Change color'))
+        color_id = menu_id.Append(unique_menu_id + 1, _('Change color'))  # Increment the unique_menu_id
         menu_id.Bind(wx.EVT_MENU, self.ChangeColor, color_id)
 
         # Allow duplicate only for markers that are not fiducials.
         if not is_fiducial:
-            duplicate_menu_item = menu_id.Append(2, _('Duplicate'))
+            duplicate_menu_item = menu_id.Append(unique_menu_id + 2, _('Duplicate'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuDuplicateMarker, duplicate_menu_item)
 
         menu_id.AppendSeparator()
@@ -2065,70 +2066,70 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
             if is_active_target:
-                target_menu_item = menu_id.Append(3, _('Unset target'))
+                target_menu_item = menu_id.Append(unique_menu_id + 3, _('Unset target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
-                    brain_target_menu_item= menu_id.Append(3, _('Set brain target'))
+                    brain_target_menu_item= menu_id.Append(unique_menu_id + 3, _('Set brain target'))
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(3, _('Set as target'))
+                target_menu_item = menu_id.Append(unique_menu_id + 3, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
             # 'Create coil target' menu item.
-            create_coil_target_menu_item = menu_id.Append(6, _('Create coil target'))
+            create_coil_target_menu_item = menu_id.Append(unique_menu_id + 6, _('Create coil target'))
             menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTargetFromCoilPose, create_coil_target_menu_item)
 
         # Show 'Create brain target' and 'Create coil target' menu items only if the marker is a landmark.
         if is_landmark:
             # 'Create brain target' menu item.
-            create_brain_target_menu_item = menu_id.Append(5, _('Create brain target'))
+            create_brain_target_menu_item = menu_id.Append(unique_menu_id + 5, _('Create brain target'))
             menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTargetFromLandmark, create_brain_target_menu_item)
 
             # 'Create coil target' menu item.
-            create_coil_target_menu_item = menu_id.Append(6, _('Create coil target'))
+            create_coil_target_menu_item = menu_id.Append(unique_menu_id + 6, _('Create coil target'))
             menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTargetFromLandmark, create_coil_target_menu_item)
 
         is_brain_target = focused_marker.marker_type == MarkerType.BRAIN_TARGET
         if is_brain_target and has_mTMS:
-            send_brain_target_menu_item = menu_id.Append(7, _('Send brain target to mTMS'))
+            send_brain_target_menu_item = menu_id.Append(unique_menu_id + 7, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu_item)
 
         if self.nav_status and self.navigation.e_field_loaded:
             #Publisher.sendMessage('Check efield data')
             #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
             if is_active_target:
-                efield_menu_item = menu_id.Append(8, _('Save Efield target Data'))
+                efield_menu_item = menu_id.Append(unique_menu_id + 8, _('Save Efield target Data'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu_item)
 
         if self.navigation.e_field_loaded:
-            efield_target_menu_item = menu_id.Append(9, _('Set as Efield target 1 (origin)'))
+            efield_target_menu_item = menu_id.Append(unique_menu_id + 9, _('Set as Efield target 1 (origin)'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu_item)
 
-            efield_target_menu_item = menu_id.Append(10, _('Set as Efield target 2'))
+            efield_target_menu_item = menu_id.Append(unique_menu_id + 10, _('Set as Efield target 2'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget2, efield_target_menu_item)
             # Publisher.sendMessage('Check efield data')
             # if self.efield_data_saved:
             #     if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
             #         if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
-            #             efield_target_menu_item  = menu_id.Append(9, _('Remove Efield target'))
+            #             efield_target_menu_item  = menu_id.Append(unique_menu_id + 9, _('Remove Efield target'))
             #             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu_item )
             #         else:
-            #             efield_target_menu_item = menu_id.Append(9, _('Set as Efield target(compare)'))
+            #             efield_target_menu_item = menu_id.Append(unique_menu_id + 9, _('Set as Efield target(compare)'))
             #             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         if self.navigation.e_field_loaded and not self.nav_status:
             if is_active_target:
-                efield_vector_plot_menu_item = menu_id.Append(11,_('Show vector field'))
+                efield_vector_plot_menu_item = menu_id.Append(unique_menu_id + 11,_('Show vector field'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu_item)
 
         if self.navigation.e_field_loaded:
             if focused_marker.is_point_of_interest:
-                create_efield_target = menu_id.Append(12, _('Remove Efield Cortex target'))
+                create_efield_target = menu_id.Append(unique_menu_id + 12, _('Remove Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target)
             else:
-                create_efield_target = menu_id.Append(12, _('Set as Efield Cortex target'))
+                create_efield_target = menu_id.Append(unique_menu_id + 12, _('Set as Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
                 self.marker_list_ctrl.GetFocusedItem()
 
