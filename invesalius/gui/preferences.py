@@ -618,7 +618,9 @@ class TrackerPage(wx.Panel):
         return True
 
     def OnChooseTracker(self, evt, ctrl):
-        self.HideParent()
+        # self.GetParent().Enable(False)
+        # self.HideParent()
+        wx.CallAfter(self.GetParent().Hide)
         Publisher.sendMessage('Begin busy cursor')
         Publisher.sendMessage('Update status text in GUI',
                               label=_("Configuring tracker ..."))
@@ -633,8 +635,10 @@ class TrackerPage(wx.Panel):
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
         ctrl.SetSelection(self.tracker.tracker_id)
-        self.ShowParent()
+        # self.ShowParent()
+        # self.GetParent().Enable(True)
         Publisher.sendMessage('End busy cursor')
+        wx.CallAfter(self.GetParent().Show)
 
     def OnChooseReferenceMode(self, evt, ctrl):
         # Probably need to refactor object registration as a whole to use the 
