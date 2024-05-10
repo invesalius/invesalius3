@@ -70,7 +70,7 @@ include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py']
 # extend-exclude = ["plugins"]
 
 [tool.ruff.lint]
-extend-select = ["UP"] # we can add PL, I, and other rules in the future
-
+extend-select = ["UP"] # Introduces linting rules for pyupgrade
+# We can extend the list with 'I' and 'PL' in the future
 [tool.ruff.format]
 line-ending = "lf"
