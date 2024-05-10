@@ -23,7 +23,7 @@ import time
 
 import invesalius.constants as const
 import invesalius.utils as utils
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
@@ -1550,7 +1550,7 @@ class Parser:
         try:
             data = self.data_image[str(0x0008)][str(0x103E)]
         except (KeyError):
-            return _("unnamed")
+            return tr("unnamed")
 
         encoding = self.GetEncoding()
         try:
@@ -1559,11 +1559,11 @@ class Parser:
             print(err)
 
         if data == "None":
-            return _("unnamed")
+            return tr("unnamed")
         if data:
             return data
         else:
-            return _("unnamed")
+            return tr("unnamed")
 
     def GetImageTime(self):
         """

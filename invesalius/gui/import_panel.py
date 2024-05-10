@@ -25,7 +25,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
@@ -92,7 +92,7 @@ class InnerPanel(wx.Panel):
 
         panel = wx.Panel(self)
         self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
-        self.btn_ok = wx.Button(panel, wx.ID_OK, _("Import"))
+        self.btn_ok = wx.Button(panel, wx.ID_OK, tr("Import"))
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(self.btn_ok)
@@ -219,18 +219,18 @@ class TextPanel(wx.Panel):
                                   )
 
 
-        tree.AddColumn(_("Patient name"))
-        tree.AddColumn(_("Patient ID"))
-        tree.AddColumn(_("Age"))
-        tree.AddColumn(_("Gender"))
-        tree.AddColumn(_("Study description"))
-        tree.AddColumn(_("Modality"))
-        tree.AddColumn(_("Date acquired"))
-        tree.AddColumn(_("# Images"))
-        tree.AddColumn(_("Institution"))
-        tree.AddColumn(_("Date of birth"))
-        tree.AddColumn(_("Accession Number"))
-        tree.AddColumn(_("Referring physician"))
+        tree.AddColumn(tr("Patient name"))
+        tree.AddColumn(tr("Patient ID"))
+        tree.AddColumn(tr("Age"))
+        tree.AddColumn(tr("Gender"))
+        tree.AddColumn(tr("Study description"))
+        tree.AddColumn(tr("Modality"))
+        tree.AddColumn(tr("Date acquired"))
+        tree.AddColumn(tr("# Images"))
+        tree.AddColumn(tr("Institution"))
+        tree.AddColumn(tr("Date of birth"))
+        tree.AddColumn(tr("Accession Number"))
+        tree.AddColumn(tr("Referring physician"))
 
         tree.SetMainColumn(0)        # the one with the tree in it...
         tree.SetColumnWidth(0, 280)  # Patient name
@@ -246,7 +246,7 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(10, 140) # Accession Number
         tree.SetColumnWidth(11, 160) # Referring physician
 
-        self.root = tree.AddRoot(_("InVesalius Database"))
+        self.root = tree.AddRoot(tr("InVesalius Database"))
         self.tree = tree
 
     def SelectSeries(self, group_index):

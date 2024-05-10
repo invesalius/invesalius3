@@ -37,7 +37,7 @@ import invesalius.project as proj
 import invesalius.session as ses
 
 from invesalius import inv_paths
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 from invesalius.data.slice_ import Slice
 
 BTN_MASK = wx.NewIdRef()
@@ -118,9 +118,9 @@ class InnerTaskPanel(wx.Panel):
         # Counter for projects loaded in current GUI
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Export InVesalius screen to an image file"))
+        tooltip = wx.ToolTip(tr("Export InVesalius screen to an image file"))
         link_export_picture = hl.HyperLinkCtrl(self, -1,
-                                            _("Export picture..."))
+                                            tr("Export picture..."))
         link_export_picture.SetUnderlines(False, False, False)
         link_export_picture.SetBold(True)
         link_export_picture.SetColours("BLACK", "BLACK", "BLACK")
@@ -131,8 +131,8 @@ class InnerTaskPanel(wx.Panel):
         link_export_picture.Bind(hl.EVT_HYPERLINK_LEFT,
                                  self.OnLinkExportPicture)
 
-        tooltip = wx.ToolTip(_("Export 3D surface"))
-        link_export_surface = hl.HyperLinkCtrl(self, -1,_("Export 3D surface..."))
+        tooltip = wx.ToolTip(tr("Export 3D surface"))
+        link_export_surface = hl.HyperLinkCtrl(self, -1,tr("Export 3D surface..."))
         link_export_surface.SetUnderlines(False, False, False)
         link_export_surface.SetBold(True)
         link_export_surface.SetColours("BLACK", "BLACK", "BLACK")
@@ -241,10 +241,10 @@ class InnerTaskPanel(wx.Panel):
 
 
         menu = wx.Menu()
-        self.id_to_name = {const.AXIAL:_("Axial slice"),
-                           const.CORONAL:_("Coronal slice"),
-                           const.SAGITAL:_("Sagittal slice"),
-                           const.VOLUME:_("Volume")}
+        self.id_to_name = {const.AXIAL:tr("Axial slice"),
+                           const.CORONAL:tr("Coronal slice"),
+                           const.SAGITAL:tr("Sagittal slice"),
+                           const.VOLUME:tr("Volume")}
 
         for id in self.id_to_name:
             item = menu.Append(id, self.id_to_name[id])
@@ -312,7 +312,7 @@ class InnerTaskPanel(wx.Panel):
             session = ses.Session()
             last_directory = session.GetConfig('last_directory_3d_surface', '')
 
-            dlg_message = _("Save 3D surface as...")
+            dlg_message = tr("Save 3D surface as...")
             dlg_style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
 
             convert_to_world = False
@@ -320,7 +320,7 @@ class InnerTaskPanel(wx.Panel):
                 dlg = dlgs.FileSelectionDialog(title=dlg_message,
                                                default_dir=last_directory,
                                                wildcard=WILDCARD_SAVE_3D)
-                conversion_radio_box = wx.RadioBox(dlg, -1, _("Export in"),
+                conversion_radio_box = wx.RadioBox(dlg, -1, tr("Export in"),
                                                    choices=const.SURFACE_SPACE_CHOICES,
                                                    style=wx.RA_SPECIFY_ROWS)
                 dlg.sizer.Hide(0)
@@ -360,8 +360,8 @@ class InnerTaskPanel(wx.Panel):
                                       convert_to_world=convert_to_world)
         else:
             dlg = wx.MessageDialog(None,
-                    _("You need to create a surface and make it ") +
-                    _("visible before exporting it."),
+                    tr("You need to create a surface and make it ") +
+                    tr("visible before exporting it."),
                     'InVesalius 3',
                     wx.OK | wx.ICON_INFORMATION)
             try:

@@ -44,7 +44,7 @@ from invesalius import inv_paths
 
 from invesalius.project import Project
 import invesalius.session as ses
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 BTN_NEW = wx.NewIdRef()
 
@@ -97,8 +97,8 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Create mask for slice segmentation and editing"))
-        link_new_mask = hl.HyperLinkCtrl(self, -1, _("Create new mask"))
+        tooltip = wx.ToolTip(tr("Create mask for slice segmentation and editing"))
+        link_new_mask = hl.HyperLinkCtrl(self, -1, tr("Create new mask"))
         link_new_mask.SetUnderlines(False, False, False)
         link_new_mask.SetBold(True)
         link_new_mask.SetColours("BLACK", "BLACK", "BLACK")
@@ -133,8 +133,8 @@ class InnerTaskPanel(wx.Panel):
         self.fold_panel = fold_panel
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, _("Create surface"))
-        check_box = wx.CheckBox(self, -1, _("Overwrite last surface"))
+        button_next = wx.Button(self, -1, tr("Create surface"))
+        check_box = wx.CheckBox(self, -1, tr("Overwrite last surface"))
         self.check_box = check_box
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
@@ -199,7 +199,7 @@ class InnerTaskPanel(wx.Panel):
                           'options': options}
                 srf_options = {"index": mask_index,
                                "name": '',
-                               "quality": _('Optimal *'),
+                               "quality": tr('Optimal *'),
                                "fill": False,
                                "keep_largest": False,
                                "overwrite": overwrite}
@@ -302,7 +302,7 @@ class InnerFoldPanel(wx.Panel):
         style.SetSecondColour(default_colour)
 
         # Fold 1 - Mask properties
-        item = fold_panel.AddFoldPanel(_("Mask properties"), collapsed=True)
+        item = fold_panel.AddFoldPanel(tr("Mask properties"), collapsed=True)
         self.mask_prop_panel = MaskProperties(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
@@ -310,7 +310,7 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 2 - Advanced edition tools
-        item = fold_panel.AddFoldPanel(_("Manual edition"), collapsed=True)
+        item = fold_panel.AddFoldPanel(tr("Manual edition"), collapsed=True)
         etw = EditionTools(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
@@ -320,7 +320,7 @@ class InnerFoldPanel(wx.Panel):
         self.last_panel_opened = None
 
         # Fold 3 - Watershed
-        item = fold_panel.AddFoldPanel(_("Watershed"), collapsed=True)
+        item = fold_panel.AddFoldPanel(tr("Watershed"), collapsed=True)
         wtw = WatershedTool(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
@@ -468,7 +468,7 @@ class MaskProperties(wx.Panel):
 
         ### LINE 2
         text_thresh = wx.StaticText(self, -1,
-                                    _("Set predefined or manual threshold:"))
+                                    tr("Set predefined or manual threshold:"))
 
         ### LINE 3
         THRESHOLD_LIST = ["",]
@@ -581,9 +581,9 @@ class MaskProperties(wx.Panel):
             index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
-            index = self.threshold_modes_names.index(_("Custom"))
+            index = self.threshold_modes_names.index(tr("Custom"))
             self.combo_thresh.SetSelection(index)
-            Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
+            Project().threshold_modes[tr("Custom")] = (thresh_min, thresh_max)
 
     def SetThresholdValues2(self, threshold_range):
         thresh_min, thresh_max = threshold_range
@@ -595,9 +595,9 @@ class MaskProperties(wx.Panel):
             index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
-            index = self.threshold_modes_names.index(_("Custom"))
+            index = self.threshold_modes_names.index(tr("Custom"))
             self.combo_thresh.SetSelection(index)
-            Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
+            Project().threshold_modes[tr("Custom")] = (thresh_min, thresh_max)
 
     def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
@@ -638,10 +638,10 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh
         else:
-            index = self.threshold_modes_names.index(_("Custom"))
+            index = self.threshold_modes_names.index(tr("Custom"))
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh
-            proj.threshold_modes[_("Custom")] = (thresh_min, thresh_max)
+            proj.threshold_modes[tr("Custom")] = (thresh_min, thresh_max)
 
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
@@ -698,17 +698,17 @@ class EditionTools(wx.Panel):
         self.unit = 'mm'
 
         ## LINE 1
-        text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
+        text1 = wx.StaticText(self, -1, tr("Choose brush type, size or operation:"))
 
         ## LINE 2
         menu = wx.Menu()
 
         CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
-        item = menu.Append(MENU_BRUSH_CIRCLE, _("Circle"))
+        item = menu.Append(MENU_BRUSH_CIRCLE, tr("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
         SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
-        item2 = menu.Append(MENU_BRUSH_SQUARE, _("Square"))
+        item2 = menu.Append(MENU_BRUSH_SQUARE, tr("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
         bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
@@ -745,7 +745,7 @@ class EditionTools(wx.Panel):
         line2.Add(combo_brush_op, 1, wx.RIGHT|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         ## LINE 3
-        text_thresh = wx.StaticText(self, -1, _("Brush threshold range:"))
+        text_thresh = wx.StaticText(self, -1, tr("Brush threshold range:"))
 
         ## LINE 4
         gradient_thresh = grad.GradientCtrl(self, -1, 0, 5000, 0, 5000,
@@ -892,7 +892,7 @@ class WatershedTool(EditionTools):
         self.SetBackgroundColour(default_colour)
 
         ## LINE 1
-        text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
+        text1 = wx.StaticText(self, -1, tr("Choose brush type, size or operation:"))
 
         self.unit = 'mm'
 
@@ -900,11 +900,11 @@ class WatershedTool(EditionTools):
         menu = wx.Menu()
 
         CIRCLE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_circle.png"), wx.BITMAP_TYPE_PNG)
-        item = menu.Append(MENU_BRUSH_CIRCLE, _("Circle"))
+        item = menu.Append(MENU_BRUSH_CIRCLE, tr("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
         SQUARE_BMP = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "brush_square.png"), wx.BITMAP_TYPE_PNG)
-        item2 = menu.Append(MENU_BRUSH_SQUARE, _("Square"))
+        item2 = menu.Append(MENU_BRUSH_SQUARE, tr("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
         bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
@@ -926,9 +926,9 @@ class WatershedTool(EditionTools):
         self.txt_unit.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
-                                     choices = (_("Foreground"),
-                                                _("Background"),
-                                                _("Erase")),
+                                     choices = (tr("Foreground"),
+                                                tr("Background"),
+                                                tr("Erase")),
                                      style = wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_brush_op.SetSelection(0)
         if sys.platform != 'win32':
@@ -947,8 +947,8 @@ class WatershedTool(EditionTools):
         ## LINE 4
 
         # LINE 5
-        check_box = wx.CheckBox(self, -1, _("Overwrite mask"))
-        ww_wl_cbox = wx.CheckBox(self, -1, _("Use WW&WL"))
+        check_box = wx.CheckBox(self, -1, tr("Overwrite mask"))
+        ww_wl_cbox = wx.CheckBox(self, -1, tr("Use WW&WL"))
         ww_wl_cbox.SetValue(True)
         self.check_box = check_box
         self.ww_wl_cbox = ww_wl_cbox
@@ -957,7 +957,7 @@ class WatershedTool(EditionTools):
         bmp = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "configuration.png"), wx.BITMAP_TYPE_PNG)
         self.btn_wconfig = wx.BitmapButton(self, -1, bitmap=bmp,
                                            size=(bmp.GetWidth()+10, bmp.GetHeight()+10))
-        self.btn_exp_watershed = wx.Button(self, -1, _('Expand watershed to 3D'))
+        self.btn_exp_watershed = wx.Button(self, -1, tr('Expand watershed to 3D'))
 
         sizer_btns = wx.BoxSizer(wx.HORIZONTAL)
         sizer_btns.Add(self.btn_wconfig, 0, wx.ALIGN_LEFT | wx.LEFT | wx.TOP | wx.DOWN, 5)

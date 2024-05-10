@@ -30,18 +30,18 @@ import invesalius.utils as utils
 
 from invesalius import math_utils
 from invesalius.gui.widgets.canvas_renderer import TextBox, Ellipse, Polygon, CanvasHandlerBase
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
-TYPE = {const.LINEAR: _(u"Linear"),
-        const.ANGULAR: _(u"Angular"),
-        const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
-        const.DENSITY_POLYGON: _(u"Density Polygon"),
+TYPE = {const.LINEAR: tr(u"Linear"),
+        const.ANGULAR: tr(u"Angular"),
+        const.DENSITY_ELLIPSE: tr(u"Density Ellipse"),
+        const.DENSITY_POLYGON: tr(u"Density Polygon"),
         }
 
-LOCATION = {const.SURFACE: _(u"3D"),
-            const.AXIAL: _(u"Axial"),
-            const.CORONAL: _(u"Coronal"),
-            const.SAGITAL: _(u"Sagittal")
+LOCATION = {const.SURFACE: tr(u"3D"),
+            const.AXIAL: tr(u"Axial"),
+            const.CORONAL: tr(u"Coronal"),
+            const.SAGITAL: tr(u"Sagittal")
         }
 
 map_locations_id = {
@@ -1117,7 +1117,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self._std = _std
         self._area = _area
 
-        text = _('Area: %.3f\n'
+        text = tr('Area: %.3f\n'
                  'Min: %.3f\n'
                  'Max: %.3f\n'
                  'Mean: %.3f\n'
@@ -1142,7 +1142,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
             Publisher.sendMessage(msg,
                                   index=m.index, name=m.name, colour=m.colour,
                                   location= self.orientation,
-                                  type_=_('Density Ellipse'),
+                                  type_=tr('Density Ellipse'),
                                   value='%.3f' % m.value)
 
     def set_measurement(self, dm):
@@ -1552,7 +1552,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self._std = _std
         self._area = _area
 
-        text = _('Area: %.3f\n'
+        text = tr('Area: %.3f\n'
                  'Min: %.3f\n'
                  'Max: %.3f\n'
                  'Mean: %.3f\n'
@@ -1581,5 +1581,5 @@ class PolygonDensityMeasure(CanvasHandlerBase):
                                   index=m.index, name=m.name,
                                   colour=m.colour,
                                   location=self.orientation,
-                                  type_=_('Density Polygon'),
+                                  type_=tr('Density Polygon'),
                                   value='%.3f' % m.value)

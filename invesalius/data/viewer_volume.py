@@ -124,7 +124,7 @@ import invesalius.utils as utils
 
 from invesalius import inv_paths
 from invesalius.math_utils import inner1d
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 if sys.platform == 'win32':
     try:
@@ -779,7 +779,7 @@ class Viewer(wx.Panel):
                 writer.Write()
 
             if not os.path.exists(filename):
-                wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
+                wx.MessageBox(tr("InVesalius was not able to export this picture"), tr("Export picture error"))
 
 
     def OnCloseProject(self):
@@ -1427,7 +1427,7 @@ class Viewer(wx.Panel):
             parts = [current_folder_path, '/', stamp_date, stamp_time, proj.name, 'Efield']
             default_filename = sep.join(parts) + '.csv'
 
-            filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+            filename = dlg.ShowLoadSaveDialog(message=tr(u"Save markers as..."),
                                               wildcard='(*.csv)|*.csv',
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename=default_filename)
@@ -2026,7 +2026,7 @@ class Viewer(wx.Panel):
                     parts = [current_folder_path, '/', stamp_date, stamp_time, proj.name, 'Efield']
                     default_filename = sep.join(parts) + '.csv'
 
-                    filename = dlg.ShowLoadSaveDialog(message=_(u"Save markers as..."),
+                    filename = dlg.ShowLoadSaveDialog(message=tr(u"Save markers as..."),
                                                       wildcard='(*.csv)|*.csv',
                                                       style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                                       default_filename=default_filename)

@@ -38,7 +38,7 @@ from invesalius import inv_paths
 
 import invesalius.session as ses
 import invesalius.constants as const
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -84,23 +84,23 @@ class Panel(wx.Panel):
 
         p1 = slice_viewer.Viewer(self, "AXIAL")
         s1 = wx.aui.AuiPaneInfo().Centre().Row(0).\
-             Name("Axial Slice").Caption(_("Axial slice")).\
+             Name("Axial Slice").Caption(tr("Axial slice")).\
              MaximizeButton(True).CloseButton(False)
 
         p2 = slice_viewer.Viewer(self, "CORONAL")
         s2 = wx.aui.AuiPaneInfo().Centre().Row(0).\
-             Name("Coronal Slice").Caption(_("Coronal slice")).\
+             Name("Coronal Slice").Caption(tr("Coronal slice")).\
              MaximizeButton(True).CloseButton(False)
 
         p3 = slice_viewer.Viewer(self, "SAGITAL")
         s3 = wx.aui.AuiPaneInfo().Centre().Row(1).\
-             Name("Sagittal Slice").Caption(_("Sagittal slice")).\
+             Name("Sagittal Slice").Caption(tr("Sagittal slice")).\
              MaximizeButton(True).CloseButton(False)
 
         p4 = VolumeViewerCover(self)
         #p4 = volume_viewer.Viewer(self)
         s4 = wx.aui.AuiPaneInfo().Row(1).Name("Volume").\
-             Bottom().Centre().Caption(_("Volume")).\
+             Bottom().Centre().Caption(tr("Volume")).\
              MaximizeButton(True).CloseButton(False)
 
         self.s4 = s4
@@ -182,25 +182,25 @@ class Panel(wx.Panel):
         p1 = slice_viewer.Viewer(self, "AXIAL")
         aui_manager.AddPane(p1,
                                  wx.aui.AuiPaneInfo().
-                                 Name("Axial Slice").Caption(_("Axial slice")).
+                                 Name("Axial Slice").Caption(tr("Axial slice")).
                                  MaximizeButton(True).CloseButton(False))
 
         p2 = slice_viewer.Viewer(self, "CORONAL")
         aui_manager.AddPane(p2,
                                  wx.aui.AuiPaneInfo().
-                                 Name("Coronal Slice").Caption(_("Coronal slice")).
+                                 Name("Coronal Slice").Caption(tr("Coronal slice")).
                                  MaximizeButton(True).CloseButton(False))
 
         p3 = slice_viewer.Viewer(self, "SAGITAL")
         aui_manager.AddPane(p3,
                                  wx.aui.AuiPaneInfo().
-                                 Name("Sagittal Slice").Caption(_("Sagittal slice")).
+                                 Name("Sagittal Slice").Caption(tr("Sagittal slice")).
                                  MaximizeButton(True).CloseButton(False))
 
         #p4 = volume_viewer.Viewer(self)
         aui_manager.AddPane(VolumeViewerCover,
                                  wx.aui.AuiPaneInfo().
-                                 Name("Volume").Caption(_("Volume")).
+                                 Name("Volume").Caption(tr("Volume")).
                                  MaximizeButton(True).CloseButton(False))
 
         splitter.AppendWindow(p1)
@@ -442,7 +442,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
     def OnSavePreset(self, evt):
-        d = wx.TextEntryDialog(self, _("Preset name"))
+        d = wx.TextEntryDialog(self, tr("Preset name"))
         if d.ShowModal() == wx.ID_OK:
             preset_name = d.GetValue()
             Publisher.sendMessage("Save raycasting preset", preset_name=preset_name)
@@ -474,7 +474,7 @@ class VolumeToolPanel(wx.Panel):
            ID_TO_TOOL_ITEM[id] = item
            TOOL_STATE[id] = False
         self.submenu_raycasting_tools = submenu
-        menu.Append(RAYCASTING_TOOLS, _("Tools"), submenu)
+        menu.Append(RAYCASTING_TOOLS, tr("Tools"), submenu)
         menu.Enable(RAYCASTING_TOOLS, 0)
 
         self.menu_raycasting = menu

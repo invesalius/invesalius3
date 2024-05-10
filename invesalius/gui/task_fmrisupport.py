@@ -27,7 +27,7 @@ import invesalius.constants as const
 from invesalius.data.slice_ import Slice
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 from invesalius.pubsub import pub as Publisher
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -73,11 +73,11 @@ class InnerTaskPanel(wx.Panel):
         self.zero_value = 0
 
         line0 = wx.StaticText(self, -1,
-                              _("Select Modalities / File"))
+                              tr("Select Modalities / File"))
         
         # Button for import config coil file
-        tooltip = wx.ToolTip(_("Load Nifti image"))
-        btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
+        tooltip = wx.ToolTip(tr("Load Nifti image"))
+        btn_load = wx.Button(self, -1, tr("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadFmri)
@@ -89,7 +89,7 @@ class InnerTaskPanel(wx.Panel):
 
         ### LINE 2
         text_thresh = wx.StaticText(self, -1,
-                                    _("Select Colormap"))
+                                    tr("Select Colormap"))
 
         ### LINE 3
         combo_thresh = wx.ComboBox(self, -1, "", #size=(15,-1),

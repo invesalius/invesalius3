@@ -33,7 +33,7 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tools as tools
 import invesalius.gui.task_navigator as navigator
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 import invesalius.gui.task_imports as imports
 
 FPB_DEFAULT_STYLE = 2621440
@@ -180,7 +180,7 @@ class LowerTaskPanel(wx.Panel):
         image_list.Add(GetCollapsedIconBitmap())
 
         # Fold 1 - Data
-        item = fold_panel.AddFoldPanel(_("Data"), collapsed=False,
+        item = fold_panel.AddFoldPanel(tr("Data"), collapsed=False,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -280,15 +280,15 @@ class UpperTaskPanel(wx.Panel):
         print("Mode: ", mode)
 
         if mode == const.MODE_RP:
-            tasks = [(_("Load data"), importer.TaskPanel),
-                     (_("Select region of interest"), slice_.TaskPanel),
-                     (_("Configure 3D surface"), surface.TaskPanel),
-                     (_("Export data"), exporter.TaskPanel)
+            tasks = [(tr("Load data"), importer.TaskPanel),
+                     (tr("Select region of interest"), slice_.TaskPanel),
+                     (tr("Configure 3D surface"), surface.TaskPanel),
+                     (tr("Export data"), exporter.TaskPanel)
                     ]
 
         elif mode == const.MODE_NAVIGATOR:
-            tasks = [(_("Imports Section"), imports.TaskPanel),
-                     (_("Navigation Section"), navigator.TaskPanel)]
+            tasks = [(tr("Imports Section"), imports.TaskPanel),
+                     (tr("Navigation Section"), navigator.TaskPanel)]
 
         for i in range(len(tasks)):
             (name, panel) = tasks[i]
@@ -321,9 +321,9 @@ class UpperTaskPanel(wx.Panel):
             # It is used as reference to set mouse cursor related to
             # slice editor.
             if mode == const.MODE_RP:
-                if name == _("Select region of interest"):
+                if name == tr("Select region of interest"):
                     self.__id_slice = item.GetId()
-                elif name == _("Configure 3D surface"):
+                elif name == tr("Configure 3D surface"):
                     self.__id_surface = item.GetId()
 
         fold_panel.Expand(fold_panel.GetFoldPanel(0))

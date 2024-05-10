@@ -39,7 +39,7 @@ import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.reader.bitmap_reader as bitmap_reader
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 from invesalius.data import vtk_utils as vtk_utils
 from skimage.color import rgb2gray
 
@@ -110,7 +110,7 @@ def ResampleImage2D(
     resample.SetAxisMagnificationFactor(1, factor_y)
     #  resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
     if update_progress:
-        message = _("Generating multiplanar visualization...")
+        message = tr("Generating multiplanar visualization...")
         resample.AddObserver(
             "ProgressEvent", lambda obj, evt: update_progress(resample, message)
         )
@@ -321,7 +321,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     From a list of dicom files it creates memmap file in the temp folder and
     returns it and its related filename.
     """
-    message = _("Generating multiplanar visualization...")
+    message = tr("Generating multiplanar visualization...")
     if len(files) > 1:
         update_progress = vtk_utils.ShowProgress(
             len(files) - 1, dialog_type="ProgressDialog"
@@ -443,7 +443,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     returns it and its related filename.
     """
     if len(files) > 1:
-        message = _("Generating multiplanar visualization...")
+        message = tr("Generating multiplanar visualization...")
         update_progress = vtk_utils.ShowProgress(
             len(files) - 1, dialog_type="ProgressDialog"
         )

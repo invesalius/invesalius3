@@ -24,7 +24,7 @@ from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.data.converters as converters
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 from invesalius_cy import cy_mesh
 
 

@@ -56,7 +56,7 @@ from vtkmodules.util import numpy_support
 import invesalius.session as ses
 
 from invesalius import inv_paths
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 
 Kernels = { 
@@ -696,7 +696,7 @@ class Volume():
         del cast
 
     def OnEnableTool(self, tool_name, flag):
-        if tool_name == _("Cut plane"):
+        if tool_name == tr("Cut plane"):
             if self.plane:
                 if flag:
                     self.plane_on = True

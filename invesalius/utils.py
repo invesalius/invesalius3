@@ -400,9 +400,9 @@ def UpdateCheck():
     import invesalius.session as ses
     def _show_update_info():
         from invesalius.gui import dialogs
-        from invesalius.i18n import tr as _
-        msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
-        title=_("Invesalius Update")
+        from invesalius.i18n import tr
+        msg=tr("A new version of InVesalius is available. Do you want to open the download website now?")
+        title=tr("Invesalius Update")
         msgdlg = dialogs.UpdateMessageDialog(url)
         #if (msgdlg.Show()==wx.ID_YES):
             #wx.LaunchDefaultBrowser(url)

@@ -27,7 +27,7 @@ except ImportError:
     from wx.combo import BitmapComboBox
 
 import invesalius.i18n as i18n
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 file_path = os.path.split(__file__)[0]
 
@@ -101,7 +101,7 @@ class LanguageDialog(wx.Dialog):
     def __init__(self, parent=None, startApp=None):
         super(LanguageDialog, self).__init__(parent, title="")
         self.__TranslateMessage__()
-        self.SetTitle(_("Language selection"))
+        self.SetTitle(tr("Language selection"))
         self.__init_gui()
         self.Centre()
 
@@ -143,7 +143,7 @@ class LanguageDialog(wx.Dialog):
         return self.bitmapCmb
 
     def __init_gui(self):
-        self.txtMsg = wx.StaticText(self, -1, label=_("Choose user interface language"))
+        self.txtMsg = wx.StaticText(self, -1, label=tr("Choose user interface language"))
 
         btnsizer = wx.StdDialogButtonSizer()
 

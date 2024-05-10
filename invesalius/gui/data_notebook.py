@@ -41,21 +41,21 @@ import wx.lib.mixins.listctrl as listmix
 
 from invesalius import project
 from invesalius import inv_paths
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 
 BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewIdRef() for i in range(4)]
 
-TYPE = {const.LINEAR: _(u"Linear"),
-        const.ANGULAR: _(u"Angular"),
-        const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
-        const.DENSITY_POLYGON: _(u"Density Polygon"),
+TYPE = {const.LINEAR: tr(u"Linear"),
+        const.ANGULAR: tr(u"Angular"),
+        const.DENSITY_ELLIPSE: tr(u"Density Ellipse"),
+        const.DENSITY_POLYGON: tr(u"Density Polygon"),
         }
 
-LOCATION = {const.SURFACE: _(u"3D"),
-            const.AXIAL: _(u"Axial"),
-            const.CORONAL: _(u"Coronal"),
-            const.SAGITAL: _(u"Sagittal")
+LOCATION = {const.SURFACE: tr(u"3D"),
+            const.AXIAL: tr(u"Axial"),
+            const.CORONAL: tr(u"Coronal"),
+            const.SAGITAL: tr(u"Sagittal")
         }
 
 # Panel that initializes notebook and related tabs
@@ -70,9 +70,9 @@ class NotebookPanel(wx.Panel):
         if sys.platform != 'win32':
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        book.AddPage(MaskPage(book), _("Masks"))
-        book.AddPage(SurfacePage(book), _("3D surfaces"))
-        book.AddPage(MeasurePage(book), _("Measures"))
+        book.AddPage(MaskPage(book), tr("Masks"))
+        book.AddPage(SurfacePage(book), tr("3D surfaces"))
+        book.AddPage(MeasurePage(book), tr("Measures"))
         #book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
 
         book.SetSelection(0)
@@ -168,20 +168,20 @@ class MeasureButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
-        button_new.SetToolTip(_("Create a new measure"))
+        button_new.SetToolTip(tr("Create a new measure"))
         self.button_new = button_new
 
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
-        button_remove.SetToolTip(_("Remove measure"))
+        button_remove.SetToolTip(tr("Remove measure"))
 
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
-        button_duplicate.SetToolTip(_("Duplicate measure"))
+        button_duplicate.SetToolTip(tr("Duplicate measure"))
         button_duplicate.Disable()
 
         # Add all controls to gui
@@ -193,8 +193,8 @@ class MeasureButtonControlPanel(wx.Panel):
         self.Fit()
 
         menu = wx.Menu()
-        item = menu.Append(const.MEASURE_LINEAR, _("Measure distance"))
-        item = menu.Append(const.MEASURE_ANGULAR, _("Measure angle"))
+        item = menu.Append(const.MEASURE_LINEAR, tr("Measure distance"))
+        item = menu.Append(const.MEASURE_ANGULAR, tr("Measure angle"))
         menu.Bind(wx.EVT_MENU, self.OnMenu)
         self.menu = menu
 
@@ -282,19 +282,19 @@ class ButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
-        button_new.SetToolTip(_("Create a new mask"))
+        button_new.SetToolTip(tr("Create a new mask"))
 
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
-        button_remove.SetToolTip(_("Remove mask"))
+        button_remove.SetToolTip(tr("Remove mask"))
 
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
-        button_duplicate.SetToolTip(_("Duplicate mask"))
+        button_duplicate.SetToolTip(tr("Duplicate mask"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -517,8 +517,8 @@ class MasksListCtrlPanel(InvListCtrl):
     def __init_columns(self):
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, _("Name"))
-        self.InsertColumn(2, _("Threshold"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(1, tr("Name"))
+        self.InsertColumn(2, tr("Threshold"), wx.LIST_FORMAT_RIGHT)
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 120)
@@ -563,7 +563,7 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.sendMessage('Show mask', index=index, value=flag)
 
 
-    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
+    def InsertNewItem(self, index=0, label=tr("Mask"), threshold="(1000, 4500)", colour=None):
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
         self.InsertItem(index, "")
@@ -656,25 +656,25 @@ class SurfaceButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
-        button_new.SetToolTip(_("Create a new surface"))
+        button_new.SetToolTip(tr("Create a new surface"))
 
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
-        button_remove.SetToolTip(_("Remove surface"))
+        button_remove.SetToolTip(tr("Remove surface"))
 
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
-        button_duplicate.SetToolTip(_("Duplicate surface"))
+        button_duplicate.SetToolTip(tr("Duplicate surface"))
 
         button_open = pbtn.PlateButton(self, BTN_OPEN, "",
                                        BMP_OPEN,
                                        style=button_style,
                                        size = wx.Size(24, 20))
-        button_open.SetToolTip(_("Import a surface file into InVesalius"))
+        button_open.SetToolTip(tr("Import a surface file into InVesalius"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -702,7 +702,7 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnNew(self):
         sl = slice_.Slice()
         dialog = dlg.SurfaceCreationDialog(None, -1,
-                            _('New surface'),
+                            tr('New surface'),
                             mask_edited=sl.current_mask.was_edited)
         try:
             if dialog.ShowModal() == wx.ID_OK:
@@ -835,10 +835,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def __init_columns(self):
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, _("Name"))
-        self.InsertColumn(2, _(u"Volume (mm³)"))
-        self.InsertColumn(3, _(u"Area (mm²)"))
-        self.InsertColumn(4, _("Transparency"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(1, tr("Name"))
+        self.InsertColumn(2, tr(u"Volume (mm³)"))
+        self.InsertColumn(3, tr(u"Area (mm²)"))
+        self.InsertColumn(4, tr("Transparency"), wx.LIST_FORMAT_RIGHT)
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 85)
@@ -1076,10 +1076,10 @@ class MeasuresListCtrlPanel(InvListCtrl):
     def __init_columns(self):
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, _("Name"))
-        self.InsertColumn(2, _("Location"))
-        self.InsertColumn(3, _("Type"))
-        self.InsertColumn(4, _("Value"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(1, tr("Name"))
+        self.InsertColumn(2, tr("Location"))
+        self.InsertColumn(3, tr("Type"))
+        self.InsertColumn(4, tr("Value"), wx.LIST_FORMAT_RIGHT)
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 65)
@@ -1243,9 +1243,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
     def __init_columns(self):
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, _("Name"))
-        self.InsertColumn(2, _("Type"), wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(3, _("Value"))
+        self.InsertColumn(1, tr("Name"))
+        self.InsertColumn(2, tr("Type"), wx.LIST_FORMAT_CENTER)
+        self.InsertColumn(3, tr("Value"))
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 90)

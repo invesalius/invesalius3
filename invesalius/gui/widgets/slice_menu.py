@@ -32,15 +32,15 @@ import invesalius.constants as const
 import invesalius.data.slice_ as sl
 import invesalius.presets as presets
 from invesalius.gui.dialogs import ClutImagedataDialog
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
-PROJECTIONS_ID = OrderedDict(((_('Normal'), const.PROJECTION_NORMAL),
-                              (_('MaxIP'), const.PROJECTION_MaxIP),
-                              (_('MinIP'), const.PROJECTION_MinIP),
-                              (_('MeanIP'), const.PROJECTION_MeanIP),
-                              (_('MIDA'), const.PROJECTION_MIDA),
-                              (_('Contour MaxIP'), const.PROJECTION_CONTOUR_MIP),
-                              (_('Contour MIDA'), const.PROJECTION_CONTOUR_MIDA),) ) 
+PROJECTIONS_ID = OrderedDict(((tr('Normal'), const.PROJECTION_NORMAL),
+                              (tr('MaxIP'), const.PROJECTION_MaxIP),
+                              (tr('MinIP'), const.PROJECTION_MinIP),
+                              (tr('MeanIP'), const.PROJECTION_MeanIP),
+                              (tr('MIDA'), const.PROJECTION_MIDA),
+                              (tr('Contour MaxIP'), const.PROJECTION_CONTOUR_MIP),
+                              (tr('Contour MIDA'), const.PROJECTION_CONTOUR_MIDA),) ) 
                 
 
 class SliceMenu(wx.Menu):
@@ -56,16 +56,16 @@ class SliceMenu(wx.Menu):
 
         #Window and level from DICOM
         new_id = self.id_wl_first = wx.NewIdRef()
-        wl_item = submenu_wl.Append(new_id, _('Default'), kind=wx.ITEM_RADIO)
+        wl_item = submenu_wl.Append(new_id, tr('Default'), kind=wx.ITEM_RADIO)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         #Case the user change window and level
         new_id = self.other_wl_id = wx.NewIdRef()
-        wl_item = submenu_wl.Append(new_id, _('Manual'), kind=wx.ITEM_RADIO)
+        wl_item = submenu_wl.Append(new_id, tr('Manual'), kind=wx.ITEM_RADIO)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         for name in const.WINDOW_LEVEL:
-            if not(name == _('Default') or name == _('Manual')):
+            if not(name == tr('Default') or name == tr('Manual')):
                 new_id = wx.NewIdRef()
                 wl_item = submenu_wl.Append(new_id, name, kind=wx.ITEM_RADIO)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
@@ -93,13 +93,13 @@ class SliceMenu(wx.Menu):
         submenu_pseudo_colours = wx.Menu()
         self.pseudo_color_items = {}
         new_id = self.id_pseudo_first = wx.NewIdRef()
-        color_item = submenu_pseudo_colours.Append(new_id, _("Default "), kind=mkind)
+        color_item = submenu_pseudo_colours.Append(new_id, tr("Default "), kind=mkind)
         color_item.Check(1)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
 
         for name in sorted(const.SLICE_COLOR_TABLE):
-            if not(name == _("Default ")):
+            if not(name == tr("Default ")):
                 new_id = wx.NewIdRef()
                 color_item = submenu_pseudo_colours.Append(new_id, name, kind=mkind)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
@@ -113,7 +113,7 @@ class SliceMenu(wx.Menu):
             self.pseudo_color_items[new_id] = color_item
 
         new_id = wx.NewIdRef()
-        color_item = submenu_pseudo_colours.Append(new_id, _('Custom'), kind=mkind)
+        color_item = submenu_pseudo_colours.Append(new_id, tr('Custom'), kind=mkind)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
 
@@ -140,9 +140,9 @@ class SliceMenu(wx.Menu):
                 flag_tiling = True
 
         # Add sub itens in the menu
-        self.Append(-1, _("Window width and level"), submenu_wl)
-        self.Append(-1, _("Pseudo color"), submenu_pseudo_colours)
-        self.Append(-1, _("Projection type"), submenu_projection)
+        self.Append(-1, tr("Window width and level"), submenu_wl)
+        self.Append(-1, tr("Pseudo color"), submenu_pseudo_colours)
+        self.Append(-1, tr("Projection type"), submenu_projection)
         ###self.Append(-1, _("Image Tiling"), submenu_image_tiling)
 
         # It doesn't work in Linux
@@ -241,7 +241,7 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Set projection type', projection_id=pid)
             Publisher.sendMessage('Reload actual slice')
 
-        elif key == _('Custom'):
+        elif key == tr('Custom'):
             if self.cdialog is None:
                 slc = sl.Slice()
                 histogram = slc.histogram

@@ -28,7 +28,7 @@ import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 from invesalius.utils import Singleton
 from invesalius.navigation.tracker import Tracker
 
@@ -108,7 +108,7 @@ class Robot(metaclass=Singleton):
     def RegisterRobot(self):
         Publisher.sendMessage('End busy cursor')
         if not self.robot_status:
-            wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
+            wx.MessageBox(tr("Unable to connect to the robot."), tr("InVesalius 3"))
             return
 
         self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(
@@ -124,7 +124,7 @@ class Robot(metaclass=Singleton):
         self.robot_coregistration_dialog.Destroy()
 
         if status != wx.ID_OK:
-            wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
+            wx.MessageBox(tr("Unable to connect to the robot."), tr("InVesalius 3"))
             return False
 
         self.matrix_tracker_to_robot = matrix_tracker_to_robot

@@ -39,7 +39,7 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
 from invesalius.utils import touch
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 
 if sys.platform == 'win32':
@@ -189,7 +189,7 @@ def JoinSeedsParts(polydata, point_id_list):
     pos = 1
     for seed in point_id_list:
         conn.AddSeed(seed)
-        UpdateProgress(pos, _("Analysing selected regions..."))
+        UpdateProgress(pos, tr("Analysing selected regions..."))
         pos += 1
 
     conn.AddObserver("ProgressEvent", lambda obj, evt:
@@ -245,6 +245,6 @@ def SplitDisconectedParts(polydata):
 
         polydata_collection.append(p)
         if progress:
-            UpdateProgress(region, _("Splitting disconnected regions..."))
+            UpdateProgress(region, tr("Splitting disconnected regions..."))
 
     return polydata_collection

@@ -17,7 +17,7 @@ import invesalius.data.slice_ as slc
 from invesalius.gui import dialogs
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment, utils
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
@@ -108,7 +108,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         )
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in self.backends)))
         self.cb_backends.SetMinClientSize((w, -1))
-        self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
+        self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, tr("Use GPU"))
         if HAS_TORCH or HAS_PLAIDML:
             if HAS_TORCH:
                 choices = list(self.torch_devices.keys())
@@ -116,7 +116,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             else:
                 choices = list(self.plaidml_devices.keys())
                 value = choices[0]
-            self.lbl_device = wx.StaticText(self, -1, _("Device"))
+            self.lbl_device = wx.StaticText(self, -1, tr("Device"))
             self.cb_devices = wx.ComboBox(
                 self,
                 wx.ID_ANY,
@@ -130,23 +130,23 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.txt_threshold = wx.TextCtrl(self, wx.ID_ANY, "")
         w, h = self.CalcSizeFromTextSize("MMMMM")
         self.txt_threshold.SetMinClientSize((w, -1))
-        self.chk_new_mask = wx.CheckBox(self, wx.ID_ANY, _("Create new mask"))
+        self.chk_new_mask = wx.CheckBox(self, wx.ID_ANY, tr("Create new mask"))
         self.chk_new_mask.SetValue(True)
-        self.chk_apply_wwwl = wx.CheckBox(self, wx.ID_ANY, _("Apply WW&WL"))
+        self.chk_apply_wwwl = wx.CheckBox(self, wx.ID_ANY, tr("Apply WW&WL"))
         self.chk_apply_wwwl.SetValue(False)
         self.overlap = wx.RadioBox(
             self,
             -1,
-            _("Overlap"),
+            tr("Overlap"),
             choices=[f"{i}%" for i in self.overlap_options],
             style=wx.NO_BORDER | wx.HORIZONTAL,
         )
         self.overlap.SetSelection(self.overlap_options.index(self.default_overlap))
         self.progress = wx.Gauge(self, -1)
-        self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
-        self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
-        self.btn_segment = wx.Button(self, wx.ID_ANY, _("Segment"))
-        self.btn_stop = wx.Button(self, wx.ID_ANY, _("Stop"))
+        self.lbl_progress_caption = wx.StaticText(self, -1, tr("Elapsed time:"))
+        self.lbl_time = wx.StaticText(self, -1, tr("00:00:00"))
+        self.btn_segment = wx.Button(self, wx.ID_ANY, tr("Segment"))
+        self.btn_stop = wx.Button(self, wx.ID_ANY, tr("Stop"))
         self.btn_stop.Disable()
         self.btn_close = wx.Button(self, wx.ID_CLOSE)
 
@@ -156,7 +156,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_backends = wx.BoxSizer(wx.HORIZONTAL)
-        label_1 = wx.StaticText(self, wx.ID_ANY, _("Backend"))
+        label_1 = wx.StaticText(self, wx.ID_ANY, tr("Backend"))
         sizer_backends.Add(label_1, 0, wx.ALIGN_CENTER, 0)
         sizer_backends.Add(self.cb_backends, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
@@ -167,7 +167,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.overlap, 0, wx.ALL | wx.EXPAND, 5)
-        label_5 = wx.StaticText(self, wx.ID_ANY, _("Level of certainty"))
+        label_5 = wx.StaticText(self, wx.ID_ANY, tr("Level of certainty"))
         main_sizer.Add(label_5, 0, wx.ALL, 5)
         sizer_3.Add(
             self.sld_threshold,
@@ -409,7 +409,7 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
     def __init__(self, parent):
         super().__init__(
             parent=parent,
-            title=_("Brain segmentation"),
+            title=tr("Brain segmentation"),
             has_torch=True,
             has_plaidml=True,
             has_theano=True,
@@ -421,7 +421,7 @@ class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
     def __init__(self, parent):
         super().__init__(
             parent=parent,
-            title=_("Trachea segmentation"),
+            title=tr("Trachea segmentation"),
             has_torch=True,
             has_plaidml=False,
             has_theano=False,
@@ -433,7 +433,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
     def __init__(self, parent):
         super().__init__(
             parent=parent,
-            title=_("Mandible segmentation (CT)"),
+            title=tr("Mandible segmentation (CT)"),
             has_torch=True,
             has_plaidml=False,
             has_theano=False,
@@ -443,7 +443,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
     def _init_gui(self):
         super()._init_gui()
 
-        self.chk_apply_resize_by_spacing = wx.CheckBox(self, wx.ID_ANY, _("Resize by spacing"))
+        self.chk_apply_resize_by_spacing = wx.CheckBox(self, wx.ID_ANY, tr("Resize by spacing"))
         self.chk_apply_resize_by_spacing.SetValue(True)
 
         self.patch_txt = wx.StaticText(self,label="Patch size:")

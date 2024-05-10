@@ -22,19 +22,19 @@ import invesalius.project as prj
 from invesalius.pubsub import pub as Publisher
 from invesalius.gui import utils
 from invesalius import constants as const
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 ORIENTATION_LABEL = {
-    const.AXIAL: _("Axial"),
-    const.CORONAL: _("Coronal"),
-    const.SAGITAL: _("Sagital"),
+    const.AXIAL: tr("Axial"),
+    const.CORONAL: tr("Coronal"),
+    const.SAGITAL: tr("Sagital"),
 }
 
 
 class ProjectProperties(wx.Dialog):
     def __init__(self, parent):
         super().__init__(id=-1, name='', parent=parent,
-              style=wx.DEFAULT_FRAME_STYLE, title=_('Project Properties'))
+              style=wx.DEFAULT_FRAME_STYLE, title=tr('Project Properties'))
         self.Center(wx.BOTH)
         self._init_gui()
 
@@ -48,7 +48,7 @@ class ProjectProperties(wx.Dialog):
         try:
             orientation = ORIENTATION_LABEL[project.original_orientation]
         except KeyError:
-            orientation = _("Other")
+            orientation = tr("Other")
 
         orientation_txt = wx.TextCtrl(self, -1, value=orientation, style=wx.TE_READONLY)
 
@@ -58,19 +58,19 @@ class ProjectProperties(wx.Dialog):
         spacing_txt_z = wx.TextCtrl(self, -1, value=f"{sz:.5}", style=wx.TE_READONLY)
 
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(wx.StaticText(self, -1, _('Name')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        name_sizer.Add(wx.StaticText(self, -1, tr('Name')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         name_sizer.Add(self.name_txt, 1, wx.EXPAND | wx.ALL, 5)
 
         modality_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        modality_sizer.Add(wx.StaticText(self, -1, _('Modality')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        modality_sizer.Add(wx.StaticText(self, -1, tr('Modality')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         modality_sizer.Add(modality_txt, 1, wx.EXPAND | wx.ALL, 5)
 
         orientation_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        orientation_sizer.Add(wx.StaticText(self, -1, _('Orientation')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        orientation_sizer.Add(wx.StaticText(self, -1, tr('Orientation')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         orientation_sizer.Add(orientation_txt, 1, wx.EXPAND | wx.ALL, 5)
 
         spacing_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        spacing_sizer.Add(wx.StaticText(self, -1, _('Spacing')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        spacing_sizer.Add(wx.StaticText(self, -1, tr('Spacing')), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         spacing_sizer.Add(spacing_txt_x, 1, wx.EXPAND | wx.ALL, 5)
         spacing_sizer.Add(spacing_txt_y, 1, wx.EXPAND | wx.ALL, 5)
         spacing_sizer.Add(spacing_txt_z, 1, wx.EXPAND | wx.ALL, 5)

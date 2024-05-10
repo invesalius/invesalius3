@@ -14,7 +14,7 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.pubsub import pub as Publisher
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 NROWS = 3
 NCOLS = 6
@@ -24,11 +24,11 @@ PREVIEW_HEIGTH = 70
 
 PREVIEW_BACKGROUND = (255, 255, 255) # White
 
-STR_SIZE = _("Image size: %d x %d")
-STR_SPC = _("Spacing: %.2f")
-STR_LOCAL = _("Location: %.2f")
+STR_SIZE = tr("Image size: %d x %d")
+STR_SPC = tr("Spacing: %.2f")
+STR_LOCAL = tr("Location: %.2f")
 STR_PATIENT = "%s\n%s"
-STR_ACQ = _("%s %s\nMade in InVesalius")
+STR_ACQ = tr("%s %s\nMade in InVesalius")
 
 myEVT_PREVIEW_CLICK = wx.NewEventType()
 EVT_PREVIEW_CLICK = wx.PyEventBinder(myEVT_PREVIEW_CLICK, 1)
@@ -165,8 +165,8 @@ class Preview(wx.Panel):
     def _init_ui(self):
         self.SetBackgroundColour(PREVIEW_BACKGROUND)
 
-        self.title = wx.StaticText(self, -1, _("Image"))
-        self.subtitle = wx.StaticText(self, -1, _("Image"))
+        self.title = wx.StaticText(self, -1, tr("Image"))
+        self.subtitle = wx.StaticText(self, -1, tr("Image"))
         self.image_viewer = DicomPaintPanel(self)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -447,8 +447,8 @@ class SingleImagePreview(wx.Panel):
         self.dicom_list = []
         self.nimages = 1
         self.current_index = 0
-        self.window_width = const.WINDOW_LEVEL[_("Bone")][0]
-        self.window_level = const.WINDOW_LEVEL[_("Bone")][1]
+        self.window_width = const.WINDOW_LEVEL[tr("Bone")][0]
+        self.window_level = const.WINDOW_LEVEL[tr("Bone")][1]
 
     def __init_vtk(self):
         text_image_size = vtku.TextZero()
@@ -531,7 +531,7 @@ class SingleImagePreview(wx.Panel):
         slider.SetTickFreq(1)
         self.slider = slider
 
-        checkbox = wx.CheckBox(self, -1, _("Auto-play"))
+        checkbox = wx.CheckBox(self, -1, tr("Auto-play"))
         self.checkbox = checkbox
 
         in_sizer = wx.BoxSizer(wx.HORIZONTAL)

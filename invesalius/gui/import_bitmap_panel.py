@@ -26,7 +26,7 @@ import invesalius.gui.dialogs as dlg
 import invesalius.gui.bitmap_preview_panel as bpp
 import invesalius.reader.bitmap_reader as bpr
 from invesalius.gui.dialogs import ImportBitmapParameters as dialogs
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 
 myEVT_SELECT_SERIE = wx.NewEventType()
@@ -93,7 +93,7 @@ class InnerPanel(wx.Panel):
 
         panel = wx.Panel(self)
         self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
-        self.btn_ok = wx.Button(panel, wx.ID_OK, _("Import"))
+        self.btn_ok = wx.Button(panel, wx.ID_OK, tr("Import"))
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(self.btn_ok)
@@ -201,16 +201,16 @@ class TextPanel(wx.Panel):
                                    , agwStyle=gizmos.TR_MULTIPLE)
 
 
-        tree.AddColumn(_("Path"))
-        tree.AddColumn(_("Type"))
-        tree.AddColumn(_("Width x Height"))
+        tree.AddColumn(tr("Path"))
+        tree.AddColumn(tr("Type"))
+        tree.AddColumn(tr("Width x Height"))
 
         tree.SetMainColumn(0)
         tree.SetColumnWidth(0, 880)
         tree.SetColumnWidth(1, 60)
         tree.SetColumnWidth(2, 130)
 
-        self.root = tree.AddRoot(_("InVesalius Database"))
+        self.root = tree.AddRoot(tr("InVesalius Database"))
         self.tree = tree
 
 

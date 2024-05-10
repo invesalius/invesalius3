@@ -23,7 +23,7 @@ import sys
 import wx
 import wx.lib.hyperlink as hl
 
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr
 
 class TaskPanel(wx.Panel):
     """
@@ -64,7 +64,7 @@ class InnerTaskPanel(wx.Panel):
         Build widgets in current panel
         """
         # Create widgets to be inserted in this panel
-        link_test = hl.HyperLinkCtrl(self, -1, _("Testing..."))
+        link_test = hl.HyperLinkCtrl(self, -1, tr("Testing..."))
         link_test.SetUnderlines(False, False, False)
         link_test.SetColours("BLACK", "BLACK", "BLACK")
         link_test.AutoBrowse(False)
