@@ -103,7 +103,7 @@ class Presets:
             "Update threshold limits", threshold_range=(thresh_min, thresh_max)
         )
 
-    def SavePlist(self, filename: str | Path) -> str:
+    def SavePlist(self, filename: "str | Path") -> str:
         filename = "{}${}".format(filename, "presets.plist")
         preset = {}
 
@@ -139,7 +139,7 @@ class Presets:
             plistlib.dump(preset, f)
         return os.path.split(filename)[1]
 
-    def OpenPlist(self, filename: str | Path) -> None:
+    def OpenPlist(self, filename: "str | Path") -> None:
         translate_to_x = {
             "Bone": _("Bone"),
             "Soft Tissue": _("Soft Tissue"),
@@ -187,7 +187,7 @@ def get_wwwl_presets() -> dict[str, str]:
 
 
 def get_wwwl_preset_colours(
-    pfile: str | Path,
+    pfile: "str | Path",
 ) -> list[tuple[int, int, int]]:
     with open(pfile, "rb") as f:
         preset = plistlib.load(f, fmt=plistlib.FMT_XML)
