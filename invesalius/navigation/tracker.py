@@ -27,7 +27,7 @@ import invesalius.data.tracker_connection as tc
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 from invesalius.utils import Singleton
 
 # Only one tracker will be initialized per time. Therefore, we use
@@ -135,7 +135,7 @@ class Tracker(metaclass=Singleton):
     def DisconnectTracker(self):
         if self.tracker_connected:
             Publisher.sendMessage('Update status text in GUI',
-                                    label=tr("Disconnecting tracker ..."))
+                                    label=_("Disconnecting tracker ..."))
             Publisher.sendMessage('Remove sensors ID')
             Publisher.sendMessage('Remove object data')
 
@@ -152,11 +152,11 @@ class Tracker(metaclass=Singleton):
                 self.tracker_id = 0
 
                 Publisher.sendMessage('Update status text in GUI',
-                                        label=tr("Tracker disconnected"))
+                                        label=_("Tracker disconnected"))
                 print("Tracker disconnected!")
             else:
                 Publisher.sendMessage('Update status text in GUI',
-                                        label=tr("Tracker still connected"))
+                                        label=_("Tracker still connected"))
                 print("Tracker still connected!")
 
     def IsTrackerInitialized(self):

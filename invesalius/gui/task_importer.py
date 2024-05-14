@@ -32,7 +32,7 @@ import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 
 from invesalius import inv_paths
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 BTN_IMPORT_LOCAL = wx.NewIdRef()
 BTN_IMPORT_PACS = wx.NewIdRef()
@@ -72,8 +72,8 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(tr("Select DICOM files to be reconstructed"))
-        link_import_local = hl.HyperLinkCtrl(self, -1, tr("Import DICOM images..."))
+        tooltip = wx.ToolTip(_("Select DICOM files to be reconstructed"))
+        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import DICOM images..."))
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetBold(True)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")
@@ -83,8 +83,8 @@ class InnerTaskPanel(wx.Panel):
         link_import_local.UpdateLink()
         link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
 
-        tooltip = wx.ToolTip(tr("Select NIFTI files to be reconstructed"))
-        link_import_nifti = hl.HyperLinkCtrl(self, -1, tr("Import NIFTI images..."))
+        tooltip = wx.ToolTip(_("Select NIFTI files to be reconstructed"))
+        link_import_nifti = hl.HyperLinkCtrl(self, -1, _("Import NIFTI images..."))
         link_import_nifti.SetUnderlines(False, False, False)
         link_import_nifti.SetBold(True)
         link_import_nifti.SetColours("BLACK", "BLACK", "BLACK")
@@ -103,8 +103,8 @@ class InnerTaskPanel(wx.Panel):
         #link_import_pacs.UpdateLink()
         #link_import_pacs.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
 
-        tooltip = wx.ToolTip(tr("Open an existing InVesalius project..."))
-        link_open_proj = hl.HyperLinkCtrl(self,-1,tr("Open an existing project..."))
+        tooltip = wx.ToolTip(_("Open an existing InVesalius project..."))
+        link_open_proj = hl.HyperLinkCtrl(self,-1,_("Open an existing project..."))
         link_open_proj.SetUnderlines(False, False, False)
         link_open_proj.SetBold(True)
         link_open_proj.SetColours("BLACK", "BLACK", "BLACK")

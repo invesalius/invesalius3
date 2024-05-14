@@ -27,7 +27,7 @@ import invesalius.gui.dialogs as dlg
 #import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
 import invesalius.net.dicom as dcm_net
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
 #from dicionario import musicdata
@@ -99,7 +99,7 @@ class InnerPanel(wx.Panel):
 
         panel = wx.Panel(self)
         self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
-        self.btn_ok = wx.Button(panel, wx.ID_OK, tr("Import"))
+        self.btn_ok = wx.Button(panel, wx.ID_OK, _("Import"))
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(self.btn_ok)
@@ -237,18 +237,18 @@ class TextPanel(wx.Panel):
                                   )
 
 
-        tree.AddColumn(tr("Patient name"))
-        tree.AddColumn(tr("Patient ID"))
-        tree.AddColumn(tr("Age"))
-        tree.AddColumn(tr("Gender"))
-        tree.AddColumn(tr("Study description"))
-        tree.AddColumn(tr("Modality"))
-        tree.AddColumn(tr("Date acquired"))
-        tree.AddColumn(tr("# Images"))
-        tree.AddColumn(tr("Institution"))
-        tree.AddColumn(tr("Date of birth"))
-        tree.AddColumn(tr("Accession Number"))
-        tree.AddColumn(tr("Referring physician"))
+        tree.AddColumn(_("Patient name"))
+        tree.AddColumn(_("Patient ID"))
+        tree.AddColumn(_("Age"))
+        tree.AddColumn(_("Gender"))
+        tree.AddColumn(_("Study description"))
+        tree.AddColumn(_("Modality"))
+        tree.AddColumn(_("Date acquired"))
+        tree.AddColumn(_("# Images"))
+        tree.AddColumn(_("Institution"))
+        tree.AddColumn(_("Date of birth"))
+        tree.AddColumn(_("Accession Number"))
+        tree.AddColumn(_("Referring physician"))
 
         tree.SetMainColumn(0)        # the one with the tree in it...
         tree.SetColumnWidth(0, 280)  # Patient name
@@ -264,7 +264,7 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(10, 140) # Accession Number
         tree.SetColumnWidth(11, 160) # Referring physician
 
-        self.root = tree.AddRoot(tr("InVesalius Database"))
+        self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
 
     def SelectSeries(self, group_index):
@@ -495,14 +495,14 @@ class FindPanel(wx.Panel):
 
         sizer_word_label = wx.BoxSizer(wx.HORIZONTAL)
         sizer_word_label.Add((5, 0), 0, wx.EXPAND|wx.HORIZONTAL)
-        find_label = wx.StaticText(self, -1, tr("Word"))
+        find_label = wx.StaticText(self, -1, _("Word"))
         sizer_word_label.Add(find_label)
         
         sizer_txt_find = wx.BoxSizer(wx.HORIZONTAL) 
         sizer_txt_find.Add((5, 0), 0, wx.EXPAND|wx.HORIZONTAL)
         self.find_txt = wx.TextCtrl(self, -1,size=(225, -1))
 
-        self.btn_find = wx.Button(self, -1, tr("Search"))
+        self.btn_find = wx.Button(self, -1, _("Search"))
         
         sizer_txt_find.Add(self.find_txt) 
         sizer_txt_find.Add(self.btn_find)
@@ -662,11 +662,11 @@ class NodesPanel(wx.Panel):
     def __init_gui(self):
         self.tree_node = NodesTree(self)
 
-        self.tree_node.InsertColumn(0, tr("Active"))
-        self.tree_node.InsertColumn(1, tr("Host"))
-        self.tree_node.InsertColumn(2, tr("Port"))
-        self.tree_node.InsertColumn(3, tr("AETitle"))
-        self.tree_node.InsertColumn(4, tr("Status"))
+        self.tree_node.InsertColumn(0, _("Active"))
+        self.tree_node.InsertColumn(1, _("Host"))
+        self.tree_node.InsertColumn(2, _("Port"))
+        self.tree_node.InsertColumn(3, _("AETitle"))
+        self.tree_node.InsertColumn(4, _("Status"))
 
         self.tree_node.SetColumnWidth(0,50)
         self.tree_node.SetColumnWidth(1, 150)
@@ -696,9 +696,9 @@ class NodesPanel(wx.Panel):
         #self.tree_node.SetItem(index2, 2, "80")
         #self.tree_node.SetItemData(index2, 0)      
 
-        self.btn_add = wx.Button(self, -1, tr("Add"))
-        self.btn_remove = wx.Button(self, -1, tr("Remove"))
-        self.btn_check = wx.Button(self, -1, tr("Check status"))
+        self.btn_add = wx.Button(self, -1, _("Add"))
+        self.btn_remove = wx.Button(self, -1, _("Remove"))
+        self.btn_check = wx.Button(self, -1, _("Check status"))
 
 
         sizer_btn = wx.BoxSizer(wx.HORIZONTAL)
@@ -771,9 +771,9 @@ class NodesPanel(wx.Panel):
                 dn.SetAETitle(self.hosts[0][3])
 
                 if dn.RunCEcho():
-                    self.tree_node.SetItem(key, 4, tr("ok"))
+                    self.tree_node.SetItem(key, 4, _("ok"))
                 else:
-                    self.tree_node.SetItem(key, 4, tr("error"))
+                    self.tree_node.SetItem(key, 4, _("error"))
 
     def RightButton(self,evt):
         event.Skip()

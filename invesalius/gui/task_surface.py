@@ -41,7 +41,7 @@ import invesalius.utils as utl
 
 from invesalius import inv_paths
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
@@ -52,7 +52,7 @@ BTN_NEW = wx.NewIdRef()
 MENU_SQUARE = wx.NewIdRef()
 MENU_CIRCLE = wx.NewIdRef()
 
-OP_LIST = [tr("Draw"), tr("Erase"), tr("Threshold")]
+OP_LIST = [_("Draw"), _("Erase"), _("Threshold")]
 
 
 class TaskPanel(wx.Panel):
@@ -96,8 +96,8 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(tr("Create 3D surface based on a mask"))
-        link_new_surface = hl.HyperLinkCtrl(self, -1, tr("Create new 3D surface"))
+        tooltip = wx.ToolTip(_("Create 3D surface based on a mask"))
+        link_new_surface = hl.HyperLinkCtrl(self, -1, _("Create new 3D surface"))
         link_new_surface.SetUnderlines(False, False, False)
         link_new_surface.SetBold(True)
         link_new_surface.SetColours("BLACK", "BLACK", "BLACK")
@@ -118,7 +118,7 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
         fold_panel.SetBackgroundColour(default_colour)
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, tr("Next step"))
+        button_next = wx.Button(self, -1, _("Next step"))
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
@@ -171,7 +171,7 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
             return
 
         dialog = dlg.SurfaceCreationDialog(None, -1,
-                            tr('New surface'),
+                            _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
 
         try:
@@ -251,13 +251,13 @@ class InnerFoldPanel(wx.Panel):
         style.SetSecondColour(default_colour)
 
         # Fold 1 - Surface properties
-        item = fold_panel.AddFoldPanel(tr("Surface properties"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Surface properties"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 2 - Surface tools
-        item = fold_panel.AddFoldPanel(tr("Advanced options"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -312,8 +312,8 @@ class SurfaceTools(wx.Panel):
 
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(tr("Automatically select largest disconnected region and create new surface"))
-        link_largest = hl.HyperLinkCtrl(self, -1, tr("Select largest surface"))
+        tooltip = wx.ToolTip(_("Automatically select largest disconnected region and create new surface"))
+        link_largest = hl.HyperLinkCtrl(self, -1, _("Select largest surface"))
         link_largest.SetUnderlines(False, False, False)
         link_largest.SetColours("BLACK", "BLACK", "BLACK")
         link_largest.SetToolTip(tooltip)
@@ -321,8 +321,8 @@ class SurfaceTools(wx.Panel):
         link_largest.UpdateLink()
         link_largest.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLargest)
 
-        tooltip = wx.ToolTip(tr("Automatically select disconnected regions and create a new surface per region"))
-        link_split_all = hl.HyperLinkCtrl(self, -1,tr("Split all disconnected surfaces"))
+        tooltip = wx.ToolTip(_("Automatically select disconnected regions and create a new surface per region"))
+        link_split_all = hl.HyperLinkCtrl(self, -1,_("Split all disconnected surfaces"))
         link_split_all.SetUnderlines(False, False, False)
         link_split_all.SetColours("BLACK", "BLACK", "BLACK")
         link_split_all.SetToolTip(tooltip)
@@ -330,8 +330,8 @@ class SurfaceTools(wx.Panel):
         link_split_all.UpdateLink()
         link_split_all.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSplit)
 
-        tooltip = wx.ToolTip(tr("Manually insert seeds of regions of interest and create a new surface"))
-        link_seeds = hl.HyperLinkCtrl(self,-1,tr("Select regions of interest..."))
+        tooltip = wx.ToolTip(_("Manually insert seeds of regions of interest and create a new surface"))
+        link_seeds = hl.HyperLinkCtrl(self,-1,_("Select regions of interest..."))
         link_seeds.SetUnderlines(False, False, False)
         link_seeds.SetColours("BLACK", "BLACK", "BLACK")
         link_seeds.SetToolTip(tooltip)
@@ -481,7 +481,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
 
         ## LINE 2
 
-        text_transparency = wx.StaticText(self, -1, tr("Transparency:"))
+        text_transparency = wx.StaticText(self, -1, _("Transparency:"))
 
         slider_transparency = wx.Slider(self, -1, 0, MIN_TRANSPARENCY,
                                         MAX_TRANSPARENCY,
@@ -638,7 +638,7 @@ class QualityAdjustment(wx.Panel):
         # LINE 2
         check_decimate = wx.CheckBox(self, -1, "")
 
-        text_decimate = wx.StaticText(self, -1, tr("Decimate resolution:"))
+        text_decimate = wx.StaticText(self, -1, _("Decimate resolution:"))
 
         spin_decimate = InvSpinCtrl(self, -1, value=30, min_value=1, max_value=100, size=(30, 50))
         #spin_decimate.Bind(wx.EVT_TEXT, self.OnDecimate)
@@ -646,7 +646,7 @@ class QualityAdjustment(wx.Panel):
         # LINE 3
         check_smooth = wx.CheckBox(self, -1, "")
 
-        text_smooth = wx.StaticText(self, -1, tr("Smooth iterations:"))
+        text_smooth = wx.StaticText(self, -1, _("Smooth iterations:"))
 
         spin_smooth = InvSpinCtrl(self, -1, value=0, min_value=1, max_values=100, size=(30, 50))
 

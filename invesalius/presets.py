@@ -22,7 +22,7 @@ import plistlib
 import typing
 
 from invesalius import inv_paths
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import TwoWaysDictionary
 
@@ -34,41 +34,41 @@ class Presets:
     def __init__(self):
         self.thresh_ct = TwoWaysDictionary(
             {
-                tr("Bone"): (226, 3071),
-                tr("Soft Tissue"): (-700, 225),
-                tr("Enamel (Adult)"): (1553, 2850),
-                tr("Enamel (Child)"): (2042, 3071),
-                tr("Compact Bone (Adult)"): (662, 1988),
-                tr("Compact Bone (Child)"): (586, 2198),
-                tr("Spongial Bone (Adult)"): (148, 661),
-                tr("Spongial Bone (Child)"): (156, 585),
-                tr("Muscle Tissue (Adult)"): (-5, 135),
-                tr("Muscle Tissue (Child)"): (-25, 139),
-                tr("Fat Tissue (Adult)"): (-205, -51),
-                tr("Fat Tissue (Child)"): (-212, -72),
-                tr("Skin Tissue (Adult)"): (-718, -177),
-                tr("Skin Tissue (Child)"): (-766, -202),
-                tr("Custom"): (0, 0),
+                _("Bone"): (226, 3071),
+                _("Soft Tissue"): (-700, 225),
+                _("Enamel (Adult)"): (1553, 2850),
+                _("Enamel (Child)"): (2042, 3071),
+                _("Compact Bone (Adult)"): (662, 1988),
+                _("Compact Bone (Child)"): (586, 2198),
+                _("Spongial Bone (Adult)"): (148, 661),
+                _("Spongial Bone (Child)"): (156, 585),
+                _("Muscle Tissue (Adult)"): (-5, 135),
+                _("Muscle Tissue (Child)"): (-25, 139),
+                _("Fat Tissue (Adult)"): (-205, -51),
+                _("Fat Tissue (Child)"): (-212, -72),
+                _("Skin Tissue (Adult)"): (-718, -177),
+                _("Skin Tissue (Child)"): (-766, -202),
+                _("Custom"): (0, 0),
             }
         )
 
         self.thresh_mri = TwoWaysDictionary(
             {
-                tr("Bone"): (1250, 4095),
-                tr("Soft Tissue"): (324, 1249),
-                tr("Enamel (Adult)"): (2577, 3874),
-                tr("Enamel (Child)"): (3066, 4095),
-                tr("Compact Bone (Adult)"): (1686, 3012),
-                tr("Compact Bone (Child)"): (1610, 3222),
-                tr("Spongial Bone (Adult)"): (1172, 1685),
-                tr("Spongial Bone (Child)"): (1180, 1609),
-                tr("Muscle Tissue (Adult)"): (1019, 1159),
-                tr("Muscle Tissue (Child)"): (999, 1163),
-                tr("Fat Tissue (Adult)"): (819, 973),
-                tr("Fat Tissue (Child)"): (812, 952),
-                tr("Skin Tissue (Adult)"): (306, 847),
-                tr("Skin Tissue (Child)"): (258, 822),
-                tr("Custom"): (0, 0),
+                _("Bone"): (1250, 4095),
+                _("Soft Tissue"): (324, 1249),
+                _("Enamel (Adult)"): (2577, 3874),
+                _("Enamel (Child)"): (3066, 4095),
+                _("Compact Bone (Adult)"): (1686, 3012),
+                _("Compact Bone (Child)"): (1610, 3222),
+                _("Spongial Bone (Adult)"): (1172, 1685),
+                _("Spongial Bone (Child)"): (1180, 1609),
+                _("Muscle Tissue (Adult)"): (1019, 1159),
+                _("Muscle Tissue (Child)"): (999, 1163),
+                _("Fat Tissue (Adult)"): (819, 973),
+                _("Fat Tissue (Child)"): (812, 952),
+                _("Skin Tissue (Adult)"): (306, 847),
+                _("Skin Tissue (Child)"): (258, 822),
+                _("Custom"): (0, 0),
             }
         )
         self.__bind_events()
@@ -108,21 +108,21 @@ class Presets:
         preset = {}
 
         translate_to_en = {
-            tr("Bone"): "Bone",
-            tr("Soft Tissue"): "Soft Tissue",
-            tr("Enamel (Adult)"): "Enamel (Adult)",
-            tr("Enamel (Child)"): "Enamel (Child)",
-            tr("Compact Bone (Adult)"): "Compact Bone (Adult)",
-            tr("Compact Bone (Child)"): "Compact Bone (Child)",
-            tr("Spongial Bone (Adult)"): "Spongial Bone (Adult)",
-            tr("Spongial Bone (Child)"): "Spongial Bone (Child)",
-            tr("Muscle Tissue (Adult)"): "Muscle Tissue (Adult)",
-            tr("Muscle Tissue (Child)"): "Muscle Tissue (Child)",
-            tr("Fat Tissue (Adult)"): "Fat Tissue (Adult)",
-            tr("Fat Tissue (Child)"): "Fat Tissue (Child)",
-            tr("Skin Tissue (Adult)"): "Skin Tissue (Adult)",
-            tr("Skin Tissue (Child)"): "Skin Tissue (Child)",
-            tr("Custom"): "Custom",
+            _("Bone"): "Bone",
+            _("Soft Tissue"): "Soft Tissue",
+            _("Enamel (Adult)"): "Enamel (Adult)",
+            _("Enamel (Child)"): "Enamel (Child)",
+            _("Compact Bone (Adult)"): "Compact Bone (Adult)",
+            _("Compact Bone (Child)"): "Compact Bone (Child)",
+            _("Spongial Bone (Adult)"): "Spongial Bone (Adult)",
+            _("Spongial Bone (Child)"): "Spongial Bone (Child)",
+            _("Muscle Tissue (Adult)"): "Muscle Tissue (Adult)",
+            _("Muscle Tissue (Child)"): "Muscle Tissue (Child)",
+            _("Fat Tissue (Adult)"): "Fat Tissue (Adult)",
+            _("Fat Tissue (Child)"): "Fat Tissue (Child)",
+            _("Skin Tissue (Adult)"): "Skin Tissue (Adult)",
+            _("Skin Tissue (Child)"): "Skin Tissue (Child)",
+            _("Custom"): "Custom",
         }
 
         thresh_mri_new = {}
@@ -141,21 +141,21 @@ class Presets:
 
     def OpenPlist(self, filename: str | Path) -> None:
         translate_to_x = {
-            "Bone": tr("Bone"),
-            "Soft Tissue": tr("Soft Tissue"),
-            "Enamel (Adult)": tr("Enamel (Adult)"),
-            "Enamel (Child)": tr("Enamel (Child)"),
-            "Compact Bone (Adult)": tr("Compact Bone (Adult)"),
-            "Compact Bone (Child)": tr("Compact Bone (Child)"),
-            "Spongial Bone (Adult)": tr("Spongial Bone (Adult)"),
-            "Spongial Bone (Child)": tr("Spongial Bone (Child)"),
-            "Muscle Tissue (Adult)": tr("Muscle Tissue (Adult)"),
-            "Muscle Tissue (Child)": tr("Muscle Tissue (Child)"),
-            "Fat Tissue (Adult)": tr("Fat Tissue (Adult)"),
-            "Fat Tissue (Child)": tr("Fat Tissue (Child)"),
-            "Skin Tissue (Adult)": tr("Skin Tissue (Adult)"),
-            "Skin Tissue (Child)": tr("Skin Tissue (Child)"),
-            "Custom": tr("Custom"),
+            "Bone": _("Bone"),
+            "Soft Tissue": _("Soft Tissue"),
+            "Enamel (Adult)": _("Enamel (Adult)"),
+            "Enamel (Child)": _("Enamel (Child)"),
+            "Compact Bone (Adult)": _("Compact Bone (Adult)"),
+            "Compact Bone (Child)": _("Compact Bone (Child)"),
+            "Spongial Bone (Adult)": _("Spongial Bone (Adult)"),
+            "Spongial Bone (Child)": _("Spongial Bone (Child)"),
+            "Muscle Tissue (Adult)": _("Muscle Tissue (Adult)"),
+            "Muscle Tissue (Child)": _("Muscle Tissue (Child)"),
+            "Fat Tissue (Adult)": _("Fat Tissue (Adult)"),
+            "Fat Tissue (Child)": _("Fat Tissue (Child)"),
+            "Skin Tissue (Adult)": _("Skin Tissue (Adult)"),
+            "Skin Tissue (Child)": _("Skin Tissue (Child)"),
+            "Custom": _("Custom"),
         }
 
         with open(filename, "rb") as f:

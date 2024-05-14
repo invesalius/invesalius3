@@ -15,7 +15,7 @@ from invesalius import utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 from invesalius.navigation.tracker import Tracker
 from invesalius.navigation.robot import Robot
@@ -28,7 +28,7 @@ class Preferences(wx.Dialog):
         parent,
         page, 
         id_=-1,
-        title=tr("Preferences"),
+        title=_("Preferences"),
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
     ):
         super().__init__(parent, id_, title, style=style)
@@ -38,7 +38,7 @@ class Preferences(wx.Dialog):
         self.pnl_viewer3d = Viewer3D(self.book)
         self.pnl_language = Language(self.book)
 
-        self.book.AddPage(self.pnl_viewer3d, tr("Visualization"))
+        self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
@@ -53,10 +53,10 @@ class Preferences(wx.Dialog):
             self.pnl_navigation = NavigationPage(self.book, navigation)
             self.pnl_tracker = TrackerPage(self.book, tracker, robot)
             self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
-            self.book.AddPage(self.pnl_navigation, tr("Navigation"))
-            self.book.AddPage(self.pnl_tracker, tr("Tracker"))
-            self.book.AddPage(self.pnl_object, tr("Stimulator"))
-        self.book.AddPage(self.pnl_language, tr("Language"))
+            self.book.AddPage(self.pnl_navigation, _("Navigation"))
+            self.book.AddPage(self.pnl_tracker, _("Tracker"))
+            self.book.AddPage(self.pnl_object, _("Stimulator"))
+        self.book.AddPage(self.pnl_language, _("Language"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -110,8 +110,8 @@ class Viewer3D(wx.Panel):
 
         wx.Panel.__init__(self, parent)
 
-        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("3D Visualization"))
-        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, tr("Surface Interpolation "))
+        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
+        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
         rb_inter = self.rb_inter = wx.RadioBox(
             bsizer.GetStaticBox(),
             -1,
@@ -124,23 +124,23 @@ class Viewer3D(wx.Panel):
         bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-        lbl_rendering = wx.StaticText(bsizer.GetStaticBox(), -1, tr("Volume Rendering"))
+        lbl_rendering = wx.StaticText(bsizer.GetStaticBox(), -1, _("Volume Rendering"))
         rb_rendering = self.rb_rendering = wx.RadioBox(
             bsizer.GetStaticBox(),
             -1,
-            choices=["CPU", tr(u"GPU (NVidia video cards only)")],
+            choices=["CPU", _(u"GPU (NVidia video cards only)")],
             majorDimension=2,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
         bsizer.Add(lbl_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, tr("2D Visualization"))
-        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, tr("Slice Interpolation "))
+        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("2D Visualization"))
+        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Slice Interpolation "))
         rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
             bsizer_slices.GetStaticBox(),
             -1,
-            choices=[tr("Yes"), tr("No")],
+            choices=[_("Yes"), _("No")],
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
@@ -181,9 +181,9 @@ class NavigationPage(wx.Panel):
         self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
 
-        text_note = wx.StaticText(self, -1, tr("Note: Using too low sleep times can result in Invesalius crashing!"))
+        text_note = wx.StaticText(self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
         # Change sleep pause between navigation loops
-        nav_sleep = wx.StaticText(self, -1, tr("Navigation Sleep (s):"))
+        nav_sleep = wx.StaticText(self, -1, _("Navigation Sleep (s):"))
         spin_nav_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
         spin_nav_sleep.Enable(1)
         spin_nav_sleep.SetRange(0.01, 10.0)
@@ -192,7 +192,7 @@ class NavigationPage(wx.Panel):
         spin_nav_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
 
         # Change sleep pause between coordinate update
-        coord_sleep = wx.StaticText(self, -1, tr("Coordinate Sleep (s):"))
+        coord_sleep = wx.StaticText(self, -1, _("Coordinate Sleep (s):"))
         spin_coord_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
         spin_coord_sleep.Enable(1)
         spin_coord_sleep.SetRange(0.01, 10.0)
@@ -213,7 +213,7 @@ class NavigationPage(wx.Panel):
             ])
 
         # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("Sleep time configuration"))
+        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Sleep time configuration"))
         conf_sizer.AddMany([
             (text_note, 0, wx.ALL, 10),
             (line_nav_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
@@ -252,24 +252,24 @@ class ObjectPage(wx.Panel):
         self.state = self.LoadConfig()
 
         # Button for creating new stimulator
-        tooltip = wx.ToolTip(tr("Create new stimulator"))
-        btn_new = wx.Button(self, -1, tr("New"), size=wx.Size(65, 23))
+        tooltip = wx.ToolTip(_("Create new stimulator"))
+        btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
         self.btn_new = btn_new
 
         # Button for loading stimulator config file
-        tooltip = wx.ToolTip(tr("Load stimulator configuration file"))
-        btn_load = wx.Button(self, -1, tr("Load"), size=wx.Size(65, 23))
+        tooltip = wx.ToolTip(_("Load stimulator configuration file"))
+        btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoil)
         self.btn_load = btn_load
 
         # Save button for saving stimulator config file
-        tooltip = wx.ToolTip(tr(u"Save stimulator configuration file"))
-        btn_save = wx.Button(self, -1, tr(u"Save"), size=wx.Size(65, 23))
+        tooltip = wx.ToolTip(_(u"Save stimulator configuration file"))
+        btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveCoil)
@@ -281,13 +281,13 @@ class ObjectPage(wx.Panel):
             config_txt = wx.StaticText(self, -1, "None")
 
         self.config_txt = config_txt    
-        lbl = wx.StaticText(self, -1, tr("Current Configuration:"))
+        lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        lbl_new = wx.StaticText(self, -1, tr("Create a new stimulator registration: "))
-        lbl_load = wx.StaticText(self, -1, tr("Load a stimulator registration: "))
-        lbl_save = wx.StaticText(self, -1, tr("Save current stimulator registration: "))
+        lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
+        lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
+        lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
 
-        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("Stimulator registration"))
+        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
         inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
         inner_load_sizer.AddMany([
             (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
@@ -301,7 +301,7 @@ class ObjectPage(wx.Panel):
         ])
         load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
         # Change angles threshold
-        text_angles = wx.StaticText(self, -1, tr("Angle threshold [degrees]:"))
+        text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
         spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_angles.SetRange(0.1, 99)
         spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
@@ -309,7 +309,7 @@ class ObjectPage(wx.Panel):
         spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
 
         # Change dist threshold
-        text_dist = wx.StaticText(self, -1, tr("Distance threshold [mm]:"))
+        text_dist = wx.StaticText(self, -1, _("Distance threshold [mm]:"))
         spin_size_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_dist.SetRange(0.1, 99)
         spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
@@ -317,7 +317,7 @@ class ObjectPage(wx.Panel):
         spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
 
         # Change timestamp interval
-        text_timestamp = wx.StaticText(self, -1, tr("Timestamp interval [s]:"))
+        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval [s]:"))
         spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
         spin_timestamp_dist.SetRange(0.5, 60.0)
         spin_timestamp_dist.SetValue(self.timestamp)
@@ -345,7 +345,7 @@ class ObjectPage(wx.Panel):
             ])
 
         # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("Stimulator configuration"))
+        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator configuration"))
         conf_sizer.AddMany([
             (line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
             (line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
@@ -392,7 +392,7 @@ class ObjectPage(wx.Panel):
                         Publisher.sendMessage('Update object registration',
                                               data=(obj_fiducials, obj_orients, obj_ref_mode, coil_path))
                         Publisher.sendMessage('Update status text in GUI',
-                                              label=tr("Ready"))
+                                              label=_("Ready"))
                         Publisher.sendMessage(
                             'Configure coil',
                             coil_path=coil_path,
@@ -412,8 +412,8 @@ class ObjectPage(wx.Panel):
             dlg.ShowNavigationTrackerWarning(0, 'choose')
 
     def OnLoadCoil(self, event=None):
-        filename = dlg.ShowLoadSaveDialog(message=tr(u"Load object registration"),
-                                          wildcard=tr("Registration files (*.obr)|*.obr"))
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Load object registration"),
+                                          wildcard=_("Registration files (*.obr)|*.obr"))
         # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
         # coil_path = 'magstim_coil_dell_laptop.obr'
         # filename = os.path.join(data_dir, coil_path)
@@ -442,7 +442,7 @@ class ObjectPage(wx.Panel):
                 Publisher.sendMessage('Update object registration',
                                       data=(obj_fiducials, obj_orients, obj_ref_mode, coil_path))
                 Publisher.sendMessage('Update status text in GUI',
-                                      label=tr("Object file successfully loaded"))
+                                      label=_("Object file successfully loaded"))
                 Publisher.sendMessage(
                     'Configure coil',
                     coil_path=coil_path,
@@ -454,26 +454,26 @@ class ObjectPage(wx.Panel):
                 Publisher.sendMessage('Press track object button', pressed=True)
                 Publisher.sendMessage('Press target mode button', pressed=False)
 
-                msg = tr("Object file successfully loaded")
-                wx.MessageBox(msg, tr("InVesalius 3"))
+                msg = _("Object file successfully loaded")
+                wx.MessageBox(msg, _("InVesalius 3"))
         except:
-            wx.MessageBox(tr("Object registration file incompatible."), tr("InVesalius 3"))
+            wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnSaveCoil(self, evt):
         obj_fiducials, obj_orients, obj_ref_mode, coil_path = self.navigation.GetObjectRegistration()
         if np.isnan(obj_fiducials).any() or np.isnan(obj_orients).any():
-            wx.MessageBox(tr("Digitize all object fiducials before saving"), tr("Save error"))
+            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
-            filename = dlg.ShowLoadSaveDialog(message=tr(u"Save object registration as..."),
-                                              wildcard=tr("Registration files (*.obr)|*.obr"),
+            filename = dlg.ShowLoadSaveDialog(message=_(u"Save object registration as..."),
+                                              wildcard=_("Registration files (*.obr)|*.obr"),
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename="object_registration.obr", save_ext="obr")
             if filename:
                 hdr = 'Object' + "\t" + utils.decode(coil_path, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
                 data = np.hstack([obj_fiducials, obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
-                wx.MessageBox(tr("Object file successfully saved"), tr("Save"))
+                wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
@@ -500,19 +500,19 @@ class TrackerPage(wx.Panel):
         self.state = self.LoadConfig()
 
         # ComboBox for spatial tracker device selection
-        tracker_options = [tr("Select")] + self.tracker.get_trackers()
+        tracker_options = [_("Select")] + self.tracker.get_trackers()
         select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
                                           choices=tracker_options, style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        tooltip = wx.ToolTip(tr("Choose the tracking device"))
+        tooltip = wx.ToolTip(_("Choose the tracking device"))
         select_tracker_elem.SetToolTip(tooltip)
         select_tracker_elem.SetSelection(self.tracker.tracker_id)
         select_tracker_elem.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem))
         self.select_tracker_elem = select_tracker_elem
 
-        select_tracker_label = wx.StaticText(self, -1, tr('Choose the tracking device: '))
+        select_tracker_label = wx.StaticText(self, -1, _('Choose the tracking device: '))
 
         # ComboBox for tracker reference mode
-        tooltip = wx.ToolTip(tr("Choose the navigation reference mode"))
+        tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
         choice_ref = wx.ComboBox(self, -1, "", size=(145, -1),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
@@ -520,7 +520,7 @@ class TrackerPage(wx.Panel):
         choice_ref.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseReferenceMode, ctrl=select_tracker_elem))
         self.choice_ref = choice_ref
 
-        choice_ref_label = wx.StaticText(self, -1, tr('Choose the navigation reference mode: '))
+        choice_ref_label = wx.StaticText(self, -1, _('Choose the navigation reference mode: '))
 
         ref_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=5, vgap=5)
         ref_sizer.AddMany([
@@ -531,14 +531,14 @@ class TrackerPage(wx.Panel):
         ])
         ref_sizer.Layout()
 
-        sizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("Setup tracker"))
+        sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
         
-        lbl_rob = wx.StaticText(self, -1, tr("Select IP for robot device: "))
+        lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
-        tooltip = wx.ToolTip(tr("Choose or type the robot IP"))
-        robot_ip_options = [tr("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
+        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
@@ -550,7 +550,7 @@ class TrackerPage(wx.Panel):
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
         self.choice_IP = choice_IP
 
-        btn_rob = wx.Button(self, -1, tr("Connect"))
+        btn_rob = wx.Button(self, -1, _("Connect"))
         btn_rob.SetToolTip("Connect to IP")
         btn_rob.Enable(1)
         btn_rob.Bind(wx.EVT_BUTTON, self.OnRobotConnect)
@@ -565,7 +565,7 @@ class TrackerPage(wx.Panel):
             status_text.SetLabelText("Robot is not connected!")
         self.status_text = status_text
 
-        btn_rob_con = wx.Button(self, -1, tr("Register"))
+        btn_rob_con = wx.Button(self, -1, _("Register"))
         btn_rob_con.SetToolTip("Register robot tracking")
         btn_rob_con.Enable(1)
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotRegister)
@@ -589,7 +589,7 @@ class TrackerPage(wx.Panel):
             (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15)
         ])
 
-        rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("Setup robot"))
+        rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
         rob_static_sizer.Add(rob_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -621,7 +621,7 @@ class TrackerPage(wx.Panel):
         self.HideParent()
         Publisher.sendMessage('Begin busy cursor')
         Publisher.sendMessage('Update status text in GUI',
-                              label=tr("Configuring tracker ..."))
+                              label=_("Configuring tracker ..."))
         if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
@@ -630,7 +630,7 @@ class TrackerPage(wx.Panel):
         self.tracker.DisconnectTracker()
         self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice)
-        Publisher.sendMessage('Update status text in GUI', label=tr("Ready"))
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
         ctrl.SetSelection(self.tracker.tracker_id)
         self.ShowParent()
@@ -683,13 +683,13 @@ class Language(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, tr("Language"))
+        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Language"))
         self.lg = lg = ComboBoxLanguage(bsizer.GetStaticBox())
         self.cmb_lang = cmb_lang = lg.GetComboBox()
         text = wx.StaticText(
             bsizer.GetStaticBox(),
             -1,
-            tr("Language settings will be applied \n the next time InVesalius starts."),
+            _("Language settings will be applied \n the next time InVesalius starts."),
         )
         bsizer.Add(cmb_lang, 0, wx.EXPAND | wx.ALL, 10)
         bsizer.AddSpacer(5)

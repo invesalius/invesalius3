@@ -30,7 +30,7 @@ import invesalius.gui.dialogs as dialog
 import invesalius.constants as const
 
 from invesalius import inv_paths
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)
@@ -527,8 +527,8 @@ class CLUTRaycastingWidget(wx.Panel):
         font = ctx.CreateFont(font, TEXT_COLOUR)
         ctx.SetFont(font)
 
-        text1 = tr("Value: %-6d" % value)
-        text2 = tr("Alpha: %-.3f" % alpha)
+        text1 = _("Value: %-6d" % value)
+        text2 = _("Alpha: %-.3f" % alpha)
 
         if ctx.GetTextExtent(text1)[0] > ctx.GetTextExtent(text2)[0]:
             wt, ht = ctx.GetTextExtent(text1)

@@ -30,7 +30,7 @@ from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as constants
 import invesalius.constants as const
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
 ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
@@ -64,12 +64,12 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed text and hyperlink items
-        tooltip = wx.ToolTip(tr("Measure distances"))
-        txt_measure = wx.StaticText(self, -1, tr("Measure"))
+        tooltip = wx.ToolTip(_("Measure distances"))
+        txt_measure = wx.StaticText(self, -1, _("Measure"))
         txt_measure.SetToolTip(tooltip)
 
-        tooltip = wx.ToolTip(tr("Add text annotations"))
-        txt_annotation = hl.HyperLinkCtrl(self, -1,tr("Add text annotations"))
+        tooltip = wx.ToolTip(_("Add text annotations"))
+        txt_annotation = hl.HyperLinkCtrl(self, -1,_("Add text annotations"))
         txt_annotation.SetUnderlines(False, False, False)
         txt_annotation.SetColours("BLACK", "BLACK", "BLACK")
         txt_annotation.SetToolTip(tooltip)

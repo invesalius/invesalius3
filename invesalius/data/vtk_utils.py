@@ -37,13 +37,13 @@ import invesalius.constants as const
 import invesalius.utils as utils
 
 from invesalius import inv_paths
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 
 class ProgressDialog(object):
     def __init__(self, parent, maximum, abort=False):
         self.title = "InVesalius 3"
-        self.msg = tr("Loading DICOM files")
+        self.msg = _("Loading DICOM files")
         self.maximum = maximum
         self.current = 0
         self.style = wx.PD_APP_MODAL
@@ -395,7 +395,7 @@ def CreateObjectPolyData(filename):
         elif filename.lower().endswith('.vtp'):
             reader = vtkXMLPolyDataReader()
         else:
-            wx.MessageBox(tr("File format not reconized by InVesalius"), tr("Import surface error"))
+            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
     else:
         filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
@@ -411,7 +411,7 @@ def CreateObjectPolyData(filename):
     obj_polydata = reader.GetOutput()
 
     if obj_polydata.GetNumberOfPoints() == 0:
-        wx.MessageBox(tr("InVesalius was not able to import this surface"), tr("Import surface error"))
+        wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
         obj_polydata = None
 
     return obj_polydata

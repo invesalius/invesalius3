@@ -66,7 +66,7 @@ import invesalius.utils as utils
 import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl, InvFloatSpinCtrl
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
@@ -94,14 +94,14 @@ class ContourMIPConfig(wx.Panel):
     def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
         self.mip_size_spin = InvSpinCtrl(self, -1, value=const.PROJECTION_MIP_SIZE, min_value=1, max_value=240)
-        self.mip_size_spin.SetToolTip(wx.ToolTip(tr("Number of slices used to compound the visualization.")))
+        self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
         self.mip_size_spin.CalcSizeFromTextSize('MMM')
 
         self.border_spin = InvFloatSpinCtrl(self, -1, min_value=0, max_value=10,
                                         increment=0.1,
                                         value=const.PROJECTION_BORDER_SIZE,
                                         digits=1)
-        self.border_spin.SetToolTip(wx.ToolTip(tr("Controls the sharpness of the"
+        self.border_spin.SetToolTip(wx.ToolTip(_("Controls the sharpness of the"
                                                  " contour. The greater the"
                                                  " value, the sharper the"
                                                  " contour.")))
@@ -110,15 +110,15 @@ class ContourMIPConfig(wx.Panel):
         #  self.border_spin.SetMinSize((5 * w + 10, -1))
         #  self.border_spin.SetMaxSize((5 * w + 10, -1))
 
-        self.inverted = wx.CheckBox(self, -1, tr("Inverted order"))
-        self.inverted.SetToolTip(wx.ToolTip(tr("If checked, the slices are"
+        self.inverted = wx.CheckBox(self, -1, _("Inverted order"))
+        self.inverted.SetToolTip(wx.ToolTip(_("If checked, the slices are"
                                               " traversed in descending"
                                               " order to compound the"
                                               " visualization instead of"
                                               " ascending order.")))
 
-        txt_mip_size = wx.StaticText(self, -1, tr("Number of slices"), style=wx.ALIGN_CENTER_HORIZONTAL)
-        self.txt_mip_border = wx.StaticText(self, -1, tr("Sharpness"))
+        txt_mip_size = wx.StaticText(self, -1, _("Number of slices"), style=wx.ALIGN_CENTER_HORIZONTAL)
+        self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 2)
@@ -383,11 +383,11 @@ class Viewer(wx.Panel):
 
             # Orientation text
             if self.orientation == 'AXIAL':
-                values = [tr('R'), tr('L'), tr('A'), tr('P')]
+                values = [_('R'), _('L'), _('A'), _('P')]
             elif self.orientation == 'SAGITAL':
-                values = [tr('P'), tr('A'), tr('T'), tr('B')]
+                values = [_('P'), _('A'), _('T'), _('B')]
             else:
-                values = [tr('R'), tr('L'), tr('T'), tr('B')]
+                values = [_('R'), _('L'), _('T'), _('B')]
 
             left_text = self.left_text = vtku.TextZero()
             left_text.ShadowOff()
@@ -438,11 +438,11 @@ class Viewer(wx.Panel):
     def ResetTextDirection(self, cam):
         # Values are on ccw order, starting from the top:
         if self.orientation == 'AXIAL':
-            values = [tr("A"), tr("R"), tr("P"), tr("L")]
+            values = [_("A"), _("R"), _("P"), _("L")]
         elif self.orientation == 'CORONAL':
-            values = [tr("T"), tr("R"), tr("B"), tr("L")]
+            values = [_("T"), _("R"), _("B"), _("L")]
         else: # 'SAGITAL':
-            values = [tr("T"), tr("P"), tr("B"), tr("A")]
+            values = [_("T"), _("P"), _("B"), _("A")]
 
         self.RenderTextDirection(values)
         if not self.nav_status:
@@ -453,116 +453,116 @@ class Viewer(wx.Panel):
         if (self.orientation == 'AXIAL'):
 
             if (croll >= -2 and croll <= 1):
-                self.RenderTextDirection([tr("A"), tr("R"), tr("P"), tr("L")])
+                self.RenderTextDirection([_("A"), _("R"), _("P"), _("L")])
 
             elif(croll > 1 and croll <= 44):
-                self.RenderTextDirection([tr("AL"), tr("RA"), tr("PR"), tr("LP")])
+                self.RenderTextDirection([_("AL"), _("RA"), _("PR"), _("LP")])
 
             elif(croll > 44 and croll <= 88):
-               self.RenderTextDirection([tr("LA"), tr("AR"), tr("RP"), tr("PL")])
+               self.RenderTextDirection([_("LA"), _("AR"), _("RP"), _("PL")])
 
             elif(croll > 89 and croll <= 91):
-               self.RenderTextDirection([tr("L"), tr("A"), tr("R"), tr("P")])
+               self.RenderTextDirection([_("L"), _("A"), _("R"), _("P")])
 
             elif(croll > 91 and croll <= 135):
-               self.RenderTextDirection([tr("LP"), tr("AL"), tr("RA"), tr("PR")])
+               self.RenderTextDirection([_("LP"), _("AL"), _("RA"), _("PR")])
 
             elif(croll > 135 and croll <= 177):
-                self.RenderTextDirection([tr("PL"), tr("LA"), tr("AR"), tr("RP")])
+                self.RenderTextDirection([_("PL"), _("LA"), _("AR"), _("RP")])
 
             elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
-                self.RenderTextDirection([tr("P"), tr("L"), tr("A"), tr("R")])
+                self.RenderTextDirection([_("P"), _("L"), _("A"), _("R")])
 
             elif(croll >= -177 and croll <= -133):
-                self.RenderTextDirection([tr("PR"), tr("LP"), tr("AL"), tr("RA")])
+                self.RenderTextDirection([_("PR"), _("LP"), _("AL"), _("RA")])
 
             elif(croll >= -132 and croll <= -101):
-                self.RenderTextDirection([tr("RP"), tr("PL"), tr("LA"), tr("AR")])
+                self.RenderTextDirection([_("RP"), _("PL"), _("LA"), _("AR")])
 
             elif(croll >= -101 and croll <= -87):
-                self.RenderTextDirection([tr("R"), tr("P"), tr("L"), tr("A")])
+                self.RenderTextDirection([_("R"), _("P"), _("L"), _("A")])
 
             elif(croll >= -86 and croll <= -42):
-                self.RenderTextDirection([tr("RA"), tr("PR"), tr("LP"), tr("AL")])
+                self.RenderTextDirection([_("RA"), _("PR"), _("LP"), _("AL")])
 
             elif(croll >= -41 and croll <= -2):
-                self.RenderTextDirection([tr("AR"), tr("RP"), tr("PL"), tr("LA")])
+                self.RenderTextDirection([_("AR"), _("RP"), _("PL"), _("LA")])
 
         elif(self.orientation == "CORONAL"):
 
             if (croll >= -2 and croll <= 1):
-                self.RenderTextDirection([tr("T"), tr("R"), tr("B"), tr("L")])
+                self.RenderTextDirection([_("T"), _("R"), _("B"), _("L")])
 
             elif(croll > 1 and croll <= 44):
-                self.RenderTextDirection([tr("TL"), tr("RT"), tr("BR"), tr("LB")])
+                self.RenderTextDirection([_("TL"), _("RT"), _("BR"), _("LB")])
 
             elif(croll > 44 and croll <= 88):
-               self.RenderTextDirection([tr("LT"), tr("TR"), tr("RB"), tr("BL")])
+               self.RenderTextDirection([_("LT"), _("TR"), _("RB"), _("BL")])
 
             elif(croll > 89 and croll <= 91):
-               self.RenderTextDirection([tr("L"), tr("T"), tr("R"), tr("B")])
+               self.RenderTextDirection([_("L"), _("T"), _("R"), _("B")])
 
             elif(croll > 91 and croll <= 135):
-               self.RenderTextDirection([tr("LB"), tr("TL"), tr("RT"), tr("BR")])
+               self.RenderTextDirection([_("LB"), _("TL"), _("RT"), _("BR")])
 
             elif(croll > 135 and croll <= 177):
-                self.RenderTextDirection([tr("BL"), tr("LT"), tr("TR"), tr("RB")])
+                self.RenderTextDirection([_("BL"), _("LT"), _("TR"), _("RB")])
 
             elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
-                self.RenderTextDirection([tr("B"), tr("L"), tr("T"), tr("R")])
+                self.RenderTextDirection([_("B"), _("L"), _("T"), _("R")])
 
             elif(croll >= -177 and croll <= -133):
-                self.RenderTextDirection([tr("BR"), tr("LB"), tr("TL"), tr("RT")])
+                self.RenderTextDirection([_("BR"), _("LB"), _("TL"), _("RT")])
 
             elif(croll >= -132 and croll <= -101):
-                self.RenderTextDirection([tr("RB"), tr("BL"), tr("LT"), tr("TR")])
+                self.RenderTextDirection([_("RB"), _("BL"), _("LT"), _("TR")])
 
             elif(croll >= -101 and croll <= -87):
-                self.RenderTextDirection([tr("R"), tr("B"), tr("L"), tr("T")])
+                self.RenderTextDirection([_("R"), _("B"), _("L"), _("T")])
 
             elif(croll >= -86 and croll <= -42):
-                self.RenderTextDirection([tr("RT"), tr("BR"), tr("LB"), tr("TL")])
+                self.RenderTextDirection([_("RT"), _("BR"), _("LB"), _("TL")])
 
             elif(croll >= -41 and croll <= -2):
-                self.RenderTextDirection([tr("TR"), tr("RB"), tr("BL"), tr("LT")])
+                self.RenderTextDirection([_("TR"), _("RB"), _("BL"), _("LT")])
 
         elif(self.orientation == "SAGITAL"):
 
             if(croll >= -101 and croll <= -87):
-                self.RenderTextDirection([tr("T"), tr("P"), tr("B"), tr("A")])
+                self.RenderTextDirection([_("T"), _("P"), _("B"), _("A")])
 
             elif(croll >= -86 and croll <= -42):
-                self.RenderTextDirection([tr("TA"), tr("PT"), tr("BP"), tr("AB")])
+                self.RenderTextDirection([_("TA"), _("PT"), _("BP"), _("AB")])
 
             elif(croll >= -41 and croll <= -2):
-                self.RenderTextDirection([tr("AT"), tr("TP"), tr("PB"), tr("BA")])
+                self.RenderTextDirection([_("AT"), _("TP"), _("PB"), _("BA")])
 
             elif (croll >= -2 and croll <= 1):
-                self.RenderTextDirection([tr("A"), tr("T"), tr("P"), tr("B")])
+                self.RenderTextDirection([_("A"), _("T"), _("P"), _("B")])
 
             elif(croll > 1 and croll <= 44):
-                self.RenderTextDirection([tr("AB"), tr("TA"), tr("PT"), tr("BP")])
+                self.RenderTextDirection([_("AB"), _("TA"), _("PT"), _("BP")])
 
             elif(croll > 44 and croll <= 88):
-               self.RenderTextDirection([tr("BA"), tr("AT"), tr("TP"), tr("PB")])
+               self.RenderTextDirection([_("BA"), _("AT"), _("TP"), _("PB")])
 
             elif(croll > 89 and croll <= 91):
-               self.RenderTextDirection([tr("B"), tr("A"), tr("T"), tr("P")])
+               self.RenderTextDirection([_("B"), _("A"), _("T"), _("P")])
 
             elif(croll > 91 and croll <= 135):
-               self.RenderTextDirection([tr("BP"), tr("AB"), tr("TA"), tr("PT")])
+               self.RenderTextDirection([_("BP"), _("AB"), _("TA"), _("PT")])
 
             elif(croll > 135 and croll <= 177):
-                self.RenderTextDirection([tr("PB"), tr("BA"), tr("AT"), tr("TP")])
+                self.RenderTextDirection([_("PB"), _("BA"), _("AT"), _("TP")])
 
             elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
-                self.RenderTextDirection([tr("P"), tr("B"), tr("A"), tr("T")])
+                self.RenderTextDirection([_("P"), _("B"), _("A"), _("T")])
 
             elif(croll >= -177 and croll <= -133):
-                self.RenderTextDirection([tr("PT"), tr("BP"), tr("AB"), tr("TA")])
+                self.RenderTextDirection([_("PT"), _("BP"), _("AB"), _("TA")])
 
             elif(croll >= -132 and croll <= -101):
-                self.RenderTextDirection([tr("TP"), tr("PB"), tr("BA"), tr("AT")])
+                self.RenderTextDirection([_("TP"), _("PB"), _("BA"), _("AT")])
 
 
     def Reposition(self, slice_data):
@@ -1041,7 +1041,7 @@ class Viewer(wx.Panel):
                 writer.Write()
 
             if not os.path.exists(filename):
-                wx.MessageBox(tr("InVesalius was not able to export this picture"), tr("Export picture error"))
+                wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
             for actor in view_prop_list:
                 self.slice_data.renderer.AddViewProp(actor)

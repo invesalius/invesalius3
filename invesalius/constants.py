@@ -24,7 +24,7 @@ import sys
 import wx
 import itertools
 
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 from invesalius import utils
 from invesalius import inv_paths
 
@@ -36,7 +36,7 @@ INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 #---------------
 
 # Measurements
-MEASURE_NAME_PATTERN = tr("M %d")
+MEASURE_NAME_PATTERN = _("M %d")
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
 
@@ -48,15 +48,15 @@ DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
 PROP_MEASURE = 0.8
 
 
-STEREO_OFF = tr(" Off")
-STEREO_RED_BLUE = tr("Red-blue")
-STEREO_CRISTAL = tr("CristalEyes")
-STEREO_INTERLACED = tr("Interlaced")
-STEREO_LEFT = tr("Left")
-STEREO_RIGHT = tr("Right")
-STEREO_DRESDEN = tr("Dresden")
-STEREO_CHECKBOARD = tr("Checkboard")
-STEREO_ANAGLYPH = tr("Anaglyph")
+STEREO_OFF = _(" Off")
+STEREO_RED_BLUE = _("Red-blue")
+STEREO_CRISTAL = _("CristalEyes")
+STEREO_INTERLACED = _("Interlaced")
+STEREO_LEFT = _("Left")
+STEREO_RIGHT = _("Right")
+STEREO_DRESDEN = _("Dresden")
+STEREO_CHECKBOARD = _("Checkboard")
+STEREO_ANAGLYPH = _("Anaglyph")
 
 
 # VTK text
@@ -117,9 +117,9 @@ ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
                       'CORONAL': (0,1,0), # Green
                       'SAGITAL': (0,0,1)} # Blue
 
-IMPORT_INTERVAL = [tr("Keep all slices"), tr("Skip 1 for each 2 slices"),
-                   tr("Skip 2 for each 3 slices"), tr("Skip 3 for each 4 slices"),
-                   tr("Skip 4 for each 5 slices"),tr("Skip 5 for each 6 slices")]
+IMPORT_INTERVAL = [_("Keep all slices"), _("Skip 1 for each 2 slices"),
+                   _("Skip 2 for each 3 slices"), _("Skip 3 for each 4 slices"),
+                   _("Skip 4 for each 5 slices"),_("Skip 5 for each 6 slices")]
 
 # Camera according to slice's orientation
 #CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
@@ -174,13 +174,13 @@ CROP_PAN = 13
 
 #Color Table from Slice
 #NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE = {tr("Default "):(None,(0,0),(0,0),(0,1)),
-                     tr("Hue"):(None,(1,1),(0,1),(1,1)),
-                     tr("Saturation"):(None,(0,1),(0.6,0.6),(1,1)),
-                     tr("Desert"):(256, (1,1), (0, 0.1), (1,1)),
-                     tr("Rainbow"):(256,(1,1),(0,0.8),(1,1)),
-                     tr("Ocean"):(256,(1,1),(0.667, 0.5),(1,1)),
-                     tr("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
+SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
+                     _("Hue"):(None,(1,1),(0,1),(1,1)),
+                     _("Saturation"):(None,(0,1),(0.6,0.6),(1,1)),
+                     _("Desert"):(256, (1,1), (0, 0.1), (1,1)),
+                     _("Rainbow"):(256,(1,1),(0,0.8),(1,1)),
+                     _("Ocean"):(256,(1,1),(0.667, 0.5),(1,1)),
+                     _("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
                      }
 
 #Colors for errors and positives
@@ -230,13 +230,13 @@ VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
 #proj = Project()
 #THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
 THRESHOLD_RANGE = [0,3033]
-THRESHOLD_PRESETS_INDEX = tr("Bone")
+THRESHOLD_PRESETS_INDEX = _("Bone")
 THRESHOLD_HUE_RANGE = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
 THRESHOLD_OUTVALUE = 0
 
 # Mask properties
-MASK_NAME_PATTERN = tr("Mask %d")
+MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 #MASK_OPACITY = 0.35
 MASK_COLOUR =  [[0.33, 1, 0.33],
@@ -292,7 +292,7 @@ BRUSH_THRESH_ERASE = 3
 BRUSH_THRESH_ADD_ONLY = 4
 BRUSH_THRESH_ERASE_ONLY = 5
 DEFAULT_BRUSH_OP = BRUSH_THRESH
-BRUSH_OP_NAME = [tr("Draw"), tr("Erase"), tr("Threshold")]
+BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
 BRUSH_COLOUR = (0,0,1.0)
 BRUSH_SIZE = 30
@@ -304,43 +304,43 @@ BRUSH_MAX_SIZE = 100
 # 2: smooth_relaxation_factor
 # 3: decimate_reduction
 SURFACE_QUALITY = {
-    tr("Low"): (3, 2, 0.3000, 0.4),
-    tr("Medium"): (2, 2, 0.3000, 0.4),
-    tr("High"): (0, 1, 0.3000, 0.1),
-    tr("Optimal *"): (0, 2, 0.3000, 0.4)}
-DEFAULT_SURFACE_QUALITY = tr("Optimal *")
-SURFACE_QUALITY_LIST = [tr("Low"),tr("Medium"),tr("High"),tr("Optimal *")]
+    _("Low"): (3, 2, 0.3000, 0.4),
+    _("Medium"): (2, 2, 0.3000, 0.4),
+    _("High"): (0, 1, 0.3000, 0.1),
+    _("Optimal *"): (0, 2, 0.3000, 0.4)}
+DEFAULT_SURFACE_QUALITY = _("Optimal *")
+SURFACE_QUALITY_LIST = [_("Low"),_("Medium"),_("High"),_("Optimal *")]
 
 
 # Surface properties
 SURFACE_TRANSPARENCY = 0.0
-SURFACE_NAME_PATTERN = tr("Surface %d")
+SURFACE_NAME_PATTERN = _("Surface %d")
 
 # Surface importing/exporting options
 SURFACE_SPACE_WORLD = 0
 SURFACE_SPACE_INV = 1
-SURFACE_SPACE_CHOICES = [tr("world/scanner space"), tr("InVesalius space")]
+SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
-WINDOW_LEVEL = {tr("Abdomen"):(350,50),
-                tr("Bone"):(2000, 300),
-                tr("Brain posterior fossa"):(120,40),
-                tr("Brain"):(80,40),
-                tr("Default"):(None, None), #Control class set window and level from DICOM
-                tr("Emphysema"):(500,-850),
-                tr("Ischemia - Hard, non contrast"):(15,32),
-                tr("Ischemia - Soft, non contrast"):(80,20),
-                tr("Larynx"):(180, 80),
-                tr("Liver"):(2000, -500),
-                tr("Lung - Soft"):(1600,-600),
-                tr("Lung - Hard"):(1000,-600),
-                tr("Mediastinum"):(350,25),
-                tr("Manual"):(None, None), #Case the user change window and level
-                tr("Pelvis"): (450,50),
-                tr("Sinus"):(4000, 400),
-                tr("Vasculature - Hard"):(240,80),
-                tr("Vasculature - Soft"):(650,160),
-                tr("Contour"): (255, 127)}
+WINDOW_LEVEL = {_("Abdomen"):(350,50),
+                _("Bone"):(2000, 300),
+                _("Brain posterior fossa"):(120,40),
+                _("Brain"):(80,40),
+                _("Default"):(None, None), #Control class set window and level from DICOM
+                _("Emphysema"):(500,-850),
+                _("Ischemia - Hard, non contrast"):(15,32),
+                _("Ischemia - Soft, non contrast"):(80,20),
+                _("Larynx"):(180, 80),
+                _("Liver"):(2000, -500),
+                _("Lung - Soft"):(1600,-600),
+                _("Lung - Hard"):(1000,-600),
+                _("Mediastinum"):(350,25),
+                _("Manual"):(None, None), #Case the user change window and level
+                _("Pelvis"): (450,50),
+                _("Sinus"):(4000, 400),
+                _("Vasculature - Hard"):(240,80),
+                _("Vasculature - Soft"):(650,160),
+                _("Contour"): (255, 127)}
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
@@ -348,50 +348,50 @@ REDUCE_IMAGEDATA_QUALITY = 0
 # PATHS
 FS_ENCODE = sys.getfilesystemencoding()
 
-ID_TO_BMP = {VOL_FRONT: [tr("Front"), str(inv_paths.ICON_DIR.joinpath("view_front.png"))],
-             VOL_BACK: [tr("Back"), str(inv_paths.ICON_DIR.joinpath("view_back.png"))],
-             VOL_TOP: [tr("Top"), str(inv_paths.ICON_DIR.joinpath("view_top.png"))],
-             VOL_BOTTOM: [tr("Bottom"), str(inv_paths.ICON_DIR.joinpath("view_bottom.png"))],
-             VOL_RIGHT: [tr("Right"), str(inv_paths.ICON_DIR.joinpath("view_right.png"))],
-             VOL_LEFT: [tr("Left"), str(inv_paths.ICON_DIR.joinpath("view_left.png"))],
-             VOL_ISO:[tr("Isometric"), str(inv_paths.ICON_DIR.joinpath("view_isometric.png"))]
+ID_TO_BMP = {VOL_FRONT: [_("Front"), str(inv_paths.ICON_DIR.joinpath("view_front.png"))],
+             VOL_BACK: [_("Back"), str(inv_paths.ICON_DIR.joinpath("view_back.png"))],
+             VOL_TOP: [_("Top"), str(inv_paths.ICON_DIR.joinpath("view_top.png"))],
+             VOL_BOTTOM: [_("Bottom"), str(inv_paths.ICON_DIR.joinpath("view_bottom.png"))],
+             VOL_RIGHT: [_("Right"), str(inv_paths.ICON_DIR.joinpath("view_right.png"))],
+             VOL_LEFT: [_("Left"), str(inv_paths.ICON_DIR.joinpath("view_left.png"))],
+             VOL_ISO:[_("Isometric"), str(inv_paths.ICON_DIR.joinpath("view_isometric.png"))]
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
 
 
-RAYCASTING_FILES = {tr("Airways"): "Airways.plist",
-                   tr("Airways II"): "Airways II.plist",
-                   tr("Black & White"): "Black & White.plist",
-                   tr("Bone + Skin"): "Bone + Skin.plist",
-                   tr("Bone + Skin II"): "Bone + Skin II.plist",
-                   tr("Dark bone"): "Dark Bone.plist",
-                   tr("Glossy"): "Glossy.plist",
-                   tr("Glossy II"): "Glossy II.plist",
-                   tr("Gold bone"): "Gold Bone.plist",
-                   tr("High contrast"): "High Contrast.plist",
-                   tr("Low contrast"): "Low Contrast.plist",
-                   tr("Soft on white"): "Soft on White.plist",
-                   tr("Mid contrast"): "Mid Contrast.plist",
-                   tr("MIP"): "MIP.plist",
-                   tr("No shading"): "No Shading.plist",
-                   tr("Pencil"): "Pencil.plist",
-                   tr("Red on white"): "Red on White.plist",
-                   tr("Skin on blue"): "Skin On Blue.plist",
-                   tr("Skin on blue II"): "Skin On Blue II.plist",
-                   tr("Soft on white"): "Soft on White.plist",
-                   tr("Soft + Skin"): "Soft + Skin.plist",
-                   tr("Soft + Skin II"): "Soft + Skin II.plist",
-                   tr("Soft + Skin III"): "Soft + Skin III.plist",
-                   tr("Soft on blue"): "Soft On Blue.plist",
-                   tr("Soft"): "Soft.plist",
-                   tr("Standard"): "Standard.plist",
-                   tr("Vascular"): "Vascular.plist",
-                   tr("Vascular II"): "Vascular II.plist",
-                   tr("Vascular III"): "Vascular III.plist",
-                   tr("Vascular IV"): "Vascular IV.plist",
-                   tr("Yellow bone"): "Yellow Bone.plist"}
+RAYCASTING_FILES = {_("Airways"): "Airways.plist",
+                   _("Airways II"): "Airways II.plist",
+                   _("Black & White"): "Black & White.plist",
+                   _("Bone + Skin"): "Bone + Skin.plist",
+                   _("Bone + Skin II"): "Bone + Skin II.plist",
+                   _("Dark bone"): "Dark Bone.plist",
+                   _("Glossy"): "Glossy.plist",
+                   _("Glossy II"): "Glossy II.plist",
+                   _("Gold bone"): "Gold Bone.plist",
+                   _("High contrast"): "High Contrast.plist",
+                   _("Low contrast"): "Low Contrast.plist",
+                   _("Soft on white"): "Soft on White.plist",
+                   _("Mid contrast"): "Mid Contrast.plist",
+                   _("MIP"): "MIP.plist",
+                   _("No shading"): "No Shading.plist",
+                   _("Pencil"): "Pencil.plist",
+                   _("Red on white"): "Red on White.plist",
+                   _("Skin on blue"): "Skin On Blue.plist",
+                   _("Skin on blue II"): "Skin On Blue II.plist",
+                   _("Soft on white"): "Soft on White.plist",
+                   _("Soft + Skin"): "Soft + Skin.plist",
+                   _("Soft + Skin II"): "Soft + Skin II.plist",
+                   _("Soft + Skin III"): "Soft + Skin III.plist",
+                   _("Soft on blue"): "Soft On Blue.plist",
+                   _("Soft"): "Soft.plist",
+                   _("Standard"): "Standard.plist",
+                   _("Vascular"): "Vascular.plist",
+                   _("Vascular II"): "Vascular II.plist",
+                   _("Vascular III"): "Vascular III.plist",
+                   _("Vascular IV"): "Vascular IV.plist",
+                   _("Yellow bone"): "Yellow Bone.plist"}
 
 
 
@@ -400,14 +400,14 @@ RAYCASTING_FILES = {tr("Airways"): "Airways.plist",
 #                    os.path.isfile(os.path.join(folder,filename))]
 
 
-RAYCASTING_TYPES = [tr(filename.name.split(".")[0]) for filename in
+RAYCASTING_TYPES = [_(filename.name.split(".")[0]) for filename in
                     inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY.glob('*') if
                     filename.is_file()]
 RAYCASTING_TYPES += RAYCASTING_FILES.keys()
-RAYCASTING_TYPES.append(tr(' Off'))
+RAYCASTING_TYPES.append(_(' Off'))
 RAYCASTING_TYPES.sort()
-RAYCASTING_OFF_LABEL = tr(' Off')
-RAYCASTING_TOOLS = [tr("Cut plane")]
+RAYCASTING_OFF_LABEL = _(' Off')
+RAYCASTING_TOOLS = [_("Cut plane")]
 
 # If 0 dont't blur, 1 blur
 RAYCASTING_WWWL_BLUR = 0
@@ -724,22 +724,22 @@ DEFAULT_TRACKER = SELECT
 NDICOMPORT = b'COM1'
 NDI_IP = ['P9-13715.local', 'P9-13719.local']
 
-TRACKERS = [tr("Claron MicronTracker"),
-           tr("Polhemus FASTRAK"), tr("Polhemus ISOTRAK II"),
-           tr("Polhemus PATRIOT"), tr("Camera tracker"),
-           tr("NDI Polaris"), tr("NDI Polaris P4"),
-           tr("Optitrack"),
-           tr("Debug tracker (random)"), tr("Debug tracker (approach)")]
+TRACKERS = [_("Claron MicronTracker"),
+           _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
+           _("Polhemus PATRIOT"), _("Camera tracker"),
+           _("NDI Polaris"), _("NDI Polaris P4"),
+           _("Optitrack"),
+           _("Debug tracker (random)"), _("Debug tracker (approach)")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
-REF_MODE = [tr("Static ref."), tr("Dynamic ref.")]
-FT_SENSOR_MODE = [tr("Sensor 3"), tr("Sensor 4")]
+REF_MODE = [_("Static ref."), _("Dynamic ref.")]
+FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
 
 DEFAULT_COIL = SELECT
-COIL = [tr("Select coil:"), tr("Neurosoft Figure-8"),
-           tr("Magstim 70 mm"), tr("Nexstim")]
+COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
+           _("Magstim 70 mm"), _("Nexstim")]
 
 IR1 = wx.NewIdRef()
 IR2 = wx.NewIdRef()
@@ -756,21 +756,21 @@ IMAGE_FIDUCIALS = [
         'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
-        'tip': tr("Select left ear in image"),
+        'tip': _("Select left ear in image"),
     },
     {
         'button_id': IR2,
         'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
-        'tip': tr("Select right ear in image"),
+        'tip': _("Select right ear in image"),
     },
     {
         'button_id': IR3,
         'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
-        'tip': tr("Select nasion in image"),
+        'tip': _("Select nasion in image"),
     },
 ]
 
@@ -780,21 +780,21 @@ TRACKER_FIDUCIALS = [
         'label': 'Left Ear',
         'fiducial_name': 'LE',
         'fiducial_index': 0,
-        'tip': tr("Select left ear with spatial tracker"),
+        'tip': _("Select left ear with spatial tracker"),
     },
     {
         'button_id': TR2,
         'label': 'Right Ear',
         'fiducial_name': 'RE',
         'fiducial_index': 1,
-        'tip': tr("Select right ear with spatial tracker"),
+        'tip': _("Select right ear with spatial tracker"),
     },
     {
         'button_id': TR3,
         'label': 'Nasion',
         'fiducial_name': 'NA',
         'fiducial_index': 2,
-        'tip': tr("Select nasion with spatial tracker"),
+        'tip': _("Select nasion with spatial tracker"),
     },
 ]
 
@@ -811,26 +811,26 @@ OBJECT_FIDUCIALS = [
     {
         'fiducial_index': 0,
         'button_id': OBJL,
-        'label': tr('Left'),
-        'tip': tr("Select left object fiducial"),
+        'label': _('Left'),
+        'tip': _("Select left object fiducial"),
     },
     {
         'fiducial_index': 1,
         'button_id': OBJR,
-        'label': tr('Right'),
-        'tip': tr("Select right object fiducial"),
+        'label': _('Right'),
+        'tip': _("Select right object fiducial"),
     },
     {
         'fiducial_index': 2,
         'button_id': OBJA,
-        'label': tr('Anterior'),
-        'tip': tr("Select anterior object fiducial"),
+        'label': _('Anterior'),
+        'tip': _("Select anterior object fiducial"),
     },
     {
         'fiducial_index': 3,
         'button_id': OBJF,
-        'label': tr('Fixed'),
-        'tip': tr("Attach sensor to object"),
+        'label': _('Fixed'),
+        'tip': _("Attach sensor to object"),
     },
 ]
 
@@ -892,7 +892,7 @@ TREKKER_CONFIG = {'seed_max': 1,
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
 CURRENT_MARKER_FILE_VERSION = 2
 SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2]
-WILDCARD_MARKER_FILES = tr("Marker scanner coord files (*.mkss)|*.mkss")
+WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Keycodes for moving markers using the keyboard
 MOVE_MARKER_LEFT_KEYCODE = 65  # A

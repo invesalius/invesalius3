@@ -49,7 +49,7 @@ import sys
 
 from invesalius import inv_paths
 from invesalius import plugins
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 DEFAULT_THRESH_MODE = 0
 
@@ -415,7 +415,7 @@ class Controller():
         session = ses.Session()
         session.CloseProject()
 
-        Publisher.sendMessage('Update status text in GUI', label=tr("Ready"))
+        Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 ###########################
 
     def StartImportBitmapPanel(self, path):
@@ -434,7 +434,7 @@ class Controller():
 
     def Progress(self, data):
         if (data):
-            message = tr("Loading file %d of %d ...")%(data[0],data[1])
+            message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
                 self.progress_dialog = vtk_utils.ProgressDialog(
                                     parent=self.frame, maximum = data[1], abort=1)
@@ -574,10 +574,10 @@ class Controller():
         
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
-        const.THRESHOLD_RANGE = proj.threshold_modes[tr("Bone")]
+        const.THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
 
-        const.WINDOW_LEVEL[tr('Default')] = (proj.window, proj.level)
-        const.WINDOW_LEVEL[tr('Manual')] = (proj.window, proj.level)
+        const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
+        const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
 
         self.Slice = sl.Slice()
         self.Slice.spacing = proj.spacing
@@ -908,7 +908,7 @@ class Controller():
         dicom = group.GetDicomSample()
         samples_per_pixel = dicom.image.samples_per_pixel
         if samples_per_pixel == 3:
-            dlg = wx.MessageDialog(wx.GetApp().GetTopWindow(), tr("this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\ndo you want to convert it to grayscale?"), tr("Confirm"), wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
+            dlg = wx.MessageDialog(wx.GetApp().GetTopWindow(), _("this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\ndo you want to convert it to grayscale?"), _("Confirm"), wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
             if dlg.ShowModal() != wx.ID_YES:
                 return
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
@@ -1014,7 +1014,7 @@ class Controller():
         tilt_value = dicom.acquisition.tilt
         if (tilt_value) and (gui):
             # Tell user gantry tilt and fix, according to answer
-            message = tr("Fix gantry tilt applying the degrees below")
+            message = _("Fix gantry tilt applying the degrees below")
             value = -1*tilt_value
             tilt_value = dialog.ShowNumberDialog(message, value)
             image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)

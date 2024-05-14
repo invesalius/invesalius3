@@ -61,7 +61,7 @@ from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
 
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius_cy import floodfill
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 # For tracts
 import invesalius.data.tractography as dtr
@@ -80,9 +80,9 @@ BRUSH_FOREGROUND=1
 BRUSH_BACKGROUND=2
 BRUSH_ERASE=0
 
-WATERSHED_OPERATIONS = {tr("Erase"): BRUSH_ERASE,
-                        tr("Foreground"): BRUSH_FOREGROUND,
-                        tr("Background"): BRUSH_BACKGROUND,}
+WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
+                        _("Foreground"): BRUSH_FOREGROUND,
+                        _("Background"): BRUSH_BACKGROUND,}
 
 
 class BaseImageInteractorStyle(vtkInteractorStyleImage):
@@ -1500,7 +1500,7 @@ class WatershedProgressWindow(object):
     def __init__(self, process):
         self.process = process
         self.title = "InVesalius 3"
-        self.msg = tr("Applying watershed ...")
+        self.msg = _("Applying watershed ...")
         self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
         self.dlg = wx.ProgressDialog(self.title,
@@ -2338,9 +2338,9 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.t1 = 2
         self.fill_value = 254
 
-        self._dlg_title = tr(u"Fill holes")
-        self._progr_title = tr(u"Fill hole")
-        self._progr_msg = tr(u"Filling hole ...")
+        self._dlg_title = _(u"Fill holes")
+        self._progr_title = _(u"Fill hole")
+        self._progr_msg = _(u"Filling hole ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
@@ -2438,9 +2438,9 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
         self.t1 = 255
         self.fill_value = 1
 
-        self._dlg_title = tr(u"Remove parts")
-        self._progr_title = tr(u"Remove part")
-        self._progr_msg = tr(u"Removing part ...")
+        self._dlg_title = _(u"Remove parts")
+        self._progr_title = _(u"Remove part")
+        self._progr_msg = _(u"Removing part ...")
 
 class CropMaskConfig(metaclass=utils.Singleton):
     def __init__(self):
@@ -2686,8 +2686,8 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
         self.config = FFillSegmentationConfig()
 
-        self._progr_title = tr(u"Region growing")
-        self._progr_msg = tr(u"Segmenting ...")
+        self._progr_title = _(u"Region growing")
+        self._progr_msg = _(u"Segmenting ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 

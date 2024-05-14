@@ -79,7 +79,7 @@ import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius.data.converters import convert_custom_bin_to_vtk
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 from invesalius.gui import dialogs
 from invesalius_cy import cy_mesh
@@ -347,7 +347,7 @@ class SurfaceManager():
                 polydata= self.CoverttoMetersPolydata(polydata)
 
             if polydata.GetNumberOfPoints() == 0:
-                wx.MessageBox(tr("InVesalius was not able to import this surface"), tr("Import surface error"))
+                wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
                 return
             else:
                 name = os.path.splitext(os.path.split(filename)[-1])[0]
@@ -505,7 +505,7 @@ class SurfaceManager():
             reader = vtkXMLPolyDataReader()
             scalar = True
         else:
-            wx.MessageBox(tr("File format not reconized by InVesalius"), tr("Import surface error"))
+            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
 
         if _has_win32api:
@@ -517,7 +517,7 @@ class SurfaceManager():
         polydata = reader.GetOutput()
 
         if polydata.GetNumberOfPoints() == 0:
-            wx.MessageBox(tr("InVesalius was not able to import this surface"), tr("Import surface error"))
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
         else:
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
@@ -709,7 +709,7 @@ class SurfaceManager():
             Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
             Publisher.sendMessage('Update status text in GUI',
-                                  label=tr("Ready"))
+                                  label=_("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
             Publisher.sendMessage('Update surface info in GUI', surface=surface)
@@ -798,7 +798,7 @@ class SurfaceManager():
         Create surface actor, save into project and send it to viewer.
         """
         if mask.matrix.max() < 127:
-            wx.MessageBox(tr("It's not possible to create a surface because there is not any voxel selected on mask"), tr("Create surface warning"))
+            wx.MessageBox(_("It's not possible to create a surface because there is not any voxel selected on mask"), _("Create surface warning"))
             return
         t_init = time.time()
         matrix = slice_.matrix
@@ -913,7 +913,7 @@ class SurfaceManager():
             try:
                 surface_filename, surface_measures = f.get()
             except Exception as e:
-                print(tr("InVesalius was not able to create the surface"))
+                print(_("InVesalius was not able to create the surface"))
                 print(traceback.print_exc())
                 return
 
@@ -964,7 +964,7 @@ class SurfaceManager():
                 if sp.WasCancelled() or not sp.running:
                     break
                 time.sleep(0.25)
-                sp.Update(tr("Creating 3D surface..."))
+                sp.Update(_("Creating 3D surface..."))
                 wx.Yield()
 
             if not sp.WasCancelled() or sp.running:
@@ -1094,7 +1094,7 @@ class SurfaceManager():
                 if wx.GetApp() is None:
                     print("It was not possible to export the surface because the surface is empty")
                 else:
-                    wx.MessageBox(tr("It was not possible to export the surface because the surface is empty"), tr("Export surface error"))
+                    wx.MessageBox(_("It was not possible to export the surface because the surface is empty"), _("Export surface error"))
                 return
 
             try:
@@ -1102,11 +1102,11 @@ class SurfaceManager():
             except PermissionError as err:
                 dirpath = os.path.split(filename)[0]
                 if wx.GetApp() is None:
-                    print(tr("It was not possible to export the surface because you don't have permission to write to {} folder: {}".format(dirpath, err)))
+                    print(_("It was not possible to export the surface because you don't have permission to write to {} folder: {}".format(dirpath, err)))
                 else:
                     dlg = dialogs.ErrorMessageBox(
                         None,
-                        tr("Export surface error"),
+                        _("Export surface error"),
                         "It was not possible to export the surface because you don't have permission to write to {}:\n{}".format(dirpath, err)
                     )
                     dlg.ShowModal()

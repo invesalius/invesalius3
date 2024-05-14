@@ -24,7 +24,7 @@ import wx
 from numpy import array, savetxt, hstack,vstack, asarray
 import invesalius.gui.dialogs as dlg
 from invesalius.pubsub import pub as Publisher
-from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 
 
 class Record(threading.Thread):
@@ -52,8 +52,8 @@ class Record(threading.Thread):
     def stop(self):
         self._pause_ = True
         #save coords dialog
-        filename = dlg.ShowLoadSaveDialog(message=tr(u"Save coords as..."),
-                                          wildcard=tr("Coordinates files (*.csv)|*.csv"),
+        filename = dlg.ShowLoadSaveDialog(message=_(u"Save coords as..."),
+                                          wildcard=_("Coordinates files (*.csv)|*.csv"),
                                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                           default_filename="coords.csv", save_ext="csv")
         if filename:
