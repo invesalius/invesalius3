@@ -50,6 +50,7 @@ class MarkerVisualizer:
         self.is_coil_at_target = False
 
         self.is_navigating = False
+        self.is_target_mode = False
 
         # The assembly for the current vector field, shown relative to the highlighted marker.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -77,9 +78,13 @@ class MarkerVisualizer:
         Publisher.subscribe(self.SetCoilAtTarget, 'Coil at target')
         Publisher.subscribe(self.UpdateVectorField, 'Update vector field')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.UpdateTargetMode, 'Set target mode')
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
+
+    def UpdateTargetMode(self, enabled=False):
+        self.is_target_mode = enabled
 
     def UpdateVectorField(self):
         """
@@ -395,17 +400,21 @@ class MarkerVisualizer:
         """
         Set the camera focal point to the marker, making the marker the center of the view.
         """
-        position = marker.position
+        # If not navigating, render the scene.
+        if not self.is_target_mode or not self.is_navigating:
+            position = marker.position
 
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
+            position_flipped = list(position)
+            position_flipped[1] = -position_flipped[1]
 
-        camera = self.renderer.GetActiveCamera()
-        camera.SetFocalPoint(position_flipped)
-        self.renderer.ResetCameraClippingRange()
+            camera = self.renderer.GetActiveCamera()
+            camera.SetFocalPoint(position_flipped)
 
-        self.renderer.Render()
-        self.interactor.GetRenderWindow().Render()
+            # If not navigating, render the scene.
+            if not self.is_navigating:
+                self.renderer.ResetCameraClippingRange()
+                self.renderer.Render()
+                self.interactor.GetRenderWindow().Render()
 
     def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.
