@@ -30,7 +30,6 @@ from datetime import datetime
 from invesalius import inv_paths
 import invesalius.constants as const
 from invesalius.utils import Singleton, deep_merge_dict
-#from invesalius.pubsub import pub as Publisher
 
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR,datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log"))
@@ -43,7 +42,6 @@ class CustomConsoleHandler(logging.StreamHandler):
         self.textctrl = textctrl
 
     def emit(self, record):
-        #print('Came to Emit ...')
         msg = self.format(record)
         stream = self.stream
         self.textctrl.WriteText(msg + "\n")
@@ -61,9 +59,6 @@ class MyPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         
         logText = wx.TextCtrl(self, style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
-        
-        #btn = wx.Button(self, label="Close")
-        #btn.Bind(wx.EVT_BUTTON, self.onClose)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
@@ -161,9 +156,6 @@ class MyLogger(metaclass=Singleton):
         return self._logger
 
     def logMessage(self,level, msg):
-        #if (self._frame == None):
-        #    self.configureLogging()
-
         level = level.upper()
         if (level=='DEBUG'):
             self._logger.debug(msg)
@@ -189,12 +181,10 @@ class MyLogger(metaclass=Singleton):
 
         if ((self._frame == None) & (console_logging!=0)):
             print('Initiating console logging ...')
-            #self.closeLogging()
             self._frame = MyFrame(self.getLogger())
             print('Initiated console logging ...')
             self._logger.info('Initiated console logging ...')
        
-        #logger = self.getLogger()
         msg = 'file_logging: {}, console_logging: {}'.format(file_logging, console_logging)
         print(msg)
 
@@ -218,7 +208,6 @@ class MyLogger(metaclass=Singleton):
             closeConsoleLogging()
         '''
 
-        print('file_logging:', file_logging)
         if file_logging:
             print('file_logging called ...')
             self._logger.info('file_logging called ...')
@@ -228,7 +217,6 @@ class MyLogger(metaclass=Singleton):
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
             # create file handler 
-            #logger = self.getLogger()
             if logging_file:
                 addFileHandler = True
                 for handler in self._logger.handlers:
@@ -259,7 +247,6 @@ class MyLogger(metaclass=Singleton):
             self.closeFileLogging()
 
     def closeFileLogging(self):
-        #logger = logging.getLogger(__name__)
         for handler in self._logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 msg = 'Removed file handler {}'.format(handler.baseFilename)
@@ -268,7 +255,6 @@ class MyLogger(metaclass=Singleton):
                 self._logger.removeHandler(handler)    
 
     def closeConsoleLogging(self):
-        #logger = logging.getLogger(__name__)
         for handler in self._logger.handlers:
             if isinstance(handler, logging.StreamHandler):
                 self._logger.info('Removed stream handler')
@@ -282,13 +268,12 @@ class MyLogger(metaclass=Singleton):
         self.closeConsoleLogging()
 
     def flushHandlers(self):
-        #logger = logging.getLogger(__name__)
         for handler in self._logger.handlers:
             handler.flush()
 
 def function_call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        logger = MyLogger() #logging.getLogger(__name__)
+        logger = MyLogger() 
         msg = 'Function {} called'.format(function.__name__)
         logger._logger.info(msg)
         function(*args)
