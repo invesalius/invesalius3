@@ -18,6 +18,12 @@ class MarkerVisualizer:
     # Color for highlighting a marker.
     HIGHLIGHT_COLOR = vtk.vtkNamedColors().GetColor3d('Red')
 
+    # Scaling factor for the marker when it is highlighted.
+    #
+    # This is done to make the highlighted marker visible if there are other markers with
+    # identical positions, which happens, e.g., when duplicating a marker.
+    HIGHLIGHTED_MARKER_SCALING_FACTOR = 1.01
+
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d('Green')
 
@@ -61,6 +67,7 @@ class MarkerVisualizer:
         Publisher.subscribe(self.ShowMarkers, 'Show markers')
         Publisher.subscribe(self.DeleteMarkers, 'Delete markers')
         Publisher.subscribe(self.DeleteMarker, 'Delete marker')
+        Publisher.subscribe(self.SetCameraToFocusOnMarker, 'Set camera to focus on marker')
         Publisher.subscribe(self.HighlightMarker, 'Highlight marker')
         Publisher.subscribe(self.UnhighlightMarker, 'Unhighlight marker')
         Publisher.subscribe(self.SetNewColor, 'Set new color')
@@ -87,7 +94,11 @@ class MarkerVisualizer:
         # Store the new vector field assembly.
         self.vector_field_assembly = new_vector_field_assembly
 
-    def AddMarker(self, marker, render):
+        # If not navigating, render the scene.
+        if not self.is_navigating:
+            self.interactor.Render()
+
+    def AddMarker(self, marker, render, focus):
         """
         Visualize marker and add the visualization to the marker object.
 
@@ -380,6 +391,22 @@ class MarkerVisualizer:
         # Store the projection line actor so that it can be removed later.
         self.projection_line_actor = actor
 
+    def SetCameraToFocusOnMarker(self, marker):
+        """
+        Set the camera focal point to the marker, making the marker the center of the view.
+        """
+        position = marker.position
+
+        position_flipped = list(position)
+        position_flipped[1] = -position_flipped[1]
+
+        camera = self.renderer.GetActiveCamera()
+        camera.SetFocalPoint(position_flipped)
+        self.renderer.ResetCameraClippingRange()
+
+        self.renderer.Render()
+        self.interactor.GetRenderWindow().Render()
+
     def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.
         actor = marker.visualization['actor']
@@ -409,6 +436,9 @@ class MarkerVisualizer:
 
         # Change the color of the marker.
         actor.GetProperty().SetColor(self.HIGHLIGHT_COLOR)
+
+        # Increase the scale of the marker.
+        self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker visible when highlighted even if it's hidden.
         if marker.visualization['hidden']:
@@ -449,6 +479,9 @@ class MarkerVisualizer:
 
         # Change the color of the marker back to its original color.
         actor.GetProperty().SetColor(colour)
+
+        # Decrease back the scale of the marker.
+        self.actor_factory.ScaleActor(actor, 1 / self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker invisible if it should be hidden.
         if marker.visualization['hidden']:

@@ -50,9 +50,11 @@ class MarkersControl(metaclass=Singleton):
             marker = Marker().from_dict(d)
             self.AddMarker(marker, render=False)
 
-    def AddMarker(self, marker, render=True):
+    def AddMarker(self, marker, render=True, focus=False):
         """
         Given a marker object, add it to the list of markers and render the new marker.
+        
+        If focus is True, the the new marker will get the focus on the marker list.
         """
         if marker.marker_uuid == '':
             marker.marker_uuid = str(uuid.uuid4())
@@ -60,7 +62,7 @@ class MarkersControl(metaclass=Singleton):
         marker.marker_id = len(self.list)
         self.list.append(marker)
 
-        Publisher.sendMessage('Add marker', marker=marker, render=render)
+        Publisher.sendMessage('Add marker', marker=marker, render=render, focus=focus)
 
         if marker.is_target:
             self.SetTarget(marker.marker_id, check_for_previous=False)
@@ -135,6 +137,10 @@ class MarkersControl(metaclass=Singleton):
 
         Publisher.sendMessage('Set target', marker=marker)
         Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
+
+        # When setting a new target, automatically switch into target mode. Note that the order is important here: 
+        # first set the target, then move into target mode.
+        Publisher.sendMessage('Press target mode button', pressed=True)
 
         self.SaveState()
 
@@ -254,9 +260,6 @@ class MarkersControl(metaclass=Singleton):
         # Marker transformator needs to know that no marker is selected so it can stop reacting to
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
-
-        # Unhighlight marker in viewer volume.
-        Publisher.sendMessage('Unhighlight marker')
 
     def CreateCoilTargetFromLandmark(self, marker):
         new_marker = marker.duplicate()

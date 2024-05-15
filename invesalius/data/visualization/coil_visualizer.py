@@ -1,3 +1,5 @@
+import os
+
 import vtk
 
 import invesalius.data.coordinates as dco
@@ -44,10 +46,6 @@ class CoilVisualizer:
         # Add the vector field assembly to the renderer, but make it invisible until the coil is shown.
         self.renderer.AddActor(self.vector_field_assembly)
         self.vector_field_assembly.SetVisibility(0)
-
-        self.x_axis_actor = None
-        self.y_axis_actor = None
-        self.z_axis_actor = None
 
         self.coil_at_target = False
 
@@ -99,6 +97,10 @@ class CoilVisualizer:
         # Store the new vector field assembly.
         self.vector_field_assembly = new_vector_field_assembly
 
+        # If not navigating, render the scene.
+        if not self.is_navigating:
+            self.interactor.Render()
+
     def SetCoilAtTarget(self, state):
         self.coil_at_target = state
 
@@ -116,15 +118,9 @@ class CoilVisualizer:
         self.renderer.RemoveActor(self.coil_center_actor)
         # TODO: Vector field assembly follows a different pattern for removal, should unify.
         self.vector_field_assembly.SetVisibility(0)
-        self.renderer.RemoveActor(self.x_axis_actor)
-        self.renderer.RemoveActor(self.y_axis_actor)
-        self.renderer.RemoveActor(self.z_axis_actor)
 
         self.coil_actor = None
         self.coil_center_actor = None
-        self.x_axis_actor = None
-        self.y_axis_actor = None
-        self.z_axis_actor = None
 
     def ConfigureCoil(self, coil_path=None, polydata=None):
         self.coil_path = coil_path
@@ -159,9 +155,6 @@ class CoilVisualizer:
 
         if self.coil_actor:
             self.coil_actor.SetVisibility(state)
-            self.x_axis_actor.SetVisibility(state)
-            self.y_axis_actor.SetVisibility(state)
-            self.z_axis_actor.SetVisibility(state)
 
         if not self.is_navigating:
             self.interactor.Render()
@@ -170,13 +163,23 @@ class CoilVisualizer:
         self.RemoveTargetCoil()
 
         vtk_colors = vtk.vtkNamedColors()
-            
+
+        decoded_path = self.coil_path.decode('utf-8')
+
+        coil_filename = os.path.basename(decoded_path)
+        coil_dir = os.path.dirname(decoded_path)
+
+        # A hack to load the coil without the handle for the Magstim figure-8 coil.
+        coil_path = os.path.join(coil_dir, coil_filename) if coil_filename != 'magstim_fig8_coil.stl' else os.path.join(coil_dir, 'magstim_fig8_coil_no_handle.stl')
+
+        obj_polydata = vtku.CreateObjectPolyData(coil_path)
+
         transform = vtk.vtkTransform()
         transform.RotateZ(90)
 
         transform_filt = vtk.vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
-        transform_filt.SetInputData(self.coil_polydata)
+        transform_filt.SetInputData(obj_polydata)
         transform_filt.Update()
 
         normals = vtk.vtkPolyDataNormals()
@@ -256,22 +259,10 @@ class CoilVisualizer:
         )
         self.coil_center_actor = coil_center_actor
 
-        # Create actors for the x, y, and z-axes.
-        self.x_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [1., 0., 0.], colour=[.0, .0, 1.0])
-        self.y_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 1., 0.], colour=[.0, 1.0, .0])
-        self.z_axis_actor = self.actor_factory.CreateLine([0., 0., 0.], [0., 0., 1.], colour=[1.0, .0, .0])
-
         self.renderer.AddActor(self.coil_actor)
         self.renderer.AddActor(self.coil_center_actor)
         # TODO: Vector field assembly follows a different pattern for addition, should unify.
         self.vector_field_assembly.SetVisibility(1)
-        self.renderer.AddActor(self.x_axis_actor)
-        self.renderer.AddActor(self.y_axis_actor)
-        self.renderer.AddActor(self.z_axis_actor)
-
-        self.x_axis_actor.SetVisibility(0)
-        self.y_axis_actor.SetVisibility(0)
-        self.z_axis_actor.SetVisibility(0)
 
     def UpdateCoilPose(self, m_img, coord):
         """
@@ -288,6 +279,3 @@ class CoilVisualizer:
         self.coil_actor.SetUserMatrix(m_img_vtk)
         self.coil_center_actor.SetUserMatrix(m_img_vtk)
         self.vector_field_assembly.SetUserMatrix(m_img_vtk)
-        self.x_axis_actor.SetUserMatrix(m_img_vtk)
-        self.y_axis_actor.SetUserMatrix(m_img_vtk)
-        self.z_axis_actor.SetUserMatrix(m_img_vtk)
