@@ -652,7 +652,10 @@ class TrackerTab(wx.Panel):
         return True
 
     def OnChooseTracker(self, evt, ctrl):
-        self.HideParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Hide)
+        else:
+            self.HideParent()
         Publisher.sendMessage('Begin busy cursor')
         Publisher.sendMessage('Update status text in GUI',
                               label=_("Configuring tracker ..."))
@@ -667,8 +670,11 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
         ctrl.SetSelection(self.tracker.tracker_id)
-        self.ShowParent()
         Publisher.sendMessage('End busy cursor')
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Show)
+        else:
+            self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
         # Probably need to refactor object registration as a whole to use the 
@@ -696,9 +702,15 @@ class TrackerTab(wx.Panel):
             Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobotRegister(self, evt):
-        self.HideParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Hide)
+        else:
+            self.HideParent()
         self.robot.RegisterRobot()
-        self.ShowParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Show)
+        else:
+            self.ShowParent()
     
     def OnRobotStatus(self, data):
         if data:
