@@ -25,13 +25,15 @@ import sys, os
 import wx
 import json
 
+from datetime import datetime
+
 from invesalius import inv_paths
 import invesalius.constants as const
-#import invesalius.session as sess
 from invesalius.utils import Singleton, deep_merge_dict
 #from invesalius.pubsub import pub as Publisher
 
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
+DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR,datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log"))
 
 class CustomConsoleHandler(logging.StreamHandler):
     def __init__(self, textctrl):
@@ -105,7 +107,7 @@ class MyLogger(metaclass=Singleton):
             'file_logging': 0,
             'file_logging_level': 0,
             'append_log_file': 0,
-            'logging_file': '',
+            'logging_file': DEFAULT_LOGFILE,
             'console_logging': 0,
             'console_logging_level': 0,
         }
@@ -126,7 +128,7 @@ class MyLogger(metaclass=Singleton):
         try:
             print(fPath, os.path.abspath(fPath))
             self._read_config_from_json(fPath) 
-            #self._read_config_from_json(r'C:\\Users\\sohan\\.config\\invesalius\\log_config.json')
+            #self._read_config_from_json(r'C:\\Users\\hrish\\.config\\invesalius\\log_config.json')
             print('Read Log config file ', fPath)
             print(self._config)
             self.configureLogging()
