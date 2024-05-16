@@ -3481,7 +3481,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.txt_coord = [list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
-        tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
+        tooltip = _(u"Choose the object reference mode")
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_ref.SetToolTip(tooltip)
@@ -3494,7 +3494,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             choice_ref.Enable(0)
 
         # ComboBox for sensor selection for FASTRAK
-        tooltip = wx.ToolTip(_(u"Choose the FASTRAK sensor port"))
+        tooltip = _(u"Choose the FASTRAK sensor port")
         choice_sensor = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.FT_SENSOR_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_sensor.SetSelection(0)
@@ -3507,7 +3507,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.choice_sensor = choice_sensor
 
         # Buttons to finish or cancel object registration
-        tooltip = wx.ToolTip(_(u"Registration done"))
+        tooltip = _(u"Registration done")
         # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
         btn_ok.SetToolTip(tooltip)
@@ -3525,7 +3525,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             tip = object_fiducial['tip']
 
             ctrl = wx.ToggleButton(self, button_id, label=label, size=wx.Size(60, 23))
-            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.SetToolTip(tip)
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnObjectFiducialButton, index, ctrl=ctrl))
 
             self.btns_coord[index] = ctrl
@@ -3846,7 +3846,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.LoadActor()
 
-        tooltip = wx.ToolTip(_("Choose the registration mode:"))
+        tooltip = _("Choose the registration mode:")
         choice_icp_method = wx.ComboBox(self, -1, "", size=(100, 23),
                                         choices=([_("Affine"), _("Similarity"), _("RigidBody")]),
                                         style=wx.CB_DROPDOWN|wx.CB_READONLY)
@@ -3870,7 +3870,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         btn_apply_icp.Enable(False)
         self.btn_apply_icp = btn_apply_icp
 
-        tooltip = wx.ToolTip(_(u"Refine done"))
+        tooltip = _(u"Refine done")
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)
         btn_ok.Enable(False)
@@ -4275,7 +4275,7 @@ class EfieldConfiguration(wx.Dialog):
         self.scalp_surface= None
     def _init_gui(self):
 
-        tooltip = wx.ToolTip(_("Load Brain Meshes"))
+        tooltip = _("Load Brain Meshes")
         btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
         btn_act.SetToolTip(tooltip)
         btn_act.Enable(1)
@@ -4302,7 +4302,7 @@ class EfieldConfiguration(wx.Dialog):
         for n in range(len(self.proj.surface_dict)):
             combo_brain_scalp_name.Insert(str(self.proj.surface_dict[n].name), n)
 
-        tooltip1 = wx.ToolTip(_(u"Target orientation done"))
+        tooltip1 = _(u"Target orientation done")
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip1)
         self.btn_ok = btn_ok
@@ -4508,7 +4508,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         slider_rotation_z.Bind(wx.EVT_SLIDER, self.OnRotationZ)
         self.slider_rotation_z = slider_rotation_z
 
-        tooltip = wx.ToolTip(_(u"Target orientation done"))
+        tooltip = _(u"Target orientation done")
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"))
         btn_ok.SetToolTip(tooltip)
         self.btn_ok = btn_ok
@@ -5647,7 +5647,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
 
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
-        tooltip = wx.ToolTip(_("Choose the tracking device"))
+        tooltip = _("Choose the tracking device")
         trackers = const.TRACKERS.copy()
 
         session = ses.Session()
@@ -5702,7 +5702,7 @@ class SetRobotIP(wx.Dialog):
 
     def _init_gui(self):
         # ComboBox for spatial tracker device selection
-        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        tooltip = _("Choose or type the robot IP")
         robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
