@@ -16,7 +16,7 @@ torch==2.0.1
 plaidml-keras==0.7.0
 
 # Utilities
-Cython==3.0.2
+Cython==3.0.10
 Pypubsub==4.0.3
 h5py==3.8.0
 psutil==5.9.4

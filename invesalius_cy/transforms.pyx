@@ -16,19 +16,18 @@ from .interpolation cimport interpolate, tricub_interpolate, tricubicInterpolate
 from libc.math cimport floor, ceil, sqrt, fabs, round
 from cython.parallel cimport prange
 
-ctypedef double (*interp_function)(image_t[:, :, :], double, double, double) nogil
+ctypedef double (*interp_function)(image_t[:, :, :], double, double, double) noexcept nogil
 
 cdef void mul_mat4_vec4(double[:, :] M,
                             double* coord,
-                            double* out) nogil:
-
+                            double* out) noexcept nogil:
     out[0] = coord[0] * M[0, 0] + coord[1] * M[0, 1] + coord[2] * M[0, 2] + coord[3] * M[0, 3]
     out[1] = coord[0] * M[1, 0] + coord[1] * M[1, 1] + coord[2] * M[1, 2] + coord[3] * M[1, 3]
     out[2] = coord[0] * M[2, 0] + coord[1] * M[2, 1] + coord[2] * M[2, 2] + coord[3] * M[2, 3]
     out[3] = coord[0] * M[3, 0] + coord[1] * M[3, 1] + coord[2] * M[3, 2] + coord[3] * M[3, 3]
 
 
-cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int y, int z, double sx, double sy, double sz, int minterpol, image_t cval) nogil:
+cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int y, int z, double sx, double sy, double sz, int minterpol, image_t cval) noexcept nogil:
 
     cdef double coord[4]
     coord[0] = z*sz
