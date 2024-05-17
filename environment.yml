@@ -3,7 +3,7 @@ channels:
   - bioconda
 dependencies:
   - python=3.11
-  - cython==3.0.2
+  - cython==3.0.10
   - pillow==9.4.0
   - pypubsub==4.0.3
   - h5py==3.8.0

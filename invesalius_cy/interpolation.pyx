@@ -305,7 +305,7 @@ cdef void calc_coef_tricub(image_t[:, :, :] V, double x, double y, double z, dou
                 coef[j] += (temp[j][i] * _x[i])
 
 
-cdef double tricub_interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double tricub_interpolate(image_t[:, :, :] V, double x, double y, double z) noexcept nogil:
     # From: Tricubic interpolation in three dimensions. Lekien and Marsden
     cdef double[64] coef
     cdef double result = 0.0
