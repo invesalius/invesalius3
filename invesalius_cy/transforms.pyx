@@ -74,7 +74,7 @@ cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int
 
 
 def apply_view_matrix_transform(image_t[:, :, :] volume,
-                                tuple spacing,
+                                spacing,
                                 double[:, :] M,
                                 unsigned int n, str orientation,
                                 int minterpol,
