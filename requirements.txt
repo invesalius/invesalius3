@@ -13,7 +13,7 @@ vtk==9.2.6
 
 # Machine Learning
 torch==2.0.1
-plaidml-keras==0.7.0
+plaidml-keras==0.7.0; python_version <= '3.8'
 
 # Utilities
 Cython==3.0.10
