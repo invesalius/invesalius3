@@ -330,7 +330,11 @@ class Slice(metaclass=utils.Singleton):
     def OnCloseProject(self):
         self.CloseProject()
 
-    def CloseProject(self):
+    def CloseProject(self): 
+        # Return early if there is no project loaded.
+        if self._matrix is None:
+            return
+
         f = self._matrix.filename
         self._matrix._mmap.close()
         self._matrix = None
