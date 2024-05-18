@@ -270,7 +270,7 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
             )
             ram_total = psutil.phymem_usage().total
             swap_free = psutil.virtmem_usage().free
-    except:
+    except Exception:
         print("Exception! psutil version < 0.3 (not recommended)")
         ram_total = psutil.TOTAL_PHYMEM  # this is for psutil < 0.3
         ram_free = 0.8 * psutil.TOTAL_PHYMEM
@@ -454,7 +454,7 @@ def UpdateCheck():
         req = Request(url, data, headers)
         try:
             response = urlopen(req, timeout=10)
-        except:
+        except Exception:
             return
         last = response.readline().rstrip().decode("utf8")
         url = response.readline().rstrip().decode("utf8")
