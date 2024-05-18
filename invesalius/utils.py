@@ -24,6 +24,7 @@ import locale
 import math
 import traceback
 import collections.abc
+from typing import Optional, Any
 
 from setuptools.extern.packaging.version import Version
 from functools import wraps
@@ -31,7 +32,7 @@ from functools import wraps
 import numpy as np
 
 
-def format_time(value):
+def format_time(value: str) -> str:
     sp1 = value.split(".")
     sp2 = value.split(":")
 
@@ -53,7 +54,7 @@ def format_time(value):
     return time.strftime("%H:%M:%S", data)
 
 
-def format_date(value):
+def format_date(value: str) -> str:
     sp1 = value.split(".")
     try:
         if len(sp1) > 1:
@@ -71,7 +72,7 @@ def format_date(value):
         return ""
 
 
-def debug(error_str):
+def debug(error_str: str) -> None:
     """
     Redirects output to file, or to the terminal
     This should be used in the place of "print"
@@ -83,7 +84,7 @@ def debug(error_str):
         print(error_str)
 
 
-def next_copy_name(original_name, names_list):
+def next_copy_name(original_name: str, names_list: str) -> str:
     """
     Given original_name of an item and a list of existing names,
     builds up the name of a copy, keeping the pattern:
@@ -128,10 +129,10 @@ def next_copy_name(original_name, names_list):
         next_copy = "%s#%d" % (first_copy, last_index + 1)
         if next_copy not in names_list:
             got_new_name = True
-            return next_copy
+    return next_copy
 
 
-def new_name_by_pattern(pattern):
+def new_name_by_pattern(pattern: str) -> str:
     from invesalius.project import Project
 
     proj = Project()
@@ -143,7 +144,7 @@ def new_name_by_pattern(pattern):
     return f"{pattern}_{count}"
 
 
-def VerifyInvalidPListCharacter(text):
+def VerifyInvalidPListCharacter(text: str) -> bool:
     # print text
     # text = unicode(text)
 
@@ -156,7 +157,7 @@ def VerifyInvalidPListCharacter(text):
     if m is not None:
         return True
     else:
-        False
+        return False
 
 
 # http://www.garyrobinson.net/2004/03/python_singleto.html
@@ -214,7 +215,10 @@ class TwoWaysDictionary(dict):
         return self[key]
 
 
-def frange(start, end=None, inc=None):
+# DEPRECATED
+def frange(
+    start: float, end: Optional[float] = None, inc: Optional[float] = None
+) -> list[float]:
     "A range function, that accepts float increments."
 
     if end is None:
@@ -224,7 +228,7 @@ def frange(start, end=None, inc=None):
     if (inc is None) or (inc == 0):
         inc = 1.0
 
-    L = []
+    L: list[float] = []
     while 1:
         next = start + len(L) * inc
         if inc > 0 and next >= end:
@@ -236,6 +240,7 @@ def frange(start, end=None, inc=None):
     return L
 
 
+# Deprecated
 def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
     """
     Predicts the percentage (between 0 and 1) to resize the image to fit the memory,
@@ -303,7 +308,7 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
 
 
 # DEPRECATED
-def predict_memory(nfiles, x, y, p):
+def predict_memory(nfiles: int, x: int, y: int, p: int) -> tuple[float, float]:
     """
     Predict how much memory will be used, giving the following
     information:
@@ -373,6 +378,7 @@ def predict_memory(nfiles, x, y, p):
 
     elif sys.platform == "darwin":
         return (x / 2, y / 2)
+    raise Exception("Platform not supported")
 
 
 # def convert_bytes(bytes):
@@ -397,14 +403,14 @@ def get_physical_memory():
     return int(mem.total())
 
 
-def get_system_encoding():
+def get_system_encoding() -> Optional[str]:
     if sys.platform == "win32":
         return locale.getdefaultlocale()[1]
     else:
         return "utf-8"
 
 
-def UpdateCheck():
+def UpdateCheck() -> None:
     try:
         from urllib.parse import urlencode
         from urllib.request import urlopen, Request
@@ -442,7 +448,7 @@ def UpdateCheck():
 
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
         headers = {"User-Agent": "Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)"}
-        data = {
+        data: Any = {
             "update_protocol_version": "1",
             "invesalius_version": const.INVESALIUS_VERSION,
             "platform": sys.platform,
@@ -478,19 +484,19 @@ def vtkarray_to_numpy(m):
     return nm
 
 
-def touch(fname):
+def touch(fname: str) -> None:
     with open(fname, "a"):
         pass
 
 
-def decode(text, encoding, *args):
+def decode(text: Any, encoding: str, *args) -> Any:
     try:
         return text.decode(encoding, *args)
     except AttributeError:
         return text
 
 
-def encode(text, encoding, *args):
+def encode(text: Any, encoding: str, *args) -> Any:
     try:
         return text.encode(encoding, *args)
     except AttributeError:
@@ -509,7 +515,7 @@ def timing(f):
     return wrapper
 
 
-def log_traceback(ex):
+def log_traceback(ex: Any) -> str:
     if hasattr(ex, "__traceback__"):
         ex_traceback = ex.__traceback__
     else:
