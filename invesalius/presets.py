@@ -19,14 +19,14 @@
 import glob
 import os
 import plistlib
-import typing
+from typing import TYPE_CHECKING, Tuple
 
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import TwoWaysDictionary
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from pathlib import Path
 
 
@@ -76,7 +76,7 @@ class Presets:
     def __bind_events(self) -> None:
         Publisher.subscribe(self.UpdateThresholdModes, "Update threshold limits list")
 
-    def UpdateThresholdModes(self, threshold_range: tuple[int, int]) -> None:
+    def UpdateThresholdModes(self, threshold_range: Tuple[int, int]) -> None:
         thresh_min, thresh_max = threshold_range
         presets_list = (self.thresh_ct, self.thresh_mri)
 
@@ -188,7 +188,7 @@ def get_wwwl_presets() -> dict[str, str]:
 
 def get_wwwl_preset_colours(
     pfile: "str | Path",
-) -> list[tuple[int, int, int]]:
+) -> list[Tuple[int, int, int]]:
     with open(pfile, "rb") as f:
         preset = plistlib.load(f, fmt=plistlib.FMT_XML)
     ncolours = len(preset["Blue"])
