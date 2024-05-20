@@ -19,7 +19,7 @@
 import glob
 import os
 import plistlib
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, Dict, List
 
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
@@ -175,11 +175,11 @@ class Presets:
         self.thresh_ct = TwoWaysDictionary(thresh_ct_new)
 
 
-def get_wwwl_presets() -> dict[str, str]:
+def get_wwwl_presets() -> Dict[str, str]:
     files = glob.glob(
         os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, "*.plist")
     )
-    presets: dict[str, str] = {}
+    presets: Dict[str, str] = {}
     for f in files:
         p = os.path.splitext(os.path.basename(f))[0]
         presets[p] = f
@@ -188,7 +188,7 @@ def get_wwwl_presets() -> dict[str, str]:
 
 def get_wwwl_preset_colours(
     pfile: "str | Path",
-) -> list[Tuple[int, int, int]]:
+) -> List[Tuple[int, int, int]]:
     with open(pfile, "rb") as f:
         preset = plistlib.load(f, fmt=plistlib.FMT_XML)
     ncolours = len(preset["Blue"])
