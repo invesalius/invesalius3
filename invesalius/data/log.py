@@ -106,7 +106,7 @@ class MyLogger(metaclass=Singleton):
             'console_logging': 0,
             'console_logging_level': 0,
         }
-        self.ReadConfig()
+        self.ReadConfigFile()
         self._logger.setLevel(logging.DEBUG)
 
     def SetConfig(self, key, value):
@@ -119,16 +119,16 @@ class MyLogger(metaclass=Singleton):
         else:
             return default_value
 
-    def ReadConfig(self, fPath=LOG_CONFIG_PATH):
+    def ReadConfigFile(self, fPath=LOG_CONFIG_PATH):
         try:
             print(fPath, os.path.abspath(fPath))
             self._read_config_from_json(fPath) 
             #self._read_config_from_json(r'C:\\Users\\hrish\\.config\\invesalius\\log_config.json')
             print('Read Log config file ', fPath)
             print(self._config)
-            self.configureLogging()
+            #self.configureLogging()
         except Exception as e1: 
-            print('Error reading config file in ReadConfig:', e1)
+            print('Error reading config file in ReadConfigFile:', e1)
         return True
     
     def WriteConfigFile(self):
@@ -281,3 +281,9 @@ def function_call_tracking_decorator(function: Callable[[str], None]):
 
             
 ################################################################################################
+
+invLogger = MyLogger()
+#invLogger.configureLogging()
+
+################################################################################################
+
