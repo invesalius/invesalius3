@@ -34,7 +34,7 @@ from invesalius.utils import Singleton, deep_merge_dict
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR,datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log"))
 
-class CustomConsoleHandler(logging.StreamHandler):
+class MyConsoleHandler(logging.StreamHandler):
     def __init__(self, textctrl):
         logging.StreamHandler.__init__(self)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -47,7 +47,7 @@ class CustomConsoleHandler(logging.StreamHandler):
         self.textctrl.WriteText(msg + "\n")
         self.flush()
 
-class RedirectText(object):
+class MyRedirectText(object):
     def __init__(self, textctrl):
         self.out = textctrl
         
@@ -66,12 +66,12 @@ class MyPanel(wx.Panel):
         self.SetSizer(sizer)
         self._parent = parent
      
-        redir = RedirectText(logText)
+        redir = MyRedirectText(logText)
         sys.stdout = redir
         #sys.stderr = redir
 
         self._logger = logger
-        txtHandler = CustomConsoleHandler(logText)
+        txtHandler = MyConsoleHandler(logText)
         self._logger.addHandler(txtHandler)
 
     def onClose(self, event):
