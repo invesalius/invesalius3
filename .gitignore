@@ -260,3 +260,4 @@ tags
 
 # MacOS temporary file
 .DS_Store
+*.xlsx
