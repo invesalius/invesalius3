@@ -28,11 +28,11 @@ cdef struct s_coord:
 ctypedef s_coord coord
 
 
-cdef inline void append_queue(cdeque[int]& stack, int x, int y, int z, int d, int h, int w) nogil:
+cdef inline void append_queue(cdeque[int]& stack, int x, int y, int z, int d, int h, int w) noexcept nogil:
     stack.push_back(z*h*w + y*w + x)
 
 
-cdef inline void pop_queue(cdeque[int]& stack, int* x, int* y, int* z, int d, int h, int w) nogil:
+cdef inline void pop_queue(cdeque[int]& stack, int* x, int* y, int* z, int d, int h, int w) noexcept nogil:
     cdef int i = stack.front()
     stack.pop_front()
     x[0] = i % w

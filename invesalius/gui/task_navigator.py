@@ -24,12 +24,6 @@ import time
 
 import numpy as np
 try:
-    import Trekker
-    has_trekker = True
-except ImportError:
-    has_trekker = False
-
-try:
     #TODO: the try-except could be done inside the mTMS() method call
     from invesalius.navigation.mtms import mTMS
     mTMS()
@@ -39,6 +33,7 @@ except:
 
 import wx
 import sys
+import uuid
 
 try:
     import wx.lib.agw.foldpanelbar as fpb
@@ -53,34 +48,21 @@ from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 
-import invesalius.data.coregistration as dcr
-import invesalius.data.slice_ as sl
-import invesalius.data.tractography as dti
-import invesalius.data.record_coords as rec
-import invesalius.data.vtk_utils as vtk_utils
-import invesalius.data.bases as db
 from invesalius.data.markers.marker import MarkerType, Marker
-import invesalius.data.markers.marker_transformator
 
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 import invesalius.session as ses
 
 from invesalius import utils
-from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
-from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.image import Image
-from invesalius.navigation.tracker import Tracker
-
-from invesalius.navigation.robot import Robot, RobotObjective
-
-from invesalius.net.neuronavigation_api import NeuronavigationApi
-from invesalius.net.pedal_connection import PedalConnector
+from invesalius.navigation.navigation import NavigationHub
+from invesalius.navigation.robot import RobotObjective
+from wx.lib.mixins.listctrl import ColumnSorterMixin
 
 from invesalius import inv_paths
 
-BTN_NEW = wx.NewId()
-BTN_IMPORT_LOCAL = wx.NewId()
+BTN_NEW = wx.NewIdRef()
+BTN_IMPORT_LOCAL = wx.NewIdRef()
         
 def GetBitMapForBackground():
     image_file = os.path.join('head.png')
@@ -158,33 +140,19 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 600), 0, fpb.FPB_SINGLE_FOLD)
+                                      (10, 800), 0, fpb.FPB_SINGLE_FOLD)
         gbs = wx.GridBagSizer(5,5)
         gbs.AddGrowableCol(0, 1)
         self.gbs = gbs
 
         # Initialize Navigation, Tracker, Robot, Image, and PedalConnection objects here to make them
         # available to several panels.
+        nav_hub = NavigationHub(window=self)
 
-        tracker = Tracker()
-        image = Image()
-        icp = IterativeClosestPoint()
-        neuronavigation_api = NeuronavigationApi()
-        pedal_connector = PedalConnector(neuronavigation_api, self)
-        navigation = Navigation(
-            pedal_connector=pedal_connector,
-            neuronavigation_api=neuronavigation_api,
-        )
-        robot = Robot(
-            tracker=tracker,
-            navigation=navigation,
-            icp=icp,
-        )
-
-        self.tracker = tracker
-        self.robot = robot
-        self.image = image
-        self.navigation = navigation
+        self.nav_hub = nav_hub
+        self.tracker = nav_hub.tracker
+        self.image = nav_hub.image
+        self.navigation = nav_hub.navigation
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -193,16 +161,7 @@ class InnerFoldPanel(wx.Panel):
         style.SetSecondColour(default_colour)
 
         item = fold_panel.AddFoldPanel(_("Coregistration"), collapsed=True)
-        ntw = CoregistrationPanel(
-            parent=item,
-            navigation=navigation,
-            tracker=tracker,
-            robot=robot,
-            icp=icp,
-            image=image,
-            pedal_connector=pedal_connector,
-            neuronavigation_api=neuronavigation_api,
-        )
+        ntw = CoregistrationPanel(parent=item, nav_hub=nav_hub)
         self.fold_panel = fold_panel
         self.__calc_best_size(ntw)
         fold_panel.ApplyCaptionStyle(item, style)
@@ -212,16 +171,7 @@ class InnerFoldPanel(wx.Panel):
 
         item = fold_panel.AddFoldPanel(_("Navigation"), collapsed=True)
         self.__id_nav = item.GetId()
-        ntw = NavigationPanel(
-            parent=item,
-            navigation=navigation,
-            tracker=tracker,
-            robot=robot,
-            icp=icp,
-            image=image,
-            pedal_connector=pedal_connector,
-            neuronavigation_api=neuronavigation_api,
-        )
+        ntw = NavigationPanel(parent=item, nav_hub=nav_hub)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0,
@@ -276,7 +226,7 @@ class InnerFoldPanel(wx.Panel):
     def OnEnableState(self, state):
         if not state:
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
-            Publisher.sendMessage('Back to image fiducials')
+            Publisher.sendMessage('Move to image page')
 
     def OnShowDbs(self):
         self.dbs_item.Show()
@@ -345,7 +295,7 @@ class InnerFoldPanel(wx.Panel):
     
 
 class CoregistrationPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connector, neuronavigation_api):
+    def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -361,18 +311,14 @@ class CoregistrationPanel(wx.Panel):
         if sys.platform != 'win32':
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        self.navigation = navigation
-        self.tracker = tracker
-        self.robot = robot
-        self.icp = icp
-        self.image = image
-        self.pedal_connector = pedal_connector
-        self.neuronavigation_api = neuronavigation_api
+        self.nav_hub = nav_hub
+        self.tracker = nav_hub.tracker
+        self.image = nav_hub.image
 
-        book.AddPage(ImagePage(book, image), _("Image"))
-        book.AddPage(TrackerPage(book, icp, tracker, navigation, pedal_connector, neuronavigation_api), _("Tracker"))
-        book.AddPage(RefinePage(book, icp, tracker, image, navigation), _("Refine"))
-        book.AddPage(StimulatorPage(book, navigation), _("Stimulator"))
+        book.AddPage(ImagePage(book, nav_hub), _("Image"))
+        book.AddPage(TrackerPage(book, nav_hub), _("Tracker"))
+        book.AddPage(RefinePage(book, nav_hub), _("Refine"))
+        book.AddPage(StimulatorPage(book, nav_hub), _("Stimulator"))
 
         book.SetSelection(0)
 
@@ -386,14 +332,13 @@ class CoregistrationPanel(wx.Panel):
     
     def __bind_events(self):
         Publisher.subscribe(self._FoldTracker,
-                                 'Next to tracker fiducials')
+                                 'Move to tracker page')
         Publisher.subscribe(self._FoldRefine,
-                                 'Next to refine fiducials')
+                                 'Move to refine page')
         Publisher.subscribe(self._FoldStimulator,
-                                 'Next to stimulator fiducials')
+                                 'Move to stimulator page')
         Publisher.subscribe(self._FoldImage,
-                                 'Back to image fiducials')
-        
+                                 'Move to image page')
 
     def OnPageChanging(self, evt):
         page = evt.GetOldSelection()
@@ -407,7 +352,7 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs if image fiducials not done.
             if not self.image.AreImageFiducialsSet():
                 self.book.SetSelection(0)
-                wx.MessageBox(_("Select image fiducials first"), _("InVesalius 3"))
+                wx.MessageBox(_("Please do the image registration first."), _("InVesalius 3"))
         if old_page != 2:
             # Load data into refine tab
             Publisher.sendMessage("Update UI for refine tab")
@@ -417,7 +362,7 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
                 self.book.SetSelection(1)
-                wx.MessageBox(_("Select tracker fiducials first"), _("InVesalius 3"))
+                wx.MessageBox(_("Please do the tracker registration first."), _("InVesalius 3"))
 
     def _FoldImage(self):
         """
@@ -445,10 +390,10 @@ class CoregistrationPanel(wx.Panel):
         self.book.SetSelection(3)
 
 class ImagePage(wx.Panel):
-    def __init__(self, parent, image):
+    def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
-        self.image = image
+        self.image = nav_hub.image
         self.btns_set_fiducial = [None, None, None]
         self.numctrls_fiducial = [[], [], []]
         self.current_coord = 0, 0, 0, None, None, None
@@ -462,7 +407,7 @@ class ImagePage(wx.Panel):
             tip = fiducial['tip']
 
             ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
-            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.SetToolTip(tip)
             ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, n))
             ctrl.Disable()
 
@@ -585,7 +530,7 @@ class ImagePage(wx.Panel):
         Publisher.sendMessage('Set image fiducial', fiducial_name=fiducial_name, position=position)
 
     def OnNext(self, evt):
-        Publisher.sendMessage("Next to tracker fiducials")
+        Publisher.sendMessage("Move to tracker page")
 
     def UpdateNextButton(self):
         self.next_button.Enable(self.image.AreImageFiducialsSet())
@@ -615,14 +560,13 @@ class ImagePage(wx.Panel):
             Publisher.sendMessage("Disable style", style=const.STATE_REGISTRATION)
 
 class TrackerPage(wx.Panel):
-    def __init__(self, parent, icp, tracker, navigation, pedal_connector, neuronavigation_api):
+    def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
-        self.icp = icp
-        self.tracker = tracker
-        self.navigation = navigation
-        self.pedal_connector = pedal_connector
-        self.neuronavigation_api = neuronavigation_api
+        self.icp = nav_hub.icp
+        self.tracker = nav_hub.tracker
+        self.navigation = nav_hub.navigation
+        self.pedal_connector = nav_hub.pedal_connector
 
         self.btns_set_fiducial = [None, None, None]
         self.numctrls_fiducial = [[], [], []]
@@ -650,7 +594,7 @@ class TrackerPage(wx.Panel):
             tip = fiducial['tip']
 
             # ctrl = wx.ToggleButton(self, button_id, label=label, style=wx.BU_EXACTFIT)
-            # ctrl.SetToolTip(wx.ToolTip(tip))
+            # ctrl.SetToolTip(tip)
             # ctrl.SetBackgroundColour((255, 0, 0))
             # ctrl.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTrackerFiducials, i=n, ctrl=ctrl))
             # ctrl.SetValue(self.tracker.IsTrackerFiducialSet(n))
@@ -658,7 +602,7 @@ class TrackerPage(wx.Panel):
             w, h = wx.ScreenDC().GetTextExtent("M"*len(label))
             ctrl = wx.StaticText(self, button_id, label='', style=wx.TE_READONLY | wx.ALIGN_CENTER| wx.ST_NO_AUTORESIZE, size=(55, h+5))
             ctrl.SetLabel(label)
-            ctrl.SetToolTip(wx.ToolTip(tip))
+            ctrl.SetToolTip(tip)
             if self.tracker.IsTrackerFiducialSet(n):
                 ctrl.SetBackgroundColour(GREEN_COLOR)
             else:
@@ -704,7 +648,7 @@ class TrackerPage(wx.Panel):
         tracker_status = self.tracker.IsTrackerInitialized()
         current_label = wx.StaticText(self, -1, _("Current tracker: "))
         current_label.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        main_label = wx.StaticText(self, -1, _("No tracker selected!"))
+        main_label = wx.StaticText(self, -1, _("No tracker selected"))
 
         if tracker_status:
             main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
@@ -786,10 +730,18 @@ class TrackerPage(wx.Panel):
         #      is more concerned with the calibration than the navigation.
         #
         ref_mode_id = self.navigation.GetReferenceMode()
-        self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+        success = self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+
+        # Setting the fiducial is not successful if head or probe markers are not visible.
+        # In that case, return early and do not move to the next fiducial.
+        if not success:
+            return
 
         self.ResetICP()
         if self.tracker.AreTrackerFiducialsSet():
+            # All tracker fiducials are set; publish a message to pass the fiducials to, e.g., robot.
+            Publisher.sendMessage("Tracker fiducials set")
+
             self.OnNextEnable()
             self.OnRegisterDisable()
         else:
@@ -855,10 +807,10 @@ class TrackerPage(wx.Panel):
         self.OnStartRegistration(self.start_button, self.start_button)
 
     def OnNext(self, evt):
-        Publisher.sendMessage("Next to refine fiducials")
+        Publisher.sendMessage("Move to refine page")
     
     def OnBack(self, evt):
-        Publisher.sendMessage('Back to image fiducials')
+        Publisher.sendMessage('Move to image page')
     
     def OnPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu", page=2)
@@ -901,16 +853,16 @@ class TrackerPage(wx.Panel):
         if self.tracker.GetTrackerId() != const.DEFAULT_TRACKER:
             self.main_label.SetLabel(self.tracker.get_trackers()[self.tracker.GetTrackerId() - 1])
         else:
-            self.main_label.SetLabel(_("No tracker selected!"))
+            self.main_label.SetLabel(_("No tracker selected"))
 
 class RefinePage(wx.Panel):
-    def __init__(self, parent, icp, tracker, image, navigation):
+    def __init__(self, parent, nav_hub):
 
         wx.Panel.__init__(self, parent)
-        self.icp = icp
-        self.tracker = tracker
-        self.image = image
-        self.navigation = navigation
+        self.icp = nav_hub.icp
+        self.tracker = nav_hub.tracker
+        self.image = nav_hub.image
+        self.navigation = nav_hub.navigation
 
         self.numctrls_fiducial = [[], [], [], [], [], []]
         const_labels = [label for label in const.FIDUCIAL_LABELS]
@@ -950,7 +902,7 @@ class RefinePage(wx.Panel):
                     self.numctrls_fiducial[m][n].SetEditable(False)
 
         txt_fre = wx.StaticText(self, -1, _('FRE:'))
-        tooltip = wx.ToolTip(_("Fiducial registration error"))
+        tooltip = _("Fiducial registration error")
         txt_fre.SetToolTip(tooltip)
 
         value = self.icp.GetFreForUI()
@@ -1035,10 +987,10 @@ class RefinePage(wx.Panel):
                 self.numctrls_fiducial[m + 3][n].SetValue(value)
 
     def OnBack(self, evt):
-        Publisher.sendMessage('Back to image fiducials')
+        Publisher.sendMessage('Move to tracker page')
     
     def OnNext(self, evt):
-        Publisher.sendMessage('Next to stimulator fiducials')
+        Publisher.sendMessage('Move to stimulator page')
 
     def OnRefine(self, evt):
         self.icp.RegisterICP(self.navigation, self.tracker)
@@ -1047,10 +999,10 @@ class RefinePage(wx.Panel):
 
 
 class StimulatorPage(wx.Panel):
-    def __init__(self, parent, navigation):
+    def __init__(self, parent, nav_hub):
 
         wx.Panel.__init__(self, parent)
-        self.navigation = navigation
+        self.navigation = nav_hub.navigation
 
         border = wx.FlexGridSizer(2, 3, 5)
         object_reg = self.navigation.GetObjectRegistration()
@@ -1130,27 +1082,27 @@ class StimulatorPage(wx.Panel):
         Publisher.sendMessage('Open navigation menu')
 
 class NavigationPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connector, neuronavigation_api):
+    def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
-        self.navigation = navigation
-        self.tracker = tracker
-        self.robot = robot
-        self.icp = icp
-        self.image = image
-        self.pedal_connector = pedal_connector
-        self.neuronavigation_api = neuronavigation_api
+        self.nav_hub = nav_hub
+        self.navigation = nav_hub.navigation
+        self.tracker = nav_hub.tracker
+        self.icp = nav_hub.icp
+        self.image = nav_hub.image
+        self.pedal_connector = nav_hub.pedal_connector
+        self.neuronavigation_api = nav_hub.neuronavigation_api
 
         self.__bind_events()
 
-        self.control_panel = ControlPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.image, self.pedal_connector, self.neuronavigation_api)
-        self.marker_panel = MarkersPanel(self, self.navigation, self.tracker, self.robot, self.icp, self.control_panel)
+        self.control_panel = ControlPanel(self, nav_hub)
+        self.marker_panel = MarkersPanel(self, nav_hub)
 
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         top_sizer.Add(self.marker_panel, 1, wx.GROW | wx.EXPAND )
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.TOP, 20)
+        bottom_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.TOP, 5)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([(top_sizer, 1, wx.EXPAND | wx.GROW),
@@ -1184,18 +1136,15 @@ class NavigationPanel(wx.Panel):
 
     
 class ControlPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, image, pedal_connector, neuronavigation_api):
+    def __init__(self, parent, nav_hub):
 
         wx.Panel.__init__(self, parent)
-        
-        # Initialize global variables
-        self.navigation = navigation
-        self.tracker = tracker
-        self.robot = robot
-        self.icp = icp
-        self.image = image
-        self.pedal_connector = pedal_connector
-        self.neuronavigation_api = neuronavigation_api
+
+        self.navigation = nav_hub.navigation
+        self.tracker = nav_hub.tracker
+        self.robot = nav_hub.robot
+        self.icp = nav_hub.icp
+        self.image = nav_hub.image
 
         self.nav_status = False
         self.target_mode = False
@@ -1206,7 +1155,7 @@ class ControlPanel(wx.Panel):
         self.target_selected = False
 
         # Toggle button for neuronavigation
-        tooltip = wx.ToolTip(_("Start navigation"))
+        tooltip = _("Start navigation")
         btn_nav = wx.ToggleButton(self, -1, _("Start neuronavigation"), size=wx.Size(80, -1))
         btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
@@ -1223,7 +1172,7 @@ class ControlPanel(wx.Panel):
         self.GREY_COLOR = GREY_COLOR
 
         # Toggle Button for Tractography
-        tooltip = wx.ToolTip(_(u"Control Tractography"))
+        tooltip = _(u"Control Tractography")
         BMP_TRACT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("tract.png")), wx.BITMAP_TYPE_PNG)
         tractography_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         tractography_checkbox.SetBackgroundColour(GREY_COLOR)
@@ -1235,7 +1184,7 @@ class ControlPanel(wx.Panel):
         self.tractography_checkbox = tractography_checkbox
 
         # Toggle button to track the coil
-        tooltip = wx.ToolTip(_(u"Track coil"))
+        tooltip = _(u"Track coil")
         BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
         track_object_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         track_object_button.SetBackgroundColour(GREY_COLOR)
@@ -1248,7 +1197,7 @@ class ControlPanel(wx.Panel):
         self.track_object_button = track_object_button
 
         # Toggle button for allowing triggering only if coil is at target
-        tooltip = wx.ToolTip(_(u"Allow triggering only if the coil is at the target"))
+        tooltip = _(u"Allow triggering only if the coil is at the target")
         BMP_LOCK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG)
         lock_to_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         lock_to_target_button.SetBackgroundColour(GREY_COLOR)
@@ -1260,7 +1209,7 @@ class ControlPanel(wx.Panel):
         self.lock_to_target_button = lock_to_target_button
 
         # Toggle button for showing coil during navigation
-        tooltip = wx.ToolTip(_("Show coil"))
+        tooltip = _("Show coil")
         BMP_SHOW_COIL = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG)
         show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         show_coil_button.SetBackgroundColour(GREY_COLOR)
@@ -1272,7 +1221,7 @@ class ControlPanel(wx.Panel):
         self.show_coil_button = show_coil_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
-        tooltip = wx.ToolTip(_("Enable serial port communication to trigger pulse and create markers"))
+        tooltip = _("Enable serial port communication to trigger pulse and create markers")
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
         checkbox_serial_port = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         checkbox_serial_port.SetBackgroundColour(RED_COLOR)
@@ -1283,7 +1232,7 @@ class ControlPanel(wx.Panel):
         self.checkbox_serial_port = checkbox_serial_port
 
         #Toggle Button for Efield
-        tooltip = wx.ToolTip(_(u"Control E-Field"))
+        tooltip = _(u"Control E-Field")
         BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
         efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         efield_checkbox.SetBackgroundColour(GREY_COLOR)
@@ -1295,7 +1244,7 @@ class ControlPanel(wx.Panel):
         self.efield_checkbox = efield_checkbox
 
         #Toggle Button for Target Mode
-        tooltip = wx.ToolTip(_(u"Target mode"))
+        tooltip = _(u"Target mode")
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
         target_mode_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         target_mode_button.SetBackgroundColour(GREY_COLOR)
@@ -1308,7 +1257,7 @@ class ControlPanel(wx.Panel):
         self.UpdateTargetButton()
 
         # Toggle button for tracking target with robot during navigation
-        tooltip = wx.ToolTip(_("Track target with robot"))
+        tooltip = _("Track target with robot")
         BMP_TRACK_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot_track_target.png")), wx.BITMAP_TYPE_PNG)
         robot_track_target_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         robot_track_target_button.SetBackgroundColour(GREY_COLOR)
@@ -1320,7 +1269,7 @@ class ControlPanel(wx.Panel):
         self.robot_track_target_button = robot_track_target_button
 
         # Toggle button for moving robot away from head
-        tooltip = wx.ToolTip(_("Move robot away from head"))
+        tooltip = _("Move robot away from head")
         BMP_ENABLE_MOVE_AWAY = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("robot_move_away.png")), wx.BITMAP_TYPE_PNG)
         robot_move_away_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         robot_move_away_button.SetBackgroundColour(GREY_COLOR)
@@ -1328,6 +1277,7 @@ class ControlPanel(wx.Panel):
         robot_move_away_button.SetToolTip(tooltip)
         robot_move_away_button.SetValue(False)
         robot_move_away_button.Enable(False)
+
         robot_move_away_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnRobotMoveAwayButton, ctrl=robot_move_away_button))
         self.robot_move_away_button = robot_move_away_button
 
@@ -1357,8 +1307,8 @@ class ControlPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
             (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-            (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM , 20),
-            (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM , 20)
+            (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, 10),
+            (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 5)
         ])
 
         self.sizer = main_sizer
@@ -1376,7 +1326,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UnsetTarget, 'Unset target')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
-        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
         Publisher.subscribe(self.SetTargetMode, 'Set target mode')
 
         Publisher.subscribe(self.UpdateTractsVisualization, 'Update tracts visualization')
@@ -1451,8 +1401,13 @@ class ControlPanel(wx.Panel):
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
         else:
             ctrl.SetBackgroundColour(self.RED_COLOR)
-    
+
     def EnableToggleButton(self, ctrl, state):
+        # Check if the button state is not changed, if so, return early. This is to prevent
+        # unnecessary updates to the button.
+        if ctrl.IsEnabled() == state:
+            return
+
         ctrl.Enable(state)
         ctrl.SetBackgroundColour(self.GREY_COLOR)
 
@@ -1473,17 +1428,20 @@ class ControlPanel(wx.Panel):
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
             self.navigation.StartNavigation(self.tracker, self.icp)
 
+            # Ensure that the target is sent to robot when navigation starts.
+            self.robot.SendTargetToRobot()
+
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, 'Stop navigation')
-            tooltip = wx.ToolTip(_("Start neuronavigation"))
+            tooltip = _("Start neuronavigation")
             btn_nav.SetToolTip(tooltip)
             btn_nav.SetLabelText(_("Start neuronavigation"))
         else:
             Publisher.sendMessage("Start navigation")
             if self.nav_status:
-                tooltip = wx.ToolTip(_("Stop neuronavigation"))
+                tooltip = _("Stop neuronavigation")
                 btn_nav.SetToolTip(tooltip)
                 btn_nav.SetLabelText(_("Stop neuronavigation"))
             else:
@@ -1547,17 +1505,19 @@ class ControlPanel(wx.Panel):
         if data:
             self.Layout()
 
-    # Enable robot buttons if:
-    #
-    #   - Navigation is on
-    #   - Target is set
-    #   - Target mode is on
-    #   - Robot is connected
-    #
     def UpdateRobotButtons(self):
-        enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
-        self.EnableRobotTrackTargetButton(enabled=enabled)
-        self.EnableRobotMoveAwayButton(enabled=enabled)
+        # Enable 'track target' robot button if:
+        #
+        #   - Navigation is on
+        #   - Target is set
+        #   - Target mode is on
+        #   - Robot is connected
+        track_target_button_enabled = self.nav_status and self.target_selected and self.target_mode and self.robot.IsConnected()
+        self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
+        
+        # Enable 'move away' robot button if robot is connected.
+        move_away_button_enabled = self.robot.IsConnected()
+        self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -1692,24 +1652,23 @@ class ControlPanel(wx.Panel):
     def UpdateTargetButton(self):
         # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
         enabled = self.target_selected and self.track_obj
-
-        # If enabling target mode, also press it on automatically.
-        pressed = enabled
-
         self.EnableToggleButton(self.target_mode_button, enabled)
-        self.PressTargetModeButton(pressed)
 
     def PressTargetModeButton(self, pressed):
+        # If pressed, ensure that the button is also enabled.
+        if pressed:
+            self.EnableToggleButton(self.target_mode_button, True)
+
         self.UpdateToggleButton(self.target_mode_button, pressed)
         self.OnTargetButton()
 
     def OnTargetButton(self, evt=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
-        
+
         Publisher.sendMessage('Set target mode', enabled=pressed)
         if pressed:
-            # Set robot objective to NONE when target mode is disabled.
+            # Set robot objective to NONE when target mode is enabled.
             self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
@@ -1755,8 +1714,8 @@ class ControlPanel(wx.Panel):
                 self.robot.SetObjective(RobotObjective.NONE)
 
 
-class MarkersPanel(wx.Panel):
-    def __init__(self, parent, navigation, tracker, robot, icp, control):
+class MarkersPanel(wx.Panel, ColumnSorterMixin):
+    def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -1766,27 +1725,23 @@ class MarkersPanel(wx.Panel):
 
         self.SetAutoLayout(1)
 
-        self.navigation = navigation
-        self.tracker = tracker
-        self.robot = robot
-        self.icp = icp
-        self.control = control
+        self.navigation = nav_hub.navigation
+        self.markers = nav_hub.markers
+
         if has_mTMS:
             self.mTMS = mTMS()
         else:
             self.mTMS = None
 
-        self.marker_transformator = invesalius.data.markers.marker_transformator.MarkerTransformator()
-
         self.__bind_events()
 
         self.session = ses.Session()
 
+        self.currently_focused_marker = None
         self.current_position = [0, 0, 0]
         self.current_orientation = [None, None, None]
         self.current_seed = 0, 0, 0
         self.cortex_position_orientation = [None, None, None, None, None, None]
-        self.markers = []
         self.nav_status = False
         self.efield_data_saved = False
         self.efield_target_idx = None 
@@ -1795,6 +1750,12 @@ class MarkersPanel(wx.Panel):
         self.marker_size = const.MARKER_SIZE
         self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
+
+        """ 
+        Stores all the marker data that is visible in the GUI, as well as the marker UUID.
+        Sorting the marker list in the GUI by column is based on values stored here. 
+        """
+        self.itemDataMap = {}
 
         self.brain_actor = None
         # Change session
@@ -1844,8 +1805,14 @@ class MarkersPanel(wx.Panel):
         sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT),
                               (btn_delete_all, 0, wx.LEFT)])
 
-        # List of markers
-        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
+        screen_width, screen_height = wx.DisplaySize()
+
+        # The marker list height is set to 120 pixels (accommodating 4 markers) if the screen height is
+        # at most 1080 pixels (a commonly used height in laptops). Otherwise, the height grows linearly with
+        # the screen height.
+        marker_list_height = max(120, screen_height - 960)
+
+        marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0, marker_list_height))
         marker_list_ctrl.InsertColumn(const.ID_COLUMN, '#')
         marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
 
@@ -1860,6 +1827,9 @@ class MarkersPanel(wx.Panel):
 
         marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, 'Target')
         marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
+
+        marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, 'Z-offset')
+        marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
 
         marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, 'Efield Target')
         marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN,45)
@@ -1877,9 +1847,13 @@ class MarkersPanel(wx.Panel):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
-        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.ChangeLabel)
+        marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
         
         self.marker_list_ctrl = marker_list_ctrl
+        self.column_sorter = ColumnSorterMixin.__init__(self, self.marker_list_ctrl.GetColumnCount())
+
+        # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
+        self.markers.LoadState()
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1892,7 +1866,14 @@ class MarkersPanel(wx.Panel):
         self.SetSizer(group_sizer)
         self.Update()
 
-        self.LoadState()
+    # Required function for sorting the marker list
+    def GetListCtrl(self):
+        return self.marker_list_ctrl
+
+    # Show ascending or descending indicator in the column after sorting
+    def OnSortOrderChanged(self):
+        column, ascending = self.GetSortState()
+        self.marker_list_ctrl.ShowSortIndicator(column, ascending)
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set cross focal point')
@@ -1907,6 +1888,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateSeedCoordinates, 'Update tracts')
         Publisher.subscribe(self.OnChangeCurrentSession, 'Current session changed')
+        Publisher.subscribe(self.UpdateMarker, 'Update marker')
         Publisher.subscribe(self.UpdateMarkerOrientation, 'Open marker orientation dialog')
         Publisher.subscribe(self.AddPeeledSurface, 'Update peel')
         Publisher.subscribe(self.GetEfieldDataStatus, 'Get status of Efield saved data')
@@ -1915,87 +1897,15 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.CreateMarkerEfield, 'Create Marker from tangential')
         Publisher.subscribe(self.UpdateCortexMarker, 'Update Cortex Marker')
 
-    def SaveState(self):
-        state = [marker.to_dict() for marker in self.markers]
-
-        session = ses.Session()
-        session.SetState('markers', state)
-
-    def LoadState(self):
-        session = ses.Session()
-        state = session.GetState('markers')
-
-        if state is None:
-            return
-
-        for d in state:
-            if 'cortex_position_orientation' in d:
-                cortex_position_orientation = d['cortex_position_orientation']
-            else:
-                cortex_position_orientation = None
-
-            # Create enum from the corresponding integer that is saved in the state.
-            marker_type = MarkerType(d['marker_type'])
-
-            marker = self.CreateMarker(
-                position=d['position'],
-                orientation=d['orientation'],
-                colour=d['colour'],
-                size=d['size'],
-                label=d['label'],
-                marker_type=marker_type,
-                # XXX: See comment below. Should be improved so that is_target wouldn't need to be set as False here.
-                is_target=False,
-                seed=d['seed'],
-                session_id=d['session_id'],
-                cortex_position_orientation=cortex_position_orientation,
-            )
-            # Note that we don't want to render the markers here for each loop iteration.
-            self.AddMarker(marker, render=False)
-
-            # XXX: Do the same thing as in OnLoadMarkers function: first create marker that is never set as a target,
-            # then set as target if needed. This could be refactored so that a CreateMarker call would
-            # suffice to set it as target.
-            if d['is_target']:
-                self.__set_marker_as_target(len(self.markers) - 1)
-
-            if d['is_point_of_interest']:
-                self.__set_marker_as_point_of_interest(len(self.markers) - 1)
-                Publisher.sendMessage('Set as Efield target at cortex', position=d['position'],
-                                        orientation=d['orientation'])
-
-    def __find_target_marker_idx(self):
-        """
-        Return the index of the marker currently selected as target (there
-        should be at most one). If there is no such marker, return None.
-        """
-        for i in range(len(self.markers)):
-            if self.markers[i].is_target:
-                return i
-                
-        return None
-
-    def __find_point_of_interest_marker(self):
-        for i in range(len(self.markers)):
-            if self.markers[i].is_point_of_interest:
-                return i
-
-        return None
-
-    def __get_brain_target_markers(self):
-        """
-        Return the index of the marker currently selected as target (there
-        should be at most one). If there is no such marker, return None.
-        """
-        brain_target_list = []
-        for i in range(len(self.markers)):
-            if self.markers[i].marker_type == MarkerType.BRAIN_TARGET:
-                brain_target_list.append(self.markers[i].coordinate)
-
-        if brain_target_list:
-            return brain_target_list
-
-        return None
+        # Update marker_list_ctrl
+        Publisher.subscribe(self._AddMarker, 'Add marker')
+        Publisher.subscribe(self._DeleteMarker, 'Delete marker')
+        Publisher.subscribe(self._DeleteMultiple, 'Delete markers')
+        Publisher.subscribe(self._SetPointOfInterest, 'Set point of interest')
+        Publisher.subscribe(self._SetTarget, 'Set target')
+        Publisher.subscribe(self._UnsetTarget, 'Unset target')
+        Publisher.subscribe(self._UnsetPointOfInterest, 'Unset point of interest')
+        Publisher.subscribe(self._UpdateMarkerLabel, 'Update marker label')
 
     def __get_selected_items(self):
         """    
@@ -2011,98 +1921,107 @@ class MarkersPanel(wx.Panel):
 
         return selection
 
-    def __delete_all_markers(self):
-        """
-        Delete all markers
-        """
-        for i in reversed(range(len(self.markers))):
-            del self.markers[i]
-            self.marker_list_ctrl.DeleteItem(i)
-
     def __delete_multiple_markers(self, indexes):
-        """
-        Delete multiple markers indexed by 'indexes'. Indexes must be sorted in
-        the ascending order.
-        """
-        for i in reversed(indexes):
-            Publisher.sendMessage('Delete marker', marker=self.markers[i])
-            del self.markers[i]
-            self.marker_list_ctrl.DeleteItem(i)
-            for n in range(0, self.marker_list_ctrl.GetItemCount()):
-                self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
+        marker_ids = [self.__get_marker_id(idx) for idx in indexes]
+        self.markers.DeleteMultiple(marker_ids)
 
-    def __delete_all_brain_targets(self):
-        """
-        Delete all brain targets markers
-        """
-        brain_target_index = []
-        for index in range(len(self.markers)):
-            if self.markers[index].marker_type == MarkerType.BRAIN_TARGET:
-                brain_target_index.append(index)
-        for index in reversed(brain_target_index):
-            Publisher.sendMessage('Delete marker', marker=self.markers[index])
-            self.marker_list_ctrl.SetItemBackgroundColour(index, 'white')
-            del self.markers[index]
-            self.marker_list_ctrl.DeleteItem(index)
-            for n in range(0, self.marker_list_ctrl.GetItemCount()):
-                self.marker_list_ctrl.SetItem(n, 0, str(n + 1))
+    def _DeleteMarker(self, marker):
+        deleted_marker_id = marker.marker_id
+        deleted_marker_uuid = marker.marker_uuid
+        idx = self.__find_marker_index(deleted_marker_id)
+        self.marker_list_ctrl.DeleteItem(idx)
+        print("_DeleteMarker:", deleted_marker_uuid)
 
-    def __set_marker_as_point_of_interest(self, idx):
-        """
-        Set marker indexed by idx as the new point of interest. idx must be a valid index.
-        """
-        # Find the previous point of interest
-        prev_idx = self.__find_point_of_interest_marker()
+        # Delete the marker from itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == deleted_marker_uuid:
+                self.itemDataMap.pop(key)
 
-        # If the new point of interest is same as the previous do nothing
-        if prev_idx == idx:
+
+        num_items = self.marker_list_ctrl.GetItemCount()
+        for n in range(num_items):
+            m_id = self.__get_marker_id(n)
+            if m_id > deleted_marker_id:
+                self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - 1))
+
+    def _DeleteMultiple(self, markers):
+        if len(markers) == self.marker_list_ctrl.GetItemCount():
+            self.marker_list_ctrl.DeleteAllItems()
+            self.itemDataMap.clear()
             return
 
-        # Unset the previous point of interest
-        if prev_idx is not None:
-            self.markers[prev_idx].is_point_of_interest = False
-            self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
-            marker = self.markers[prev_idx]
-            Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-            self.marker_list_ctrl.SetItem(prev_idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
+        min_for_fast_deletion = 10
+        if len(markers) > min_for_fast_deletion:
+            self.marker_list_ctrl.Hide()
 
-        # Set the new point of interest
-        self.markers[idx].is_point_of_interest = True
+        deleted_ids = []
+        deleted_keys = []
+        for marker in markers:
+            idx = self.__find_marker_index(marker.marker_id)
+            deleted_uuid = marker.marker_uuid
+            for key, data in self.itemDataMap.items():
+                current_uuid = data[-1]
+
+                if current_uuid == deleted_uuid:
+                    deleted_keys.append(key)
+
+            self.marker_list_ctrl.DeleteItem(idx)
+            deleted_ids.append(marker.marker_id)
+
+        # Remove all the deleted markers from itemDataMap
+        for key in deleted_keys:
+            try:
+                self.itemDataMap.pop(key)
+            except KeyError:
+                print("Invalid itemDataMap key:", key)
+
+        num_items = self.marker_list_ctrl.GetItemCount()
+        for n in range(num_items):
+            m_id = self.__get_marker_id(n)
+            reduction_in_m_id = 0
+            for d_id in deleted_ids:
+                if m_id > d_id:
+                    reduction_in_m_id += 1
+            self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
+
+        self.marker_list_ctrl.Show()
+
+    def _SetPointOfInterest(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'PURPLE')
         self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, _("Yes"))
+        uuid = marker.marker_uuid
 
-    def __set_marker_as_target(self, idx):
-        """
-        Set marker indexed by idx as the new target. idx must be a valid index.
-        """
-        # Find the previous target
-        prev_idx = self.__find_target_marker_idx()
+        # Set the point of interest in itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.POINT_OF_INTEREST_TARGET_COLUMN] = "Yes"
 
-        # If the new target is same as the previous do nothing.
-        if prev_idx == idx:
-            return
+    def _UnsetPointOfInterest(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
 
-        # Unset the previous target
-        if prev_idx is not None:
-            self.markers[prev_idx].is_target = False
-            self.marker_list_ctrl.SetItemBackgroundColour(prev_idx, 'white')
-            marker = self.markers[prev_idx]
-            Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-            Publisher.sendMessage('Unset target', marker=marker)
-            self.marker_list_ctrl.SetItem(prev_idx, const.TARGET_COLUMN, "")
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
+        self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
+        uuid = marker.marker_uuid
 
-        # Set the new target
-        marker = self.markers[idx]
-        marker.is_target = True
+        # Unset the point of interest in itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.POINT_OF_INTEREST_TARGET_COLUMN] = ""
 
-        # Set the marker as the target in the list control.
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'RED')
-        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
+    def _UpdateMarkerLabel(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItem(idx, const.LABEL_COLUMN, marker.label)
 
-        self.control.target_selected = True
-
-        Publisher.sendMessage('Set target', marker=marker)
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
+        # Update the marker label in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.LABEL_COLUMN] = marker.label
 
     @staticmethod
     def __list_fiducial_labels():
@@ -2130,11 +2049,12 @@ class MarkersPanel(wx.Panel):
 
     def OnMouseRightDown(self, evt):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
-        target_marker_idx = self.__find_target_marker_idx()
-        marker_type = self.markers[focused_marker_idx].marker_type
+        focused_marker = self.__get_marker(focused_marker_idx)
+        marker_type = focused_marker.marker_type
+        unique_menu_id = 1
 
         # Check if the currently focused marker is the active target.
-        is_active_target = focused_marker_idx == target_marker_idx
+        is_active_target = focused_marker.is_target
 
         # Check if the currently focused marker is of the type 'coil target'.
         is_coil_target = marker_type == MarkerType.COIL_TARGET
@@ -2151,15 +2071,15 @@ class MarkersPanel(wx.Panel):
         # Create the context menu.
         menu_id = wx.Menu()
 
-        edit_id = menu_id.Append(0, _('Change label'))
+        edit_id = menu_id.Append(unique_menu_id, _('Change label'))  # Use non-zero ID
         menu_id.Bind(wx.EVT_MENU, self.ChangeLabel, edit_id)
 
-        color_id = menu_id.Append(1, _('Change color'))
+        color_id = menu_id.Append(unique_menu_id + 1, _('Change color'))  # Increment the unique_menu_id
         menu_id.Bind(wx.EVT_MENU, self.ChangeColor, color_id)
 
         # Allow duplicate only for markers that are not fiducials.
         if not is_fiducial:
-            duplicate_menu_item = menu_id.Append(2, _('Duplicate'))
+            duplicate_menu_item = menu_id.Append(unique_menu_id + 2, _('Duplicate'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuDuplicateMarker, duplicate_menu_item)
 
         menu_id.AppendSeparator()
@@ -2167,70 +2087,70 @@ class MarkersPanel(wx.Panel):
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
             if is_active_target:
-                target_menu_item = menu_id.Append(3, _('Unset target'))
+                target_menu_item = menu_id.Append(unique_menu_id + 3, _('Unset target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
-                    brain_target_menu_item= menu_id.Append(3, _('Set brain target'))
+                    brain_target_menu_item= menu_id.Append(unique_menu_id + 3, _('Set brain target'))
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(3, _('Set as target'))
+                target_menu_item = menu_id.Append(unique_menu_id + 3, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
             # 'Create coil target' menu item.
-            create_coil_target_menu_item = menu_id.Append(6, _('Create coil target'))
+            create_coil_target_menu_item = menu_id.Append(unique_menu_id + 6, _('Create coil target'))
             menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTargetFromCoilPose, create_coil_target_menu_item)
 
         # Show 'Create brain target' and 'Create coil target' menu items only if the marker is a landmark.
         if is_landmark:
             # 'Create brain target' menu item.
-            create_brain_target_menu_item = menu_id.Append(5, _('Create brain target'))
+            create_brain_target_menu_item = menu_id.Append(unique_menu_id + 5, _('Create brain target'))
             menu_id.Bind(wx.EVT_MENU, self.OnCreateBrainTargetFromLandmark, create_brain_target_menu_item)
 
             # 'Create coil target' menu item.
-            create_coil_target_menu_item = menu_id.Append(6, _('Create coil target'))
+            create_coil_target_menu_item = menu_id.Append(unique_menu_id + 6, _('Create coil target'))
             menu_id.Bind(wx.EVT_MENU, self.OnCreateCoilTargetFromLandmark, create_coil_target_menu_item)
 
-        is_brain_target = self.markers[self.marker_list_ctrl.GetFocusedItem()].marker_type == MarkerType.BRAIN_TARGET
+        is_brain_target = focused_marker.marker_type == MarkerType.BRAIN_TARGET
         if is_brain_target and has_mTMS:
-            send_brain_target_menu_item = menu_id.Append(7, _('Send brain target to mTMS'))
+            send_brain_target_menu_item = menu_id.Append(unique_menu_id + 7, _('Send brain target to mTMS'))
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu_item)
 
         if self.nav_status and self.navigation.e_field_loaded:
             #Publisher.sendMessage('Check efield data')
             #if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
-            if self.__find_target_marker_idx()  == self.marker_list_ctrl.GetFocusedItem():
-                efield_menu_item = menu_id.Append(8, _('Save Efield target Data'))
+            if is_active_target:
+                efield_menu_item = menu_id.Append(unique_menu_id + 8, _('Save Efield target Data'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu_item)
 
         if self.navigation.e_field_loaded:
-            efield_target_menu_item = menu_id.Append(9, _('Set as Efield target 1 (origin)'))
+            efield_target_menu_item = menu_id.Append(unique_menu_id + 9, _('Set as Efield target 1 (origin)'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu_item)
 
-            efield_target_menu_item = menu_id.Append(10, _('Set as Efield target 2'))
+            efield_target_menu_item = menu_id.Append(unique_menu_id + 10, _('Set as Efield target 2'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget2, efield_target_menu_item)
             # Publisher.sendMessage('Check efield data')
             # if self.efield_data_saved:
             #     if tuple(np.argwhere(self.indexes_saved_lists==self.marker_list_ctrl.GetFocusedItem())):
             #         if self.efield_target_idx  == self.marker_list_ctrl.GetFocusedItem():
-            #             efield_target_menu_item  = menu_id.Append(9, _('Remove Efield target'))
+            #             efield_target_menu_item  = menu_id.Append(unique_menu_id + 9, _('Remove Efield target'))
             #             menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTarget, efield_target_menu_item )
             #         else:
-            #             efield_target_menu_item = menu_id.Append(9, _('Set as Efield target(compare)'))
+            #             efield_target_menu_item = menu_id.Append(unique_menu_id + 9, _('Set as Efield target(compare)'))
             #             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu)
 
         if self.navigation.e_field_loaded and not self.nav_status:
-            if self.__find_target_marker_idx() == self.marker_list_ctrl.GetFocusedItem():
-                efield_vector_plot_menu_item = menu_id.Append(11,_('Show vector field'))
+            if is_active_target:
+                efield_vector_plot_menu_item = menu_id.Append(unique_menu_id + 11,_('Show vector field'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu_item)
 
         if self.navigation.e_field_loaded:
-            if self.__find_point_of_interest_marker() == self.marker_list_ctrl.GetFocusedItem():
-                create_efield_target = menu_id.Append(12, _('Remove Efield Cortex target'))
+            if focused_marker.is_point_of_interest:
+                create_efield_target = menu_id.Append(unique_menu_id + 12, _('Remove Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target)
             else:
-                create_efield_target = menu_id.Append(12, _('Set as Efield Cortex target'))
+                create_efield_target = menu_id.Append(unique_menu_id + 12, _('Set as Efield Cortex target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
                 self.marker_list_ctrl.GetFocusedItem()
 
@@ -2239,82 +2159,104 @@ class MarkersPanel(wx.Panel):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
+    # Programmatically set the focus on the marker with the given index, simulating left click.
+    def FocusOnMarker(self, idx):
+        # Deselect the previously focused marker.
+        if self.currently_focused_marker is not None:
+            current_marker_idx = self.__find_marker_index(self.currently_focused_marker.marker_id)
+
+            # If the marker has been deleted, it might not be found in the list of markers. In that case,
+            # do not try to deselect it.
+            if current_marker_idx is not None:
+                self.marker_list_ctrl.SetItemState(current_marker_idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+
+                # Trigger EVT_LIST_ITEM_DESELECTED event manually for the old item.
+                event_deselect = wx.ListEvent(wx.EVT_LIST_ITEM_DESELECTED.typeId, self.marker_list_ctrl.GetId())
+                event_deselect.SetIndex(current_marker_idx)
+                event_deselect.SetEventObject(self.marker_list_ctrl)
+                self.marker_list_ctrl.GetEventHandler().ProcessEvent(event_deselect)
+
+        # Select the item.
+        self.marker_list_ctrl.SetItemState(idx, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+
+        # Focus on the item.
+        self.marker_list_ctrl.SetItemState(idx, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
+        self.marker_list_ctrl.EnsureVisible(idx)
+
+        # Trigger EVT_LIST_ITEM_SELECTED event manually.
+        event = wx.ListEvent(wx.EVT_LIST_ITEM_SELECTED.typeId, self.marker_list_ctrl.GetId())
+        event.SetIndex(idx)
+        event.SetEventObject(self.marker_list_ctrl)
+        self.marker_list_ctrl.GetEventHandler().ProcessEvent(event)
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.markers[idx]
 
-        # Marker transformator needs to know which marker is selected so it can react to keyboard events.
-        Publisher.sendMessage('Update selected marker', marker=marker)
+        # Selection of more than 1 marker not supported by MarkerTransformator
+        if idx == -1:
+            return
 
-        # Highlight marker in viewer volume.
-        Publisher.sendMessage('Highlight marker', marker=marker)
+        marker_id = self.__get_marker_id(idx)
+        marker = self.markers.list[marker_id]
+
+        # XXX: There seems to be a bug in WxPython when selecting multiple items on the list using,
+        #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
+        #   is triggered repeatedly for the same item (the one that was first selected). This is a
+        #   workaround to prevent the event from being triggered repeatedly for the same item.
+        if self.currently_focused_marker is not None and marker == self.currently_focused_marker:
+            return
+
+        # When selecting multiple markers, e.g., by pressing ctrl while clicking on the markers, EVT_LIST_ITEM_SELECTED
+        # event is triggered for each selected item, without triggering EVT_LIST_ITEM_DESELECTED event for the previously
+        # selected item. By unhighlighting the previously focused marker here, we ensure that only one marker is highlighted
+        # at a time.
+        #
+        # TODO: Support multiple highlighted markers at the same time.
+        if self.currently_focused_marker is not None:
+            # Unhighlight the previously focused marker in the viewer volume.
+            Publisher.sendMessage('Unhighlight marker')
+
+        self.currently_focused_marker = marker
+        self.markers.SelectMarker(marker_id)
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
+    #
+    # Note: This is called also when re-clicking on the same marker that is already focused.
     def OnMarkerUnfocused(self, evt):
-        # Marker transformator needs to know that no marker is selected so it can stop reacting to
-        # keyboard events.
-        Publisher.sendMessage('Update selected marker', marker=None)
+        self.markers.DeselectMarker()
 
-        # Unhighlight marker in viewer volume.
-        Publisher.sendMessage('Unhighlight marker')
-        
+    def SetCameraToFocusOnMarker(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.markers.list[idx]
+        Publisher.sendMessage('Set camera to focus on marker', marker=marker)
+
     def OnCreateCoilTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
+        marker = self.__get_marker(list_index)
 
-        # Create a duplicate of the selected marker.
-        new_marker = self.markers[list_index].duplicate()
-
-        # Project to the scalp.        
-        self.marker_transformator.ProjectToScalp(
-            marker=new_marker,
-            # We are projecting the marker that is on the brain surface; hence, project to the opposite side
-            # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
-            opposite_side=True,
-        )
-
-        # Set marker type to 'coil target'.
-        new_marker.marker_type = MarkerType.COIL_TARGET
-
-        # Give the new marker a new label.
-        new_marker.label = self.GetNextMarkerLabel()
-
-        # Add the new marker to the marker list and render it.
-        self.AddMarker(new_marker, render=True)
-
-        self.SaveState()
+        self.markers.CreateCoilTargetFromLandmark(marker)
 
     def OnCreateCoilTargetFromCoilPose(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
+        marker = self.__get_marker(list_index)
 
-        # Create a duplicate of the selected marker.
-        new_marker = self.markers[list_index].duplicate()
-
-        # Set marker type to 'coil target'.
-        new_marker.marker_type = MarkerType.COIL_TARGET
-
-        # Add the new marker to the marker list and render it.
-        self.AddMarker(new_marker, render=True)
-        
-        self.SaveState()
+        self.markers.CreateCoilTargetFromCoilPose(marker)
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-
+        marker = self.__get_marker(list_index)
         new_label = dlg.ShowEnterMarkerID(self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN))
-        self.markers[list_index].label = str(new_label)
-        self.marker_list_ctrl.SetItem(list_index, const.LABEL_COLUMN, new_label)
-
-        self.SaveState()
+        self.markers.ChangeLabel(marker, new_label)
 
     def OnMenuSetTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2322,14 +2264,21 @@ class MarkersPanel(wx.Panel):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
 
-        # Set robot objective to NONE when a new target is selected. This prevents the robot from
-        # automatically moving to the new target (which would be the case if robot objective was previously
-        # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
-        self.robot.SetObjective(RobotObjective.NONE)
+        marker_id = self.__get_marker_id(idx)
+        self.markers.SetTarget(marker_id)
 
-        self.__set_marker_as_target(idx)
+    def _SetTarget(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'RED')
+        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
-        self.SaveState()
+        target_uuid = marker.marker_uuid
+
+        # Set the target column to "Yes" in itemDataMap
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == target_uuid:
+                self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
 
     def OnMenuDuplicateMarker(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2338,10 +2287,12 @@ class MarkersPanel(wx.Panel):
             return
 
         # Create a duplicate of the selected marker.
-        new_marker = self.markers[idx].duplicate()
-        self.AddMarker(new_marker, render=True)
+        new_marker = self.__get_marker(idx).duplicate()
 
-        self.SaveState()
+        # Add suffix to marker name.
+        new_marker.label = new_marker.label + ' (copy)'
+
+        self.markers.AddMarker(new_marker, render=True, focus=True)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.indexes_saved_lists= []
@@ -2363,19 +2314,20 @@ class MarkersPanel(wx.Panel):
             size=2,
             marker_type=MarkerType.COIL_TARGET,
         )
-        self.AddMarker(marker, render=True)
+        self.markers.AddMarker(marker, render=True, focus=True)
 
     def OnMenuShowVectorField(self, evt):
         session = ses.Session()
-        list_index = self.marker_list_ctrl.GetFocusedItem()
-        position = self.markers[list_index].position
-        orientation = np.radians(self.markers[list_index].orientation)
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.__get_marker(idx)
+        position = marker.position
+        orientation = np.radians(marker.orientation)
         Publisher.sendMessage('Calculate position and rotation', position=position, orientation=orientation)
         coord = [position, orientation]
         coord = np.array(coord).flatten()
 
         #Check here, it resets the radious list
-        Publisher.sendMessage('Update interseccion offline', m_img =self.m_img_offline, coord = coord, list_index = list_index)
+        Publisher.sendMessage('Update interseccion offline', m_img=self.m_img_offline, coord=coord, list_index=marker.marker_id)
 
         if session.GetConfig('debug_efield'):
             enorm = self.navigation.debug_efield_enorm
@@ -2400,44 +2352,48 @@ class MarkersPanel(wx.Panel):
         if idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        self.__set_marker_as_target(idx)
-        self.efield_target_idx_origin = idx
+        marker_id = self.__get_marker_id(idx)
+        self.markers.SetTarget(marker_id)
+        self.efield_target_idx_origin = marker_id
 
-        #Publisher.sendMessage('Get target index efield', target_index_list = idx )
+        #Publisher.sendMessage('Get target index efield', target_index_list = marker_id )
 
     def OnMenuSetEfieldTarget2(self,evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
         if idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        efield_target_idx_2 = idx
-        target1_origin = self.markers[self.efield_target_idx_origin].cortex_position_orientation
-        target2 = self.markers[efield_target_idx_2].cortex_position_orientation
-        Publisher.sendMessage('Get targets Ids for mtms', target1_origin = target1_origin, target2 = target2)
+
+        efield_target_idx_2 = self.__get_marker_id(idx)
+        target1_origin = self.markers.list[self.efield_target_idx_origin].cortex_position_orientation
+        target2 = self.markers.list[efield_target_idx_2].cortex_position_orientation
+        Publisher.sendMessage('Get targets Ids for mtms', target1_origin=target1_origin, target2=target2)
 
     def OnMenuSaveEfieldTargetData(self,evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
-        position = self.markers[list_index].position
-        orientation = self.markers[list_index].orientation
+        marker = self.__get_marker(list_index)
+        position = marker.position
+        orientation = marker.orientation
         plot_efield_vectors = self.navigation.plot_efield_vectors
-        Publisher.sendMessage('Save target data', target_list_index = list_index, position = position, orientation = orientation, plot_efield_vectors= plot_efield_vectors)
+        Publisher.sendMessage('Save target data', target_list_index=marker.marker_id, position=position, orientation=orientation, plot_efield_vectors=plot_efield_vectors)
 
     def OnSetEfieldBrainTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        list_index = self.marker_list_ctrl.GetFocusedItem()
-        position = self.markers[list_index].position
-        orientation =  self.markers[list_index].orientation
+        marker = self.__get_marker(idx)
+        position = marker.position
+        orientation = marker.orientation
+        marker_id = marker.marker_id
         if all([o is None for o in orientation]):
             orientation = [0, 0, 0]
 
-        self.__set_marker_as_point_of_interest(idx)
-        Publisher.sendMessage('Send efield target position on brain', marker_id=list_index, position=position, orientation=orientation)
-        self.SaveState()
+        self.markers.SetPointOfInterest(marker_id)
+        Publisher.sendMessage('Send efield target position on brain', marker_id=marker_id, position=position, orientation=orientation)
 
     def OnCreateBrainTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
-        position = self.markers[list_index].position
-        orientation = self.markers[list_index].orientation
+        marker = self.__get_marker(list_index)
+        position = marker.position
+        orientation = marker.orientation
 
         dialog = dlg.CreateBrainTargetDialog(marker=position+orientation, brain_actor=self.brain_actor)
         if dialog.ShowModal() == wx.ID_OK:
@@ -2448,13 +2404,13 @@ class MarkersPanel(wx.Panel):
             marker = self.CreateMarker(
                 position=position,
                 orientation=orientation,
-                # XXX: Setting the marker type to 'brain traget' is inconsistent with the variable names above ('coil_position_list' etc.);
+                # XXX: Setting the marker type to 'brain target' is inconsistent with the variable names above ('coil_position_list' etc.);
                 #   however, the dialog shown to the user by this function should be used exclusively for creating brain targets, hence the
                 #   variable naming (and the internal logic of the dialog where it currently returns both coil targets and brain targets)
                 #   should probably be modified to reflect that.
                 marker_type=MarkerType.BRAIN_TARGET,
             )
-            self.AddMarker(marker, render=True)
+            self.markers.AddMarker(marker, render=True, focus=True)
 
             for (position, orientation) in zip(brain_position_list, brain_orientation_list):
                 marker = self.CreateMarker(
@@ -2462,118 +2418,128 @@ class MarkersPanel(wx.Panel):
                     orientation=list(orientation),
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.AddMarker(marker, render=True)
+                self.markers.AddMarker(marker, render=True, focus=False)
 
         dialog.Destroy()
 
-        self.SaveState()
-
-    def OnMenuRemoveEfieldTarget(self,evt):
+    def OnMenuRemoveEfieldTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
+        marker_id = self.__get_marker_id(idx)
 
-        marker = self.markers[idx]
-        marker.is_target = False
-
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-        Publisher.sendMessage('Unset target', marker=marker)
-
-        # Update the marker list control.
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
-        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
+        self.markers.UnsetTarget(marker_id)
 
         self.efield_target_idx = None
 
-    def OnMenuRemoveEfieldTargetatCortex(self,evt):
+    def OnMenuRemoveEfieldTargetatCortex(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-
-        marker = self.markers[idx]
+        marker = self.__get_marker(idx)
 
         # TODO: Is this correct? Should it be "brain target"?
         marker.marker_type = MarkerType.LANDMARK
 
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-        self.marker_list_ctrl.SetItem(idx, const.POINT_OF_INTEREST_TARGET_COLUMN, "")
+        self.markers.UnsetPointOfInterest(marker.marker_id)
         Publisher.sendMessage('Clear efield target at cortex')
-        self.SaveState()
 
     def OnMenuUnsetTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.markers[idx]
-        marker.is_target = False
+        marker_id = self.__get_marker_id(idx)
+        self.markers.UnsetTarget(marker_id)
 
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-        Publisher.sendMessage('Unset target', marker=marker)
+    def _UnsetTarget(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+
+        # When unsetting a target, automatically unpress the target mode button.
+        Publisher.sendMessage('Press target mode button', pressed=False)
 
         # Update the marker list control.
         self.marker_list_ctrl.SetItemBackgroundColour(idx, 'white')
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
 
-        self.SaveState()
+        # Unset the target in itemDataMap
+        target_uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == target_uuid:
+                self.itemDataMap[key][const.TARGET_COLUMN] = ""
+
+    def __find_marker_index(self, marker_id):
+        """
+        For a marker_id, returns the corresponding index in self.marker_list_ctrl.
+        """
+        num_items = self.marker_list_ctrl.GetItemCount()
+        for idx in range(num_items):
+            item_marker_id = self.__get_marker_id(idx)
+            if item_marker_id == marker_id:
+                return idx
+        return None
+
+    def __get_marker_id(self, idx):
+        """
+        For an index in self.marker_list_ctrl, returns the corresponding marker_id
+        """
+        list_item = self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN)
+        return int(list_item.GetText())
+
+    def __get_marker(self, idx):
+        """
+        For an index in self.marker_list_ctrl, returns the corresponding marker
+        """
+        marker_id = self.__get_marker_id(idx)
+        return self.markers.list[marker_id]
 
     def ChangeColor(self, evt):
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
+        marker = self.__get_marker(index)
 
-        current_color = [ch * 255 for ch in self.markers[index].colour]
-
+        current_color = marker.colour8bit
         new_color = dlg.ShowColorDialog(color_current=current_color)
 
         if not new_color:
             return
 
-        assert len(new_color) == 3
-
-        marker = self.markers[index]
-
-        # XXX: Seems like a slightly too early point for rounding; better to round only when the value
-        #      is printed to the screen or file.
-        #
-        marker.colour = [round(s / 255.0, 3) for s in new_color]
-
-        Publisher.sendMessage('Set new color', marker=marker, new_color=new_color)
-
-        self.SaveState()
+        self.markers.ChangeColor(marker, new_color)
 
     def OnSetBrainTarget(self, evt):
         if isinstance(evt, int):
-           self.marker_list_ctrl.Focus(evt)
+            self.marker_list_ctrl.Focus(evt)
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
+        marker = self.__get_marker(index)
 
-        position = self.markers[index].position
-        orientation = self.markers[index].orientation
+        position = marker.position
+        orientation = marker.orientation
         dialog = dlg.CreateBrainTargetDialog(mTMS=self.mTMS, marker=position+orientation, brain_target=True, brain_actor=self.brain_actor)
 
         if dialog.ShowModal() == wx.ID_OK:
             position_list, orientation_list = dialog.GetValueBrainTarget()
             for (position, orientation) in zip(position_list, orientation_list):
-                marker = self.CreateMarker(
+                new_marker = self.CreateMarker(
                     position=list(position),
                     orientation=list(orientation),
                     size=0.05,
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.AddMarker(marker, render=True)
-                
-        dialog.Destroy()
+                self.markers.AddMarker(new_marker, render=True, focus=True)
 
-        self.SaveState()
+        dialog.Destroy()
 
     def OnSendBrainTarget(self, evt):
         if isinstance(evt, int):
-           self.marker_list_ctrl.Focus(evt)
+            self.marker_list_ctrl.Focus(evt)
         index = self.marker_list_ctrl.GetFocusedItem()
         if index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        brain_target = self.markers[index].position + self.markers[index].orientation
-        if self.__find_target_marker_idx():
-            coil_pose = self.markers[self.__find_target_marker_idx()].position+self.markers[self.__find_target_marker_idx()].orientation
+        marker = self.__get_marker(index)
+        brain_target = marker.position + marker.orientation
+        target = self.markers.FindTarget()
+        if target is not None:
+            coil_pose = target.position + target.orientation
             if self.navigation.coil_at_target:
                 self.mTMS.UpdateTarget(coil_pose, brain_target)
                 #wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
@@ -2596,7 +2562,7 @@ class MarkersPanel(wx.Panel):
               place where the list of markers, including information about their visualization, is
               stored.
         """
-        for (m, idx) in zip(self.markers, range(len(self.markers))):
+        for (m, idx) in zip(self.markers.list, range(len(self.markers.list))):
             visualization = m.visualization
             if visualization is None:
                 continue
@@ -2604,7 +2570,7 @@ class MarkersPanel(wx.Panel):
             if visualization['actor'] == actor:
                 # Unselect the previously selected item.
                 idx_old = self.marker_list_ctrl.GetFocusedItem()
-                if idx_old != -1:
+                if idx_old != -1 and idx_old != idx:
                     self.marker_list_ctrl.Select(idx_old, on=False)
 
                 # Focus and select the marker in the list control.
@@ -2617,18 +2583,8 @@ class MarkersPanel(wx.Panel):
             result = dlg.ShowConfirmationDialog(msg=_("Delete all markers? Cannot be undone."))
             if result != wx.ID_OK:
                 return
-
-        idx = self.__find_target_marker_idx()
-        if idx is not None:
-            marker = self.markers[idx]
-            Publisher.sendMessage('Unset target', marker=marker)
-
-        Publisher.sendMessage('Delete markers', markers=self.markers)
-
-        self.markers = []
-        self.marker_list_ctrl.DeleteAllItems()
-
-        self.SaveState()
+        self.markers.Clear()
+        self.itemDataMap.clear()
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -2640,7 +2596,6 @@ class MarkersPanel(wx.Panel):
                     indexes = [self.marker_list_ctrl.GetFocusedItem()]
 
         self.__delete_multiple_markers(indexes)
-        self.SaveState()
 
     def OnDeleteSelectedMarkers(self, evt=None):
         indexes = self.__get_selected_items()
@@ -2655,28 +2610,17 @@ class MarkersPanel(wx.Panel):
         if result != wx.ID_OK:
             return
 
-        # If current target is removed, handle it as a special case.
-        idx = self.__find_target_marker_idx()
-        if idx in indexes:
-            marker = self.markers[idx]
-            Publisher.sendMessage('Unset target', marker=marker)
-
         self.__delete_multiple_markers(indexes)
-        self.SaveState()
+
+        # Re-focus on the marker with the same index as the first marker that was selected before deletion.
+        if self.currently_focused_marker is not None:
+            first_deleted_index = indexes[0]
+            first_existing_index = first_deleted_index if first_deleted_index < len(self.markers.list) else len(self.markers.list) - 1
+
+            self.FocusOnMarker(first_existing_index)
 
     def GetNextMarkerLabel(self):
-        """
-        Return a label for the next marker that is not already in use, in the form 'New marker N',
-        where N is a number.
-        """
-        current_labels = [m.label for m in self.markers]
-        label = 'New marker'
-        i = 1
-        while label in current_labels:
-            i += 1
-            label = 'New marker ' + str(i)
-
-        return label
+        return self.markers.GetNextMarkerLabel()
 
     def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label=None,
                        is_target=False, seed=None, session_id=None, marker_type=None, cortex_position_orientation=None):
@@ -2710,9 +2654,28 @@ class MarkersPanel(wx.Panel):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
         )
-        self.AddMarker(marker, render=True)
+        self.markers.AddMarker(marker, render=True, focus=True)
 
-        self.SaveState()
+    # Given a string, try to parse it as an integer, float, or string.
+    #
+    # TODO: This shouldn't be here, but there's currently no good place for the function.
+    #   If csv-related functions are moved to a separate module, this function should be moved there.
+    def ParseValue(self, value):
+        value = value.strip()
+
+        # Check for integer, float, string encapsulated by quotes, and None.
+        if value == "None":
+            return None
+        try:
+            if '.' in value:
+                return float(value)
+            return int(value)
+
+        except ValueError:
+            # Check for strings marked by quotes.
+            if value.startswith('"') and value.endswith('"'):
+                return value[1:-1]
+            return value
 
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
@@ -2724,31 +2687,33 @@ class MarkersPanel(wx.Panel):
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
 
-                file.readline() # skip the header line
+                # Use the first line after the magick_line as the names for dictionary keys.
+                column_names = file.readline().strip().split('\t')
+                column_names_parsed = [self.ParseValue(name) for name in column_names]
 
-                self.marker_list_ctrl.Hide()
-                # Read the data lines and create markers
-                for line in file.readlines():
-                    marker = Marker(
-                        version=version,
-                    )
-                    marker.from_csv_row(line)
+                markers_data = []
+                for line in file:
+                    values = line.strip().split('\t')
+                    values_parsed = [self.ParseValue(value) for value in values]
+                    marker_data = dict(zip(column_names_parsed, values_parsed))
 
-                    # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
-                    marker.is_target = False
+                    markers_data.append(marker_data)
 
-                    # Note that we don't want to render the markers here for each loop iteration.
-                    self.AddMarker(marker, render=False)
+            self.marker_list_ctrl.Hide()
 
-                    if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
-                        Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
+            # Create markers from the dictionary.
+            for data in markers_data:
+                marker = Marker(version=version)
+                marker.from_dict(data)
 
-                    # Separately set the marker as target if needed.
-                    if marker.is_target:
-                        self.__set_marker_as_target(len(self.markers) - 1)
+                # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
+                marker.is_target = False
 
-                    if marker.is_point_of_interest:
-                        Publisher.sendMessage('Set as Efield target at cortex', position = marker.position, orientation = marker.orientation)
+                # Note that we don't want to render or focus on the markers here for each loop iteration.
+                self.markers.AddMarker(marker, render=False)
+
+                if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
+                    Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
         except Exception as e:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))
@@ -2756,8 +2721,8 @@ class MarkersPanel(wx.Panel):
 
         self.marker_list_ctrl.Show()
         Publisher.sendMessage('Render volume viewer')
-        self.SaveState()
         Publisher.sendMessage("Update UI for refine tab")
+        self.markers.SaveState()
 
     def OnLoadMarkers(self, evt):
         """Loads markers from file and appends them to the current marker list.
@@ -2775,10 +2740,10 @@ class MarkersPanel(wx.Panel):
 
     def OnShowHideAllMarkers(self, evt, ctrl):
         if ctrl.GetValue():
-            Publisher.sendMessage('Hide markers', markers=self.markers)
+            Publisher.sendMessage('Hide markers', markers=self.markers.list)
             ctrl.SetLabel('Show all')
         else:
-            Publisher.sendMessage('Show markers', markers=self.markers)
+            Publisher.sendMessage('Show markers', markers=self.markers.list)
             ctrl.SetLabel('Hide all')
 
     def OnSaveMarkers(self, evt):
@@ -2800,14 +2765,15 @@ class MarkersPanel(wx.Panel):
 
         version_line = '%s%i\n' % (const.MARKER_FILE_MAGICK_STRING, const.CURRENT_MARKER_FILE_VERSION)
         header_line = '%s\n' % Marker.to_csv_header()
-        data_lines = [marker.to_csv_row() + '\n' for marker in self.markers]
+        data_lines = [marker.to_csv_row() + '\n' for marker in self.markers.list]
         try:
             with open(filename, 'w', newline='') as file:
                 file.writelines([version_line, header_line])
                 file.writelines(data_lines)
                 file.close()
-        except:
-            wx.MessageBox(_("Error writing markers file."), _("InVesalius 3"))  
+        except Error as e:
+            wx.MessageBox(_("Error writing markers file."), _("InVesalius 3"))
+            utils.debug(e)
 
     def OnSelectColour(self, evt, ctrl):
         # TODO: Make sure GetValue returns 3 numbers (without alpha)
@@ -2819,10 +2785,25 @@ class MarkersPanel(wx.Panel):
     def OnChangeCurrentSession(self, new_session_id):
         self.current_session = new_session_id
 
+    def UpdateMarker(self, marker, new_position, new_orientation):
+        marker_id = marker.marker_id
+        self.markers.list[marker_id].position = new_position
+        self.markers.list[marker_id].orientation = new_orientation
+        self.UpdateMarkerInList(marker)
+        self.markers.SaveState()
+
+    def UpdateMarkerInList(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        if idx is None:
+            return
+
+        z_offset_str = str(marker.z_offset) if marker.z_offset != 0.0 else ""
+        self.marker_list_ctrl.SetItem(idx, const.Z_OFFSET_COLUMN, z_offset_str)
+
     def UpdateMarkerOrientation(self, marker_id=None):
         list_index = marker_id if marker_id else 0
-        position = self.markers[list_index].position
-        orientation = self.markers[list_index].orientation
+        position = self.markers.list[list_index].position
+        orientation = self.markers.list[list_index].orientation
         dialog = dlg.CreateBrainTargetDialog(mTMS=self.mTMS, marker=position+orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
@@ -2835,7 +2816,8 @@ class MarkersPanel(wx.Panel):
         self.brain_actor = actor
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label=None, is_target=False, seed=None,
-                     session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None):
+                     session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None,
+                     z_offset=0.0, z_rotation=0.0):
         """
         Create a new marker object.
         """
@@ -2855,44 +2837,57 @@ class MarkersPanel(wx.Panel):
         marker.session_id = session_id or self.current_session
         marker.marker_type = marker_type
         marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
+        marker.z_offset = z_offset
+        marker.z_rotation = z_rotation
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
-        marker.marker_id = len(self.markers)
+        marker.marker_id = len(self.markers.list)
+
+        # Create an uuid for the marker
+        marker.marker_uuid = str(uuid.uuid4())
 
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             marker.colour = [0, 0, 1]
 
         return marker
 
-    def AddMarker(self, marker, render=True):
-        """
-        Given a marker object, add it to the list of markers and render the new marker.
-        """
-        if self.robot.IsConnected() and self.nav_status:
-            current_head_robot_target_status = True
-        else:
-            current_head_robot_target_status = False
+    def _AddMarker(self, marker, render, focus):
 
-        Publisher.sendMessage('Add marker', marker=marker, render=render)
-        self.markers.append(marker)
-
-        # Add marker to the marker list in GUI.
+        # Add marker to the marker list in GUI and to the itemDataMap.
         num_items = self.marker_list_ctrl.GetItemCount()
 
-        list_entry = ["" for _ in range(0, const.TARGET_COLUMN)]
+        key = 0
+        if len(self.itemDataMap) > 0:
+            # If itemDataMap is not empty, set the new key as last key + 1
+            key = list(self.itemDataMap.keys())[-1] + 1
+
+        list_entry = ["" for _ in range(0, const.X_COLUMN)]
         list_entry[const.ID_COLUMN] = num_items
         list_entry[const.SESSION_COLUMN] = str(marker.session_id)
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
         list_entry[const.LABEL_COLUMN] = marker.label
+        list_entry[const.Z_OFFSET_COLUMN] = str(marker.z_offset) if marker.z_offset != 0.0 else ""
+        list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
+        list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = "Yes" if marker.is_point_of_interest else ""
+
+        if self.session.GetConfig('debug'):
+            list_entry.append(round(marker.x, 1))
+            list_entry.append(round(marker.y, 1))
+            list_entry.append(round(marker.z, 1))
 
         self.marker_list_ctrl.Append(list_entry)
+        self.marker_list_ctrl.SetItemData(num_items, key)
+        data_map_entry = list_entry.copy()
+
+        # Add the UUID to the entry in itemDataMap
+        data_map_entry.append(marker.marker_uuid)
+        self.itemDataMap[key] = data_map_entry
 
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
 
-        if self.session.GetConfig('debug'):
-            self.marker_list_ctrl.SetItem(num_items, const.X_COLUMN, str(round(marker.x, 1)))
-            self.marker_list_ctrl.SetItem(num_items, const.Y_COLUMN, str(round(marker.y, 1)))
-            self.marker_list_ctrl.SetItem(num_items, const.Z_COLUMN, str(round(marker.z, 1)))
-
         self.marker_list_ctrl.EnsureVisible(num_items)
+
+        # Focus on the added marker.
+        if focus:
+            self.FocusOnMarker(num_items)

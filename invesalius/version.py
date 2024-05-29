@@ -25,6 +25,7 @@ import os
 import os.path
 import re
 
+# DEPRECATED. Check the use o Dunamai (https://github.com/mtkennerly/dunamai) to have git commit
 def get_svn_revision(path=None):
     """
     Returns the SVN revision in the form pspb-XXXX,

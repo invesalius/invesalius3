@@ -46,18 +46,18 @@ from invesalius.project import Project
 import invesalius.session as ses
 from invesalius.i18n import tr as _
 
-BTN_NEW = wx.NewId()
+BTN_NEW = wx.NewIdRef()
 
-MENU_BRUSH_SQUARE = wx.NewId()
-MENU_BRUSH_CIRCLE = wx.NewId()
+MENU_BRUSH_SQUARE = wx.NewIdRef()
+MENU_BRUSH_CIRCLE = wx.NewIdRef()
 
-MENU_BRUSH_ADD = wx.NewId()
-MENU_BRUSH_DEL = wx.NewId()
-MENU_BRUSH_THRESH = wx.NewId()
+MENU_BRUSH_ADD = wx.NewIdRef()
+MENU_BRUSH_DEL = wx.NewIdRef()
+MENU_BRUSH_THRESH = wx.NewIdRef()
 
-MENU_UNIT_MM = wx.NewId()
-MENU_UNIT_UM = wx.NewId()
-MENU_UNIT_PX = wx.NewId()
+MENU_UNIT_MM = wx.NewIdRef()
+MENU_UNIT_UM = wx.NewIdRef()
+MENU_UNIT_PX = wx.NewIdRef()
 
 MASK_LIST = []
 
@@ -97,7 +97,7 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Create mask for slice segmentation and editing"))
+        tooltip = _("Create mask for slice segmentation and editing")
         link_new_mask = hl.HyperLinkCtrl(self, -1, _("Create new mask"))
         link_new_mask.SetUnderlines(False, False, False)
         link_new_mask.SetBold(True)

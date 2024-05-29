@@ -83,7 +83,7 @@ class OptitrackTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.SetOptitrackconfigs()
+        dialog = dlg.ConfigureOptitrackDialog()
 
         status = dialog.ShowModal()
         success = status == ID_OK
@@ -381,7 +381,7 @@ class PolarisTrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.SetNDIconfigs()
+        dialog = dlg.ConfigurePolarisDialog()
         status = dialog.ShowModal()
 
         success = status == ID_OK
@@ -443,7 +443,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.SetNDIconfigs()
+        dialog = dlg.ConfigurePolarisDialog()
         status = dialog.ShowModal()
 
         success = status == ID_OK
@@ -574,98 +574,3 @@ def CreateTrackerConnection(tracker_id):
         model=model
     )
     return tracker_connection
-
-
-
-'''
-Deprecated Code
-
-class RobotTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
-        super().__init__(model)
-
-    def Configure(self):
-        select_tracker_dialog = dlg.SetTrackerDeviceToRobot()
-        status = select_tracker_dialog.ShowModal()
-
-        success = False
-
-        if status == ID_OK:
-            tracker_id = select_tracker_dialog.GetValue()
-            if tracker_id:
-                connection = CreateTrackerConnection(tracker_id)
-                connection.Configure()
-
-                select_ip_dialog = dlg.SetRobotIP()
-                status = select_ip_dialog.ShowModal()
-
-                if status == ID_OK:
-                    robot_ip = select_ip_dialog.GetValue()
-
-                    self.configuration = {
-                        'tracker_id': tracker_id,
-                        'robot_ip': robot_ip,
-                        'tracker_configuration': connection.GetConfiguration(),
-                    }
-                    self.connection = connection
-
-                    success = True
-
-                select_ip_dialog.Destroy()
-
-        select_tracker_dialog.Destroy()
-
-        return success
-
-    def Connect(self):
-        assert self.configuration is not None, "No configuration defined"
-
-        tracker_id = self.configuration['tracker_id']
-        robot_ip = self.configuration['robot_ip']
-        tracker_configuration = self.configuration['tracker_configuration']
-
-        if self.connection is None:
-            self.connection = CreateTrackerConnection(tracker_id)
-            self.connection.SetConfiguration(tracker_configuration)
-
-        Publisher.sendMessage('Connect to robot', robot_IP=robot_ip)
-
-        self.connection.Connect()
-        if not self.connection.IsConnected():
-            print("Failed to connect to tracker.")
-
-    def Disconnect(self):
-        try:
-            Publisher.sendMessage('Reset robot', data=None)
-
-            self.connection.Disconnect()
-            self.connection = False
-
-            self.lib_mode = 'wrapper'
-            print('Tracker disconnected.')
-        except:
-            self.connection = True
-            self.lib_mode = 'error'
-            print('The tracker could not be disconnected.')
-
-    def GetTrackerId(self):
-        tracker_id = self.configuration['tracker_id']
-        return tracker_id
-
-    def GetConnection(self):
-        # XXX: This is a bit convoluted logic, so here's a short explanation: in other cases, self.connection
-        #   is the object which can be used to communicate with the tracker directly. However, when using robot,
-        #   self.connection is another TrackerConnection object, hence forward the query to that object.
-        return self.connection.GetConnection()
-
-    def GetLibMode(self):
-        return self.connection.GetLibMode()
-
-    def IsConnected(self):
-        return self.connection and self.connection.IsConnected()
-
-    def SetConfiguration(self, configuration):
-        self.configuration = configuration
-        return True
-
-'''

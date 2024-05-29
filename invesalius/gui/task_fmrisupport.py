@@ -76,7 +76,7 @@ class InnerTaskPanel(wx.Panel):
                               _("Select Modalities / File"))
         
         # Button for import config coil file
-        tooltip = wx.ToolTip(_("Load Nifti image"))
+        tooltip = _("Load Nifti image")
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)

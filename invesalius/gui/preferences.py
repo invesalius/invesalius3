@@ -23,6 +23,7 @@ from invesalius.navigation.robot import Robot
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.navigation.navigation import Navigation
 
+
 class Preferences(wx.Dialog):
     def __init__(
         self,
@@ -35,12 +36,13 @@ class Preferences(wx.Dialog):
         super().__init__(parent, id_, title, style=style)
 
         self.book = wx.Notebook(self, -1)
+                                         
+        self.visualization_tab = VisualizationTab(self.book)
+        self.language_tab = LanguageTab(self.book)
+        self.logging_tab = LoggingTab(self.book)
 
-        self.pnl_viewer3d = Viewer3D(self.book)
-        self.pnl_language = Language(self.book)                                          
-        self.pnl_logging = LoggingPane(self.book)
+        self.book.AddPage(self.visualization_tab, _("Visualization"))
 
-        self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
         session = ses.Session()
         mode = session.GetConfig('mode')
         if mode == const.MODE_NAVIGATOR:
@@ -52,15 +54,17 @@ class Preferences(wx.Dialog):
                 pedal_connector=pedal_connector,
                 neuronavigation_api=neuronavigation_api,
             )
-            self.pnl_navigation = NavigationPage(self.book, navigation)
-            self.pnl_tracker = TrackerPage(self.book, tracker, robot)
-            self.pnl_object = ObjectPage(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
-            self.book.AddPage(self.pnl_navigation, _("Navigation"))
-            self.book.AddPage(self.pnl_tracker, _("Tracker"))
-            self.book.AddPage(self.pnl_object, _("Stimulator"))
 
-        self.book.AddPage(self.pnl_language, _("Language"))
-        self.book.AddPage(self.pnl_logging, _("Logging"))
+            self.navigation_tab = NavigationTab(self.book, navigation)
+            self.tracker_tab = TrackerTab(self.book, tracker, robot)
+            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
+
+            self.book.AddPage(self.navigation_tab, _("Navigation"))
+            self.book.AddPage(self.tracker_tab, _("Tracker"))
+            self.book.AddPage(self.object_tab, _("Stimulator"))
+
+        self.book.AddPage(self.language_tab, _("Language"))
+        self.book.AddPage(self.logging_tab, _("Logging"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -68,6 +72,7 @@ class Preferences(wx.Dialog):
         if sys.platform.startswith("linux"):
             self.book.SetMinClientSize((min_width * 2, min_height * 2))
         self.book.SetSelection(page)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
@@ -80,9 +85,10 @@ class Preferences(wx.Dialog):
 
     def GetPreferences(self):
         values = {}
-        lang = self.pnl_language.GetSelection()
-        viewer = self.pnl_viewer3d.GetSelection()
-        logging = self.pnl_logging.GetSelection()
+
+        lang = self.language_tab.GetSelection()
+        viewer = self.visualization_tab.GetSelection()
+        logging = self.logging_tab.GetSelection()
 
         values.update(lang)
         values.update(viewer)
@@ -106,10 +112,10 @@ class Preferences(wx.Dialog):
         console_logging = logger.GetConfig('console_logging')
         console_logging_level = logger.GetConfig('console_logging_level')
 
-        #session = ses.Session()
         mode = session.GetConfig('mode')
+
         if mode == const.MODE_NAVIGATOR:
-            self.pnl_object.LoadConfig()
+            self.object_tab.LoadConfig()
 
         values = {
             const.RENDERING: rendering,
@@ -124,11 +130,12 @@ class Preferences(wx.Dialog):
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
         }
 
-        self.pnl_viewer3d.LoadSelection(values)
-        self.pnl_language.LoadSelection(values)
-        self.pnl_logging.LoadSelection(values)
+        self.visualization_tab.LoadSelection(values)
+        self.language_tab.LoadSelection(values)
+        self.logging_tab.LoadSelection(values)
 
-class Viewer3D(wx.Panel):
+
+class VisualizationTab(wx.Panel):
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
@@ -196,10 +203,8 @@ class Viewer3D(wx.Panel):
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
-class LoggingPane(wx.Panel):
-
+class LoggingTab(wx.Panel):
     def __init__(self, parent):
-
         wx.Panel.__init__(self, parent)
         
         bsizer_file_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _(" File Logging "))
@@ -330,12 +335,16 @@ class LoggingPane(wx.Panel):
         self.rb_console_logging.SetSelection(int(console_logging))
         self.cb_console_logging_level.SetSelection(int(console_logging_level))
 
-class NavigationPage(wx.Panel):
+class NavigationTab(wx.Panel):
     def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
+        
+        self.session = ses.Session()
         self.navigation = navigation
         self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
+
+        self.LoadConfig()
 
         text_note = wx.StaticText(self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
         # Change sleep pause between navigation loops
@@ -385,13 +394,30 @@ class NavigationPage(wx.Panel):
         self.sleep_nav = ctrl.GetValue()
         self.navigation.UpdateNavSleep(self.sleep_nav)
 
+        self.session.SetConfig('sleep_nav', self.sleep_nav)
+
     def OnSelectCoordSleep(self, evt, ctrl):
         self.sleep_coord = ctrl.GetValue()
         Publisher.sendMessage('Update coord sleep', data=self.sleep_coord)
+
+        self.session.SetConfig('sleep_coord', self.sleep_nav)
+
+    def LoadConfig(self):
+        sleep_nav = self.session.GetConfig('sleep_nav')
+        sleep_coord = self.session.GetConfig('sleep_coord')
+
+        if sleep_nav is not None:
+            self.sleep_nav = sleep_nav
         
-class ObjectPage(wx.Panel):
+        if sleep_coord is not None:
+            self.sleep_coord = sleep_coord
+
+
+class ObjectTab(wx.Panel):
     def __init__(self, parent, navigation, tracker, pedal_connector, neuronavigation_api):
         wx.Panel.__init__(self, parent)
+
+        self.session = ses.Session()
 
         self.coil_list = const.COIL
         
@@ -408,7 +434,7 @@ class ObjectPage(wx.Panel):
         self.state = self.LoadConfig()
 
         # Button for creating new stimulator
-        tooltip = wx.ToolTip(_("Create new stimulator"))
+        tooltip = _("Create new stimulator")
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
@@ -416,7 +442,7 @@ class ObjectPage(wx.Panel):
         self.btn_new = btn_new
 
         # Button for loading stimulator config file
-        tooltip = wx.ToolTip(_("Load stimulator configuration file"))
+        tooltip = _("Load stimulator configuration file")
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
@@ -424,7 +450,7 @@ class ObjectPage(wx.Panel):
         self.btn_load = btn_load
 
         # Save button for saving stimulator config file
-        tooltip = wx.ToolTip(_(u"Save stimulator configuration file"))
+        tooltip = _(u"Save stimulator configuration file")
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
@@ -457,23 +483,23 @@ class ObjectPage(wx.Panel):
         ])
         load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
         # Change angles threshold
-        text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
+        text_angles = wx.StaticText(self, -1, _("Angle threshold (degrees):"))
         spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_angles.SetRange(0.1, 99)
-        spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
+        spin_size_angles.SetValue(self.angle_threshold)
         spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
         spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
 
         # Change dist threshold
-        text_dist = wx.StaticText(self, -1, _("Distance threshold [mm]:"))
+        text_dist = wx.StaticText(self, -1, _("Distance threshold (mm):"))
         spin_size_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_dist.SetRange(0.1, 99)
-        spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
-        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
-        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+        spin_size_dist.SetValue(self.distance_threshold)
+        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
+        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
 
         # Change timestamp interval
-        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval [s]:"))
+        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval (s):"))
         spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
         spin_timestamp_dist.SetRange(0.5, 60.0)
         spin_timestamp_dist.SetValue(self.timestamp)
@@ -521,19 +547,18 @@ class ObjectPage(wx.Panel):
         Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
 
     def LoadConfig(self):
-        session = ses.Session()
-        state = session.GetConfig('navigation')
+        self.angle_threshold = self.session.GetConfig('angle_threshold') or const.DEFAULT_ANGLE_THRESHOLD
+        self.distance_threshold = self.session.GetConfig('distance_threshold') or const.DEFAULT_DISTANCE_THRESHOLD
 
-        if state is None:
-            return False
+        state = self.session.GetConfig('navigation')
 
-        object_fiducials = np.array(state['object_fiducials'])
-        object_orientations = np.array(state['object_orientations'])
-        object_reference_mode = state['object_reference_mode']
-        object_name = state['object_name'].encode(const.FS_ENCODE)
+        if state is not None:
+            object_fiducials = np.array(state['object_fiducials'])
+            object_orientations = np.array(state['object_orientations'])
+            object_reference_mode = state['object_reference_mode']
+            object_name = state['object_name'].encode(const.FS_ENCODE)
 
-        self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.coil_path = object_fiducials, object_orientations, object_reference_mode, object_name
-        return True
+            self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.coil_path = object_fiducials, object_orientations, object_reference_mode, object_name
 
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
@@ -632,10 +657,16 @@ class ObjectPage(wx.Panel):
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
     def OnSelectAngleThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
+        self.angle_threshold = ctrl.GetValue()
+        Publisher.sendMessage('Update angle threshold', angle=self.angle_threshold)
 
-    def OnSelectDistThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update dist threshold', dist_threshold=ctrl.GetValue())
+        self.session.SetConfig('angle_threshold', self.angle_threshold)
+
+    def OnSelectDistanceThreshold(self, evt, ctrl):
+        self.distance_threshold = ctrl.GetValue()
+        Publisher.sendMessage('Update distance threshold', dist_threshold=self.distance_threshold)
+
+        self.session.SetConfig('distance_threshold', self.distance_threshold)
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
@@ -643,7 +674,8 @@ class ObjectPage(wx.Panel):
     def OnObjectUpdate(self, data=None):
         self.config_txt.SetLabel(os.path.basename(data[-1]))
 
-class TrackerPage(wx.Panel):
+
+class TrackerTab(wx.Panel):
     def __init__(self, parent, tracker, robot):
         wx.Panel.__init__(self, parent)
 
@@ -659,7 +691,7 @@ class TrackerPage(wx.Panel):
         tracker_options = [_("Select")] + self.tracker.get_trackers()
         select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
                                           choices=tracker_options, style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        tooltip = wx.ToolTip(_("Choose the tracking device"))
+        tooltip = _("Choose the tracking device")
         select_tracker_elem.SetToolTip(tooltip)
         select_tracker_elem.SetSelection(self.tracker.tracker_id)
         select_tracker_elem.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem))
@@ -668,7 +700,7 @@ class TrackerPage(wx.Panel):
         select_tracker_label = wx.StaticText(self, -1, _('Choose the tracking device: '))
 
         # ComboBox for tracker reference mode
-        tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
+        tooltip = _("Choose the navigation reference mode")
         choice_ref = wx.ComboBox(self, -1, "", size=(145, -1),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
@@ -693,7 +725,7 @@ class TrackerPage(wx.Panel):
         lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
-        tooltip = wx.ToolTip(_("Choose or type the robot IP"))
+        tooltip = _("Choose or type the robot IP")
         robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
                                   choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
@@ -758,8 +790,8 @@ class TrackerPage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
-        Publisher.subscribe(self.OnRobotStatus, "Robot connection status")
-        Publisher.subscribe(self.OnTransformationMatrix, "Load robot transformation matrix")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
+        Publisher.subscribe(self.OnSetRobotTransformationMatrix, "Neuronavigation to Robot: Set robot transformation matrix")
     
     def LoadConfig(self):
         session = ses.Session()
@@ -774,7 +806,10 @@ class TrackerPage(wx.Panel):
         return True
 
     def OnChooseTracker(self, evt, ctrl):
-        self.HideParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Hide)
+        else:
+            self.HideParent()
         Publisher.sendMessage('Begin busy cursor')
         Publisher.sendMessage('Update status text in GUI',
                               label=_("Configuring tracker ..."))
@@ -789,8 +824,11 @@ class TrackerPage(wx.Panel):
         Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
         ctrl.SetSelection(self.tracker.tracker_id)
-        self.ShowParent()
         Publisher.sendMessage('End busy cursor')
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Show)
+        else:
+            self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
         # Probably need to refactor object registration as a whole to use the 
@@ -815,19 +853,25 @@ class TrackerPage(wx.Panel):
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
-            Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
+            Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobotRegister(self, evt):
-        self.HideParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Hide)
+        else:
+            self.HideParent()
         self.robot.RegisterRobot()
-        self.ShowParent()
+        if sys.platform == 'darwin':
+            wx.CallAfter(self.GetParent().Show)
+        else:
+            self.ShowParent()
     
     def OnRobotStatus(self, data):
         if data:
             self.status_text.SetLabelText("Setup robot transformation matrix:")
             self.btn_rob_con.Show()
 
-    def OnTransformationMatrix(self, data):
+    def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")
@@ -835,7 +879,8 @@ class TrackerPage(wx.Panel):
             self.btn_rob_con.Layout()
             self.Parent.Update()
 
-class Language(wx.Panel):
+
+class LanguageTab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -867,64 +912,3 @@ class Language(wx.Panel):
         locales = self.lg.GetLocalesKey()
         selection = locales.index(language)
         self.cmb_lang.SetSelection(int(selection))
-
-
-'''
-Deprecated code
-
-class SurfaceCreation(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        self.rb_fill_border = wx.RadioBox(
-            self,
-            -1,
-            _("Fill border holes"),
-            choices=[_("Yes"), _("No")],
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-        )
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.rb_fill_border)
-
-        self.SetSizerAndFit(sizer)
-
-    def GetSelection(self):
-        return {}
-
-    def LoadSelection(self, values):
-        pass
-
-class Viewer2D(wx.Panel):
-    def __init__(self, parent):
-
-        wx.Panel.__init__(self, parent)
-
-        bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Slices"))
-        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Interpolated "))
-        rb_inter = self.rb_inter = wx.RadioBox(
-            bsizer.GetStaticBox(),
-            -1,
-            choices=[_("Yes"), _("No")],
-            majorDimension=3,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-        )
-
-        bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT, 10)
-        bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT, 0)
-
-        border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer, 1, wx.EXPAND | wx.ALL, 10)
-        self.SetSizerAndFit(border)
-        self.Layout()
-
-    def GetSelection(self):
-
-        options = {const.SLICE_INTERPOLATION: self.rb_inter.GetSelection()}
-
-        return options
-
-    def LoadSelection(self, values):
-        value = values[const.SLICE_INTERPOLATION]
-        self.rb_inter.SetSelection(int(value))
-
-'''

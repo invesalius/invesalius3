@@ -321,7 +321,7 @@ import wx.lib.buttons as btn
 from invesalius.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
-RAYCASTING_TOOLS = wx.NewId()
+RAYCASTING_TOOLS = wx.NewIdRef()
 
 ID_TO_NAME = {}
 ID_TO_TOOL = {}
@@ -356,7 +356,6 @@ class VolumeToolPanel(wx.Panel):
         BMP_SLICE_PLANE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("slice_plane.png")), wx.BITMAP_TYPE_PNG)
         BMP_3D_STEREO = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG)
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        BMP_3D_MASK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(self, -1,"", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         self.button_raycasting.SetToolTip("Raycasting view")
@@ -366,7 +365,6 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.SetToolTip("Slices into 3D")
         #self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         #self.button_target.Enable(0)
-        #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
@@ -456,7 +454,7 @@ class VolumeToolPanel(wx.Panel):
         #print ">>>>", const.RAYCASTING_TYPES.sort()
         #print "\n\n"
         for name in const.RAYCASTING_TYPES:
-            id = wx.NewId()
+            id = wx.NewIdRef()
             item = menu.Append(id, name, kind=wx.ITEM_RADIO)
             if name == const.RAYCASTING_OFF_LABEL:
                 self.off_item = item
@@ -468,7 +466,7 @@ class VolumeToolPanel(wx.Panel):
         self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
-           id = wx.NewId()
+           id = wx.NewIdRef()
            if not(self.id_cutplane):
                self.id_cutplane = id
            item = submenu.Append(id, name, kind=wx.ITEM_CHECK)
@@ -501,7 +499,7 @@ class VolumeToolPanel(wx.Panel):
         itens = ["Axial", "Coronal", "Sagital"]
 
         for value in itens:
-            new_id = wx.NewId()
+            new_id = wx.NewIdRef()
 
             item = slice_plane_menu.Append(new_id, value, kind = wx.ITEM_CHECK)
             ID_TO_ITEMSLICEMENU[new_id] = item
@@ -516,7 +514,7 @@ class VolumeToolPanel(wx.Panel):
                  const.STEREO_CHECKBOARD]
 
         for value in itens:
-            new_id = wx.NewId()
+            new_id = wx.NewIdRef()
             item = stereo_menu.Append(new_id, value, kind = wx.ITEM_RADIO)
             ID_TO_ITEM_3DSTEREO[new_id] = item
             ID_TO_STEREO_NAME[new_id] = value

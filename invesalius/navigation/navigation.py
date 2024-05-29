@@ -40,6 +40,37 @@ from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
+from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
+from invesalius.navigation.image import Image
+from invesalius.navigation.tracker import Tracker
+from invesalius.navigation.markers import MarkersControl
+from invesalius.navigation.robot import Robot
+from invesalius.net.neuronavigation_api import NeuronavigationApi
+from invesalius.net.pedal_connection import PedalConnector
+
+
+class NavigationHub(metaclass=Singleton):
+    """
+    Class to initialize and store references to navigation components.
+    """
+    def __init__(self, window=None):
+        self.tracker = Tracker()
+        self.image = Image()
+        self.icp = IterativeClosestPoint()
+        self.neuronavigation_api = NeuronavigationApi()
+        self.pedal_connector = PedalConnector(self.neuronavigation_api, window)
+        self.navigation = Navigation(
+            pedal_connector=self.pedal_connector,
+            neuronavigation_api=self.neuronavigation_api
+        )
+        self.robot = Robot(
+            tracker=self.tracker,
+            navigation=self.navigation,
+            icp=self.icp,
+        )
+        self.markers = MarkersControl(robot=self.robot)
+
+
 class QueueCustom(queue.Queue):
     """
     A custom queue subclass that provides a :meth:`clear` method.
@@ -97,9 +128,9 @@ class UpdateNavigationScene(threading.Thread):
             got_coords = False
             object_visible_flag = False
             try:
-                coord, markers_flag, m_img, view_obj = self.coord_queue.get_nowait()
+                coord, marker_visibilities, m_img, view_obj = self.coord_queue.get_nowait()
                 got_coords = True
-                object_visible_flag = markers_flag[2]
+                object_visible_flag = marker_visibilities[2]
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -193,9 +224,15 @@ class Navigation(metaclass=Singleton):
         self.enable_act = False
         self.act_data = None
         self.n_tracts = const.N_TRACTS
+        
+        # Sleep parameters
+        session = ses.Session()
+        sleep_nav = session.GetConfig('sleep_nav', const.SLEEP_NAVIGATION)
+
+        self.sleep_nav = sleep_nav
+
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
-        self.sleep_nav = const.SLEEP_NAVIGATION
 
         # Serial port
         self.serial_port_in_use = False
@@ -339,7 +376,7 @@ class Navigation(metaclass=Singleton):
                 coreg_data = [self.m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
-                    coord_raw, markers_flag = tracker.TrackerCoordinates.GetCoordinates()
+                    coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
                 else:
                     coord_raw = np.array([None])
 
