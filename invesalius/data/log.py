@@ -273,9 +273,9 @@ class MyLogger(metaclass=Singleton):
 
 def function_call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        logger = MyLogger() 
+        #logger = MyLogger() 
         msg = 'Function {} called'.format(function.__name__)
-        logger._logger.info(msg)
+        invLogger._logger.info(msg)
         function(*args)
     return wrapper_accepting_arguments
 
