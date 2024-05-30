@@ -359,6 +359,7 @@ class Slice(metaclass=utils.Singleton):
         self.value_range = (0, 1)
 
         self.interaction_style.Reset()
+        self.to_show_aux = ""
 
         Publisher.sendMessage("Select first item from slice menu")
 
