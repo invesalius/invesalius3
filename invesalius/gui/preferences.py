@@ -104,13 +104,13 @@ class Preferences(wx.Dialog):
         language = session.GetConfig('language')
         slice_interpolation = session.GetConfig('slice_interpolation')
 
-        logger = log.MyLogger()
-        file_logging = logger.GetConfig('file_logging')
-        file_logging_level = logger.GetConfig('file_logging_level')
-        append_log_file = logger.GetConfig('append_log_file')
-        logging_file  = logger.GetConfig('logging_file')
-        console_logging = logger.GetConfig('console_logging')
-        console_logging_level = logger.GetConfig('console_logging_level')
+        #logger = log.MyLogger()
+        file_logging = log.invLogger.GetConfig('file_logging')
+        file_logging_level = log.invLogger.GetConfig('file_logging_level')
+        append_log_file = log.invLogger.GetConfig('append_log_file')
+        logging_file  = log.invLogger.GetConfig('logging_file')
+        console_logging = log.invLogger.GetConfig('console_logging')
+        console_logging_level = log.invLogger.GetConfig('console_logging_level')
 
         mode = session.GetConfig('mode')
 
@@ -304,20 +304,20 @@ class LoggingTab(wx.Panel):
             const.CONSOLE_LOGGING_LEVEL: self.cb_console_logging_level.GetSelection(),
         }
         #session = ses.Session()
-        logger = log.MyLogger()
+        #logger = log.MyLogger()
         file_logging = self.rb_file_logging.GetSelection()
-        logger.SetConfig('file_logging', file_logging)
+        log.invLogger.SetConfig('file_logging', file_logging)
         file_logging_level = self.cb_file_logging_level.GetSelection()
-        logger.SetConfig('file_logging_level', file_logging_level)
+        log.invLogger.SetConfig('file_logging_level', file_logging_level)
         append_log_file = self.rb_append_file.GetSelection()
-        logger.SetConfig('append_log_file', append_log_file)
+        log.invLogger.SetConfig('append_log_file', append_log_file)
         logging_file  = self.tc_log_file_name.GetValue()
-        logger.SetConfig('logging_file', logging_file)
+        log.invLogger.SetConfig('logging_file', logging_file)
         console_logging = self.rb_console_logging.GetSelection()
-        logger.SetConfig('console_logging', console_logging)
+        log.invLogger.SetConfig('console_logging', console_logging)
         console_logging_level = self.cb_console_logging_level.GetSelection()
-        logger.SetConfig('console_logging_level', console_logging_level)
-        logger.configureLogging()
+        log.invLogger.SetConfig('console_logging_level', console_logging_level)
+        log.invLogger.configureLogging()
         return options
 
     def LoadSelection(self, values):
