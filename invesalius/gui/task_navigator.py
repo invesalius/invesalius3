@@ -2656,6 +2656,27 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
+    # Given a string, try to parse it as an integer, float, or string.
+    #
+    # TODO: This shouldn't be here, but there's currently no good place for the function.
+    #   If csv-related functions are moved to a separate module, this function should be moved there.
+    def ParseValue(self, value):
+        value = value.strip()
+
+        # Check for integer, float, string encapsulated by quotes, and None.
+        if value == "None":
+            return None
+        try:
+            if '.' in value:
+                return float(value)
+            return int(value)
+
+        except ValueError:
+            # Check for strings marked by quotes.
+            if value.startswith('"') and value.endswith('"'):
+                return value[1:-1]
+            return value
+
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
             with open(filename, 'r') as file:
@@ -2666,24 +2687,33 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
                     return
 
-                file.readline() # skip the header line
+                # Use the first line after the magick_line as the names for dictionary keys.
+                column_names = file.readline().strip().split('\t')
+                column_names_parsed = [self.ParseValue(name) for name in column_names]
 
-                self.marker_list_ctrl.Hide()
-                # Read the data lines and create markers
-                for line in file.readlines():
-                    marker = Marker(
-                        version=version,
-                    )
-                    marker.from_csv_row(line)
+                markers_data = []
+                for line in file:
+                    values = line.strip().split('\t')
+                    values_parsed = [self.ParseValue(value) for value in values]
+                    marker_data = dict(zip(column_names_parsed, values_parsed))
 
-                    # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
-                    marker.is_target = False
+                    markers_data.append(marker_data)
 
-                    # Note that we don't want to render or focus on the markers here for each loop iteration.
-                    self.markers.AddMarker(marker, render=False)
+            self.marker_list_ctrl.Hide()
 
-                    if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
-                        Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
+            # Create markers from the dictionary.
+            for data in markers_data:
+                marker = Marker(version=version)
+                marker.from_dict(data)
+
+                # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
+                marker.is_target = False
+
+                # Note that we don't want to render or focus on the markers here for each loop iteration.
+                self.markers.AddMarker(marker, render=False)
+
+                if overwrite_image_fiducials and marker.label in self.__list_fiducial_labels():
+                    Publisher.sendMessage('Load image fiducials', label=marker.label, position=marker.position)
 
         except Exception as e:
             wx.MessageBox(_("Invalid markers file."), _("InVesalius 3"))

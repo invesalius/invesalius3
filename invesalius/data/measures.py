@@ -3,10 +3,7 @@
 import math
 import sys
 
-from invesalius.pubsub import pub as Publisher
-
 import numpy as np
-
 from vtkmodules.vtkCommonCore import vtkMath
 from vtkmodules.vtkFiltersCore import vtkAppendPolyData
 from vtkmodules.vtkFiltersSources import (
@@ -27,37 +24,45 @@ import invesalius.constants as const
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
-
 from invesalius import math_utils
-from invesalius.gui.widgets.canvas_renderer import TextBox, Ellipse, Polygon, CanvasHandlerBase
+from invesalius.gui.widgets.canvas_renderer import (
+    CanvasHandlerBase,
+    Ellipse,
+    Polygon,
+    TextBox,
+)
 from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
 
-TYPE = {const.LINEAR: _(u"Linear"),
-        const.ANGULAR: _(u"Angular"),
-        const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
-        const.DENSITY_POLYGON: _(u"Density Polygon"),
-        }
+TYPE = {
+    const.LINEAR: _("Linear"),
+    const.ANGULAR: _("Angular"),
+    const.DENSITY_ELLIPSE: _("Density Ellipse"),
+    const.DENSITY_POLYGON: _("Density Polygon"),
+}
 
-LOCATION = {const.SURFACE: _(u"3D"),
-            const.AXIAL: _(u"Axial"),
-            const.CORONAL: _(u"Coronal"),
-            const.SAGITAL: _(u"Sagittal")
-        }
+LOCATION = {
+    const.SURFACE: _("3D"),
+    const.AXIAL: _("Axial"),
+    const.CORONAL: _("Coronal"),
+    const.SAGITAL: _("Sagittal"),
+}
 
 map_locations_id = {
-    "3D":       const.SURFACE,
-    "AXIAL":    const.AXIAL,
-    "CORONAL":  const.CORONAL,
+    "3D": const.SURFACE,
+    "AXIAL": const.AXIAL,
+    "CORONAL": const.CORONAL,
     "SAGITAL": const.SAGITAL,
 }
 
-map_id_locations = {const.SURFACE: "3D",
-                    const.AXIAL: "AXIAL",
-                    const.CORONAL: "CORONAL",
-                    const.SAGITAL: "SAGITAL",
-                    }
+map_id_locations = {
+    const.SURFACE: "3D",
+    const.AXIAL: "AXIAL",
+    const.CORONAL: "CORONAL",
+    const.SAGITAL: "SAGITAL",
+}
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     MEASURE_LINE_COLOUR = (255, 0, 0, 255)
     MEASURE_TEXT_COLOUR = (0, 0, 0)
     MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
@@ -69,30 +74,38 @@ else:
 
 DEBUG_DENSITY = False
 
+
 class MeasureData(metaclass=utils.Singleton):
     """
     Responsible to keep measures data.
     """
+
     def __init__(self):
-        self.measures = {const.SURFACE: {},
-                         const.AXIAL:   {},
-                         const.CORONAL: {},
-                         const.SAGITAL: {}}
+        self.measures = {
+            const.SURFACE: {},
+            const.AXIAL: {},
+            const.CORONAL: {},
+            const.SAGITAL: {},
+        }
         self._list_measures = []
 
     def append(self, m):
         try:
             self.measures[m[0].location][m[0].slice_number].append(m)
         except KeyError:
-            self.measures[m[0].location][m[0].slice_number] = [m, ]
+            self.measures[m[0].location][m[0].slice_number] = [
+                m,
+            ]
 
         self._list_measures.append(m)
 
     def clean(self):
-        self.measures = {const.SURFACE: {},
-                         const.AXIAL:   {},
-                         const.CORONAL: {},
-                         const.SAGITAL: {}}
+        self.measures = {
+            const.SURFACE: {},
+            const.AXIAL: {},
+            const.CORONAL: {},
+            const.SAGITAL: {},
+        }
         self._list_measures = []
 
     def get(self, location, slice_number):
@@ -125,6 +138,7 @@ class MeasurementManager(object):
     A class to manage the use (Addition, remotion and visibility) from
     measures.
     """
+
     def __init__(self):
         self.current = None
         self.measures = MeasureData()
@@ -136,11 +150,14 @@ class MeasurementManager(object):
         Publisher.subscribe(self._remove_measurements, "Remove measurements")
         Publisher.subscribe(self._set_visibility, "Show measurement")
         Publisher.subscribe(self._load_measurements, "Load measurement dict")
-        Publisher.subscribe(self._rm_incomplete_measurements,
-                            "Remove incomplete measurements")
-        Publisher.subscribe(self._change_measure_point_pos, 'Change measurement point position')
+        Publisher.subscribe(
+            self._rm_incomplete_measurements, "Remove incomplete measurements"
+        )
+        Publisher.subscribe(
+            self._change_measure_point_pos, "Change measurement point position"
+        )
         Publisher.subscribe(self._add_density_measure, "Add density measurement")
-        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
 
     def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
         for i in measurement_dict:
@@ -148,21 +165,21 @@ class MeasurementManager(object):
 
             if isinstance(m, DensityMeasurement):
                 if m.type == const.DENSITY_ELLIPSE:
-                    mr = CircleDensityMeasure(map_id_locations[m.location],
-                                              m.slice_number,
-                                              m.colour)
+                    mr = CircleDensityMeasure(
+                        map_id_locations[m.location], m.slice_number, m.colour
+                    )
                     mr.set_center(m.points[0])
                     mr.set_point1(m.points[1])
                     mr.set_point2(m.points[2])
                 elif m.type == const.DENSITY_POLYGON:
-                    mr = PolygonDensityMeasure(map_id_locations[m.location],
-                                              m.slice_number,
-                                              m.colour)
+                    mr = PolygonDensityMeasure(
+                        map_id_locations[m.location], m.slice_number, m.colour
+                    )
                     for p in m.points:
                         mr.insert_point(p)
                     mr.complete_polygon()
 
-                mr.set_density_values(m.min, m.max, m.mean, m.std, m.area)
+                mr.set_density_values(m.min, m.max, m.mean, m.std, m.area, m.perimeter)
                 print(m.min, m.max, m.mean, m.std)
                 mr._need_calc = False
                 self.measures.append((m, mr))
@@ -193,19 +210,22 @@ class MeasurementManager(object):
                     actors = mr.AddPoint(x, y, z)
 
                 if m.location == const.SURFACE:
-                    Publisher.sendMessage(("Add actors " + str(m.location)),
-                        actors=actors)
+                    Publisher.sendMessage(
+                        ("Add actors " + str(m.location)), actors=actors
+                    )
 
             self.current = None
 
             if not m.visible:
                 mr.SetVisibility(False)
                 if m.location == const.SURFACE:
-                    Publisher.sendMessage('Render volume viewer')
+                    Publisher.sendMessage("Render volume viewer")
                 else:
-                    Publisher.sendMessage('Redraw canvas')
+                    Publisher.sendMessage("Redraw canvas")
 
-    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE):
+    def _add_point(
+        self, position, type, location, slice_number=0, radius=const.PROP_MEASURE
+    ):
         to_remove = False
         if self.current is None:
             to_create = True
@@ -233,12 +253,12 @@ class MeasurementManager(object):
                 #  actors = self.current[1].GetActors()
                 #  slice_number = self.current[0].slice_number
                 #  Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                      #  (actors, slice_number))
+                #  (actors, slice_number))
                 self.measures.pop()[1].Remove()
                 if self.current[0].location == const.SURFACE:
-                    Publisher.sendMessage('Render volume viewer')
+                    Publisher.sendMessage("Render volume viewer")
                 else:
-                    Publisher.sendMessage('Redraw canvas')
+                    Publisher.sendMessage("Redraw canvas")
 
             session = ses.Session()
             session.ChangeProject()
@@ -260,22 +280,27 @@ class MeasurementManager(object):
 
         if mr.IsComplete():
             index = prj.Project().AddMeasurement(m)
-            #m.index = index # already done in proj
+            # m.index = index # already done in proj
             name = m.name
             colour = m.colour
             m.value = mr.GetValue()
             type_ = TYPE[type]
             location = LOCATION[location]
             if type == const.LINEAR:
-                value = u"%.3f mm"% m.value
+                value = "%.3f mm" % m.value
             else:
-                value = u"%.3f°"% m.value
+                value = "%.3f°" % m.value
 
-            msg =  'Update measurement info in GUI',
-            Publisher.sendMessage(msg,
-                                  index=index, name=name,
-                                  colour=colour, location=location,
-                                  type_=type_, value=value)
+            msg = ("Update measurement info in GUI",)
+            Publisher.sendMessage(
+                msg,
+                index=index,
+                name=name,
+                colour=colour,
+                location=location,
+                type_=type_,
+                value=value,
+            )
             self.current = None
 
     def _change_measure_point_pos(self, index, npoint, pos):
@@ -300,14 +325,19 @@ class MeasurementManager(object):
         location = LOCATION[m.location]
 
         if m.type == const.LINEAR:
-            value = u"%.3f mm"% m.value
+            value = "%.3f mm" % m.value
         else:
-            value = u"%.3f°"% m.value
+            value = "%.3f°" % m.value
 
-        Publisher.sendMessage('Update measurement info in GUI',
-                              index=index, name=name, colour=colour,
-                              location=location, type_=type_,
-                              value=value)
+        Publisher.sendMessage(
+            "Update measurement info in GUI",
+            index=index,
+            name=name,
+            colour=colour,
+            location=location,
+            type_=type_,
+            value=value,
+        )
 
     def _change_name(self, index, name):
         self.measures[index][0].name = name
@@ -322,10 +352,11 @@ class MeasurementManager(object):
                 pass
             prj.Project().RemoveMeasurement(index)
             if m.location == const.SURFACE:
-                Publisher.sendMessage('Remove actors ' + str(m.location),
-                                      actors=mr.GetActors())
-        Publisher.sendMessage('Redraw canvas')
-        Publisher.sendMessage('Render volume viewer')
+                Publisher.sendMessage(
+                    "Remove actors " + str(m.location), actors=mr.GetActors()
+                )
+        Publisher.sendMessage("Redraw canvas")
+        Publisher.sendMessage("Render volume viewer")
 
         session = ses.Session()
         session.ChangeProject()
@@ -335,9 +366,9 @@ class MeasurementManager(object):
         m.visible = visibility
         mr.SetVisibility(visibility)
         if m.location == const.SURFACE:
-            Publisher.sendMessage('Render volume viewer')
+            Publisher.sendMessage("Render volume viewer")
         else:
-            Publisher.sendMessage('Redraw canvas')
+            Publisher.sendMessage("Redraw canvas")
 
     def _rm_incomplete_measurements(self):
         if self.current is None:
@@ -351,15 +382,16 @@ class MeasurementManager(object):
             actors = mr.GetActors()
             slice_number = self.current[0].slice_number
             if m.location == const.SURFACE:
-                Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                      actors=actors)
+                Publisher.sendMessage(
+                    ("Remove actors " + str(self.current[0].location)), actors=actors
+                )
             if self.current[0].location == const.SURFACE:
-                Publisher.sendMessage('Render volume viewer')
+                Publisher.sendMessage("Render volume viewer")
             else:
-                Publisher.sendMessage('Redraw canvas')
+                Publisher.sendMessage("Redraw canvas")
 
             #  if self.measures:
-                #  self.measures.pop()
+            #  self.measures.pop()
             self.current = None
 
     def _add_density_measure(self, density_measure):
@@ -374,10 +406,14 @@ class MeasurementManager(object):
         m.min = density_measure._min
         m.max = density_measure._max
         m.std = density_measure._std
-        if density_measure.format == 'ellipse':
-            m.points = [density_measure.center, density_measure.point1, density_measure.point2]
+        if density_measure.format == "ellipse":
+            m.points = [
+                density_measure.center,
+                density_measure.point1,
+                density_measure.point2,
+            ]
             m.type = const.DENSITY_ELLIPSE
-        elif density_measure.format == 'polygon':
+        elif density_measure.format == "polygon":
             m.points = density_measure.points
             m.type = const.DENSITY_POLYGON
         density_measure.index = m.index
@@ -388,27 +424,32 @@ class MeasurementManager(object):
 
         index = prj.Project().AddMeasurement(m)
 
-        msg =  'Update measurement info in GUI',
-        Publisher.sendMessage(msg,
-                              index=m.index, name=m.name, colour=m.colour,
-                              location=density_measure.orientation,
-                              type_='Density',
-                              value='%.3f' % m.value)
+        msg = ("Update measurement info in GUI",)
+        Publisher.sendMessage(
+            msg,
+            index=m.index,
+            name=m.name,
+            colour=m.colour,
+            location=density_measure.orientation,
+            type_="Density",
+            value="%.3f" % m.value,
+        )
 
     def OnCloseProject(self):
         self.measures.clean()
 
 
-class Measurement():
+class Measurement:
     general_index = -1
+
     def __init__(self):
         Measurement.general_index += 1
         self.index = Measurement.general_index
-        self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
+        self.name = const.MEASURE_NAME_PATTERN % (self.index + 1)
         self.colour = next(const.MEASURE_COLOUR)
         self.value = 0
-        self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
-        self.type = const.LINEAR # ANGULAR
+        self.location = const.SURFACE  # AXIAL, CORONAL, SAGITTAL
+        self.type = const.LINEAR  # ANGULAR
         self.slice_number = 0
         self.points = []
         self.visible = True
@@ -426,27 +467,29 @@ class Measurement():
 
     def get_as_dict(self):
         d = {
-            'index': self.index,
-            'name': self.name,
-            'colour': self.colour,
-            'value': self.value,
-            'location': self.location,
-            'type': self.type,
-            'slice_number': self.slice_number,
-            'points': self.points,
-            'visible': self.visible,
+            "index": self.index,
+            "name": self.name,
+            "colour": self.colour,
+            "value": self.value,
+            "location": self.location,
+            "type": self.type,
+            "slice_number": self.slice_number,
+            "points": self.points,
+            "visible": self.visible,
         }
         return d
 
 
-class DensityMeasurement():
+class DensityMeasurement:
     general_index = -1
+
     def __init__(self):
         DensityMeasurement.general_index += 1
         self.index = DensityMeasurement.general_index
-        self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
+        self.name = const.MEASURE_NAME_PATTERN % (self.index + 1)
         self.colour = next(const.MEASURE_COLOUR)
         self.area = 0
+        self.perimeter = 0.0
         self.min = 0
         self.max = 0
         self.mean = 0
@@ -467,28 +510,32 @@ class DensityMeasurement():
         self.slice_number = info["slice_number"]
         self.points = info["points"]
         self.visible = info["visible"]
-        self.area = info['area']
+        self.area = info["area"]
         self.min = info["min"]
         self.max = info["max"]
         self.mean = info["mean"]
         self.std = info["std"]
+        try:
+            self.perimeter = info["perimeter"]
+        except KeyError:
+            self.perimeter = 0.0
 
     def get_as_dict(self):
         d = {
-            'index': self.index,
-            'name': self.name,
-            'colour': self.colour,
-            'value': self.value,
-            'location': self.location,
-            'type': self.type,
-            'slice_number': self.slice_number,
-            'points': self.points,
-            'visible': self.visible,
-            'area': self.area,
-            'min': self.min,
-            'max': self.max,
-            'mean': self.mean,
-            'std': self.std,
+            "index": self.index,
+            "name": self.name,
+            "colour": self.colour,
+            "value": self.value,
+            "location": self.location,
+            "type": self.type,
+            "slice_number": self.slice_number,
+            "points": self.points,
+            "visible": self.visible,
+            "area": self.area,
+            "min": self.min,
+            "max": self.max,
+            "mean": self.mean,
+            "std": self.std,
         }
         return d
 
@@ -497,6 +544,7 @@ class CirclePointRepresentation(object):
     """
     This class represents a circle that indicate a point in the surface
     """
+
     def __init__(self, colour=(1, 0, 0), radius=1.0):
         """
         colour: the colour of the representation
@@ -513,12 +561,12 @@ class CirclePointRepresentation(object):
         sphere.SetCenter(x, y, z)
         sphere.SetRadius(self.radius)
 
-#        c = vtkCoordinate()
-#        c.SetCoordinateSystemToWorld()
+        #        c = vtkCoordinate()
+        #        c.SetCoordinateSystemToWorld()
 
         m = vtkPolyDataMapper()
         m.SetInputConnection(sphere.GetOutputPort())
-#        m.SetTransformCoordinate(c)
+        #        m.SetTransformCoordinate(c)
 
         a = vtkActor()
         a.SetMapper(m)
@@ -526,10 +574,12 @@ class CirclePointRepresentation(object):
 
         return a
 
+
 class CrossPointRepresentation(object):
     """
     This class represents a cross that indicate a point in the surface
     """
+
     def __init__(self, camera, colour=(1, 0, 0), size=1.0):
         """
         colour: the colour of the representation
@@ -541,16 +591,16 @@ class CrossPointRepresentation(object):
         self.size = size
 
     def GetRepresentation(self, x, y, z):
-        pc = self.camera.GetPosition() # camera position
-        pf = self.camera.GetFocalPoint() # focal position
-        pp = (x, y, z) # point where the user clicked
+        pc = self.camera.GetPosition()  # camera position
+        pf = self.camera.GetFocalPoint()  # focal position
+        pp = (x, y, z)  # point where the user clicked
 
         # Vector from camera position to user clicked point
-        vcp = [j-i for i,j in zip(pc, pp)]
+        vcp = [j - i for i, j in zip(pc, pp)]
         # Vector from camera position to camera focal point
-        vcf = [j-i for i,j in zip(pc, pf)]
+        vcf = [j - i for i, j in zip(pc, pf)]
         # the vector where the perpendicular vector will be given
-        n = [0,0,0]
+        n = [0, 0, 0]
         # The cross, or vectorial product, give a vector perpendicular to vcp
         # and vcf, in this case this vector will be in horizontal, this vector
         # will be stored in the variable "n"
@@ -558,19 +608,19 @@ class CrossPointRepresentation(object):
         # then normalize n to only indicate the direction of this vector
         vtkMath.Normalize(n)
         # then
-        p1 = [i*self.size + j for i,j in zip(n, pp)]
-        p2 = [i*-self.size + j for i,j in zip(n, pp)]
+        p1 = [i * self.size + j for i, j in zip(n, pp)]
+        p2 = [i * -self.size + j for i, j in zip(n, pp)]
 
         sh = vtkLineSource()
         sh.SetPoint1(p1)
         sh.SetPoint2(p2)
 
-        n = [0,0,0]
-        vcn = [j-i for i,j in zip(p1, pc)]
+        n = [0, 0, 0]
+        vcn = [j - i for i, j in zip(p1, pc)]
         vtkMath.Cross(vcp, vcn, n)
         vtkMath.Normalize(n)
-        p3 = [i*self.size + j for i,j in zip(n, pp)]
-        p4 = [i*-self.size +j for i,j in zip(n, pp)]
+        p3 = [i * self.size + j for i, j in zip(n, pp)]
+        p4 = [i * -self.size + j for i, j in zip(n, pp)]
 
         sv = vtkLineSource()
         sv.SetPoint1(p3)
@@ -591,6 +641,7 @@ class CrossPointRepresentation(object):
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         return a
+
 
 class LinearMeasure(object):
     def __init__(self, colour=(1, 0, 0), representation=None):
@@ -615,7 +666,7 @@ class LinearMeasure(object):
     def AddPoint(self, x, y, z):
         if not self.point_actor1:
             self.SetPoint1(x, y, z)
-            return (self.point_actor1, )
+            return (self.point_actor1,)
         elif not self.point_actor2:
             self.SetPoint2(x, y, z)
             return (self.point_actor2, self.line_actor, self.text_actor)
@@ -628,12 +679,18 @@ class LinearMeasure(object):
             self.points[0] = (x, y, z)
             if len(self.points) == 2:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
                 self.CreateMeasure()
             else:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
 
     def SetPoint2(self, x, y, z):
         if len(self.points) == 1:
@@ -670,12 +727,11 @@ class LinearMeasure(object):
 
     def _draw_text(self):
         p1, p2 = self.points
-        text = ' %.3f mm ' % \
-                math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2))
-        x,y,z=[(i+j)/2 for i,j in zip(p1, p2)]
+        text = " %.3f mm " % math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2))
+        x, y, z = [(i + j) / 2 for i, j in zip(p1, p2)]
         textsource = vtkTextSource()
         textsource.SetText(text)
-        textsource.SetBackgroundColor((250/255.0, 247/255.0, 218/255.0))
+        textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
         textsource.SetForegroundColor(self.colour)
 
         m = vtkPolyDataMapper2D()
@@ -685,7 +741,7 @@ class LinearMeasure(object):
         a.SetMapper(m)
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
-        a.GetPositionCoordinate().SetValue(x,y,z)
+        a.GetPositionCoordinate().SetValue(x, y, z)
         a.GetProperty().SetColor((0, 1, 0))
         a.GetProperty().SetOpacity(0.75)
         self.text_actor = a
@@ -707,12 +763,20 @@ class LinearMeasure(object):
             points.append((cx, cy))
 
         if len(points) > 1:
-            for (p0, p1) in zip(points[:-1:], points[1::]):
+            for p0, p1 in zip(points[:-1:], points[1::]):
                 r, g, b = self.colour
-                canvas.draw_line(p0, p1, colour=(r*255, g*255, b*255, 255))
+                canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 
-            txt = u"%.3f mm" % self.GetValue()
-            canvas.draw_text_box(txt, ((points[0][0]+points[1][0])/2.0, (points[0][1]+points[1][1])/2.0), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
+            txt = "%.3f mm" % self.GetValue()
+            canvas.draw_text_box(
+                txt,
+                (
+                    (points[0][0] + points[1][0]) / 2.0,
+                    (points[0][1] + points[1][1]) / 2.0,
+                ),
+                txt_colour=MEASURE_TEXT_COLOUR,
+                bg_colour=MEASURE_TEXTBOX_COLOUR,
+            )
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -810,14 +874,24 @@ class AngularMeasure(object):
             self.points[0] = (x, y, z)
             if len(self.points) == 3:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
-                self.point_actor3 = self.representation.GetRepresentation(*self.points[2])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
+                self.point_actor3 = self.representation.GetRepresentation(
+                    *self.points[2]
+                )
                 self.CreateMeasure()
             else:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
 
     def SetPoint2(self, x, y, z):
         if self.number_of_points == 1:
@@ -828,14 +902,24 @@ class AngularMeasure(object):
             self.points[1] = (x, y, z)
             if len(self.points) == 3:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
-                self.point_actor3 = self.representation.GetRepresentation(*self.points[2])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
+                self.point_actor3 = self.representation.GetRepresentation(
+                    *self.points[2]
+                )
                 self.CreateMeasure()
             else:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
 
     def SetPoint3(self, x, y, z):
         if self.number_of_points == 2:
@@ -847,14 +931,24 @@ class AngularMeasure(object):
             self.points[2] = (x, y, z)
             if len(self.points) == 3:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
-                self.point_actor3 = self.representation.GetRepresentation(*self.points[2])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
+                self.point_actor3 = self.representation.GetRepresentation(
+                    *self.points[2]
+                )
                 self.CreateMeasure()
             else:
                 self.Remove()
-                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
-                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor1 = self.representation.GetRepresentation(
+                    *self.points[0]
+                )
+                self.point_actor2 = self.representation.GetRepresentation(
+                    *self.points[1]
+                )
 
     def CreateMeasure(self):
         self._draw_line()
@@ -889,25 +983,22 @@ class AngularMeasure(object):
         self.line_actor = a
 
     def DrawArc(self):
-
-        d1 = math.sqrt(vtkMath.Distance2BetweenPoints(self.points[0],
-                                                          self.points[1]))
-        d2 = math.sqrt(vtkMath.Distance2BetweenPoints(self.points[2],
-                                                          self.points[1]))
+        d1 = math.sqrt(vtkMath.Distance2BetweenPoints(self.points[0], self.points[1]))
+        d2 = math.sqrt(vtkMath.Distance2BetweenPoints(self.points[2], self.points[1]))
 
         if d1 < d2:
             d = d1
             p1 = self.points[0]
-            a,b,c = [j-i for i,j in zip(self.points[1], self.points[2])]
+            a, b, c = [j - i for i, j in zip(self.points[1], self.points[2])]
         else:
             d = d2
             p1 = self.points[2]
-            a,b,c = [j-i for i,j in zip(self.points[1], self.points[0])]
+            a, b, c = [j - i for i, j in zip(self.points[1], self.points[0])]
 
-        t = (d / math.sqrt(a**2 + b**2 + c**2))
-        x = self.points[1][0] + a*t
-        y = self.points[1][1] + b*t
-        z = self.points[1][2] + c*t
+        t = d / math.sqrt(a**2 + b**2 + c**2)
+        x = self.points[1][0] + a * t
+        y = self.points[1][1] + b * t
+        z = self.points[1][2] + c * t
         p2 = (x, y, z)
 
         arc = vtkArcSource()
@@ -918,12 +1009,11 @@ class AngularMeasure(object):
         return arc
 
     def _draw_text(self):
-        text = u' %.3f ' % \
-                self.CalculateAngle()
-        x,y,z= self.points[1]
+        text = " %.3f " % self.CalculateAngle()
+        x, y, z = self.points[1]
         textsource = vtkTextSource()
         textsource.SetText(text)
-        textsource.SetBackgroundColor((250/255.0, 247/255.0, 218/255.0))
+        textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
         textsource.SetForegroundColor(self.colour)
 
         m = vtkPolyDataMapper2D()
@@ -933,7 +1023,7 @@ class AngularMeasure(object):
         a.SetMapper(m)
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
-        a.GetPositionCoordinate().SetValue(x,y,z)
+        a.GetPositionCoordinate().SetValue(x, y, z)
         self.text_actor = a
 
     def draw_to_canvas(self, gc, canvas):
@@ -954,18 +1044,25 @@ class AngularMeasure(object):
             points.append((cx, cy))
 
         if len(points) > 1:
-            for (p0, p1) in zip(points[:-1:], points[1::]):
+            for p0, p1 in zip(points[:-1:], points[1::]):
                 r, g, b = self.colour
-                canvas.draw_line(p0, p1, colour=(r*255, g*255, b*255, 255))
+                canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 
             if len(points) == 3:
-                txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
+                txt = "%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
                 r, g, b = self.colour
-                canvas.draw_arc(points[1], points[0], points[2],
-                                line_colour=(int(r*255), int(g*255), int(b*255), 255))
-                canvas.draw_text_box(txt, (points[1][0], points[1][1]),
-                                     txt_colour=MEASURE_TEXT_COLOUR,
-                                     bg_colour=MEASURE_TEXTBOX_COLOUR)
+                canvas.draw_arc(
+                    points[1],
+                    points[0],
+                    points[2],
+                    line_colour=(int(r * 255), int(g * 255), int(b * 255), 255),
+                )
+                canvas.draw_text_box(
+                    txt,
+                    (points[1][0], points[1][1]),
+                    txt_colour=MEASURE_TEXT_COLOUR,
+                    bg_colour=MEASURE_TEXTBOX_COLOUR,
+                )
 
     def GetNumberOfPoints(self):
         return self.number_of_points
@@ -1008,10 +1105,10 @@ class AngularMeasure(object):
         product between the magnitude from that vectors. Then the angle is inverse
         cosine.
         """
-        v1 = [j-i for i,j in zip(self.points[0], self.points[1])]
-        v2 = [j-i for i,j in zip(self.points[2], self.points[1])]
+        v1 = [j - i for i, j in zip(self.points[0], self.points[1])]
+        v2 = [j - i for i, j in zip(self.points[2], self.points[1])]
         try:
-            cos = vtkMath.Dot(v1, v2)/(vtkMath.Norm(v1)*vtkMath.Norm(v2))
+            cos = vtkMath.Dot(v1, v2) / (vtkMath.Norm(v1) * vtkMath.Norm(v2))
         except ZeroDivisionError:
             return 0.0
 
@@ -1050,7 +1147,9 @@ class AngularMeasure(object):
 
 
 class CircleDensityMeasure(CanvasHandlerBase):
-    def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+    def __init__(
+        self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True
+    ):
         super(CircleDensityMeasure, self).__init__(None)
         self.parent = None
         self.children = []
@@ -1064,7 +1163,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.orientation = orientation
         self.slice_number = slice_number
 
-        self.format = 'ellipse'
+        self.format = "ellipse"
 
         self.location = map_locations_id[self.orientation]
         self.index = 0
@@ -1077,8 +1176,14 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
         self._measurement = None
 
-        self.ellipse = Ellipse(self, self.center, self.point1, self.point2,
-                               fill=False, line_colour=self.colour)
+        self.ellipse = Ellipse(
+            self,
+            self.center,
+            self.point1,
+            self.point2,
+            fill=False,
+            line_colour=self.colour,
+        )
         self.ellipse.layer = 1
         self.add_child(self.ellipse)
         self.text_box = None
@@ -1110,21 +1215,35 @@ class CircleDensityMeasure(CanvasHandlerBase):
         if self._measurement:
             self._measurement.points = [self.center, self.point1, self.point2]
 
-    def set_density_values(self, _min, _max, _mean, _std, _area):
+    def set_density_values(
+        self,
+        _min: float,
+        _max: float,
+        _mean: float,
+        _std: float,
+        _area: float,
+        _perimeter: float,
+    ):
         self._min = _min
         self._max = _max
         self._mean = _mean
         self._std = _std
         self._area = _area
+        self._perimeter = _perimeter
 
-        text = _('Area: %.3f\n'
-                 'Min: %.3f\n'
-                 'Max: %.3f\n'
-                 'Mean: %.3f\n'
-                 'Std: %.3f' % (self._area, self._min, self._max, self._mean, self._std))
+        text = _(
+            f"Area: {self._area:.3f}\n"
+            f"Min: {self._min:.3f}\n"
+            f"Max: {self._max:3f}\n"
+            f"Mean: {self._mean:3f}\n"
+            f"Std: {self._std:.3f}\n"
+            f"Perimeter: {self._perimeter:.3f}"
+        )
 
         if self.text_box is None:
-            self.text_box = TextBox(self, text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.text_box = TextBox(
+                self, text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR
+            )
             self.text_box.layer = 2
             self.add_child(self.text_box)
         else:
@@ -1135,18 +1254,25 @@ class CircleDensityMeasure(CanvasHandlerBase):
             self._update_gui_info()
 
     def _update_gui_info(self):
-        msg =  'Update measurement info in GUI',
+        msg = ("Update measurement info in GUI",)
         print(msg)
         if self._measurement:
             m = self._measurement
-            Publisher.sendMessage(msg,
-                                  index=m.index, name=m.name, colour=m.colour,
-                                  location= self.orientation,
-                                  type_=_('Density Ellipse'),
-                                  value='%.3f' % m.value)
+            Publisher.sendMessage(
+                msg,
+                index=m.index,
+                name=m.name,
+                colour=m.colour,
+                location=self.orientation,
+                type_=_("Density Ellipse"),
+                value="%.3f" % m.value,
+            )
 
     def set_measurement(self, dm):
         self._measurement = dm
+        if self._measurement.perimeter == 0.0:
+            _perimeter = self.calc_perimeter()
+            self._measurement.perimeter = float(_perimeter)
 
     def SetVisibility(self, value):
         self.visible = value
@@ -1161,11 +1287,11 @@ class CircleDensityMeasure(CanvasHandlerBase):
     def is_over(self, x, y):
         return None
         #  if self.interactive:
-            #  if self.ellipse.is_over(x, y):
-                #  return self.ellipse.is_over(x, y)
-            #  elif self.text_box.is_over(x, y):
-                #  return self.text_box.is_over(x, y)
-            #  return None
+        #  if self.ellipse.is_over(x, y):
+        #  return self.ellipse.is_over(x, y)
+        #  elif self.text_box.is_over(x, y):
+        #  return self.text_box.is_over(x, y)
+        #  return None
 
     def set_interactive(self, value):
         self.interactive = bool(value)
@@ -1194,22 +1320,38 @@ class CircleDensityMeasure(CanvasHandlerBase):
         #  #  self.handle_tl.draw_to_canvas(gc, canvas)
 
     def calc_area(self):
-        if self.orientation == 'AXIAL':
+        if self.orientation == "AXIAL":
             a = abs(self.point1[0] - self.center[0])
             b = abs(self.point2[1] - self.center[1])
 
-        elif self.orientation == 'CORONAL':
+        elif self.orientation == "CORONAL":
             a = abs(self.point1[0] - self.center[0])
             b = abs(self.point2[2] - self.center[2])
 
-        elif self.orientation == 'SAGITAL':
+        elif self.orientation == "SAGITAL":
             a = abs(self.point1[1] - self.center[1])
             b = abs(self.point2[2] - self.center[2])
 
         return math_utils.calc_ellipse_area(a, b)
 
+    def calc_perimeter(self) -> float:
+        if self.orientation == "AXIAL":
+            a = abs(self.point1[0] - self.center[0])
+            b = abs(self.point2[1] - self.center[1])
+
+        elif self.orientation == "CORONAL":
+            a = abs(self.point1[0] - self.center[0])
+            b = abs(self.point2[2] - self.center[2])
+
+        elif self.orientation == "SAGITAL":
+            a = abs(self.point1[1] - self.center[1])
+            b = abs(self.point2[2] - self.center[2])
+
+        return math_utils.calc_ellipse_circumference(a, b)
+
     def calc_density(self):
         from invesalius.data.slice_ import Slice
+
         slc = Slice()
         n = self.slice_number
         orientation = self.orientation
@@ -1217,7 +1359,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         dy, dx = img_slice.shape
         spacing = slc.spacing
 
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             sx, sy = spacing[0], spacing[1]
             cx, cy = self.center[0], self.center[1]
 
@@ -1227,7 +1369,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
             n = slc.buffer_slices["AXIAL"].index + 1
             m = slc.current_mask.matrix[n, 1:, 1:]
 
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             sx, sy = spacing[0], spacing[2]
             cx, cy = self.center[0], self.center[2]
 
@@ -1237,7 +1379,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
             n = slc.buffer_slices["CORONAL"].index + 1
             m = slc.current_mask.matrix[1:, n, 1:]
 
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             sx, sy = spacing[1], spacing[2]
             cx, cy = self.center[1], self.center[2]
 
@@ -1250,23 +1392,23 @@ class CircleDensityMeasure(CanvasHandlerBase):
         #  a = np.linalg.norm(np.array(self.point1) - np.array(self.center))
         #  b = np.linalg.norm(np.array(self.point2) - np.array(self.center))
 
-        mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sx:sx]
+        mask_y, mask_x = np.ogrid[0 : dy * sy : sy, 0 : dx * sx : sx]
         #  mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
-        mask = (((mask_x-cx)**2 / a**2) + ((mask_y-cy)**2 / b**2)) <= 1.0
+        mask = (((mask_x - cx) ** 2 / a**2) + ((mask_y - cy) ** 2 / b**2)) <= 1.0
 
         #  try:
-            #  test_img = np.zeros_like(img_slice)
-            #  test_img[mask] = img_slice[mask]
-            #  imsave('/tmp/manolo.png', test_img[::-1,:])
+        #  test_img = np.zeros_like(img_slice)
+        #  test_img[mask] = img_slice[mask]
+        #  imsave('/tmp/manolo.png', test_img[::-1,:])
         if DEBUG_DENSITY:
             try:
                 m[:] = 0
                 m[mask] = 254
                 slc.buffer_slices[self.orientation].discard_vtk_mask()
                 slc.buffer_slices[self.orientation].discard_mask()
-                Publisher.sendMessage('Reload actual slice')
+                Publisher.sendMessage("Reload actual slice")
             except IndexError:
-                    pass
+                pass
 
         values = img_slice[mask]
 
@@ -1282,6 +1424,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
             _std = 0
 
         _area = self.calc_area()
+        _perimeter = self.calc_perimeter()
 
         if self._measurement:
             self._measurement.points = [self.center, self.point1, self.point2]
@@ -1291,8 +1434,9 @@ class CircleDensityMeasure(CanvasHandlerBase):
             self._measurement.max = float(_max)
             self._measurement.std = float(_std)
             self._measurement.area = float(_area)
+            self._measurement.perimeter = float(_perimeter)
 
-        self.set_density_values(_min, _max, _mean, _std, _area)
+        self.set_density_values(_min, _max, _mean, _std, _area, _perimeter)
 
     def IsComplete(self):
         return True
@@ -1303,8 +1447,10 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.set_point1(self.ellipse.point1)
         self.set_point2(self.ellipse.point2)
 
-        diff = tuple((i-j for i,j in zip(self.center, old_center)))
-        self.text_box.position = tuple((i+j for i,j in zip(self.text_box.position, diff)))
+        diff = tuple((i - j for i, j in zip(self.center, old_center)))
+        self.text_box.position = tuple(
+            (i + j for i, j in zip(self.text_box.position, diff))
+        )
 
         if self._measurement:
             self._measurement.points = [self.center, self.point1, self.point2]
@@ -1325,7 +1471,9 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
 
 class PolygonDensityMeasure(CanvasHandlerBase):
-    def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+    def __init__(
+        self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True
+    ):
         super(PolygonDensityMeasure, self).__init__(None)
         self.parent = None
         self.children = []
@@ -1339,7 +1487,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
         self.complete = False
 
-        self.format = 'polygon'
+        self.format = "polygon"
 
         self.location = map_locations_id[self.orientation]
         self.index = 0
@@ -1349,6 +1497,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self._max = 0
         self._mean = 0
         self._std = 0
+        self._perimeter = 0
 
         self._dist_tbox = (0, 0, 0)
 
@@ -1363,7 +1512,6 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self._need_calc = False
         self.interactive = interactive
 
-
     def on_mouse_move(self, evt):
         self.points = self.polygon.points
         self._need_calc = self.complete
@@ -1375,9 +1523,9 @@ class PolygonDensityMeasure(CanvasHandlerBase):
             bounds = self.get_bounds()
             p = [bounds[3], bounds[4], bounds[5]]
             if evt.root_event_obj is self.text_box:
-                self._dist_tbox = [i-j for i,j in zip(self.text_box.position, p)]
+                self._dist_tbox = [i - j for i, j in zip(self.text_box.position, p)]
             else:
-                self.text_box.position = [i+j for i,j in zip(self._dist_tbox, p)]
+                self.text_box.position = [i + j for i, j in zip(self._dist_tbox, p)]
                 print("text box position", self.text_box.position)
 
         session = ses.Session()
@@ -1387,14 +1535,14 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         if self._need_calc:
             self.calc_density(canvas)
         #  if self.visible:
-            #  self.polygon.draw_to_canvas(gc, canvas)
-            #  if self._need_calc:
-                #  self.calc_density(canvas)
-            #  if self.text_box:
-                #  bounds = self.get_bounds()
-                #  p = [bounds[3], bounds[4], bounds[5]]
-                #  self.text_box.draw_to_canvas(gc, canvas)
-                #  self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
+        #  self.polygon.draw_to_canvas(gc, canvas)
+        #  if self._need_calc:
+        #  self.calc_density(canvas)
+        #  if self.text_box:
+        #  bounds = self.get_bounds()
+        #  p = [bounds[3], bounds[4], bounds[5]]
+        #  self.text_box.draw_to_canvas(gc, canvas)
+        #  self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
 
     def insert_point(self, point):
         print("insert points", len(self.points))
@@ -1411,7 +1559,9 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         p = [bounds[3], bounds[4], bounds[5]]
         if self.text_box is None:
             p[0] += 5
-            self.text_box = TextBox(self, '', p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.text_box = TextBox(
+                self, "", p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR
+            )
             self.text_box.layer = 2
             self.add_child(self.text_box)
 
@@ -1425,31 +1575,43 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         dy, dx = img_slice.shape
         spacing = slc.spacing
 
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             sx, sy = spacing[0], spacing[1]
             n = slc.buffer_slices["AXIAL"].index + 1
             m = slc.current_mask.matrix[n, 1:, 1:]
-            plg_points = [(x/sx, y/sy) for (x, y, z) in self.points]
+            plg_points = [(x / sx, y / sy) for (x, y, z) in self.points]
 
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             sx, sy = spacing[0], spacing[2]
             n = slc.buffer_slices["CORONAL"].index + 1
             m = slc.current_mask.matrix[1:, n, 1:]
-            plg_points = [(x/sx, z/sy) for (x, y, z) in self.points]
+            plg_points = [(x / sx, z / sy) for (x, y, z) in self.points]
 
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             sx, sy = spacing[1], spacing[2]
             n = slc.buffer_slices["SAGITAL"].index + 1
             m = slc.current_mask.matrix[1:, 1:, n]
 
-            plg_points = [(y/sx, z/sy) for (x, y, z) in self.points]
+            plg_points = [(y / sx, z / sy) for (x, y, z) in self.points]
 
-        plg_tmp = Polygon(None, plg_points, fill=True,
-                          line_colour=(0, 0, 0, 0),
-                          fill_colour=(255, 255, 255, 255), width=1,
-                          interactive=False, is_3d=False)
+        plg_tmp = Polygon(
+            None,
+            plg_points,
+            fill=True,
+            line_colour=(0, 0, 0, 0),
+            fill_colour=(255, 255, 255, 255),
+            width=1,
+            interactive=False,
+            is_3d=False,
+        )
         h, w = img_slice.shape
-        arr = canvas.draw_element_to_array([plg_tmp, ], size=(w, h), flip=False)
+        arr = canvas.draw_element_to_array(
+            [
+                plg_tmp,
+            ],
+            size=(w, h),
+            flip=False,
+        )
         mask = arr[:, :, 0] >= 128
 
         print("mask sum", mask.sum())
@@ -1460,9 +1622,9 @@ class PolygonDensityMeasure(CanvasHandlerBase):
                 m[mask] = 254
                 slc.buffer_slices[self.orientation].discard_vtk_mask()
                 slc.buffer_slices[self.orientation].discard_mask()
-                Publisher.sendMessage('Reload actual slice')
+                Publisher.sendMessage("Reload actual slice")
             except IndexError:
-                    pass
+                pass
 
         values = img_slice[mask]
 
@@ -1478,6 +1640,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
             _std = 0
 
         _area = self.calc_area()
+        _perimeter = self.calc_perimeter()
 
         if self._measurement:
             self._measurement.points = self.points
@@ -1487,24 +1650,39 @@ class PolygonDensityMeasure(CanvasHandlerBase):
             self._measurement.max = float(_max)
             self._measurement.std = float(_std)
             self._measurement.area = float(_area)
+            self._perimeter = float(_perimeter)
 
-        self.set_density_values(_min, _max, _mean, _std, _area)
+        self.set_density_values(_min, _max, _mean, _std, _area, _perimeter)
         self.calc_area()
 
         self._need_calc = False
 
     def calc_area(self):
-        if self.orientation == 'AXIAL':
+        if self.orientation == "AXIAL":
             points = [(x, y) for (x, y, z) in self.points]
-        elif self.orientation == 'CORONAL':
+        elif self.orientation == "CORONAL":
             points = [(x, z) for (x, y, z) in self.points]
-        elif self.orientation == 'SAGITAL':
+        elif self.orientation == "SAGITAL":
             points = [(y, z) for (x, y, z) in self.points]
         area = math_utils.calc_polygon_area(points)
-        print('Points', points)
-        print('xv = %s;' % [i[0] for i in points])
-        print('yv = %s;' % [i[1] for i in points])
-        print('Area', area)
+        print("Points", points)
+        print("xv = %s;" % [i[0] for i in points])
+        print("yv = %s;" % [i[1] for i in points])
+        print("Area", area)
+        return area
+
+    def calc_perimeter(self) -> float:
+        if self.orientation == "AXIAL":
+            points = [(x, y) for (x, y, z) in self.points]
+        elif self.orientation == "CORONAL":
+            points = [(x, z) for (x, y, z) in self.points]
+        elif self.orientation == "SAGITAL":
+            points = [(y, z) for (x, y, z) in self.points]
+        area = math_utils.calc_polygon_perimeter(points)
+        print("Points", points)
+        print("xv = %s;" % [i[0] for i in points])
+        print("yv = %s;" % [i[1] for i in points])
+        print("Perimeter", area)
         return area
 
     def get_bounds(self):
@@ -1526,6 +1704,9 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
     def set_measurement(self, dm):
         self._measurement = dm
+        if self._measurement.perimeter == 0.0:
+            _perimeter = self.calc_perimeter()
+            self._measurement.perimeter = float(_perimeter)
 
     def SetVisibility(self, value):
         self.visible = value
@@ -1538,25 +1719,37 @@ class PolygonDensityMeasure(CanvasHandlerBase):
     def is_over(self, x, y):
         None
         #  if self.interactive:
-            #  if self.polygon.is_over(x, y):
-                #  return self.polygon.is_over(x, y)
-            #  if self.text_box is not None:
-                #  if self.text_box.is_over(x, y):
-                    #  return self.text_box.is_over(x, y)
-            #  return None
+        #  if self.polygon.is_over(x, y):
+        #  return self.polygon.is_over(x, y)
+        #  if self.text_box is not None:
+        #  if self.text_box.is_over(x, y):
+        #  return self.text_box.is_over(x, y)
+        #  return None
 
-    def set_density_values(self, _min, _max, _mean, _std, _area):
+    def set_density_values(
+        self,
+        _min: float,
+        _max: float,
+        _mean: float,
+        _std: float,
+        _area: float,
+        _perimeter: float,
+    ):
         self._min = _min
         self._max = _max
         self._mean = _mean
         self._std = _std
         self._area = _area
+        self._perimeter = _perimeter
 
-        text = _('Area: %.3f\n'
-                 'Min: %.3f\n'
-                 'Max: %.3f\n'
-                 'Mean: %.3f\n'
-                 'Std: %.3f' % (self._area, self._min, self._max, self._mean, self._std))
+        text = _(
+            f"Area: {self._area:.3f}\n"
+            f"Min: {self._min:.3f}\n"
+            f"Max: {self._max:3f}\n"
+            f"Mean: {self._mean:3f}\n"
+            f"Std: {self._std:.3f}\n"
+            f"Perimeter: {self._perimeter:.3f}"
+        )
 
         bounds = self.get_bounds()
         p = [bounds[3], bounds[4], bounds[5]]
@@ -1573,13 +1766,16 @@ class PolygonDensityMeasure(CanvasHandlerBase):
             self._update_gui_info()
 
     def _update_gui_info(self):
-        msg =  'Update measurement info in GUI',
+        msg = ("Update measurement info in GUI",)
         print(msg)
         if self._measurement:
             m = self._measurement
-            Publisher.sendMessage(msg,
-                                  index=m.index, name=m.name,
-                                  colour=m.colour,
-                                  location=self.orientation,
-                                  type_=_('Density Polygon'),
-                                  value='%.3f' % m.value)
+            Publisher.sendMessage(
+                msg,
+                index=m.index,
+                name=m.name,
+                colour=m.colour,
+                location=self.orientation,
+                type_=_("Density Polygon"),
+                value="%.3f" % m.value,
+            )
