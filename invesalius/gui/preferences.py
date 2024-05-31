@@ -276,7 +276,7 @@ class LoggingTab(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
-    @log.function_call_tracking_decorator
+    @log.call_tracking_decorator
     def OnModifyButton(self,e):
         logging_file = self.tc_log_file_name.GetValue()
         path, fname = os.path.split(logging_file)

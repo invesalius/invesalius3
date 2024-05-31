@@ -271,7 +271,7 @@ class MyLogger(metaclass=Singleton):
         for handler in self._logger.handlers:
             handler.flush()
 
-def function_call_tracking_decorator(function: Callable[[str], None]):
+def call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
         #logger = MyLogger() 
         msg = 'Function {} called'.format(function.__name__)
@@ -279,7 +279,13 @@ def function_call_tracking_decorator(function: Callable[[str], None]):
         function(*args)
     return wrapper_accepting_arguments
 
-            
+def error_handling_decorator(func: Callable[[str], None]):
+    def wrapper_function(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except TypeError:
+            invLogger._logger.error(f"Wrong data types found in {func.__name__} call")
+    return wrapper_function            
 ################################################################################################
 
 invLogger = MyLogger()
