@@ -451,13 +451,13 @@ class Frame(wx.Frame):
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
 
-        logger = log.MyLogger()
+        #logger = log.MyLogger()
 
         if not save and answer == wx.ID_YES:
-            logger.closeLogging()
+            log.invLogger.closeLogging()
             return 1  # Exit and delete session
         elif save and answer == wx.ID_YES:
-            logger.closeLogging()
+            log.invLogger.closeLogging()
             return 2  # Exit without deleting session
         else:
             return 0  # Don't Exit
