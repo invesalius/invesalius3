@@ -22,6 +22,7 @@ import sys
 
 
 from collections import OrderedDict
+from typing import Dict
 
 import wx
 from invesalius.pubsub import pub as Publisher
@@ -90,12 +91,11 @@ class SliceMenu(wx.Menu):
         else:
             mkind = wx.ITEM_RADIO
 
-        self.pseudo_color_items = {}
         submenu_pseudo_colours = wx.Menu()
-        self.pseudo_color_items = {}
+        self.pseudo_color_items: Dict[int, wx.MenuItem] = {}
         new_id = self.id_pseudo_first = wx.NewIdRef()
         color_item = submenu_pseudo_colours.Append(new_id, _("Default "), kind=mkind)
-        color_item.Check(1)
+        color_item.Check(True)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
 
