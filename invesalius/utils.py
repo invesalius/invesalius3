@@ -24,7 +24,7 @@ import locale
 import math
 import traceback
 import collections.abc
-from typing import Optional, Any
+from typing import Optional, Any, Tuple, List
 
 from setuptools.extern.packaging.version import Version
 from functools import wraps
@@ -218,7 +218,7 @@ class TwoWaysDictionary(dict):
 # DEPRECATED
 def frange(
     start: float, end: Optional[float] = None, inc: Optional[float] = None
-) -> list[float]:
+) -> List[float]:
     "A range function, that accepts float increments."
 
     if end is None:
@@ -308,7 +308,7 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
 
 
 # DEPRECATED
-def predict_memory(nfiles: int, x: int, y: int, p: int) -> tuple[float, float]:
+def predict_memory(nfiles: int, x: int, y: int, p: int) -> Tuple[float, float]:
     """
     Predict how much memory will be used, giving the following
     information:
