@@ -1,3 +1,5 @@
+[project]
+requires-python = ">=3.8"
 [tool.mypy]
 show_error_codes = true
 check_untyped_defs = false
@@ -67,10 +69,12 @@ ignore_missing_imports = true
 
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py']
+line-length = 100
 # extend-exclude = ["plugins"]
 
 [tool.ruff.lint]
 extend-select = ["UP"] # Introduces linting rules for pyupgrade
 # We can extend the list with 'I' and 'PL' in the future
+
 [tool.ruff.format]
 line-ending = "lf"

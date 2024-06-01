@@ -34,3 +34,5 @@ dependencies:
     - Trekker==0.9
     - uvicorn[standard]==0.22.0
     - wxPython==4.2.1
+    - ruff~=0.4.5
+    - pre-commit~=3.7.1
