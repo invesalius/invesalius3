@@ -50,6 +50,7 @@ RAYCASTING_PRESETS_COLOR_DIRECTORY = INV_TOP_DIR.joinpath(
 )
 
 MODELS_DIR = INV_TOP_DIR.joinpath("ai")
+LOCALE_DIR = INV_TOP_DIR.joinpath("locale")
 
 # Inside the windows executable
 if hasattr(sys, "frozen") and (
