@@ -1810,7 +1810,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # The marker list height is set to 120 pixels (accommodating 4 markers) if the screen height is
         # at most 1080 pixels (a commonly used height in laptops). Otherwise, the height grows linearly with
         # the screen height.
-        marker_list_height = max(120, screen_height - 960)
+        marker_list_height = max(120, int(screen_height/4))
 
         marker_list_ctrl = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0, marker_list_height))
         marker_list_ctrl.InsertColumn(const.ID_COLUMN, '#')
