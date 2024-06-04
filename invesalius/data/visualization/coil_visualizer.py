@@ -8,6 +8,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.data.polydata_utils as pu
 
 from invesalius.pubsub import pub as Publisher
+from invesalius.navigation.tracker import Tracker
 import invesalius.session as ses
 
 
@@ -24,6 +25,10 @@ class CoilVisualizer:
     def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
         self.renderer = renderer
         self.interactor = interactor
+        self.tracker = Tracker()
+
+        # Keeps track of whether tracker fiducials have been set.
+        self.tracker_fiducials_set = self.tracker.AreTrackerFiducialsSet()
         
         # The actor factory is used to create actors for the coil and coil center.
         self.actor_factory = actor_factory
@@ -52,7 +57,12 @@ class CoilVisualizer:
         self.coil_path = None
         self.coil_polydata = None
 
-        self.show_coil = False
+        # Show coil button status
+        self.show_coil_pressed = False
+
+        # Is this the first time show coil has been pressed
+        self.initial_button_press = True
+
         self.is_navigating = False
 
         self.LoadConfig()
@@ -67,6 +77,7 @@ class CoilVisualizer:
         Publisher.subscribe(self.ConfigureCoil, 'Configure coil')
         Publisher.subscribe(self.UpdateCoilPose, 'Update coil pose')
         Publisher.subscribe(self.UpdateVectorField, 'Update vector field')
+        Publisher.subscribe(self.SetTrackerFiducials, 'Tracker fiducials set')
 
     def SaveConfig(self):
         coil_path = self.coil_path.decode(const.FS_ENCODE) if self.coil_path is not None else None
@@ -83,6 +94,9 @@ class CoilVisualizer:
 
         self.coil_path = coil_path_unencoded.encode(const.FS_ENCODE)
         self.coil_polydata = pu.LoadPolydata(path=coil_path_unencoded)
+
+    def SetTrackerFiducials(self):
+        self.tracker_fiducials_set = True
 
     def UpdateVectorField(self):
         """
@@ -131,7 +145,7 @@ class CoilVisualizer:
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
         if self.is_navigating and self.coil_actor is not None:
-            self.coil_actor.SetVisibility(self.show_coil)
+            self.coil_actor.SetVisibility(self.show_coil_pressed)
 
     # Called when 'track object' button is pressed in the user interface.
     def TrackObject(self, enabled):
@@ -148,13 +162,25 @@ class CoilVisualizer:
 
     # Called when 'show coil' button is pressed in the user interface.
     def ShowCoil(self, state):
-        self.show_coil = state
+        self.show_coil_pressed = state
+        print("show_coil:", self.show_coil_pressed)
+
+        # Initially, if the tracker fiducials are not set but the show coil button is pressed,
+        # press it again to hide the coil
+        if not self.tracker_fiducials_set and self.show_coil_pressed and self.initial_button_press:
+            print("Press show coil button in code")
+
+            # After the initial in-code button press, don't undo subsequent button presses in UI
+            self.initial_button_press = False
+
+            Publisher.sendMessage('Press show-coil button', pressed=False)
+            return
 
         if self.target_coil_actor is not None:
-            self.target_coil_actor.SetVisibility(state)
+            self.target_coil_actor.SetVisibility(self.show_coil_pressed)
 
         if self.coil_actor:
-            self.coil_actor.SetVisibility(state)
+            self.coil_actor.SetVisibility(self.show_coil_pressed)
 
         if not self.is_navigating:
             self.interactor.Render()
@@ -199,7 +225,7 @@ class CoilVisualizer:
         self.target_coil_actor.GetProperty().SetSpecular(0.5)
         self.target_coil_actor.GetProperty().SetSpecularPower(10)
         self.target_coil_actor.GetProperty().SetOpacity(.3)
-        self.target_coil_actor.SetVisibility(self.show_coil)
+        self.target_coil_actor.SetVisibility(self.show_coil_pressed)
         self.target_coil_actor.SetUserMatrix(m_target)
 
         self.renderer.AddActor(self.target_coil_actor)
