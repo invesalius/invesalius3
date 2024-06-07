@@ -180,7 +180,7 @@ class CoilVisualizer:
         if self.is_navigating and self.coil_actor is not None:
             self.coil_actor.SetVisibility(self.show_coil_pressed)
 
-    # Called when 'track object' button is pressed in the user interface.
+    # Called when 'track object' button is pressed in the user interface or in code.
     def TrackObject(self, enabled):
         self.track_object_pressed = enabled
 
@@ -195,19 +195,17 @@ class CoilVisualizer:
         if enabled:
             self.AddCoilActor(self.coil_path)
 
-    # Called when 'show coil' button is pressed in the user interface.
+    # Called when 'show coil' button is pressed in the user interface or in code.
     def ShowCoil(self, state):
         self.show_coil_pressed = state
-        print("show_coil:", self.show_coil_pressed)
 
         # Initially, if the tracker fiducials are not set but the show coil button is pressed,
         # press it again to hide the coil
         if not self.tracker_fiducials_set and self.show_coil_pressed and self.initial_button_press:
-            print("Show coil pressed")
 
-            # After the initial in-code button press, don't undo subsequent button presses in UI
             self.initial_button_press = False
 
+            # Press the show coil button to turn it off
             Publisher.sendMessage('Press show-coil button', pressed=False)
             return
 
