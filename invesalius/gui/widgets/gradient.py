@@ -129,10 +129,10 @@ class GradientSlider(wx.Panel):
         dc.Clear()
 
         w, h = self.GetSize()
-        width_gradient = w - 2 * PUSH_WIDTH
-        height_gradient = h
-        x_init_gradient = PUSH_WIDTH
-        y_init_gradient = 0
+        # width_gradient = w - 2 * PUSH_WIDTH
+        # height_gradient = h
+        # x_init_gradient = PUSH_WIDTH
+        # y_init_gradient = 0
 
         x_init_push1 = self.min_position - PUSH_WIDTH
         x_init_push2 = self.max_position
