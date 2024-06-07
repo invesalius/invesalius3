@@ -1,5 +1,21 @@
 [project]
+name = "InVesalius"
+version = "3.1.99998"
+description = "3D medical imaging reconstruction software"
+keywords = [
+  "medical imaging",
+  "dicom",
+  "segmentation",
+  "3D printing",
+  "neuronavigation",
+]
+license = { file = "LICENSE.txt" }
+readme = "README.md"
 requires-python = ">=3.8"
+
+[tool.setuptools]
+packages = ["invesalius", "invesalius_cy"]
+
 [tool.mypy]
 show_error_codes = true
 check_untyped_defs = false
