@@ -31,7 +31,7 @@ class InvSpinCtrl(wx.Panel):
         max_value=100,
         increment=1,
         spin_button=True,
-        unit='',
+        unit="",
         size=wx.DefaultSize,
         style=wx.TE_RIGHT,
     ):
@@ -106,9 +106,8 @@ class InvSpinCtrl(wx.Panel):
             value = self._max_value
 
         self._value = value
-        self._textctrl.SetValue("{} {}".format(self._value, self.unit))
+        self._textctrl.SetValue(f"{self._value} {self.unit}")
         self._last_value = self._value
-
 
     def GetUnit(self):
         return self.unit
@@ -120,9 +119,7 @@ class InvSpinCtrl(wx.Panel):
     def CalcSizeFromTextSize(self, text=None):
         # To calculate best width to spinctrl
         if text is None:
-            text = "{}".format(
-                max(len(str(self._max_value)), len(str(self._min_value)), 5) * "M"
-            )
+            text = "{}".format(max(len(str(self._max_value)), len(str(self._min_value)), 5) * "M")
 
         dc = wx.WindowDC(self)
         dc.SetFont(self.GetFont())
@@ -276,15 +273,13 @@ class InvFloatSpinCtrl(wx.Panel):
             value = self._max_value
 
         self._value = value
-        self._textctrl.SetValue("{}".format(self._value))
+        self._textctrl.SetValue(f"{self._value}")
         self._last_value = self._value
 
     def CalcSizeFromTextSize(self, text=None):
         # To calculate best width to spinctrl
         if text is None:
-            text = "{}".format(
-                max(len(str(self._max_value)), len(str(self._min_value))) * "M"
-            )
+            text = "{}".format(max(len(str(self._max_value)), len(str(self._min_value))) * "M")
 
         dc = wx.WindowDC(self)
         dc.SetFont(self.GetFont())
