@@ -20,7 +20,6 @@
 # --------------------------------------------------------------------------
 import sys
 
-import numpy
 import wx
 
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
@@ -67,7 +66,7 @@ class GradientSlider(wx.Panel):
         # minValue: the least value in the range
         # maxValue: the most value in the range
         # colour: colour used in this widget.
-        super(GradientSlider, self).__init__(parent, id)
+        super().__init__(parent, id)
         self._bind_events_wx()
 
         self.min_range = minRange
@@ -142,9 +141,11 @@ class GradientSlider(wx.Panel):
 
         gc = wx.GraphicsContext.Create(dc)
 
-        points = ((0, PUSH_WIDTH, (0, 0, 0), (0, 0, 0)),
-                  (PUSH_WIDTH, w - PUSH_WIDTH, (0, 0, 0), (255, 255, 255)),
-                  (w - PUSH_WIDTH, w, (255, 255, 255), (255, 255, 255)))
+        points = (
+            (0, PUSH_WIDTH, (0, 0, 0), (0, 0, 0)),
+            (PUSH_WIDTH, w - PUSH_WIDTH, (0, 0, 0), (255, 255, 255)),
+            (w - PUSH_WIDTH, w, (255, 255, 255), (255, 255, 255)),
+        )
 
         # Drawing the gradient background
         for p1, p2, c1, c2 in points:
@@ -187,13 +188,13 @@ class GradientSlider(wx.Panel):
         n.DrawPushButton(self, dc, (x_init_push2, 0, PUSH_WIDTH, h))
 
         #  # Drawing the transparent slider.
-        #  bytes = numpy.array(self.colour * width_transparency * h, "B")
-        #  try:
-            #  slider = wx.Bitmap.FromBufferRGBA(width_transparency, h, bytes)
-        #  except:
-            #  pass
-        #  else:
-            #  dc.DrawBitmap(slider, self.min_position, 0, True)
+        # bytes = numpy.array(self.colour * width_transparency * h, "B")
+        # try:
+        #     slider = wx.Bitmap.FromBufferRGBA(width_transparency, h, bytes)
+        # except:
+        #     pass
+        # else:
+        #     dc.DrawBitmap(slider, self.min_position, 0, True)
 
     def OnEraseBackGround(self, evt):
         # Only to avoid this widget to flick.
@@ -298,12 +299,8 @@ class GradientSlider(wx.Panel):
         window_width = w - 2 * PUSH_WIDTH
         proportion = window_width / float(self.max_range - self.min_range)
 
-        self.min_position = (
-            int(round((self.minimun - self.min_range) * proportion)) + PUSH_WIDTH
-        )
-        self.max_position = (
-            int(round((self.maximun - self.min_range) * proportion)) + PUSH_WIDTH
-        )
+        self.min_position = int(round((self.minimun - self.min_range) * proportion)) + PUSH_WIDTH
+        self.max_position = int(round((self.maximun - self.min_range) * proportion)) + PUSH_WIDTH
 
     def _max_position_to_maximun(self, max_position):
         """
@@ -384,7 +381,7 @@ class GradientSlider(wx.Panel):
 
 class GradientNoSlide(wx.Panel):
     # This widget is formed by a gradient background (black-white)
-    # Unlike GradientSlide, here the widget is used as a colorbar to display 
+    # Unlike GradientSlide, here the widget is used as a colorbar to display
     # the available colors (used in fmri support)
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
         # minRange: the minimal value
@@ -392,7 +389,7 @@ class GradientNoSlide(wx.Panel):
         # minValue: the least value in the range
         # maxValue: the most value in the range
         # colour: colour used in this widget.
-        super(GradientNoSlide, self).__init__(parent, id)
+        super().__init__(parent, id)
         self._bind_events_wx()
 
         self.min_range = minRange
@@ -402,7 +399,7 @@ class GradientNoSlide(wx.Panel):
         self.selected = 0
 
         self.min_position = 0
-        w, h = self.GetSize()        
+        w, h = self.GetSize()
 
         self._gradient_colours = None
         self.colour = colour
@@ -538,12 +535,8 @@ class GradientNoSlide(wx.Panel):
         window_width = w - 2 * PUSH_WIDTH
         proportion = window_width / float(self.max_range - self.min_range)
 
-        self.min_position = (
-            int(round((self.minimun - self.min_range) * proportion)) + PUSH_WIDTH
-        )
-        self.max_position = (
-            int(round((self.maximun - self.min_range) * proportion)) + PUSH_WIDTH
-        )
+        self.min_position = int(round((self.minimun - self.min_range) * proportion)) + PUSH_WIDTH
+        self.max_position = int(round((self.maximun - self.min_range) * proportion)) + PUSH_WIDTH
 
     def _max_position_to_maximun(self, max_position):
         """
@@ -624,7 +617,7 @@ class GradientNoSlide(wx.Panel):
 
 class GradientCtrl(wx.Panel):
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
-        super(GradientCtrl, self).__init__(parent, id)
+        super().__init__(parent, id)
         self.min_range = minRange
         self.max_range = maxRange
         self.minimun = minValue
@@ -850,7 +843,7 @@ class GradientCtrl(wx.Panel):
 class GradientDisp(wx.Panel):
     # Class for colorbars gradient used in fmri support (showing different colormaps possible)
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
-        super(GradientDisp, self).__init__(parent, id)
+        super().__init__(parent, id)
         self.min_range = minRange
         self.max_range = maxRange
         self.minimun = minValue
@@ -863,20 +856,14 @@ class GradientDisp(wx.Panel):
 
     def _draw_controls(self):
         self.gradient_slider = GradientNoSlide(
-            self,
-            -1,
-            self.min_range,
-            self.max_range,
-            self.minimun,
-            self.maximun,
-            self.colour
+            self, -1, self.min_range, self.max_range, self.minimun, self.maximun, self.colour
         )
-        
+
         self.gradient_slider.SetGradientColours(self.colour)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(1,30)
+        sizer.Add(1, 30)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
-        sizer.Add(1,30)
+        sizer.Add(1, 30)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(sizer, 1, wx.EXPAND)
@@ -884,7 +871,7 @@ class GradientDisp(wx.Panel):
         self.sizer.Fit(self)
 
     def _bind_events_wx(self):
-        return 
+        return
 
     def OnSlider(self, evt):
         self.minimun = evt.minimun
@@ -895,7 +882,6 @@ class GradientDisp(wx.Panel):
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
-
 
     def SetColour(self, colour):
         colour = list(int(i) for i in colour[:3])
