@@ -178,10 +178,7 @@ class GradientSlider(wx.Panel):
                 gc.FillPath(path)
 
         # Drawing the pushes
-        try:
-            n = wx.RendererNative.Get()
-        except AttributeError:
-            n = wx.RendererNative_Get()
+        n = wx.RendererNative.Get()
 
         # Drawing the push buttons
         n.DrawPushButton(self, dc, (x_init_push1, 0, PUSH_WIDTH, h))
