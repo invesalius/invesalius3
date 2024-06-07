@@ -60,8 +60,14 @@ class CoilVisualizer:
         # Show coil button status
         self.show_coil_pressed = False
 
-        # Is this the first time show coil has been pressed
+        # Track object button status
+        self.track_object_pressed = False
+
+        # Is this the first time show coil button has been pressed
         self.initial_button_press = True
+
+        # Is this the initial project that was loaded
+        self.initial_project = True
 
         self.is_navigating = False
 
@@ -77,7 +83,9 @@ class CoilVisualizer:
         Publisher.subscribe(self.ConfigureCoil, 'Configure coil')
         Publisher.subscribe(self.UpdateCoilPose, 'Update coil pose')
         Publisher.subscribe(self.UpdateVectorField, 'Update vector field')
-        Publisher.subscribe(self.SetTrackerFiducials, 'Tracker fiducials set')
+        Publisher.subscribe(self.OnSetTrackerFiducials, 'Tracker fiducials set')
+        Publisher.subscribe(self.OnResetTrackerFiducials, 'Reset tracker fiducials')
+        Publisher.subscribe(self.OnLoadProject, 'Project loaded successfully')
 
     def SaveConfig(self):
         coil_path = self.coil_path.decode(const.FS_ENCODE) if self.coil_path is not None else None
@@ -95,8 +103,33 @@ class CoilVisualizer:
         self.coil_path = coil_path_unencoded.encode(const.FS_ENCODE)
         self.coil_polydata = pu.LoadPolydata(path=coil_path_unencoded)
 
-    def SetTrackerFiducials(self):
+    def OnSetTrackerFiducials(self):
         self.tracker_fiducials_set = True
+
+        # If the track coil button is not pressed, press it after tracker fiducials have been set
+        if not self.track_object_pressed:
+            Publisher.sendMessage('Press track object button', pressed=True)
+
+        elif not self.show_coil_pressed:
+            Publisher.sendMessage('Press show-coil button', pressed=True)
+        else:
+            self.ShowCoil(self.show_coil_pressed)
+
+    def OnResetTrackerFiducials(self):
+        self.tracker_fiducials_set = False
+
+        # If the show coil button is pressed, press it again to hide the coil
+        if self.show_coil_pressed:
+            Publisher.sendMessage('Press show-coil button', pressed=False)
+
+    def OnLoadProject(self):
+
+        # When loading some other than the initially loaded project, reset some instance variables
+        if self.initial_project:
+            self.initial_project = False
+        else:
+            self.tracker_fiducials_set = False
+            #self.initial_button_press = True
 
     def UpdateVectorField(self):
         """
@@ -149,6 +182,8 @@ class CoilVisualizer:
 
     # Called when 'track object' button is pressed in the user interface.
     def TrackObject(self, enabled):
+        self.track_object_pressed = enabled
+
         if self.coil_path is None:
             return
 
@@ -168,7 +203,7 @@ class CoilVisualizer:
         # Initially, if the tracker fiducials are not set but the show coil button is pressed,
         # press it again to hide the coil
         if not self.tracker_fiducials_set and self.show_coil_pressed and self.initial_button_press:
-            print("Press show coil button in code")
+            print("Show coil pressed")
 
             # After the initial in-code button press, don't undo subsequent button presses in UI
             self.initial_button_press = False
@@ -178,6 +213,9 @@ class CoilVisualizer:
 
         if self.target_coil_actor is not None:
             self.target_coil_actor.SetVisibility(self.show_coil_pressed)
+
+        if self.coil_center_actor is not None:
+            self.coil_center_actor.SetVisibility(self.show_coil_pressed)
 
         if self.coil_actor:
             self.coil_actor.SetVisibility(self.show_coil_pressed)
