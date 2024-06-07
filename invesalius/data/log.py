@@ -96,7 +96,7 @@ class MyLogger(metaclass=Singleton):
     def __init__(self):
         # create logger
         self._logger = logging.getLogger(__name__)
-        self._logger.setLevel(logging.DEBUG)
+        #self._logger.setLevel(logging.DEBUG)
         self._frame = None
         self._config = {
             'file_logging': 0,
@@ -105,9 +105,11 @@ class MyLogger(metaclass=Singleton):
             'logging_file': DEFAULT_LOGFILE,
             'console_logging': 0,
             'console_logging_level': 0,
+            'base_logging_level': logging.DEBUG,
+            'logging_format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         }
         self.ReadConfigFile()
-        self._logger.setLevel(logging.DEBUG)
+        self._logger.setLevel(self._config['base_logging_level'])
 
     def SetConfig(self, key, value):
         self._config[key] = value
@@ -177,7 +179,9 @@ class MyLogger(metaclass=Singleton):
         logging_file = os.path.abspath(logging_file)
         print('logging_file:', logging_file)
         console_logging = self._config['console_logging']
-        #console_logging_level = self._config['console_logging_level']
+        console_logging_level = self._config['console_logging_level']
+
+        self._logger.setLevel(self._config['base_logging_level'])
 
         if ((self._frame == None) & (console_logging!=0)):
             print('Initiating console logging ...')
@@ -192,38 +196,25 @@ class MyLogger(metaclass=Singleton):
         self._logger.info('configureLogging called ...')
         self.logMessage('info', msg)
 
-        '''
-        if console_logging:
-            logger.info("console_logging called ...")
-            closeConsoleLogging()
-            # create formatter
-            python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[console_logging_level].upper(), None)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            ch = logging.StreamHandler(sys.stderr)
-            ch.setLevel(python_loglevel)
-            ch.setFormatter(formatter)
-            logger.addHandler(ch)
-            logger.info('Added stream handler')
-        else:
-            closeConsoleLogging()
-        '''
 
         if file_logging:
             print('file_logging called ...')
             self._logger.info('file_logging called ...')
-            python_loglevel = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
+            file_logging_level = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
 
             # create formatter
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter(self._config['logging_format'])
 
             # create file handler 
             if logging_file:
                 addFileHandler = True
                 for handler in self._logger.handlers:
                     if isinstance(handler, logging.FileHandler):
-                        if hasattr(handler, 'baseFilename') & \
-                            os.path.samefile(logging_file,handler.baseFilename):
-                            handler.setLevel(python_loglevel)
+                        if hasattr(handler, 'baseFilename') & os.path.exists(logging_file) & \
+                            (os.path.normcase(os.path.abspath(logging_file)) == os.path.normcase(os.path.abspath(handler.baseFilename))): 
+                            # os.path.samefile(logging_file,handler.baseFilename):
+                            handler.setLevel(file_logging_level)
                             addFileHandler = False
                             msg = 'No change in log file name {}.'.format(logging_file)
                             self._logger.info(msg)
@@ -232,7 +223,9 @@ class MyLogger(metaclass=Singleton):
                                 handler.baseFilename, logging_file)
                             self._logger.info(msg)
                             self._logger.removeHandler(handler)
-                            self._logger.info('Removed existing FILE handler')
+                            msg = 'Removed existing FILE handler {}'.format(handler.baseFilename) 
+                            print(msg)
+                            self._logger.info(msg)
                 if addFileHandler:
                     if append_log_file:
                         fh = logging.FileHandler(os.path.abspath(logging_file), 'a', encoding=None)
