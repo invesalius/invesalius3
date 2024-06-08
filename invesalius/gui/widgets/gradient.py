@@ -19,6 +19,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import sys
+from typing import Iterable, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
 
@@ -48,7 +49,9 @@ EVT_THRESHOLD_CHANGING = wx.PyEventBinder(myEVT_THRESHOLD_CHANGING, 1)
 
 
 class SliderEvent(wx.PyCommandEvent):
-    def __init__(self, evtType, id, minRange, maxRange, minValue, maxValue):
+    def __init__(
+        self, evtType: int, id: int, minRange: int, maxRange: int, minValue: int, maxValue: int
+    ):
         wx.PyCommandEvent.__init__(self, evtType, id)
         self.min_range = minRange
         self.max_range = maxRange
@@ -60,7 +63,16 @@ class GradientSlider(wx.Panel):
     # This widget is formed by a gradient background (black-white), two push
     # buttons change the min and max values respectively and a slider which you can drag to
     # change the both min and max values.
-    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
+    def __init__(
+        self,
+        parent: wx.Window,
+        id: int,
+        minRange: int,
+        maxRange: int,
+        minValue: int,
+        maxValue: int,
+        colour: Iterable[SupportsInt],
+    ):
         # minRange: the minimal value
         # maxrange: the maximum value
         # minValue: the least value in the range
@@ -75,7 +87,7 @@ class GradientSlider(wx.Panel):
         self.maximun = maxValue
         self.selected = 0
 
-        self._gradient_colours = None
+        self._gradient_colours: Optional[List[Tuple[int, int, int]]] = None
 
         self.SetColour(colour)
         self.CalculateControlPositions()
@@ -140,6 +152,7 @@ class GradientSlider(wx.Panel):
         width_transparency = self.max_position - self.min_position
 
         gc = wx.GraphicsContext.Create(dc)
+        gc: wx.GraphicsContext
 
         points = (
             (0, PUSH_WIDTH, (0, 0, 0), (0, 0, 0)),
@@ -332,7 +345,7 @@ class GradientSlider(wx.Panel):
         else:
             return 0
 
-    def SetColour(self, colour):
+    def SetColour(self, colour: Iterable[SupportsInt]):
         self.colour = [int(i) for i in colour]
 
     def SetGradientColours(self, colors):
@@ -380,7 +393,16 @@ class GradientNoSlide(wx.Panel):
     # This widget is formed by a gradient background (black-white)
     # Unlike GradientSlide, here the widget is used as a colorbar to display
     # the available colors (used in fmri support)
-    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
+    def __init__(
+        self,
+        parent: wx.Window,
+        id: int,
+        minRange: int,
+        maxRange: int,
+        minValue: int,
+        maxValue: int,
+        colour,
+    ):
         # minRange: the minimal value
         # maxrange: the maximum value
         # minValue: the least value in the range
@@ -613,7 +635,16 @@ class GradientNoSlide(wx.Panel):
 
 
 class GradientCtrl(wx.Panel):
-    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
+    def __init__(
+        self,
+        parent: wx.Window,
+        id: int,
+        minRange: int,
+        maxRange: int,
+        minValue: int,
+        maxValue: int,
+        colour: Sequence[float],
+    ):
         super().__init__(parent, id)
         self.min_range = minRange
         self.max_range = maxRange
@@ -839,7 +870,16 @@ class GradientCtrl(wx.Panel):
 
 class GradientDisp(wx.Panel):
     # Class for colorbars gradient used in fmri support (showing different colormaps possible)
-    def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
+    def __init__(
+        self,
+        parent: wx.Window,
+        id: int,
+        minRange: int,
+        maxRange: int,
+        minValue: int,
+        maxValue: int,
+        colour: List[Tuple[int, int, int, int]],
+    ):
         super().__init__(parent, id)
         self.min_range = minRange
         self.max_range = maxRange
