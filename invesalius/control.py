@@ -646,6 +646,7 @@ class Controller():
             Publisher.sendMessage('Enable Go-to-Coord', status=False)
         
         Publisher.sendMessage('End busy cursor')
+        Publisher.sendMessage('Project loaded successfully')
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
         name_to_const = {"AXIAL":const.AXIAL,
