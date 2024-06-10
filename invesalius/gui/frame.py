@@ -36,7 +36,7 @@ import invesalius.gui.preferences as preferences
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
-import invesalius.data.log as log
+import invesalius.gui.log as log
 import wx
 import wx.aui
 import wx.lib.popupctl as pc

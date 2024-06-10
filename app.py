@@ -99,7 +99,7 @@ if session.ReadConfig():
         except FileNotFoundError:
             pass
 
-import invesalius.data.log as log
+import invesalius.gui.log as log
 
 class InVesalius(wx.App):
     """

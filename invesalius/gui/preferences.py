@@ -6,7 +6,7 @@ import nibabel as nb
 import numpy as np
 import invesalius.constants as const
 import invesalius.session as ses
-import invesalius.data.log as log
+import invesalius.gui.log as log
 import invesalius.gui.dialogs as dlg0
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius import inv_paths
@@ -36,10 +36,13 @@ class Preferences(wx.Dialog):
         super().__init__(parent, id_, title, style=style)
 
         self.book = wx.Notebook(self, -1)
+
+        self.have_log_tab = 1
                                          
         self.visualization_tab = VisualizationTab(self.book)
         self.language_tab = LanguageTab(self.book)
-        self.logging_tab = LoggingTab(self.book)
+        if self.have_log_tab==1:
+            self.logging_tab = LoggingTab(self.book)
 
         self.book.AddPage(self.visualization_tab, _("Visualization"))
 
@@ -64,7 +67,8 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.object_tab, _("Stimulator"))
 
         self.book.AddPage(self.language_tab, _("Language"))
-        self.book.AddPage(self.logging_tab, _("Logging"))
+        if self.have_log_tab==1:
+            self.book.AddPage(self.logging_tab, _("Logging"))
 
         btnsizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         min_width = max([i.GetMinWidth() for i in (self.book.GetChildren())])
@@ -88,13 +92,14 @@ class Preferences(wx.Dialog):
 
         lang = self.language_tab.GetSelection()
         viewer = self.visualization_tab.GetSelection()
-        logging = self.logging_tab.GetSelection()
 
         values.update(lang)
         values.update(viewer)
-        values.update(logging)
 
-        #log.configureLogging()
+        if self.have_log_tab==1:
+            logging = self.logging_tab.GetSelection()
+            values.update(logging)
+
         return values
 
     def LoadPreferences(self):
@@ -132,7 +137,8 @@ class Preferences(wx.Dialog):
 
         self.visualization_tab.LoadSelection(values)
         self.language_tab.LoadSelection(values)
-        self.logging_tab.LoadSelection(values)
+        if self.have_log_tab==1:
+            self.logging_tab.LoadSelection(values)
 
 
 class VisualizationTab(wx.Panel):
@@ -208,36 +214,33 @@ class LoggingTab(wx.Panel):
         wx.Panel.__init__(self, parent)
         
         bsizer_file_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _(" File Logging "))
-        #lbl_do_file_logging = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Do "))
-        #bsizer_file_logging.Add(lbl_do_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
         rb_file_logging = self.rb_file_logging = wx.RadioBox(
             bsizer_file_logging.GetStaticBox(),
             -1,
             choices=["No", "Yes"],
             majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER, # | wx.FIXED_MINSIZE,
         )
-        bsizer_file_logging.Add(rb_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        bsizer_file_logging.Add(rb_file_logging, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
         lbl_file_logging_level = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Logging Level "))
-        #bsizer_logging_level = wx.StaticBoxSizer(wx.VERTICAL, self, _("Logging level"))
         cb_file_logging_level = self.cb_file_logging_level = wx.Choice(
             bsizer_file_logging.GetStaticBox(),
             -1,
             choices=const.LOGGING_LEVEL_TYPES, 
         ) 
-        bsizer_file_logging.Add(lbl_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(cb_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(lbl_file_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(cb_file_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
         lbl_append_log_file = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Append File "))
-        #bsizer_append_log_file = wx.StaticBoxSizer(wx.VERTICAL, self, _("Append Log file"))
         rb_append_file = self.rb_append_file = wx.RadioBox(
             bsizer_file_logging.GetStaticBox(),
             -1,
             choices=["No", "Yes"],
             majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER, # | wx.FIXED_MINSIZE,
         )
-        bsizer_file_logging.Add(lbl_append_log_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(lbl_append_log_file, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
 
         lbl_log_file_label = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _("Current file:"))
         tc_log_file_name = self.tc_log_file_name = wx.TextCtrl(
@@ -247,9 +250,10 @@ class LoggingTab(wx.Panel):
         tc_log_file_name.SetForegroundColour(wx.RED)
         bt_log_file_select = wx.Button(bsizer_file_logging.GetStaticBox(), label="Modify")
         bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
-        bsizer_file_logging.Add(lbl_log_file_label, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(tc_log_file_name, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(lbl_log_file_label, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(tc_log_file_name, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        #self.SetSizerAndFit(bsizer_file_logging)
 
         bsizer_console_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _(" Console Logging "))
         rb_console_logging = self.rb_console_logging = wx.RadioBox(
@@ -257,21 +261,22 @@ class LoggingTab(wx.Panel):
             -1,
             choices=["No", "Yes"],
             majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER , #| wx.FIXED_MINSIZE,
         )
-        bsizer_console_logging.Add(rb_console_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_console_logging.Add(rb_console_logging, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
         lbl_console_logging_level = wx.StaticText(bsizer_console_logging.GetStaticBox(), -1, _(" Logging Level "))
         cb_console_logging_level = self.cb_console_logging_level = wx.Choice(
             bsizer_console_logging.GetStaticBox(),
             -1,
             choices=const.LOGGING_LEVEL_TYPES, 
         ) 
-        bsizer_console_logging.Add(lbl_console_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        bsizer_console_logging.Add(cb_console_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_console_logging.Add(lbl_console_logging_level, 0, wx.TOP | wx.LEFT, 0) # | wx.FIXED_MINSIZE, 0)
+        bsizer_console_logging.Add(cb_console_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        #self.SetSizerAndFit(bsizer_console_logging)
 
         border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer_file_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
-        border.Add(bsizer_console_logging, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer_file_logging, 1, wx.EXPAND | wx.ALL , 10) #| wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer_console_logging, 1, wx.EXPAND | wx.ALL , 10) #| wx.FIXED_MINSIZE, 10)
 
         self.SetSizerAndFit(border)
         self.Layout()

@@ -92,7 +92,7 @@ class MyFrame(wx.Frame):
         self._logger.info("MyFrame window close selected.")
         self.Hide()
 
-class MyLogger(metaclass=Singleton):
+class MyLogger(): #metaclass=Singleton):
     def __init__(self):
         # create logger
         self._logger = logging.getLogger(__name__)
