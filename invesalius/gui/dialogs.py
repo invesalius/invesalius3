@@ -6715,7 +6715,7 @@ class FileSelectionDialog(wx.Dialog):
 
 class ProgressBarHandler(wx.ProgressDialog):
     def __init__(self, parent, title="Progress Dialog", msg="Initializing...", max_value=None):
-        super(ProgressBarHandler    , self).__init__(title,msg,parent=parent,style=wx.PD_APP_MODAL|wx.PD_CAN_ABORT|wx.PD_AUTO_HIDE)
+        super(ProgressBarHandler    , self).__init__(title,msg,parent=parent,style=wx.PD_APP_MODAL|wx.PD_AUTO_HIDE)
 
         self.max_value = max_value
 
