@@ -705,14 +705,14 @@ class GradientCtrl(wx.Panel):
         self.spin_min.Bind(wx.EVT_SPINCTRL, self.OnMinMouseWheel)
         self.spin_max.Bind(wx.EVT_SPINCTRL, self.OnMaxMouseWheel)
 
-    def OnSlider(self, evt) -> None:
+    def OnSlider(self, evt: Any) -> None:
         self.spin_min.SetValue(evt.minimun)
         self.spin_max.SetValue(evt.maximun)
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
-    def OnSliding(self, evt) -> None:
+    def OnSliding(self, evt: Any) -> None:
         self.spin_min.SetValue(evt.minimun)
         self.spin_max.SetValue(evt.maximun)
         self.minimun = evt.minimun
@@ -892,12 +892,12 @@ class GradientDisp(wx.Panel):
     def _bind_events_wx(self) -> None:
         return
 
-    def OnSlider(self, evt) -> None:
+    def OnSlider(self, evt: Any) -> None:
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
-    def OnSliding(self, evt) -> None:
+    def OnSliding(self, evt: Any) -> None:
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
