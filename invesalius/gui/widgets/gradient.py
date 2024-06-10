@@ -89,7 +89,7 @@ class GradientSlider(wx.Panel):
         self.selected = 0
         self.max_position: int
 
-        self._gradient_colours: Optional[List[Tuple[int, int, int]]] = None
+        self._gradient_colours: Optional[Sequence[ColourType]] = None
 
         self.SetColour(colour)
         self.CalculateControlPositions()
@@ -155,7 +155,7 @@ class GradientSlider(wx.Panel):
 
         gc: wx.GraphicsContext = wx.GraphicsContext.Create(dc)
 
-        points = (
+        points: Sequence[Tuple[int, int, ColourType, ColourType]] = (
             (0, PUSH_WIDTH, (0, 0, 0), (0, 0, 0)),
             (PUSH_WIDTH, w - PUSH_WIDTH, (0, 0, 0), (255, 255, 255)),
             (w - PUSH_WIDTH, w, (255, 255, 255), (255, 255, 255)),
@@ -349,7 +349,7 @@ class GradientSlider(wx.Panel):
     def SetColour(self, colour: Iterable[SupportsInt]) -> None:
         self.colour = [int(i) for i in colour]
 
-    def SetGradientColours(self, colors) -> None:
+    def SetGradientColours(self, colors: Optional[Sequence[ColourType]]) -> None:
         self._gradient_colours = colors
 
     def SetMinRange(self, min_range: int) -> None:
@@ -402,7 +402,7 @@ class GradientNoSlide(wx.Panel):
         maxRange: int,
         minValue: int,
         maxValue: int,
-        colour,
+        colours: Sequence[ColourType],
     ):
         # minRange: the minimal value
         # maxrange: the maximum value
@@ -421,8 +421,7 @@ class GradientNoSlide(wx.Panel):
         self.min_position = 0
         w, h = self.GetSize()
 
-        self._gradient_colours = None
-        self.colour = colour
+        self._gradient_colours = colours
 
     def _bind_events_wx(self) -> None:
         self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
@@ -591,10 +590,7 @@ class GradientNoSlide(wx.Panel):
         else:
             return 0
 
-    def SetColour(self, colour: Iterable[SupportsInt]) -> None:
-        self.colour = [int(i) for i in colour]
-
-    def SetGradientColours(self, colors) -> None:
+    def SetGradientColours(self, colors: Sequence[ColourType]) -> None:
         self._gradient_colours = colors
 
     def SetMinRange(self, min_range: int) -> None:
@@ -775,7 +771,7 @@ class GradientCtrl(wx.Panel):
         self.gradient_slider.SetColour(colour)
         self.gradient_slider.Refresh()
 
-    def SetGradientColours(self, colors) -> None:
+    def SetGradientColours(self, colors: Sequence[ColourType]) -> None:
         self.gradient_slider.SetGradientColours(colors)
 
     def SetMaxRange(self, value: int) -> None:
@@ -865,14 +861,14 @@ class GradientDisp(wx.Panel):
         maxRange: int,
         minValue: int,
         maxValue: int,
-        colour: List[Tuple[int, int, int, int]],
+        colours: List[ColourType],
     ):
         super().__init__(parent, id)
         self.min_range = minRange
         self.max_range = maxRange
         self.minimun = minValue
         self.maximun = maxValue
-        self.colour = colour
+        self.colours = colours
         self.changed = False
         self._draw_controls()
         self._bind_events_wx()
@@ -880,10 +876,9 @@ class GradientDisp(wx.Panel):
 
     def _draw_controls(self) -> None:
         self.gradient_slider = GradientNoSlide(
-            self, -1, self.min_range, self.max_range, self.minimun, self.maximun, self.colour
+            self, -1, self.min_range, self.max_range, self.minimun, self.maximun, self.colours
         )
 
-        self.gradient_slider.SetGradientColours(self.colour)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(1, 30)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
@@ -907,13 +902,7 @@ class GradientDisp(wx.Panel):
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
-    def SetColour(self, colour: Sequence[SupportsInt]) -> None:
-        colour = list(int(i) for i in colour[:3])
-        self.colour = colour
-        self.gradient_slider.SetColour(colour)
-        self.gradient_slider.Refresh()
-
-    def SetGradientColours(self, colors) -> None:
+    def SetGradientColours(self, colors: Sequence[ColourType]) -> None:
         self.gradient_slider.SetGradientColours(colors)
 
     def GetMaxValue(self) -> int:
