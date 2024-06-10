@@ -832,20 +832,6 @@ class GradientCtrl(wx.Panel):
             self.gradient_slider.SetMinimun(value)
             self.minimun = value
 
-    def ChangeMinValue(self, e):
-        # Why do I need to change slide min value if it has been changed for
-        # the user?
-        if not self.slided:
-            self.gradient_slider.SetMinValue(int(self.spin_min.GetValue()))
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
-
-    def ChangeMaxValue(self, e):
-        # Why do I need to change slide max value if it has been changed for
-        # the user?
-        if not self.slided:
-            self.gradient_slider.SetMaxValue(int(self.spin_max.GetValue()))
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
-
     def GetMaxValue(self) -> int:
         return self.maximun
 
