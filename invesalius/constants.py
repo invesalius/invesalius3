@@ -753,6 +753,7 @@ TR3 = wx.NewIdRef()
 SET = wx.NewIdRef()
 
 FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
+FIDUCIAL_REGISTRATION_ORDER = [0, 2, 1]
 IMAGE_FIDUCIALS = [
     {
         'button_id': IR1,
