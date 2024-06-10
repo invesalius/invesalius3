@@ -6727,11 +6727,11 @@ class ProgressBarHandler(wx.ProgressDialog):
         Publisher.subscribe(self.update, "Update Progress bar")
         Publisher.subscribe(self.close, "Close Progress bar")
 
-    def wasCancelled(self):
+    def was_cancelled(self):
        return super().WasCancelled()
 
     def update(self, value, msg=None):
-        if self.WasCancelled():
+        if self.was_cancelled():
                 return
 
         if self.max_value is None:
