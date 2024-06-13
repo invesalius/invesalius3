@@ -213,41 +213,42 @@ class LoggingTab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         
+        #File Logging Selection
         bsizer_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _("File Logging Options"))
 
         bsizer_file_logging = wx.BoxSizer(wx.HORIZONTAL) 
 
-        #rb_file_logging = self.rb_file_logging = wx.CheckBox(self, -1, "File Logging")
         rb_file_logging = self.rb_file_logging = wx.RadioBox(
             self,
             -1,
+            label="Do Logging",
             choices=["No", "Yes"],
             majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER, # | wx.FIXED_MINSIZE,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
         )
-        bsizer_file_logging.Add(rb_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(rb_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
 
-        #rb_append_file = self.lbl_append_log_file = wx.CheckBox(self, -1, "Append File")
         rb_append_file = self.rb_append_file = wx.RadioBox(
             self, #bsizer_file_logging.GetStaticBox(),
             -1,
+            label = "Append File",
             choices=["No", "Yes"],
             majorDimension=2,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
         )
 
-
-        bsizer_file_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-
         lbl_file_logging_level = wx.StaticText(self, -1, _(" Logging Level "))
         cb_file_logging_level = self.cb_file_logging_level = wx.Choice(
             self,
             -1,
+            name="Logging Level",
             choices=const.LOGGING_LEVEL_TYPES, 
         ) 
-        bsizer_file_logging.Add(lbl_file_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(cb_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        bsizer_logging.Add(bsizer_file_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_file_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_file_logging.Add(lbl_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE , 5)
+        bsizer_file_logging.Add(cb_file_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+
+        bsizer_logging.Add(bsizer_file_logging, 0, wx.TOP | wx.LEFT | wx.EXPAND , 0)
 
         bsizer_log_filename = wx.BoxSizer(wx.HORIZONTAL) 
 
@@ -264,68 +265,26 @@ class LoggingTab(wx.Panel):
         bsizer_log_filename.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
         bsizer_logging.Add(bsizer_log_filename, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-
-        '''
-        rb_file_logging = self.rb_file_logging = wx.RadioBox(
-            bsizer_logging.GetStaticBox(),
-            -1,
-            choices=["No", "Yes"],
-            majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER, # | wx.FIXED_MINSIZE,
-        )
-        bsizer_logging.Add(rb_file_logging, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-
-        lbl_file_logging_level = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Logging Level "))
-        cb_file_logging_level = self.cb_file_logging_level = wx.Choice(
-            bsizer_file_logging.GetStaticBox(),
-            -1,
-            choices=const.LOGGING_LEVEL_TYPES, 
-        ) 
-        bsizer_file_logging.Add(lbl_file_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(cb_file_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        lbl_append_log_file = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _(" Append File "))
-        rb_append_file = self.rb_append_file = wx.RadioBox(
-            bsizer_file_logging.GetStaticBox(),
-            -1,
-            choices=["No", "Yes"],
-            majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER, # | wx.FIXED_MINSIZE,
-        )
-        bsizer_file_logging.Add(lbl_append_log_file, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(rb_append_file, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-
-        lbl_log_file_label = wx.StaticText(bsizer_file_logging.GetStaticBox(), -1, _("Current file:"))
-        tc_log_file_name = self.tc_log_file_name = wx.TextCtrl(
-            bsizer_file_logging.GetStaticBox(), -1, "", 
-            style = wx.TE_READONLY | wx.TE_LEFT | wx.TE_MULTILINE , 
-            size=(300, -1))
-        tc_log_file_name.SetForegroundColour(wx.RED)
-        bt_log_file_select = wx.Button(bsizer_file_logging.GetStaticBox(), label="Modify")
-        bt_log_file_select.Bind(wx.EVT_BUTTON, self.OnModifyButton)
-        bsizer_file_logging.Add(lbl_log_file_label, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(tc_log_file_name, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        bsizer_file_logging.Add(bt_log_file_select, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        #self.SetSizerAndFit(bsizer_file_logging)
-        '''
-        bsizer_console_logging = wx.StaticBoxSizer(wx.VERTICAL, self, _(" Console Logging "))
+        #Console Logging Selection
+        bsizer_console_logging = wx.StaticBoxSizer(wx.HORIZONTAL, self, _(" Console Logging "))
         
         rb_console_logging = self.rb_console_logging = wx.RadioBox(
             bsizer_console_logging.GetStaticBox(),
             -1,
+            label = "Do logging",
             choices=["No", "Yes"],
             majorDimension=2,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER , #| wx.FIXED_MINSIZE,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
         )
-        bsizer_console_logging.Add(rb_console_logging, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
+        bsizer_console_logging.Add(rb_console_logging, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
         lbl_console_logging_level = wx.StaticText(bsizer_console_logging.GetStaticBox(), -1, _(" Logging Level "))
         cb_console_logging_level = self.cb_console_logging_level = wx.Choice(
             bsizer_console_logging.GetStaticBox(),
             -1,
             choices=const.LOGGING_LEVEL_TYPES, 
         ) 
-        bsizer_console_logging.Add(lbl_console_logging_level, 0, wx.TOP | wx.LEFT, 0) # | wx.FIXED_MINSIZE, 0)
-        bsizer_console_logging.Add(cb_console_logging_level, 0, wx.TOP | wx.LEFT , 0) #| wx.FIXED_MINSIZE, 0)
-        #self.SetSizerAndFit(bsizer_console_logging)
+        bsizer_console_logging.Add(lbl_console_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_console_logging.Add(cb_console_logging_level, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
 
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_logging, 1, wx.EXPAND | wx.ALL , 10) #| wx.FIXED_MINSIZE, 10)
