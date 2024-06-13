@@ -2077,9 +2077,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         color_id = menu_id.Append(unique_menu_id + 1, _('Change color'))  # Increment the unique_menu_id
         menu_id.Bind(wx.EVT_MENU, self.ChangeColor, color_id)
 
+        delete_id = menu_id.Append(unique_menu_id + 2, _('Delete'))
+        menu_id.Bind(wx.EVT_MENU, self.OnDeleteSelectedMarkers, delete_id)
+
         # Allow duplicate only for markers that are not fiducials.
         if not is_fiducial:
-            duplicate_menu_item = menu_id.Append(unique_menu_id + 2, _('Duplicate'))
+            duplicate_menu_item = menu_id.Append(unique_menu_id + 3, _('Duplicate'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuDuplicateMarker, duplicate_menu_item)
 
         menu_id.AppendSeparator()
@@ -2087,13 +2090,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
             if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 3, _('Unset target'))
+                target_menu_item = menu_id.Append(unique_menu_id + 4, _('Unset target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
-                    brain_target_menu_item= menu_id.Append(unique_menu_id + 3, _('Set brain target'))
+                    brain_target_menu_item= menu_id.Append(unique_menu_id + 4, _('Set brain target'))
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 3, _('Set as target'))
+                target_menu_item = menu_id.Append(unique_menu_id + 4, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
