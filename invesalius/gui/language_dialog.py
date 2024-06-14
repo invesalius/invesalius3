@@ -28,6 +28,7 @@ except ImportError:
 
 import invesalius.i18n as i18n
 from invesalius.i18n import tr as _
+from invesalius.inv_paths import ICON_DIR
 
 file_path = os.path.split(__file__)[0]
 
@@ -38,8 +39,6 @@ if hasattr(sys, "frozen") and (
         file_path + os.sep + ".." + os.sep + ".." + os.sep + ".." + os.sep + ".."
     )
     ICON_DIR = os.path.abspath(os.path.join(abs_file_path, "icons"))
-else:
-    ICON_DIR = os.path.abspath(os.path.join(file_path, "..", "..", "icons"))
 
 # MAC App
 if not os.path.exists(ICON_DIR):
