@@ -34,7 +34,7 @@ from invesalius.utils import Singleton, deep_merge_dict
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR,datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log"))
 
-class MyConsoleHandler(logging.StreamHandler):
+class ConsoleLogHandler(logging.StreamHandler):
     def __init__(self, textctrl):
         logging.StreamHandler.__init__(self)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -47,14 +47,14 @@ class MyConsoleHandler(logging.StreamHandler):
         self.textctrl.WriteText(msg + "\n")
         self.flush()
 
-class MyRedirectText(object):
+class ConsoleRedirectText(object):
     def __init__(self, textctrl):
         self.out = textctrl
         
     def write(self, string):
         self.out.WriteText(string)
 
-class MyPanel(wx.Panel):
+class ConsoleLogPanel(wx.Panel):
     def __init__(self, parent, logger):
         wx.Panel.__init__(self, parent)
         
@@ -66,33 +66,33 @@ class MyPanel(wx.Panel):
         self.SetSizer(sizer)
         self._parent = parent
      
-        redir = MyRedirectText(logText)
+        redir = ConsoleRedirectText(logText)
         sys.stdout = redir
         #sys.stderr = redir
 
         self._logger = logger
-        txtHandler = MyConsoleHandler(logText)
+        txtHandler = ConsoleLogHandler(logText)
         self._logger.addHandler(txtHandler)
 
     def onClose(self, event):
-        self._logger.info("MyPanel window close selected.")
+        self._logger.info("ConsoleLogPanel window close selected.")
         self._parent.Iconify()
         
      
-class MyFrame(wx.Frame):
+class ConsoleLogFrame(wx.Frame):
     def __init__(self, logger):
         wx.Frame.__init__(self, None, title="Log Console", 
                     style=wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX))
-        self._panel = MyPanel(self, logger)
+        self._panel = ConsoleLogPanel(self, logger)
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.Show()
         
     #To be tested
     def onClose(self, event):
-        self._logger.info("MyFrame window close selected.")
+        self._logger.info("ConsoleLogFrame window close selected.")
         self.Hide()
 
-class MyLogger(): #metaclass=Singleton):
+class InvesaliusLogger(): #metaclass=Singleton):
     def __init__(self):
         # create logger
         self._logger = logging.getLogger(__name__)
@@ -185,7 +185,7 @@ class MyLogger(): #metaclass=Singleton):
 
         if ((self._frame == None) & (console_logging!=0)):
             print('Initiating console logging ...')
-            self._frame = MyFrame(self.getLogger())
+            self._frame = ConsoleLogFrame(self.getLogger())
             print('Initiated console logging ...')
             self._logger.info('Initiated console logging ...')
        
@@ -266,7 +266,7 @@ class MyLogger(): #metaclass=Singleton):
 
 def call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        #logger = MyLogger() 
+        #logger = InvesaliusLogger() 
         msg = 'Function {} called'.format(function.__name__)
         invLogger._logger.info(msg)
         function(*args)
@@ -281,7 +281,7 @@ def error_handling_decorator(func: Callable[[str], None]):
     return wrapper_function            
 ################################################################################################
 
-invLogger = MyLogger()
+invLogger = InvesaliusLogger()
 #invLogger.configureLogging()
 
 ################################################################################################
