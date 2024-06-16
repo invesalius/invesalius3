@@ -44,8 +44,9 @@ class ConsoleLogHandler(logging.StreamHandler):
     def emit(self, record):
         msg = self.format(record)
         stream = self.stream
-        self.textctrl.WriteText(msg + "\n")
-        self.flush()
+        if invLogger._config['console_logging']==1:
+            self.textctrl.WriteText(msg + "\n")
+            self.flush()
 
 class ConsoleRedirectText(object):
     def __init__(self, textctrl):
@@ -188,9 +189,8 @@ class InvesaliusLogger(): #metaclass=Singleton):
         self._logger.info('configureLogging called ...')
         self.logMessage('info', msg)
 
-
         if file_logging:
-            print('file_logging called ...')
+            #print('file_logging called ...')
             self._logger.info('file_logging called ...')
             file_logging_level = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
 
@@ -207,8 +207,8 @@ class InvesaliusLogger(): #metaclass=Singleton):
                             # os.path.samefile(logging_file,handler.baseFilename): #it doesn't seem to work
                             handler.setLevel(file_logging_level)
                             addFileHandler = False
-                            msg = 'No change in log file name {}.'.format(logging_file)
-                            self._logger.info(msg)
+                            #msg = 'No change in log file name {}.'.format(logging_file)
+                            #self._logger.info(msg)
                         else:
                             msg = 'Closing current log file {} as new log file {} requested.'.format( \
                                 handler.baseFilename, logging_file)
