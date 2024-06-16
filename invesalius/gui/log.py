@@ -62,7 +62,7 @@ class ConsoleLogPanel(wx.Panel):
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(logText, 1, wx.EXPAND|wx.ALL, 5)
-        #sizer.Add(btn, 0, wx.ALL, 5)
+        
         self.SetSizer(sizer)
         self._parent = parent
      
@@ -96,7 +96,7 @@ class InvesaliusLogger(): #metaclass=Singleton):
     def __init__(self):
         # create logger
         self._logger = logging.getLogger(__name__)
-        #self._logger.setLevel(logging.DEBUG)
+    
         self._frame = None
         self._config = {
             'file_logging': 0,
@@ -125,10 +125,8 @@ class InvesaliusLogger(): #metaclass=Singleton):
         try:
             print(fPath, os.path.abspath(fPath))
             self._read_config_from_json(fPath) 
-            #self._read_config_from_json(r'C:\\Users\\hrish\\.config\\invesalius\\log_config.json')
-            print('Read Log config file ', fPath)
+            print('Reading Log config file ', fPath)
             print(self._config)
-            #self.configureLogging()
         except Exception as e1: 
             print('Error reading config file in ReadConfigFile:', e1)
         return True
@@ -141,11 +139,6 @@ class InvesaliusLogger(): #metaclass=Singleton):
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _read_config_from_json(self, json_filename):
-        '''
-        with open(json_filename, 'r') as config_file:
-            config_dict = json.loads(config_file)
-            self._config = deep_merge_dict(self._config.copy(), config_dict)
-        '''
         try:
             config_file = open(json_filename, 'r')
             config_dict = json.load(config_file)
@@ -168,7 +161,6 @@ class InvesaliusLogger(): #metaclass=Singleton):
         elif (level=='ERROR'):
             self._logger.error(msg)
         else:  #'info'
-            #print('Came to info ...')
             self._logger.info(msg)
 
     def configureLogging(self):
@@ -203,7 +195,6 @@ class InvesaliusLogger(): #metaclass=Singleton):
             file_logging_level = getattr(logging,  const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None)
 
             # create formatter
-            #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             formatter = logging.Formatter(self._config['logging_format'])
 
             # create file handler 
@@ -213,7 +204,7 @@ class InvesaliusLogger(): #metaclass=Singleton):
                     if isinstance(handler, logging.FileHandler):
                         if hasattr(handler, 'baseFilename') & os.path.exists(logging_file) & \
                             (os.path.normcase(os.path.abspath(logging_file)) == os.path.normcase(os.path.abspath(handler.baseFilename))): 
-                            # os.path.samefile(logging_file,handler.baseFilename):
+                            # os.path.samefile(logging_file,handler.baseFilename): #it doesn't seem to work
                             handler.setLevel(file_logging_level)
                             addFileHandler = False
                             msg = 'No change in log file name {}.'.format(logging_file)
@@ -231,7 +222,7 @@ class InvesaliusLogger(): #metaclass=Singleton):
                         fh = logging.FileHandler(os.path.abspath(logging_file), 'a', encoding=None)
                     else:
                         fh = logging.FileHandler(os.path.abspath(logging_file), 'w', encoding=None)
-                    #fh.setLevel(python_loglevel)
+
                     fh.setFormatter(formatter)
                     self._logger.addHandler(fh)
                     msg = 'Added file handler {}'.format(logging_file)
@@ -266,7 +257,6 @@ class InvesaliusLogger(): #metaclass=Singleton):
 
 def call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        #logger = InvesaliusLogger() 
         msg = 'Function {} called'.format(function.__name__)
         invLogger._logger.info(msg)
         function(*args)
