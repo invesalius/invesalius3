@@ -16,20 +16,19 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
-import platform
-import time
-import sys
-import re
+import collections.abc
 import locale
 import math
+import platform
+import re
+import sys
+import time
 import traceback
-import collections.abc
-from typing import Optional, Any, Tuple, List
-
-from setuptools.extern.packaging.version import Version
 from functools import wraps
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
+from setuptools.extern.packaging.version import Version
 
 
 def format_time(value: str) -> str:
@@ -84,7 +83,7 @@ def debug(error_str: str) -> None:
         print(error_str)
 
 
-def next_copy_name(original_name: str, names_list: str) -> str:
+def next_copy_name(original_name: str, names_list: List[str]) -> str:
     """
     Given original_name of an item and a list of existing names,
     builds up the name of a copy, keeping the pattern:
@@ -137,9 +136,7 @@ def new_name_by_pattern(pattern: str) -> str:
 
     proj = Project()
     mask_dict = proj.mask_dict
-    names_list = [
-        i.name for i in mask_dict.values() if i.name.startswith(pattern + "_")
-    ]
+    names_list = [i.name for i in mask_dict.values() if i.name.startswith(pattern + "_")]
     count = len(names_list) + 1
     return f"{pattern}_{count}"
 
@@ -216,9 +213,7 @@ class TwoWaysDictionary(dict):
 
 
 # DEPRECATED
-def frange(
-    start: float, end: Optional[float] = None, inc: Optional[float] = None
-) -> List[float]:
+def frange(start: float, end: Optional[float] = None, inc: Optional[float] = None) -> List[float]:
     "A range function, that accepts float increments."
 
     if end is None:
@@ -228,7 +223,7 @@ def frange(
     if (inc is None) or (inc == 0):
         inc = 1.0
 
-    L: list[float] = []
+    L: List[float] = []
     while 1:
         next = start + len(L) * inc
         if inc > 0 and next >= end:
@@ -268,11 +263,7 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
             ram_total = psutil.virtual_memory().total
             swap_free = psutil.swap_memory().free
         else:
-            ram_free = (
-                psutil.phymem_usage().free
-                + psutil.cached_phymem()
-                + psutil.phymem_buffers()
-            )
+            ram_free = psutil.phymem_usage().free + psutil.cached_phymem() + psutil.phymem_buffers()
             ram_total = psutil.phymem_usage().total
             swap_free = psutil.virtmem_usage().free
     except Exception:
@@ -357,9 +348,7 @@ def predict_memory(nfiles: int, x: int, y: int, p: int) -> Tuple[float, float]:
             # 839000000 = 800 MB
             if (m <= 839000000) and (physical_memory <= 2147483648):
                 return (x, y)
-            elif (
-                (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200)
-            ):
+            elif (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
             else:
                 return (x, y)
@@ -367,9 +356,7 @@ def predict_memory(nfiles: int, x: int, y: int, p: int) -> Tuple[float, float]:
         else:
             if (m <= 839000000) and (physical_memory <= 2147483648):
                 return (x, y)
-            elif (
-                (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200)
-            ):
+            elif (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
             else:
                 return (x, y)
@@ -413,12 +400,14 @@ def get_system_encoding() -> Optional[str]:
 def UpdateCheck() -> None:
     try:
         from urllib.parse import urlencode
-        from urllib.request import urlopen, Request
+        from urllib.request import Request, urlopen
     except ImportError:
         from urllib import urlencode
-        from urllib2 import urlopen, Request
+
+        from urllib2 import Request, urlopen
 
     import wx
+
     import invesalius.session as ses
 
     def _show_update_info():
@@ -521,8 +510,7 @@ def log_traceback(ex: Any) -> str:
     else:
         _, _, ex_traceback = sys.exc_info()
     tb_lines = [
-        line.rstrip("\n")
-        for line in traceback.format_exception(ex.__class__, ex, ex_traceback)
+        line.rstrip("\n") for line in traceback.format_exception(ex.__class__, ex, ex_traceback)
     ]
     return "".join(tb_lines)
 

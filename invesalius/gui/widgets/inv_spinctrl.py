@@ -155,18 +155,18 @@ class InvSpinCtrl(wx.Panel):
         self.raise_event()
         evt.Skip()
 
-    def OnKillFocus(self, evt: wx.Event) -> None:
+    def OnKillFocus(self, evt: wx.FocusEvent) -> None:
         value = self._textctrl.GetValue()
         self.SetValue(value)
         self.raise_event()
         evt.Skip()
 
-    def OnSpinDown(self, evt: wx.Event) -> None:
+    def OnSpinDown(self, evt: wx.SpinEvent) -> None:
         self.SetValue(self.GetValue() - self._increment)
         self.raise_event()
         evt.Skip()
 
-    def OnSpinUp(self, evt: wx.Event) -> None:
+    def OnSpinUp(self, evt: wx.SpinEvent) -> None:
         self.SetValue(self.GetValue() + self._increment)
         self.raise_event()
         evt.Skip()
@@ -323,18 +323,18 @@ class InvFloatSpinCtrl(wx.Panel):
         self.raise_event()
         evt.Skip()
 
-    def OnKillFocus(self, evt: wx.Event) -> None:
+    def OnKillFocus(self, evt: wx.FocusEvent) -> None:
         value = self._textctrl.GetValue()
         self.SetValue(value)
         self.raise_event()
         evt.Skip()
 
-    def OnSpinDown(self, evt: wx.Event) -> None:
+    def OnSpinDown(self, evt: wx.SpinEvent) -> None:
         self.SetValue(self._value - self._increment)
         self.raise_event()
         evt.Skip()
 
-    def OnSpinUp(self, evt: wx.Event) -> None:
+    def OnSpinUp(self, evt: wx.SpinEvent) -> None:
         self.SetValue(self._value + self._increment)
         self.raise_event()
         evt.Skip()
