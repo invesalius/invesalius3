@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 import wx
+import wx.dataview
 
 import invesalius.gui.dialogs as dialog
 from invesalius import inv_paths
