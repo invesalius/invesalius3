@@ -20,6 +20,7 @@
 import bisect
 import math
 import os
+from typing import Optional, Tuple
 
 import numpy
 import wx
@@ -69,7 +70,7 @@ class Curve:
     def __init__(self):
         self.wl = 0
         self.ww = 0
-        self.wl_px = 0
+        self.wl_px: Optional[Tuple[int, int]] = None
         self.nodes = []
 
     def CalculateWWWl(self):
