@@ -1,5 +1,7 @@
 import functools
 import math
+from typing import List
+
 import wx
 
 HISTOGRAM_LINE_COLOUR = (128, 128, 128)
@@ -20,8 +22,27 @@ RADIUS = 5
 PADDING = 2
 
 
+@functools.total_ordering
+class Node:
+    def __init__(self, value, colour):
+        self.value = value
+        self.colour = colour
+
+    def __cmp__(self, o):
+        return self.value == o.value
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __repr__(self):
+        return "(%d %s)" % (self.value, self.colour)
+
+
 class CLUTEvent(wx.PyCommandEvent):
-    def __init__(self, evtType, id, nodes):
+    def __init__(self, evtType: int, id: int, nodes: List[Node]):
         wx.PyCommandEvent.__init__(self, evtType, id)
         self.nodes = nodes
 
@@ -34,31 +55,13 @@ myEVT_CLUT_NODE_CHANGED = wx.NewEventType()
 EVT_CLUT_NODE_CHANGED = wx.PyEventBinder(myEVT_CLUT_NODE_CHANGED, 1)
 
 
-@functools.total_ordering
-class Node(object):
-    def __init__(self, value, colour):
-        self.value = value
-        self.colour = colour
-
-    def __cmp__(self, o):
-        return cmp(self.value, o.value)
-
-    def __lt__(self, other):
-        return self.value < other.value
-
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def __repr__(self):
-        return "(%d %s)" % (self.value, self.colour)
-
-
 class CLUTImageDataWidget(wx.Panel):
     """
     Widget used to config the Lookup table from imagedata.
     """
+
     def __init__(self, parent, id, histogram, init, end, nodes=None):
-        super(CLUTImageDataWidget, self).__init__(parent, id)
+        super().__init__(parent, id)
 
         self.SetFocusIgnoringChildren()
         self.SetMinSize((400, 200))
@@ -78,8 +81,7 @@ class CLUTImageDataWidget(wx.Panel):
             self.wl = (init + end) / 2.0
             self.ww = end - init
 
-            self.nodes = [Node(init, (0, 0, 0)),
-                         Node(end, (255, 255, 255))]
+            self.nodes = [Node(init, (0, 0, 0)), Node(end, (255, 255, 255))]
         else:
             self.nodes = nodes
             self.nodes.sort()
@@ -142,8 +144,8 @@ class CLUTImageDataWidget(wx.Panel):
 
     def _build_drawn_hist(self):
         w, h = self.GetVirtualSize()
-        #w = len(self.histogram)
-        #h = 1080
+        # w = len(self.histogram)
+        # h = 1080
 
         x_init = self._init
         x_end = self._end
@@ -198,7 +200,7 @@ class CLUTImageDataWidget(wx.Panel):
 
     def OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
-        dc.SetBackground(wx.Brush('Black'))
+        dc.SetBackground(wx.Brush("Black"))
         dc.Clear()
 
         self.draw_histogram(dc)
@@ -302,7 +304,7 @@ class CLUTImageDataWidget(wx.Panel):
             # Left key - Decrease node value
             elif evt.GetKeyCode() in (wx.WXK_LEFT, wx.WXK_NUMPAD_LEFT):
                 n = self.last_selected
-                n.value = self.pixel_to_hounsfield(self.hounsfield_to_pixel(n.value) -1)
+                n.value = self.pixel_to_hounsfield(self.hounsfield_to_pixel(n.value) - 1)
                 self.Refresh()
                 self._generate_event()
 
@@ -350,14 +352,14 @@ class CLUTImageDataWidget(wx.Panel):
         for x, y in self._d_hist:
             path.AddLineToPoint(x, h - y)
 
-        w0 = self.pixel_to_hounsfield(0)
-        w1 = self.pixel_to_hounsfield(w-1)
+        # w0 = self.pixel_to_hounsfield(0)
+        # w1 = self.pixel_to_hounsfield(w - 1)
         ctx.Translate(self.hounsfield_to_pixel(self._s_init), 0)
         ctx.Scale(self._scale, 1.0)
-        #ctx.Translate(-self.hounsfield_to_pixel(self._s_init), 0)
-        #ctx.Translate(0, h)
-        #ctx.Translate(0, -h)
-        #ctx.Translate(0, h * h/1080.0 )
+        # ctx.Translate(-self.hounsfield_to_pixel(self._s_init), 0)
+        # ctx.Translate(0, h)
+        # ctx.Translate(0, -h)
+        # ctx.Translate(0, h * h/1080.0 )
         ctx.PushState()
         ctx.StrokePath(path)
         ctx.PopState()
@@ -379,9 +381,7 @@ class CLUTImageDataWidget(wx.Panel):
 
             ci = ni.colour + (GRADIENT_RGBA,)
             cj = nj.colour + (GRADIENT_RGBA,)
-            b = ctx.CreateLinearGradientBrush(vi, h,
-                                              vj, h,
-                                              ci, cj)
+            b = ctx.CreateLinearGradientBrush(vi, h, vj, h, ci, cj)
             ctx.SetBrush(b)
             ctx.SetPen(wx.TRANSPARENT_PEN)
             ctx.FillPath(path)
@@ -396,7 +396,7 @@ class CLUTImageDataWidget(wx.Panel):
         path.AddCircle(px, h / 2, RADIUS)
 
         path.AddCircle(px, h / 2, RADIUS)
-        ctx.SetPen(wx.Pen('white', LINE_WIDTH + 1))
+        ctx.SetPen(wx.Pen("white", LINE_WIDTH + 1))
         ctx.StrokePath(path)
 
         ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH - 1))
@@ -418,7 +418,7 @@ class CLUTImageDataWidget(wx.Panel):
         font = ctx.CreateFont(font, TEXT_COLOUR)
         ctx.SetFont(font)
 
-        text = 'Value: %-6d' % value
+        text = "Value: %-6d" % value
 
         wt, ht = ctx.GetTextExtent(text)
 
@@ -457,7 +457,7 @@ class CLUTImageDataWidget(wx.Panel):
             x = self.hounsfield_to_pixel(n.value)
             y = h / 2
 
-            if ((px - x)**2 + (py - y)**2)**0.5 <= RADIUS:
+            if ((px - x) ** 2 + (py - y) ** 2) ** 0.5 <= RADIUS:
                 return n
 
         return None
@@ -470,4 +470,4 @@ class CLUTImageDataWidget(wx.Panel):
         if scale <= 10.0:
             self._scale = scale
             self._init, self._end = init, end
-            #self._build_drawn_hist()
+            # self._build_drawn_hist()
