@@ -20,10 +20,11 @@
 import bisect
 import math
 import os
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy
 import wx
+import wx.dataview
 
 import invesalius.gui.dialogs as dialog
 from invesalius import inv_paths
@@ -85,7 +86,7 @@ class Histogram:
     def __init__(self):
         self.init = -1024
         self.end = 2000
-        self.points = ()
+        self.points: List[Tuple[int, int]] = []
 
 
 class Button:
@@ -94,7 +95,7 @@ class Button:
     """
 
     def __init__(self):
-        self.image = None
+        self.image: Optional[wx.Bitmap] = None
         self.position = (0, 0)
         self.size = (24, 24)
 
@@ -132,9 +133,9 @@ class CLUTRaycastingWidget(wx.Panel):
         parent -- parent of this frame
         """
         super().__init__(parent, id)
-        self.points = []
-        self.colours = []
-        self.curves: list[Curve] = []
+        self.points: List[List[Dict]] = []
+        self.colours: List[List[Dict]] = []
+        self.curves: List[Curve] = []
         self.init = -1024
         self.end = 2000
         self.Histogram = Histogram()
@@ -499,8 +500,8 @@ class CLUTRaycastingWidget(wx.Panel):
                 ctx.SetPen(wx.TRANSPARENT_PEN)
                 ctx.FillPath(path)
 
-    def _draw_curves(self, ctx):
-        path = ctx.CreatePath()
+    def _draw_curves(self, ctx: wx.GraphicsContext) -> None:
+        path: wx.GraphicsPath = ctx.CreatePath()
         ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
         for curve in self.curves:
             path.MoveToPoint(curve.nodes[0].x, curve.nodes[0].y)
@@ -508,16 +509,16 @@ class CLUTRaycastingWidget(wx.Panel):
                 path.AddLineToPoint(node.x, node.y)
             ctx.StrokePath(path)
 
-    def _draw_points(self, ctx):
+    def _draw_points(self, ctx: wx.GraphicsContext) -> None:
         for curve in self.curves:
             for node in curve.nodes:
-                path = ctx.CreatePath()
+                path: wx.GraphicsPath = ctx.CreatePath()
                 ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
                 ctx.SetBrush(wx.Brush(node.colour))
                 path.AddCircle(node.x, node.y, RADIUS)
                 ctx.DrawPath(path)
 
-    def _draw_selected_point_text(self, ctx) -> None:
+    def _draw_selected_point_text(self, ctx: wx.GraphicsContext) -> None:
         i, j = self.point_dragged
         node = self.curves[i].nodes[j]
         x, y = node.x, node.y
@@ -554,14 +555,14 @@ class CLUTRaycastingWidget(wx.Panel):
         ctx.DrawText(text1, xf, yf)
         ctx.DrawText(text2, xf, yf + ht)
 
-    def _draw_histogram(self, ctx, height):
+    def _draw_histogram(self, ctx: wx.GraphicsContext, height: int) -> None:
         # The histogram
         x, y = self.Histogram.points[0]
 
         ctx.SetPen(wx.Pen(HISTOGRAM_LINE_COLOUR, HISTOGRAM_LINE_WIDTH))
         ctx.SetBrush(wx.Brush(HISTOGRAM_FILL_COLOUR))
 
-        path = ctx.CreatePath()
+        path: wx.GraphicsPath = ctx.CreatePath()
         path.MoveToPoint(x, y)
         for x, y in self.Histogram.points:
             path.AddLineToPoint(x, y)
@@ -584,7 +585,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 x_center - SELECTION_SIZE / 2.0, y_center, SELECTION_SIZE, SELECTION_SIZE
             )
 
-    def _draw_tool_bar(self, ctx, height):
+    def _draw_tool_bar(self, ctx: wx.GraphicsContext, height: int) -> None:
         ctx.SetPen(wx.TRANSPARENT_PEN)
         ctx.SetBrush(wx.Brush(TOOLBAR_COLOUR))
         ctx.DrawRectangle(0, 0, TOOLBAR_SIZE, height + self.padding * 2)
@@ -595,7 +596,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.save_button.position = (x, y)
         ctx.DrawBitmap(image, x, y, w, h)
 
-    def Render(self, dc):
+    def Render(self, dc: wx.DC) -> None:
         ctx = wx.GraphicsContext.Create(dc)
         width, height = self.GetVirtualSize()
         height -= self.padding * 2
@@ -610,7 +611,7 @@ class CLUTRaycastingWidget(wx.Panel):
         if self.point_dragged:
             self._draw_selected_point_text(ctx)
 
-    def _build_histogram(self):
+    def _build_histogram(self) -> None:
         width, height = self.GetVirtualSize()
         width -= self.padding
         height -= self.padding * 2
@@ -679,7 +680,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.curves.append(curve)
         self._build_histogram()
 
-    def HounsfieldToPixel(self, graylevel):
+    def HounsfieldToPixel(self, graylevel: int) -> int:
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """
@@ -689,7 +690,7 @@ class CLUTRaycastingWidget(wx.Panel):
         x = (graylevel - self.init) * proportion + TOOLBAR_SIZE
         return x
 
-    def OpacityToPixel(self, opacity):
+    def OpacityToPixel(self, opacity: int) -> int:
         """
         Given a Opacity point returns a pixel point in the canvas.
         """
@@ -698,7 +699,7 @@ class CLUTRaycastingWidget(wx.Panel):
         y = height - (opacity * height) + self.padding
         return y
 
-    def PixelToHounsfield(self, x):
+    def PixelToHounsfield(self, x: int) -> float:
         """
         Translate from pixel point to Hounsfield scale.
         """
@@ -708,7 +709,7 @@ class CLUTRaycastingWidget(wx.Panel):
         graylevel = (x - TOOLBAR_SIZE) / proportion - abs(self.init)
         return graylevel
 
-    def PixelToOpacity(self, y):
+    def PixelToOpacity(self, y: int) -> float:
         """
         Translate from pixel point to opacity.
         """
@@ -717,7 +718,7 @@ class CLUTRaycastingWidget(wx.Panel):
         opacity = (height - y + self.padding) * 1.0 / height
         return opacity
 
-    def SetRaycastPreset(self, preset):
+    def SetRaycastPreset(self, preset: Dict) -> None:
         if not preset:
             self.to_draw_points = 0
         elif preset["advancedCLUT"]:
@@ -729,12 +730,12 @@ class CLUTRaycastingWidget(wx.Panel):
             self.to_draw_points = 0
         self.Refresh()
 
-    def SetHistogramArray(self, h_array, range):
+    def SetHistogramArray(self, h_array, range) -> None:
         self.histogram_array = h_array
         self.Histogram.init = range[0]
         self.Histogram.end = range[1]
 
-    def GetCurveWWWl(self, curve):
+    def GetCurveWWWl(self, curve: int) -> Tuple[int, float]:
         return (self.curves[curve].ww, self.curves[curve].wl)
 
 
