@@ -204,11 +204,11 @@ class InvesaliusLogger(): #metaclass=Singleton):
                     if isinstance(handler, logging.FileHandler):
                         if hasattr(handler, 'baseFilename') & os.path.exists(logging_file) & \
                             (os.path.normcase(os.path.abspath(logging_file)) == os.path.normcase(os.path.abspath(handler.baseFilename))): 
-                            # os.path.samefile(logging_file,handler.baseFilename): #it doesn't seem to work
+                            #os.path.samefile(logging_file,handler.baseFilename): #it doesn't seem to work
                             handler.setLevel(file_logging_level)
                             addFileHandler = False
-                            #msg = 'No change in log file name {}.'.format(logging_file)
-                            #self._logger.info(msg)
+                            msg = 'No change in log file name {}.'.format(logging_file)
+                            self._logger.info(msg)
                         else:
                             msg = 'Closing current log file {} as new log file {} requested.'.format( \
                                 handler.baseFilename, logging_file)
@@ -218,7 +218,7 @@ class InvesaliusLogger(): #metaclass=Singleton):
                             print(msg)
                             self._logger.info(msg)
                 if addFileHandler:
-                    if append_log_file:
+                    if os.path.exists(logging_file) & append_log_file:
                         fh = logging.FileHandler(os.path.abspath(logging_file), 'a', encoding=None)
                     else:
                         fh = logging.FileHandler(os.path.abspath(logging_file), 'w', encoding=None)
