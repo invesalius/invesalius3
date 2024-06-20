@@ -36,6 +36,7 @@ from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
+import wx.lib.colourselect as csel
 #  import invesalius.gui.widgets.listctrl as listmix
 import wx.lib.mixins.listctrl as listmix
 
@@ -430,6 +431,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self._click_check = False
         self.mask_list_index = {}
         self.current_index = 0
+        self.current_colour = []
         self.__init_columns()
         self.__init_image_list()
         self.__bind_events_wx()
@@ -438,6 +440,7 @@ class MasksListCtrlPanel(InvListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.on_mouse_right_click)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
@@ -450,6 +453,64 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
         Publisher.subscribe(self.__show_current_mask, 'Show current mask')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.update_current_colour, 'Set GUI items colour')
+
+    def on_mouse_right_click(self, event):
+        start_idx = 1
+
+        # Create the context menu and add all the menu items
+        mask_context_menu = wx.Menu()
+
+        colour_id = mask_context_menu.Append(start_idx, _('Change color'))
+        mask_context_menu.Bind(wx.EVT_MENU, self.change_color, colour_id)
+
+        duplicate_id = mask_context_menu.Append(start_idx + 1, _('Duplicate'))
+        mask_context_menu.Bind(wx.EVT_MENU, self.duplicate_masks, duplicate_id)
+
+        mask_context_menu.AppendSeparator()
+
+        delete_id = mask_context_menu.Append(start_idx + 2, _('Delete mask'))
+        mask_context_menu.Bind(wx.EVT_MENU, self.delete_mask, delete_id)
+
+        self.PopupMenu(mask_context_menu)
+        mask_context_menu.Destroy()
+
+    def update_current_colour(self, colour):
+        self.current_colour = colour
+
+    def change_color(self, event):
+        focused_item = self.GetFocusedItem()
+
+        # Select the focused mask
+        Publisher.sendMessage('Change mask selected', index=focused_item)
+
+        if focused_item == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        colour = (255, 255, 255)
+
+        if self.current_colour:
+            colour = self.current_colour
+
+        new_color = dlg.ShowColorDialog(color_current=colour)
+
+        if not new_color:
+            return
+
+        Publisher.sendMessage('Change mask colour', colour=new_color)
+
+    def duplicate_masks(self, event):
+        selected_items = self.GetSelected()
+        if selected_items:
+            Publisher.sendMessage('Duplicate masks', mask_indexes=selected_items)
+        else:
+            dlg.MaskSelectionRequiredForDuplication()
+
+
+    def delete_mask(self, event):
+        self.RemoveMasks()
+
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
