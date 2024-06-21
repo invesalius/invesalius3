@@ -55,6 +55,9 @@ class ConsoleRedirectText(object):
     def write(self, string):
         self.out.WriteText(string)
 
+    def flush(self):
+        pass
+
 class ConsoleLogPanel(wx.Panel):
     def __init__(self, parent, logger):
         wx.Panel.__init__(self, parent)
@@ -265,6 +268,9 @@ def call_tracking_decorator(function: Callable[[str], None]):
 def error_handling_decorator(func: Callable[[str], None]):
     def wrapper_function(*args, **kwargs):
         try:
+            msg = 'Function {} called'.format(func.__name__)
+            invLogger._logger.info(msg)
+            #print(f"{func.__name__} called")
             func(*args, **kwargs)
         except TypeError:
             invLogger._logger.error(f"Wrong data types found in {func.__name__} call")
