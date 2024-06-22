@@ -20,7 +20,7 @@
 
 import logging 
 import logging.config 
-from typing import Callable
+from  typing  import Callable, List
 import sys, os
 import wx
 import json
@@ -265,20 +265,36 @@ def call_tracking_decorator(function: Callable[[str], None]):
         function(*args)
     return wrapper_accepting_arguments
 
-def error_handling_decorator(func: Callable[[str], None]):
+def error_handling_decorator01(func: Callable[[str], None]):
     def wrapper_function(*args, **kwargs):
         try:
             msg = 'Function {} called'.format(func.__name__)
             invLogger._logger.info(msg)
             #print(f"{func.__name__} called")
             func(*args, **kwargs)
-        except TypeError:
-            invLogger._logger.error(f"Wrong data types found in {func.__name__} call")
+        except Exception as e:
+            invLogger._logger.error(f"Exception {e} encountered in Function {func.__name__} call")
+            raise 
     return wrapper_function            
+
+def error_handling_decorator02(errorList: List[str]):  
+    def Inner(func):
+        def wrapper(*args, **kwargs):
+            msg = 'Function {} called'.format(func.__name__)
+            invLogger._logger.info(msg)
+            try:
+                func(*args, **kwargs)  
+            except errorList as e:
+                invLogger._logger.error(f"Exception {e} found in {func.__name__} call")
+                return
+            else:
+                invLogger._logger.error(f"{func.__name__} ran successfully.")
+                pass
+        return wrapper
+    return Inner 
 ################################################################################################
 
 invLogger = InvesaliusLogger()
 #invLogger.configureLogging()
 
 ################################################################################################
-
