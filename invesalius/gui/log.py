@@ -317,7 +317,7 @@ def error_handling_decorator03(errorList: Dict[str, str]):
                 func(*args, **kwargs)  
             except (TypeError, ZeroDivisionError) as e:
                 invLogger._logger.error(f"Exception {e} found in {func.__name__} call")
-                errorList[e]()
+                #errorList[e]()
                 #return
             else:
                 invLogger._logger.error(f"{func.__name__} ran successfully.")
