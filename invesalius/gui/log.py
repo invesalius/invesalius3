@@ -20,7 +20,7 @@
 
 import logging 
 import logging.config 
-from  typing  import Callable, List
+from  typing  import Callable, List, Dict
 import sys, os
 import wx
 import json
@@ -33,6 +33,11 @@ from invesalius.utils import Singleton, deep_merge_dict
 
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR,datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log"))
+
+actionDictionary00 = {
+    'TypeError': 'raise TypeError',
+    'ZeroDivisionError': 'Exception ZeroDivisionError found in {func.__name__} call'
+}
 
 class ConsoleLogHandler(logging.StreamHandler):
     def __init__(self, textctrl):
@@ -265,7 +270,12 @@ def call_tracking_decorator(function: Callable[[str], None]):
         function(*args)
     return wrapper_accepting_arguments
 
+#####################################################################################
+#  Decorators for error handling
+from functools import wraps
+
 def error_handling_decorator01(func: Callable[[str], None]):
+    @wraps(func) #adds the functionality of copying over the function name, docstring, arguments list, etc. 
     def wrapper_function(*args, **kwargs):
         try:
             msg = 'Function {} called'.format(func.__name__)
@@ -292,9 +302,48 @@ def error_handling_decorator02(errorList: List[str]):
                 pass
         return wrapper
     return Inner 
-################################################################################################
+
+def error_handling_decorator03(errorList: Dict[str, str]):  
+    def Inner(func):
+        def wrapper(*args, **kwargs):
+            msg = 'Function {} called'.format(func.__name__)
+            invLogger._logger.info(msg)
+            keys = [key for key in errorList]
+            values = [errorList[key] for key in errorList]
+            #keys, values = zip(*errorList.items())
+            invLogger._logger.error(keys)
+            invLogger._logger.error(values)
+            try:
+                func(*args, **kwargs)  
+            except (TypeError, ZeroDivisionError) as e:
+                invLogger._logger.error(f"Exception {e} found in {func.__name__} call")
+                errorList[e]()
+                #return
+            else:
+                invLogger._logger.error(f"{func.__name__} ran successfully.")
+                pass
+        return wrapper
+    return Inner 
+
+#Decorator template
+def get_decorator(errors=(Exception, ), default_value=''):
+
+    def decorator(func):
+
+        def new_func(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except errors as e:
+                print("Got error! ") #, repr(e)
+                return default_value
+
+        return new_func
+
+    return decorator
+
+#####################################################################################
 
 invLogger = InvesaliusLogger()
 #invLogger.configureLogging()
 
-################################################################################################
+#####################################################################################
