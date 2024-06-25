@@ -34,10 +34,10 @@ import invesalius.gui.dialogs as dlg
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 
-BTN_IMPORT_LOCAL = wx.NewId()
-BTN_IMPORT_PACS = wx.NewId()
-BTN_OPEN_PROJECT = wx.NewId()
-BTN_IMPORT_NIFTI = wx.NewId()
+BTN_IMPORT_LOCAL = wx.NewIdRef()
+BTN_IMPORT_PACS = wx.NewIdRef()
+BTN_OPEN_PROJECT = wx.NewIdRef()
+BTN_IMPORT_NIFTI = wx.NewIdRef()
 
 
 
@@ -72,7 +72,7 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Select DICOM files to be reconstructed"))
+        tooltip = _("Select DICOM files to be reconstructed")
         link_import_local = hl.HyperLinkCtrl(self, -1, _("Import DICOM images..."))
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetBold(True)
@@ -83,7 +83,7 @@ class InnerTaskPanel(wx.Panel):
         link_import_local.UpdateLink()
         link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
 
-        tooltip = wx.ToolTip(_("Select NIFTI files to be reconstructed"))
+        tooltip = _("Select NIFTI files to be reconstructed")
         link_import_nifti = hl.HyperLinkCtrl(self, -1, _("Import NIFTI images..."))
         link_import_nifti.SetUnderlines(False, False, False)
         link_import_nifti.SetBold(True)
@@ -94,7 +94,7 @@ class InnerTaskPanel(wx.Panel):
         link_import_nifti.UpdateLink()
         link_import_nifti.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportNifti)
 
-        #tooltip = wx.ToolTip("Import DICOM files from PACS server")
+        #tooltip = "Import DICOM files from PACS server"
         #link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
         #link_import_pacs.SetUnderlines(False, False, False)
         #link_import_pacs.SetColours("BLACK", "BLACK", "BLACK")
@@ -103,7 +103,7 @@ class InnerTaskPanel(wx.Panel):
         #link_import_pacs.UpdateLink()
         #link_import_pacs.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
 
-        tooltip = wx.ToolTip(_("Open an existing InVesalius project..."))
+        tooltip = _("Open an existing InVesalius project...")
         link_open_proj = hl.HyperLinkCtrl(self,-1,_("Open an existing project..."))
         link_open_proj.SetUnderlines(False, False, False)
         link_open_proj.SetBold(True)
@@ -115,20 +115,12 @@ class InnerTaskPanel(wx.Panel):
         link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
 
         # Image(s) for buttons
-        BMP_IMPORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_import.png")), wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
-        BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open.png")), wx.BITMAP_TYPE_PNG)
-
-        bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
-        #for bmp in bmp_list:
-            #bmp.SetWidth(25)
-            #bmp.SetHeight(25)
+        BMP_IMPORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_import_original.png")), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open_original.png")), wx.BITMAP_TYPE_PNG)
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
-        #button_import_pacs = pbtn.PlateButton(self, BTN_IMPORT_PACS, "", BMP_NET,
-        #                                      style=button_style)
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
                                                BMP_IMPORT, style=button_style)
         button_import_local.SetBackgroundColour(self.GetBackgroundColour())

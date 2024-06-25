@@ -813,7 +813,7 @@ msgid "No data selected"
 msgstr ""
 
 #: dialogs.py:763
-msgid "Edit marker ID"
+msgid "Change label"
 msgstr ""
 
 #: dialogs.py:810
@@ -1330,7 +1330,7 @@ msgid "Move"
 msgstr ""
 
 #: frame.py:1322
-msgid "Constrast"
+msgid "Contrast"
 msgstr ""
 
 #: frame.py:1480
@@ -1751,10 +1751,6 @@ msgstr ""
 
 #: task_navigator.py:137
 msgid "Extra tools"
-msgstr ""
-
-#: task_navigator.py:146
-msgid "Update camera in volume"
 msgstr ""
 
 #: task_navigator.py:147

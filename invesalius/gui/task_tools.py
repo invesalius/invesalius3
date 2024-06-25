@@ -32,9 +32,9 @@ import invesalius.constants as constants
 import invesalius.constants as const
 from invesalius.i18n import tr as _
 
-ID_BTN_MEASURE_LINEAR = wx.NewId()
-ID_BTN_MEASURE_ANGULAR = wx.NewId()
-ID_BTN_ANNOTATION = wx.NewId()
+ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
+ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
+ID_BTN_ANNOTATION = wx.NewIdRef()
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -64,11 +64,11 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed text and hyperlink items
-        tooltip = wx.ToolTip(_("Measure distances"))
+        tooltip = _("Measure distances")
         txt_measure = wx.StaticText(self, -1, _("Measure"))
         txt_measure.SetToolTip(tooltip)
 
-        tooltip = wx.ToolTip(_("Add text annotations"))
+        tooltip = _("Add text annotations")
         txt_annotation = hl.HyperLinkCtrl(self, -1,_("Add text annotations"))
         txt_annotation.SetUnderlines(False, False, False)
         txt_annotation.SetColours("BLACK", "BLACK", "BLACK")
@@ -79,8 +79,8 @@ class InnerTaskPanel(wx.Panel):
 
         # Image(s) for buttons
         BMP_ANNOTATE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "annotation.png"), wx.BITMAP_TYPE_PNG)
-        BMP_ANGLE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_angle.png"), wx.BITMAP_TYPE_PNG)
-        BMP_DISTANCE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_line.png"), wx.BITMAP_TYPE_PNG)
+        BMP_ANGLE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_angle_original.png"), wx.BITMAP_TYPE_PNG)
+        BMP_DISTANCE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "measure_line_original.png"), wx.BITMAP_TYPE_PNG)
         BMP_ANNOTATE.SetWidth(25)
         BMP_ANNOTATE.SetHeight(25)
         BMP_ANGLE.SetWidth(25)

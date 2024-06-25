@@ -321,7 +321,7 @@ import wx.lib.buttons as btn
 from invesalius.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
-RAYCASTING_TOOLS = wx.NewId()
+RAYCASTING_TOOLS = wx.NewIdRef()
 
 ID_TO_NAME = {}
 ID_TO_TOOL = {}
@@ -356,7 +356,6 @@ class VolumeToolPanel(wx.Panel):
         BMP_SLICE_PLANE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("slice_plane.png")), wx.BITMAP_TYPE_PNG)
         BMP_3D_STEREO = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG)
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        BMP_3D_MASK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_from_internet.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(self, -1,"", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         self.button_raycasting.SetToolTip("Raycasting view")
@@ -366,7 +365,6 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.SetToolTip("Slices into 3D")
         #self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         #self.button_target.Enable(0)
-        #  self.button_3d_mask = pbtn.PlateButton(self, -1, "", BMP_3D_MASK, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
@@ -416,15 +414,6 @@ class VolumeToolPanel(wx.Panel):
                                  'Change volume viewer gui colour')
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
-        '''
-        Publisher.subscribe(self.ShowTargetButton, 'Show target button')
-        Publisher.subscribe(self.HideTargetButton, 'Hide target button')
-        Publisher.subscribe(self.DisableTargetMode, 'Disable target mode')
-
-        # Conditions for enabling target button:
-        Publisher.subscribe(self.TargetSelected, 'Target selected')
-        Publisher.subscribe(self.TrackObject, 'Track object')
-        '''
 
 
     def DisablePreset(self):
@@ -452,50 +441,6 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
-    '''
-    def ShowCoilChecked(self, checked):
-        self.show_coil_checked = checked
-        self.UpdateTargetButton()
-
-    def TargetSelected(self, status):
-        self.target_selected = status
-        self.UpdateTargetButton()
-
-    def TrackObject(self, enabled):
-        self.track_obj = enabled
-        self.UpdateTargetButton()
-
-    def ShowTargetButton(self):
-        self.button_target.Show()
-
-    def HideTargetButton(self):
-        self.button_target.Hide()
-
-    def DisableTargetMode(self):
-        self.OnButtonTarget(False)
-        self.button_target._SetState(0)
-
-    def UpdateTargetButton(self):
-        if self.target_selected and self.track_obj:
-            self.button_target.Enable(1)
-        else:
-            self.DisableTargetMode()
-            self.button_target.Enable(0)
-
-    def OnButtonTarget(self, evt):
-        if not self.button_target.IsPressed() and evt is not False:
-            self.button_target._pressed = True
-            Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Check volume camera checkbox', checked=False)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=False)
-
-        elif self.button_target.IsPressed() or evt is False:
-            self.button_target._pressed = False
-            Publisher.sendMessage('Target navigation mode', target_mode=self.button_target._pressed)
-            Publisher.sendMessage('Enable volume camera checkbox', enabled=True)
-            Publisher.sendMessage('Update robot target', robot_tracker_flag=False,
-                                  target_index=None, target=None)
-    '''
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
         if d.ShowModal() == wx.ID_OK:
@@ -509,7 +454,7 @@ class VolumeToolPanel(wx.Panel):
         #print ">>>>", const.RAYCASTING_TYPES.sort()
         #print "\n\n"
         for name in const.RAYCASTING_TYPES:
-            id = wx.NewId()
+            id = wx.NewIdRef()
             item = menu.Append(id, name, kind=wx.ITEM_RADIO)
             if name == const.RAYCASTING_OFF_LABEL:
                 self.off_item = item
@@ -521,7 +466,7 @@ class VolumeToolPanel(wx.Panel):
         self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
-           id = wx.NewId()
+           id = wx.NewIdRef()
            if not(self.id_cutplane):
                self.id_cutplane = id
            item = submenu.Append(id, name, kind=wx.ITEM_CHECK)
@@ -554,7 +499,7 @@ class VolumeToolPanel(wx.Panel):
         itens = ["Axial", "Coronal", "Sagital"]
 
         for value in itens:
-            new_id = wx.NewId()
+            new_id = wx.NewIdRef()
 
             item = slice_plane_menu.Append(new_id, value, kind = wx.ITEM_CHECK)
             ID_TO_ITEMSLICEMENU[new_id] = item
@@ -569,7 +514,7 @@ class VolumeToolPanel(wx.Panel):
                  const.STEREO_CHECKBOARD]
 
         for value in itens:
-            new_id = wx.NewId()
+            new_id = wx.NewIdRef()
             item = stereo_menu.Append(new_id, value, kind = wx.ITEM_RADIO)
             ID_TO_ITEM_3DSTEREO[new_id] = item
             ID_TO_STEREO_NAME[new_id] = value

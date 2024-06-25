@@ -31,6 +31,7 @@ import sys
 from invesalius.session import Session
  
 import invesalius.utils as utl
+from invesalius.inv_paths import LOCALE_DIR
  
 def GetLocales(): 
     """Return a dictionary which defines supported languages""" 
@@ -51,7 +52,8 @@ def GetLocales():
                                 'ro': u'Română',
                                 'ru': u'Русский',
                                 'ja': u'日本語',
-                                'be': u'Беларуская',}) 
+                                'be': u'Беларуская',
+                                'uz': u'O‘zbek',}) 
     return d 
  
 def GetLocaleOS(): 
@@ -67,13 +69,11 @@ def GetLocaleOS():
  
 def InstallLanguage(language):
     file_path = os.path.split(__file__)[0]
-
-    abs_file_path = os.path.abspath(file_path + os.sep + "..")
-
+    language_dir = LOCALE_DIR
     if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):
+        abs_file_path = os.path.abspath(file_path + os.sep + "..")
         abs_file_path = os.path.abspath(abs_file_path + os.sep + ".." + os.sep + "..")
-
-    language_dir = os.path.join(abs_file_path, 'locale')
+        language_dir = os.path.join(abs_file_path, 'locale')
 
     # MAC app
     if not os.path.exists(language_dir):

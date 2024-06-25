@@ -416,7 +416,7 @@ cdef vector[vertex_id_t]* find_staircase_artifacts(Mesh mesh, double[3] stack_or
     return output
 
 
-cdef void taubin_smooth(Mesh mesh, vector[weight_t]& weights, float l, float m, int steps) nogil:
+cdef void taubin_smooth(Mesh mesh, vector[weight_t]& weights, float l, float m, int steps) noexcept nogil:
     """
     Implementation of Taubin's smooth algorithm described in the paper "A
     Signal Processing Approach To Fair Surface Design". His benefeat is it

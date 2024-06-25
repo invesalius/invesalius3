@@ -173,7 +173,7 @@ class Tracker(metaclass=Singleton):
         coord_samples = {}
 
         for i in range(n_samples):
-            coord_raw, markers_flag = self.TrackerCoordinates.GetCoordinates()
+            coord_raw, marker_visibilities = self.TrackerCoordinates.GetCoordinates()
 
             if ref_mode_id == const.DYNAMIC_REF:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
@@ -187,13 +187,24 @@ class Tracker(metaclass=Singleton):
         coord_raw_avg = np.median(list(coord_raw_samples.values()), axis=0)
         coord_avg = np.median(list(coord_samples.values()), axis=0)
 
-        return coord_avg, coord_raw_avg
+        return marker_visibilities, coord_avg, coord_raw_avg
 
     def SetTrackerFiducial(self, ref_mode_id, fiducial_index):
-        coord, coord_raw = self.GetTrackerCoordinates(
+        marker_visibilities, coord, coord_raw = self.GetTrackerCoordinates(
             ref_mode_id=ref_mode_id,
             n_samples=const.CALIBRATION_TRACKER_SAMPLES,
         )
+
+        # If probe or head markers are not visible, show a warning and return early.
+        probe_visible, head_visible, _ = marker_visibilities
+
+        if not probe_visible:
+            dlg.ShowNavigationTrackerWarning(0, 'probe marker not visible')
+            return False
+        
+        if not head_visible:
+            dlg.ShowNavigationTrackerWarning(0, 'head marker not visible')
+            return False
 
         # Update tracker fiducial with tracker coordinates
         self.tracker_fiducials[fiducial_index, :] = coord[0:3]
@@ -209,6 +220,8 @@ class Tracker(metaclass=Singleton):
         print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
 
         self.SaveState()
+
+        return True
 
     def ResetTrackerFiducials(self):
         for m in range(3):
@@ -238,25 +251,3 @@ class Tracker(metaclass=Singleton):
 
     def get_trackers(self):
         return const.TRACKERS
-
-
-'''
-Deprecated Code
-
-    def UpdateUI(self, selection_ctrl, numctrls_fiducial, txtctrl_fre):
-        if self.tracker_connected:
-            selection_ctrl.SetSelection(self.tracker_id)
-        else:
-            selection_ctrl.SetSelection(0)
-
-        # Update tracker location in the UI.
-        for m in range(3):
-            coord = self.tracker_fiducials[m, :]
-            for n in range(0, 3):
-                value = 0.0 if np.isnan(coord[n]) else float(coord[n])
-                numctrls_fiducial[m][n].SetValue(value)
-
-        txtctrl_fre.SetValue('')
-        txtctrl_fre.SetBackgroundColour('WHITE')
-
-'''

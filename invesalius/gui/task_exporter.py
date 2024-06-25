@@ -40,11 +40,11 @@ from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.data.slice_ import Slice
 
-BTN_MASK = wx.NewId()
-BTN_PICTURE = wx.NewId()
-BTN_SURFACE = wx.NewId()
-BTN_REPORT = wx.NewId()
-BTN_REQUEST_RP = wx.NewId()
+BTN_MASK = wx.NewIdRef()
+BTN_PICTURE = wx.NewIdRef()
+BTN_SURFACE = wx.NewIdRef()
+BTN_REPORT = wx.NewIdRef()
+BTN_REQUEST_RP = wx.NewIdRef()
 
 WILDCARD_SAVE_3D = "Inventor (*.iv)|*.iv|"\
                    "PLY (*.ply)|*.ply|"\
@@ -118,7 +118,7 @@ class InnerTaskPanel(wx.Panel):
         # Counter for projects loaded in current GUI
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Export InVesalius screen to an image file"))
+        tooltip = _("Export InVesalius screen to an image file")
         link_export_picture = hl.HyperLinkCtrl(self, -1,
                                             _("Export picture..."))
         link_export_picture.SetUnderlines(False, False, False)
@@ -131,7 +131,7 @@ class InnerTaskPanel(wx.Panel):
         link_export_picture.Bind(hl.EVT_HYPERLINK_LEFT,
                                  self.OnLinkExportPicture)
 
-        tooltip = wx.ToolTip(_("Export 3D surface"))
+        tooltip = _("Export 3D surface")
         link_export_surface = hl.HyperLinkCtrl(self, -1,_("Export 3D surface..."))
         link_export_surface.SetUnderlines(False, False, False)
         link_export_surface.SetBold(True)
@@ -143,7 +143,7 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT,
                               self.OnLinkExportSurface)
 
-        #tooltip = wx.ToolTip(_("Export 3D mask (voxels)"))
+        #tooltip = _("Export 3D mask (voxels)")
         #link_export_mask = hl.HyperLinkCtrl(self, -1,_("Export mask..."))
         #link_export_mask.SetUnderlines(False, False, False)
         #link_export_mask.SetColours("BLACK", "BLACK", "BLACK")
@@ -154,7 +154,7 @@ class InnerTaskPanel(wx.Panel):
         #                      self.OnLinkExportMask)
 
 
-        #tooltip = wx.ToolTip("Request rapid prototyping services")
+        #tooltip = "Request rapid prototyping services"
         #link_request_rp = hl.HyperLinkCtrl(self,-1,"Request rapid prototyping...")
         #link_request_rp.SetUnderlines(False, False, False)
         #link_request_rp.SetColours("BLACK", "BLACK", "BLACK")
@@ -163,7 +163,7 @@ class InnerTaskPanel(wx.Panel):
         #link_request_rp.UpdateLink()
         #link_request_rp.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
 
-        #tooltip = wx.ToolTip("Open report tool...")
+        #tooltip = "Open report tool..."
         #link_report = hl.HyperLinkCtrl(self,-1,"Open report tool...")
         #link_report.SetUnderlines(False, False, False)
         #link_report.SetColours("BLACK", "BLACK", "BLACK")
@@ -174,29 +174,14 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Image(s) for buttons
-        if sys.platform == 'darwin':
-            BMP_EXPORT_SURFACE = wx.Bitmap(\
-                                  os.path.join(inv_paths.ICON_DIR, "surface_export_original.png"),
-                                  wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-            BMP_TAKE_PICTURE = wx.Bitmap(\
-                                 os.path.join(inv_paths.ICON_DIR, "tool_photo_original.png"),
-                                 wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-
-            #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask.png",
-            #                            wx.BITMAP_TYPE_PNG)
-        else:
-            BMP_EXPORT_SURFACE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "surface_export.png"),
-                                        wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-
-            BMP_TAKE_PICTURE = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "tool_photo.png"),
-                                     wx.BITMAP_TYPE_PNG).ConvertToImage()\
-                                          .Rescale(25, 25).ConvertToBitmap()
-
-            #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask_small.png",
-            #                            wx.BITMAP_TYPE_PNG)
+        BMP_EXPORT_SURFACE = wx.Bitmap(\
+                                os.path.join(inv_paths.ICON_DIR, "surface_export_original.png"),
+                                wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                        .Rescale(25, 25).ConvertToBitmap()
+        BMP_TAKE_PICTURE = wx.Bitmap(\
+                                os.path.join(inv_paths.ICON_DIR, "tool_photo_original.png"),
+                                wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                        .Rescale(25, 25).ConvertToBitmap()
 
 
 

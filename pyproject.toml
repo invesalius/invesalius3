@@ -1,0 +1,96 @@
+[project]
+name = "InVesalius"
+version = "3.1.99998"
+description = "3D medical imaging reconstruction software"
+keywords = [
+  "medical imaging",
+  "dicom",
+  "segmentation",
+  "3D printing",
+  "neuronavigation",
+]
+license = { file = "LICENSE.txt" }
+readme = "README.md"
+requires-python = ">=3.8"
+
+[tool.setuptools]
+packages = ["invesalius", "invesalius_cy"]
+
+[tool.mypy]
+show_error_codes = true
+check_untyped_defs = false
+disallow_any_generics = false
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+warn_redundant_casts = false
+warn_unused_ignores = false
+no_implicit_optional = false
+strict_equality = false
+warn_return_any = false
+warn_unreachable = false
+warn_unused_configs = false
+no_implicit_reexport = false
+follow_imports = "normal"
+
+disable_error_code =  ["attr-defined", "no-redef"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    'wx.*',
+    'vtkmodules.*',
+    'pubsub.*',
+    'scipy.*',
+    'skimage.*',
+    'serial.*',
+    'gdcm.*',
+    'pyacvd.*',
+    'vtk.*',
+    'scipy.spatial.*',
+    'invesalius.data.camera_tracker.*',
+    'aioconsole.*',
+    'nest_asyncio.*',
+    'uvicorn.*',
+    'polhemus.*',
+    'polhemusFT.*',
+    'pyclaron.*',
+    'urllib2.*',
+    'optitrack.*',
+    'ordereddict.*',
+    'keras.*',
+    'Image.*',
+    'mido.*',
+    'ConfigParser.*',
+    'Queue.*',
+    'weakrefmethod.*',
+    'torchviz.*',
+    'Trekker.*',
+    'sklearn.*',
+    'usb.*',
+    'plaidml.*',
+    'pypolaris.*',
+    'pypolarisP4.*',
+    'socketio.*',
+    'setuptools.*',
+    'psutil.*',
+    'h5py.*',
+    'info.*',
+    'pandas.*',
+    'PIL.*',
+    'win32com.client.*',
+    'win32com.*',
+    'sigar.*',
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py']
+line-length = 100
+# extend-exclude = ["plugins"]
+
+[tool.ruff.lint]
+extend-select = ["UP"] # Introduces linting rules for pyupgrade
+# We can extend the list with 'I' and 'PL' in the future
+
+[tool.ruff.format]
+line-ending = "lf"

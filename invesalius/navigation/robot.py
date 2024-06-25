@@ -17,13 +17,14 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import threading
+from enum import Enum
 
 from wx import ID_OK
 import numpy as np
 import wx
 
 import invesalius.constants as const
+import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
@@ -31,16 +32,36 @@ from invesalius.i18n import tr as _
 from invesalius.utils import Singleton
 from invesalius.navigation.tracker import Tracker
 
+
+class RobotObjective(Enum):
+    NONE = 0
+    TRACK_TARGET = 1
+    MOVE_AWAY_FROM_HEAD = 2
+
+
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Robot(metaclass=Singleton):
-    def __init__(self):
-        self.tracker = Tracker()
+    def __init__(self, tracker, navigation, icp):
+        self.tracker = tracker
+        self.navigation = navigation
+        self.icp = icp
 
-        self.robot_status = None
+        self.enabled_in_gui = False
+
+        self.is_robot_connected = False
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
+        self.target = None
+
+        self.objective = RobotObjective.NONE
+        self.target = None
+
+        # If tracker already has fiducials set, send them to the robot; this can happen, e.g.,
+        # when a pre-existing state is loaded at start-up.
+        if self.tracker.AreTrackerFiducialsSet():
+            self.TrackerFiducialsSet()
 
         success = self.LoadConfig()
         if success:
@@ -50,8 +71,14 @@ class Robot(metaclass=Singleton):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.AbortRobotConfiguration, 'Dialog robot destroy')
-        Publisher.subscribe(self.OnRobotStatus, 'Robot connection status')
+        Publisher.subscribe(self.AbortRobotConfiguration, 'Robot to Neuronavigation: Close robot dialog')
+        Publisher.subscribe(self.OnRobotConnectionStatus, 'Robot to Neuronavigation: Robot connection status')
+        Publisher.subscribe(self.SetObjectiveByRobot, 'Robot to Neuronavigation: Set objective')
+
+        Publisher.subscribe(self.SetTarget, 'Set target')
+        Publisher.subscribe(self.UnsetTarget, 'Unset target')
+
+        Publisher.subscribe(self.TrackerFiducialsSet, 'Tracker fiducials set')
 
     def SaveConfig(self):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
@@ -74,17 +101,26 @@ class Robot(metaclass=Singleton):
         self.matrix_tracker_to_robot = np.array(state['tracker_to_robot'])
 
         return True
-        
-    def OnRobotStatus(self, data):
-        if data:
-            self.robot_status = data
+
+    def OnRobotConnectionStatus(self, data):
+        # TODO: Is this check necessary?
+        if not data:
+            return
+
+        self.is_robot_connected = data
+        if self.is_robot_connected:
+            Publisher.sendMessage('Enable move away button', enabled=True)
 
     def RegisterRobot(self):
         Publisher.sendMessage('End busy cursor')
-        if not self.robot_status:
+        if not self.is_robot_connected:
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
             return
-        self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(self, self.tracker)
+
+        self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(
+            robot=self,
+            tracker=self.tracker
+        )
 
         # Show dialog and store relevant output values.
         status = self.robot_coregistration_dialog.ShowModal()
@@ -106,48 +142,85 @@ class Robot(metaclass=Singleton):
             self.robot_coregistration_dialog.Destroy()
 
     def IsConnected(self):
-        return self.robot_status
+        return self.is_robot_connected
     
     def SetRobotIP(self, data):
         if data is not None:
             self.robot_ip = data
 
     def ConnectToRobot(self):
-        Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
-        print("Connected to Robot!")
+        Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
+        print("Connected to robot")
 
     def InitializeRobot(self):
-        Publisher.sendMessage('Robot navigation mode', robot_mode=True)
-        Publisher.sendMessage('Load robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
-        print("Robot Initialized!")
+        Publisher.sendMessage('Neuronavigation to Robot: Set robot transformation matrix', data=self.matrix_tracker_to_robot.tolist())
+        print("Robot initialized")
 
-    def DisconnectRobot(self):
-        Publisher.sendMessage('Robot navigation mode', robot_mode=False)
-
-'''
-Deprecated Code
-
-    def ConfigureRobot(self):
-        if self.tracker.tracker_connection and self.tracker.tracker_connection.IsConnected():
-            select_ip_dialog = dlg.SetRobotIP()
-            status = select_ip_dialog.ShowModal()
-
-            if status == ID_OK:
-                robot_ip = select_ip_dialog.GetValue()
-                self.robot_ip = robot_ip
-                self.configuration = {
-                    'tracker_id': self.tracker.GetTrackerId(),
-                    'robot_ip': robot_ip,
-                    'tracker_configuration': self.tracker.tracker_connection.GetConfiguration(),
-                }
-                self.connection = self.tracker.tracker_connection
-                Publisher.sendMessage('Connect to robot', robot_IP=self.robot_ip)
-                select_ip_dialog.Destroy()
-                return True
-            else:
-                select_ip_dialog.Destroy()
-                return False
-        else:
-            wx.MessageBox(_("Select Tracker first"), _("InVesalius 3"))
+    def SendTargetToRobot(self):
+        # If the target is not set, return early.
+        if self.target is None:
             return False
-'''
+
+        # Compute the target in tracker coordinate system.
+        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+
+        # TODO: This is done here for now because the robot code expects the y-coordinate to be flipped. When this
+        #   is removed, the robot code should be updated similarly, and vice versa. Create a copy of self.target by
+        #   to avoid modifying it.
+        target = self.target[:]
+        target[1] = -target[1]
+        
+        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
+        if self.navigation.m_change is None or self.navigation.obj_data is None:
+            return False
+
+        m_target = dcr.image_to_tracker(self.navigation.m_change, coord_raw, target, self.icp, self.navigation.obj_data)
+
+        Publisher.sendMessage('Neuronavigation to Robot: Set target',
+            target=m_target.tolist(),
+        )
+
+    def TrackerFiducialsSet(self):
+        tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
+        Publisher.sendMessage('Neuronavigation to Robot: Set tracker fiducials', tracker_fiducials=tracker_fiducials)
+        
+    def SetObjective(self, objective):
+        # If the objective is already set to the same value, return early.
+        # This is done to avoid sending the same objective to the robot repeatedly.
+        if self.objective == objective:
+            return
+
+        self.objective = objective
+        Publisher.sendMessage('Neuronavigation to Robot: Set objective', objective=objective.value)
+
+    def SetObjectiveByRobot(self, objective):
+        if objective is None:
+            return
+
+        self.objective = RobotObjective(objective)
+        if self.objective == RobotObjective.TRACK_TARGET:
+            # Unpress 'Move away from robot' button when the robot is tracking the target.
+            Publisher.sendMessage('Press move away button', pressed=False)
+
+        elif self.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
+            # Unpress 'Track target' button when the robot is moving away from head.
+            Publisher.sendMessage('Press robot button', pressed=False)
+            
+        elif self.objective == RobotObjective.NONE:
+            # Unpress 'Track target' and 'Move away from robot' buttons when the robot has no objective.
+            Publisher.sendMessage('Press robot button', pressed=False)
+            Publisher.sendMessage('Press move away button', pressed=False)
+
+    def UnsetTarget(self, marker):
+        self.target = None
+        Publisher.sendMessage('Neuronavigation to Robot: Unset target')
+
+    def SetTarget(self, marker):
+        coord = marker.position + marker.orientation
+
+        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
+        #   flip wouldn't be needed.
+        coord[1] = -coord[1]
+
+        self.target = coord
+        self.SendTargetToRobot()
