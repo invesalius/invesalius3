@@ -38,6 +38,7 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataReader, vtkXMLImageDataWriter
 import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
+import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.i18n import tr as _
 from invesalius.data import vtk_utils as vtk_utils
@@ -534,6 +535,13 @@ def img2memmap(group):
     # alternatively could test if "data.dtype == 'float64'" but maybe it is too specific
     if numpy.ptp(data) > (2**16/2-1):
         data = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
+        dlg.WarningRescalePixelValues()
+
+    # images can have pixel intensities in small float numbers which after int conversion will
+    # have be binary (0, 1). To prevent that, rescale pixel values from 0-255
+    elif data.max() < (2**3):
+        data = image_normalize(data, min_=0, max_=255, output_dtype=np.int16)
+        dlg.WarningRescalePixelValues()
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = numpy.swapaxes(data, 0, 2)
