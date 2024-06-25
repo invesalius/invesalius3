@@ -5626,6 +5626,27 @@ class SelectNiftiVolumeDialog(wx.Dialog):
         return volume_choice
 
 
+def DialogRescalePixelIntensity(max_intensity, unique_values):
+    msg = _("Maximum pixel intensity is: ") + str(round(max_intensity, 1)) + '\n\n' + \
+          _("Number of unique pixel intensities: ") + str(unique_values) + '\n\n' + \
+          _("Would you like to rescale pixel values to 0-255?")
+
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.YES_NO)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.YES_NO)
+
+    if dlg.ShowModal() == wx.ID_YES:
+        status = True
+    else:
+        status = False
+
+    dlg.Destroy()
+    return status
+
+
 class ConfigureOptitrackDialog(wx.Dialog):
     def __init__(self, title=_("Configure Optitrack")):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, size=wx.Size(1000, 200),
