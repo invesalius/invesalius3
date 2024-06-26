@@ -35,8 +35,8 @@ LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'log_config.json')
 DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR,datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log"))
 
 actionDictionary00 = {
-    'TypeError': 'raise TypeError',
-    'ZeroDivisionError': 'Exception ZeroDivisionError found in {func.__name__} call'
+    'TypeError': 'invLogger._logger.error(\'raise TypeError\')',
+    'ZeroDivisionError': 'invLogger._logger.error(\'Exception ZeroDivisionError found in {func.__name__} call\')'
 }
 
 class ConsoleLogHandler(logging.StreamHandler):
@@ -115,7 +115,8 @@ class InvesaliusLogger(): #metaclass=Singleton):
             'console_logging': 0,
             'console_logging_level': 0,
             'base_logging_level': logging.DEBUG,
-            'logging_format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            #'logging_format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            'logging_format': '%(asctime)s - %(levelname)s - %(message)s',
         }
         self.ReadConfigFile()
         self._logger.setLevel(self._config['base_logging_level'])
@@ -186,7 +187,15 @@ class InvesaliusLogger(): #metaclass=Singleton):
 
         if ((self._frame == None) & (console_logging!=0)):
             print('Initiating console logging ...')
-            self._frame = ConsoleLogFrame(self.getLogger())
+            #self._frame = ConsoleLogFrame(self.getLogger())
+
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            ch = logging.StreamHandler(sys.stderr)
+            ch.setLevel(logging.DEBUG)
+            ch.setFormatter(formatter)
+            self._logger.addHandler(ch)
+
+
             print('Initiated console logging ...')
             self._logger.info('Initiated console logging ...')
        
@@ -303,39 +312,40 @@ def error_handling_decorator02(errorList: List[str]):
         return wrapper
     return Inner 
 
+#https://stackoverflow.com/questions/9168340/using-a-dictionary-to-select-function-to-execute
 def error_handling_decorator03(errorList: Dict[str, str]):  
     def Inner(func):
         def wrapper(*args, **kwargs):
             msg = 'Function {} called'.format(func.__name__)
             invLogger._logger.info(msg)
             keys = [key for key in errorList]
+            print('keys:', keys)
             values = [errorList[key] for key in errorList]
             #keys, values = zip(*errorList.items())
             invLogger._logger.error(keys)
             invLogger._logger.error(values)
             try:
                 func(*args, **kwargs)  
-            except (TypeError, ZeroDivisionError) as e:
+            except (TypeError, ZeroDivisionError) as e: #keys as e: #
                 invLogger._logger.error(f"Exception {e} found in {func.__name__} call")
-                #errorList[e]()
-                #return
-            else:
-                invLogger._logger.error(f"{func.__name__} ran successfully.")
-                pass
+                #print('e:',e, type(e).__name__) #, e.__str__, e.args)
+                exec(errorList[type(e).__name__])
+            #else:
+                #invLogger._logger.error(f"{func.__name__} ran successfully.")
+                #pass
         return wrapper
     return Inner 
 
 #Decorator template
 def get_decorator(errors=(Exception, ), default_value=''):
-
     def decorator(func):
-
         def new_func(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
             except errors as e:
                 print("Got error! ") #, repr(e)
                 return default_value
+
 
         return new_func
 
