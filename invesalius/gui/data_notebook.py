@@ -806,19 +806,19 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.__init_image_list()
         self.__init_evt()
         self.__bind_events_wx()
+
+        # Color of the currently selected surface when opening context menu, default is white
+        self.current_color = [255, 255, 255]
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
 
     def __init_evt(self):
-        Publisher.subscribe(self.AddSurface,
-                                'Update surface info in GUI')
-        Publisher.subscribe(self.EditSurfaceTransparency,
-                                 'Set surface transparency')
-        Publisher.subscribe(self.EditSurfaceColour,
-                                 'Set surface colour')
+        Publisher.subscribe(self.AddSurface,'Update surface info in GUI')
+        Publisher.subscribe(self.update_current_color, 'Update surface info in GUI')
+        Publisher.subscribe(self.EditSurfaceTransparency,'Set surface transparency')
+        Publisher.subscribe(self.EditSurfaceColour,'Set surface colour')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.OnHideSurface, 'Hide surface items')
-
         Publisher.subscribe(self.OnShowSingle, 'Show single surface')
         Publisher.subscribe(self.OnShowMultiple, 'Show multiple surfaces')
 
@@ -826,6 +826,64 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.on_mouse_right_click)
+
+    def on_mouse_right_click(self, event):
+        start_idx = 1
+        focused_idx = self.GetFocusedItem()
+
+        # Select the surface that was clicked
+        Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
+
+        # Create the context menu and add all the menu items
+        surface_context_menu = wx.Menu()
+
+        colour_id = surface_context_menu.Append(start_idx, _('Change color'))
+        surface_context_menu.Bind(wx.EVT_MENU, self.change_color, colour_id)
+
+        duplicate_id = surface_context_menu.Append(start_idx + 1, _('Duplicate'))
+        surface_context_menu.Bind(wx.EVT_MENU, self.duplicate_surface, duplicate_id)
+
+        surface_context_menu.AppendSeparator()
+
+        delete_id = surface_context_menu.Append(start_idx + 2, _('Delete surface'))
+        surface_context_menu.Bind(wx.EVT_MENU, self.delete_surface, delete_id)
+
+        self.PopupMenu(surface_context_menu)
+        surface_context_menu.Destroy()
+
+    def update_current_color(self, surface):
+        self.current_colour = [int(255 * c) for c in surface.colour][:3]
+        print("current colour:", self.current_colour)
+
+    def change_color(self, event):
+        focused_idx = self.GetFocusedItem()
+
+        current_color = self.current_color
+
+        new_color = dlg.ShowColorDialog(color_current=current_color)
+
+        if not new_color:
+            return
+
+        new_vtk_color = [c / 255.0 for c in new_color]
+        print("new vtk color:", new_vtk_color)
+
+        Publisher.sendMessage('Set surface colour',
+                              surface_index=focused_idx,
+                              colour=new_vtk_color)
+
+        Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
+
+    def duplicate_surface(self, event):
+        selected_items = self.GetSelected()
+        if selected_items:
+            Publisher.sendMessage('Duplicate surfaces', surface_indexes=selected_items)
+        else:
+            dlg.SurfaceSelectionRequiredForDuplication()
+
+    def delete_surface(self, event):
+        self.RemoveSurfaces()
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
