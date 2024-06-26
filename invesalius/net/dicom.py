@@ -249,13 +249,13 @@ class DicomNet:
         )
         if assoc.is_established:
             total_responses = values["n_images"]
-            progress_callback(completed_responses, total_responses)
+            progress_callback(completed_responses - 1, total_responses)
             try:
                 responses = assoc.send_c_get(ds, PatientRootQueryRetrieveInformationModelGet)
                 for status, identifier in responses:
                     # pending status, keep moving and updating progress
                     if status and status.Status in (0xFF00, 0xFF01):
-                        progress_callback(completed_responses, total_responses)
+                        progress_callback(completed_responses - 1, total_responses)
 
                     # completed case, subtract 1 to avoid reaches 100% and get stuck
                     elif status and status.Status == 0x0000:
