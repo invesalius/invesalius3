@@ -379,6 +379,7 @@ class Controller():
 
         proj = prj.Project()
         try:
+            dlg=dialogs.SaveProjectProgressWindow()
             prj.Project().SavePlistProject(dirpath, filename, compress)
         except PermissionError as err:
             if wx.GetApp() is None:

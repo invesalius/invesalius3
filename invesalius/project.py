@@ -239,6 +239,7 @@ class Project(metaclass=Singleton):
         project['matrix'] = matrix
         filelist[self.matrix_filename] = 'matrix.dat'
         #shutil.copyfile(self.matrix_filename, filename_tmp)
+        Publisher.sendMessage('update_progress', value=1)
 
         # Saving the masks
         masks = {}
@@ -246,6 +247,7 @@ class Project(metaclass=Singleton):
             masks[str(index)] = self.mask_dict[index].SavePlist(dir_temp,
                                                                 filelist)
         project['masks'] = masks
+        Publisher.sendMessage('update_progress',value=2)
 
         # Saving the surfaces
         surfaces = {}
@@ -253,6 +255,7 @@ class Project(metaclass=Singleton):
             surfaces[str(index)] = self.surface_dict[index].SavePlist(dir_temp,
                                                                      filelist)
         project['surfaces'] = surfaces
+        Publisher.sendMessage('update_progress', value=3)
 
         # Saving the measurements
         measurements = self.GetMeasuresDict()
@@ -262,10 +265,12 @@ class Project(metaclass=Singleton):
             plistlib.dump(measurements, f)
         filelist[temp_mplist] = measurements_filename
         project['measurements'] = measurements_filename
+        Publisher.sendMessage('update_progress', value=4)
         os.close(fd_mplist)
 
         # Saving the annotations (empty in this version)
         project['annotations'] = {}
+        Publisher.sendMessage('update_progress', value=5)
 
         # Saving the main plist
         temp_fd, temp_plist = tempfile.mkstemp()
@@ -284,6 +289,10 @@ class Project(metaclass=Singleton):
         for f in filelist:
             if filelist[f].endswith('.plist'):
                 os.remove(f)
+        Publisher.sendMessage('update_progress', value=6)
+
+        Publisher.sendMessage('destroy_progress')
+        wx.Yield()
 
     def OpenPlistProject(self, filename):
         if not const.VTK_WARNING:
