@@ -469,7 +469,7 @@ class MasksListCtrlPanel(InvListCtrl):
 
         mask_context_menu.AppendSeparator()
 
-        delete_id = mask_context_menu.Append(start_idx + 2, _('Delete mask'))
+        delete_id = mask_context_menu.Append(start_idx + 2, _('Delete'))
         mask_context_menu.Bind(wx.EVT_MENU, self.delete_mask, delete_id)
 
         self.PopupMenu(mask_context_menu)
@@ -853,7 +853,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         surface_context_menu.AppendSeparator()
 
-        delete_id = surface_context_menu.Append(start_idx + 3, _('Delete surface'))
+        delete_id = surface_context_menu.Append(start_idx + 3, _('Delete'))
         surface_context_menu.Bind(wx.EVT_MENU, self.delete_surface, delete_id)
 
         self.PopupMenu(surface_context_menu)
