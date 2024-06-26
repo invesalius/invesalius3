@@ -809,12 +809,13 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         # Color of the currently selected surface when opening context menu, default is white
         self.current_color = [255, 255, 255]
+        self.current_transparency = 0
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
 
     def __init_evt(self):
         Publisher.subscribe(self.AddSurface,'Update surface info in GUI')
-        Publisher.subscribe(self.update_current_color, 'Update surface info in GUI')
+        Publisher.subscribe(self.update_current_surface_data, 'Update surface info in GUI')
         Publisher.subscribe(self.EditSurfaceTransparency,'Set surface transparency')
         Publisher.subscribe(self.EditSurfaceColour,'Set surface colour')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -841,24 +842,26 @@ class SurfacesListCtrlPanel(InvListCtrl):
         colour_id = surface_context_menu.Append(start_idx, _('Change color'))
         surface_context_menu.Bind(wx.EVT_MENU, self.change_color, colour_id)
 
-        duplicate_id = surface_context_menu.Append(start_idx + 1, _('Duplicate'))
+        transparency_id = surface_context_menu.Append(start_idx + 1, _('Change transparency'))
+        surface_context_menu.Bind(wx.EVT_MENU, self.change_transparency, transparency_id)
+
+        duplicate_id = surface_context_menu.Append(start_idx + 2, _('Duplicate'))
         surface_context_menu.Bind(wx.EVT_MENU, self.duplicate_surface, duplicate_id)
 
         surface_context_menu.AppendSeparator()
 
-        delete_id = surface_context_menu.Append(start_idx + 2, _('Delete surface'))
+        delete_id = surface_context_menu.Append(start_idx + 3, _('Delete surface'))
         surface_context_menu.Bind(wx.EVT_MENU, self.delete_surface, delete_id)
 
         self.PopupMenu(surface_context_menu)
         surface_context_menu.Destroy()
 
-    def update_current_color(self, surface):
+    def update_current_surface_data(self, surface):
         self.current_colour = [int(255 * c) for c in surface.colour][:3]
-        print("current colour:", self.current_colour)
+        self.current_transparency = int(100 * surface.transparency)
 
     def change_color(self, event):
         focused_idx = self.GetFocusedItem()
-
         current_color = self.current_color
 
         new_color = dlg.ShowColorDialog(color_current=current_color)
@@ -867,13 +870,32 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         new_vtk_color = [c / 255.0 for c in new_color]
-        print("new vtk color:", new_vtk_color)
 
         Publisher.sendMessage('Set surface colour',
                               surface_index=focused_idx,
                               colour=new_vtk_color)
 
+        # Select the edited surface again to update the color in the surface properties GUI
         Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
+
+    def change_transparency(self, event):
+        focused_idx = self.GetFocusedItem()
+        initial_value = self.current_transparency
+        new_value = -1
+
+        transparency_dialog = dlg.SurfaceTransparencyDialog(self, initial_value)
+        if transparency_dialog.ShowModal() == wx.ID_OK:
+            new_value = transparency_dialog.get_value() / 100.0
+        transparency_dialog.Destroy()
+
+        if new_value != -1:
+            Publisher.sendMessage('Set surface transparency',
+                                surface_index=focused_idx,
+                                transparency=new_value)
+
+            # Select the edited surface again to update the slider in the surface properties GUI
+            Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
+
 
     def duplicate_surface(self, event):
         selected_items = self.GetSelected()

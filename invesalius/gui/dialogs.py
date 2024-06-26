@@ -1773,6 +1773,51 @@ class SurfaceCreationOptionsPanel(wx.Panel):
                 "keep_largest": keep_largest,
                 "overwrite": False}
 
+class SurfaceTransparencyDialog(wx.Dialog):
+    def __init__(self, parent, transparency=0):
+        super(SurfaceTransparencyDialog, self).__init__(parent)
+
+        self.SetTitle("Surface transparency")
+        self.SetSize((300, 180))
+
+        self.slider = wx.Slider(self,
+                                value=transparency,
+                                minValue=0,
+                                maxValue=100,
+                                style=wx.SL_HORIZONTAL)
+
+        self.slider.Bind(wx.EVT_SLIDER, self.on_slider)
+
+        # Current value
+        self.value_text = wx.StaticText(self, label=f"Transparency: {self.slider.GetValue()}%")
+
+        # Buttons
+        ok_button = wx.Button(self, wx.ID_OK, label="OK")
+        ok_button.Bind(wx.EVT_BUTTON, self.on_ok)
+
+        cancel_button = wx.Button(self, wx.ID_CANCEL, label="Cancel")
+
+        # Layout
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.value_text, 0, wx.ALL | wx.CENTER, 10)
+        sizer.Add(self.slider, 0, wx.ALL | wx.EXPAND, 10)
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_sizer.Add(ok_button, 0, wx.ALL, 5)
+        button_sizer.Add(cancel_button, 0, wx.ALL, 5)
+
+        sizer.Add(button_sizer, 0, wx.ALL | wx.CENTER, 10)
+        self.SetSizer(sizer)
+
+    def on_slider(self, event):
+        value = self.slider.GetValue()
+        self.value_text.SetLabel(f"Transparency: {value}%")
+
+    def on_ok(self, event):
+        self.EndModal(wx.ID_OK)
+
+    def get_value(self):
+        return self.slider.GetValue()
 
 class CAOptions(wx.Panel):
     '''
