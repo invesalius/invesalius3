@@ -431,7 +431,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self._click_check = False
         self.mask_list_index = {}
         self.current_index = 0
-        self.current_colour = []
+        self.current_color = [255, 255, 255]
         self.__init_columns()
         self.__init_image_list()
         self.__bind_events_wx()
@@ -462,7 +462,7 @@ class MasksListCtrlPanel(InvListCtrl):
         mask_context_menu = wx.Menu()
 
         colour_id = mask_context_menu.Append(start_idx, _('Change color'))
-        mask_context_menu.Bind(wx.EVT_MENU, self.change_color, colour_id)
+        mask_context_menu.Bind(wx.EVT_MENU, self.change_mask_color, colour_id)
 
         duplicate_id = mask_context_menu.Append(start_idx + 1, _('Duplicate'))
         mask_context_menu.Bind(wx.EVT_MENU, self.duplicate_masks, duplicate_id)
@@ -478,22 +478,14 @@ class MasksListCtrlPanel(InvListCtrl):
     def update_current_colour(self, colour):
         self.current_colour = colour
 
-    def change_color(self, event):
+    def change_mask_color(self, event):
         focused_item = self.GetFocusedItem()
+        current_color = self.current_color
 
         # Select the focused mask
         Publisher.sendMessage('Change mask selected', index=focused_item)
 
-        if focused_item == -1:
-            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
-            return
-
-        colour = (255, 255, 255)
-
-        if self.current_colour:
-            colour = self.current_colour
-
-        new_color = dlg.ShowColorDialog(color_current=colour)
+        new_color = dlg.ShowColorDialog(color_current=current_color)
 
         if not new_color:
             return
@@ -843,7 +835,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface_context_menu = wx.Menu()
 
         colour_id = surface_context_menu.Append(start_idx, _('Change color'))
-        surface_context_menu.Bind(wx.EVT_MENU, self.change_color, colour_id)
+        surface_context_menu.Bind(wx.EVT_MENU, self.change_surface_color, colour_id)
 
         transparency_id = surface_context_menu.Append(start_idx + 1, _('Change transparency'))
         surface_context_menu.Bind(wx.EVT_MENU, self.change_transparency, transparency_id)
@@ -860,10 +852,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface_context_menu.Destroy()
 
     def update_current_surface_data(self, surface):
-        self.current_colour = [int(255 * c) for c in surface.colour][:3]
+        self.current_color = [int(255 * c) for c in surface.colour][:3]
         self.current_transparency = int(100 * surface.transparency)
 
-    def change_color(self, event):
+    def change_surface_color(self, event):
         focused_idx = self.GetFocusedItem()
         current_color = self.current_color
 
