@@ -509,6 +509,9 @@ class MasksListCtrlPanel(InvListCtrl):
 
 
     def delete_mask(self, event):
+        result = dlg.ShowConfirmationDialog(msg=_("Delete mask?"))
+        if result != wx.ID_OK:
+            return
         self.RemoveMasks()
 
 
@@ -905,6 +908,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
             dlg.SurfaceSelectionRequiredForDuplication()
 
     def delete_surface(self, event):
+        result = dlg.ShowConfirmationDialog(msg=_("Delete surface?"))
+        if result != wx.ID_OK:
+            return
         self.RemoveSurfaces()
 
     def OnKeyEvent(self, event):
