@@ -277,7 +277,7 @@ class ObjectTab(wx.Panel):
         self.coil_path = None
         self.__bind_events()
         self.timestamp = const.TIMESTAMP
-        self.state = self.LoadConfig()
+        self.LoadConfig()
 
         # Buttons for TMS coil configuration
         tooltip = _("New TMS coil configuration")
@@ -300,13 +300,11 @@ class ObjectTab(wx.Panel):
         btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveCoil)
         self.btn_save = btn_save
-        
-        if self.state:
-            config_txt = wx.StaticText(self, -1, os.path.basename(self.coil_path))
-        else:
-            config_txt = wx.StaticText(self, -1, "None")
 
-        self.config_txt = config_txt    
+        self.config_txt = config_txt = wx.StaticText(self, -1, 'None')
+        data = self.navigation.GetObjectRegistration()
+        self.OnObjectUpdate(data)
+
         lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         lbl_new = wx.StaticText(self, -1, _("Create new configuration: "))
@@ -516,7 +514,11 @@ class ObjectTab(wx.Panel):
         self.timestamp = ctrl.GetValue()
 
     def OnObjectUpdate(self, data=None):
-        self.config_txt.SetLabel(os.path.basename(data[-1]))
+        if data:
+            label = os.path.basename(data[-1])
+        else:
+            label = 'None'
+        self.config_txt.SetLabel(label)
 
 
 class TrackerTab(wx.Panel):
