@@ -1786,12 +1786,13 @@ class SurfaceCreationOptionsPanel(wx.Panel):
                 "overwrite": False}
 
 class SurfaceTransparencyDialog(wx.Dialog):
-    def __init__(self, parent, surface_idx, transparency=0):
+    def __init__(self, parent, surface_index=0, transparency=0):
         super(SurfaceTransparencyDialog, self).__init__(parent)
+
+        self.surface_index = surface_index
 
         self.SetTitle("Surface transparency")
         self.SetSize((300, 180))
-        self.surface_idx = surface_idx
 
         self.slider = wx.Slider(self,
                                 value=transparency,
@@ -1820,16 +1821,19 @@ class SurfaceTransparencyDialog(wx.Dialog):
         button_sizer.Add(cancel_button, 0, wx.ALL, 5)
 
         sizer.Add(button_sizer, 0, wx.ALL | wx.CENTER, 10)
+
         self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+        self.CenterOnScreen()
 
     def on_slider(self, event):
         value = self.slider.GetValue()
         self.value_text.SetLabel(f"Transparency: {value}%")
-        updated_transparency = value / 100.0
 
         Publisher.sendMessage('Set surface transparency',
-                              surface_index=self.surface_idx,
-                              transparency=updated_transparency)
+                              surface_index=self.surface_index,
+                              transparency=value/100.)
 
     def on_ok(self, event):
         self.EndModal(wx.ID_OK)

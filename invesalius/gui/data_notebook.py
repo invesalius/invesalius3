@@ -876,19 +876,21 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def change_transparency(self, event):
         focused_idx = self.GetFocusedItem()
         initial_value = self.current_transparency
-        transparency_dialog = dlg.SurfaceTransparencyDialog(self, focused_idx, initial_value)
 
-        # Clicking OK keeps the current slider value, otherwise the intial transparency value is used
+        transparency_dialog = dlg.SurfaceTransparencyDialog(self, surface_index=focused_idx,
+                                                            transparency=initial_value,)
+
+        # Clicking OK keeps the current slider value, otherwise the inital transparency value is used
         if transparency_dialog.ShowModal() == wx.ID_OK:
-            new_value = transparency_dialog.get_value() / 100.0
+            new_value = transparency_dialog.get_value()
         else:
-            new_value = initial_value / 100.0
+            new_value = initial_value
 
         transparency_dialog.Destroy()
 
         Publisher.sendMessage('Set surface transparency',
-                            surface_index=focused_idx,
-                            transparency=new_value)
+                              surface_index=focused_idx,
+                              transparency=new_value/100.)
 
         # Select the edited surface again to update the slider in the surface properties GUI
         Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
