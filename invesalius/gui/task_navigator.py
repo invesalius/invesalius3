@@ -366,29 +366,18 @@ class CoregistrationPanel(wx.Panel):
                 self.book.SetSelection(1)
                 wx.MessageBox(_("Please do the tracker registration first."), _("InVesalius 3"))
 
+    # Unfold specific notebook pages
     def _FoldImage(self):
-        """
-        Fold image notebook page.
-        """
         self.book.SetSelection(0)
 
     def _FoldTracker(self):
-        """
-        Fold tracker notebook page.
-        """
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
         self.book.SetSelection(1)
 
     def _FoldRefine(self):
-        """
-        Fold refine notebook page.
-        """
         self.book.SetSelection(2)
 
     def _FoldStimulator(self):
-        """
-        Fold mask notebook page.
-        """
         self.book.SetSelection(3)
 
 class ImagePage(wx.Panel):
