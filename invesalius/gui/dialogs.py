@@ -1074,15 +1074,14 @@ def ReportICPDistributionError():
     dlg.ShowModal()
     dlg.Destroy()
 
+
 def ShowEnterMarkerID(default):
     msg = _("Change label")
-    if sys.platform == 'darwin':
-        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
-    else:
-        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+    dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
     dlg.ShowModal()
     result = dlg.GetValue()
     dlg.Destroy()
+
     return result
 
 
