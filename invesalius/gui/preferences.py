@@ -58,7 +58,7 @@ class Preferences(wx.Dialog):
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
             self.book.AddPage(self.tracker_tab, _("Tracker"))
-            self.book.AddPage(self.object_tab, _("Stimulator"))
+            self.book.AddPage(self.object_tab, _("TMS Coil"))
 
         self.book.AddPage(self.language_tab, _("Language"))
 
@@ -279,24 +279,22 @@ class ObjectTab(wx.Panel):
         self.timestamp = const.TIMESTAMP
         self.state = self.LoadConfig()
 
-        # Button for creating new stimulator
-        tooltip = _("Create new stimulator")
+        # Buttons for TMS coil configuration
+        tooltip = _("New TMS coil configuration")
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
         self.btn_new = btn_new
 
-        # Button for loading stimulator config file
-        tooltip = _("Load stimulator configuration file")
+        tooltip = _("Load TMS coil configuration from a file")
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoil)
         self.btn_load = btn_load
 
-        # Save button for saving stimulator config file
-        tooltip = _(u"Save stimulator configuration file")
+        tooltip = _(u"Save current TMS coil configuration to a file")
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
@@ -311,11 +309,11 @@ class ObjectTab(wx.Panel):
         self.config_txt = config_txt    
         lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
-        lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
-        lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
+        lbl_new = wx.StaticText(self, -1, _("Create new configuration: "))
+        lbl_load = wx.StaticText(self, -1, _("Load configuration from file: "))
+        lbl_save = wx.StaticText(self, -1, _("Save configuration to file: "))
 
-        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
+        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("TMS coil registration"))
         inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
         inner_load_sizer.AddMany([
             (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
@@ -373,7 +371,7 @@ class ObjectTab(wx.Panel):
             ])
 
         # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator configuration"))
+        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Settings"))
         conf_sizer.AddMany([
             (line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
             (line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),

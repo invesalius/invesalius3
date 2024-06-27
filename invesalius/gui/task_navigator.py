@@ -318,9 +318,9 @@ class CoregistrationPanel(wx.Panel):
         self.image = nav_hub.image
 
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
-        book.AddPage(TrackerPage(book, nav_hub), _("Tracker"))
+        book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
         book.AddPage(RefinePage(book, nav_hub), _("Refine"))
-        book.AddPage(StimulatorPage(book, nav_hub), _("Stimulator"))
+        book.AddPage(StimulatorPage(book, nav_hub), _("TMS Coil"))
 
         book.SetSelection(0)
 
@@ -945,7 +945,7 @@ class StimulatorPage(wx.Panel):
         object_reg = self.navigation.GetObjectRegistration()
         self.object_reg = object_reg
         
-        lbl = wx.StaticText(self, -1, _("No stimulator selected!"))
+        lbl = wx.StaticText(self, -1, _("No TMS coil configured!"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
 
