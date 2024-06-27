@@ -878,9 +878,14 @@ class SurfacesListCtrlPanel(InvListCtrl):
         initial_value = self.current_transparency
         new_value = -1
 
-        transparency_dialog = dlg.SurfaceTransparencyDialog(self, initial_value)
+        transparency_dialog = dlg.SurfaceTransparencyDialog(self, focused_idx, initial_value)
+
+        # Clicking OK keeps the current slider value, otherwise the intial transparency value is used
         if transparency_dialog.ShowModal() == wx.ID_OK:
             new_value = transparency_dialog.get_value() / 100.0
+        else:
+            new_value = initial_value / 100.0
+
         transparency_dialog.Destroy()
 
         if new_value != -1:
