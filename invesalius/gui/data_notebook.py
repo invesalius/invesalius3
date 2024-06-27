@@ -943,6 +943,13 @@ class SurfacesListCtrlPanel(InvListCtrl):
             self.surface_list_index = new_dict
 
             Publisher.sendMessage('Remove surfaces', surface_indexes=selected_items)
+
+            # If there are still surfaces in the list, select the surface before the one that was removed
+            # to update the color in the surface properties UI
+            current_index = max(selected_items[0] - 1, 0)
+
+            if len(self.surface_list_index) > 0:
+                Publisher.sendMessage('Change surface selected', surface_index=current_index)
         else:
            dlg.SurfaceSelectionRequiredForRemoval()
 
