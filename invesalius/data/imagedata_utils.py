@@ -24,7 +24,6 @@ import tempfile
 
 import gdcm
 import imageio
-import numpy
 import numpy as np
 
 from scipy.ndimage import shift, zoom
@@ -38,6 +37,7 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataReader, vtkXMLImageDataWriter
 import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
+import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.i18n import tr as _
 from invesalius.data import vtk_utils as vtk_utils
@@ -158,7 +158,7 @@ def FixGantryTilt(matrix, spacing, tilt):
     Fix gantry tilt given a vtkImageData and the tilt value. Return new
     vtkImageData.
     """
-    angle = numpy.radians(tilt)
+    angle = np.radians(tilt)
     spacing = spacing[0], spacing[1], spacing[2]
     gntan = math.tan(angle)
 
@@ -308,7 +308,7 @@ def array2memmap(arr, filename=None):
     fd = None
     if filename is None:
         fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")
-    matrix = numpy.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
+    matrix = np.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
     if fd:
@@ -359,7 +359,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             )
 
     if resolution_percentage == 1.0:
-        matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=shape)
+        matrix = np.memmap(temp_file, mode="w+", dtype="int16", shape=shape)
 
     cont = 0
     max_scalar = None
@@ -394,7 +394,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
             if not (first_resample_entry):
                 shape = shape[0], yx_shape[0], yx_shape[1]
-                matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=shape)
+                matrix = np.memmap(temp_file, mode="w+", dtype="int16", shape=shape)
                 first_resample_entry = True
 
             image = image_resized
@@ -460,7 +460,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     else:
         shape = len(files), slice_size[1], slice_size[0]
 
-    matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=shape)
+    matrix = np.memmap(temp_file, mode="w+", dtype="int16", shape=shape)
     for n, f in enumerate(files):
         im_array = read_dcm_slice_as_np2(f, resolution_percentage)[::-1]
 
@@ -495,7 +495,7 @@ def dcmmf2memmap(dcm_file, orientation):
     if samples_per_pixel == 3:
         np_image = image_normalize(rgb2gray(np_image), 0, 255)
     temp_fd, temp_file = tempfile.mkstemp()
-    matrix = numpy.memmap(temp_file, mode="w+", dtype="int16", shape=np_image.shape)
+    matrix = np.memmap(temp_file, mode="w+", dtype="int16", shape=np_image.shape)
     z, y, x = np_image.shape
     if orientation == "CORONAL":
         spacing = xs, zs, ys
@@ -532,18 +532,29 @@ def img2memmap(group):
     # to be rescalaed so that no negative values are created when converting to int16
     # maximum of 10000 was selected arbitrarily by testing with one MRI example
     # alternatively could test if "data.dtype == 'float64'" but maybe it is too specific
-    if numpy.ptp(data) > (2**16/2-1):
+    if np.ptp(data) > (2**16/2-1):
         data = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
+        dlg.WarningRescalePixelValues()
+
+    # images can have pixel intensities in small float numbers which after int conversion will
+    # have to be binary (0, 1). To prevent that, rescale pixel values from 0-255
+    elif data.max() < (2**3):
+        data_temp = image_normalize(data, min_=0, max_=255, output_dtype=np.int16)
+        status = dlg.DialogRescalePixelIntensity(data.max(), np.unique(data_temp).size)
+
+        if status:
+            data = data_temp
+            # dlg.WarningRescalePixelValues()
 
     # Convert RAS+ to default InVesalius orientation ZYX
-    data = numpy.swapaxes(data, 0, 2)
-    data = numpy.fliplr(data)
+    data = np.swapaxes(data, 0, 2)
+    data = np.fliplr(data)
 
-    matrix = numpy.memmap(temp_file, mode="w+", dtype=np.int16, shape=data.shape)
+    matrix = np.memmap(temp_file, mode="w+", dtype=np.int16, shape=data.shape)
     matrix[:] = data[:]
     matrix.flush()
 
-    scalar_range = numpy.amin(matrix), numpy.amax(matrix)
+    scalar_range = np.amin(matrix), np.amax(matrix)
     os.close(temp_fd)
 
     return matrix, scalar_range, temp_file
