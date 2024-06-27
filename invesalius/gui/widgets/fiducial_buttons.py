@@ -24,26 +24,36 @@ from wx.lib.masked.numctrl import NumCtrl
 
 
 class OrderedFiducialButtons:
-    def __init__(self, parent, fiducial_definitions, is_fiducial_set, get_fiducial_coord=None, order=None):
+    def __init__(self, parent, fiducial_definitions, is_fiducial_set, get_fiducial_coord=None, set_actor_colors=None,
+                 order=None):
         """
+        Class to initialize fiducials GUI and to keep track of the order to set fiducials.
+
         :param parent: parent for wx elements
         :param fiducial_definitions: const.OBJECT_FIDUCIALS or const.TRACKER_FIDUCIALS
         :param is_fiducial_set: Function taking fiducial index as parameter, returning True if that
                                 fiducial is set, False otherwise.
         :param get_fiducial_coord: Function to retrieve value for NumCtrl. Takes fiducial index and
                                    coordinate index as parameters, returns value.
+        :param set_actor_colors: Function taking fiducial index and float color as parameter, changing
+                                 the color of relevant actors to match the fiducial index.
         :param order: list of indices representing default order to record fiducials
         """
         count = len(fiducial_definitions)
         self.is_fiducial_set = is_fiducial_set
         self.get_fiducial_coord = get_fiducial_coord
+        self.set_actor_colors = set_actor_colors
         self.order: list[int] = order or list(range(count))
 
-        self.buttons: list[wx.Button] = []  # list of buttons
+        self.buttons: list[wx.Button] = []
         self.numctrls: list[list[NumCtrl]] = []
 
         self.focused_index: int | None = None
         self.focused: wx.Button | None = None
+
+        self.COLOR_NOT_SET = 0
+        self.COLOR_FOCUSED = 1
+        self.COLOR_SET = 2
 
         # Initialize buttons
         for n, fiducial in enumerate(fiducial_definitions):
@@ -94,14 +104,30 @@ class OrderedFiducialButtons:
                 return
         raise ValueError
 
+    def _TrySetActorColors(self, n, color_float):
+        if self.set_actor_colors is not None:
+            self.set_actor_colors(n, color_float)
+
+    def _SetColor(self, n, color):
+        button = self.buttons[n]
+        if color == self.COLOR_SET:
+            button.SetBackgroundColour(const.GREEN_COLOR_RGB)
+            self._TrySetActorColors(n, const.GREEN_COLOR_FLOAT)
+        elif color == self.COLOR_FOCUSED:
+            button.SetBackgroundColour(const.YELLOW_COLOR_RGB)
+            self._TrySetActorColors(n, const.YELLOW_COLOR_FLOAT)
+        else:
+            button.SetBackgroundColour(const.RED_COLOR_RGB)
+            self._TrySetActorColors(n, const.RED_COLOR_FLOAT)
+
     def _RefreshColors(self):
         for n, button in enumerate(self.buttons):
             if self.is_fiducial_set(n):
-                button.SetBackgroundColour(const.GREEN_COLOR_RGB)
+                self._SetColor(n, self.COLOR_SET)
             else:
-                button.SetBackgroundColour(const.RED_COLOR_RGB)
+                self._SetColor(n, self.COLOR_NOT_SET)
         if self.focused is not None:
-            self.focused.SetBackgroundColour(const.YELLOW_COLOR_RGB)
+            self._SetColor(self.focused_index, self.COLOR_FOCUSED)
 
     def _UpdateControls(self):
         if self.get_fiducial_coord is None:
@@ -132,7 +158,7 @@ class OrderedFiducialButtons:
 
     def ClearFocus(self):
         if self.focused is not None:
-            self.focused.SetBackgroundColour(const.RED_COLOR_RGB)
+            self._SetColor(self.focused_index, self.COLOR_NOT_SET)
             self.focused = None
 
     def _OnButton(self, evt, n):
@@ -141,10 +167,10 @@ class OrderedFiducialButtons:
     def Focus(self, n):
         self.ClearFocus()
         self.focused = self.buttons[n]
-        self.focused.SetBackgroundColour(const.YELLOW_COLOR_RGB)
+        self._SetColor(self.focused_index, self.COLOR_FOCUSED)
 
     def SetFocused(self):
-        self.focused.SetBackgroundColour(const.GREEN_COLOR_RGB)
+        self._SetColor(self.focused_index, self.COLOR_SET)
         self._UpdateControl(self.focused_index)
         self.focused = None
         self.FocusNext()
@@ -154,6 +180,5 @@ class OrderedFiducialButtons:
         self.SetFocused()
 
     def Unset(self, n):
-        button = self.buttons[n]
-        button.SetBackgroundColour(const.RED_COLOR_RGB)
+        self._SetColor(n, self.COLOR_NOT_SET)
         self.FocusNext()

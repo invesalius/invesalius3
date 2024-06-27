@@ -3618,6 +3618,16 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ball_actors[1], self.text_actors[1] = self.OnCreateObjectText('Right', (0,-55,0))
         self.ball_actors[2], self.text_actors[2] = self.OnCreateObjectText('Anterior', (23,0,0))
 
+        # Match actor colors with fiducial buttons
+        def set_actor_colors(n, color_float):
+            if n != const.OBJECT_FIDUCIAL_FIXED:
+                self.ball_actors[n].GetProperty().SetColor(color_float)
+                self.text_actors[n].GetProperty().SetColor(color_float)
+                self.Refresh()
+
+        self.buttons.set_actor_colors = set_actor_colors
+        self.buttons.Update()
+
         self.ren.AddActor(obj_actor)
         self.ren.ResetCamera()
 
@@ -3671,7 +3681,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         ball_actor = vtkActor()
         ball_actor.SetMapper(mapper)
         ball_actor.SetPosition(coord)
-        ball_actor.GetProperty().SetColor(1, 0, 0)
+        ball_actor.GetProperty().SetColor(const.RED_COLOR_FLOAT)
 
         textSource = vtkVectorText()
         textSource.SetText(name)
@@ -3680,7 +3690,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         mapper.SetInputConnection(textSource.GetOutputPort())
         tactor = vtkFollower()
         tactor.SetMapper(mapper)
-        tactor.GetProperty().SetColor(1.0, 0.0, 0.0)
+        tactor.GetProperty().SetColor(const.RED_COLOR_FLOAT)
         tactor.SetScale(5)
         ball_position = ball_actor.GetPosition()
         tactor.SetPosition(ball_position[0]+5, ball_position[1]+5, ball_position[2]+10)
@@ -3750,9 +3760,6 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.buttons.SetFocused()
             for i in [0, 1, 2]:
                 self.txt_coord[fiducial_index][i].SetLabel(str(round(coord[i], 1)))
-                if self.text_actors[fiducial_index]:
-                    self.text_actors[fiducial_index].GetProperty().SetColor(0.0, 1.0, 0.0)
-                    self.ball_actors[fiducial_index].GetProperty().SetColor(0.0, 1.0, 0.0)
             self.Refresh()
         else:
             ShowNavigationTrackerWarning(0, 'choose')
