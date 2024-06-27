@@ -1791,7 +1791,7 @@ class SurfaceTransparencyDialog(wx.Dialog):
 
         self.surface_index = surface_index
 
-        self.SetTitle("Surface transparency")
+        self.SetTitle("InVesalius 3")
         self.SetSize((300, 180))
 
         self.slider = wx.Slider(self,
@@ -1803,7 +1803,7 @@ class SurfaceTransparencyDialog(wx.Dialog):
         self.slider.Bind(wx.EVT_SLIDER, self.on_slider)
 
         # Current value
-        self.value_text = wx.StaticText(self, label=f"Transparency: {self.slider.GetValue()}%")
+        self.value_text = wx.StaticText(self, label=f"Surface transparency: {self.slider.GetValue()}%")
 
         # Buttons
         ok_button = wx.Button(self, wx.ID_OK, label="OK")
@@ -5670,8 +5670,8 @@ class SelectNiftiVolumeDialog(wx.Dialog):
         main_sizer.Add((5, 5))
 
         self.SetSizer(main_sizer)
-        main_sizer.Fit(self)
-        self.Layout()
+        # main_sizer.Fit(self)
+        # self.Layout()
         self.CenterOnParent()
 
     def GetVolumeChoice(self):
