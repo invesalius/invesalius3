@@ -780,6 +780,7 @@ class TrackerPage(wx.Panel):
     def OnStartRegistration(self, evt, ctrl):
         started = ctrl.GetValue()
         if started:
+            self.tracker.ResetTrackerFiducials()
             self.StartRegistration()
         else:
             self.StopRegistration()
