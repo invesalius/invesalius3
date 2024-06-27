@@ -3503,14 +3503,19 @@ class ObjectCalibrationDialog(wx.Dialog):
             choice_sensor.Show(False)
         self.choice_sensor = choice_sensor
 
+        tooltip = _("Reset all fiducials")
+        btn_reset = wx.Button(self, -1, _("Reset"), size=wx.Size(90, 30))
+        btn_reset.SetToolTip(tooltip)
+        btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
+
         # Buttons to finish or cancel object registration
         tooltip = _(u"Registration done")
-        # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
         btn_ok.SetToolTip(tooltip)
 
-        extra_sizer = wx.FlexGridSizer(rows=3, cols=1, hgap=5, vgap=30)
+        extra_sizer = wx.FlexGridSizer(cols=1, hgap=5, vgap=10)
         extra_sizer.AddMany([choice_ref,
+                             btn_reset,
                              btn_ok,
                              choice_sensor])
 
@@ -3753,6 +3758,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         for coord_index in range(0, 3):
             self.txt_coord[index][coord_index].SetLabel('-')
         self.buttons.Unset(index)
+
+    def OnReset(self, evt):
+        self.ResetObjectFiducials()
 
     def OnChooseReferenceMode(self, evt):
         # When ref mode is changed the tracker coordinates are set to nan
