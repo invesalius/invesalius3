@@ -876,8 +876,6 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def change_transparency(self, event):
         focused_idx = self.GetFocusedItem()
         initial_value = self.current_transparency
-        new_value = -1
-
         transparency_dialog = dlg.SurfaceTransparencyDialog(self, focused_idx, initial_value)
 
         # Clicking OK keeps the current slider value, otherwise the intial transparency value is used
@@ -888,13 +886,12 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         transparency_dialog.Destroy()
 
-        if new_value != -1:
-            Publisher.sendMessage('Set surface transparency',
-                                surface_index=focused_idx,
-                                transparency=new_value)
+        Publisher.sendMessage('Set surface transparency',
+                            surface_index=focused_idx,
+                            transparency=new_value)
 
-            # Select the edited surface again to update the slider in the surface properties GUI
-            Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
+        # Select the edited surface again to update the slider in the surface properties GUI
+        Publisher.sendMessage('Change surface selected', surface_index=focused_idx)
 
 
     def duplicate_surface(self, event):
