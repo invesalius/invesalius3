@@ -3450,10 +3450,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.neuronavigation_api = neuronavigation_api
 
         self.tracker_id = tracker.GetTrackerId()
+        self.show_sensor_options: bool = self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
         self.obj_ref_id = 2
         self.coil_path = None
         self.polydata = None
-        self.object_fiducial_being_set = None
 
         self.obj_fiducials = np.full([4, 3], np.nan)
         self.obj_orients = np.full([4, 3], np.nan)
@@ -3497,11 +3497,15 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.SetSelection(0)
         choice_sensor.SetToolTip(tooltip)
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
-        if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
+        self.choice_sensor = choice_sensor
+
+        # Show tracker reference mode and sensor selection for certain trackers only
+        if self.show_sensor_options:
+            choice_ref.Show(True)
             choice_sensor.Show(True)
         else:
+            choice_ref.Show(False)
             choice_sensor.Show(False)
-        self.choice_sensor = choice_sensor
 
         tooltip = _("Reset all fiducials")
         btn_reset = wx.Button(self, -1, _("Reset"), size=wx.Size(90, 30))
@@ -3539,6 +3543,12 @@ class ObjectCalibrationDialog(wx.Dialog):
             coord_sizer.Add(button, pos=wx.GBPosition(m, 0))
             for n in range(0, 3):
                 coord_sizer.Add(self.txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
+
+        # Hide "Fixed fiducial" for trackers other than Polhemus
+        if not self.show_sensor_options:
+            self.buttons[const.OBJECT_FIDUCIAL_FIXED].Hide()
+            for coord in self.txt_coord[const.OBJECT_FIDUCIAL_FIXED]:
+                coord.Hide()
 
         group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
         group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20),
@@ -3726,7 +3736,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
         #      and not change the function to the point of potentially breaking it.)
         #
-        if self.obj_ref_id and fiducial_index == 3:
+        if self.obj_ref_id and fiducial_index == const.OBJECT_FIDUCIAL_FIXED:
             coord = coord_raw[self.obj_ref_id, :]
         else:
             coord = coord_raw[0, :]
@@ -3746,6 +3756,10 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.Refresh()
         else:
             ShowNavigationTrackerWarning(0, 'choose')
+
+        # Collect the "fixed fiducial" at the same time as anterior for trackers other than Polhemus
+        if fiducial_index == const.OBJECT_FIDUCIAL_ANTERIOR and not self.show_sensor_options:
+            self.SetObjectFiducial(const.OBJECT_FIDUCIAL_FIXED)
 
     def ResetObjectFiducials(self):
         for m in range(0, 4):
@@ -3772,7 +3786,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         if evt.GetSelection() == 1:
             self.obj_ref_id = 2
-            if self.tracker_id in [const.FASTRAK, const.DEBUGTRACKRANDOM, const.DEBUGTRACKAPPROACH]:
+            if self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS:
                 self.choice_sensor.Show(self.obj_ref_id)
         else:
             self.obj_ref_id = 0

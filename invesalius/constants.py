@@ -739,6 +739,7 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
+TRACKERS_WITH_SENSOR_OPTIONS = [FASTRAK, ISOTRAKII, PATRIOT, DEBUGTRACKRANDOM, DEBUGTRACKAPPROACH]
 
 DEFAULT_COIL = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
@@ -811,6 +812,9 @@ OBJR = wx.NewIdRef()
 OBJA = wx.NewIdRef()
 OBJF = wx.NewIdRef()
 
+OBJECT_FIDUCIAL_ANTERIOR = 2
+OBJECT_FIDUCIAL_FIXED = 3
+
 OBJECT_FIDUCIALS = [
     {
         'fiducial_index': 0,
@@ -825,13 +829,13 @@ OBJECT_FIDUCIALS = [
         'tip': _("Select right object fiducial"),
     },
     {
-        'fiducial_index': 2,
+        'fiducial_index': OBJECT_FIDUCIAL_ANTERIOR,
         'button_id': OBJA,
         'label': _('Anterior'),
         'tip': _("Select anterior object fiducial"),
     },
     {
-        'fiducial_index': 3,
+        'fiducial_index': OBJECT_FIDUCIAL_FIXED,
         'button_id': OBJF,
         'label': _('Fixed'),
         'tip': _("Attach sensor to object"),
