@@ -46,7 +46,7 @@ class PedalConnector:
 
         if const.KEYSTROKE_PEDAL_ENABLED:
             self._set_frame(window)
-            self.panel_callbacks = {}
+            self.panel_callbacks = {}  # dict[wxpanel_id, dict[callback_name, function]]
 
     def _set_frame(self, panel):
         try:
@@ -70,6 +70,7 @@ class PedalConnector:
                     if remove_when_released:
                         self.panel_callbacks[panel_id].pop(name)
             evt.Skip()
+
         panel.Bind(wx.EVT_CHAR_HOOK, partial(OnKeyPress, state=True))
 
     def add_callback(self, name, callback, remove_when_released=False, panel=None):
