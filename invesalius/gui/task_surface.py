@@ -605,11 +605,6 @@ class SurfaceProperties(scrolled.ScrolledPanel):
 
     def OnTransparency(self, evt):
         transparency = evt.GetInt()/float(MAX_TRANSPARENCY)
-        # FIXME: In Mac OS/X, wx.Slider (wx.Python 2.8.10) has problem on the
-        # right-limit as reported on http://trac.wxwidgets.org/ticket/4555.
-        # This problem is in wx.Widgets and therefore we'll simply overcome it:
-        if (wx.Platform == "__WXMAC__"):
-            transparency = evt.GetInt()/(0.96*float(MAX_TRANSPARENCY))
         Publisher.sendMessage('Set surface transparency',
                               surface_index=self.combo_surface_name.GetSelection(),
                               transparency=transparency)
