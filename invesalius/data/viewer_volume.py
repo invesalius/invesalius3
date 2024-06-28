@@ -2367,7 +2367,11 @@ class Viewer(wx.Panel):
             self.Refresh()
 
     def UpdateTMSMapping(self, marker, render, focus):
-        self.mep_visualizer.update_surface_map(marker)
+        self.mep_visualizer.update_mep_points([marker])
+        self.mep_visualizer.render_visualization(surface=self.surface)
+        # TODO: figure a way to obtain all markers so we can delete all point data and add the current
+        # this will be helpful in case of position change or deletion of markers in the future
+
         # self.marker_visualizer
         pass
 

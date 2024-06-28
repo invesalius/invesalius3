@@ -52,11 +52,13 @@ import time
 
 from invesalius.data.markers.marker import Marker
 
+import random
+
 
 class MEPVisualizer:
 
     def __init__(self, renderer, interactor):
-        self.points = None
+        self.points = vtk.vtkPolyData()
         self.surface = self.read_surface_data(actor_out=True)
 
         # configuration variables
@@ -64,14 +66,12 @@ class MEPVisualizer:
         self.range_up = 1
         self.dims_size = 100
         self.gaussain_sharpness = .4
-        self.gaussian_radius = 10
+        self.gaussian_radius = 20
         self.bounds = None
         self.test_data_filename = 'data/MEP_data.txt'
 
         self.renderer = renderer
         self.interactor = interactor
-
-        self.render_visualization()
 
     def read_surface_data(self, filename='data/T1.stl', actor_out=False):
         """Reads the surface data from an STL file."""
@@ -103,6 +103,7 @@ class MEPVisualizer:
         table_points.Update()
 
         output = table_points.GetOutput()
+        # Table points are now converted to polydata and MEP is the active scalar
         output.GetPointData().SetActiveScalars('MEP')
 
         return output
@@ -155,21 +156,66 @@ class MEPVisualizer:
         lut_map.Build()
         return lut_map
 
-    def update_surface_map(self, markers=None, clear_old=True):
-        ''' Update the surface map based on the markers array '''
-        # convert marker obj array to points we can process
-        # TODO: this implementation should be updated and not be dependent on saving to text file
-        if markers is not None:
-            # check if only one marker is given
-            if not isinstance(markers, list):
-                markers = [markers]
+    def update_mep_points(self, markers: list[Marker], clear_old=False):
+        """Updates or creates the point data with MEP values from a list of markers.
 
+        Args:
+            markers (List[Marker]): The list of marker objects to add/update points for.
+            clear_old (bool, default=False): If True, clears all existing points before updating.
+        """
+
+        points = self.points.GetPoints()
+
+        if clear_old:
+            self.points.SetPoints(vtk.vtkPoints())
+            points = self.points.GetPoints()
+        # 1. Get or create the points data structure
+        if points is None:
             points = vtk.vtkPoints()
-            for marker in markers:
+            print('Added new points object')
+        elif points.GetNumberOfPoints() == 0 or clear_old:
+            print('No points found or clear_old is True')
+            self.points.SetPoints(vtk.vtkPoints())
+            points = self.points.GetPoints()
+        else:
+            print(
+                f'Current point count is now {points.GetNumberOfPoints()} points')
 
-                points.InsertNextPoint(marker.position)
-            self.points_data = points
+        # 2. Add or update MEP values for each marker
+        point_data = self.points.GetPointData()
+        mep_array = point_data.GetArray('MEP')
 
+        if not mep_array:
+            mep_array = vtk.vtkDoubleArray()
+            mep_array.SetName('MEP')
+            point_data.AddArray(mep_array)
+
+        for marker in markers:
+            # 3. Create a new point (vtkIdType is VTK's integer type for point IDs)
+            new_point_id = points.GetNumberOfPoints()  # Get the ID of the next point
+            # points.InsertNextPoint(marker.position)
+            points.InsertNextPoint(
+                marker.position[0], -marker.position[1], marker.position[2])
+
+            # 4. Generate a random MEP value (Or get it from marker object)
+            if hasattr(marker, "mep_value"):
+                mep_value = marker.mep_value
+            else:
+                mep_value = random.uniform(0, 10)/10  # Adjust range as needed
+
+            # 5. Add the MEP value to the 'MEP' array
+            mep_array.InsertNextValue(mep_value)
+
+        # Update points data
+        self.points.SetPoints(points)
+        self.points.GetPointData().SetActiveScalars('MEP')
+        self.points.Modified()
+
+        # 6. (Optional) If visualization needs an immediate update
+        # self.render_visualization(self.surface)
+
+    def update_surface_map(self):
+        ''' Update the surface map based on the markers array '''
         # interpolate the data
         interpolated_data = self.interpolate_data()
 
@@ -181,6 +227,7 @@ class MEPVisualizer:
         self.renderer.RemoveActor(self.surface)
         self.surface = actor
         self.renderer.AddActor(self.surface)
+
 
     def create_colorbar_actor(self, lut=None) -> vtk.vtkActor:
         if lut is None:
@@ -262,12 +309,16 @@ class MEPVisualizer:
         point_actor.SetMapper(point_mapper)
         return point_actor
 
-    def render_visualization(self):
+    def render_visualization(self, surface):
 
         # Read data
-        surface = self.surface
+        if surface is None:
+            print('No surface data found')
+            return
+        self.surface = surface
         self.bounds = np.array(surface.GetBounds())
-        points = self.read_point_data()
+        # points = self.read_point_data()
+        points = self.points
 
         # Calculate data range and dims
         range_up = points.GetPointData().GetScalars().GetRange()[1]
