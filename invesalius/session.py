@@ -82,6 +82,12 @@ class Session(metaclass=Singleton):
             'auto_reload_preview': False,
             'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
             'last_dicom_folder': '',
+            'server_aetitle': 'PYNETDICOM',
+            'server_port': '11120',
+            'nodes': [],
+            'selected_node': {},
+            'store_path': str(inv_paths.USER_DICOM_DIR),
+            'server_ip': "0.0.0.0"
         }
         self.WriteConfigFile()
 
@@ -224,6 +230,12 @@ class Session(metaclass=Singleton):
         slice_interpolation = config.getint('session', 'slice_interpolation')
         rendering = config.getint('session', 'rendering')
         random_id = config.getint('session','random_id')
+        server_aetitle = config.get('session','server_aetitle')
+        server_port = config.get('session','server_port')
+        nodes = config.get('session','nodes')
+        selected_node = config.get('session','selected_node')
+        store_path = config.get('session','store_path')
+        server_ip = config.get('session','server_ip')
 
         recent_projects = eval(config.get('project','recent_projects'))
         recent_projects = [list(rp) for rp in recent_projects]
@@ -238,6 +250,12 @@ class Session(metaclass=Singleton):
         self.SetConfig('rendering', rendering)
         self.SetConfig('random_id', random_id)
         self.SetConfig('recent_projects', recent_projects)
+        self.SetConfig('server_aetitle', server_aetitle)
+        self.SetConfig('server_port', server_port)
+        self.SetConfig('nodes', nodes)
+        self.SetConfig('selected_node', selected_node)
+        self.SetConfig('store_path', store_path)
+        self.SetConfig('server_ip', server_ip)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
