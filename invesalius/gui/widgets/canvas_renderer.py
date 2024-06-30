@@ -19,15 +19,10 @@
 
 import sys
 from typing import Any, Literal, Self
+from weakref import WeakMethod
 
 import numpy as np
 import wx
-
-try:
-    from weakref import WeakMethod
-except ImportError:
-    from weakrefmethod import WeakMethod
-
 from vtkmodules.vtkRenderingCore import vtkActor2D, vtkCoordinate, vtkImageMapper
 
 from invesalius.data import converters
