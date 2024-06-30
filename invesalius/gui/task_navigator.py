@@ -995,7 +995,7 @@ class RefinePage(wx.Panel):
     def OnRefine(self, evt):
         self.icp.RegisterICP(self.navigation, self.tracker)
         if self.icp.use_icp:
-            self.UpdateUI()
+            self.OnUpdateUI()
 
 
 class StimulatorPage(wx.Panel):

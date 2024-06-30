@@ -848,7 +848,20 @@ def ImportInvalidFiles(ftype="DICOM"):
     dlg.Destroy()
 
 
-def ImportAnalyzeWarning():
+def WarningRescalePixelValues():
+    msg1 = _("Warning! Pixel values are smaller than 8 (possible float values).\n")
+    msg2 = _("Pixel values have been rescaled from 0-255 for compatibility.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg1 + msg2,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg1 + msg2, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def ImagePixelRescaling():
     msg1 = _("Warning! InVesalius has limited support to Analyze format.\n")
     msg2 = _("Slices may be wrongly oriented and functions may not work properly.")
     if sys.platform == 'darwin':
@@ -5566,6 +5579,73 @@ class GoToDialogScannerCoord(wx.Dialog):
     def Close(self):
         wx.Dialog.Close(self)
         self.Destroy()
+
+
+class SelectNiftiVolumeDialog(wx.Dialog):
+    def __init__(self, volumes, title=_(u"Select NIfTI volume")):
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title,
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+
+        self._init_gui(volumes)
+
+    def _init_gui(self, volumes):
+
+        self.cmb_volume = wx.ComboBox(self, -1, choices=volumes, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+        button_ok = wx.Button(self, wx.ID_OK)
+        button_ok.SetHelpText("")
+        button_ok.SetDefault()
+
+        button_cancel = wx.Button(self, wx.ID_CANCEL)
+        button_cancel.SetHelpText("")
+
+        button_sizer = wx.StdDialogButtonSizer()
+        button_sizer.AddButton(button_ok)
+        button_sizer.AddButton(button_cancel)
+        button_sizer.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # main_sizer.Add((5, 5))
+        # main_sizer.Add(
+            # wx.StaticText(self, -1, _("Select NIfTI volume:")), 0, wx.EXPAND, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(self.cmb_volume, 1, wx.EXPAND | wx.ALL, 5)
+        main_sizer.Add((5, 5))
+        main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 5)
+        main_sizer.Add((5, 5))
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+        self.Layout()
+        self.CenterOnParent()
+
+    def GetVolumeChoice(self):
+        volume_choice = int(self.cmb_volume.GetString(self.cmb_volume.GetSelection())) - 1
+
+        return volume_choice
+
+
+def DialogRescalePixelIntensity(max_intensity, unique_values):
+    msg = _("Maximum pixel intensity is: ") + str(round(max_intensity, 1)) + '\n\n' + \
+          _("Number of unique pixel intensities: ") + str(unique_values) + '\n\n' + \
+          _("Would you like to rescale pixel values to 0-255?")
+
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.YES_NO)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.YES_NO)
+
+    if dlg.ShowModal() == wx.ID_YES:
+        status = True
+    else:
+        status = False
+
+    dlg.Destroy()
+    return status
+
 
 class ConfigureOptitrackDialog(wx.Dialog):
     def __init__(self, title=_("Configure Optitrack")):

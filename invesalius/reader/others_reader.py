@@ -50,6 +50,37 @@ def ReadOthers(dir_):
         imagedata = nib.squeeze_image(nib.load(dir_))
         imagedata = nib.as_closest_canonical(imagedata)
         imagedata.update_header()
+
+        if len(imagedata.shape) == 4:
+            import invesalius.gui.dialogs as dlg
+            from wx import ID_OK
+
+            dialog = dlg.SelectNiftiVolumeDialog(volumes=[str(n+1) for n in range(imagedata.shape[-1])])
+            status = dialog.ShowModal()
+
+            success = status == ID_OK
+
+            if success:
+                # selected_option = int(dialog.choice.GetStringSelection())
+                selected_volume = dialog.GetVolumeChoice()
+
+                data = imagedata.get_fdata()
+                header = imagedata.header.copy()
+
+                selected_volume = data[..., selected_volume]
+                header.set_data_shape(selected_volume.shape)
+
+                zooms = list(header.get_zooms())
+                new_zooms = zooms[:3]  # Adjust this to your desired zooms
+                header.set_zooms(new_zooms)
+
+                imagedata = nib.Nifti1Image(selected_volume, imagedata.affine, header=header)
+
+            else:
+                raise ValueError
+
+            dialog.Destroy()
+
     except(nib.filebasedimages.ImageFileError):
         return False
 
