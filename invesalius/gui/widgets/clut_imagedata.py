@@ -413,7 +413,7 @@ class CLUTImageDataWidget(wx.Panel):
         value: float,
     ) -> None:
         w, h = self.GetVirtualSize()
-        ctx: wx.GraphicsContext = wx.GraphicsContext.Create(dc)
+        ctx = wx.GraphicsContext.Create(dc)
 
         x = self.hounsfield_to_pixel(value)
         y = h / 2

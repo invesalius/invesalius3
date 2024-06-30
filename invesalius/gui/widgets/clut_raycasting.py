@@ -75,15 +75,9 @@ class Curve:
     the curve and its window width & level.
     """
 
-<<<<<<< HEAD
     def __init__(self) -> None:
         self.wl: float = 0
         self.ww: float = 0
-=======
-    def __init__(self):
-        self.wl = 0
-        self.ww = 0
->>>>>>> 5272f7d6 (Annotated rest of widgets)
         self.wl_px: Optional[Tuple[float, int]] = None
         self.nodes: List[Node] = []
 
@@ -96,17 +90,10 @@ class Curve:
 
 
 class Histogram:
-<<<<<<< HEAD
     def __init__(self) -> None:
         self.init: float = -1024
         self.end: float = 2000
         self.points: List[Tuple[float, float]] = []
-=======
-    def __init__(self):
-        self.init: float = -1024
-        self.end: float = 2000
-        self.points: List[Tuple[int, int]] = []
->>>>>>> 5272f7d6 (Annotated rest of widgets)
 
 
 class Button:
@@ -407,13 +394,9 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             return False
 
-<<<<<<< HEAD
     def _calculate_distance(
         self, p1: "SupportsGetItem[float]", p2: "SupportsGetItem[float]"
     ) -> float:
-=======
-    def _calculate_distance(self, p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
->>>>>>> 5272f7d6 (Annotated rest of widgets)
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
     def _move_node(self, x: int, y: int, point: Tuple[int, int]) -> None:
@@ -709,11 +692,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.curves.append(curve)
         self._build_histogram()
 
-<<<<<<< HEAD
     def HounsfieldToPixel(self, graylevel: float) -> int:
-=======
-    def HounsfieldToPixel(self, graylevel: int) -> float:
->>>>>>> 5272f7d6 (Annotated rest of widgets)
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """
