@@ -17,6 +17,7 @@ requires-python = ">=3.8"
 packages = ["invesalius", "invesalius_cy"]
 
 [tool.mypy]
+mypy_path = "typings"
 show_error_codes = true
 check_untyped_defs = false
 disallow_any_generics = false
@@ -31,6 +32,10 @@ warn_unreachable = false
 warn_unused_configs = false
 no_implicit_reexport = false
 follow_imports = "normal"
+# I want to ignore 'invesalius/gui/widgets/listctrl.py'
+
+[mypy-invesalius.gui.widgets.listctrl]
+ignore_errors = true
 
 disable_error_code =  ["attr-defined", "no-redef"]
 explicit_package_bases = true
@@ -89,7 +94,7 @@ line-length = 100
 # extend-exclude = ["plugins"]
 
 [tool.ruff.lint]
-extend-select = ["UP"] # Introduces linting rules for pyupgrade
+extend-select = ["UP","I"] # Introduces linting rules for pyupgrade
 # We can extend the list with 'I' and 'PL' in the future
 
 [tool.ruff.format]
