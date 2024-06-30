@@ -20,7 +20,7 @@
 import bisect
 import math
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy
 import wx
@@ -88,7 +88,7 @@ class Histogram:
     def __init__(self):
         self.init: float = -1024
         self.end: float = 2000
-        self.points: List[Tuple[int, int]] = []
+        self.points: List[Tuple[float, float]] = []
 
 
 class Button:
@@ -98,7 +98,7 @@ class Button:
 
     def __init__(self):
         self.image: Optional[wx.Bitmap] = None
-        self.position = (0, 0)
+        self.position: Tuple[float, float] = (0, 0)
         self.size = (24, 24)
 
     def HasClicked(self, position: Tuple[int, int]) -> bool:
@@ -115,11 +115,11 @@ class Button:
 
 
 class CLUTEvent(wx.PyCommandEvent):
-    def __init__(self, evtType: int, id: int, curve):
+    def __init__(self, evtType: int, id: int, curve: int):
         wx.PyCommandEvent.__init__(self, evtType, id)
         self.curve = curve
 
-    def GetCurve(self):
+    def GetCurve(self) -> int:
         return self.curve
 
 
@@ -330,7 +330,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.CalculatePixelPoints()
         self.Refresh()
 
-    def _has_clicked_in_a_point(self, position) -> Optional[Tuple[int, int]]:
+    def _has_clicked_in_a_point(self, position: Sequence[float]) -> Optional[Tuple[int, int]]:
         """
         returns the index from the selected point
         """
@@ -385,7 +385,7 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             return False
 
-    def _calculate_distance(self, p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
+    def _calculate_distance(self, p1: Sequence[float], p2: Sequence[float]) -> float:
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
     def _move_node(self, x: int, y: int) -> None:
@@ -682,7 +682,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.curves.append(curve)
         self._build_histogram()
 
-    def HounsfieldToPixel(self, graylevel: int) -> float:
+    def HounsfieldToPixel(self, graylevel: float) -> float:
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """

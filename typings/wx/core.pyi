@@ -27,6 +27,8 @@ Everything you need for building typical GUI applications is here.
 # This code block was included from src/core_ex.py
 import sys as _sys
 
+from .type_defs import Coord, EventType, SystemFont
+
 # Load version numbers from __version__ and some other initialization tasks...
 if "wxEVT_NULL" in dir():
     import wx._core
@@ -5868,8 +5870,10 @@ class Point(object):
 
     A wxPoint is a useful data structure for graphics operations.
     """
-
-    def __init__(self, *args, **kw):
+    @overload
+    def __init__(
+        self,
+    ):
         """
         Point()
         Point(x, y)
@@ -5877,7 +5881,10 @@ class Point(object):
 
         A wxPoint is a useful data structure for graphics operations.
         """
-
+    @overload
+    def __init__(self, x: int, y: int): ...
+    @overload
+    def __init__(self, pt: RealPoint): ...
     def __iadd__(self, *args, **kw):
         """ """
 
@@ -5934,15 +5941,16 @@ class Point(object):
     def __repr__(self):
         """ """
 
-    def __len__(self):
-        """ """
-
+    def __len__(self) -> int: ...
     def __reduce__(self):
         """ """
 
-    def __getitem__(self, idx):
-        """ """
-
+    @overload
+    def __getitem__(self, idx: int) -> int: ...
+    @overload
+    def __getitem__(self, idx: slice) -> tuple[int] | tuple[int, int]: ...
+    # this function is here just to convince mypy that Size is an Iterable (__iter__ not implemented)
+    def __iter__(self) -> Iterator[int]: ...
     def __setitem__(self, idx, val):
         """ """
 
@@ -6134,7 +6142,7 @@ class Size(object):
     @overload
     def __getitem__(self, idx: int) -> int: ...
     @overload
-    def __getitem__(self, idx: slice) -> tuple[int, int]: ...
+    def __getitem__(self, idx: slice) -> tuple[int] | tuple[int, int]: ...
     def __setitem__(self, idx: int, val: int) -> None:
         """ """
     # this function is here just to convince mypy that Size is an Iterable (__iter__ not implemented)
@@ -9918,7 +9926,7 @@ def ImageFromDataWithAlpha(width, height, data, alpha):
     """
     pass
 
-def ImageFromBuffer(width, height, dataBuffer, alphaBuffer=None):
+def ImageFromBuffer(width, height, dataBuffer, alphaBuffer=None) -> Image:
     """
     Creates a :class:`Image` from the data in `dataBuffer`.  The `dataBuffer`
     parameter must be a Python object that implements the buffer interface,
@@ -9943,7 +9951,6 @@ def ImageFromBuffer(width, height, dataBuffer, alphaBuffer=None):
     the objects used for the data and alpha buffers in a way that would cause
     them to change size.
     """
-    pass
 
 IMAGE_OPTION_QUALITY = "quality"
 IMAGE_OPTION_FILENAME = "FileName"
@@ -10435,7 +10442,7 @@ class Bitmap(GDIObject):
         """
 
     @staticmethod
-    def FromRGBA(width, height, red=0, green=0, blue=0, alpha=0):
+    def FromRGBA(width: int, height: int, red=0, green=0, blue=0, alpha=0) -> Bitmap:
         """
         FromRGBA(width, height, red=0, green=0, blue=0, alpha=0) -> Bitmap
 
@@ -15569,15 +15576,34 @@ class GraphicsContext(GraphicsObject):
 
         Strokes along a path with the current pen.
         """
-
-    def CreateFont(self, *args, **kw):
+    @overload
+    def CreateFont(
+        self,
+        font: Font,
+        col: tuple[int, int, int]
+        | tuple[int, int, int, int]
+        | list[int]
+        | Colour
+        | tuple[float, float, float, float] = BLACK,
+    ) -> GraphicsFont:
         """
         CreateFont(font, col=BLACK) -> GraphicsFont
         CreateFont(sizeInPixels, facename, flags=FONTFLAG_DEFAULT, col=BLACK) -> GraphicsFont
 
         Creates a native graphics font from a wxFont and a text colour.
         """
-
+    @overload
+    def CreateFont(
+        self,
+        sizeInPixels: float,
+        facename: str,
+        flags: int = FONTFLAG_DEFAULT,
+        col: tuple[int, int, int]
+        | tuple[int, int, int, int]
+        | list[int]
+        | Colour
+        | tuple[float, float, float, float] = BLACK,
+    ) -> GraphicsFont: ...
     def SetFont(self, *args, **kw):
         """
         SetFont(font, colour)
@@ -20250,7 +20276,7 @@ class KeyboardState(object):
         Returns true if the Control key (also under macOS).
         """
 
-    def ShiftDown(self):
+    def ShiftDown(self) -> bool:
         """
         ShiftDown() -> bool
 
@@ -20342,21 +20368,21 @@ class MouseState(KeyboardState):
         Represents the mouse state.
         """
 
-    def GetPosition(self):
+    def GetPosition(self) -> Point:
         """
         GetPosition() -> Point
 
         Returns the physical mouse position.
         """
 
-    def GetX(self):
+    def GetX(self) -> Coord:
         """
         GetX() -> Coord
 
         Returns X coordinate of the physical mouse event position.
         """
 
-    def GetY(self):
+    def GetY(self) -> Coord:
         """
         GetY() -> Coord
 
@@ -21225,7 +21251,7 @@ class Event(Object):
         any.
         """
 
-    def GetEventType(self):
+    def GetEventType(self) -> EventType:
         """
         GetEventType() -> EventType
 
@@ -22085,7 +22111,7 @@ class KeyEvent(Event, KeyboardState):
         pressed.
         """
 
-    def GetKeyCode(self):
+    def GetKeyCode(self) -> int:
         """
         GetKeyCode() -> int
 
@@ -22471,7 +22497,7 @@ class MouseEvent(Event, MouseState):
         magnification.
         """
 
-    def GetWheelDelta(self):
+    def GetWheelDelta(self) -> int:
         """
         GetWheelDelta() -> int
 
@@ -23625,7 +23651,7 @@ class ThreadEvent(Event):
 
 # end of class ThreadEvent
 
-def NewEventType():
+def NewEventType() -> EventType:
     """
     NewEventType() -> EventType
 
@@ -49906,7 +49932,7 @@ class SystemSettings(object):
         """
 
     @staticmethod
-    def GetFont(index):
+    def GetFont(index: SystemFont) -> Font:
         """
         GetFont(index) -> Font
 

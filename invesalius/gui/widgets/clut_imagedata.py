@@ -419,7 +419,7 @@ class CLUTImageDataWidget(wx.Panel):
 
     def draw_text(self, dc: Union[wx.WindowDC, wx.MemoryDC, wx.PrinterDC, wx.MetafileDC]) -> None:
         w, h = self.GetVirtualSize()
-        ctx: wx.GraphicsContext = wx.GraphicsContext.Create(dc)
+        ctx = wx.GraphicsContext.Create(dc)
 
         value = self.last_selected.value
 

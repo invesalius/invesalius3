@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -16,9 +15,10 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import sys
+from typing import Any, Literal, Self
 
 import numpy as np
 import wx
@@ -28,14 +28,23 @@ try:
 except ImportError:
     from weakrefmethod import WeakMethod
 
-from vtkmodules.vtkRenderingCore import vtkImageMapper, vtkActor2D, vtkCoordinate
+from vtkmodules.vtkRenderingCore import vtkActor2D, vtkCoordinate, vtkImageMapper
 
 from invesalius.data import converters
 
 
 class CanvasEvent:
-    def __init__(self, event_name, root_event_obj, pos, viewer, renderer,
-                 control_down=False, alt_down=False, shift_down=False):
+    def __init__(
+        self,
+        event_name,
+        root_event_obj,
+        pos,
+        viewer,
+        renderer,
+        control_down=False,
+        alt_down=False,
+        shift_down=False,
+    ):
         self.root_event_obj = root_event_obj
         self.event_name = event_name
         self.position = pos
@@ -81,10 +90,10 @@ class CanvasRendererCTX:
         self._selected_obj = None
 
         self._callback_events = {
-            'LeftButtonPressEvent': [],
-            'LeftButtonReleaseEvent': [],
-            'LeftButtonDoubleClickEvent': [],
-            'MouseMoveEvent': [],
+            "LeftButtonPressEvent": [],
+            "LeftButtonReleaseEvent": [],
+            "LeftButtonDoubleClickEvent": [],
+            "MouseMoveEvent": [],
         }
 
         self._bind_events()
@@ -104,19 +113,19 @@ class CanvasRendererCTX:
     def unsubscribe_event(self, event, callback):
         for n, cb in enumerate(self._callback_events[event]):
             if cb() == callback:
-                print('removed')
+                print("removed")
                 self._callback_events[event].pop(n)
                 return
 
     def propagate_event(self, root, event):
-        print('propagating', event.event_name, 'from', root)
+        print("propagating", event.event_name, "from", root)
         node = root
-        callback_name = 'on_%s' % event.event_name
+        callback_name = f"on_{event.event_name}"
         while node:
             try:
                 getattr(node, callback_name)(event)
             except AttributeError as e:
-                print('errror', node, e)
+                print("errror", node, e)
             node = node.parent
 
     def _init_canvas(self):
@@ -167,7 +176,7 @@ class CanvasRendererCTX:
         self.canvas_renderer.RemoveActor(self.actor)
         self.evt_renderer.RemoveObservers("StartEvent")
 
-    def get_over_mouse_obj(self, x, y):
+    def get_over_mouse_obj(self, x, y) -> bool:
         for n, i in self._ordered_draw_list[::-1]:
             try:
                 obj = i.is_over(x, y)
@@ -183,7 +192,7 @@ class CanvasRendererCTX:
         self.modified = True
         self.viewer.interactor.Render()
 
-    def OnMouseMove(self, evt):
+    def OnMouseMove(self, evt: wx.MouseEvent) -> None:
         try:
             x, y = self.viewer.get_vtk_mouse_position()
         except AttributeError:
@@ -193,10 +202,16 @@ class CanvasRendererCTX:
 
         if self._drag_obj:
             redraw = True
-            evt_obj = CanvasEvent('mouse_move', self._drag_obj, (x, y), self.viewer, self.evt_renderer,
-                                  control_down=evt.ControlDown(),
-                                  alt_down=evt.AltDown(),
-                                  shift_down=evt.ShiftDown())
+            evt_obj = CanvasEvent(
+                "mouse_move",
+                self._drag_obj,
+                (x, y),
+                self.viewer,
+                self.evt_renderer,
+                control_down=evt.ControlDown(),
+                alt_down=evt.AltDown(),
+                shift_down=evt.ShiftDown(),
+            )
             self.propagate_event(self._drag_obj, evt_obj)
             #  self._drag_obj.mouse_move(evt_obj)
         else:
@@ -205,22 +220,32 @@ class CanvasRendererCTX:
 
             if was_over and was_over != self._over_obj:
                 try:
-                    evt_obj = CanvasEvent('mouse_leave', was_over, (x, y), self.viewer,
-                                          self.evt_renderer,
-                                          control_down=evt.ControlDown(),
-                                          alt_down=evt.AltDown(),
-                                          shift_down=evt.ShiftDown())
+                    evt_obj = CanvasEvent(
+                        "mouse_leave",
+                        was_over,
+                        (x, y),
+                        self.viewer,
+                        self.evt_renderer,
+                        control_down=evt.ControlDown(),
+                        alt_down=evt.AltDown(),
+                        shift_down=evt.ShiftDown(),
+                    )
                     was_over.on_mouse_leave(evt_obj)
                 except AttributeError:
                     pass
 
             if self._over_obj:
                 try:
-                    evt_obj = CanvasEvent('mouse_enter', self._over_obj, (x, y), self.viewer,
-                                          self.evt_renderer,
-                                          control_down=evt.ControlDown(),
-                                          alt_down=evt.AltDown(),
-                                          shift_down=evt.ShiftDown())
+                    evt_obj = CanvasEvent(
+                        "mouse_enter",
+                        self._over_obj,
+                        (x, y),
+                        self.viewer,
+                        self.evt_renderer,
+                        control_down=evt.ControlDown(),
+                        alt_down=evt.AltDown(),
+                        shift_down=evt.ShiftDown(),
+                    )
                     self._over_obj.on_mouse_enter(evt_obj)
                 except AttributeError:
                     pass
@@ -231,29 +256,39 @@ class CanvasRendererCTX:
 
         evt.Skip()
 
-    def OnLeftButtonPress(self, evt):
+    def OnLeftButtonPress(self, evt: wx.KeyEvent) -> None:
         try:
             x, y = self.viewer.get_vtk_mouse_position()
         except AttributeError:
             evt.Skip()
             return
-        if self._over_obj and hasattr(self._over_obj, 'on_mouse_move'):
-            if hasattr(self._over_obj, 'on_select'):
+        if self._over_obj and hasattr(self._over_obj, "on_mouse_move"):
+            if hasattr(self._over_obj, "on_select"):
                 try:
-                    evt_obj = CanvasEvent('deselect', self._over_obj, (x, y), self.viewer,
-                                          self.evt_renderer,
-                                          control_down=evt.ControlDown(),
-                                          alt_down=evt.AltDown(),
-                                          shift_down=evt.ShiftDown())
+                    evt_obj = CanvasEvent(
+                        "deselect",
+                        self._over_obj,
+                        (x, y),
+                        self.viewer,
+                        self.evt_renderer,
+                        control_down=evt.ControlDown(),
+                        alt_down=evt.AltDown(),
+                        shift_down=evt.ShiftDown(),
+                    )
                     #  self._selected_obj.on_deselect(evt_obj)
                     self.propagate_event(self._selected_obj, evt_obj)
                 except AttributeError:
                     pass
-                evt_obj = CanvasEvent('select', self._over_obj, (x, y), self.viewer,
-                                      self.evt_renderer,
-                                      control_down=evt.ControlDown(),
-                                      alt_down=evt.AltDown(),
-                                      shift_down=evt.ShiftDown())
+                evt_obj = CanvasEvent(
+                    "select",
+                    self._over_obj,
+                    (x, y),
+                    self.viewer,
+                    self.evt_renderer,
+                    control_down=evt.ControlDown(),
+                    alt_down=evt.AltDown(),
+                    shift_down=evt.ShiftDown(),
+                )
                 #  self._over_obj.on_select(evt_obj)
                 self.propagate_event(self._over_obj, evt_obj)
                 self._selected_obj = self._over_obj
@@ -262,22 +297,32 @@ class CanvasRendererCTX:
         else:
             self.get_over_mouse_obj(x, y)
             if not self._over_obj:
-                evt_obj = CanvasEvent('leftclick', None, (x, y), self.viewer,
-                                      self.evt_renderer,
-                                      control_down=evt.ControlDown(),
-                                      alt_down=evt.AltDown(),
-                                      shift_down=evt.ShiftDown())
+                evt_obj = CanvasEvent(
+                    "leftclick",
+                    None,
+                    (x, y),
+                    self.viewer,
+                    self.evt_renderer,
+                    control_down=evt.ControlDown(),
+                    alt_down=evt.AltDown(),
+                    shift_down=evt.ShiftDown(),
+                )
                 #  self._selected_obj.on_deselect(evt_obj)
-                for cb in self._callback_events['LeftButtonPressEvent']:
+                for cb in self._callback_events["LeftButtonPressEvent"]:
                     if cb() is not None:
                         cb()(evt_obj)
                         break
                 try:
-                    evt_obj = CanvasEvent('deselect', self._over_obj, (x, y), self.viewer,
-                                          self.evt_renderer,
-                                          control_down=evt.ControlDown(),
-                                          alt_down=evt.AltDown(),
-                                          shift_down=evt.ShiftDown())
+                    evt_obj = CanvasEvent(
+                        "deselect",
+                        self._over_obj,
+                        (x, y),
+                        self.viewer,
+                        self.evt_renderer,
+                        control_down=evt.ControlDown(),
+                        alt_down=evt.AltDown(),
+                        shift_down=evt.ShiftDown(),
+                    )
                     #  self._selected_obj.on_deselect(evt_obj)
                     if self._selected_obj.on_deselect(evt_obj):
                         self.Refresh()
@@ -285,28 +330,34 @@ class CanvasRendererCTX:
                     pass
         evt.Skip()
 
-    def OnLeftButtonRelease(self, evt):
+    def OnLeftButtonRelease(self, evt: wx.KeyEvent) -> None:
         self._over_obj = None
         self._drag_obj = None
         evt.Skip()
 
-    def OnDoubleClick(self, evt):
+    def OnDoubleClick(self, evt: wx.MouseEvent) -> None:
         try:
             x, y = self.viewer.get_vtk_mouse_position()
         except AttributeError:
             evt.Skip()
             return
-        evt_obj = CanvasEvent('double_left_click', None, (x, y), self.viewer, self.evt_renderer,
-                              control_down=evt.ControlDown(),
-                              alt_down=evt.AltDown(),
-                              shift_down=evt.ShiftDown())
-        for cb in self._callback_events['LeftButtonDoubleClickEvent']:
+        evt_obj = CanvasEvent(
+            "double_left_click",
+            None,
+            (x, y),
+            self.viewer,
+            self.evt_renderer,
+            control_down=evt.ControlDown(),
+            alt_down=evt.AltDown(),
+            shift_down=evt.ShiftDown(),
+        )
+        for cb in self._callback_events["LeftButtonDoubleClickEvent"]:
             if cb() is not None:
                 cb()(evt_obj)
                 break
         evt.Skip()
 
-    def OnPaint(self, evt, obj):
+    def OnPaint(self, evt: wx.Event, obj: Any) -> None:
         size = self.canvas_renderer.GetSize()
         w, h = size
         ew, eh = self.evt_renderer.GetSize()
@@ -322,13 +373,13 @@ class CanvasRendererCTX:
 
         self._array[:] = 0
 
-        coord = vtkCoordinate()
+        vtkCoordinate()
 
         self.image.SetDataBuffer(self.rgb)
         self.image.SetAlphaBuffer(self.alpha)
         self.image.Clear()
         gc = wx.GraphicsContext.Create(self.image)
-        if sys.platform != 'darwin':
+        if sys.platform != "darwin":
             gc.SetAntialiasMode(0)
 
         self.gc = gc
@@ -345,7 +396,12 @@ class CanvasRendererCTX:
         gc.Scale(1, -1)
 
         self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
-        for l, d in self._ordered_draw_list: #sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
+        for (
+            l,
+            d,
+        ) in (
+            self._ordered_draw_list
+        ):  # sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
             d.draw_to_canvas(gc, self)
 
         gc.Destroy()
@@ -360,8 +416,9 @@ class CanvasRendererCTX:
         self.modified = False
         self._drawn = False
 
-    def _follow_draw_list(self):
+    def _follow_draw_list(self) -> list:
         out = []
+
         def loop(node, layer):
             for child in node.children:
                 loop(child, layer + child.layer)
@@ -369,13 +426,14 @@ class CanvasRendererCTX:
 
         for element in self.draw_list:
             out.append((element.layer, element))
-            if hasattr(element, 'children'):
-                loop(element,element.layer)
+            if hasattr(element, "children"):
+                loop(element, element.layer)
 
         return out
 
-
-    def draw_element_to_array(self, elements, size=None, antialiasing=False, flip=True):
+    def draw_element_to_array(
+        self, elements, size=None, antialiasing=False, flip=True
+    ) -> np.ndarray:
         """
         Draws the given elements to a array.
 
@@ -448,13 +506,22 @@ class CanvasRendererCTX:
 
         w = 0
         h = 0
-        for t in text.split('\n'):
+        for t in text.split("\n"):
             _w, _h = gc.GetTextExtent(t)
             w = max(w, _w)
             h += _h
         return w, h
 
-    def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
+    def draw_line(
+        self,
+        pos0,
+        pos1,
+        arrow_start=False,
+        arrow_end=False,
+        colour=(255, 0, 0, 128),
+        width=2,
+        style=wx.SOLID,
+    ):
         """
         Draw a line from pos0 to pos1
 
@@ -497,8 +564,8 @@ class CanvasRendererCTX:
             v = p3 - p0
             v = v / np.linalg.norm(v)
             iv = np.array((v[1], -v[0]))
-            p1 = p0 + w*v + iv*w/2.0
-            p2 = p0 + w*v + (-iv)*w/2.0
+            p1 = p0 + w * v + iv * w / 2.0
+            p2 = p0 + w * v + (-iv) * w / 2.0
 
             path = gc.CreatePath()
             path.MoveToPoint(p0)
@@ -511,8 +578,8 @@ class CanvasRendererCTX:
             v = p3 - p0
             v = v / np.linalg.norm(v)
             iv = np.array((v[1], -v[0]))
-            p1 = p3 - w*v + iv*w/2.0
-            p2 = p3 - w*v + (-iv)*w/2.0
+            p1 = p3 - w * v + iv * w / 2.0
+            p2 = p3 - w * v + (-iv) * w / 2.0
 
             path = gc.CreatePath()
             path.MoveToPoint(p3)
@@ -523,7 +590,9 @@ class CanvasRendererCTX:
 
         self._drawn = True
 
-    def draw_circle(self, center, radius=2.5, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+    def draw_circle(
+        self, center, radius=2.5, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)
+    ):
         """
         Draw a circle centered at center with the given radius.
 
@@ -553,9 +622,17 @@ class CanvasRendererCTX:
         gc.FillPath(path)
         self._drawn = True
 
-        return (cx, -cy, radius*2, radius*2)
+        return (cx, -cy, radius * 2, radius * 2)
 
-    def draw_ellipse(self, center, width, height, line_width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+    def draw_ellipse(
+        self,
+        center,
+        width,
+        height,
+        line_width=2,
+        line_colour=(255, 0, 0, 128),
+        fill_colour=(0, 0, 0, 0),
+    ):
         """
         Draw a ellipse centered at center with the given width and height.
 
@@ -578,13 +655,13 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
 
         cx, cy = center
-        xi = cx - width/2.0
-        xf = cx + width/2.0
-        yi = cy - height/2.0
-        yf = cy + height/2.0
+        xi = cx - width / 2.0
+        xf = cx + width / 2.0
+        yi = cy - height / 2.0
+        yf = cy + height / 2.0
 
-        cx -= width/2.0
-        cy += height/2.0
+        cx -= width / 2.0
+        cy += height / 2.0
         cy = -cy
 
         path = gc.CreatePath()
@@ -595,9 +672,17 @@ class CanvasRendererCTX:
 
         return (xi, yi, xf, yf)
 
-    def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128),
-        fill_colour=(0, 0, 0, 0), line_width=1, pen_style=wx.PENSTYLE_SOLID,
-        brush_style=wx.BRUSHSTYLE_SOLID):
+    def draw_rectangle(
+        self,
+        pos,
+        width,
+        height,
+        line_colour=(255, 0, 0, 128),
+        fill_colour=(0, 0, 0, 0),
+        line_width=1,
+        pen_style=wx.PENSTYLE_SOLID,
+        brush_style=wx.BRUSHSTYLE_SOLID,
+    ):
         """
         Draw a rectangle with its top left at pos and with the given width and height.
 
@@ -641,7 +726,7 @@ class CanvasRendererCTX:
 
         _font = gc.CreateFont(font, txt_colour)
         px, py = pos
-        for t in text.split('\n'):
+        for t in text.split("\n"):
             t = t.strip()
             _py = -py
             _px = px
@@ -653,7 +738,15 @@ class CanvasRendererCTX:
 
         self._drawn = True
 
-    def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
+    def draw_text_box(
+        self,
+        text,
+        pos,
+        font=None,
+        txt_colour=(255, 255, 255),
+        bg_colour=(128, 128, 128, 128),
+        border=5,
+    ):
         """
         Draw text inside a text box.
 
@@ -718,10 +811,10 @@ class CanvasRendererCTX:
         s0 = np.linalg.norm(v0)
         s1 = np.linalg.norm(v1)
 
-        a0 = np.arctan2(v0[1] , v0[0])
-        a1 = np.arctan2(v1[1] , v1[0])
+        a0 = np.arctan2(v0[1], v0[0])
+        a1 = np.arctan2(v1[1], v1[0])
 
-        if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
+        if (a1 - a0) % (np.pi * 2) < (a0 - a1) % (np.pi * 2):
             sa = a0
             ea = a1
         else:
@@ -733,9 +826,15 @@ class CanvasRendererCTX:
         gc.StrokePath(path)
         self._drawn = True
 
-    def draw_polygon(self, points, fill=True, closed=False, line_colour=(255, 255, 255, 255),
-                     fill_colour=(255, 255, 255, 255), width=2):
-
+    def draw_polygon(
+        self,
+        points,
+        fill=True,
+        closed=False,
+        line_colour=(255, 255, 255, 255),
+        fill_colour=(255, 255, 255, 255),
+        width=2,
+    ):
         if self.gc is None:
             return None
         gc = self.gc
@@ -764,7 +863,7 @@ class CanvasRendererCTX:
         return path
 
 
-class CanvasHandlerBase(object):
+class CanvasHandlerBase:
     def __init__(self, parent):
         self.parent = parent
         self.children = []
@@ -799,12 +898,17 @@ class CanvasHandlerBase(object):
             return self
         return None
 
+
 class TextBox(CanvasHandlerBase):
-    def __init__(self, parent,
-                 text, position=(0, 0, 0),
-                 text_colour=(0, 0, 0, 255),
-                 box_colour=(255, 255, 255, 255)):
-        super(TextBox, self).__init__(parent)
+    def __init__(
+        self,
+        parent,
+        text,
+        position=(0, 0, 0),
+        text_colour=(0, 0, 0, 255),
+        box_colour=(255, 255, 255, 255),
+    ):
+        super().__init__(parent)
 
         self.layer = 0
         self.text = text
@@ -827,14 +931,12 @@ class TextBox(CanvasHandlerBase):
         if self.visible:
             px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
 
-            x, y, w, h = canvas.draw_text_box(self.text, (px, py),
-                                              txt_colour=self.text_colour,
-                                              bg_colour=self.box_colour)
+            x, y, w, h = canvas.draw_text_box(
+                self.text, (px, py), txt_colour=self.text_colour, bg_colour=self.box_colour
+            )
             if self._highlight:
                 rw, rh = canvas.evt_renderer.GetSize()
-                canvas.draw_rectangle((px, py - h), w, h,
-                                      (255, 0, 0, 25),
-                                      (255, 0, 0, 25))
+                canvas.draw_rectangle((px, py - h), w, h, (255, 0, 0, 25), (255, 0, 0, 25))
 
             self.bbox = (x, y - h, x + w, y)
 
@@ -847,7 +949,9 @@ class TextBox(CanvasHandlerBase):
     def on_mouse_move(self, evt):
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
-        self.position = [i - j + k  for (i, j, k) in zip((x, y, z), self._last_position, self.position)]
+        self.position = [
+            i - j + k for (i, j, k) in zip((x, y, z), self._last_position, self.position)
+        ]
 
         self._last_position = (x, y, z)
 
@@ -868,11 +972,16 @@ class TextBox(CanvasHandlerBase):
 
 
 class CircleHandler(CanvasHandlerBase):
-    def __init__(self, parent, position, radius=5,
-                 line_colour=(255, 255, 255, 255),
-                 fill_colour=(0, 0, 0, 0), is_3d=True):
-
-        super(CircleHandler, self).__init__(parent)
+    def __init__(
+        self,
+        parent,
+        position,
+        radius=5,
+        line_colour=(255, 255, 255, 255),
+        fill_colour=(0, 0, 0, 0),
+        is_3d=True,
+    ):
+        super().__init__(parent)
 
         self.layer = 0
         self.position = position
@@ -889,7 +998,7 @@ class CircleHandler(CanvasHandlerBase):
     def on_move(self, evt_function):
         self._on_move_function = WeakMethod(evt_function)
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas) -> None:
         if self.visible:
             viewer = canvas.viewer
             scale = viewer.GetContentScaleFactor()
@@ -897,10 +1006,13 @@ class CircleHandler(CanvasHandlerBase):
                 px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
             else:
                 px, py = self.position
-            x, y, w, h = canvas.draw_circle((px, py), self.radius * scale,
-                                            line_colour=self.line_colour,
-                                            fill_colour=self.fill_colour)
-            self.bbox = (x - w/2, y - h/2, x + w/2, y + h/2)
+            x, y, w, h = canvas.draw_circle(
+                (px, py),
+                self.radius * scale,
+                line_colour=self.line_colour,
+                fill_colour=self.fill_colour,
+            )
+            self.bbox = (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
 
     def on_mouse_move(self, evt):
         mx, my = evt.position
@@ -918,15 +1030,19 @@ class CircleHandler(CanvasHandlerBase):
 
 
 class Polygon(CanvasHandlerBase):
-    def __init__(self, parent,
-                 points=None,
-                 fill=True,
-                 closed=True,
-                 line_colour=(255, 255, 255, 255),
-                 fill_colour=(255, 255, 255, 128), width=2,
-                 interactive=True, is_3d=True):
-
-        super(Polygon, self).__init__(parent)
+    def __init__(
+        self,
+        parent,
+        points=None,
+        fill=True,
+        closed=True,
+        line_colour=(255, 255, 255, 255),
+        fill_colour=(255, 255, 255, 128),
+        width=2,
+        interactive=True,
+        is_3d=True,
+    ):
+        super().__init__(parent)
 
         self.layer = 0
         self.children = []
@@ -954,11 +1070,11 @@ class Polygon(CanvasHandlerBase):
         self.is_3d = is_3d
 
     @property
-    def interactive(self):
+    def interactive(self) -> bool:
         return self._interactive
 
     @interactive.setter
-    def interactive(self, value):
+    def interactive(self, value: bool) -> None:
         self._interactive = value
         for handler in self.handlers:
             handler.visible = value
@@ -969,20 +1085,22 @@ class Polygon(CanvasHandlerBase):
                 points = [self._3d_to_2d(canvas.evt_renderer, p) for p in self.points]
             else:
                 points = self.points
-            self._path = canvas.draw_polygon(points, self.fill, self.closed, self.line_colour, self.fill_colour, self.width)
+            self._path = canvas.draw_polygon(
+                points, self.fill, self.closed, self.line_colour, self.fill_colour, self.width
+            )
 
             #  if self.closed:
-                #  U, L = self.convex_hull(points, merge=False)
-                #  canvas.draw_polygon(U, self.fill, self.closed, self.line_colour, (0, 255, 0, 255), self.width)
-                #  canvas.draw_polygon(L, self.fill, self.closed, self.line_colour, (0, 0, 255, 255), self.width)
-                #  for p0, p1 in self.get_all_antipodal_pairs(points):
-                    #  canvas.draw_line(p0, p1)
+            #  U, L = self.convex_hull(points, merge=False)
+            #  canvas.draw_polygon(U, self.fill, self.closed, self.line_colour, (0, 255, 0, 255), self.width)
+            #  canvas.draw_polygon(L, self.fill, self.closed, self.line_colour, (0, 0, 255, 255), self.width)
+            #  for p0, p1 in self.get_all_antipodal_pairs(points):
+            #  canvas.draw_line(p0, p1)
 
         #  if self.interactive:
-            #  for handler in self.handlers:
-                #  handler.draw_to_canvas(gc, canvas)
+        #  for handler in self.handlers:
+        #  handler.draw_to_canvas(gc, canvas)
 
-    def append_point(self, point):
+    def append_point(self, point) -> None:
         handler = CircleHandler(self, point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
         handler.layer = 1
         self.add_child(handler)
@@ -990,7 +1108,7 @@ class Polygon(CanvasHandlerBase):
         self.handlers.append(handler)
         self.points.append(point)
 
-    def on_mouse_move(self, evt):
+    def on_mouse_move(self, evt) -> None:
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
         else:
@@ -998,11 +1116,11 @@ class Polygon(CanvasHandlerBase):
             for handler in self.handlers:
                 self.points.append(handler.position)
 
-    def is_over(self, x, y):
+    def is_over(self, x, y) -> Self | None:
         if self.closed and self._path and self._path.Contains(x, -y):
             return self
 
-    def on_mouse_move2(self, evt):
+    def on_mouse_move2(self, evt) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1010,27 +1128,27 @@ class Polygon(CanvasHandlerBase):
         else:
             new_pos = mx, my
 
-        diff = [i-j for i,j in zip(new_pos, self._last_position)]
+        diff = [i - j for i, j in zip(new_pos, self._last_position)]
 
         for n, point in enumerate(self.points):
-            self.points[n] = tuple((i+j for i,j in zip(diff, point)))
+            self.points[n] = tuple((i + j for i, j in zip(diff, point)))
             self.handlers[n].position = self.points[n]
 
         self._last_position = new_pos
 
         return True
 
-    def on_mouse_enter(self, evt):
+    def on_mouse_enter(self, evt: wx.Event) -> None:
         pass
         #  self.interactive = True
         #  self.layer = 99
 
-    def on_mouse_leave(self, evt):
+    def on_mouse_leave(self, evt: wx.Event) -> None:
         pass
         #  self.interactive = False
         #  self.layer = 0
 
-    def on_select(self, evt):
+    def on_select(self, evt) -> None:
         mx, my = evt.position
         self.interactive = True
         print("on_select", self.interactive)
@@ -1040,7 +1158,7 @@ class Polygon(CanvasHandlerBase):
         else:
             self._last_position = (mx, my)
 
-    def on_deselect(self, evt):
+    def on_deselect(self, evt: wx.Event) -> Literal[True]:
         self.interactive = False
         return True
 
@@ -1049,7 +1167,8 @@ class Polygon(CanvasHandlerBase):
         U = []
         L = []
 
-        _dir = lambda o, a, b:  (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+        def _dir(o, a, b):
+            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
         for p in spoints:
             while len(L) >= 2 and _dir(L[-2], L[-1], p) <= 0:
@@ -1073,25 +1192,32 @@ class Polygon(CanvasHandlerBase):
             yield U[i], L[j]
 
             if i == len(U) - 1:
-                j -=  1
+                j -= 1
             elif j == 0:
                 i += 1
-            elif (U[i+1][1]-U[i][1])*(L[j][0]-L[j-1][0]) > (L[j][1]-L[j-1][1])*(U[i+1][0]-U[i][0]):
+            elif (U[i + 1][1] - U[i][1]) * (L[j][0] - L[j - 1][0]) > (L[j][1] - L[j - 1][1]) * (
+                U[i + 1][0] - U[i][0]
+            ):
                 i += 1
             else:
                 j -= 1
 
 
 class Ellipse(CanvasHandlerBase):
-    def __init__(self, parent,
-                 center,
-                 point1, point2,
-                 fill=True,
-                 line_colour=(255, 255, 255, 255),
-                 fill_colour=(255, 255, 255, 128), width=2,
-                 interactive=True, is_3d=True):
-
-        super(Ellipse, self).__init__(parent)
+    def __init__(
+        self,
+        parent,
+        center,
+        point1,
+        point2,
+        fill=True,
+        line_colour=(255, 255, 255, 255),
+        fill_colour=(255, 255, 255, 128),
+        width=2,
+        interactive=True,
+        is_3d=True,
+    ):
+        super().__init__(parent)
 
         self.children = []
         self.layer = 0
@@ -1121,16 +1247,16 @@ class Ellipse(CanvasHandlerBase):
         self.add_child(self.handler_2)
 
     @property
-    def interactive(self):
+    def interactive(self) -> bool:
         return self._interactive
 
     @interactive.setter
-    def interactive(self, value):
+    def interactive(self, value: bool) -> None:
         self._interactive = value
         self.handler_1.visible = value
         self.handler_2.visible = value
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas) -> None:
         if self.visible:
             if self.is_3d:
                 cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
@@ -1144,36 +1270,35 @@ class Ellipse(CanvasHandlerBase):
             width = abs(p1x - cx) * 2.0
             height = abs(p2y - cy) * 2.0
 
-            self.bbox = canvas.draw_ellipse((cx, cy), width,
-                                            height, self.width,
-                                            self.line_colour,
-                                            self.fill_colour)
+            self.bbox = canvas.draw_ellipse(
+                (cx, cy), width, height, self.width, self.line_colour, self.fill_colour
+            )
             #  if self.interactive:
-                #  self.handler_1.draw_to_canvas(gc, canvas)
-                #  self.handler_2.draw_to_canvas(gc, canvas)
+            #  self.handler_1.draw_to_canvas(gc, canvas)
+            #  self.handler_2.draw_to_canvas(gc, canvas)
 
-    def set_point1(self, pos):
+    def set_point1(self, pos) -> None:
         self.point1 = pos
         self.handler_1.position = pos
 
-    def set_point2(self, pos):
+    def set_point2(self, pos) -> None:
         self.point2 = pos
         self.handler_2.position = pos
 
-    def on_mouse_move(self, evt):
+    def on_mouse_move(self, evt) -> None:
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
         else:
             self.move_p1(evt)
             self.move_p2(evt)
 
-    def move_p1(self, evt):
+    def move_p1(self, evt) -> None:
         pos = self.handler_1.position
-        if evt.viewer.orientation == 'AXIAL':
+        if evt.viewer.orientation == "AXIAL":
             pos = pos[0], self.point1[1], self.point1[2]
-        elif evt.viewer.orientation == 'CORONAL':
+        elif evt.viewer.orientation == "CORONAL":
             pos = pos[0], self.point1[1], self.point1[2]
-        elif evt.viewer.orientation == 'SAGITAL':
+        elif evt.viewer.orientation == "SAGITAL":
             pos = self.point1[0], pos[1], self.point1[2]
 
         self.set_point1(pos)
@@ -1188,11 +1313,11 @@ class Ellipse(CanvasHandlerBase):
 
     def move_p2(self, evt):
         pos = self.handler_2.position
-        if evt.viewer.orientation == 'AXIAL':
+        if evt.viewer.orientation == "AXIAL":
             pos = self.point2[0], pos[1], self.point2[2]
-        elif evt.viewer.orientation == 'CORONAL':
+        elif evt.viewer.orientation == "CORONAL":
             pos = self.point2[0], self.point2[1], pos[2]
-        elif evt.viewer.orientation == 'SAGITAL':
+        elif evt.viewer.orientation == "SAGITAL":
             pos = self.point2[0], self.point2[1], pos[2]
 
         self.set_point2(pos)
@@ -1205,20 +1330,20 @@ class Ellipse(CanvasHandlerBase):
 
             self.set_point1(tuple(point1))
 
-    def on_mouse_enter(self, evt):
+    def on_mouse_enter(self, evt: wx.Event) -> None:
         #  self.interactive = True
         pass
 
-    def on_mouse_leave(self, evt):
+    def on_mouse_leave(self, evt: wx.Event) -> None:
         #  self.interactive = False
         pass
 
-    def is_over(self, x, y):
+    def is_over(self, x: float, y: float) -> Self | None:
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             return self
 
-    def on_mouse_move2(self, evt):
+    def on_mouse_move2(self, evt) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1226,17 +1351,17 @@ class Ellipse(CanvasHandlerBase):
         else:
             new_pos = mx, my
 
-        diff = [i-j for i,j in zip(new_pos, self._last_position)]
+        diff = [i - j for i, j in zip(new_pos, self._last_position)]
 
-        self.center = tuple((i+j for i,j in zip(diff, self.center)))
-        self.set_point1(tuple((i+j for i,j in zip(diff, self.point1))))
-        self.set_point2(tuple((i+j for i,j in zip(diff, self.point2))))
+        self.center = tuple((i + j for i, j in zip(diff, self.center)))
+        self.set_point1(tuple((i + j for i, j in zip(diff, self.point1))))
+        self.set_point2(tuple((i + j for i, j in zip(diff, self.point2))))
 
         self._last_position = new_pos
 
         return True
 
-    def on_select(self, evt):
+    def on_select(self, evt) -> None:
         self.interactive = True
         mx, my = evt.position
         if self.is_3d:
@@ -1245,6 +1370,6 @@ class Ellipse(CanvasHandlerBase):
         else:
             self._last_position = (mx, my)
 
-    def on_deselect(self, evt):
+    def on_deselect(self, evt: wx.Event) -> Literal[True]:
         self.interactive = False
         return True
