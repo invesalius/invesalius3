@@ -54,7 +54,9 @@ class Node:
     graylevel (hounsfield scale), opacity, x and y position in the widget.
     """
 
-    def __init__(self, colour: Tuple[int, int, int], x: int, y: int, graylevel: int, opacity: int):
+    def __init__(
+        self, colour: Tuple[int, int, int], x: int, y: int, graylevel: float, opacity: float
+    ):
         self.colour = colour
         self.x = x
         self.y = y
@@ -71,7 +73,7 @@ class Curve:
     def __init__(self):
         self.wl = 0
         self.ww = 0
-        self.wl_px: Optional[Tuple[int, int]] = None
+        self.wl_px: Optional[Tuple[float, int]] = None
         self.nodes: List[Node] = []
 
     def CalculateWWWl(self) -> None:
@@ -84,8 +86,8 @@ class Curve:
 
 class Histogram:
     def __init__(self):
-        self.init = -1024
-        self.end = 2000
+        self.init: float = -1024
+        self.end: float = 2000
         self.points: List[Tuple[int, int]] = []
 
 
@@ -153,7 +155,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self._build_buttons()
         self.Show()
 
-    def SetRange(self, range: Tuple[int, int]) -> None:
+    def SetRange(self, range: Tuple[float, float]) -> None:
         """
         Se the range from hounsfield
         """
@@ -383,7 +385,7 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             return False
 
-    def _calculate_distance(self, p1: Tuple[int, int], p2: Tuple[int, int]) -> float:
+    def _calculate_distance(self, p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
     def _move_node(self, x: int, y: int) -> None:
@@ -479,7 +481,7 @@ class CLUTRaycastingWidget(wx.Panel):
 
         self.curves.pop(n_curve)
 
-    def _draw_gradient(self, ctx: wx.GraphicsContext, height) -> None:
+    def _draw_gradient(self, ctx: wx.GraphicsContext, height: int) -> None:
         # The gradient
         height += self.padding
         for curve in self.curves:
@@ -576,7 +578,7 @@ class CLUTRaycastingWidget(wx.Panel):
         path.AddLineToPoint(x, y)
         ctx.FillPath(path)
 
-    def _draw_selection_curve(self, ctx, height):
+    def _draw_selection_curve(self, ctx: wx.GraphicsContext, height: int) -> None:
         ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
         ctx.SetBrush(wx.Brush((0, 0, 0)))
         for curve in self.curves:
@@ -596,7 +598,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.save_button.position = (x, y)
         ctx.DrawBitmap(image, x, y, w, h)
 
-    def Render(self, dc: wx.DC) -> None:
+    def Render(self, dc: Union[wx.WindowDC, wx.MemoryDC, wx.PrinterDC, wx.MetafileDC]) -> None:
         ctx = wx.GraphicsContext.Create(dc)
         width, height = self.GetVirtualSize()
         height -= self.padding * 2
@@ -680,7 +682,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.curves.append(curve)
         self._build_histogram()
 
-    def HounsfieldToPixel(self, graylevel: int) -> int:
+    def HounsfieldToPixel(self, graylevel: int) -> float:
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """

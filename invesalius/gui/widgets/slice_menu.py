@@ -19,19 +19,17 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import sys
-
-
 from collections import OrderedDict
 from typing import Dict
 
 import wx
-from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.slice_ as sl
 import invesalius.presets as presets
 from invesalius.gui.dialogs import ClutImagedataDialog
 from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
 
 PROJECTIONS_ID = OrderedDict(
     (
@@ -49,7 +47,7 @@ PROJECTIONS_ID = OrderedDict(
 class SliceMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
-        self.ID_TO_TOOL_ITEM = {}
+        self.ID_TO_TOOL_ITEM: Dict[int | wx.WindowIDRef, wx.MenuItem] = {}
         self.cdialog = None
 
         # ------------ Sub menu of the window and level ----------
@@ -92,7 +90,7 @@ class SliceMenu(wx.Menu):
             mkind = wx.ITEM_RADIO
 
         submenu_pseudo_colours = wx.Menu()
-        self.pseudo_color_items: Dict[int, wx.MenuItem] = {}
+        self.pseudo_color_items: Dict[wx.WindowIDRef, wx.MenuItem] = {}
         new_id = self.id_pseudo_first = wx.NewIdRef()
         color_item = submenu_pseudo_colours.Append(new_id, _("Default "), kind=mkind)
         color_item.Check(True)
@@ -119,13 +117,11 @@ class SliceMenu(wx.Menu):
         self.pseudo_color_items[new_id] = color_item
 
         # --------------- Sub menu of the projection type ---------------------
-        self.projection_items = {}
+        self.projection_items: Dict[int, wx.MenuItem] = {}
         submenu_projection = wx.Menu()
         for name in PROJECTIONS_ID:
             new_id = wx.NewIdRef()
-            projection_item = submenu_projection.Append(
-                new_id, name, kind=wx.ITEM_RADIO
-            )
+            projection_item = submenu_projection.Append(new_id, name, kind=wx.ITEM_RADIO)
             self.ID_TO_TOOL_ITEM[new_id] = projection_item
             self.projection_items[PROJECTIONS_ID[name]] = projection_item
 
@@ -134,9 +130,7 @@ class SliceMenu(wx.Menu):
         submenu_image_tiling = wx.Menu()
         for name in sorted(const.IMAGE_TILING):
             new_id = wx.NewIdRef()
-            image_tiling_item = submenu_image_tiling.Append(
-                new_id, name, kind=wx.ITEM_RADIO
-            )
+            image_tiling_item = submenu_image_tiling.Append(new_id, name, kind=wx.ITEM_RADIO)
             self.ID_TO_TOOL_ITEM[new_id] = image_tiling_item
 
             # Save first id item
@@ -161,14 +155,14 @@ class SliceMenu(wx.Menu):
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.CheckWindowLevelOther, "Check window and level other")
         Publisher.subscribe(self.FirstItemSelect, "Select first item from slice menu")
         Publisher.subscribe(self._close, "Close project data")
 
         Publisher.subscribe(self._check_projection_menu, "Check projection menu")
 
-    def FirstItemSelect(self):
+    def FirstItemSelect(self) -> None:
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
         item.Check(True)
 
@@ -182,16 +176,16 @@ class SliceMenu(wx.Menu):
         #  item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
         #  item.Check(True)
 
-    def CheckWindowLevelOther(self):
+    def CheckWindowLevelOther(self) -> None:
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()
 
-    def _check_projection_menu(self, projection_id):
+    def _check_projection_menu(self, projection_id: int) -> None:
         item = self.projection_items[projection_id]
         item.Check()
 
-    def OnPopup(self, evt):
-        id = evt.GetId()
+    def OnPopup(self, evt: wx.Event) -> None:
+        # id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetItemLabelText()
         if key in const.WINDOW_LEVEL.keys():
@@ -199,9 +193,7 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage(
                 "Bright and contrast adjustment image", window=window, level=level
             )
-            Publisher.sendMessage(
-                "Update window level value", window=window, level=level
-            )
+            Publisher.sendMessage("Update window level value", window=window, level=level)
             #  Publisher.sendMessage('Update window and level text',
             #  "WL: %d  WW: %d"%(level, window))
             Publisher.sendMessage("Update slice viewer")
@@ -211,9 +203,7 @@ class SliceMenu(wx.Menu):
 
         elif key in const.SLICE_COLOR_TABLE.keys():
             values = const.SLICE_COLOR_TABLE[key]
-            Publisher.sendMessage(
-                "Change colour table from background image", values=values
-            )
+            Publisher.sendMessage("Change colour table from background image", values=values)
             Publisher.sendMessage("Update slice viewer")
 
             if sys.platform.startswith("linux"):
@@ -275,11 +265,11 @@ class SliceMenu(wx.Menu):
 
         evt.Skip()
 
-    def HideClutDialog(self):
+    def HideClutDialog(self) -> None:
         if self.cdialog:
             self.cdialog.Hide()
 
-    def _close(self):
+    def _close(self) -> None:
         if self.cdialog:
             self.cdialog.Destroy()
             self.cdialog = None
