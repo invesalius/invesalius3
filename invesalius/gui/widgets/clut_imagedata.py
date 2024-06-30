@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import wx
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     import numpy as np
@@ -412,7 +413,7 @@ class CLUTImageDataWidget(wx.Panel):
         value: float,
     ) -> None:
         w, h = self.GetVirtualSize()
-        ctx = wx.GraphicsContext.Create(dc)
+        ctx: wx.GraphicsContext = wx.GraphicsContext.Create(dc)
 
         x = self.hounsfield_to_pixel(value)
         y = h / 2
