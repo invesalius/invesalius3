@@ -153,7 +153,7 @@ class GradientSlider(wx.Panel):
 
         width_transparency = self.max_position - self.min_position
 
-        gc: wx.GraphicsContext = wx.GraphicsContext.Create(dc)
+        gc = wx.GraphicsContext.Create(dc)
 
         points: Sequence[Tuple[int, int, ColourType, ColourType]] = (
             (0, PUSH_WIDTH, (0, 0, 0), (0, 0, 0)),
@@ -163,7 +163,9 @@ class GradientSlider(wx.Panel):
 
         # Drawing the gradient background
         for p1, p2, c1, c2 in points:
-            brush = gc.CreateLinearGradientBrush(p1, 0, p2, h, c1, c2)
+            brush: Union[wx.GraphicsBrush, wx.Brush] = gc.CreateLinearGradientBrush(
+                p1, 0, p2, h, c1, c2
+            )
             gc.SetBrush(brush)
             path = gc.CreatePath()
             path.AddRectangle(p1, 0, p2 - p1, h)
