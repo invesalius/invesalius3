@@ -30,6 +30,7 @@ import invesalius.gui.dialogs as dialog
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from typings.utils import SupportsGetItem
 
 if TYPE_CHECKING:
     import numpy as np
