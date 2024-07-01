@@ -97,8 +97,8 @@ class Button:
     The button in the clut raycasting.
     """
 
-    def __init__(self):
-        self.image: Optional[wx.Bitmap] = None
+    def __init__(self, image: wx.Bitmap):
+        self.image: wx.Bitmap = image
         self.position: Tuple[float, float] = (0, 0)
         self.size = (24, 24)
 
@@ -640,8 +640,7 @@ class CLUTRaycastingWidget(wx.Panel):
         img = wx.Image(os.path.join(inv_paths.ICON_DIR, "Floppy.png"))
         width = img.GetWidth()
         height = img.GetHeight()
-        self.save_button = Button()
-        self.save_button.image = wx.Bitmap(img)
+        self.save_button = Button(wx.Bitmap(img))
         self.save_button.size = (width, height)
 
     def __sort_pixel_points(self) -> None:
