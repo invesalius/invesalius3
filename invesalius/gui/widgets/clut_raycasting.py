@@ -20,7 +20,7 @@
 import bisect
 import math
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 import wx
@@ -30,7 +30,9 @@ import invesalius.gui.dialogs as dialog
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from typings.utils import SupportsGetItem
+
+if TYPE_CHECKING:
+    from typings.utils import SupportsGetItem
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)
@@ -71,9 +73,9 @@ class Curve:
     the curve and its window width & level.
     """
 
-    def __init__(self):
-        self.wl = 0
-        self.ww = 0
+    def __init__(self) -> None:
+        self.wl: float = 0
+        self.ww: float = 0
         self.wl_px: Optional[Tuple[float, int]] = None
         self.nodes: List[Node] = []
 
@@ -86,7 +88,7 @@ class Curve:
 
 
 class Histogram:
-    def __init__(self):
+    def __init__(self) -> None:
         self.init: float = -1024
         self.end: float = 2000
         self.points: List[Tuple[float, float]] = []
@@ -97,10 +99,10 @@ class Button:
     The button in the clut raycasting.
     """
 
-    def __init__(self, image: wx.Bitmap):
+    def __init__(self, image: wx.Bitmap) -> None:
         self.image: wx.Bitmap = image
         self.position: Tuple[float, float] = (0, 0)
-        self.size = (24, 24)
+        self.size: Tuple[int, int] = (24, 24)
 
     def HasClicked(self, position: Tuple[int, int]) -> bool:
         """
@@ -139,8 +141,8 @@ class CLUTRaycastingWidget(wx.Panel):
         self.points: List[List[Dict]] = []
         self.colours: List[List[Dict]] = []
         self.curves: List[Curve] = []
-        self.init = -1024
-        self.end = 2000
+        self.init: float = -1024
+        self.end: float = 2000
         self.Histogram = Histogram()
         self.padding = 5
         self.previous_wl = 0
@@ -149,7 +151,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.middle_drag = False
         self.to_draw_points = 0
         self.point_dragged: Optional[Tuple[int, int]] = None
-        self.curve_dragged = None
+        self.curve_dragged: Optional[int] = None
         self.histogram_array = [100, 100]
         self.CalculatePixelPoints()
         self.__bind_events_wx()
@@ -204,10 +206,10 @@ class CLUTRaycastingWidget(wx.Panel):
             self.GetEventHandler().ProcessEvent(evt)
             return
         else:
-            p = self._has_clicked_in_line((x, y))
+            point_2 = self._has_clicked_in_line((x, y))
             # The user clicked in the line. Insert a new point.
-            if p:
-                n, p = p
+            if point_2:
+                n, p = point_2
                 self.points[n].insert(p, {"x": 0, "y": 0})
                 self.colours[n].insert(p, {"red": 0, "green": 0, "blue": 0})
                 self.points[n][p]["x"] = self.PixelToHounsfield(x)
@@ -332,7 +334,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Refresh()
 
     def _has_clicked_in_a_point(
-        self, position: SupportsGetItem[float]
+        self, position: "SupportsGetItem[float]"
     ) -> Optional[Tuple[int, int]]:
         """
         returns the index from the selected point
@@ -360,7 +362,7 @@ class CLUTRaycastingWidget(wx.Panel):
         distance = math.sin(theta) * len_A
         return distance
 
-    def _has_clicked_in_selection_curve(self, position: SupportsGetItem[float]) -> Optional[int]:
+    def _has_clicked_in_selection_curve(self, position: "SupportsGetItem[float]") -> Optional[int]:
         # x, y = position
         for i, curve in enumerate(self.curves):
             if self._calculate_distance(curve.wl_px, position) <= RADIUS:
@@ -388,7 +390,9 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             return False
 
-    def _calculate_distance(self, p1: SupportsGetItem[float], p2: SupportsGetItem[float]) -> float:
+    def _calculate_distance(
+        self, p1: "SupportsGetItem[float]", p2: "SupportsGetItem[float]"
+    ) -> float:
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
     def _move_node(self, x: int, y: int, point: Tuple[int, int]) -> None:
@@ -533,8 +537,8 @@ class CLUTRaycastingWidget(wx.Panel):
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         font.SetWeight(wx.BOLD)
-        font = ctx.CreateFont(font, TEXT_COLOUR)
-        ctx.SetFont(font)
+        graphics_font = ctx.CreateFont(font, TEXT_COLOUR)
+        ctx.SetFont(graphics_font)
 
         text1 = _("Value: %-6d" % value)
         text2 = _("Alpha: %-.3f" % alpha)  # noqa: UP031
@@ -650,7 +654,7 @@ class CLUTRaycastingWidget(wx.Panel):
         width when the user interacts with this widgets.
         """
         for n, (point, colour) in enumerate(zip(self.points, self.colours)):
-            point_colour = zip(point, colour)
+            point_colour: Iterable[Tuple[Dict, Dict]] = zip(point, colour)
             point_colour = sorted(point_colour, key=lambda x: x[0]["x"])
             self.points[n] = [i[0] for i in point_colour]
             self.colours[n] = [i[1] for i in point_colour]

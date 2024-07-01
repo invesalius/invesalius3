@@ -1,4 +1,6 @@
-from typing import Protocol
+from typing import Generic, Protocol, TypeVar
 
-class SupportsGetItem[T](Protocol):
+T = TypeVar("T", covariant=True)
+
+class SupportsGetItem(Protocol, Generic[T]):
     def __getitem__(self, key: int, /) -> T: ...

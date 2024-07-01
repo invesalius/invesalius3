@@ -45,7 +45,7 @@ PROJECTIONS_ID = OrderedDict(
 
 
 class SliceMenu(wx.Menu):
-    def __init__(self):
+    def __init__(self) -> None:
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM: Dict[int | wx.WindowIDRef, wx.MenuItem] = {}
         self.cdialog = None

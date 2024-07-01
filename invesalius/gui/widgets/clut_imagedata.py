@@ -1,9 +1,8 @@
-import functools
 import math
+from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Union
 
 import wx
-from typing_extensions import Self
 
 HISTOGRAM_LINE_COLOUR = (128, 128, 128)
 HISTOGRAM_FILL_COLOUR = (64, 64, 64)
@@ -23,23 +22,10 @@ RADIUS = 5
 PADDING = 2
 
 
-@functools.total_ordering
+@dataclass(order=True, slots=True)
 class Node:
-    def __init__(self, value: float, colour: Tuple[int, int, int]):
-        self.value = value
-        self.colour = colour
-
-    def __cmp__(self, o: Self) -> bool:
-        return self.value == o.value
-
-    def __lt__(self, other: Self) -> bool:
-        return self.value < other.value
-
-    def __eq__(self, other: Self) -> bool:
-        return self.value == other.value
-
-    def __repr__(self) -> str:
-        return "(%d %s)" % (self.value, self.colour)
+    value: float
+    colour: Tuple[int, int, int] = field(compare=False)
 
 
 class CLUTEvent(wx.PyCommandEvent):
@@ -430,8 +416,8 @@ class CLUTImageDataWidget(wx.Panel):
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         font.SetWeight(wx.BOLD)
-        font = ctx.CreateFont(font, TEXT_COLOUR)
-        ctx.SetFont(font)
+        graphics_font = ctx.CreateFont(font, TEXT_COLOUR)
+        ctx.SetFont(graphics_font)
 
         text = "Value: %-6d" % value
 

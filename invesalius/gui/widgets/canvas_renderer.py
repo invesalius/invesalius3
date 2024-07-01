@@ -18,7 +18,18 @@
 # --------------------------------------------------------------------------
 
 import sys
-from typing import TYPE_CHECKING, Any, Callable, List, Literal, Optional, Tuple, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    overload,
+)
 from weakref import WeakMethod
 
 import numpy as np
@@ -31,11 +42,16 @@ from invesalius.data import converters
 if TYPE_CHECKING:
     from vtkmodules.vtkRenderingCore import vtkRenderer
 
+    from invesalius.data.viewer_slice import Viewer as sliceViewer
+    from invesalius.data.viewer_volume import Viewer as volumeViewer
+    from invesalius.gui.bitmap_preview_panel import SingleImagePreview as bitmapSingleImagePreview
+    from invesalius.gui.dicom_preview_panel import SingleImagePreview as dicomSingleImagePreview
+
 
 class CanvasEvent:
     def __init__(
         self,
-        event_name,
+        event_name: str,
         root_event_obj,
         pos,
         viewer,
@@ -58,7 +74,7 @@ class CanvasEvent:
 class CanvasRendererCTX:
     def __init__(
         self,
-        viewer,
+        viewer: "Union[sliceViewer, volumeViewer, bitmapSingleImagePreview, dicomSingleImagePreview]",
         evt_renderer: "vtkRenderer",
         canvas_renderer: "vtkRenderer",
         orientation: Optional[str] = None,
@@ -94,7 +110,7 @@ class CanvasRendererCTX:
         self._drag_obj = None
         self._selected_obj = None
 
-        self._callback_events = {
+        self._callback_events: Dict[str, List[Callable]] = {
             "LeftButtonPressEvent": [],
             "LeftButtonReleaseEvent": [],
             "LeftButtonDoubleClickEvent": [],
@@ -193,7 +209,7 @@ class CanvasRendererCTX:
                 pass
         return False
 
-    def Refresh(self):
+    def Refresh(self) -> None:
         self.modified = True
         self.viewer.interactor.Render()
 
@@ -487,7 +503,9 @@ class CanvasRendererCTX:
 
         return arr
 
-    def calc_text_size(self, text: str, font: Optional[wx.Font] = None) -> Optional[Tuple[int]]:
+    def calc_text_size(
+        self, text: str, font: Optional[wx.Font] = None
+    ) -> Optional[Tuple[int, int]]:
         """
         Given an unicode text and a font returns the width and height of the
         rendered text in pixels.
@@ -982,9 +1000,9 @@ class CircleHandler(CanvasHandlerBase):
         parent,
         position,
         radius=5,
-        line_colour=(255, 255, 255, 255),
-        fill_colour=(0, 0, 0, 0),
-        is_3d=True,
+        line_colour: Tuple[int, int, int, int] = (255, 255, 255, 255),
+        fill_colour: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        is_3d: bool = True,
     ):
         super().__init__(parent)
 
@@ -1037,10 +1055,10 @@ class CircleHandler(CanvasHandlerBase):
 class Polygon(CanvasHandlerBase):
     def __init__(
         self,
-        parent,
+        parent: CanvasHandlerBase,
         points=None,
-        fill=True,
-        closed=True,
+        fill: bool = True,
+        closed: bool = True,
         line_colour=(255, 255, 255, 255),
         fill_colour=(255, 255, 255, 128),
         width=2,

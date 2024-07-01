@@ -57,7 +57,7 @@ else:
 wx = _sys.modules[__name__]
 
 import warnings
-from typing import Any, Iterator, overload
+from typing import Any, Callable, Iterator, overload
 
 class wxPyDeprecationWarning(DeprecationWarning):
     pass
@@ -8942,14 +8942,14 @@ class Image(Object):
         Gets the blue value of the mask colour.
         """
 
-    def GetWidth(self):
+    def GetWidth(self) -> int:
         """
         GetWidth() -> int
 
         Gets the width of the image in pixels.
         """
 
-    def GetHeight(self):
+    def GetHeight(self) -> int:
         """
         GetHeight() -> int
 
@@ -21109,7 +21109,14 @@ class EvtHandler(Object, Trackable):
         Remove a filter previously installed with AddFilter().
         """
 
-    def Bind(self, event, handler, source=None, id=wx.ID_ANY, id2=wx.ID_ANY):
+    def Bind(
+        self,
+        event: PyEventBinder,
+        handler: Callable,
+        source: Window | None = None,
+        id: int = wx.ID_ANY,
+        id2: int = wx.ID_ANY,
+    ) -> None:
         """
         Bind an event to an event handler.
 

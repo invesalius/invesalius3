@@ -162,6 +162,8 @@ class GradientSlider(wx.Panel):
         )
 
         # Drawing the gradient background
+        p1: float
+        p2: float
         for p1, p2, c1, c2 in points:
             brush: Union[wx.GraphicsBrush, wx.Brush] = gc.CreateLinearGradientBrush(
                 p1, 0, p2, h, c1, c2
