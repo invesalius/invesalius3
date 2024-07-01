@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import wx
-from typing_extensions import Self
 
 if TYPE_CHECKING:
     import numpy as np
