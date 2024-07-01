@@ -308,7 +308,7 @@ class CLUTRaycastingWidget(wx.Panel):
         x = evt.GetX()
         y = evt.GetY()
         if self.dragged and self.point_dragged:
-            self._move_node(x, y)
+            self._move_node(x, y, self.point_dragged)
         elif self.dragged and self.curve_dragged is not None:
             self._move_curve(x, y)
         elif self.middle_drag:
@@ -388,9 +388,9 @@ class CLUTRaycastingWidget(wx.Panel):
     def _calculate_distance(self, p1: Sequence[float], p2: Sequence[float]) -> float:
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
-    def _move_node(self, x: int, y: int) -> None:
+    def _move_node(self, x: int, y: int, point: Tuple[int, int]) -> None:
         self.to_render = True
-        i, j = self.point_dragged
+        i, j = point
 
         width, height = self.GetVirtualSize()
 
