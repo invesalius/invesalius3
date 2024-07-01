@@ -18,14 +18,18 @@
 # --------------------------------------------------------------------------
 
 import sys
-from typing import Any, Literal, Self
+from typing import TYPE_CHECKING, Any, Callable, List, Literal, Optional, Tuple, Union, overload
 from weakref import WeakMethod
 
 import numpy as np
 import wx
+from typing_extensions import Self
 from vtkmodules.vtkRenderingCore import vtkActor2D, vtkCoordinate, vtkImageMapper
 
 from invesalius.data import converters
+
+if TYPE_CHECKING:
+    from vtkmodules.vtkRenderingCore import vtkRenderer
 
 
 class CanvasEvent:
@@ -52,7 +56,13 @@ class CanvasEvent:
 
 
 class CanvasRendererCTX:
-    def __init__(self, viewer, evt_renderer, canvas_renderer, orientation=None):
+    def __init__(
+        self,
+        viewer,
+        evt_renderer: "vtkRenderer",
+        canvas_renderer: "vtkRenderer",
+        orientation: Optional[str] = None,
+    ):
         """
         A Canvas to render over a vtktRenderer.
 
@@ -477,7 +487,7 @@ class CanvasRendererCTX:
 
         return arr
 
-    def calc_text_size(self, text, font=None):
+    def calc_text_size(self, text: str, font: Optional[wx.Font] = None) -> Optional[Tuple[int]]:
         """
         Given an unicode text and a font returns the width and height of the
         rendered text in pixels.
@@ -677,7 +687,7 @@ class CanvasRendererCTX:
         line_width=1,
         pen_style=wx.PENSTYLE_SOLID,
         brush_style=wx.BRUSHSTYLE_SOLID,
-    ):
+    ) -> None:
         """
         Draw a rectangle with its top left at pos and with the given width and height.
 
@@ -701,7 +711,7 @@ class CanvasRendererCTX:
         gc.DrawRectangle(px, py, width, -height)
         self._drawn = True
 
-    def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)):
+    def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)) -> None:
         """
         Draw text.
 
@@ -778,7 +788,7 @@ class CanvasRendererCTX:
 
         return px, py, cw, ch
 
-    def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2):
+    def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2) -> None:
         """
         Draw an arc passing in p0 and p1 centered at center.
 
@@ -824,12 +834,12 @@ class CanvasRendererCTX:
     def draw_polygon(
         self,
         points,
-        fill=True,
+        fill: bool = True,
         closed=False,
         line_colour=(255, 255, 255, 255),
         fill_colour=(255, 255, 255, 255),
         width=2,
-    ):
+    ) -> Optional[wx.GraphicsPath]:
         if self.gc is None:
             return None
         gc = self.gc
@@ -866,16 +876,16 @@ class CanvasHandlerBase:
         self._visible = True
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         return self._visible
 
     @visible.setter
-    def visible(self, value):
+    def visible(self, value: bool) -> None:
         self._visible = value
         for child in self.children:
             child.visible = value
 
-    def _3d_to_2d(self, renderer, pos):
+    def _3d_to_2d(self, renderer, pos) -> Tuple[float, float]:
         coord = vtkCoordinate()
         coord.SetValue(pos)
         px, py = coord.GetComputedDoubleDisplayValue(renderer)
@@ -887,7 +897,7 @@ class CanvasHandlerBase:
     def draw_to_canvas(self, gc, canvas):
         pass
 
-    def is_over(self, x, y):
+    def is_over(self, x, y) -> Self | None:
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             return self
@@ -922,7 +932,7 @@ class TextBox(CanvasHandlerBase):
     def set_text(self, text):
         self.text = text
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
         if self.visible:
             px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
 
@@ -935,13 +945,13 @@ class TextBox(CanvasHandlerBase):
 
             self.bbox = (x, y - h, x + w, y)
 
-    def is_over(self, x, y):
+    def is_over(self, x: float, y: float) -> Self | None:
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             return self
         return None
 
-    def on_mouse_move(self, evt):
+    def on_mouse_move(self, evt: Any) -> Literal[True]:
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
         self.position = [
@@ -952,15 +962,15 @@ class TextBox(CanvasHandlerBase):
 
         return True
 
-    def on_mouse_enter(self, evt):
+    def on_mouse_enter(self, evt: wx.Event) -> None:
         #  self.layer = 99
         self._highlight = True
 
-    def on_mouse_leave(self, evt):
+    def on_mouse_leave(self, evt: wx.Event) -> None:
         #  self.layer = 0
         self._highlight = False
 
-    def on_select(self, evt):
+    def on_select(self, evt: Any) -> None:
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
         self._last_position = (x, y, z)
@@ -990,10 +1000,10 @@ class CircleHandler(CanvasHandlerBase):
 
         self._on_move_function = None
 
-    def on_move(self, evt_function):
+    def on_move(self, evt_function: Callable) -> None:
         self._on_move_function = WeakMethod(evt_function)
 
-    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas) -> None:
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
         if self.visible:
             viewer = canvas.viewer
             scale = viewer.GetContentScaleFactor()
@@ -1009,7 +1019,7 @@ class CircleHandler(CanvasHandlerBase):
             )
             self.bbox = (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
 
-    def on_mouse_move(self, evt):
+    def on_mouse_move(self, evt: Any) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1074,7 +1084,7 @@ class Polygon(CanvasHandlerBase):
         for handler in self.handlers:
             handler.visible = value
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
         if self.visible and self.points:
             if self.is_3d:
                 points = [self._3d_to_2d(canvas.evt_renderer, p) for p in self.points]
@@ -1103,7 +1113,7 @@ class Polygon(CanvasHandlerBase):
         self.handlers.append(handler)
         self.points.append(point)
 
-    def on_mouse_move(self, evt) -> None:
+    def on_mouse_move(self, evt: Any) -> None:
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
         else:
@@ -1115,7 +1125,7 @@ class Polygon(CanvasHandlerBase):
         if self.closed and self._path and self._path.Contains(x, -y):
             return self
 
-    def on_mouse_move2(self, evt) -> Literal[True]:
+    def on_mouse_move2(self, evt: Any) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1143,7 +1153,7 @@ class Polygon(CanvasHandlerBase):
         #  self.interactive = False
         #  self.layer = 0
 
-    def on_select(self, evt) -> None:
+    def on_select(self, evt: Any) -> None:
         mx, my = evt.position
         self.interactive = True
         print("on_select", self.interactive)
@@ -1157,10 +1167,22 @@ class Polygon(CanvasHandlerBase):
         self.interactive = False
         return True
 
-    def convex_hull(self, points, merge=True):
+    @overload
+    def convex_hull(
+        self, points: List[Tuple[float, float]], merge: Literal[True]
+    ) -> List[Tuple[float, float]]: ...
+    @overload
+    def convex_hull(
+        self, points: List[Tuple[float, float]], merge: Literal[False]
+    ) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]: ...
+    def convex_hull(
+        self, points: List[Tuple[float, float]], merge: bool = True
+    ) -> Union[
+        List[Tuple[float, float]], Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]
+    ]:
         spoints = sorted(points)
-        U = []
-        L = []
+        U: List[Tuple[float, float]] = []
+        L: List[Tuple[float, float]] = []
 
         def _dir(o, a, b):
             return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
@@ -1179,7 +1201,7 @@ class Polygon(CanvasHandlerBase):
             return U + L
         return U, L
 
-    def get_all_antipodal_pairs(self, points):
+    def get_all_antipodal_pairs(self, points: List[Tuple[float, float]]):
         U, L = self.convex_hull(points, merge=False)
         i = 0
         j = len(L) - 1
@@ -1251,7 +1273,7 @@ class Ellipse(CanvasHandlerBase):
         self.handler_1.visible = value
         self.handler_2.visible = value
 
-    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas) -> None:
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
         if self.visible:
             if self.is_3d:
                 cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
@@ -1272,22 +1294,22 @@ class Ellipse(CanvasHandlerBase):
             #  self.handler_1.draw_to_canvas(gc, canvas)
             #  self.handler_2.draw_to_canvas(gc, canvas)
 
-    def set_point1(self, pos) -> None:
+    def set_point1(self, pos: Tuple) -> None:
         self.point1 = pos
         self.handler_1.position = pos
 
-    def set_point2(self, pos) -> None:
+    def set_point2(self, pos: Tuple) -> None:
         self.point2 = pos
         self.handler_2.position = pos
 
-    def on_mouse_move(self, evt) -> None:
+    def on_mouse_move(self, evt: Any) -> None:
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
         else:
             self.move_p1(evt)
             self.move_p2(evt)
 
-    def move_p1(self, evt) -> None:
+    def move_p1(self, evt: Any) -> None:
         pos = self.handler_1.position
         if evt.viewer.orientation == "AXIAL":
             pos = pos[0], self.point1[1], self.point1[2]
@@ -1306,7 +1328,7 @@ class Ellipse(CanvasHandlerBase):
 
             self.set_point2(tuple(point2))
 
-    def move_p2(self, evt):
+    def move_p2(self, evt: Any) -> None:
         pos = self.handler_2.position
         if evt.viewer.orientation == "AXIAL":
             pos = self.point2[0], pos[1], self.point2[2]
@@ -1338,7 +1360,7 @@ class Ellipse(CanvasHandlerBase):
         if xi <= x <= xf and yi <= y <= yf:
             return self
 
-    def on_mouse_move2(self, evt) -> Literal[True]:
+    def on_mouse_move2(self, evt: Any) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1356,7 +1378,7 @@ class Ellipse(CanvasHandlerBase):
 
         return True
 
-    def on_select(self, evt) -> None:
+    def on_select(self, evt: Any) -> None:
         self.interactive = True
         mx, my = evt.position
         if self.is_3d:

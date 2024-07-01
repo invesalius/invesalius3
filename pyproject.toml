@@ -32,14 +32,15 @@ warn_unreachable = false
 warn_unused_configs = false
 no_implicit_reexport = false
 follow_imports = "normal"
-# I want to ignore 'invesalius/gui/widgets/listctrl.py'
+explicit_package_bases = true
+disable_error_code =  ["attr-defined", "no-redef"]
 
 [mypy-invesalius.gui.widgets.listctrl]
 ignore_errors = true
 
-disable_error_code =  ["attr-defined", "no-redef"]
-explicit_package_bases = true
-
+[[tool.mypy.overrides]]
+module = 'wx.*'
+disable_error_code = ["no-redef"] # because some classes are redefined in the stubs
 [[tool.mypy.overrides]]
 module = [
     'wx.*',

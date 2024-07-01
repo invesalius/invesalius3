@@ -20,7 +20,7 @@
 import bisect
 import math
 import os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy
 import wx
@@ -30,6 +30,7 @@ import invesalius.gui.dialogs as dialog
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from typings.utils import SupportsGetItem
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)
@@ -330,7 +331,9 @@ class CLUTRaycastingWidget(wx.Panel):
         self.CalculatePixelPoints()
         self.Refresh()
 
-    def _has_clicked_in_a_point(self, position: Sequence[float]) -> Optional[Tuple[int, int]]:
+    def _has_clicked_in_a_point(
+        self, position: SupportsGetItem[float]
+    ) -> Optional[Tuple[int, int]]:
         """
         returns the index from the selected point
         """
@@ -357,7 +360,7 @@ class CLUTRaycastingWidget(wx.Panel):
         distance = math.sin(theta) * len_A
         return distance
 
-    def _has_clicked_in_selection_curve(self, position) -> Optional[int]:
+    def _has_clicked_in_selection_curve(self, position: SupportsGetItem[float]) -> Optional[int]:
         # x, y = position
         for i, curve in enumerate(self.curves):
             if self._calculate_distance(curve.wl_px, position) <= RADIUS:
@@ -385,7 +388,7 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             return False
 
-    def _calculate_distance(self, p1: Sequence[float], p2: Sequence[float]) -> float:
+    def _calculate_distance(self, p1: SupportsGetItem[float], p2: SupportsGetItem[float]) -> float:
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
     def _move_node(self, x: int, y: int, point: Tuple[int, int]) -> None:
@@ -737,7 +740,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Histogram.init = range[0]
         self.Histogram.end = range[1]
 
-    def GetCurveWWWl(self, curve: int) -> Tuple[int, float]:
+    def GetCurveWWWl(self, curve: int) -> Tuple[float, float]:
         return (self.curves[curve].ww, self.curves[curve].wl)
 
 

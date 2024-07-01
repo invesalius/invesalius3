@@ -26,6 +26,8 @@ Everything you need for building typical GUI applications is here.
 # This code block was included from src/core_ex.py
 import sys as _sys
 
+import numpy as np
+
 from .type_defs import Coord, EventType, PolygonFillMode, SystemFont
 
 # Load version numbers from __version__ and some other initialization tasks...
@@ -9325,7 +9327,7 @@ class Image(Object):
         __bool__() -> int
         """
 
-    def ConvertToBitmap(self, depth=-1):
+    def ConvertToBitmap(self, depth: int = -1) -> Bitmap:
         """
         ConvertToBitmap(depth=-1) -> Bitmap
 
@@ -11621,7 +11623,7 @@ class Font(GDIObject):
         Changes this font to be stricken-through.
         """
 
-    def Scale(self, x):
+    def Scale(self, x: float) -> Font:
         """
         Scale(x) -> Font
 
@@ -15457,14 +15459,16 @@ class GraphicsContext(GraphicsObject):
         Creates a native brush with a radial gradient.
         """
 
-    def SetBrush(self, *args, **kw):
+    @overload
+    def SetBrush(self, brush: Brush) -> None:
         """
         SetBrush(brush)
         SetBrush(brush)
 
         Sets the brush for filling paths.
         """
-
+    @overload
+    def SetBrush(self, brush: GraphicsBrush) -> None: ...
     def CreatePen(self, *args, **kw):
         """
         CreatePen(pen) -> GraphicsPen
@@ -15473,22 +15477,28 @@ class GraphicsContext(GraphicsObject):
         Creates a native pen from a wxPen.
         """
 
-    def SetPen(self, *args, **kw):
+    @overload
+    def SetPen(self, pen: Pen) -> None:
         """
         SetPen(pen)
         SetPen(pen)
 
         Sets the pen used for stroking.
         """
-
-    def DrawBitmap(self, *args, **kw):
+    @overload
+    def SetPen(self, pen: GraphicsPen) -> None: ...
+    @overload
+    def DrawBitmap(self, bmp: GraphicsBitmap, x: float, y: float, w: float, h: float) -> None:
         """
-        DrawBitmap(bmp, x, y, w, h)
-        DrawBitmap(bmp, x, y, w, h)
-
         Draws the bitmap.
-        """
 
+        In case of a mono bitmap, this is treated as a mask and the current brushed is used for filling.
+        """
+    @overload
+    def DrawBitmap(self, bmp: Bitmap, x: float, y: float, w: float, h: float) -> None:
+        """
+        This is an overloaded member function, provided for convenience. It differs from the above function only in what argument(s) it accepts.
+        """
     def DrawEllipse(self, x, y, w, h):
         """
         DrawEllipse(x, y, w, h)
@@ -15517,7 +15527,7 @@ class GraphicsContext(GraphicsObject):
         Draws the path by first filling and then stroking.
         """
 
-    def DrawRectangle(self, x, y, w, h):
+    def DrawRectangle(self, x: float, y: float, w: float, h: float) -> None:
         """
         DrawRectangle(x, y, w, h)
 
@@ -16142,7 +16152,9 @@ class GraphicsPath(GraphicsObject):
         Adds a straight line from the current point to (x,y).
         """
     @overload
-    def AddLineToPoint(self, p: Point2D) -> None: ...
+    def AddLineToPoint(
+        self, p: tuple[float, float] | list[float] | np.ndarray | Point2D
+    ) -> None: ...
     def AddPath(self, path):
         """
         AddPath(path)
@@ -16217,7 +16229,7 @@ class GraphicsPath(GraphicsObject):
         Begins a new subpath at (x,y).
         """
     @overload
-    def MoveToPoint(self, p: Point2D) -> None: ...
+    def MoveToPoint(self, p: tuple[float, float] | list[float] | np.ndarray | Point2D) -> None: ...
     def Transform(self, matrix):
         """
         Transform(matrix)
@@ -29318,7 +29330,7 @@ class Window(WindowBase):
         """
 
     @staticmethod
-    def FindWindowByLabel(label, parent=None):
+    def FindWindowByLabel(label: str, parent: Window | None = None) -> Window | None:
         """
         FindWindowByLabel(label, parent=None) -> Window
 
@@ -29326,7 +29338,7 @@ class Window(WindowBase):
         """
 
     @staticmethod
-    def FindWindowByName(name, parent=None):
+    def FindWindowByName(name: str, parent: Window | None = None) -> Window | None:
         """
         FindWindowByName(name, parent=None) -> Window
 
@@ -29649,7 +29661,7 @@ def FindWindowById(self, id, parent=None):
     hierarchy. The search is recursive in both cases.
     """
 
-def FindWindowByName(self, name, parent=None):
+def FindWindowByName(name: str, parent: Window | None = None) -> Window | None:
     """
     FindWindowByName(name, parent=None) -> Window
 
@@ -29664,7 +29676,7 @@ def FindWindowByName(self, name, parent=None):
     If no window with the name is found, wx.FindWindowByLabel is called.
     """
 
-def FindWindowByLabel(self, label, parent=None):
+def FindWindowByLabel(label: str, parent: Window | None = None) -> Window | None:
     """
     FindWindowByLabel(label, parent=None) -> Window
 
@@ -48768,16 +48780,6 @@ def FindWindowAtPoint(pt):
 
     Find the deepest window at the given mouse position in screen
     coordinates, returning the window if found, or NULL if not.
-    """
-
-def FindWindowByLabel(label, parent=None):
-    """
-    FindWindowByLabel(label, parent=None) -> Window
-    """
-
-def FindWindowByName(name, parent=None):
-    """
-    FindWindowByName(name, parent=None) -> Window
     """
 
 def FindMenuItemId(frame, menuString, itemString):
