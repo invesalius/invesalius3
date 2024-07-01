@@ -216,7 +216,7 @@ class CLUTImageDataWidget(wx.Panel):
         self.draw_gradient(dc)
 
         if self.last_selected is not None:
-            self.draw_text(dc)
+            self.draw_text(dc, self.last_selected.value)
 
     def OnWheel(self, evt: wx.MouseEvent) -> None:
         """
@@ -417,11 +417,13 @@ class CLUTImageDataWidget(wx.Panel):
         ctx.StrokePath(path)
         ctx.FillPath(path)
 
-    def draw_text(self, dc: Union[wx.WindowDC, wx.MemoryDC, wx.PrinterDC, wx.MetafileDC]) -> None:
+    def draw_text(
+        self,
+        dc: Union[wx.WindowDC, wx.MemoryDC, wx.PrinterDC, wx.MetafileDC],
+        value: float,
+    ) -> None:
         w, h = self.GetVirtualSize()
         ctx = wx.GraphicsContext.Create(dc)
-
-        value = self.last_selected.value
 
         x = self.hounsfield_to_pixel(value)
         y = h / 2
