@@ -91,7 +91,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py']
-exclude = ["invesalius/gui/widgets/listctrl.py"]
+extend-exclude = ["./invesalius/gui/widgets/listctrl.py"]
 line-length = 100
 # extend-exclude = ["plugins"]
 
