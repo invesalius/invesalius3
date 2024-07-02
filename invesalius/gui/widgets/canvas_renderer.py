@@ -503,9 +503,7 @@ class CanvasRendererCTX:
 
         return arr
 
-    def calc_text_size(
-        self, text: str, font: Optional[wx.Font] = None
-    ) -> Optional[Tuple[int, int]]:
+    def calc_text_size(self, text: str, font: Optional[wx.Font] = None) -> Tuple[int, int]:
         """
         Given an unicode text and a font returns the width and height of the
         rendered text in pixels.
@@ -518,7 +516,7 @@ class CanvasRendererCTX:
             A tuple with width and height values in pixels
         """
         if self.gc is None:
-            return None
+            raise ValueError("No graphics context available.")
         gc = self.gc
 
         if font is None:
@@ -763,13 +761,13 @@ class CanvasRendererCTX:
 
     def draw_text_box(
         self,
-        text,
-        pos,
-        font=None,
+        text: str,
+        pos: Tuple[float, float],
+        font: Optional[wx.Font] = None,
         txt_colour=(255, 255, 255),
         bg_colour=(128, 128, 128, 128),
         border=5,
-    ):
+    ) -> Tuple[float, float, int, int]:
         """
         Draw text inside a text box.
 
@@ -782,7 +780,7 @@ class CanvasRendererCTX:
             border: the border size.
         """
         if self.gc is None:
-            return None
+            raise ValueError("No graphics context available.")
         gc = self.gc
 
         if font is None:
