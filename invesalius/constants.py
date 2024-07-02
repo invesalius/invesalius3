@@ -647,6 +647,15 @@ SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
 
+#------------ Logging options key------------
+FILE_LOGGING = 4
+FILE_LOGGING_LEVEL = 5
+APPEND_LOG_FILE = 6
+LOGFILE = 7
+CONSOLE_LOGGING = 8
+CONSOLE_LOGGING_LEVEL = 9
+LOGGING_LEVEL_TYPES = ['NOTSET', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']
+
 #Correlaction extracted from pyDicom
 DICOM_ENCODING_TO_PYTHON = {
                             'None':'iso8859',
