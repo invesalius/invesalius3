@@ -40,7 +40,7 @@ class InvSpinCtrl(wx.Panel):
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
         if spin_button and wx.Platform != "__WXGTK__":
-            self._spinbtn = wx.SpinButton(self, -1)
+            self._spinbtn: Optional[wx.SpinButton] = wx.SpinButton(self, -1)
         else:
             self._spinbtn = None
 
@@ -94,7 +94,7 @@ class InvSpinCtrl(wx.Panel):
     def GetValue(self) -> int:
         return self._value
 
-    def SetValue(self, value: Any) -> None:
+    def SetValue(self, value: Union[float, str]) -> None:
         try:
             value = int(value)
         except ValueError:
@@ -194,7 +194,7 @@ class InvFloatSpinCtrl(wx.Panel):
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
         if spin_button and wx.Platform != "__WXGTK__":
-            self._spinbtn = wx.SpinButton(self, -1)
+            self._spinbtn: Optional[wx.SpinButton] = wx.SpinButton(self, -1)
         else:
             self._spinbtn = None
 
