@@ -9927,7 +9927,12 @@ def ImageFromDataWithAlpha(width, height, data, alpha):
     """
     pass
 
-def ImageFromBuffer(width, height, dataBuffer, alphaBuffer=None) -> Image:
+def ImageFromBuffer(
+    width: int,
+    height: int,
+    dataBuffer: np.ndarray[Any, Any],
+    alphaBuffer: np.ndarray[Any, Any] | None = None,
+) -> Image:
     """
     Creates a :class:`Image` from the data in `dataBuffer`.  The `dataBuffer`
     parameter must be a Python object that implements the buffer interface,
@@ -10443,7 +10448,9 @@ class Bitmap(GDIObject):
         """
 
     @staticmethod
-    def FromRGBA(width: int, height: int, red=0, green=0, blue=0, alpha=0) -> Bitmap:
+    def FromRGBA(
+        width: int, height: int, red: int = 0, green: int = 0, blue: int = 0, alpha: int = 0
+    ) -> Bitmap:
         """
         FromRGBA(width, height, red=0, green=0, blue=0, alpha=0) -> Bitmap
 
@@ -15381,7 +15388,7 @@ class GraphicsContext(GraphicsObject):
         Rotates the current transformation matrix (in radians).
         """
 
-    def Scale(self, xScale: float, yScale: float):
+    def Scale(self, xScale: float, yScale: float) -> None:
         """
         Scale(xScale, yScale)
 
@@ -15395,7 +15402,7 @@ class GraphicsContext(GraphicsObject):
         Sets the current transformation matrix of this context.
         """
 
-    def Translate(self, dx: float, dy: float):
+    def Translate(self, dx: float, dy: float) -> None:
         """
         Translate(dx, dy)
 
@@ -16153,7 +16160,7 @@ class GraphicsPath(GraphicsObject):
         """
     @overload
     def AddLineToPoint(
-        self, p: tuple[float, float] | list[float] | np.ndarray | Point2D
+        self, p: tuple[float, float] | list[float] | np.ndarray[Any, Any] | Point2D
     ) -> None: ...
     def AddPath(self, path):
         """
@@ -16229,7 +16236,9 @@ class GraphicsPath(GraphicsObject):
         Begins a new subpath at (x,y).
         """
     @overload
-    def MoveToPoint(self, p: tuple[float, float] | list[float] | np.ndarray | Point2D) -> None: ...
+    def MoveToPoint(
+        self, p: tuple[float, float] | list[float] | np.ndarray[Any, Any] | Point2D
+    ) -> None: ...
     def Transform(self, matrix):
         """
         Transform(matrix)
@@ -16842,7 +16851,7 @@ class RendererNative:
 
     def DrawPushButton(
         self, win: Window, dc: DC, rect: tuple[int, int, int, int] | Rect, flags: int = 0
-    ):
+    ) -> None:
         """
         DrawPushButton(win, dc, rect, flags=0)
 
@@ -21112,7 +21121,7 @@ class EvtHandler(Object, Trackable):
     def Bind(
         self,
         event: PyEventBinder,
-        handler: Callable,
+        handler: Callable[[Any], None],
         source: Window | None = None,
         id: int = wx.ID_ANY,
         id2: int = wx.ID_ANY,
