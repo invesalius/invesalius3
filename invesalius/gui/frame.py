@@ -36,6 +36,7 @@ import invesalius.gui.preferences as preferences
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius.gui.log as log
 import wx
 import wx.aui
 import wx.lib.popupctl as pc
@@ -136,6 +137,7 @@ class Frame(wx.Frame):
         self.__bind_events()
         self.__bind_events_wx()
 
+        #log.initLogger()
 
     def __bind_events(self):
         """
@@ -449,9 +451,13 @@ class Frame(wx.Frame):
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
 
+        #logger = log.MyLogger()
+
         if not save and answer == wx.ID_YES:
+            log.invLogger.closeLogging()
             return 1  # Exit and delete session
         elif save and answer == wx.ID_YES:
+            log.invLogger.closeLogging()
             return 2  # Exit without deleting session
         else:
             return 0  # Don't Exit
@@ -674,6 +680,7 @@ class Frame(wx.Frame):
 
         if preferences_dialog.ShowModal() == wx.ID_OK:
             values = preferences_dialog.GetPreferences()
+ 
             preferences_dialog.Destroy()
 
             session = ses.Session()
@@ -682,11 +689,23 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
-
+            file_logging  = values[const.FILE_LOGGING]
+            file_logging_level  = values[const.FILE_LOGGING_LEVEL]
+            append_log_file  = values[const.APPEND_LOG_FILE]
+            logging_file = values[const.LOGFILE]
+            console_logging  = values[const.CONSOLE_LOGGING]
+            console_logging_level  = values[const.CONSOLE_LOGGING_LEVEL]
+            
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
             session.SetConfig('language', language)
             session.SetConfig('slice_interpolation', slice_interpolation)
+            session.SetConfig('file_logging', file_logging)
+            session.SetConfig('file_logging_level', file_logging_level)
+            session.SetConfig('append_log_file', append_log_file)
+            session.SetConfig('logging_file', logging_file)
+            session.SetConfig('console_logging', console_logging)
+            session.SetConfig('console_logging_level', console_logging_level)
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Raycasting')
@@ -694,6 +713,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage('Update Slice Interpolation MenuBar')
             Publisher.sendMessage('Update Navigation Mode MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
+
 
     def ShowAbout(self):
         """

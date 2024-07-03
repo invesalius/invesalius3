@@ -99,6 +99,7 @@ if session.ReadConfig():
         except FileNotFoundError:
             pass
 
+import invesalius.gui.log as log
 
 class InVesalius(wx.App):
     """
@@ -131,6 +132,8 @@ class InVesalius(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show()
         self.frame.Raise()
+        #logger = log.MyLogger()
+        log.invLogger.configureLogging()
 
 # ------------------------------------------------------------------
 
