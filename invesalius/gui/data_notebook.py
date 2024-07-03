@@ -431,6 +431,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self._click_check = False
         self.mask_list_index = {}
         self.current_index = 0
+        # Color of the currently selected surface when opening context menu, default is white
         self.current_color = [255, 255, 255]
         self.__init_columns()
         self.__init_image_list()
@@ -457,6 +458,7 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def on_mouse_right_click(self, event):
         start_idx = 1
+        focused_item = self.GetFocusedItem()
 
         # Create the context menu and add all the menu items
         mask_context_menu = wx.Menu()
@@ -472,6 +474,10 @@ class MasksListCtrlPanel(InvListCtrl):
         delete_id = mask_context_menu.Append(start_idx + 2, _('Delete'))
         mask_context_menu.Bind(wx.EVT_MENU, self.delete_mask, delete_id)
 
+        # Select the focused mask and show it in the slice viewer
+        Publisher.sendMessage('Change mask selected', index=focused_item)
+        Publisher.sendMessage('Show mask', index=focused_item, value=True)
+
         self.PopupMenu(mask_context_menu)
         mask_context_menu.Destroy()
 
@@ -479,11 +485,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.current_colour = colour
 
     def change_mask_color(self, event):
-        focused_item = self.GetFocusedItem()
         current_color = self.current_color
-
-        # Select the focused mask
-        Publisher.sendMessage('Change mask selected', index=focused_item)
 
         new_color = dlg.ShowColorDialog(color_current=current_color)
 

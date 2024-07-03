@@ -1829,7 +1829,7 @@ class SurfaceTransparencyDialog(wx.Dialog):
 
     def on_slider(self, event):
         value = self.slider.GetValue()
-        self.value_text.SetLabel(f"Transparency: {value}%")
+        self.value_text.SetLabel(f"Surface transparency: {value}%")
 
         Publisher.sendMessage('Set surface transparency',
                               surface_index=self.surface_index,
