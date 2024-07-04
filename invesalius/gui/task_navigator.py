@@ -496,6 +496,9 @@ class ImagePage(wx.Panel):
         fiducial_index = fiducial['fiducial_index']
 
         self.image.SetImageFiducial(fiducial_index, position)
+
+        if self.image.AreImageFiducialsSet():
+            self.StopRegistration()
         self.UpdateNextButton()
 
     def UpdateImageCoordinates(self, position):
@@ -537,18 +540,26 @@ class ImagePage(wx.Panel):
         self.start_button.SetValue(False)
         self.OnStartRegistration(self.start_button, self.start_button)
 
+    def StartRegistration(self):
+        Publisher.sendMessage("Enable style", style=const.STATE_REGISTRATION)
+        for button in self.btns_set_fiducial:
+            button.Enable()
+        self.start_button.SetLabel("Stop Registration")
+        self.start_button.SetValue(True)
+
+    def StopRegistration(self):
+        self.start_button.SetLabel("Start Registration")
+        self.start_button.SetValue(False)
+        for button in self.btns_set_fiducial:
+            button.Disable()
+        Publisher.sendMessage("Disable style", style=const.STATE_REGISTRATION)
+
     def OnStartRegistration(self, evt, ctrl):
         value = ctrl.GetValue()
         if value:
-            Publisher.sendMessage("Enable style", style=const.STATE_REGISTRATION)
-            for button in self.btns_set_fiducial:
-                button.Enable()
-            self.start_button.SetLabel("Stop Registration")
+            self.StartRegistration()
         else:
-            self.start_button.SetLabel("Start Registration")
-            for button in self.btns_set_fiducial:
-                button.Disable()
-            Publisher.sendMessage("Disable style", style=const.STATE_REGISTRATION)
+            self.StopRegistration()
 
 class TrackerPage(wx.Panel):
     def __init__(self, parent, nav_hub):
