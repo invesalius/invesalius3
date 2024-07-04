@@ -454,6 +454,7 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set cross focal point')
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
         Publisher.subscribe(self._OnStateProject, "Enable state project")
+        Publisher.subscribe(self.StopRegistration, 'Stop image registration')
 
     def _OnStateProject(self, state):
         self.UpdateData()
