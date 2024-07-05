@@ -1196,6 +1196,9 @@ class Slice(metaclass=utils.Singleton):
         future_mask = proj.GetMask(index)
         future_mask.is_shown = True
         self.current_mask = future_mask
+        # Update the current mask index because is some edge cases
+        # it will be incorrect after self.current_mask = future_mask
+        self.current_mask.index = index
         self.current_mask.on_show()
 
         colour = future_mask.colour

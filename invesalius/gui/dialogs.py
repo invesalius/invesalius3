@@ -1074,15 +1074,14 @@ def ReportICPDistributionError():
     dlg.ShowModal()
     dlg.Destroy()
 
+
 def ShowEnterMarkerID(default):
     msg = _("Change label")
-    if sys.platform == 'darwin':
-        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
-    else:
-        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+    dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
     dlg.ShowModal()
     result = dlg.GetValue()
     dlg.Destroy()
+
     return result
 
 
@@ -1786,6 +1785,61 @@ class SurfaceCreationOptionsPanel(wx.Panel):
                 "keep_largest": keep_largest,
                 "overwrite": False}
 
+class SurfaceTransparencyDialog(wx.Dialog):
+    def __init__(self, parent, surface_index=0, transparency=0):
+        super(SurfaceTransparencyDialog, self).__init__(parent)
+
+        self.surface_index = surface_index
+
+        self.SetTitle("InVesalius 3")
+        self.SetSize((300, 180))
+
+        self.slider = wx.Slider(self,
+                                value=transparency,
+                                minValue=0,
+                                maxValue=100,
+                                style=wx.SL_HORIZONTAL)
+
+        self.slider.Bind(wx.EVT_SLIDER, self.on_slider)
+
+        # Current value
+        self.value_text = wx.StaticText(self, label=f"Surface transparency: {self.slider.GetValue()}%")
+
+        # Buttons
+        ok_button = wx.Button(self, wx.ID_OK, label="OK")
+        ok_button.Bind(wx.EVT_BUTTON, self.on_ok)
+
+        cancel_button = wx.Button(self, wx.ID_CANCEL, label="Cancel")
+
+        # Layout
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.value_text, 0, wx.ALL | wx.CENTER, 10)
+        sizer.Add(self.slider, 0, wx.ALL | wx.EXPAND, 10)
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_sizer.Add(ok_button, 0, wx.ALL, 5)
+        button_sizer.Add(cancel_button, 0, wx.ALL, 5)
+
+        sizer.Add(button_sizer, 0, wx.ALL | wx.CENTER, 10)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+        self.CenterOnScreen()
+
+    def on_slider(self, event):
+        value = self.slider.GetValue()
+        self.value_text.SetLabel(f"Surface transparency: {value}%")
+
+        Publisher.sendMessage('Set surface transparency',
+                              surface_index=self.surface_index,
+                              transparency=value/100.)
+
+    def on_ok(self, event):
+        self.EndModal(wx.ID_OK)
+
+    def get_value(self):
+        return self.slider.GetValue()
 
 class CAOptions(wx.Panel):
     '''
@@ -5616,8 +5670,8 @@ class SelectNiftiVolumeDialog(wx.Dialog):
         main_sizer.Add((5, 5))
 
         self.SetSizer(main_sizer)
-        main_sizer.Fit(self)
-        self.Layout()
+        # main_sizer.Fit(self)
+        # self.Layout()
         self.CenterOnParent()
 
     def GetVolumeChoice(self):
