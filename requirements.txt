@@ -1,5 +1,5 @@
 # Scientific
-numpy==1.24.3
+numpy==1.26.4
 scipy==1.14.0
 matplotlib==3.9.0
 
