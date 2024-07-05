@@ -742,6 +742,8 @@ class TrackerPage(wx.Panel):
             self.next_button.Enable()
             self.StopRegistration()
 
+        self.Refresh()
+
     def OnFiducialButton(self, index, evt):
         button = self.fiducial_buttons[index]
 
@@ -762,6 +764,7 @@ class TrackerPage(wx.Panel):
 
     def OnReset(self, evt):
         self.tracker.ResetTrackerFiducials()
+        self.Refresh()
 
     def OnResetTrackerFiducials(self):
         self.UpdateElements()
