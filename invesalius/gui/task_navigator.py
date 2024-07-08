@@ -1716,6 +1716,8 @@ class ControlPanel(wx.Panel):
             self.UpdateToggleButton(ctrl)
         pressed = self.track_object_button.GetValue()
         Publisher.sendMessage("Track object", enabled=pressed)
+        if not pressed:
+            Publisher.sendMessage("Press target mode button", pressed=pressed)
 
         # Disable or enable 'Show coil' button, based on if 'Track object' button is pressed.
         Publisher.sendMessage("Enable show-coil button", enabled=pressed)
