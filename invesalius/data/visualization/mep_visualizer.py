@@ -228,7 +228,6 @@ class MEPVisualizer:
         self.surface = actor
         self.renderer.AddActor(self.surface)
 
-
     def create_colorbar_actor(self, lut=None) -> vtk.vtkActor:
         if lut is None:
             lut = self.lut_setup()

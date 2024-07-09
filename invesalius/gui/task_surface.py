@@ -444,8 +444,6 @@ class SurfaceTools(wx.Panel):
         Publisher.sendMessage('Disable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
 
-
-
 class SurfaceProperties(scrolled.ScrolledPanel):
     def __init__(self, parent):
         scrolled.ScrolledPanel.__init__(self, parent)

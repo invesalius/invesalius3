@@ -2367,6 +2367,8 @@ class Viewer(wx.Panel):
             self.Refresh()
 
     def UpdateTMSMapping(self, marker, render, focus):
+        #TODO: select brain surface only using a checkbox
+        #TODO: special MEP markers and stop randomization, "Brain Target"
         self.mep_visualizer.update_mep_points([marker])
         self.mep_visualizer.render_visualization(surface=self.surface)
         # TODO: figure a way to obtain all markers so we can delete all point data and add the current
