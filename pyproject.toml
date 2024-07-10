@@ -35,9 +35,9 @@ follow_imports = "normal"
 explicit_package_bases = true
 disable_error_code =  ["attr-defined", "no-redef"]
 
-[mypy-invesalius.gui.widgets.listctrl]
+[[tool.mypy.overrides]]
+module = 'invesalius.gui.widgets.listctrl'
 ignore_errors = true
-
 [[tool.mypy.overrides]]
 module = 'wx.*'
 disable_error_code = ["no-redef"] # because some classes are redefined in the stubs

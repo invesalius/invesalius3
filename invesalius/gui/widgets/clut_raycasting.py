@@ -137,8 +137,8 @@ class CLUTRaycastingWidget(wx.Panel):
         parent -- parent of this frame
         """
         super().__init__(parent, id)
-        self.points: List[List[Dict]] = []
-        self.colours: List[List[Dict]] = []
+        self.points: List[List[Dict[str, float]]] = []
+        self.colours: List[List[Dict[str, float]]] = []
         self.curves: List[Curve] = []
         self.init: float = -1024
         self.end: float = 2000
@@ -653,7 +653,7 @@ class CLUTRaycastingWidget(wx.Panel):
         width when the user interacts with this widgets.
         """
         for n, (point, colour) in enumerate(zip(self.points, self.colours)):
-            point_colour: Iterable[Tuple[Dict, Dict]] = zip(point, colour)
+            point_colour: Iterable[Tuple[Dict[str, float], Dict[str, float]]] = zip(point, colour)
             point_colour = sorted(point_colour, key=lambda x: x[0]["x"])
             self.points[n] = [i[0] for i in point_colour]
             self.colours[n] = [i[1] for i in point_colour]
@@ -687,7 +687,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.curves.append(curve)
         self._build_histogram()
 
-    def HounsfieldToPixel(self, graylevel: float) -> float:
+    def HounsfieldToPixel(self, graylevel: float) -> int:
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """
@@ -697,7 +697,7 @@ class CLUTRaycastingWidget(wx.Panel):
         x = (graylevel - self.init) * proportion + TOOLBAR_SIZE
         return x
 
-    def OpacityToPixel(self, opacity: int) -> int:
+    def OpacityToPixel(self, opacity: float) -> int:
         """
         Given a Opacity point returns a pixel point in the canvas.
         """
@@ -725,7 +725,7 @@ class CLUTRaycastingWidget(wx.Panel):
         opacity = (height - y + self.padding) * 1.0 / height
         return opacity
 
-    def SetRaycastPreset(self, preset: Dict) -> None:
+    def SetRaycastPreset(self, preset: Dict[str, List[List[Dict[str, float]]]]) -> None:
         if not preset:
             self.to_draw_points = 0
         elif preset["advancedCLUT"]:

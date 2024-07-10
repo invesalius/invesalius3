@@ -20,7 +20,7 @@
 # --------------------------------------------------------------------------
 import sys
 from collections import OrderedDict
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 import wx
 
@@ -48,7 +48,7 @@ class SliceMenu(wx.Menu):
     def __init__(self) -> None:
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM: Dict[Union[wx.WindowIDRef, int], wx.MenuItem] = {}
-        self.cdialog = None
+        self.cdialog: Optional[ClutImagedataDialog] = None
 
         # ------------ Sub menu of the window and level ----------
         submenu_wl = wx.Menu()
