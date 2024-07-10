@@ -167,6 +167,49 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
 
     return m_target_in_tracker
 
+def corregistrate_probe(m_change, coord_raw, ref_mode_id):
+    m_probe = compute_marker_transformation(coord_raw, 0) 
+    #print(f"raw angles: {np.degrees(tr.euler_from_matrix(m_probe,axes='rzyx'))}")
+
+    # transform probe to reference system if dynamic ref_mode
+    if ref_mode_id:
+        m_probe_ref = object_to_reference(coord_raw, m_probe)
+    else:
+        m_probe_ref = m_probe
+
+    # invert y coordinate
+    m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
+    # Manual method:
+    # Hold stylus in line with head (pointing up)
+    # Save the euler-angle from the print statement below into up_trk:
+    print(f"up_trk angles: {np.degrees(tr.euler_from_matrix(m_probe_ref,axes='rzyx'))}")
+    # this gets the angle of stylus relative to head
+
+    # orientation 'stylus pointing up along head' in tracker system 
+    up_trk = tr.euler_matrix(*np.radians([90.0, 6, 18.0]), axes='rzyx')[:3,:3] 
+    
+    # orientation 'stylus pointing up along head' in vtk-coordinate system
+    up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
+    
+    # Rotation or change of basis matrix from tracker to VTK coordinate system
+    R = up_vtk @ np.linalg.inv(up_trk)
+
+    # rotate new orientation to vtk space
+    r_img = R @ m_probe_ref[:3,:3]
+
+    # translate and rotate m_probe_ref from tracker to image space
+    m_img = m_change @ m_probe_ref 
+    m_img[:3, :3] = r_img[:3, :3]
+
+    # compute rotation angles
+    angles = np.degrees(tr.euler_from_matrix(m_img, axes='sxyz'))
+
+    # create output coordinate list
+    coord = np.array([ m_img[0, -1], m_img[1, -1], m_img[2, -1],
+        angles[0], angles[1], angles[2] ])
+
+    return coord, m_img
 
 def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
 
@@ -189,11 +232,11 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles = np.degrees(tr.euler_from_matrix(m_img, axes='sxyz'))
 
     # create output coordinate list
-    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
-            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
+    coord = np.array([ m_img[0, -1], m_img[1, -1], m_img[2, -1],
+        angles[0], angles[1], angles[2] ])
 
     return coord, m_img
 
@@ -229,11 +272,11 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles = np.degrees(tr.euler_from_matrix(m_img, axes='sxyz'))
 
     # create output coordinate list
-    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
-            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
+    coord = np.array([ m_img[0, -1], m_img[1, -1], m_img[2, -1],
+        angles[0], angles[1], angles[2] ])
 
     return coord, m_img
 
@@ -316,7 +359,13 @@ class CoordinateCorregistrate(threading.Thread):
 
                 # print(f"Set the coordinate")
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+                
+                m_change = coreg_data[0] 
+                coords, m_imgs = corregistrate_probe(m_change, coord_raw, self.ref_mode_id)
                 coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+                #LUKATODO: rename to coord_maincoil or something   
+                coords = np.stack((coords, coord))
+                m_imgs = np.stack((m_imgs, m_img))
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
@@ -342,7 +391,7 @@ class CoordinateCorregistrate(threading.Thread):
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
                 # self.pipeline.set_message(m_img_flip)
 
-                self.coord_queue.put_nowait([coord, marker_visibilities, m_img, view_obj])
+                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs, view_obj])
                 # print('CoordCoreg: put {}'.format(count))
                 # count += 1
 
@@ -389,12 +438,19 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 # print(f"Set the coordinate")
                 #print(self.icp, self.m_icp)
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+
+                m_change = coreg_data[0]
+                coords, m_imgs = corregistrate_probe(m_change, coord_raw, self.ref_mode_id)
                 coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+
+                coords = np.stack((coords, coord))
+                m_imgs = np.stack((m_imgs, m_img))
+
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                self.coord_queue.put_nowait([coord, marker_visibilities, m_img, view_obj])
+                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs, view_obj])
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)

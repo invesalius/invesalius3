@@ -111,6 +111,7 @@ from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
+from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
@@ -325,6 +326,8 @@ class Viewer(wx.Panel):
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
+        
+        self.probe_visualizer = ProbeVisualizer(self.ren, self.interactor)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
