@@ -7,7 +7,7 @@ import numpy as np
 import invesalius.constants as const
 import invesalius.session as ses
 import invesalius.gui.log as log
-import invesalius.gui.dialogs as dlg0
+import invesalius.gui.dialogs as dlg
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius import inv_paths
 
