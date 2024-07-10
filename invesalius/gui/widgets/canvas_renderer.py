@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from invesalius.data.viewer_volume import Viewer as volumeViewer
     from invesalius.gui.bitmap_preview_panel import SingleImagePreview as bitmapSingleImagePreview
     from invesalius.gui.dicom_preview_panel import SingleImagePreview as dicomSingleImagePreview
+    from typings.utils import CanvasObjects, Element
 
 
 class CanvasEvent:
