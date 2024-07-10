@@ -14,4 +14,5 @@ ColourType = (
     | list[int]
     | wx.Colour
     | tuple[float, float, float, float]
+    | str
 )
