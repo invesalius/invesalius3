@@ -1241,6 +1241,18 @@ class ControlPanel(wx.Panel):
         show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
         self.show_coil_button = show_coil_button
 
+        # Toggle button for showing probe during navigation
+        tooltip = _("Show probe") #LUKATODO: get proper png
+        BMP_SHOW_PROBE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG)
+        show_probe_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        show_probe_button.SetBackgroundColour(GREY_COLOR)
+        show_probe_button.SetBitmap(BMP_SHOW_PROBE)
+        show_probe_button.SetToolTip(tooltip)
+        show_probe_button.Enable(True)
+        self.UpdateToggleButton(show_probe_button, False) #the probe is hidden at start
+        show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
+        self.show_probe_button = show_probe_button
+
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = _("Enable serial port communication to trigger pulse and create markers")
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
@@ -1379,6 +1391,7 @@ class ControlPanel(wx.Panel):
                 (efield_checkbox),
                 (lock_to_target_button),
                 (show_coil_button),
+                (show_probe_button),
                 (show_motor_map_button),
             ]
         )
@@ -1422,8 +1435,10 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
 
         # Externally press/unpress and enable/disable buttons.
-        Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
-        Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
+        Publisher.subscribe(self.PressShowProbeButton, 'Press show-probe button')
+
+        Publisher.subscribe(self.PressShowCoilButton, 'Press show-coil button')
+        Publisher.subscribe(self.EnableShowCoilButton, 'Enable show-coil button')
 
         Publisher.subscribe(self.PressTrackObjectButton, "Press track object button")
         Publisher.subscribe(self.EnableTrackObjectButton, "Enable track object button")
@@ -1721,7 +1736,17 @@ class ControlPanel(wx.Panel):
     def OnShowCoil(self, evt=None):
         self.UpdateToggleButton(self.show_coil_button)
         pressed = self.show_coil_button.GetValue()
-        Publisher.sendMessage("Show coil in viewer volume", state=pressed)
+        Publisher.sendMessage('Show coil in viewer volume', state=pressed)
+    
+    # 'Show probe' button
+    def PressShowProbeButton(self, pressed=False):
+        self.UpdateToggleButton(self.show_probe_button, pressed)
+        self.OnShowProbe()
+
+    def OnShowProbe(self, evt=None):
+        self.UpdateToggleButton(self.show_probe_button)
+        pressed = self.show_probe_button.GetValue()
+        Publisher.sendMessage('Show probe in viewer volume', state=pressed)
 
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
