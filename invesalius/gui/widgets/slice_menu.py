@@ -20,7 +20,7 @@
 # --------------------------------------------------------------------------
 import sys
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, Union
 
 import wx
 
@@ -47,7 +47,7 @@ PROJECTIONS_ID = OrderedDict(
 class SliceMenu(wx.Menu):
     def __init__(self) -> None:
         wx.Menu.__init__(self)
-        self.ID_TO_TOOL_ITEM: Dict[int | wx.WindowIDRef, wx.MenuItem] = {}
+        self.ID_TO_TOOL_ITEM: Dict[Union[wx.WindowIDRef, int], wx.MenuItem] = {}
         self.cdialog = None
 
         # ------------ Sub menu of the window and level ----------
@@ -117,7 +117,7 @@ class SliceMenu(wx.Menu):
         self.pseudo_color_items[new_id] = color_item
 
         # --------------- Sub menu of the projection type ---------------------
-        self.projection_items: Dict[wx.WindowIDRef, wx.MenuItem] = {}
+        self.projection_items: Dict[Union[wx.WindowIDRef, int], wx.MenuItem] = {}
         submenu_projection = wx.Menu()
         for name in PROJECTIONS_ID:
             new_id = wx.NewIdRef()

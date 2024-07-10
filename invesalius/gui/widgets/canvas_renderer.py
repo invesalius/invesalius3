@@ -54,7 +54,7 @@ class CanvasEvent:
     def __init__(
         self,
         event_name: str,
-        root_event_obj: Optional[CanvasObjects],
+        root_event_obj: Optional["CanvasObjects"],
         pos: Tuple[int, int],
         viewer: "Union[sliceViewer, volumeViewer, bitmapSingleImagePreview, dicomSingleImagePreview]",
         renderer: "vtkRenderer",
@@ -102,10 +102,10 @@ class CanvasRendererCTX:
         self.draw_list = []
         self._ordered_draw_list = []
         self.orientation = orientation
-        self.gc = None
-        self.last_cam_modif_time = -1
-        self.modified = True
-        self._drawn = False
+        self.gc: Optional[wx.GraphicsContext] = None
+        self.last_cam_modif_time: int = -1
+        self.modified: bool = True
+        self._drawn: bool = False
         self._init_canvas()
 
         self._over_obj = None
