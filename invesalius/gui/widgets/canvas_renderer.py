@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import sys
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
     from invesalius.data.viewer_volume import Viewer as volumeViewer
     from invesalius.gui.bitmap_preview_panel import SingleImagePreview as bitmapSingleImagePreview
     from invesalius.gui.dicom_preview_panel import SingleImagePreview as dicomSingleImagePreview
-    from typings.utils import CanvasObjects, Element
+    from typings.utils import CanvasElement, CanvasObjects
 
 
 class CanvasEvent:
@@ -456,7 +457,7 @@ class CanvasRendererCTX:
 
     def draw_element_to_array(
         self,
-        elements: List["Element"],
+        elements: List["CanvasElement"],
         size: Optional[Tuple[int, int]] = None,
         antialiasing: bool = False,
         flip: bool = True,
@@ -908,7 +909,7 @@ class CanvasRendererCTX:
         return path
 
 
-class CanvasHandlerBase:
+class CanvasHandlerBase(ABC):
     def __init__(self, parent: Optional["CanvasHandlerBase"]):
         self.parent = parent
         self.children: List[CanvasHandlerBase] = []
@@ -936,6 +937,7 @@ class CanvasHandlerBase:
     def add_child(self, child: "CanvasHandlerBase") -> None:
         self.children.append(child)
 
+    @abstractmethod
     def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
         pass
 
@@ -1022,7 +1024,7 @@ class CircleHandler(CanvasHandlerBase):
     def __init__(
         self,
         parent: CanvasHandlerBase,
-        position,
+        position: Union[Tuple[float, float, float], Tuple[float, float]],
         radius=5,
         line_colour: Tuple[int, int, int, int] = (255, 255, 255, 255),
         fill_colour: Tuple[int, int, int, int] = (0, 0, 0, 0),
