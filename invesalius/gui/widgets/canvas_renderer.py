@@ -99,8 +99,8 @@ class CanvasRendererCTX:
         self.canvas_renderer = canvas_renderer
         self.evt_renderer = evt_renderer
         self._size = self.canvas_renderer.GetSize()
-        self.draw_list = []
-        self._ordered_draw_list = []
+        self.draw_list: List[CanvasHandlerBase] = []
+        self._ordered_draw_list: List[Tuple[int, CanvasHandlerBase]] = []
         self.orientation = orientation
         self.gc: Optional[wx.GraphicsContext] = None
         self.last_cam_modif_time: int = -1
@@ -439,10 +439,10 @@ class CanvasRendererCTX:
         self.modified = False
         self._drawn = False
 
-    def _follow_draw_list(self) -> List:
+    def _follow_draw_list(self) -> List[Tuple[int, "CanvasHandlerBase"]]:
         out = []
 
-        def loop(node, layer) -> None:
+        def loop(node: CanvasHandlerBase, layer: int) -> None:
             for child in node.children:
                 loop(child, layer + child.layer)
                 out.append((layer + child.layer, child))
@@ -541,8 +541,8 @@ class CanvasRendererCTX:
 
     def draw_line(
         self,
-        pos0: Tuple[int, int],
-        pos1: Tuple[int, int],
+        pos0: Tuple[float, float],
+        pos1: Tuple[float, float],
         arrow_start: bool = False,
         arrow_end: bool = False,
         colour: Tuple[float, float, float, float] = (255, 0, 0, 128),
@@ -619,12 +619,12 @@ class CanvasRendererCTX:
 
     def draw_circle(
         self,
-        center: Tuple[int, int],
+        center: Tuple[float, float],
         radius: float = 2.5,
         width: int = 2,
         line_colour: Tuple[int, int, int, int] = (255, 0, 0, 128),
         fill_colour: Tuple[int, int, int, int] = (0, 0, 0, 0),
-    ) -> Tuple[int, int, float, float]:
+    ) -> Tuple[float, float, float, float]:
         """
         Draw a circle centered at center with the given radius.
 
@@ -823,9 +823,9 @@ class CanvasRendererCTX:
 
     def draw_arc(
         self,
-        center: Tuple[int, int],
-        p0: Tuple[int, int],
-        p1: Tuple[int, int],
+        center: Tuple[float, float],
+        p0: Tuple[float, float],
+        p1: Tuple[float, float],
         line_colour: Tuple[int, int, int, int] = (255, 0, 0, 128),
         width: int = 2,
     ) -> None:
@@ -909,7 +909,7 @@ class CanvasRendererCTX:
 
 
 class CanvasHandlerBase:
-    def __init__(self, parent: "CanvasHandlerBase"):
+    def __init__(self, parent: Optional["CanvasHandlerBase"]):
         self.parent = parent
         self.children: List[CanvasHandlerBase] = []
         self.layer = 0
