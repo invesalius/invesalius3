@@ -117,7 +117,7 @@ class SliceMenu(wx.Menu):
         self.pseudo_color_items[new_id] = color_item
 
         # --------------- Sub menu of the projection type ---------------------
-        self.projection_items: Dict[int, wx.MenuItem] = {}
+        self.projection_items: Dict[wx.WindowIDRef, wx.MenuItem] = {}
         submenu_projection = wx.Menu()
         for name in PROJECTIONS_ID:
             new_id = wx.NewIdRef()
@@ -184,7 +184,7 @@ class SliceMenu(wx.Menu):
         item = self.projection_items[projection_id]
         item.Check()
 
-    def OnPopup(self, evt: wx.Event) -> None:
+    def OnPopup(self, evt: wx.CommandEvent) -> None:
         # id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetItemLabelText()

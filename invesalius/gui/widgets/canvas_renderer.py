@@ -41,24 +41,26 @@ from invesalius.data import converters
 
 if TYPE_CHECKING:
     from vtkmodules.vtkRenderingCore import vtkRenderer
+    from wx.type_defs import BrushStyle, PenStyle  # type: ignore
 
     from invesalius.data.viewer_slice import Viewer as sliceViewer
     from invesalius.data.viewer_volume import Viewer as volumeViewer
     from invesalius.gui.bitmap_preview_panel import SingleImagePreview as bitmapSingleImagePreview
     from invesalius.gui.dicom_preview_panel import SingleImagePreview as dicomSingleImagePreview
+    from typings.utils import CanvasObjects, Element
 
 
 class CanvasEvent:
     def __init__(
         self,
         event_name: str,
-        root_event_obj,
-        pos,
-        viewer,
-        renderer,
-        control_down=False,
-        alt_down=False,
-        shift_down=False,
+        root_event_obj: Optional[CanvasObjects],
+        pos: Tuple[int, int],
+        viewer: "Union[sliceViewer, volumeViewer, bitmapSingleImagePreview, dicomSingleImagePreview]",
+        renderer: "vtkRenderer",
+        control_down: bool = False,
+        alt_down: bool = False,
+        shift_down: bool = False,
     ):
         self.root_event_obj = root_event_obj
         self.event_name = event_name
@@ -119,7 +121,7 @@ class CanvasRendererCTX:
 
         self._bind_events()
 
-    def _bind_events(self):
+    def _bind_events(self) -> None:
         iren = self.viewer.interactor
         iren.Bind(wx.EVT_MOTION, self.OnMouseMove)
         iren.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButtonPress)
@@ -127,18 +129,18 @@ class CanvasRendererCTX:
         iren.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.canvas_renderer.AddObserver("StartEvent", self.OnPaint)
 
-    def subscribe_event(self, event, callback):
+    def subscribe_event(self, event, callback) -> None:
         ref = WeakMethod(callback)
         self._callback_events[event].append(ref)
 
-    def unsubscribe_event(self, event, callback):
+    def unsubscribe_event(self, event, callback) -> None:
         for n, cb in enumerate(self._callback_events[event]):
             if cb() == callback:
                 print("removed")
                 self._callback_events[event].pop(n)
                 return
 
-    def propagate_event(self, root, event):
+    def propagate_event(self, root, event) -> None:
         print("propagating", event.event_name, "from", root)
         node = root
         callback_name = f"on_{event.event_name}"
@@ -149,7 +151,7 @@ class CanvasRendererCTX:
                 print("errror", node, e)
             node = node.parent
 
-    def _init_canvas(self):
+    def _init_canvas(self) -> None:
         w, h = self._size
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
 
@@ -176,7 +178,7 @@ class CanvasRendererCTX:
         except TypeError:
             self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
-    def _resize_canvas(self, w, h):
+    def _resize_canvas(self, w: int, h: int) -> None:
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
         self._cv_image = converters.np_rgba_to_vtk(self._array)
         self.mapper.SetInputData(self._cv_image)
@@ -193,11 +195,11 @@ class CanvasRendererCTX:
 
         self.modified = True
 
-    def remove_from_renderer(self):
+    def remove_from_renderer(self) -> None:
         self.canvas_renderer.RemoveActor(self.actor)
         self.evt_renderer.RemoveObservers("StartEvent")
 
-    def get_over_mouse_obj(self, x, y) -> bool:
+    def get_over_mouse_obj(self, x: int, y: int) -> bool:
         for n, i in self._ordered_draw_list[::-1]:
             try:
                 obj = i.is_over(x, y)
@@ -437,10 +439,10 @@ class CanvasRendererCTX:
         self.modified = False
         self._drawn = False
 
-    def _follow_draw_list(self) -> list:
+    def _follow_draw_list(self) -> List:
         out = []
 
-        def loop(node, layer):
+        def loop(node, layer) -> None:
             for child in node.children:
                 loop(child, layer + child.layer)
                 out.append((layer + child.layer, child))
@@ -453,7 +455,11 @@ class CanvasRendererCTX:
         return out
 
     def draw_element_to_array(
-        self, elements, size=None, antialiasing=False, flip=True
+        self,
+        elements: List["Element"],
+        size: Optional[Tuple[int, int]] = None,
+        antialiasing: bool = False,
+        flip: bool = True,
     ) -> np.ndarray:
         """
         Draws the given elements to a array.
@@ -535,14 +541,14 @@ class CanvasRendererCTX:
 
     def draw_line(
         self,
-        pos0,
-        pos1,
-        arrow_start=False,
-        arrow_end=False,
-        colour=(255, 0, 0, 128),
-        width=2,
-        style=wx.SOLID,
-    ):
+        pos0: Tuple[int, int],
+        pos1: Tuple[int, int],
+        arrow_start: bool = False,
+        arrow_end: bool = False,
+        colour: Tuple[float, float, float, float] = (255, 0, 0, 128),
+        width: int = 2,
+        style: "PenStyle" = wx.SOLID,
+    ) -> None:
         """
         Draw a line from pos0 to pos1
 
@@ -612,8 +618,13 @@ class CanvasRendererCTX:
         self._drawn = True
 
     def draw_circle(
-        self, center, radius=2.5, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)
-    ):
+        self,
+        center: Tuple[int, int],
+        radius: float = 2.5,
+        width: int = 2,
+        line_colour: Tuple[int, int, int, int] = (255, 0, 0, 128),
+        fill_colour: Tuple[int, int, int, int] = (0, 0, 0, 0),
+    ) -> Tuple[int, int, float, float]:
         """
         Draw a circle centered at center with the given radius.
 
@@ -625,7 +636,7 @@ class CanvasRendererCTX:
             fill_colour: RGBA fill colour.
         """
         if self.gc is None:
-            return None
+            raise ValueError("No graphics context available.")
         gc = self.gc
 
         pen = wx.Pen(wx.Colour(*line_colour), width, wx.SOLID)
@@ -647,13 +658,13 @@ class CanvasRendererCTX:
 
     def draw_ellipse(
         self,
-        center,
-        width,
-        height,
-        line_width=2,
-        line_colour=(255, 0, 0, 128),
-        fill_colour=(0, 0, 0, 0),
-    ):
+        center: Tuple[float, float],
+        width: float,
+        height: float,
+        line_width: int = 2,
+        line_colour: Tuple[int, int, int, int] = (255, 0, 0, 128),
+        fill_colour: Tuple[int, int, int, int] = (0, 0, 0, 0),
+    ) -> Tuple[float, float, float, float]:
         """
         Draw a ellipse centered at center with the given width and height.
 
@@ -666,7 +677,7 @@ class CanvasRendererCTX:
             fill_colour: RGBA fill colour.
         """
         if self.gc is None:
-            return None
+            raise ValueError("No graphics context available.")
         gc = self.gc
 
         pen = wx.Pen(wx.Colour(*line_colour), line_width, wx.SOLID)
@@ -695,14 +706,14 @@ class CanvasRendererCTX:
 
     def draw_rectangle(
         self,
-        pos,
-        width,
-        height,
-        line_colour=(255, 0, 0, 128),
-        fill_colour=(0, 0, 0, 0),
-        line_width=1,
-        pen_style=wx.PENSTYLE_SOLID,
-        brush_style=wx.BRUSHSTYLE_SOLID,
+        pos: Tuple[float, float],
+        width: int,
+        height: int,
+        line_colour: Tuple[int, int, int, int] = (255, 0, 0, 128),
+        fill_colour: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        line_width: int = 1,
+        pen_style: "PenStyle" = wx.PENSTYLE_SOLID,
+        brush_style: "BrushStyle" = wx.BRUSHSTYLE_SOLID,
     ) -> None:
         """
         Draw a rectangle with its top left at pos and with the given width and height.
@@ -727,7 +738,13 @@ class CanvasRendererCTX:
         gc.DrawRectangle(px, py, width, -height)
         self._drawn = True
 
-    def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)) -> None:
+    def draw_text(
+        self,
+        text: str,
+        pos: Tuple[float, float],
+        font: Optional[wx.Font] = None,
+        txt_colour: Tuple[int, int, int] = (255, 255, 255),
+    ) -> None:
         """
         Draw text.
 
@@ -764,9 +781,9 @@ class CanvasRendererCTX:
         text: str,
         pos: Tuple[float, float],
         font: Optional[wx.Font] = None,
-        txt_colour=(255, 255, 255),
-        bg_colour=(128, 128, 128, 128),
-        border=5,
+        txt_colour: Tuple[int, int, int] = (255, 255, 255),
+        bg_colour: Tuple[int, int, int, int] = (128, 128, 128, 128),
+        border: int = 5,
     ) -> Tuple[float, float, int, int]:
         """
         Draw text inside a text box.
@@ -804,7 +821,14 @@ class CanvasRendererCTX:
 
         return px, py, cw, ch
 
-    def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2) -> None:
+    def draw_arc(
+        self,
+        center: Tuple[int, int],
+        p0: Tuple[int, int],
+        p1: Tuple[int, int],
+        line_colour: Tuple[int, int, int, int] = (255, 0, 0, 128),
+        width: int = 2,
+    ) -> None:
         """
         Draw an arc passing in p0 and p1 centered at center.
 
@@ -849,12 +873,12 @@ class CanvasRendererCTX:
 
     def draw_polygon(
         self,
-        points,
+        points: List[Tuple[float, float]],
         fill: bool = True,
-        closed=False,
-        line_colour=(255, 255, 255, 255),
-        fill_colour=(255, 255, 255, 255),
-        width=2,
+        closed: bool = False,
+        line_colour: Tuple[int, int, int, int] = (255, 255, 255, 255),
+        fill_colour: Tuple[int, int, int, int] = (255, 255, 255, 255),
+        width: int = 2,
     ) -> Optional[wx.GraphicsPath]:
         if self.gc is None:
             return None
@@ -885,9 +909,9 @@ class CanvasRendererCTX:
 
 
 class CanvasHandlerBase:
-    def __init__(self, parent):
+    def __init__(self, parent: "CanvasHandlerBase"):
         self.parent = parent
-        self.children = []
+        self.children: List[CanvasHandlerBase] = []
         self.layer = 0
         self._visible = True
 
@@ -901,19 +925,21 @@ class CanvasHandlerBase:
         for child in self.children:
             child.visible = value
 
-    def _3d_to_2d(self, renderer, pos) -> Tuple[float, float]:
+    def _3d_to_2d(
+        self, renderer: "vtkRenderer", pos: Tuple[float, float, float]
+    ) -> Tuple[float, float]:
         coord = vtkCoordinate()
         coord.SetValue(pos)
         px, py = coord.GetComputedDoubleDisplayValue(renderer)
         return px, py
 
-    def add_child(self, child):
+    def add_child(self, child: "CanvasHandlerBase") -> None:
         self.children.append(child)
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
         pass
 
-    def is_over(self, x, y) -> Self | None:
+    def is_over(self, x: int, y: int) -> Optional[Self]:
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             return self
@@ -923,8 +949,8 @@ class CanvasHandlerBase:
 class TextBox(CanvasHandlerBase):
     def __init__(
         self,
-        parent,
-        text,
+        parent: CanvasHandlerBase,
+        text: str,
         position=(0, 0, 0),
         text_colour=(0, 0, 0, 255),
         box_colour=(255, 255, 255, 255),
@@ -945,7 +971,7 @@ class TextBox(CanvasHandlerBase):
 
         self._last_position = (0, 0, 0)
 
-    def set_text(self, text):
+    def set_text(self, text: str) -> None:
         self.text = text
 
     def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: CanvasRendererCTX) -> None:
@@ -961,7 +987,7 @@ class TextBox(CanvasHandlerBase):
 
             self.bbox = (x, y - h, x + w, y)
 
-    def is_over(self, x: float, y: float) -> Self | None:
+    def is_over(self, x: int, y: int) -> Optional[Self]:
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             return self
@@ -995,7 +1021,7 @@ class TextBox(CanvasHandlerBase):
 class CircleHandler(CanvasHandlerBase):
     def __init__(
         self,
-        parent,
+        parent: CanvasHandlerBase,
         position,
         radius=5,
         line_colour: Tuple[int, int, int, int] = (255, 255, 255, 255),
@@ -1137,7 +1163,7 @@ class Polygon(CanvasHandlerBase):
             for handler in self.handlers:
                 self.points.append(handler.position)
 
-    def is_over(self, x, y) -> Self | None:
+    def is_over(self, x: int, y: int) -> Optional[Self]:
         if self.closed and self._path and self._path.Contains(x, -y):
             return self
 
@@ -1239,16 +1265,16 @@ class Polygon(CanvasHandlerBase):
 class Ellipse(CanvasHandlerBase):
     def __init__(
         self,
-        parent,
-        center,
-        point1,
-        point2,
-        fill=True,
-        line_colour=(255, 255, 255, 255),
-        fill_colour=(255, 255, 255, 128),
-        width=2,
-        interactive=True,
-        is_3d=True,
+        parent: CanvasHandlerBase,
+        center: Tuple[float, float, float],
+        point1: Tuple[float, float, float],
+        point2: Tuple[float, float, float],
+        fill: bool = True,
+        line_colour: Tuple[int, int, int, int] = (255, 255, 255, 255),
+        fill_colour: Tuple[int, int, int, int] = (255, 255, 255, 128),
+        width: int = 2,
+        interactive: bool = True,
+        is_3d: bool = True,
     ):
         super().__init__(parent)
 
@@ -1371,7 +1397,7 @@ class Ellipse(CanvasHandlerBase):
         #  self.interactive = False
         pass
 
-    def is_over(self, x: float, y: float) -> Self | None:
+    def is_over(self, x: float, y: float) -> Optional[Self]:
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             return self

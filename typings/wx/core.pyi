@@ -28,7 +28,7 @@ import sys as _sys
 
 import numpy as np
 
-from .type_defs import Coord, EventType, PolygonFillMode, SystemFont
+from .type_defs import ColourType, Coord, EventType, PenCap, PenStyle, PolygonFillMode, SystemFont
 
 # Load version numbers from __version__ and some other initialization tasks...
 if "wxEVT_NULL" in dir():
@@ -12159,7 +12159,7 @@ class PenInfo:
         Join(join) -> PenInfo
         """
 
-    def Cap(self, cap):
+    def Cap(self, cap: PenCap) -> PenInfo:
         """
         Cap(cap) -> PenInfo
         """
@@ -12205,7 +12205,7 @@ class PenInfo:
         GetJoin() -> PenJoin
         """
 
-    def GetCap(self):
+    def GetCap(self) -> PenCap:
         """
         GetCap() -> PenCap
         """
@@ -12236,8 +12236,8 @@ class Pen(GDIObject):
 
     A pen is a drawing tool for drawing outlines.
     """
-
-    def __init__(self, *args, **kw):
+    @overload
+    def __init__(self):
         """
         Pen()
         Pen(info)
@@ -12246,7 +12246,10 @@ class Pen(GDIObject):
 
         A pen is a drawing tool for drawing outlines.
         """
-
+    @overload
+    def __init__(self, info: PenInfo): ...
+    @overload
+    def __init__(self, colour: Colour, width: int = 1, style: PenStyle = PENSTYLE_SOLID): ...
     def SetColour(self, *args, **kw):
         """
         SetColour(colour)
@@ -12255,7 +12258,7 @@ class Pen(GDIObject):
         The pen's colour is changed to the given colour.
         """
 
-    def GetCap(self):
+    def GetCap(self) -> PenCap:
         """
         GetCap() -> PenCap
 
@@ -12334,7 +12337,7 @@ class Pen(GDIObject):
         Returns true if the pen is transparent.
         """
 
-    def SetCap(self, capStyle):
+    def SetCap(self, capStyle: PenCap) -> None:
         """
         SetCap(capStyle)
 
@@ -15188,7 +15191,7 @@ class GraphicsPenInfo:
         GetJoin() -> PenJoin
         """
 
-    def GetCap(self):
+    def GetCap(self) -> PenCap:
         """
         GetCap() -> PenCap
         """
@@ -15423,16 +15426,8 @@ class GraphicsContext(GraphicsObject):
         y1: float,
         x2: float,
         y2: float,
-        c1: tuple[int, int, int]
-        | tuple[int, int, int, int]
-        | list[int]
-        | Colour
-        | tuple[float, float, float, float],
-        c2: tuple[int, int, int]
-        | tuple[int, int, int, int]
-        | list[int]
-        | Colour
-        | tuple[float, float, float, float],
+        c1: ColourType,
+        c2: ColourType,
         matrix: GraphicsMatrix = NullGraphicsMatrix,
     ) -> GraphicsBrush:
         """
@@ -15596,11 +15591,7 @@ class GraphicsContext(GraphicsObject):
     def CreateFont(
         self,
         font: Font,
-        col: tuple[int, int, int]
-        | tuple[int, int, int, int]
-        | list[int]
-        | Colour
-        | tuple[float, float, float, float] = BLACK,
+        col: ColourType = BLACK,
     ) -> GraphicsFont:
         """
         CreateFont(font, col=BLACK) -> GraphicsFont
@@ -15614,20 +15605,18 @@ class GraphicsContext(GraphicsObject):
         sizeInPixels: float,
         facename: str,
         flags: int = FONTFLAG_DEFAULT,
-        col: tuple[int, int, int]
-        | tuple[int, int, int, int]
-        | list[int]
-        | Colour
-        | tuple[float, float, float, float] = BLACK,
+        col: ColourType = BLACK,
     ) -> GraphicsFont: ...
-    def SetFont(self, *args, **kw):
+    @overload
+    def SetFont(self, font: Font, colour: Colour) -> None:
         """
         SetFont(font, colour)
         SetFont(font)
 
         Sets the font for drawing text.
         """
-
+    @overload
+    def SetFont(self, font: GraphicsFont) -> None: ...
     def GetPartialTextExtents(self, text):
         """
         GetPartialTextExtents(text) -> ArrayDouble
@@ -16108,15 +16097,20 @@ class GraphicsPath(GraphicsObject):
     """
     A wxGraphicsPath is a native representation of a geometric path.
     """
-
-    def AddArc(self, *args, **kw):
+    @overload
+    def AddArc(
+        self, x: float, y: float, r: float, startAngle: float, endAngle: float, clockwise: bool
+    ) -> None:
         """
         AddArc(x, y, r, startAngle, endAngle, clockwise)
         AddArc(c, r, startAngle, endAngle, clockwise)
 
         Adds an arc of a circle.
         """
-
+    @overload
+    def AddArc(
+        self, c: Point2D, r: float, startAngle: float, endAngle: float, clockwise: bool
+    ) -> None: ...
     def AddArcToPoint(self, x1, y1, x2, y2, r):
         """
         AddArcToPoint(x1, y1, x2, y2, r)
@@ -16126,7 +16120,7 @@ class GraphicsPath(GraphicsObject):
         y1) and (x2, y2).
         """
 
-    def AddCircle(self, x, y, r):
+    def AddCircle(self, x: float, y: float, r: float) -> None:
         """
         AddCircle(x, y, r)
 
@@ -16142,7 +16136,7 @@ class GraphicsPath(GraphicsObject):
         points and an end point.
         """
 
-    def AddEllipse(self, x, y, w, h):
+    def AddEllipse(self, x: float, y: float, w: float, h: float) -> None:
         """
         AddEllipse(x, y, w, h)
 

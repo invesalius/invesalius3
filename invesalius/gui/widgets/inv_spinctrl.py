@@ -39,10 +39,9 @@ class InvSpinCtrl(wx.Panel):
         super().__init__(parent, id, size=size)
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
+        self._spinbtn: Optional[wx.SpinButton] = None
         if spin_button and wx.Platform != "__WXGTK__":
-            self._spinbtn: Optional[wx.SpinButton] = wx.SpinButton(self, -1)
-        else:
-            self._spinbtn = None
+            self._spinbtn = wx.SpinButton(self, -1)
 
         self._value = 0
         self._last_value = 0
@@ -193,10 +192,9 @@ class InvFloatSpinCtrl(wx.Panel):
         super().__init__(parent, id, size=size)
 
         self._textctrl = wx.TextCtrl(self, -1, style=style)
+        self._spinbtn: Optional[wx.SpinButton] = None
         if spin_button and wx.Platform != "__WXGTK__":
-            self._spinbtn: Optional[wx.SpinButton] = wx.SpinButton(self, -1)
-        else:
-            self._spinbtn = None
+            self._spinbtn = wx.SpinButton(self, -1)
 
         self._digits = digits
         self._dec_context = decimal.Context(prec=digits)
