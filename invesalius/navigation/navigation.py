@@ -139,7 +139,10 @@ class UpdateNavigationScene(threading.Thread):
             got_coords = False
             object_visible_flag = False
             try:
-                coord, marker_visibilities, m_img, view_obj = self.coord_queue.get_nowait()
+                coords, marker_visibilities, m_imgs, view_obj = self.coord_queue.get_nowait()
+                coord = coords[1] # main coil
+                m_img = m_imgs[1]
+
                 got_coords = True
                 object_visible_flag = marker_visibilities[2]
 
@@ -215,6 +218,9 @@ class UpdateNavigationScene(threading.Thread):
                         "Update volume viewer pointer",
                         position=[coord[0], -coord[1], coord[2]],
                     )
+                
+                wx.CallAfter(Publisher.sendMessage, 'Update probe pose', m_img=m_imgs[0], coord=coords[0])
+                
                 # Render the volume viewer and the slice viewers.
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 wx.CallAfter(Publisher.sendMessage, "Update slice viewer")
