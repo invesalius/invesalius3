@@ -1045,7 +1045,7 @@ class StylusPage(wx.Panel):
         pass #Publisher.subscribe(self.OnCloseProject, 'Remove object data')
 
     def onRecord(self, evt):
-        marker_visibilities, _, coord_raw = self.tracker.GetTrackerCoordinates(ref_mode_id=0, n_samples=1) #ref_mode is irrelevant here
+        marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(ref_mode_id=0, n_samples=1)
         if marker_visibilities[0] and marker_visibilities[1]: #if probe and head are visible
             self.navigation.SetStylusOrientation(coord_raw)
             return True
