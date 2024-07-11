@@ -183,30 +183,11 @@ def corregistrate_probe(m_change, r_change, coord_raw, ref_mode_id):
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
 
-    # Manual method:
-    # Hold stylus in line with head (pointing up)
-    # Save the euler-angle from the print statement below into up_trk:
-    print(f"up_trk angles: {np.degrees(tr.euler_from_matrix(m_probe_ref,axes='rzyx'))}")
-    # this gets the angle of stylus relative to head
-
-    # orientation 'stylus pointing up along head' in tracker system 
-    up_trk = tr.euler_matrix(*np.radians([90.0, 6, 18.0]), axes='rzyx')[:3,:3] 
-    
-    # orientation 'stylus pointing up along head' in vtk-coordinate system
-    up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
-    
-    # Rotation or change of basis matrix from tracker to VTK coordinate system
-    R = up_vtk @ np.linalg.inv(up_trk)
-
-    # rotate new orientation to vtk space
-    r_img = R @ m_probe_ref[:3,:3]
-    
-
     # translate m_probe_ref from tracker to image space
     m_img = m_change @ m_probe_ref 
    
     # rotate m_probe_ref from tracker to image space 
-    #r_img = r_change @ m_probe_ref[:3,:3]
+    r_img = r_change @ m_probe_ref[:3,:3]
     m_img[:3, :3] = r_img[:3, :3]
 
     # compute rotation angles
