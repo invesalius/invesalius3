@@ -246,6 +246,7 @@ class Navigation(metaclass=Singleton):
         self.object_registration = None
         self.track_obj = False
         self.m_change = None
+        self.r_change = None
         self.obj_data = None
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -411,6 +412,29 @@ class Navigation(metaclass=Singleton):
             self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T, shear=False, scale=False
         )
 
+    def SetStylusOrientation(self, coord_raw):
+        if self.m_change is not None:
+            m_probe = dcr.compute_marker_transformation(coord_raw, 0) 
+
+            # transform probe to reference system if dynamic ref_mode
+            if self.ref_mode_id:
+                up_trk = dcr.object_to_reference(coord_raw, m_probe)[:3, :3]
+            else:
+                up_trk = m_probe[:3, :3]
+            # up_trk is orientation 'stylus pointing up along head' in tracker system 
+            
+            # orientation 'stylus pointing up along head' in vtk-coordinate system
+            up_vtk = np.eye(3)
+            up_vtk[:, [1,2]] = up_vtk[:, [2,1]] #swap last 2 columns
+            up_vtk[:, 2] *= -1  # flip last column
+
+            # above is identical to:
+            #up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
+
+            # Rotation from tracker to VTK coordinate system
+            self.r_change = up_vtk @ np.linalg.inv(up_trk)
+        
+
     def StartNavigation(self, tracker, icp):
         # initialize jobs list
         jobs_list = []
@@ -448,7 +472,7 @@ class Navigation(metaclass=Singleton):
                 # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
                 obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
 
-                coreg_data = [self.m_change, obj_ref_mode]
+                coreg_data = [self.r_change, self.m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
                     coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
@@ -483,7 +507,7 @@ class Navigation(metaclass=Singleton):
                     )
                 )
         else:
-            coreg_data = (self.m_change, 0)
+            coreg_data = (self.r_change, self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
             jobs_list.append(
                 dcr.CoordinateCorregistrateNoObject(
