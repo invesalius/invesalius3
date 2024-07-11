@@ -167,7 +167,7 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
 
     return m_target_in_tracker
 
-def corregistrate_probe(m_change, coord_raw, ref_mode_id):
+def corregistrate_probe(m_change, r_change, coord_raw, ref_mode_id):
     m_probe = compute_marker_transformation(coord_raw, 0) 
     #print(f"raw angles: {np.degrees(tr.euler_from_matrix(m_probe,axes='rzyx'))}")
 
@@ -197,9 +197,13 @@ def corregistrate_probe(m_change, coord_raw, ref_mode_id):
 
     # rotate new orientation to vtk space
     r_img = R @ m_probe_ref[:3,:3]
+    
 
-    # translate and rotate m_probe_ref from tracker to image space
+    # translate m_probe_ref from tracker to image space
     m_img = m_change @ m_probe_ref 
+   
+    # rotate m_probe_ref from tracker to image space 
+    #r_img = r_change @ m_probe_ref[:3,:3]
     m_img[:3, :3] = r_img[:3, :3]
 
     # compute rotation angles
@@ -359,10 +363,11 @@ class CoordinateCorregistrate(threading.Thread):
 
                 # print(f"Set the coordinate")
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
-                
-                m_change = coreg_data[0] 
-                coords, m_imgs = corregistrate_probe(m_change, coord_raw, self.ref_mode_id)
-                coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+
+                #m_change = coreg_data[1]
+                #r_change = coreg_data[0] # currently used for probe only 
+                coords, m_imgs = corregistrate_probe(coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id)
+                coord, m_img = corregistrate_dynamic(coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
                 #LUKATODO: rename to coord_maincoil or something   
                 coords = np.stack((coords, coord))
                 m_imgs = np.stack((m_imgs, m_img))
@@ -439,9 +444,10 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 #print(self.icp, self.m_icp)
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
-                m_change = coreg_data[0]
-                coords, m_imgs = corregistrate_probe(m_change, coord_raw, self.ref_mode_id)
-                coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+                #m_change = coreg_data[1]
+                #r_change = coreg_data[0] # currently used for probe only 
+                coords, m_imgs = corregistrate_probe(coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id)
+                coord, m_img = corregistrate_dynamic(coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
 
                 coords = np.stack((coords, coord))
                 m_imgs = np.stack((m_imgs, m_img))
