@@ -327,6 +327,7 @@ class CoregistrationPanel(wx.Panel):
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
         book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
         book.AddPage(RefinePage(book, nav_hub), _("Refine"))
+        book.AddPage(StylusPage(book, nav_hub), _("Stylus"))
         book.AddPage(StimulatorPage(book, nav_hub), _("TMS Coil"))
 
         book.SetSelection(0)
@@ -342,6 +343,7 @@ class CoregistrationPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self._FoldTracker, "Move to tracker page")
         Publisher.subscribe(self._FoldRefine, "Move to refine page")
+        Publisher.subscribe(self._FoldStylus, "Move to stylus page")
         Publisher.subscribe(self._FoldStimulator, "Move to stimulator page")
         Publisher.subscribe(self._FoldImage, "Move to image page")
 
@@ -363,7 +365,7 @@ class CoregistrationPanel(wx.Panel):
             Publisher.sendMessage("Update UI for refine tab")
 
         # new page validations
-        if (old_page == 1) and (new_page == 2 or new_page == 3):
+        if (old_page == 1) and (new_page > 1):
             # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
                 self.book.SetSelection(1)
@@ -380,8 +382,11 @@ class CoregistrationPanel(wx.Panel):
     def _FoldRefine(self):
         self.book.SetSelection(2)
 
-    def _FoldStimulator(self):
+    def _FoldStylus(self):
         self.book.SetSelection(3)
+
+    def _FoldStimulator(self):
+        self.book.SetSelection(4)
 
 
 class ImagePage(wx.Panel):
@@ -997,13 +1002,70 @@ class RefinePage(wx.Panel):
         Publisher.sendMessage("Move to tracker page")
 
     def OnNext(self, evt):
-        Publisher.sendMessage("Move to stimulator page")
+        Publisher.sendMessage('Move to stylus page')
 
     def OnRefine(self, evt):
         self.icp.RegisterICP(self.navigation, self.tracker)
         if self.icp.use_icp:
             self.OnUpdateUI()
 
+class StylusPage(wx.Panel):
+    def __init__(self, parent, nav_hub):
+
+        wx.Panel.__init__(self, parent)
+        self.navigation = nav_hub.navigation
+        self.tracker = nav_hub.tracker
+
+        border = wx.FlexGridSizer(1,3, 5)
+        
+        lbl = wx.StaticText(self, -1, _("Calibrate stylus with head"))
+        lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.lbl = lbl
+
+        lbl_rec = wx.StaticText(self, -1, _("Calibrate stylus with physical head"))
+        btn_rec = wx.Button(self, -1, _("Record"))
+        btn_rec.SetToolTip("Record stylus orientation relative to head")
+        btn_rec.Bind(wx.EVT_BUTTON, self.onRecord)
+
+        border.AddMany([
+            (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
+            (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5),
+            (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
+        ])
+
+        next_button = wx.Button(self, label="Next")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(next_button)
+        
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany([
+            (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
+            (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
+        ])
+        
+        self.SetSizerAndFit(main_sizer)
+        self.Layout()
+        self.__bind_events()
+
+    def __bind_events(self):
+        pass #Publisher.subscribe(self.OnCloseProject, 'Remove object data')
+
+    def onRecord(self, evt):
+        marker_visibilities, _, coord_raw = self.tracker.GetTrackerCoordinates(ref_mode_id=0, n_samples=1) #ref_mode is irrelevant here
+        if marker_visibilities[0] and marker_visibilities[1]: #if probe and head are visible
+            self.navigation.SetStylusOrientation(coord_raw)
+            return True
+        else:
+            wx.MessageBox(_("Probe or head not visible to tracker!"), _("InVesalius 3"))            
+            return False
+
+    def OnBack(self, evt):
+        Publisher.sendMessage('Move to refine page')
+ 
+    def OnNext(self, evt):
+        Publisher.sendMessage('Move to stimulator page')
 
 class StimulatorPage(wx.Panel):
     def __init__(self, parent, nav_hub):
