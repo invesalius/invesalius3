@@ -183,6 +183,8 @@ class Viewer(wx.Panel):
         ren = vtkRenderer()
         self.ren = ren
 
+        self.default_pass = self.ren.GetPass()
+
         # Render the target guide in a separate renderer, so that it can be
         # rendered on top of the volume.
         self.target_guide_renderer = vtkRenderer()
@@ -390,10 +392,10 @@ class Viewer(wx.Panel):
         sequence = vtkSequencePass()
         sequence.SetPasses(collection)
 
-        camP = vtkCameraPass()
-        camP.SetDelegatePass(sequence)
+        self.camP = vtkCameraPass()
+        self.camP.SetDelegatePass(sequence)
 
-        self.ren.SetPass(camP)
+        # self.ren.SetPass(camP)
 
     def UpdateCanvas(self):
         if self.canvas is not None:
@@ -441,6 +443,7 @@ class Viewer(wx.Panel):
         # Publisher.subscribe(self.OnShowSurface, 'Show surface')
         Publisher.subscribe(self.UpdateRender, "Render volume viewer")
         Publisher.subscribe(self.ChangeBackgroundColour, "Change volume viewer background colour")
+        Publisher.subscribe(self.ActivateSSAO, "Activate SSAO render")
 
         # Related to raycasting
         Publisher.subscribe(self.LoadVolume, "Load volume into viewer")
@@ -650,9 +653,15 @@ class Viewer(wx.Panel):
             self.pointer_actor = None
         self.UpdateRender()
 
+    def ActivateSSAO(self, activated):
+        if activated:
+            self.ren.SetPass(self.camP)
+        else:
+            self.ren.SetPass(self.default_pass)
+        self.UpdateRender()
+
     def OnSensors(self, marker_visibilities):
         probe_id, ref_id, obj_id = marker_visibilities
-
         if not self.probe:
             self.probe = True
             self.CreateSensorID()

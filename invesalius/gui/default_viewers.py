@@ -497,8 +497,7 @@ class VolumeToolPanel(wx.Panel):
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonSSAO(self, evt):
-        print(self.button_SSAO.IsPressed())
-        Publisher.sendMessage("Activate SSAO render")
+        Publisher.sendMessage("Activate SSAO render", activated=self.button_SSAO.IsPressed())
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
