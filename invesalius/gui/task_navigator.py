@@ -1003,38 +1003,50 @@ class RefinePage(wx.Panel):
 
 class StylusPage(wx.Panel):
     def __init__(self, parent, nav_hub):
-
         wx.Panel.__init__(self, parent)
         self.navigation = nav_hub.navigation
         self.tracker = nav_hub.tracker
 
         border = wx.FlexGridSizer(1,3, 5)
-        
+        self.border = border
+
+        self.success = False
+
         lbl = wx.StaticText(self, -1, _("Calibrate stylus with head"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
+        self.help_img = wx.Image(os.path.join(inv_paths.ICON_DIR,"align.png"), wx.BITMAP_TYPE_ANY)
+        
+        #first show help in grayscale. when record successful: make it green
+        self.help = wx.GenericStaticBitmap(self, -1, self.help_img.ConvertToGreyscale(), (10, 5), (self.help_img.GetWidth(), self.help_img.GetHeight()))
 
-        lbl_rec = wx.StaticText(self, -1, _("Calibrate stylus with physical head"))
+        lbl_rec = wx.StaticText(self, -1, _("Point stylus up relative to head, like so:"))
         btn_rec = wx.Button(self, -1, _("Record"))
         btn_rec.SetToolTip("Record stylus orientation relative to head")
         btn_rec.Bind(wx.EVT_BUTTON, self.onRecord)
+        
+        self.btn_rec = btn_rec
 
-        border.AddMany([
+        self.border.AddMany([
             (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
             (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5),
+            (self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5),      
             (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
         ])
-
+        
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(back_button)
         bottom_sizer.Add(next_button)
-        
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
             (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
-            (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
+            (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 20)
         ])
         
         self.SetSizerAndFit(main_sizer)
@@ -1048,6 +1060,13 @@ class StylusPage(wx.Panel):
         marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(ref_mode_id=0, n_samples=1)
         if marker_visibilities[0] and marker_visibilities[1]: #if probe and head are visible
             self.navigation.SetStylusOrientation(coord_raw)
+            if not self.success: #only show green first time
+                self.success = True
+                #show green for success
+                self.help.Destroy()
+                self.help = wx.GenericStaticBitmap(self, -1, self.help_img.ConvertToBitmap(), (10, 5), (self.help_img.GetWidth(), self.help_img.GetHeight()))
+                self.border.Insert(2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+                self.Layout()
             return True
         else:
             wx.MessageBox(_("Probe or head not visible to tracker!"), _("InVesalius 3"))            
@@ -1304,7 +1323,7 @@ class ControlPanel(wx.Panel):
         self.show_coil_button = show_coil_button
 
         # Toggle button for showing probe during navigation
-        tooltip = _("Show probe") #LUKATODO: get proper png
+        tooltip = _("Show probe")
         BMP_SHOW_PROBE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG)
         show_probe_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
         show_probe_button.SetBackgroundColour(GREY_COLOR)

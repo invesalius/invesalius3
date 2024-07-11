@@ -421,15 +421,10 @@ class Navigation(metaclass=Singleton):
                 up_trk = dcr.object_to_reference(coord_raw, m_probe)[:3, :3]
             else:
                 up_trk = m_probe[:3, :3]
-            # up_trk is orientation 'stylus pointing up along head' in tracker system 
             
-            # orientation 'stylus pointing up along head' in vtk-coordinate system
-            up_vtk = np.eye(3)
-            up_vtk[:, [1,2]] = up_vtk[:, [2,1]] #swap last 2 columns
-            up_vtk[:, 2] *= -1  # flip last column
-
-            # above is identical to:
-            #up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
+            # up_trk: orientation 'stylus pointing up along head' in tracker space 
+            # up_vtk: orientation 'stylus pointing up along head' in vtk space
+            up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
 
             # Rotation from tracker to VTK coordinate system
             self.r_change = up_vtk @ np.linalg.inv(up_trk)
