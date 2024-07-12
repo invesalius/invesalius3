@@ -343,6 +343,11 @@ class Navigation(metaclass=Singleton):
             object_name,
         )
 
+        # Try to load stylus orientation data
+        stylus_data = session.GetConfig('navigation-stylus')
+        if stylus_data is not None:
+            self.r_change = np.array(stylus_data['r_change'])
+
     def CoilAtTarget(self, state):
         self.coil_at_target = state
 
@@ -426,6 +431,9 @@ class Navigation(metaclass=Singleton):
 
             # Rotation from tracker to VTK coordinate system
             self.r_change = up_vtk @ np.linalg.inv(up_trk)
+            return True
+        else:
+            return False
         
 
     def StartNavigation(self, tracker, icp):
