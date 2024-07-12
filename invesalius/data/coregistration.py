@@ -168,8 +168,11 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     return m_target_in_tracker
 
 def corregistrate_probe(m_change, r_change, coord_raw, ref_mode_id):
+    if r_change is None:
+        #utils.debug("STYLUS ORIENTATION NOT DEFINED!")
+        r_change = np.eye(3)
+
     m_probe = compute_marker_transformation(coord_raw, 0) 
-    #print(f"raw angles: {np.degrees(tr.euler_from_matrix(m_probe,axes='rzyx'))}")
 
     # transform probe to reference system if dynamic ref_mode
     if ref_mode_id:
@@ -348,7 +351,7 @@ class CoordinateCorregistrate(threading.Thread):
                 #m_change = coreg_data[1]
                 #r_change = coreg_data[0] # currently used for probe only 
                 coords, m_imgs = corregistrate_probe(coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id)
-                coord, m_img = corregistrate_dynamic(coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+                coord, m_img = corregistrate_object_dynamic(coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
                 #LUKATODO: rename to coord_maincoil or something   
                 coords = np.stack((coords, coord))
                 m_imgs = np.stack((m_imgs, m_img))
@@ -428,6 +431,7 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 #m_change = coreg_data[1]
                 #r_change = coreg_data[0] # currently used for probe only 
                 coords, m_imgs = corregistrate_probe(coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id)
+                print(f"COREGDATA: {coreg_data}")
                 coord, m_img = corregistrate_dynamic(coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
 
                 coords = np.stack((coords, coord))
