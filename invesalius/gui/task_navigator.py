@@ -1028,10 +1028,10 @@ class StylusPage(wx.Panel):
         self.btn_rec = btn_rec
 
         self.border.AddMany([
-            (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
-            (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5),
-            (self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5),      
-            (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
+            (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
+            (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
+            (self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1),      
+            (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 1)
         ])
         
         back_button = wx.Button(self, label="Back")
@@ -1045,8 +1045,8 @@ class StylusPage(wx.Panel):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
-            (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
-            (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 20)
+            (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 1),
+            (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 1)
         ])
         
         self.SetSizerAndFit(main_sizer)
@@ -1065,7 +1065,7 @@ class StylusPage(wx.Panel):
                 #show green for success
                 self.help.Destroy()
                 self.help = wx.GenericStaticBitmap(self, -1, self.help_img.ConvertToBitmap(), (10, 5), (self.help_img.GetWidth(), self.help_img.GetHeight()))
-                self.border.Insert(2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+                self.border.Insert(2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
                 self.Layout()
             return True
         else:
