@@ -17,28 +17,18 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-try:
-    import configparser as ConfigParser
-except ImportError:
-    import ConfigParser
 
 import codecs
-import collections
-import datetime
+import configparser as ConfigParser
 import json
 import os
-import shutil
-import sys
-import time
 from json.decoder import JSONDecodeError
 from random import randint
-from threading import Thread
-
-import wx
+from typing import Any, Dict, List, Tuple, Union
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton, debug, decode, deep_merge_dict
+from invesalius.utils import Singleton, debug, deep_merge_dict
 
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
@@ -54,7 +44,7 @@ class Session(metaclass=Singleton):
     def __init__(self):
         self.temp_item = False
         self.mask_3d_preview = False
-        self._config = {
+        self._config: Dict[str, Union[int, str, bool, List[Tuple[str, str]]]] = {
             "project_status": 3,
             "language": "",
             "auto_reload_preview": False,
@@ -68,10 +58,10 @@ class Session(metaclass=Singleton):
         self._exited_successfully_last_time = not self._ReadState()
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self._Exit, "Exit session")
 
-    def CreateConfig(self):
+    def CreateConfig(self) -> None:
         import invesalius.constants as const
 
         self._config = {
@@ -98,46 +88,46 @@ class Session(metaclass=Singleton):
         }
         self.WriteConfigFile()
 
-    def CreateState(self):
-        self._state = {}
+    def CreateState(self) -> None:
+        self._state: Dict[str, Any] = {}
         self.WriteStateFile()
 
-    def DeleteStateFile(self):
+    def DeleteStateFile(self) -> None:
         if os.path.exists(STATE_PATH):
             os.remove(STATE_PATH)
             print("Successfully deleted state file.")
         else:
             print("State file does not exist.")
 
-    def ExitedSuccessfullyLastTime(self):
+    def ExitedSuccessfullyLastTime(self) -> bool:
         return self._exited_successfully_last_time
 
-    def SetConfig(self, key, value):
+    def SetConfig(self, key: str, value: Any) -> None:
         self._config[key] = value
         self.WriteConfigFile()
 
-    def GetConfig(self, key, default_value=None):
+    def GetConfig(self, key: str, default_value: Any = None) -> Any:
         if key in self._config:
             return self._config[key]
         else:
             return default_value
 
-    def SetState(self, key, value):
+    def SetState(self, key: str, value: Any) -> None:
         self._state[key] = value
         self.WriteStateFile()
 
-    def GetState(self, key, default_value=None):
+    def GetState(self, key: str, default_value: Any = None) -> Any:
         if key in self._state:
             return self._state[key]
         else:
             return default_value
 
-    def IsOpen(self):
+    def IsOpen(self) -> bool:
         import invesalius.constants as const
 
         return self.GetConfig("project_status") != const.PROJECT_STATUS_CLOSED
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         import invesalius.constants as const
 
         debug("Session.CloseProject")
@@ -146,7 +136,7 @@ class Session(metaclass=Singleton):
         # self.mode = const.MODE_RP
         self.temp_item = False
 
-    def SaveProject(self, path=()):
+    def SaveProject(self, path: Union[Tuple[()], Tuple[str, str]] = ()) -> None:
         import invesalius.constants as const
 
         debug("Session.SaveProject")
@@ -219,7 +209,7 @@ class Session(metaclass=Singleton):
         self.SetConfig("recent_projects", recent_projects[: const.RECENT_PROJECTS_MAXIMUM])
 
     def _read_config_from_json(self, json_filename):
-        with open(json_filename, "r") as config_file:
+        with open(json_filename) as config_file:
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
 
@@ -238,7 +228,7 @@ class Session(metaclass=Singleton):
         debug_efield = config.getboolean("session", "debug_efield")
         language = config.get("session", "language")
         last_dicom_folder = config.get("paths", "last_dicom_folder")
-        project_status = config.getint("session", "status")
+        # project_status = config.getint("session", "status")
         surface_interpolation = config.getint("session", "surface_interpolation")
         slice_interpolation = config.getint("session", "slice_interpolation")
         rendering = config.getint("session", "rendering")
@@ -279,30 +269,30 @@ class Session(metaclass=Singleton):
 
     # TODO: Make also this function private so that it is run when the class constructor is run.
     #   (Compare to _ReadState below.)
-    def ReadConfig(self):
+    def ReadConfig(self) -> bool:
         try:
             self._read_config_from_json(CONFIG_PATH)
         except Exception as e1:
-            debug(e1)
+            debug(str(e1))
             try:
                 self._read_config_from_ini(OLD_CONFIG_PATH)
             except Exception as e2:
-                debug(e2)
+                debug(str(e2))
                 return False
         self.WriteConfigFile()
         return True
 
-    def _ReadState(self):
+    def _ReadState(self) -> bool:
         success = False
         if os.path.exists(STATE_PATH):
             print("Restoring a previous state...")
 
-            state_file = open(STATE_PATH, "r")
+            state_file = open(STATE_PATH)
             try:
                 self._state = json.load(state_file)
                 success = True
 
-            except JSONDecodeError as e:
+            except JSONDecodeError:
                 print("State file is corrupted. Deleting...")
 
                 state_file.close()
@@ -313,6 +303,6 @@ class Session(metaclass=Singleton):
 
         return success
 
-    def _Exit(self):
+    def _Exit(self) -> None:
         self.CloseProject()
         self.DeleteStateFile()

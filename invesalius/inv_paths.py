@@ -51,7 +51,9 @@ MODELS_DIR = INV_TOP_DIR.joinpath("ai")
 LOCALE_DIR = INV_TOP_DIR.joinpath("locale")
 
 # Inside the windows executable
-if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):
+if hasattr(sys, "frozen") and (
+    sys.frozen == "windows_exe" or sys.frozen == "console_exe"  # type: ignore
+):
     abs_path = INV_TOP_DIR.parent.resolve()
     ICON_DIR = abs_path.joinpath("icons")
     SAMPLE_DIR = INV_TOP_DIR.joinpath("samples")
