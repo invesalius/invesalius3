@@ -109,9 +109,9 @@ class CanvasRendererCTX:
         self._drawn: bool = False
         self._init_canvas()
 
-        self._over_obj = None
-        self._drag_obj = None
-        self._selected_obj = None
+        self._over_obj: Optional[CanvasObjects] = None
+        self._drag_obj: Optional[CanvasObjects] = None
+        self._selected_obj: Optional[CanvasObjects] = None
 
         self._callback_events: Dict[str, List[Callable]] = {
             "LeftButtonPressEvent": [],
@@ -130,18 +130,18 @@ class CanvasRendererCTX:
         iren.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.canvas_renderer.AddObserver("StartEvent", self.OnPaint)
 
-    def subscribe_event(self, event, callback) -> None:
+    def subscribe_event(self, event: str, callback: Callable) -> None:
         ref = WeakMethod(callback)
         self._callback_events[event].append(ref)
 
-    def unsubscribe_event(self, event, callback) -> None:
+    def unsubscribe_event(self, event: str, callback: Callable) -> None:
         for n, cb in enumerate(self._callback_events[event]):
             if cb() == callback:
                 print("removed")
                 self._callback_events[event].pop(n)
                 return
 
-    def propagate_event(self, root, event) -> None:
+    def propagate_event(self, root: Optional["CanvasObjects"], event: CanvasEvent) -> None:
         print("propagating", event.event_name, "from", root)
         node = root
         callback_name = f"on_{event.event_name}"
@@ -1097,7 +1097,7 @@ class Polygon(CanvasHandlerBase):
         self.children = []
 
         if points is None:
-            self.points = []
+            self.points: List[Union[Tuple[float, float], Tuple[float, float, float]]] = []
         else:
             self.points = points
 
@@ -1149,7 +1149,7 @@ class Polygon(CanvasHandlerBase):
         #  for handler in self.handlers:
         #  handler.draw_to_canvas(gc, canvas)
 
-    def append_point(self, point) -> None:
+    def append_point(self, point: Union[Tuple[float, float], Tuple[float, float]]) -> None:
         handler = CircleHandler(self, point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
         handler.layer = 1
         self.add_child(handler)

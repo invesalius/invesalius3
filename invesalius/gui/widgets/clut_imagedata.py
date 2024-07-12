@@ -1,8 +1,11 @@
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import wx
+
+if TYPE_CHECKING:
+    import numpy as np
 
 HISTOGRAM_LINE_COLOUR = (128, 128, 128)
 HISTOGRAM_FILL_COLOUR = (64, 64, 64)
@@ -51,7 +54,7 @@ class CLUTImageDataWidget(wx.Panel):
         self,
         parent: wx.Window,
         id: int,
-        histogram,
+        histogram: "np.ndarray",
         init: float,
         end: float,
         nodes: Optional[List[Node]] = None,

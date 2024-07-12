@@ -31,6 +31,8 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from typings.utils import SupportsGetItem
 
 FONT_COLOUR = (1, 1, 1)
@@ -344,7 +346,9 @@ class CLUTRaycastingWidget(wx.Panel):
                     return (i, j)
         return None
 
-    def distance_from_point_line(self, p1, p2, pc) -> numpy.floating[Any]:
+    def distance_from_point_line(
+        self, p1: Tuple[float, float], p2: Tuple[float, float], pc: Tuple[float, float]
+    ) -> numpy.floating[Any]:
         """
         Calculate the distance from point pc to a line formed by p1 and p2.
         """
@@ -737,7 +741,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.to_draw_points = 0
         self.Refresh()
 
-    def SetHistogramArray(self, h_array, range) -> None:
+    def SetHistogramArray(self, h_array: "np.ndarray", range: Tuple[float, float]) -> None:
         self.histogram_array = h_array
         self.Histogram.init = range[0]
         self.Histogram.end = range[1]
