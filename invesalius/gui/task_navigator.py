@@ -473,7 +473,7 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.UpdateImageCoordinates, "Set cross focal point")
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
         Publisher.subscribe(self._OnStateProject, "Enable state project")
-        Publisher.subscribe(self.StopRegistration, 'Stop image registration')
+        Publisher.subscribe(self.StopRegistration, "Stop image registration")
 
     def _OnStateProject(self, state):
         self.UpdateData()
@@ -604,7 +604,12 @@ class TrackerPage(wx.Panel):
         self.bg_bmp = GetBitMapForBackground()
 
         # Toggle buttons for image fiducials
-        self.fiducial_buttons = OrderedFiducialButtons(self, const.TRACKER_FIDUCIALS, self.tracker.IsTrackerFiducialSet, order=const.FIDUCIAL_REGISTRATION_ORDER)
+        self.fiducial_buttons = OrderedFiducialButtons(
+            self,
+            const.TRACKER_FIDUCIALS,
+            self.tracker.IsTrackerFiducialSet,
+            order=const.FIDUCIAL_REGISTRATION_ORDER,
+        )
         background = wx.StaticBitmap(self, -1, self.bg_bmp, (0, 0))
 
         for index, btn in enumerate(self.fiducial_buttons):
@@ -612,7 +617,7 @@ class TrackerPage(wx.Panel):
             btn.Disable()
 
         self.fiducial_buttons.Update()
-        
+
         register_button = wx.Button(self, label="Record Fiducial")
         register_button.Bind(wx.EVT_BUTTON, partial(self.OnRegister))
         register_button.Disable()
@@ -666,27 +671,33 @@ class TrackerPage(wx.Panel):
         )
 
         sizer = wx.GridBagSizer(5, 5)
-        sizer.Add(self.fiducial_buttons[1],
-                  wx.GBPosition(1, 0),
-                  span=wx.GBSpan(1, 2),
-                  flag=wx.ALIGN_CENTER_VERTICAL)
-        sizer.Add(self.fiducial_buttons[2],
-                  wx.GBPosition(0, 2),
-                  span=wx.GBSpan(1, 2),
-                  flag=wx.ALIGN_CENTER_HORIZONTAL)
-        sizer.Add(self.fiducial_buttons[0],
-                  wx.GBPosition(1, 3),
-                  span=wx.GBSpan(1, 2),
-                  flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(
+            self.fiducial_buttons[1],
+            wx.GBPosition(1, 0),
+            span=wx.GBSpan(1, 2),
+            flag=wx.ALIGN_CENTER_VERTICAL,
+        )
+        sizer.Add(
+            self.fiducial_buttons[2],
+            wx.GBPosition(0, 2),
+            span=wx.GBSpan(1, 2),
+            flag=wx.ALIGN_CENTER_HORIZONTAL,
+        )
+        sizer.Add(
+            self.fiducial_buttons[0],
+            wx.GBPosition(1, 3),
+            span=wx.GBSpan(1, 2),
+            flag=wx.ALIGN_CENTER_VERTICAL,
+        )
 
-        sizer.Add(background,
-                  wx.GBPosition(1, 2))
-        
+        sizer.Add(background, wx.GBPosition(1, 2))
+
         sizer.Add(
             register_button,
             wx.GBPosition(2, 2),
             span=wx.GBSpan(1, 2),
-            flag=wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.EXPAND,
+        )
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
@@ -719,7 +730,7 @@ class TrackerPage(wx.Panel):
     def StartRegistration(self):
         if not self.tracker.IsTrackerInitialized():
             self.start_button.SetValue(False)
-            dlg.ShowNavigationTrackerWarning(0, 'choose')
+            dlg.ShowNavigationTrackerWarning(0, "choose")
             return
 
         self.registration_on = True
@@ -734,7 +745,9 @@ class TrackerPage(wx.Panel):
             if state and index is not None:
                 self.SetTrackerFiducial(index)
 
-        self.pedal_connector.add_callback('fiducial', set_fiducial_callback, remove_when_released=False)
+        self.pedal_connector.add_callback(
+            "fiducial", set_fiducial_callback, remove_when_released=False
+        )
 
     def StopRegistration(self):
         self.registration_on = False
@@ -746,7 +759,7 @@ class TrackerPage(wx.Panel):
         self.start_button.SetValue(False)
         self.start_button.SetLabel(self.START_REGISTRATION_LABEL)
 
-        self.pedal_connector.remove_callback('fiducial')
+        self.pedal_connector.remove_callback("fiducial")
 
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
@@ -758,7 +771,9 @@ class TrackerPage(wx.Panel):
 
     def OnSetTrackerFiducial(self, fiducial_name):
         fiducial = self.GetFiducialByAttribute(
-          const.TRACKER_FIDUCIALS, "fiducial_name", fiducial_name,
+            const.TRACKER_FIDUCIALS,
+            "fiducial_name",
+            fiducial_name,
         )
         fiducial_index = fiducial["fiducial_index"]
         self.SetTrackerFiducial(fiducial_index)
@@ -998,7 +1013,7 @@ class StimulatorPage(wx.Panel):
         border = wx.FlexGridSizer(2, 3, 5)
         object_reg = self.navigation.GetObjectRegistration()
         self.object_reg = object_reg
-        
+
         lbl = wx.StaticText(self, -1, _("No TMS coil configured!"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
