@@ -18,15 +18,13 @@
 # --------------------------------------------------------------------------
 
 import itertools
-import os.path
-import platform
 import sys
 from typing import Dict, Optional, Tuple, Union
 
 import psutil
 import wx
 
-from invesalius import inv_paths, utils
+from invesalius import inv_paths
 from invesalius.i18n import tr as _
 
 # from invesalius.project import Project
@@ -930,16 +928,16 @@ OBJECT_FIDUCIALS = [
         "tip": _("Select right object fiducial"),
     },
     {
-        'fiducial_index': OBJECT_FIDUCIAL_ANTERIOR,
-        'button_id': OBJA,
-        'label': _('Anterior'),
-        'tip': _("Select anterior object fiducial"),
+        "fiducial_index": OBJECT_FIDUCIAL_ANTERIOR,
+        "button_id": OBJA,
+        "label": _("Anterior"),
+        "tip": _("Select anterior object fiducial"),
     },
     {
-        'fiducial_index': OBJECT_FIDUCIAL_FIXED,
-        'button_id': OBJF,
-        'label': _('Fixed'),
-        'tip': _("Attach sensor to object"),
+        "fiducial_index": OBJECT_FIDUCIAL_FIXED,
+        "button_id": OBJF,
+        "label": _("Fixed"),
+        "tip": _("Attach sensor to object"),
     },
 ]
 
