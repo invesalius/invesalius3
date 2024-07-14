@@ -2,37 +2,40 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.11
+  - python==3.11
   - cython==3.0.10
-  - pillow==9.4.0
+  - pillow==10.3.0
   - pypubsub==4.0.3
-  - h5py==3.8.0
-  - imageio==2.31.1
-  - nibabel==5.1.0
-  - numpy==1.24.3
-  - psutil==5.9.4
+  - h5py==3.11.0
+  - imageio==2.34.2
+  - nibabel==5.2.1
+  - numpy==1.26.4
+  - psutil==6.0.0
   - pyserial==3.5
-  - pytorch==2.0.1
-  - requests==2.31.0
-  - scipy==1.10.1
-  - vtk==9.2.6
+  - pytorch==2.3.1
+  - requests==2.32.3
+  - scipy==1.14.0
+  - vtk==9.3.0
   - mido==1.2.10
-  - nest-asyncio==1.5.6
+  - nest-asyncio==1.6.0
   - pip
   - pip:
-    - aioconsole==0.6.1
-    - opencv-python==4.7.0.72
-    - python-gdcm==3.0.22
-    - python-rtmidi==1.4.9
-    - python-socketio[client]==5.8.0
-    - pyacvd==0.2.9
-    - pyclaron==0.0.4
-    - polhemusFT==0.0.3
-    - polhemus==0.0.3
+    - matplotlib==3.9.0
+    - aioconsole==0.7.1
+    - opencv-python==4.10.0.84
+    - python-gdcm==3.0.24
+    - python-rtmidi==1.5.8
+    - python-socketio[client]==5.11.3
+    - pyacvd==0.2.11
+    - pyclaron
+    - polhemusFT
+    - polhemus
     - pypolaris==0.0.7
-    - scikit-image==0.21.0
+    - scikit-image==0.24.0
+    - scikit-learn==1.5.0
     - Trekker==0.9
-    - uvicorn[standard]==0.22.0
+    - uvicorn[standard]==0.30.1
     - wxPython==4.2.1
-    - ruff~=0.4.5
+    - mypy==1.10.1
+    - ruff~=0.5.0
     - pre-commit~=3.7.1

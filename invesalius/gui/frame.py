@@ -1986,6 +1986,10 @@ class SliceToolBar(AuiToolBar):
         else:
             Publisher.sendMessage('Disable style', style=id)
 
+        # const.STATE_REGISTRATION can be disabled with the same button as const.SLICE_STATE_CROSS
+        if id == const.SLICE_STATE_CROSS and not state:
+            Publisher.sendMessage('Stop image registration')
+
         for item in self.enable_items:
             state = self.GetToolToggled(item)
             if state and (item != id):

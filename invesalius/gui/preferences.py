@@ -7,7 +7,7 @@ import numpy as np
 import invesalius.constants as const
 import invesalius.session as ses
 import invesalius.gui.log as log
-import invesalius.gui.dialogs as dlg0
+import invesalius.gui.dialogs as dlg
 import invesalius.data.vtk_utils as vtk_utils
 from invesalius import inv_paths
 
@@ -64,7 +64,7 @@ class Preferences(wx.Dialog):
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
             self.book.AddPage(self.tracker_tab, _("Tracker"))
-            self.book.AddPage(self.object_tab, _("Stimulator"))
+            self.book.AddPage(self.object_tab, _("TMS Coil"))
 
         self.book.AddPage(self.language_tab, _("Language"))
         if self.have_log_tab==1:
@@ -450,45 +450,41 @@ class ObjectTab(wx.Panel):
         self.coil_path = None
         self.__bind_events()
         self.timestamp = const.TIMESTAMP
-        self.state = self.LoadConfig()
+        self.LoadConfig()
 
-        # Button for creating new stimulator
-        tooltip = _("Create new stimulator")
+        # Buttons for TMS coil configuration
+        tooltip = _("New TMS coil configuration")
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
         self.btn_new = btn_new
 
-        # Button for loading stimulator config file
-        tooltip = _("Load stimulator configuration file")
+        tooltip = _("Load TMS coil configuration from a file")
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoil)
         self.btn_load = btn_load
 
-        # Save button for saving stimulator config file
-        tooltip = _(u"Save stimulator configuration file")
+        tooltip = _(u"Save current TMS coil configuration to a file")
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveCoil)
         self.btn_save = btn_save
-        
-        if self.state:
-            config_txt = wx.StaticText(self, -1, os.path.basename(self.coil_path))
-        else:
-            config_txt = wx.StaticText(self, -1, "None")
 
-        self.config_txt = config_txt    
+        self.config_txt = config_txt = wx.StaticText(self, -1, 'None')
+        data = self.navigation.GetObjectRegistration()
+        self.OnObjectUpdate(data)
+
         lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
-        lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
-        lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
+        lbl_new = wx.StaticText(self, -1, _("Create new configuration: "))
+        lbl_load = wx.StaticText(self, -1, _("Load configuration from file: "))
+        lbl_save = wx.StaticText(self, -1, _("Save configuration to file: "))
 
-        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
+        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("TMS coil registration"))
         inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
         inner_load_sizer.AddMany([
             (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
@@ -546,7 +542,7 @@ class ObjectTab(wx.Panel):
             ])
 
         # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator configuration"))
+        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Settings"))
         conf_sizer.AddMany([
             (line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
             (line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
@@ -691,7 +687,11 @@ class ObjectTab(wx.Panel):
         self.timestamp = ctrl.GetValue()
 
     def OnObjectUpdate(self, data=None):
-        self.config_txt.SetLabel(os.path.basename(data[-1]))
+        if data:
+            label = os.path.basename(data[-1])
+        else:
+            label = 'None'
+        self.config_txt.SetLabel(label)
 
 
 class TrackerTab(wx.Panel):
