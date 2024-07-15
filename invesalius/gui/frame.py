@@ -37,6 +37,7 @@ import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_network_panel as imp_net
 import invesalius.gui.import_panel as imp
+import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
 import invesalius.project as prj
 import invesalius.session as ses
@@ -136,6 +137,8 @@ class Frame(wx.Frame):
         # Initialize bind to pubsub events
         self.__bind_events()
         self.__bind_events_wx()
+
+        # log.initLogger()
 
     def __bind_events(self):
         """
@@ -524,9 +527,13 @@ class Frame(wx.Frame):
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
 
+        # logger = log.MyLogger()
+
         if not save and answer == wx.ID_YES:
+            log.invLogger.closeLogging()
             return 1  # Exit and delete session
         elif save and answer == wx.ID_YES:
+            log.invLogger.closeLogging()
             return 2  # Exit without deleting session
         else:
             return 0  # Don't Exit
@@ -750,6 +757,7 @@ class Frame(wx.Frame):
 
         if preferences_dialog.ShowModal() == wx.ID_OK:
             values = preferences_dialog.GetPreferences()
+
             preferences_dialog.Destroy()
 
             session = ses.Session()
@@ -771,6 +779,23 @@ class Frame(wx.Frame):
             session.SetConfig("server_port", server_port)
             session.SetConfig("store_path", store_path)
             session.SetConfig("server_ip", server_ip)
+            file_logging = values[const.FILE_LOGGING]
+            file_logging_level = values[const.FILE_LOGGING_LEVEL]
+            append_log_file = values[const.APPEND_LOG_FILE]
+            logging_file = values[const.LOGFILE]
+            console_logging = values[const.CONSOLE_LOGGING]
+            console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
+
+            session.SetConfig("rendering", rendering)
+            session.SetConfig("surface_interpolation", surface_interpolation)
+            session.SetConfig("language", language)
+            session.SetConfig("slice_interpolation", slice_interpolation)
+            session.SetConfig("file_logging", file_logging)
+            session.SetConfig("file_logging_level", file_logging_level)
+            session.SetConfig("append_log_file", append_log_file)
+            session.SetConfig("logging_file", logging_file)
+            session.SetConfig("console_logging", console_logging)
+            session.SetConfig("console_logging_level", console_logging_level)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
@@ -2149,6 +2174,10 @@ class SliceToolBar(AuiToolBar):
             Publisher.sendMessage("Untoggle object toolbar items")
         else:
             Publisher.sendMessage("Disable style", style=id)
+
+        # const.STATE_REGISTRATION can be disabled with the same button as const.SLICE_STATE_CROSS
+        if id == const.SLICE_STATE_CROSS and not state:
+            Publisher.sendMessage("Stop image registration")
 
         for item in self.enable_items:
             state = self.GetToolToggled(item)

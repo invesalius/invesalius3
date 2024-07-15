@@ -196,8 +196,10 @@ SLICE_COLOR_TABLE = {
 # Colors for errors and positives
 RED_COLOR_FLOAT = (0.99, 0.55, 0.38)
 GREEN_COLOR_FLOAT = (0.40, 0.76, 0.65)
+YELLOW_COLOR_FLOAT = (1.0, 0.77, 0.0)
 RED_COLOR_RGB = (252, 141, 98)
 GREEN_COLOR_RGB = (102, 194, 165)
+YELLOW_COLOR_RGB = (255, 196, 0)
 
 # Volume view angle
 VOL_FRONT = wx.NewIdRef()
@@ -737,6 +739,15 @@ SERVER_PORT = 5
 STORE_PATH = 6
 SERVER_IP = 7
 
+# ------------ Logging options key------------
+FILE_LOGGING = 4
+FILE_LOGGING_LEVEL = 5
+APPEND_LOG_FILE = 6
+LOGFILE = 7
+CONSOLE_LOGGING = 8
+CONSOLE_LOGGING_LEVEL = 9
+LOGGING_LEVEL_TYPES = ["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
+
 # Correlaction extracted from pyDicom
 DICOM_ENCODING_TO_PYTHON = {
     "None": "iso8859",
@@ -833,6 +844,7 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
+TRACKERS_WITH_SENSOR_OPTIONS = [FASTRAK, ISOTRAKII, PATRIOT, DEBUGTRACKRANDOM, DEBUGTRACKAPPROACH]
 
 DEFAULT_COIL = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"), _("Magstim 70 mm"), _("Nexstim")]
@@ -846,6 +858,7 @@ TR3 = wx.NewIdRef()
 SET = wx.NewIdRef()
 
 FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
+FIDUCIAL_REGISTRATION_ORDER = [0, 2, 1]
 IMAGE_FIDUCIALS = [
     {
         "button_id": IR1,
@@ -901,6 +914,9 @@ OBJR = wx.NewIdRef()
 OBJA = wx.NewIdRef()
 OBJF = wx.NewIdRef()
 
+OBJECT_FIDUCIAL_ANTERIOR = 2
+OBJECT_FIDUCIAL_FIXED = 3
+
 OBJECT_FIDUCIALS = [
     {
         "fiducial_index": 0,
@@ -915,13 +931,13 @@ OBJECT_FIDUCIALS = [
         "tip": _("Select right object fiducial"),
     },
     {
-        "fiducial_index": 2,
+        "fiducial_index": OBJECT_FIDUCIAL_ANTERIOR,
         "button_id": OBJA,
         "label": _("Anterior"),
         "tip": _("Select anterior object fiducial"),
     },
     {
-        "fiducial_index": 3,
+        "fiducial_index": OBJECT_FIDUCIAL_FIXED,
         "button_id": OBJF,
         "label": _("Fixed"),
         "tip": _("Attach sensor to object"),

@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,23 +15,24 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 try:
     import configparser as ConfigParser
 except ImportError:
     import ConfigParser
 
+import codecs
+import collections
+import datetime
+import json
 import os
 import shutil
 import sys
 import time
-import codecs
-import collections
-import json
+from json.decoder import JSONDecodeError
 from random import randint
 from threading import Thread
-from json.decoder import JSONDecodeError
 
 import wx
 
@@ -39,55 +40,67 @@ from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, decode, deep_merge_dict
 
+CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
+OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
 
-CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.json')
-OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, 'config.cfg')
+STATE_PATH = os.path.join(inv_paths.USER_INV_DIR, "state.json")
 
-STATE_PATH = os.path.join(inv_paths.USER_INV_DIR, 'state.json')
-
-SESSION_ENCODING = 'utf8'
+SESSION_ENCODING = "utf8"
 
 
 # Only one session will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Session(metaclass=Singleton):
-
     def __init__(self):
         self.temp_item = False
         self.mask_3d_preview = False
-
         self._config = {
-            'project_status': 3,
-            'language': '',
-            'auto_reload_preview': False,
+            "project_status": 3,
+            "language": "",
+            "auto_reload_preview": False,
+            "file_logging": 0,
+            "file_logging_level": 0,
+            "append_log_file": 0,
+            "logging_file": "",
+            "console_logging": 0,
+            "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self._Exit, 'Exit session')
+        Publisher.subscribe(self._Exit, "Exit session")
 
     def CreateConfig(self):
         import invesalius.constants as const
+
         self._config = {
-            'mode': const.MODE_RP,
-            'project_status': const.PROJECT_STATUS_CLOSED,
-            'debug': False,
-            'debug_efield': False,
-            'language': "",
-            'random_id': randint(0, pow(10, 16)),
-            'surface_interpolation': 1,
-            'rendering': 0,
-            'slice_interpolation': 0,
-            'auto_reload_preview': False,
-            'recent_projects': [(str(inv_paths.SAMPLE_DIR), u"Cranium.inv3"), ],
-            'last_dicom_folder': '',
-            'server_aetitle': 'PYNETDICOM',
-            'server_port': '11120',
-            'nodes': [],
-            'selected_node': {},
-            'store_path': str(inv_paths.USER_DICOM_DIR),
-            'server_ip': "0.0.0.0"
+            "mode": const.MODE_RP,
+            "project_status": const.PROJECT_STATUS_CLOSED,
+            "debug": False,
+            "debug_efield": False,
+            "language": "",
+            "random_id": randint(0, pow(10, 16)),
+            "surface_interpolation": 1,
+            "rendering": 0,
+            "slice_interpolation": 0,
+            "auto_reload_preview": False,
+            "recent_projects": [
+                (str(inv_paths.SAMPLE_DIR), "Cranium.inv3"),
+            ],
+            "last_dicom_folder": "",
+            "server_aetitle": "PYNETDICOM",
+            "server_port": "11120",
+            "nodes": [],
+            "selected_node": {},
+            "store_path": str(inv_paths.USER_DICOM_DIR),
+            "server_ip": "0.0.0.0",
+            "file_logging": 0,
+            "file_logging_level": 0,
+            "append_log_file": 0,
+            "logging_file": "",
+            "console_logging": 0,
+            "console_logging_level": 0,
         }
         self.WriteConfigFile()
 
@@ -127,49 +140,55 @@ class Session(metaclass=Singleton):
 
     def IsOpen(self):
         import invesalius.constants as const
-        return self.GetConfig('project_status') != const.PROJECT_STATUS_CLOSED
+
+        return self.GetConfig("project_status") != const.PROJECT_STATUS_CLOSED
 
     def CloseProject(self):
         import invesalius.constants as const
+
         debug("Session.CloseProject")
-        self.SetState('project_path', None)
-        self.SetConfig('project_status', const.PROJECT_STATUS_CLOSED)
-        #self.mode = const.MODE_RP
+        self.SetState("project_path", None)
+        self.SetConfig("project_status", const.PROJECT_STATUS_CLOSED)
+        # self.mode = const.MODE_RP
         self.temp_item = False
 
     def SaveProject(self, path=()):
         import invesalius.constants as const
+
         debug("Session.SaveProject")
         if path:
-            self.SetState('project_path', path)
+            self.SetState("project_path", path)
             self._add_to_recent_projects(path)
         if self.temp_item:
             self.temp_item = False
 
-        self.SetConfig('project_status', const.PROJECT_STATUS_OPENED)
+        self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
 
     def ChangeProject(self):
         import invesalius.constants as const
+
         debug("Session.ChangeProject")
-        self.SetConfig('project_status', const.PROJECT_STATUS_CHANGED)
+        self.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
 
     def CreateProject(self, filename):
         import invesalius.constants as const
+
         debug("Session.CreateProject")
-        Publisher.sendMessage('Begin busy cursor')
+        Publisher.sendMessage("Begin busy cursor")
 
         # Set session info
         tempdir = str(inv_paths.TEMP_DIR)
 
         project_path = (tempdir, filename)
-        self.SetState('project_path', project_path)
+        self.SetState("project_path", project_path)
 
         self.temp_item = True
 
-        self.SetConfig('project_status', const.PROJECT_STATUS_NEW)
+        self.SetConfig("project_status", const.PROJECT_STATUS_NEW)
 
     def OpenProject(self, filepath):
         import invesalius.constants as const
+
         debug("Session.OpenProject")
 
         # Add item to recent projects list
@@ -177,8 +196,8 @@ class Session(metaclass=Singleton):
         self._add_to_recent_projects(project_path)
 
         # Set session info
-        self.SetState('project_path', project_path)
-        self.SetConfig('project_status', const.PROJECT_STATUS_OPENED)
+        self.SetState("project_path", project_path)
+        self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
 
     def WriteConfigFile(self):
         self._write_to_json(self._config, CONFIG_PATH)
@@ -187,14 +206,14 @@ class Session(metaclass=Singleton):
         self._write_to_json(self._state, STATE_PATH)
 
     def _write_to_json(self, config_dict, config_filename):
-        with open(config_filename, 'w') as config_file:
+        with open(config_filename, "w") as config_file:
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _add_to_recent_projects(self, item):
         import invesalius.constants as const
 
         # Recent projects list
-        recent_projects = self.GetConfig('recent_projects')
+        recent_projects = self.GetConfig("recent_projects")
         item = list(item)
 
         # If item exists, remove it from list
@@ -203,10 +222,10 @@ class Session(metaclass=Singleton):
 
         # Add new item
         recent_projects.insert(0, item)
-        self.SetConfig('recent_projects', recent_projects[:const.RECENT_PROJECTS_MAXIMUM])
+        self.SetConfig("recent_projects", recent_projects[: const.RECENT_PROJECTS_MAXIMUM])
 
     def _read_config_from_json(self, json_filename):
-        with open(json_filename, 'r') as config_file:
+        with open(json_filename, "r") as config_file:
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
 
@@ -215,54 +234,66 @@ class Session(metaclass=Singleton):
         self.project_status = 3
 
     def _read_config_from_ini(self, config_filename):
-        file = codecs.open(config_filename, 'rb', SESSION_ENCODING)
+        file = codecs.open(config_filename, "rb", SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
         config.readfp(file)
         file.close()
 
-        mode = config.getint('session', 'mode')
-        debug = config.getboolean('session', 'debug')
-        debug_efield = config.getboolean('session','debug_efield')
-        language = config.get('session','language')
-        last_dicom_folder = config.get('paths','last_dicom_folder') 
-        project_status = config.getint('session', 'status')
-        surface_interpolation = config.getint('session', 'surface_interpolation')
-        slice_interpolation = config.getint('session', 'slice_interpolation')
-        rendering = config.getint('session', 'rendering')
-        random_id = config.getint('session','random_id')
-        server_aetitle = config.get('session','server_aetitle')
-        server_port = config.get('session','server_port')
-        nodes = config.get('session','nodes')
-        selected_node = config.get('session','selected_node')
-        store_path = config.get('session','store_path')
-        server_ip = config.get('session','server_ip')
+        mode = config.getint("session", "mode")
+        debug = config.getboolean("session", "debug")
+        debug_efield = config.getboolean("session", "debug_efield")
+        language = config.get("session", "language")
+        last_dicom_folder = config.get("paths", "last_dicom_folder")
+        project_status = config.getint("session", "status")
+        surface_interpolation = config.getint("session", "surface_interpolation")
+        slice_interpolation = config.getint("session", "slice_interpolation")
+        rendering = config.getint("session", "rendering")
+        random_id = config.getint("session", "random_id")
+        server_aetitle = config.get("session", "server_aetitle")
+        server_port = config.get("session", "server_port")
+        nodes = config.get("session", "nodes")
+        selected_node = config.get("session", "selected_node")
+        store_path = config.get("session", "store_path")
+        server_ip = config.get("session", "server_ip")
+        do_file_logging = config.getint("session", "do_file_logging")
+        file_logging_level = config.getint("session", "file_logging_level")
+        append_log_file = config.getint("session", "append_log_file")
+        logging_file = config.get("session", "logging_file")
+        do_console_logging = config.getint("session", "do_console_logging")
+        console_logging_level = config.getint("session", "console_logging_level")
 
-        recent_projects = eval(config.get('project','recent_projects'))
+        recent_projects = eval(config.get("project", "recent_projects"))
         recent_projects = [list(rp) for rp in recent_projects]
 
-        self.SetConfig('mode', mode)
-        self.SetConfig('debug', debug)
-        self.SetConfig('debug_efield', debug_efield)
-        self.SetConfig('language', language)
-        self.SetConfig('last_dicom_folder', last_dicom_folder)
-        self.SetConfig('surface_interpolation', surface_interpolation)
-        self.SetConfig('slice_interpolation', slice_interpolation)
-        self.SetConfig('rendering', rendering)
-        self.SetConfig('random_id', random_id)
-        self.SetConfig('recent_projects', recent_projects)
-        self.SetConfig('server_aetitle', server_aetitle)
-        self.SetConfig('server_port', server_port)
-        self.SetConfig('nodes', nodes)
-        self.SetConfig('selected_node', selected_node)
-        self.SetConfig('store_path', store_path)
-        self.SetConfig('server_ip', server_ip)
+        self.SetConfig("mode", mode)
+        self.SetConfig("debug", debug)
+        self.SetConfig("debug_efield", debug_efield)
+        self.SetConfig("language", language)
+        self.SetConfig("last_dicom_folder", last_dicom_folder)
+        self.SetConfig("surface_interpolation", surface_interpolation)
+        self.SetConfig("slice_interpolation", slice_interpolation)
+        self.SetConfig("rendering", rendering)
+        self.SetConfig("random_id", random_id)
+        self.SetConfig("recent_projects", recent_projects)
+        self.SetConfig("server_aetitle", server_aetitle)
+        self.SetConfig("server_port", server_port)
+        self.SetConfig("nodes", nodes)
+        self.SetConfig("selected_node", selected_node)
+        self.SetConfig("store_path", store_path)
+        self.SetConfig("server_ip", server_ip)
+        self.SetConfig("do_file_logging", do_file_logging)
+        self.SetConfig("file_logging_level", file_logging_level)
+        self.SetConfig("append_log_file", append_log_file)
+        self.SetConfig("logging_file", logging_file)
+        self.SetConfig("do_console_logging", do_console_logging)
+        self.SetConfig("console_logging_level", console_logging_level)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
-        #self.SetConfig('project_status', project_status)
+        # self.SetConfig('project_status', project_status)
 
         #  if not(sys.platform == 'win32'):
-          #  self.SetConfig('last_dicom_folder', last_dicom_folder.decode('utf-8'))
+        #  self.SetConfig('last_dicom_folder', last_dicom_folder.decode('utf-8'))
 
     # TODO: Make also this function private so that it is run when the class constructor is run.
     #   (Compare to _ReadState below.)
@@ -284,7 +315,7 @@ class Session(metaclass=Singleton):
         if os.path.exists(STATE_PATH):
             print("Restoring a previous state...")
 
-            state_file = open(STATE_PATH, 'r')
+            state_file = open(STATE_PATH, "r")
             try:
                 self._state = json.load(state_file)
                 success = True
@@ -299,7 +330,7 @@ class Session(metaclass=Singleton):
             self._state = {}
 
         return success
-    
+
     def _Exit(self):
         self.CloseProject()
         self.DeleteStateFile()
