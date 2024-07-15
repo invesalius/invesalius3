@@ -28,7 +28,17 @@ import sys as _sys
 
 import numpy as np
 
-from .type_defs import ColourType, Coord, EventType, PenCap, PenStyle, PolygonFillMode, SystemFont
+from .type_defs import (
+    ColourType,
+    Coord,
+    EventType,
+    PenCap,
+    PenStyle,
+    PolygonFillMode,
+    SystemFont,
+)
+from .type_defs import PyAssertionError as PyAssertionError
+from .type_defs import PyNoAppError as PyNoAppError
 
 # Load version numbers from __version__ and some other initialization tasks...
 if "wxEVT_NULL" in dir():
@@ -26944,7 +26954,7 @@ class PyApp(AppConsole):
 
 # end of class PyApp
 
-def GetApp():
+def GetApp() -> AppConsole:
     """
     GetApp() -> AppConsole
 
@@ -28071,8 +28081,8 @@ class Window(WindowBase):
         Sets the minimum size of the window, to indicate to the sizer layout
         mechanism that this is the minimum required size.
         """
-
-    def SetSize(self, *args, **kw):
+    @overload
+    def SetSize(self, x: int, y: int, width: int, height: int, sizeFlags: int = SIZE_AUTO) -> None:
         """
         SetSize(x, y, width, height, sizeFlags=SIZE_AUTO)
         SetSize(rect)
@@ -28081,7 +28091,12 @@ class Window(WindowBase):
 
         Sets the size of the window in pixels.
         """
-
+    @overload
+    def SetSize(self, rect: Rect) -> None: ...
+    @overload
+    def SetSize(self, size: Size) -> None: ...
+    @overload
+    def SetSize(self, width: int, height: int) -> None: ...
     def SetSizeHints(self, *args, **kw):
         """
         SetSizeHints(minSize, maxSize=DefaultSize, incSize=DefaultSize)
@@ -46940,7 +46955,14 @@ class ProgressDialog(GenericProgressDialog):
     wxGenericProgressDialog.
     """
 
-    def __init__(self, title, message, maximum=100, parent=None, style=PD_APP_MODAL | PD_AUTO_HIDE):
+    def __init__(
+        self,
+        title: str,
+        message: str,
+        maximum: int = 100,
+        parent: Window | None = None,
+        style: int = PD_APP_MODAL | PD_AUTO_HIDE,
+    ):
         """
         ProgressDialog(title, message, maximum=100, parent=None, style=PD_APP_MODAL|PD_AUTO_HIDE)
 
@@ -47011,7 +47033,7 @@ class ProgressDialog(GenericProgressDialog):
         Returns true if the "Skip" button was pressed.
         """
 
-    def Update(self, value, newmsg=EmptyString):
+    def Update(self, value: int, newmsg: str = EmptyString) -> tuple[bool, bool]:
         """
         Update(value, newmsg=EmptyString) -> (bool, skip)
 

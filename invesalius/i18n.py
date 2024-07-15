@@ -19,22 +19,19 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-try:
-    import configparser as ConfigParser
-except ImportError:
-    import ConfigParser
 
 import gettext
 import locale
 import os
 import sys
+from typing import Optional
 
 import invesalius.utils as utl
 from invesalius.inv_paths import LOCALE_DIR
 from invesalius.session import Session
 
 
-def GetLocales():
+def GetLocales() -> utl.TwoWaysDictionary:
     """Return a dictionary which defines supported languages"""
     d = utl.TwoWaysDictionary(
         {
@@ -62,7 +59,7 @@ def GetLocales():
     return d
 
 
-def GetLocaleOS():
+def GetLocaleOS() -> Optional[str]:
     """Return language of the operating system."""
     if sys.platform == "darwin":
         # The app can't get the location then it has to set
@@ -74,7 +71,7 @@ def GetLocaleOS():
     return locale.getdefaultlocale()[0]
 
 
-def InstallLanguage(language):
+def InstallLanguage(language: str):
     file_path = os.path.split(__file__)[0]
     language_dir = LOCALE_DIR
     if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):

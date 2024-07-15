@@ -20,7 +20,6 @@ import os
 import tempfile
 
 import numpy as np
-from scipy import ndimage
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
 from vtkmodules.vtkImagingCore import (
@@ -51,7 +50,7 @@ PLIST = 1
 WIDGET = 2
 
 
-class SliceBuffer(object):
+class SliceBuffer:
     """
     This class is used as buffer that mantains the vtkImageData and numpy array
     from actual slices from each orientation.
@@ -64,19 +63,19 @@ class SliceBuffer(object):
         self.vtk_image = None
         self.vtk_mask = None
 
-    def discard_vtk_mask(self):
+    def discard_vtk_mask(self) -> None:
         self.vtk_mask = None
 
-    def discard_vtk_image(self):
+    def discard_vtk_image(self) -> None:
         self.vtk_image = None
 
-    def discard_mask(self):
+    def discard_mask(self) -> None:
         self.mask = None
 
-    def discard_image(self):
+    def discard_image(self) -> None:
         self.image = None
 
-    def discard_buffer(self):
+    def discard_buffer(self) -> None:
         self.index = -1
         self.image = None
         self.mask = None
@@ -1595,7 +1594,7 @@ class Slice(metaclass=utils.Singleton):
             const.BOOLEAN_XOR: _("XOR"),
         }
 
-        name = "%s_%s_%s" % (name_ops[op], m1.name, m2.name)
+        name = f"{name_ops[op]}_{m1.name}_{m2.name}"
         proj = Project()
         mask_dict = proj.mask_dict
         names_list = [mask_dict[i].name for i in mask_dict.keys()]
