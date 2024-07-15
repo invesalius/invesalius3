@@ -7372,8 +7372,10 @@ class ProgressBarHandler(wx.ProgressDialog):
         self.Bind(wx.EVT_CLOSE, self.close)
 
         # self.Show()
+        self.__bind_events()
 
-        # Subscribe to the channels
+    def __bind_events(self):
+        # Subscribe to pubsub messages
         Publisher.subscribe(self.update, "Update Progress bar")
         Publisher.subscribe(self.close, "Close Progress bar")
 
