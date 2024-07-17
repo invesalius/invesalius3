@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,7 +15,7 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 import wx
 
 import invesalius.constants as const
@@ -36,7 +36,7 @@ class SliceData(object):
         self.text = None
         self.layer = 99
         self.number = 0
-        self.orientation = 'AXIAL'
+        self.orientation = "AXIAL"
         self.renderer = None
         self.canvas_renderer = None
         self.overlay_renderer = None
@@ -50,7 +50,7 @@ class SliceData(object):
         text.SetSize(const.TEXT_SIZE_LARGE)
         text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
         text.SetSymbolicSize(wx.FONTSIZE_LARGE)
-        #text.SetVerticalJustificationToBottom()
+        # text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
         self.text = text
 
@@ -83,5 +83,7 @@ class SliceData(object):
     def draw_to_canvas(self, gc, canvas):
         w, h = self.renderer.GetSize()
         colour = const.ORIENTATION_COLOUR[self.orientation]
-        canvas.draw_rectangle((0, 0), w, h, line_colour=[255*i for i in colour] + [255], line_width=2)
+        canvas.draw_rectangle(
+            (0, 0), w, h, line_colour=[255 * i for i in colour] + [255], line_width=2
+        )
         self.text.draw_to_canvas(gc, canvas)

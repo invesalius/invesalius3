@@ -19,13 +19,21 @@
 from functools import partial
 
 import wx
-import invesalius.constants as const
 from wx.lib.masked.numctrl import NumCtrl
+
+import invesalius.constants as const
 
 
 class OrderedFiducialButtons:
-    def __init__(self, parent, fiducial_definitions, is_fiducial_set, get_fiducial_coord=None, set_actor_colors=None,
-                 order=None):
+    def __init__(
+        self,
+        parent,
+        fiducial_definitions,
+        is_fiducial_set,
+        get_fiducial_coord=None,
+        set_actor_colors=None,
+        order=None,
+    ):
         """
         Class to initialize fiducials GUI and to keep track of the order to set fiducials.
 
@@ -57,12 +65,12 @@ class OrderedFiducialButtons:
 
         # Initialize buttons
         for n, fiducial in enumerate(fiducial_definitions):
-            button_id = fiducial['button_id']
-            label = fiducial['label']
-            tip = fiducial['tip']
+            button_id = fiducial["button_id"]
+            label = fiducial["label"]
+            tip = fiducial["tip"]
 
-            w, h = wx.ScreenDC().GetTextExtent("M"*len(label))
-            ctrl = wx.Button(parent, button_id, label='', size=(55, h+5))
+            w, h = wx.ScreenDC().GetTextExtent("M" * len(label))
+            ctrl = wx.Button(parent, button_id, label="", size=(55, h + 5))
             ctrl.SetLabel(label)
             ctrl.SetToolTip(tip)
             ctrl.Bind(wx.EVT_BUTTON, partial(self._OnButton, n=n))
@@ -72,7 +80,9 @@ class OrderedFiducialButtons:
         for n in range(count):
             coords = []
             for coord_index in range(3):
-                numctrl = wx.lib.masked.numctrl.NumCtrl(parent=parent, integerWidth=4, fractionWidth=1)
+                numctrl = wx.lib.masked.numctrl.NumCtrl(
+                    parent=parent, integerWidth=4, fractionWidth=1
+                )
                 numctrl.Hide()
                 coords.append(numctrl)
             self.numctrls.append(coords)

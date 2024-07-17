@@ -24,9 +24,8 @@ import pathlib
 import sys
 from itertools import chain
 
-from invesalius.pubsub import pub as Publisher
-
 from invesalius import inv_paths
+from invesalius.pubsub import pub as Publisher
 
 
 def import_source(module_name, module_file_path):
@@ -47,8 +46,10 @@ class PluginManager:
     def find_plugins(self):
         self.plugins = {}
         for p in chain(
-                glob.glob(str(inv_paths.PLUGIN_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
-                glob.glob(str(inv_paths.USER_PLUGINS_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
+            glob.glob(str(inv_paths.PLUGIN_DIRECTORY.joinpath("**/plugin.json")), recursive=True),
+            glob.glob(
+                str(inv_paths.USER_PLUGINS_DIRECTORY.joinpath("**/plugin.json")), recursive=True
+            ),
         ):
             try:
                 p = pathlib.Path(p)

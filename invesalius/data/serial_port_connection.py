@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,12 +15,11 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import queue
 import threading
 import time
-
 
 from invesalius import constants
 from invesalius.pubsub import pub as Publisher
@@ -31,7 +30,7 @@ class SerialPortConnection(threading.Thread):
         """
         Thread created to communicate using the serial port to interact with software during neuronavigation.
         """
-        threading.Thread.__init__(self, name='Serial port')
+        threading.Thread.__init__(self, name="Serial port")
 
         self.connection = None
         self.stylusplh = False
@@ -48,10 +47,11 @@ class SerialPortConnection(threading.Thread):
             return
         try:
             import serial
+
             self.connection = serial.Serial(self.com_port, baudrate=self.baud_rate, timeout=0)
             print("Connection to port {} opened.".format(self.com_port))
 
-            Publisher.sendMessage('Serial port connection', state=True)
+            Publisher.sendMessage("Serial port connection", state=True)
         except:
             print("Serial port init error: Connecting to port {} failed.".format(self.com_port))
 
@@ -60,12 +60,12 @@ class SerialPortConnection(threading.Thread):
             self.connection.close()
             print("Connection to port {} closed.".format(self.com_port))
 
-            Publisher.sendMessage('Serial port connection', state=False)
+            Publisher.sendMessage("Serial port connection", state=False)
 
     def SendPulse(self):
         try:
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
-            Publisher.sendMessage('Serial port pulse triggered')
+            Publisher.sendMessage("Serial port pulse triggered")
         except:
             print("Error: Serial port could not be written into.")
 

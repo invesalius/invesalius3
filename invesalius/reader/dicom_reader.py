@@ -57,7 +57,6 @@ else:
 
 
 def ReadDicomGroup(dir_):
-
     patient_group = GetDicomGroups(dir_)
     if len(patient_group) > 0:
         filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
@@ -68,7 +67,7 @@ def ReadDicomGroup(dir_):
         imagedata = CreateImageData(filelist, zspacing, size, bits)
 
         session = ses.Session()
-        session.SetConfig('project_status', const.PROJECT_STATUS_NEW)
+        session.SetConfig("project_status", const.PROJECT_STATUS_NEW)
 
         return imagedata, dicom
     else:
@@ -120,9 +119,7 @@ class LoadDicom:
         if _has_win32api:
             try:
                 reader.SetFileName(
-                    utils.encode(
-                        win32api.GetShortPathName(self.filepath), const.FS_ENCODE
-                    )
+                    utils.encode(win32api.GetShortPathName(self.filepath), const.FS_ENCODE)
                 )
             except TypeError:
                 reader.SetFileName(win32api.GetShortPathName(self.filepath))
@@ -207,9 +204,7 @@ class LoadDicom:
                         data_dict[group] = {}
 
                     if not (utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = utils.decode(
-                            data[1], encoding, "replace"
-                        )
+                        data_dict[group][field] = utils.decode(data[1], encoding, "replace")
                     else:
                         data_dict[group][field] = "Invalid Character"
 
@@ -246,18 +241,14 @@ class LoadDicom:
             # ----------  Verify is DICOMDir -------------------------------
             is_dicom_dir = 1
             try:
-                if (
-                    data_dict[str(0x002)][str(0x002)] != "1.2.840.10008.1.3.10"
-                ):  # DICOMDIR
+                if data_dict[str(0x002)][str(0x002)] != "1.2.840.10008.1.3.10":  # DICOMDIR
                     is_dicom_dir = 0
-            except (KeyError):
+            except KeyError:
                 is_dicom_dir = 0
 
             if not (is_dicom_dir):
                 parser = dicom.Parser()
-                parser.SetDataImage(
-                    dict_file[self.filepath], self.filepath, thumbnail_path
-                )
+                parser.SetDataImage(dict_file[self.filepath], self.filepath, thumbnail_path)
 
                 dcm = dicom.Dicom()
                 # self.l.acquire()
@@ -354,7 +345,6 @@ class ProgressDicomReader:
         Publisher.sendMessage("End dicom load", patient_series=patient_list)
 
     def GetDicomGroups(self, path, recursive):
-
         if not const.VTK_WARNING:
             log_path = utils.encode(
                 str(inv_paths.USER_LOG_DIR.joinpath("vtkoutput.txt")), const.FS_ENCODE

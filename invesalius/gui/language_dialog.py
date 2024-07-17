@@ -19,6 +19,7 @@
 
 import os
 import sys
+
 import wx
 
 try:
@@ -32,9 +33,7 @@ from invesalius.inv_paths import ICON_DIR
 
 file_path = os.path.split(__file__)[0]
 
-if hasattr(sys, "frozen") and (
-    sys.frozen == "windows_exe" or sys.frozen == "console_exe"
-):
+if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):
     abs_file_path = os.path.abspath(
         file_path + os.sep + ".." + os.sep + ".." + os.sep + ".." + os.sep + ".."
     )
@@ -42,9 +41,7 @@ if hasattr(sys, "frozen") and (
 
 # MAC App
 if not os.path.exists(ICON_DIR):
-    ICON_DIR = os.path.abspath(
-        os.path.join(file_path, "..", "..", "..", "..", "..", "icons")
-    )
+    ICON_DIR = os.path.abspath(os.path.join(file_path, "..", "..", "..", "..", "..", "icons"))
 
 
 class ComboBoxLanguage:

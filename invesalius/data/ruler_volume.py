@@ -114,7 +114,9 @@ class RulerVolume(ABC):
             tuple: (width as a proportion of viewport width, height as a proportion of viewport height)
                     eg:- (0.03, .0.5)
         """
-        w, h = self.viewer_volume.canvas.calc_text_size(text, self.GetFont(font_size))  # w, h are in pixels
+        w, h = self.viewer_volume.canvas.calc_text_size(
+            text, self.GetFont(font_size)
+        )  # w, h are in pixels
         return w / self.GetWindowSize()[0], h / self.GetWindowSize()[1]
 
     def GetWLTextProperties(self):
@@ -129,7 +131,9 @@ class RulerVolume(ABC):
         """
         wl_text = self.viewer_volume.text
         wl_text_font = self.GetFont(wl_text.symbolic_syze)
-        w, h = self.viewer_volume.canvas.calc_text_size(wl_text.text, wl_text_font)  # w, h are in pixels
+        w, h = self.viewer_volume.canvas.calc_text_size(
+            wl_text.text, wl_text_font
+        )  # w, h are in pixels
         if wl_text.position == const.TEXT_POS_LEFT_UP:
             x, y = const.TEXT_POS_LEFT_DOWN  # x, y are in proportions relative to window size
         return x, y, w / self.GetWindowSize()[0], h / self.GetWindowSize()[1]
@@ -144,8 +148,12 @@ class RulerVolume(ABC):
         initial_orientation = (0, 0, 1)  # up direction is z-axis
         initial_rotational_axis = (0, 1, 0)  # y-axis
         bounds = self.viewer_volume.surface.GetBounds()
-        bounds_matrix = np.abs(np.array([bounds[0] - bounds[1], bounds[2] - bounds[3], bounds[4] - bounds[5]]))
-        return bounds_matrix[0], bounds_matrix[2]  # x-axis is the width, z-axis is the height; initially
+        bounds_matrix = np.abs(
+            np.array([bounds[0] - bounds[1], bounds[2] - bounds[3], bounds[4] - bounds[5]])
+        )
+        return bounds_matrix[0], bounds_matrix[
+            2
+        ]  # x-axis is the width, z-axis is the height; initially
 
     def RoundToMultiple(self, number, multiples, floor=True):
         """
@@ -240,9 +248,19 @@ class GenericLeftRulerVolume(RulerVolume):
         self.edge_mark = 0.02
         self.font_size = wx.FONTSIZE_SMALL
         self.colour = (1, 1, 1)
-        self.ruler_scale_step = [(5000, 1000, 100, 0), (1000, 500, 50, 0), (500, 250, 10, 0), (250, 25, 5, 0),
-                                 (25, 1, 1, 0), (1, 0.1, 0.1, 1), (0.1, 0.01, 0.01, 2), (0.01, 0.001, 0.001, 3),
-                                 (0.001, 0.0001, 0.0001, 4), (0.0001, 0.00001, 0.00001, 5), (0.00001, 0, 0.000001, 6)]
+        self.ruler_scale_step = [
+            (5000, 1000, 100, 0),
+            (1000, 500, 50, 0),
+            (500, 250, 10, 0),
+            (250, 25, 5, 0),
+            (25, 1, 1, 0),
+            (1, 0.1, 0.1, 1),
+            (0.1, 0.01, 0.01, 2),
+            (0.01, 0.001, 0.001, 3),
+            (0.001, 0.0001, 0.0001, 4),
+            (0.0001, 0.00001, 0.00001, 5),
+            (0.00001, 0, 0.000001, 6),
+        ]
 
     def draw_to_canvas(self, gc, canvas):
         image_height = self.GetVolumeSize()[1]
@@ -250,30 +268,57 @@ class GenericLeftRulerVolume(RulerVolume):
         wl_text_prop = self.GetWLTextProperties()
         pixel_size = self.GetPixelSize()
         window_size = self.GetWindowSize()
-        ruler_min_y = (wl_text_prop[1] + dummy_scale_text_size[1] + 2 * self.scale_text_padding) * window_size[1]
+        ruler_min_y = (
+            wl_text_prop[1] + dummy_scale_text_size[1] + 2 * self.scale_text_padding
+        ) * window_size[1]
         ruler_min_x = (wl_text_prop[0] + self.left_padding) * window_size[0]
         max_ruler_height = window_size[1] - 2 * ruler_min_y
         image_size_in_pixels = image_height / pixel_size
         if image_size_in_pixels < max_ruler_height:
-            ruler_half_height, decimals = self.RoundToMultiple(image_height / 2, self.ruler_scale_step)
+            ruler_half_height, decimals = self.RoundToMultiple(
+                image_height / 2, self.ruler_scale_step
+            )
         else:
-            ruler_half_height, decimals = self.RoundToMultiple((max_ruler_height * pixel_size / 2), self.ruler_scale_step)
+            ruler_half_height, decimals = self.RoundToMultiple(
+                (max_ruler_height * pixel_size / 2), self.ruler_scale_step
+            )
         ruler_height = ruler_half_height * 2
         ruler_height_pixels = ruler_height / pixel_size
-        lines = [[(ruler_min_x, (window_size[1] - ruler_height_pixels) / 2),
-                  (ruler_min_x, (window_size[1] + ruler_height_pixels) / 2)],
-                 [(ruler_min_x, (window_size[1] - ruler_height_pixels) / 2),
-                  (ruler_min_x + self.edge_mark * window_size[0], (window_size[1] - ruler_height_pixels) / 2)],
-                 [(ruler_min_x, window_size[1] / 2),
-                  (ruler_min_x + self.center_mark * window_size[0], window_size[1] / 2)],
-                 [(ruler_min_x, (window_size[1] + ruler_height_pixels) / 2),
-                  (ruler_min_x + self.edge_mark * window_size[0], (window_size[1] + ruler_height_pixels) / 2)]]
+        lines = [
+            [
+                (ruler_min_x, (window_size[1] - ruler_height_pixels) / 2),
+                (ruler_min_x, (window_size[1] + ruler_height_pixels) / 2),
+            ],
+            [
+                (ruler_min_x, (window_size[1] - ruler_height_pixels) / 2),
+                (
+                    ruler_min_x + self.edge_mark * window_size[0],
+                    (window_size[1] - ruler_height_pixels) / 2,
+                ),
+            ],
+            [
+                (ruler_min_x, window_size[1] / 2),
+                (ruler_min_x + self.center_mark * window_size[0], window_size[1] / 2),
+            ],
+            [
+                (ruler_min_x, (window_size[1] + ruler_height_pixels) / 2),
+                (
+                    ruler_min_x + self.edge_mark * window_size[0],
+                    (window_size[1] + ruler_height_pixels) / 2,
+                ),
+            ],
+        ]
         r, g, b = self.colour
         for line in lines:
             canvas.draw_line(line[0], line[1], colour=(r * 255, g * 255, b * 255, 255), width=1)
         text_size = self.GetTextSize("{:.{}f} mm".format(ruler_height, decimals), self.font_size)
-        x_text = (2 * ruler_min_x + self.edge_mark * window_size[0] - (text_size[0] * window_size[0])) / 2
+        x_text = (
+            2 * ruler_min_x + self.edge_mark * window_size[0] - (text_size[0] * window_size[0])
+        ) / 2
         y_text = (window_size[1] - ruler_height_pixels) / 2 - self.scale_text_padding
-        canvas.draw_text("{:.{}f} mm".format(ruler_height, decimals), (x_text, y_text),
-                         font=self.GetFont(self.font_size),
-                         txt_colour=(r * 255, g * 255, b * 255))
+        canvas.draw_text(
+            "{:.{}f} mm".format(ruler_height, decimals),
+            (x_text, y_text),
+            font=self.GetFont(self.font_size),
+            txt_colour=(r * 255, g * 255, b * 255),
+        )

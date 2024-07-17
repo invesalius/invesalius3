@@ -17,8 +17,9 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import wx
 import time
+
+import wx
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
@@ -27,9 +28,7 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPi
 
 import invesalius.constants as const
 import invesalius.project as prj
-
 from invesalius.pubsub import pub as Publisher
-
 
 PROP_MEASURE = 0.8
 
@@ -78,6 +77,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     * Select marker by clicking right button on the marker.
     * Focus camera by double clicking right button.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.state_code = const.STATE_DEFAULT
@@ -106,7 +106,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.AddObserver("RightButtonReleaseEvent", self.OnRightRelease)
 
         # Zoom using mouse wheel.
-        self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+        self.AddObserver("MouseWheelForwardEvent", self.OnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
@@ -131,10 +131,10 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
             evt.OnMiddleButtonDown()
 
     def OnRightClick(self, evt, obj):
-        self.viewer.interactor.InvokeEvent('StartSpinEvent')
+        self.viewer.interactor.InvokeEvent("StartSpinEvent")
 
     def OnRightRelease(self, evt, obj):
-        self.viewer.interactor.InvokeEvent('EndSpinEvent')
+        self.viewer.interactor.InvokeEvent("EndSpinEvent")
 
     def OnLeftClick(self, evt, obj):
         evt.StartRotate()
@@ -165,7 +165,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.marker_found = actor
 
         if self.marker_found is not None:
-            Publisher.sendMessage('Select marker by actor', actor=actor)
+            Publisher.sendMessage("Select marker by actor", actor=actor)
 
     def SetCameraFocus(self, evt):
         # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
@@ -208,6 +208,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for zooming by clicking left mouse button and moving the mouse.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
 
@@ -222,19 +223,17 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
 
         self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
-        
+
         self.zoom_started = False
 
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.ResetCamera)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnMouseMoveZoom(self, evt, obj):
         if self.zoom_started:
@@ -262,6 +261,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
     Interactor style responsible for zooming by selecting a region.
     """
+
     def __init__(self, viewer):
         self.viewer = viewer
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.ResetCamera)
@@ -269,13 +269,11 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
         self.state_code = const.STATE_ZOOM_SL
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def ResetCamera(self, evt):
         renderer = self.viewer.ren
@@ -290,6 +288,7 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for translating the camera by clicking left mouse button and moving the mouse.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
 
@@ -303,13 +302,11 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspan)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
         self.panning = True
@@ -331,6 +328,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for spinning the camera by clicking left mouse button and moving the mouse.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
         self.state_code = const.STATE_SPIN
@@ -339,10 +337,10 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseMoveEvent", self.OnSpinMove)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
         self.spinning = True
@@ -360,11 +358,12 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.state_code = const.STATE_WL
 
-        self.viewer =  viewer
+        self.viewer = viewer
 
         self.last_x = 0
         self.last_y = 0
@@ -379,14 +378,14 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnWindowLevelRelease)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
         self.viewer.on_wl = True
         if self.viewer.raycasting_volume:
             self.viewer.text.Show()
             self.viewer.interactor.Render()
 
     def CleanUp(self):
-        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.viewer.on_wl = True
         self.viewer.text.Hide()
         self.viewer.interactor.Render()
@@ -397,10 +396,11 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             diff_x = mouse_x - self.last_x
             diff_y = mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
-            Publisher.sendMessage('Set raycasting relative window and level',
-                                  diff_wl=diff_x, diff_ww=diff_y)
-            Publisher.sendMessage('Refresh raycasting widget points')
-            Publisher.sendMessage('Render volume viewer')
+            Publisher.sendMessage(
+                "Set raycasting relative window and level", diff_wl=diff_x, diff_ww=diff_y
+            )
+            Publisher.sendMessage("Refresh raycasting widget points")
+            Publisher.sendMessage("Render volume viewer")
 
     def OnWindowLevelClick(self, obj, evt):
         self.last_x, self.last_y = self.viewer.get_vtk_mouse_position()
@@ -414,6 +414,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for linear measurements by clicking consecutive points in the volume viewer.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.viewer = viewer
@@ -427,25 +428,25 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
     def OnInsertLinearMeasurePoint(self, obj, evt):
-        x,y = self.viewer.get_vtk_mouse_position()
+        x, y = self.viewer.get_vtk_mouse_position()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor():
             self.left_pressed = False
-            Publisher.sendMessage("Add measurement point",
-                                  position=(x, y,z),
-                                  type=const.LINEAR,
-                                  location=const.SURFACE,
-                                  radius=self._radius)
+            Publisher.sendMessage(
+                "Add measurement point",
+                position=(x, y, z),
+                type=const.LINEAR,
+                location=const.SURFACE,
+                radius=self._radius,
+            )
             self.viewer.interactor.Render()
         else:
             self.left_pressed = True
@@ -455,6 +456,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for angular measurements by clicking consecutive points in the volume viewer.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.viewer = viewer
@@ -468,23 +470,25 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertAngularMeasurePoint)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        Publisher.sendMessage('Toggle toolbar item', _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
-        x,y = self.viewer.get_vtk_mouse_position()
+        x, y = self.viewer.get_vtk_mouse_position()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor():
             self.left_pressed = False
-            Publisher.sendMessage("Add measurement point",
-                                  position=(x, y,z),
-                                  type=const.ANGULAR,
-                                  location=const.SURFACE,
-                                  radius=self._radius)
+            Publisher.sendMessage(
+                "Add measurement point",
+                position=(x, y, z),
+                type=const.ANGULAR,
+                location=const.SURFACE,
+                radius=self._radius,
+            )
             self.viewer.interactor.Render()
         else:
             self.left_pressed = True
@@ -494,6 +498,7 @@ class SeedInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for selecting sub-surfaces.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.viewer = viewer
@@ -503,7 +508,7 @@ class SeedInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertSeed)
 
     def OnInsertSeed(self, obj, evt):
-        x,y = self.viewer.get_vtk_mouse_position()
+        x, y = self.viewer.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.viewer.ren)
         point_id = self.picker.GetPointId()
         if point_id > -1:
@@ -521,6 +526,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     in the location of the mouse click. The picked position is then used to update the position
     of the slices and the cross pointer.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
@@ -539,12 +545,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.picker.GetPickPosition()
 
         if self.picker.GetActor():
-            Publisher.sendMessage('Update slices position', position=[x, -y, z])
-            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
-            Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
+            Publisher.sendMessage("Update slices position", position=[x, -y, z])
+            Publisher.sendMessage("Set cross focal point", position=[x, -y, z, None, None, None])
+            Publisher.sendMessage("Update volume viewer pointer", position=[x, y, z])
 
-            Publisher.sendMessage('Update slice viewer')
-            Publisher.sendMessage('Render volume viewer')
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Render volume viewer")
 
 
 class RegistrationInteractorStyle(DefaultInteractorStyle):
@@ -556,6 +562,7 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
 
     Identical to CrossInteractorStyle for now, but may be extended in the future.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
         self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
@@ -574,12 +581,12 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.picker.GetPickPosition()
 
         if self.picker.GetActor():
-            Publisher.sendMessage('Update slices position', position=[x, -y, z])
-            Publisher.sendMessage('Set cross focal point', position=[x, -y, z, None, None, None])
-            Publisher.sendMessage('Update volume viewer pointer', position=[x, y, z])
+            Publisher.sendMessage("Update slices position", position=[x, -y, z])
+            Publisher.sendMessage("Set cross focal point", position=[x, -y, z, None, None, None])
+            Publisher.sendMessage("Update volume viewer pointer", position=[x, y, z])
 
-            Publisher.sendMessage('Update slice viewer')
-            Publisher.sendMessage('Render volume viewer')
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Render volume viewer")
 
 
 class NavigationInteractorStyle(DefaultInteractorStyle):
@@ -587,6 +594,7 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
     Interactor style used for 3d volume viewer during navigation mode. The functions are the same as
     in the default interactor style: rotating, panning, and zooming.
     """
+
     def __init__(self, viewer):
         super().__init__(viewer)
 
