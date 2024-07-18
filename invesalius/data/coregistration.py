@@ -171,7 +171,7 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     return m_target_in_tracker
 
 
-def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id):
+def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id, icp=[None, None]):
     if r_stylus is None:
         # utils.debug("STYLUS ORIENTATION NOT DEFINED!")
         r_stylus = np.eye(3)
@@ -189,6 +189,7 @@ def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id):
 
     # translate m_probe_ref from tracker to image space
     m_img = m_change @ m_probe_ref
+    m_img = apply_icp(m_img, icp)
 
     # rotate m_probe_ref from tracker to image space
     r_img = r_stylus @ m_probe_ref[:3, :3]
@@ -252,42 +253,6 @@ def compute_marker_transformation(coord_raw, obj_ref_mode):
         axes="rzyx",
     )
     return m_probe
-
-
-def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
-    m_change, obj_ref_mode = inp
-
-    # transform raw marker coordinate to object center
-    m_probe = compute_marker_transformation(coord_raw, obj_ref_mode)
-
-    # transform object center to reference marker if specified as dynamic reference
-    if ref_mode_id:
-        m_ref = compute_marker_transformation(coord_raw, 1)
-        m_probe_ref = np.linalg.inv(m_ref) @ m_probe
-    else:
-        m_probe_ref = m_probe
-
-    # invert y coordinate
-    m_probe_ref[2, -1] = -m_probe_ref[2, -1]
-
-    # corregistrate from tracker to image space
-    m_img = m_change @ m_probe_ref
-    m_img = apply_icp(m_img, icp)
-
-    # compute rotation angles
-    angles = np.degrees(tr.euler_from_matrix(m_img, axes="sxyz"))
-
-    # create output coordinate list
-    coord = (
-        m_img[0, -1],
-        m_img[1, -1],
-        m_img[2, -1],
-        angles[0],
-        angles[1],
-        angles[2],
-    )
-
-    return coord, m_img
 
 
 def apply_icp(m_img, icp):
@@ -476,18 +441,14 @@ class CoordinateCorregistrateNoObject(threading.Thread):
 
                 # NOTE: THIS THREAD WILL BE REFACTORED/DELETED SOON (with multicoil PR)
 
-                # m_change = coreg_data[1]
-                # r_stylus = coreg_data[0] # currently used for probe only
-                coords, m_imgs = corregistrate_probe(
+                # m_change = coreg_data[1], r_stylus = coreg_data[0]
+                coord, m_img = corregistrate_probe(
                     coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id
                 )
-                coord, m_img = corregistrate_dynamic(
-                    coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp]
-                )
 
-                coords = np.stack((coords, coord))
-                m_imgs = np.stack((m_imgs, m_img))
-
+                # temporary hack to follow old code structure, will be refactored soon
+                coords = [coord, coord]
+                m_imgs = [m_img, m_img]
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]

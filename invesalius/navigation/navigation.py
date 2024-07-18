@@ -142,7 +142,7 @@ class UpdateNavigationScene(threading.Thread):
             object_visible_flag = False
             try:
                 coords, marker_visibilities, m_imgs, view_obj = self.coord_queue.get_nowait()
-                coord = coords[1]  # main coil
+                coord = coords[1]  # main coil (or stylus if view_obj=False)
                 m_img = m_imgs[1]
 
                 got_coords = True

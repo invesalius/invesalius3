@@ -137,9 +137,7 @@ def calculate_fre(
 
     dist = np.zeros([3, 1])
     for i in range(0, 6, 2):
-        p_m, _ = dcr.corregistrate_dynamic(
-            (m_change, 0), fiducials_raw[i : i + 2], ref_mode_id, icp
-        )
+        p_m, _ = dcr.corregistrate_probe(m_change, None, fiducials_raw[i : i + 2], ref_mode_id, icp)
         dist[int(i / 2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i / 2), :]), 2)))
 
     return float(np.sqrt(np.sum(dist**2) / 3))

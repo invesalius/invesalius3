@@ -4474,9 +4474,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def GetCurrentCoord(self) -> Tuple[Tuple, List[bool]]:
         coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
-        coord, _ = dcr.corregistrate_dynamic(
-            (self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None]
-        )
+        coord, _ = dcr.corregistrate_probe(self.m_change, None, coord_raw, const.DEFAULT_REF_MODE)
         return coord[:3], marker_visibilities
 
     def AddMarker(self, size: int, colour: Tuple[int, int, int], coord: np.ndarray) -> None:
