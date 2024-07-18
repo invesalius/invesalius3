@@ -1,9 +1,11 @@
 import os
+
 import vtk
 
 import invesalius.data.vtk_utils as vtku
-from invesalius.pubsub import pub as Publisher
 from invesalius import inv_paths
+from invesalius.pubsub import pub as Publisher
+
 
 class ProbeVisualizer:
     """
@@ -23,14 +25,14 @@ class ProbeVisualizer:
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.ShowProbe, 'Show probe in viewer volume')
-        Publisher.subscribe(self.UpdateProbePose, 'Update probe pose')
-        Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.ShowProbe, "Show probe in viewer volume")
+        Publisher.subscribe(self.UpdateProbePose, "Update probe pose")
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status  # show probe when start navigation
-        if self.probe_actor is not None: # and hide it when stop navigation
-            Publisher.sendMessage('Press show-probe button',pressed=nav_status)
+        if self.probe_actor is not None:  # and hide it when stop navigation
+            Publisher.sendMessage("Press show-probe button", pressed=nav_status)
             self.ShowProbe(self.is_navigating)
             self.interactor.Render()
 
@@ -40,15 +42,15 @@ class ProbeVisualizer:
         if self.probe_actor:
             self.probe_actor.SetVisibility(self.show_probe)
             self.interactor.Render()
-    
+
     def AddProbeActor(self, probe_path):
         vtk_colors = vtk.vtkNamedColors()
         obj_polydata = vtku.CreateObjectPolyData(probe_path)
-             
-        # This rotation is done so that the probe visibility icon in viewer_volume doesn't need to be rotated
+
+        # This rotation is done so that the probe visibility icon in viewer_volume doesn"t need to be rotated
         transform = vtk.vtkTransform()
         transform.RotateZ(-150)
-        
+
         transform_filt = vtk.vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
         transform_filt.SetInputData(obj_polydata)
@@ -60,10 +62,10 @@ class ProbeVisualizer:
 
         probe_actor = vtk.vtkActor()
         probe_actor.SetMapper(obj_mapper)
-        probe_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d('GhostWhite'))
+        probe_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d("GhostWhite"))
         probe_actor.GetProperty().SetSpecular(30)
         probe_actor.GetProperty().SetSpecularPower(80)
-        probe_actor.GetProperty().SetOpacity(.4)
+        probe_actor.GetProperty().SetOpacity(0.4)
         probe_actor.SetVisibility(0)
 
         self.probe_actor = probe_actor
@@ -75,12 +77,13 @@ class ProbeVisualizer:
             self.probe_actor = None
 
     def UpdateProbePose(self, m_img, coord):
-        m_img_flip = m_img.copy() 
+        m_img_flip = m_img.copy()
         m_img_flip[1, -1] = -m_img_flip[1, -1]
 
         m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
 
         self.probe_actor.SetUserMatrix(m_img_vtk)
+
 
 """
 Code used to shrink and align old stylus.stl file. 

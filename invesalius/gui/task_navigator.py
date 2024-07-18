@@ -1002,12 +1002,13 @@ class RefinePage(wx.Panel):
         Publisher.sendMessage("Move to tracker page")
 
     def OnNext(self, evt):
-        Publisher.sendMessage('Move to stylus page')
+        Publisher.sendMessage("Move to stylus page")
 
     def OnRefine(self, evt):
         self.icp.RegisterICP(self.navigation, self.tracker)
         if self.icp.use_icp:
             self.OnUpdateUI()
+
 
 class StylusPage(wx.Panel):
     def __init__(self, parent, nav_hub):
@@ -1023,31 +1024,33 @@ class StylusPage(wx.Panel):
         lbl = wx.StaticText(self, -1, _("Calibrate stylus with head"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
-        self.help_img = wx.Image(os.path.join(inv_paths.ICON_DIR,"align.png"), wx.BITMAP_TYPE_ANY)
-        
-        #first show help in grayscale. when record successful: make it green to show success
+        self.help_img = wx.Image(os.path.join(inv_paths.ICON_DIR, "align.png"), wx.BITMAP_TYPE_ANY)
+
+        # first show help in grayscale. when record successful: make it green to show success
         self.help = wx.GenericStaticBitmap(
-            self, 
-            -1, 
-            self.help_img.ConvertToGreyscale(), 
-            (10, 5), 
-            (self.help_img.GetWidth(), self.help_img.GetHeight())
+            self,
+            -1,
+            self.help_img.ConvertToGreyscale(),
+            (10, 5),
+            (self.help_img.GetWidth(), self.help_img.GetHeight()),
         )
 
         lbl_rec = wx.StaticText(self, -1, _("Point stylus up relative to head, like so:"))
         btn_rec = wx.Button(self, -1, _("Record"))
         btn_rec.SetToolTip("Record stylus orientation relative to head")
         btn_rec.Bind(wx.EVT_BUTTON, self.onRecord)
-        
+
         self.btn_rec = btn_rec
 
-        self.border.AddMany([
-            (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
-            (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
-            (self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1),      
-            (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 1)
-        ])
-        
+        self.border.AddMany(
+            [
+                (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
+                (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
+                (self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1),
+                (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 1),
+            ]
+        )
+
         back_button = wx.Button(self, label="Back")
         back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
         next_button = wx.Button(self, label="Next")
@@ -1058,48 +1061,54 @@ class StylusPage(wx.Panel):
         bottom_sizer.Add(next_button)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.AddMany([
-            (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 1),
-            (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 1)
-        ])
-        
+        main_sizer.AddMany(
+            [
+                (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 1),
+                (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 1),
+            ]
+        )
+
         self.SetSizerAndFit(main_sizer)
         self.Layout()
         self.__bind_events()
 
     def __bind_events(self):
-        pass #Publisher.subscribe(self.OnCloseProject, 'Remove object data')
+        pass  # Publisher.subscribe(self.OnCloseProject, 'Remove object data')
 
     def onRecord(self, evt):
-        marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(ref_mode_id=0, n_samples=1)
-        if marker_visibilities[0] and marker_visibilities[1]: #if probe and head are visible
-            if self.navigation.SetStylusOrientation(coord_raw): # if successfully created r_stylus
+        marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(
+            ref_mode_id=0, n_samples=1
+        )
+        if marker_visibilities[0] and marker_visibilities[1]:  # if probe and head are visible
+            if self.navigation.SetStylusOrientation(coord_raw):  # if successfully created r_stylus
                 # Save to config.json file
                 ses.Session().SetConfig(
-                    'navigation-stylus', 
-                    {'r_stylus': self.navigation.r_stylus.tolist()}
+                    "navigation-stylus", {"r_stylus": self.navigation.r_stylus.tolist()}
                 )
 
-                if not self.done: #only show green on first record
+                if not self.done:  # only show green on first record
                     self.done = True
-                    self.help.Destroy() #show a colored (green) bitmap as opposed to grayscale
+                    self.help.Destroy()  # show a colored (green) bitmap as opposed to grayscale
                     self.help = wx.GenericStaticBitmap(
-                        self, 
-                        -1, 
-                        self.help_img.ConvertToBitmap(), 
-                        (10, 5), 
-                        (self.help_img.GetWidth(), self.help_img.GetHeight())
+                        self,
+                        -1,
+                        self.help_img.ConvertToBitmap(),
+                        (10, 5),
+                        (self.help_img.GetWidth(), self.help_img.GetHeight()),
                     )
-                    self.border.Insert(2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
+                    self.border.Insert(
+                        2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1
+                    )
                     self.Layout()
         else:
-            wx.MessageBox(_("Probe or head not visible to tracker!"), _("InVesalius 3"))            
+            wx.MessageBox(_("Probe or head not visible to tracker!"), _("InVesalius 3"))
 
     def OnBack(self, evt):
-        Publisher.sendMessage('Move to refine page')
- 
+        Publisher.sendMessage("Move to refine page")
+
     def OnNext(self, evt):
-        Publisher.sendMessage('Move to stimulator page')
+        Publisher.sendMessage("Move to stimulator page")
+
 
 class StimulatorPage(wx.Panel):
     def __init__(self, parent, nav_hub):
@@ -1345,13 +1354,17 @@ class ControlPanel(wx.Panel):
 
         # Toggle button for showing probe during navigation
         tooltip = _("Show probe")
-        BMP_SHOW_PROBE = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG)
-        show_probe_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        BMP_SHOW_PROBE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG
+        )
+        show_probe_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         show_probe_button.SetBackgroundColour(GREY_COLOR)
         show_probe_button.SetBitmap(BMP_SHOW_PROBE)
         show_probe_button.SetToolTip(tooltip)
         show_probe_button.Enable(True)
-        self.UpdateToggleButton(show_probe_button, False) #the probe is hidden at start
+        self.UpdateToggleButton(show_probe_button, False)  # the probe is hidden at start
         show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
         self.show_probe_button = show_probe_button
 
@@ -1497,10 +1510,10 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
 
         # Externally press/unpress and enable/disable buttons.
-        Publisher.subscribe(self.PressShowProbeButton, 'Press show-probe button')
+        Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
-        Publisher.subscribe(self.PressShowCoilButton, 'Press show-coil button')
-        Publisher.subscribe(self.EnableShowCoilButton, 'Enable show-coil button')
+        Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
+        Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
 
         Publisher.subscribe(self.PressTrackObjectButton, "Press track object button")
         Publisher.subscribe(self.EnableTrackObjectButton, "Enable track object button")
@@ -1790,8 +1803,8 @@ class ControlPanel(wx.Panel):
     def OnShowCoil(self, evt=None):
         self.UpdateToggleButton(self.show_coil_button)
         pressed = self.show_coil_button.GetValue()
-        Publisher.sendMessage('Show coil in viewer volume', state=pressed)
-    
+        Publisher.sendMessage("Show coil in viewer volume", state=pressed)
+
     # 'Show probe' button
     def PressShowProbeButton(self, pressed=False):
         self.UpdateToggleButton(self.show_probe_button, pressed)
@@ -1800,7 +1813,7 @@ class ControlPanel(wx.Panel):
     def OnShowProbe(self, evt=None):
         self.UpdateToggleButton(self.show_probe_button)
         pressed = self.show_probe_button.GetValue()
-        Publisher.sendMessage('Show probe in viewer volume', state=pressed)
+        Publisher.sendMessage("Show probe in viewer volume", state=pressed)
 
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
