@@ -313,7 +313,7 @@ class Viewer(wx.Panel):
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
-        
+
         self.probe_visualizer = ProbeVisualizer(self.ren, self.interactor)
 
         self.seed_offset = const.SEED_OFFSET

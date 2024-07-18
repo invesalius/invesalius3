@@ -142,7 +142,7 @@ class UpdateNavigationScene(threading.Thread):
             object_visible_flag = False
             try:
                 coords, marker_visibilities, m_imgs, view_obj = self.coord_queue.get_nowait()
-                coord = coords[1] # main coil
+                coord = coords[1]  # main coil
                 m_img = m_imgs[1]
 
                 got_coords = True
@@ -220,9 +220,11 @@ class UpdateNavigationScene(threading.Thread):
                         "Update volume viewer pointer",
                         position=[coord[0], -coord[1], coord[2]],
                     )
-                
-                wx.CallAfter(Publisher.sendMessage, 'Update probe pose', m_img=m_imgs[0], coord=coords[0])
-                
+
+                wx.CallAfter(
+                    Publisher.sendMessage, "Update probe pose", m_img=m_imgs[0], coord=coords[0]
+                )
+
                 # Render the volume viewer and the slice viewers.
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 wx.CallAfter(Publisher.sendMessage, "Update slice viewer")
@@ -346,9 +348,9 @@ class Navigation(metaclass=Singleton):
         )
 
         # Try to load stylus orientation data
-        stylus_data = session.GetConfig('navigation-stylus')
+        stylus_data = session.GetConfig("navigation-stylus")
         if stylus_data is not None:
-            self.r_stylus = np.array(stylus_data['r_stylus'])
+            self.r_stylus = np.array(stylus_data["r_stylus"])
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -419,24 +421,23 @@ class Navigation(metaclass=Singleton):
 
     def SetStylusOrientation(self, coord_raw):
         if self.m_change is not None:
-            m_probe = dcr.compute_marker_transformation(coord_raw, 0) 
+            m_probe = dcr.compute_marker_transformation(coord_raw, 0)
 
             # transform probe to reference system if dynamic ref_mode
             if self.ref_mode_id:
                 up_trk = dcr.object_to_reference(coord_raw, m_probe)[:3, :3]
             else:
                 up_trk = m_probe[:3, :3]
-            
-            # up_trk: orientation 'stylus pointing up along head' in tracker space 
+
+            # up_trk: orientation 'stylus pointing up along head' in tracker space
             # up_vtk: orientation 'stylus pointing up along head' in vtk space
-            up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
+            up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes="rxyz")[:3, :3]
 
             # Rotation from tracker to VTK coordinate system
             self.r_stylus = up_vtk @ np.linalg.inv(up_trk)
             return True
         else:
             return False
-        
 
     def StartNavigation(self, tracker, icp):
         # initialize jobs list
