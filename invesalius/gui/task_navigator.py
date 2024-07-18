@@ -513,9 +513,7 @@ class ImagePage(wx.Panel):
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
 
-        assert len(found) != 0, "No fiducial found for which {} = {}".format(
-            attribute_name, attribute_value
-        )
+        assert len(found) != 0, f"No fiducial found for which {attribute_name} = {attribute_value}"
         return found[0]
 
     def SetImageFiducial(self, fiducial_name, position):
@@ -769,9 +767,7 @@ class TrackerPage(wx.Panel):
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
 
-        assert len(found) != 0, "No fiducial found for which {} = {}".format(
-            attribute_name, attribute_value
-        )
+        assert len(found) != 0, f"No fiducial found for which {attribute_name} = {attribute_value}"
         return found[0]
 
     def OnSetTrackerFiducial(self, fiducial_name):
@@ -2986,7 +2982,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
-            with open(filename, "r") as file:
+            with open(filename) as file:
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
                 version = int(magick_line.split("_")[-1])
@@ -3060,12 +3056,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
         timestamp = time.localtime(time.time())
-        stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-        )
-        stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-        )
+        stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+        stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
         sep = "-"
         parts = [stamp_date, stamp_time, prj_data.name, "markers"]
         default_filename = sep.join(parts) + ".mkss"

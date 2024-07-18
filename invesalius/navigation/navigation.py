@@ -35,7 +35,6 @@ import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 import invesalius.session as ses
-import invesalius.utils as utils
 from invesalius.data.markers.marker import MarkerType
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
