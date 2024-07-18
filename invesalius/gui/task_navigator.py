@@ -1010,7 +1010,7 @@ class StylusPage(wx.Panel):
         border = wx.FlexGridSizer(1,3, 5)
         self.border = border
 
-        self.success = False
+        self.done = False
 
         lbl = wx.StaticText(self, -1, _("Calibrate stylus with head"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -1059,12 +1059,12 @@ class StylusPage(wx.Panel):
     def onRecord(self, evt):
         marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(ref_mode_id=0, n_samples=1)
         if marker_visibilities[0] and marker_visibilities[1]: #if probe and head are visible
-            if self.navigation.SetStylusOrientation(coord_raw): # if successfully created r_change
+            if self.navigation.SetStylusOrientation(coord_raw): # if successfully created r_stylus
                 # Save to config.json file
-                ses.Session().SetConfig('navigation-stylus', {'r_change': self.navigation.r_change.tolist()})
+                ses.Session().SetConfig('navigation-stylus', {'r_stylus': self.navigation.r_stylus.tolist()})
 
-                if not self.success: #only show green on first successful record
-                    self.success = True
+                if not self.done: #only show green on first record
+                    self.done = True
                     self.help.Destroy() #show a colored (green) bitmap as opposed to grayscale
                     self.help = wx.GenericStaticBitmap(self, -1, self.help_img.ConvertToBitmap(), (10, 5), (self.help_img.GetWidth(), self.help_img.GetHeight()))
                     self.border.Insert(2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)

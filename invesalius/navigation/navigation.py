@@ -246,7 +246,7 @@ class Navigation(metaclass=Singleton):
         self.object_registration = None
         self.track_obj = False
         self.m_change = None
-        self.r_change = None
+        self.r_stylus = None
         self.obj_data = None
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -348,7 +348,7 @@ class Navigation(metaclass=Singleton):
         # Try to load stylus orientation data
         stylus_data = session.GetConfig('navigation-stylus')
         if stylus_data is not None:
-            self.r_change = np.array(stylus_data['r_change'])
+            self.r_stylus = np.array(stylus_data['r_stylus'])
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -432,7 +432,7 @@ class Navigation(metaclass=Singleton):
             up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes='rxyz')[:3,:3]
 
             # Rotation from tracker to VTK coordinate system
-            self.r_change = up_vtk @ np.linalg.inv(up_trk)
+            self.r_stylus = up_vtk @ np.linalg.inv(up_trk)
             return True
         else:
             return False
@@ -475,7 +475,7 @@ class Navigation(metaclass=Singleton):
                 # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
                 obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
 
-                coreg_data = [self.r_change, self.m_change, obj_ref_mode]
+                coreg_data = [self.r_stylus, self.m_change, obj_ref_mode]
 
                 if self.ref_mode_id:
                     coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
@@ -510,7 +510,7 @@ class Navigation(metaclass=Singleton):
                     )
                 )
         else:
-            coreg_data = (self.r_change, self.m_change, 0)
+            coreg_data = (self.r_stylus, self.m_change, 0)
             queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
             jobs_list.append(
                 dcr.CoordinateCorregistrateNoObject(
