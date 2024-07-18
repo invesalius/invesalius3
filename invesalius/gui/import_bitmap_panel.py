@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,19 +15,18 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 import wx
 import wx.gizmos as gizmos
-from invesalius.pubsub import pub as Publisher
 import wx.lib.splitter as spl
 
 import invesalius.constants as const
-import invesalius.gui.dialogs as dlg
 import invesalius.gui.bitmap_preview_panel as bpp
+import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bpr
 from invesalius.gui.dialogs import ImportBitmapParameters as dialogs
 from invesalius.i18n import tr as _
-
+from invesalius.pubsub import pub as Publisher
 
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
@@ -43,7 +42,7 @@ EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
 
 
 class SelectEvent(wx.PyCommandEvent):
-    def __init__(self , evtType, id):
+    def __init__(self, evtType, id):
         super(SelectEvent, self).__init__(evtType, id)
 
     def GetSelectID(self):
@@ -64,7 +63,7 @@ class Panel(wx.Panel):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(InnerPanel(self), 1, wx.EXPAND|wx.GROW|wx.ALL, 5)
+        sizer.Add(InnerPanel(self), 1, wx.EXPAND | wx.GROW | wx.ALL, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -100,26 +99,27 @@ class InnerPanel(wx.Panel):
         btnsizer.AddButton(self.btn_cancel)
         btnsizer.Realize()
 
-        self.combo_interval = wx.ComboBox(panel, -1, "", choices=const.IMPORT_INTERVAL,
-                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.combo_interval = wx.ComboBox(
+            panel, -1, "", choices=const.IMPORT_INTERVAL, style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
         self.combo_interval.SetSelection(0)
 
         inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        inner_sizer.Add(btnsizer, 0, wx.LEFT|wx.TOP, 5)
-        inner_sizer.Add(self.combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        inner_sizer.Add(btnsizer, 0, wx.LEFT | wx.TOP, 5)
+        inner_sizer.Add(self.combo_interval, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
         panel.SetSizer(inner_sizer)
         inner_sizer.Fit(panel)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(splitter, 20, wx.EXPAND)
-        sizer.Add(panel, 0, wx.EXPAND|wx.LEFT, 90)
+        sizer.Add(panel, 0, wx.EXPAND | wx.LEFT, 90)
 
         self.text_panel = TextPanel(splitter)
         splitter.AppendWindow(self.text_panel, 250)
 
         self.image_panel = ImagePanel(splitter)
         splitter.AppendWindow(self.image_panel, 250)
-        
+
         self.SetSizer(sizer)
         sizer.Fit(self)
 
@@ -129,16 +129,16 @@ class InnerPanel(wx.Panel):
 
     def _bind_pubsubevt(self):
         Publisher.subscribe(self.ShowBitmapPreview, "Load import bitmap panel")
-        Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")  
+        Publisher.subscribe(self.GetSelectedImages, "Selected Import Images")
 
     def ShowBitmapPreview(self, data):
-        #self.patients.extend(dicom_groups)
+        # self.patients.extend(dicom_groups)
         self.text_panel.Populate(data)
 
     def GetSelectedImages(self, selection):
         self.first_image_selection = selection[0]
         self.last_image_selection = selection[1]
-        
+
     def _bind_events(self):
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
@@ -159,7 +159,6 @@ class InnerPanel(wx.Panel):
         parm = dlg.ImportBitmapParameters()
         parm.SetInterval(self.combo_interval.GetSelection())
         parm.ShowModal()
-
 
     def OnClickCancel(self, evt):
         Publisher.sendMessage("Cancel DICOM load")
@@ -183,23 +182,25 @@ class TextPanel(wx.Panel):
         self.__bind_pubsub_evt()
 
     def __bind_pubsub_evt(self):
-        Publisher.subscribe(self.SelectSeries, 'Select series in import panel')
+        Publisher.subscribe(self.SelectSeries, "Select series in import panel")
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
 
     def __init_gui(self):
-        tree = gizmos.TreeListCtrl(self, -1, style =
-                                   wx.TR_DEFAULT_STYLE
-                                   | wx.TR_HIDE_ROOT
-                                   | wx.TR_ROW_LINES
-                                   #  | wx.TR_COLUMN_LINES
-                                   | wx.TR_FULL_ROW_HIGHLIGHT
-                                   #| wx.TR_MULTIPLE
-                                   | wx.TR_HIDE_ROOT
-                                   , agwStyle=gizmos.TR_MULTIPLE)
-
+        tree = gizmos.TreeListCtrl(
+            self,
+            -1,
+            style=wx.TR_DEFAULT_STYLE
+            | wx.TR_HIDE_ROOT
+            | wx.TR_ROW_LINES
+            #  | wx.TR_COLUMN_LINES
+            | wx.TR_FULL_ROW_HIGHLIGHT
+            # | wx.TR_MULTIPLE
+            | wx.TR_HIDE_ROOT,
+            agwStyle=gizmos.TR_MULTIPLE,
+        )
 
         tree.AddColumn(_("Path"))
         tree.AddColumn(_("Type"))
@@ -213,37 +214,33 @@ class TextPanel(wx.Panel):
         self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
 
-
-
     def OnKeyPress(self, evt):
         key_code = evt.GetKeyCode()
-        
-        if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
-            
-            for selected_item in self.selected_items:
 
+        if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
+            for selected_item in self.selected_items:
                 if selected_item != self.tree.GetRootItem():
                     text_item = self.tree.GetItemText(selected_item)
-                    
+
                     index = bpr.BitmapData().GetIndexByPath(text_item)
 
                     bpr.BitmapData().RemoveFileByPath(text_item)
 
                     data_size = len(bpr.BitmapData().GetData())
-                    
+
                     if index >= 0 and index < data_size:
-                        Publisher.sendMessage('Set bitmap in preview panel', pos=index)
+                        Publisher.sendMessage("Set bitmap in preview panel", pos=index)
                     elif index == data_size and data_size > 0:
-                        Publisher.sendMessage('Set bitmap in preview panel', pos=index - 1)
+                        Publisher.sendMessage("Set bitmap in preview panel", pos=index - 1)
                     elif data_size == 1:
-                        Publisher.sendMessage('Set bitmap in preview panel', pos=0)
+                        Publisher.sendMessage("Set bitmap in preview panel", pos=0)
                     else:
-                        Publisher.sendMessage('Show black slice in single preview image')
-                    
+                        Publisher.sendMessage("Show black slice in single preview image")
+
                     self.tree.Delete(selected_item)
                     self.tree.Update()
                     self.tree.Refresh()
-                    Publisher.sendMessage('Remove preview panel', data=text_item)
+                    Publisher.sendMessage("Remove preview panel", data=text_item)
 
         evt.Skip()
 
@@ -261,17 +258,16 @@ class TextPanel(wx.Panel):
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
         tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
 
-        Publisher.sendMessage('Load bitmap into import panel', data=data)
+        Publisher.sendMessage("Load bitmap into import panel", data=data)
 
     def OnSelChanged(self, evt):
         self.selected_items = self.tree.GetSelections()
         item = self.selected_items[-1]
-        
-        if self._selected_by_user:
 
+        if self._selected_by_user:
             text_item = self.tree.GetItemText(item)
             index = bpr.BitmapData().GetIndexByPath(text_item)
-            Publisher.sendMessage('Set bitmap in preview panel', pos=index)
+            Publisher.sendMessage("Set bitmap in preview panel", pos=index)
 
         evt.Skip()
 
@@ -347,7 +343,6 @@ class SeriesPanel(wx.Panel):
 
         self.thumbnail_preview = bpp.BitmapPreviewSeries(self)
 
-
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.thumbnail_preview, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Fit(self)
@@ -362,11 +357,10 @@ class SeriesPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
-        Publisher.subscribe(self.SetBitmapFiles, 'Load bitmap into import panel')
+        Publisher.subscribe(self.SetBitmapFiles, "Load bitmap into import panel")
 
     def _bind_gui_evt(self):
         self.thumbnail_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
-
 
     def GetSelectedImagesRange(self):
         return [self.bitmap_preview.first_selected, self.dicom_preview_last_selection]
@@ -395,7 +389,6 @@ class SeriesPanel(wx.Panel):
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
-
 class SlicePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -403,14 +396,14 @@ class SlicePanel(wx.Panel):
         self.__bind_evt()
 
     def __bind_evt(self):
-        Publisher.subscribe(self.SetBitmapFiles, 'Load bitmap into import panel')
+        Publisher.subscribe(self.SetBitmapFiles, "Load bitmap into import panel")
 
     def __init_gui(self):
-        self.SetBackgroundColour((255,255,255))
+        self.SetBackgroundColour((255, 255, 255))
         self.bitmap_preview = bpp.SingleImagePreview(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.bitmap_preview, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(self.bitmap_preview, 1, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
         self.SetSizer(sizer)
         self.Layout()

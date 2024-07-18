@@ -8,15 +8,14 @@ import traceback
 
 import numpy as np
 from skimage.transform import resize
+from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
 
 import invesalius.data.slice_ as slc
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
+from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
 from invesalius.utils import new_name_by_pattern
-from invesalius.data.converters import to_vtk
-
-from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
 
 from . import utils
 
@@ -36,9 +35,7 @@ def gen_patches(image, patch_size, overlap):
     sub_image = np.empty(shape=(patch_size, patch_size, patch_size), dtype="float32")
     for idx, (iz, iy, ix) in enumerate(i_cuts):
         sub_image[:] = 0
-        _sub_image = image[
-            iz : iz + patch_size, iy : iy + patch_size, ix : ix + patch_size
-        ]
+        _sub_image = image[iz : iz + patch_size, iy : iy + patch_size, ix : ix + patch_size]
         sz, sy, sx = _sub_image.shape
         sub_image[0:sz, 0:sy, 0:sx] = _sub_image
         ez = iz + sz
@@ -50,9 +47,7 @@ def gen_patches(image, patch_size, overlap):
 
 def predict_patch(sub_image, patch, nn_model, patch_size):
     (iz, ez), (iy, ey), (ix, ex) = patch
-    sub_mask = nn_model.predict(
-        sub_image.reshape(1, patch_size, patch_size, patch_size, 1)
-    )
+    sub_mask = nn_model.predict(sub_image.reshape(1, patch_size, patch_size, patch_size, 1))
     return sub_mask.reshape(patch_size, patch_size, patch_size)[
         0 : ez - iz, 0 : ey - iy, 0 : ex - ix
     ]
@@ -65,9 +60,9 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = (
             nn_model(
-                torch.from_numpy(
-                    sub_image.reshape(1, 1, patch_size, patch_size, patch_size)
-                ).to(device)
+                torch.from_numpy(sub_image.reshape(1, 1, patch_size, patch_size, patch_size)).to(
+                    device
+                )
             )
             .cpu()
             .numpy()
@@ -116,7 +111,7 @@ def segment_torch(
 
     device = torch.device(device_id)
     if weights_file.exists():
-        state_dict = torch.load(str(weights_file), map_location=torch.device('cpu'))
+        state_dict = torch.load(str(weights_file), map_location=torch.device("cpu"))
     else:
         raise FileNotFoundError("Weights file not found")
     model = Unet3D()
@@ -140,7 +135,8 @@ def segment_torch(
 
 
 def segment_torch_jit(
-    image, weights_file,
+    image,
+    weights_file,
     overlap,
     device_id,
     probability_array,
@@ -152,23 +148,26 @@ def segment_torch_jit(
     flipped=False,
 ):
     import torch
+
     from .model import WrapModel
 
-    print(f'\n\n\n{image_spacing}\n\n\n')
-    print("Patch size:",patch_size)
+    print(f"\n\n\n{image_spacing}\n\n\n")
+    print("Patch size:", patch_size)
 
     if resize_by_spacing:
         old_shape = image.shape
-        new_shape = [round(i * j/k) for (i, j, k) in zip(old_shape, image_spacing[::-1], needed_spacing[::-1])]
+        new_shape = [
+            round(i * j / k)
+            for (i, j, k) in zip(old_shape, image_spacing[::-1], needed_spacing[::-1])
+        ]
 
         image = resize(image, output_shape=new_shape, order=0, preserve_range=True)
         original_probability_array = probability_array
         probability_array = np.zeros_like(image)
 
-
     device = torch.device(device_id)
     if weights_file.exists():
-        jit_model = torch.jit.load(weights_file, map_location=torch.device('cpu'))
+        jit_model = torch.jit.load(weights_file, map_location=torch.device("cpu"))
     else:
         raise FileNotFoundError("Weights file not found")
     model = WrapModel(jit_model)
@@ -186,15 +185,16 @@ def segment_torch_jit(
 
     probability_array /= sums
 
-    #FIX: to remove
+    # FIX: to remove
     if flipped:
-        probability_array = np.flip(probability_array,2)
+        probability_array = np.flip(probability_array, 2)
 
     if resize_by_spacing:
-        original_probability_array[:] = resize(probability_array, output_shape=old_shape, preserve_range=True)
+        original_probability_array[:] = resize(
+            probability_array, output_shape=old_shape, preserve_range=True
+        )
 
     comm_array[0] = np.Inf
-
 
 
 ctx = multiprocessing.get_context("spawn")
@@ -212,7 +212,7 @@ class SegmentProcess(ctx.Process):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
-        patch_size=SIZE
+        patch_size=SIZE,
     ):
         multiprocessing.Process.__init__(self)
 
@@ -228,9 +228,7 @@ class SegmentProcess(ctx.Process):
         self._prob_array_fd = fd
 
         fd, fname = tempfile.mkstemp()
-        self._comm_array = np.memmap(
-            filename=fname, shape=(1,), dtype=np.float32, mode="w+"
-        )
+        self._comm_array = np.memmap(filename=fname, shape=(1,), dtype=np.float32, mode="w+")
         self._comm_array_filename = self._comm_array.filename
         self._comm_array_fd = fd
 
@@ -275,9 +273,7 @@ class SegmentProcess(ctx.Process):
         )
 
         if self.apply_wwwl:
-            image = imagedata_utils.get_LUT_value(
-                image, self.window_width, self.window_level
-            )
+            image = imagedata_utils.get_LUT_value(image, self.window_width, self.window_level)
 
         probability_array = np.memmap(
             self._prob_array_filename,
@@ -285,20 +281,14 @@ class SegmentProcess(ctx.Process):
             shape=self._image_shape,
             mode="r+",
         )
-        comm_array = np.memmap(
-            self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
-        )
+        comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
         if self.backend.lower() == "pytorch":
             if not self.torch_weights_file_name:
                 raise FileNotFoundError("Weights file not specified.")
-            folder = inv_paths.MODELS_DIR.joinpath(
-                self.torch_weights_file_name.split(".")[0]
-            )
+            folder = inv_paths.MODELS_DIR.joinpath(self.torch_weights_file_name.split(".")[0])
             system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
-            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
-                self.torch_weights_file_name
-            )
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(self.torch_weights_file_name)
             if system_state_dict_file.exists():
                 weights_file = system_state_dict_file
             elif user_state_dict_file.exists():
@@ -318,7 +308,7 @@ class SegmentProcess(ctx.Process):
                 self.device_id,
                 probability_array,
                 comm_array,
-                self.patch_size
+                self.patch_size,
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
@@ -328,7 +318,7 @@ class SegmentProcess(ctx.Process):
                 self.overlap,
                 probability_array,
                 comm_array,
-                self.patch_size
+                self.patch_size,
             )
 
     @property
@@ -378,7 +368,7 @@ class BrainSegmentProcess(SegmentProcess):
         apply_wwwl=False,
         window_width=255,
         window_level=127,
-        patch_size=SIZE
+        patch_size=SIZE,
     ):
         super().__init__(
             image,
@@ -390,17 +380,15 @@ class BrainSegmentProcess(SegmentProcess):
             apply_wwwl=apply_wwwl,
             window_width=window_width,
             window_level=window_level,
-            patch_size=patch_size
+            patch_size=patch_size,
         )
-        self.torch_weights_file_name = 'brain_mri_t1.pt'
-        self.torch_weights_url = "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
-        self.torch_weights_hash = (
-            "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
+        self.torch_weights_file_name = "brain_mri_t1.pt"
+        self.torch_weights_url = (
+            "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
         )
+        self.torch_weights_hash = "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
 
-        self.keras_weight_file = inv_paths.MODELS_DIR.joinpath(
-            "brain_mri_t1/model.json"
-        )
+        self.keras_weight_file = inv_paths.MODELS_DIR.joinpath("brain_mri_t1/model.json")
 
 
 class TracheaSegmentProcess(SegmentProcess):
@@ -427,13 +415,13 @@ class TracheaSegmentProcess(SegmentProcess):
             apply_wwwl=apply_wwwl,
             window_width=window_width,
             window_level=window_level,
-            patch_size=patch_size
+            patch_size=patch_size,
         )
-        self.torch_weights_file_name = 'trachea_ct.pt'
-        self.torch_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
-        self.torch_weights_hash = (
-            "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
+        self.torch_weights_file_name = "trachea_ct.pt"
+        self.torch_weights_url = (
+            "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
         )
+        self.torch_weights_hash = "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
 
 
 class MandibleCTSegmentProcess(SegmentProcess):
@@ -463,7 +451,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
             apply_wwwl=apply_wwwl,
             window_width=window_width,
             window_level=window_level,
-            patch_size=patch_size
+            patch_size=patch_size,
         )
 
         self.threshold = threshold
@@ -471,11 +459,9 @@ class MandibleCTSegmentProcess(SegmentProcess):
         self.image_spacing = image_spacing
         self.needed_spacing = (0.5, 0.5, 0.5)
 
-        self.torch_weights_file_name = 'mandible_jit_ct.pt'
+        self.torch_weights_file_name = "mandible_jit_ct.pt"
         self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
-        self.torch_weights_hash = (
-            "a9988c64b5f04dfbb6d058b95b737ed801f1a89d1cc828cd3e5d76d81979a724"
-        )
+        self.torch_weights_hash = "a9988c64b5f04dfbb6d058b95b737ed801f1a89d1cc828cd3e5d76d81979a724"
 
     def _run_segmentation(self):
         image = np.memmap(
@@ -486,9 +472,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
         )
 
         if self.apply_wwwl:
-            image = imagedata_utils.get_LUT_value(
-                image, self.window_width, self.window_level
-            )
+            image = imagedata_utils.get_LUT_value(image, self.window_width, self.window_level)
 
         image = (image >= self.threshold).astype(np.float32)
 
@@ -498,20 +482,14 @@ class MandibleCTSegmentProcess(SegmentProcess):
             shape=self._image_shape,
             mode="r+",
         )
-        comm_array = np.memmap(
-            self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
-        )
+        comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
         if self.backend.lower() == "pytorch":
             if not self.torch_weights_file_name:
                 raise FileNotFoundError("Weights file not specified.")
-            folder = inv_paths.MODELS_DIR.joinpath(
-                self.torch_weights_file_name.split(".")[0]
-            )
+            folder = inv_paths.MODELS_DIR.joinpath(self.torch_weights_file_name.split(".")[0])
             system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
-            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
-                self.torch_weights_file_name
-            )
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(self.torch_weights_file_name)
             if system_state_dict_file.exists():
                 weights_file = system_state_dict_file
             elif user_state_dict_file.exists():
@@ -534,7 +512,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 self.patch_size,
                 resize_by_spacing=self.resize_by_spacing,
                 image_spacing=self.image_spacing,
-                needed_spacing=self.needed_spacing
+                needed_spacing=self.needed_spacing,
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
@@ -544,5 +522,5 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 self.overlap,
                 probability_array,
                 comm_array,
-                self.patch_size
+                self.patch_size,
             )

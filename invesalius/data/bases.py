@@ -1,7 +1,9 @@
 import numpy as np
+
 import invesalius.data.coordinates as dco
-import invesalius.data.transformations as tr
 import invesalius.data.coregistration as dcr
+import invesalius.data.transformations as tr
+
 
 def angle_calculation(ap_axis, coil_axis):
     """
@@ -14,8 +16,11 @@ def angle_calculation(ap_axis, coil_axis):
 
     ap_axis = np.array([ap_axis[0], ap_axis[1]])
     coil_axis = np.array([float(coil_axis[0]), float(coil_axis[1])])
-    angle = np.rad2deg(np.arccos((np.dot(ap_axis, coil_axis))/(
-        np.linalg.norm(ap_axis)*np.linalg.norm(coil_axis))))
+    angle = np.rad2deg(
+        np.arccos(
+            (np.dot(ap_axis, coil_axis)) / (np.linalg.norm(ap_axis) * np.linalg.norm(coil_axis))
+        )
+    )
 
     return float(angle)
 
@@ -36,9 +41,9 @@ def base_creation_old(fiducials):
 
     sub1 = p2 - p1
     sub2 = p3 - p1
-    lamb = (sub1[0]*sub2[0]+sub1[1]*sub2[1]+sub1[2]*sub2[2])/np.dot(sub1, sub1)
+    lamb = (sub1[0] * sub2[0] + sub1[1] * sub2[1] + sub1[2] * sub2[2]) / np.dot(sub1, sub1)
 
-    q = p1 + lamb*sub1
+    q = p1 + lamb * sub1
     g1 = p1 - q
     g2 = p3 - q
 
@@ -47,13 +52,11 @@ def base_creation_old(fiducials):
 
     g3 = np.cross(g2, g1)
 
-    g1 = g1/np.sqrt(np.dot(g1, g1))
-    g2 = g2/np.sqrt(np.dot(g2, g2))
-    g3 = g3/np.sqrt(np.dot(g3, g3))
+    g1 = g1 / np.sqrt(np.dot(g1, g1))
+    g2 = g2 / np.sqrt(np.dot(g2, g2))
+    g3 = g3 / np.sqrt(np.dot(g3, g3))
 
-    m = np.matrix([[g1[0], g1[1], g1[2]],
-                   [g2[0], g2[1], g2[2]],
-                   [g3[0], g3[1], g3[2]]])
+    m = np.matrix([[g1[0], g1[1], g1[2]], [g2[0], g2[1], g2[2]], [g3[0], g3[1], g3[2]]])
 
     m_inv = m.I
 
@@ -77,9 +80,9 @@ def base_creation(fiducials):
 
     sub1 = p2 - p1
     sub2 = p3 - p1
-    lamb = np.dot(sub1, sub2)/np.dot(sub1, sub1)
+    lamb = np.dot(sub1, sub2) / np.dot(sub1, sub1)
 
-    q = p1 + lamb*sub1
+    q = p1 + lamb * sub1
     g1 = p3 - q
     g2 = p1 - q
 
@@ -88,14 +91,14 @@ def base_creation(fiducials):
 
     g3 = np.cross(g1, g2)
 
-    g1 = g1/np.sqrt(np.dot(g1, g1))
-    g2 = g2/np.sqrt(np.dot(g2, g2))
-    g3 = g3/np.sqrt(np.dot(g3, g3))
+    g1 = g1 / np.sqrt(np.dot(g1, g1))
+    g2 = g2 / np.sqrt(np.dot(g2, g2))
+    g3 = g3 / np.sqrt(np.dot(g3, g3))
 
     m = np.zeros([3, 3])
-    m[:, 0] = g1/np.sqrt(np.dot(g1, g1))
-    m[:, 1] = g2/np.sqrt(np.dot(g2, g2))
-    m[:, 2] = g3/np.sqrt(np.dot(g3, g3))
+    m[:, 0] = g1 / np.sqrt(np.dot(g1, g1))
+    m[:, 1] = g2 / np.sqrt(np.dot(g2, g2))
+    m[:, 2] = g3 / np.sqrt(np.dot(g3, g3))
 
     return m, q
 
@@ -123,10 +126,12 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
 
     dist = np.zeros([3, 1])
     for i in range(0, 6, 2):
-        p_m, _ = dcr.corregistrate_dynamic((m_change, 0), fiducials_raw[i:i+2], ref_mode_id, icp)
-        dist[int(i/2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i/2), :]), 2)))
+        p_m, _ = dcr.corregistrate_dynamic(
+            (m_change, 0), fiducials_raw[i : i + 2], ref_mode_id, icp
+        )
+        dist[int(i / 2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i / 2), :]), 2)))
 
-    return float(np.sqrt(np.sum(dist ** 2) / 3))
+    return float(np.sqrt(np.sum(dist**2) / 3))
 
 
 # The function flip_x_m is deprecated and was replaced by a simple minus multiplication of the Y coordinate as follows:
@@ -156,6 +161,7 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
 #
 #     return point_rot
 
+
 def transform_icp(m_img, m_icp):
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
@@ -163,12 +169,14 @@ def transform_icp(m_img, m_icp):
 
     return m_img
 
+
 def inverse_transform_icp(m_img, m_icp):
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = np.linalg.inv(m_icp) @ coord_img
     m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
 
     return m_img
+
 
 def object_registration(fiducials, orients, coord_raw, m_change):
     """
@@ -196,12 +204,12 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     #      the lines below, and then again in dco.coordinates_to_transformation_matrix.
     #
     a, b, g = np.radians(coords[3, 3:])
-    r_s0_raw = tr.euler_matrix(a, b, g, axes='rzyx')
+    r_s0_raw = tr.euler_matrix(a, b, g, axes="rzyx")
 
     s0_raw = dco.coordinates_to_transformation_matrix(
         position=coords[3, :3],
         orientation=coords[3, 3:],
-        axes='rzyx',
+        axes="rzyx",
     )
 
     # compute change of basis for object fiducials in source frame
@@ -224,11 +232,11 @@ def object_registration(fiducials, orients, coord_raw, m_change):
         M_p = dco.coordinates_to_transformation_matrix(
             position=fids_dyn[ic, :3],
             orientation=fids_dyn[ic, 3:],
-            axes='rzyx',
+            axes="rzyx",
         )
         M_img = m_change @ M_p
 
-        angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
+        angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, "rzyx")))
         coord_img = list(M_img[:3, -1])
         coord_img[1] = -coord_img[1]
 
@@ -243,7 +251,7 @@ def object_registration(fiducials, orients, coord_raw, m_change):
     s0_dyn = dco.coordinates_to_transformation_matrix(
         position=fids_dyn[3, :3],
         orientation=fids_dyn[3, 3:],
-        axes='rzyx',
+        axes="rzyx",
     )
 
     return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img

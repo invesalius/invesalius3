@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,7 +15,7 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import os
 import sys
@@ -25,11 +25,13 @@ import wx.lib.hyperlink as hl
 
 from invesalius.i18n import tr as _
 
+
 class TaskPanel(wx.Panel):
     """
-    This panel works as a "frame", drawing a white margin arround 
+    This panel works as a "frame", drawing a white margin arround
     the panel that really matters (InnerTaskPanel).
     """
+
     def __init__(self, parent):
         # note: don't change this class!!!
         wx.Panel.__init__(self, parent)
@@ -37,21 +39,20 @@ class TaskPanel(wx.Panel):
         inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
-                  wx.LEFT, 7)
+        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
-class InnerTaskPanel(wx.Panel):
 
+class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        self.SetBackgroundColour(wx.Colour(255, 255, 255))
         self.SetAutoLayout(1)
-        
+
         # Build GUI
         self.__init_gui()
 
@@ -73,7 +74,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Add line sizers into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(link_test, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(link_test, 0, wx.GROW | wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -90,10 +91,9 @@ class InnerTaskPanel(wx.Panel):
         """
         # Example: self.Bind(wx.EVT_BUTTON, self.OnButton)
         self.link_test.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTest)
-    
+
     def OnTest(self, event):
         """
         Describe what this method does
         """
         event.Skip()
-

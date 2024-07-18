@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,15 +15,16 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+
+import uuid
 
 import invesalius.session as ses
-from invesalius.pubsub import pub as Publisher
-from invesalius.data.markers.marker import MarkerType, Marker
+from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.utils import Singleton
 from invesalius.navigation.robot import Robot, RobotObjective
-import uuid
+from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
@@ -37,11 +38,11 @@ class MarkersControl(metaclass=Singleton):
         state = [marker.to_dict() for marker in self.list]
 
         session = ses.Session()
-        session.SetState('markers', state)
+        session.SetState("markers", state)
 
     def LoadState(self):
         session = ses.Session()
-        state = session.GetState('markers')
+        state = session.GetState("markers")
 
         if state is None:
             return
@@ -53,24 +54,27 @@ class MarkersControl(metaclass=Singleton):
     def AddMarker(self, marker, render=True, focus=False):
         """
         Given a marker object, add it to the list of markers and render the new marker.
-        
+
         If focus is True, the the new marker will get the focus on the marker list.
         """
-        if marker.marker_uuid == '':
+        if marker.marker_uuid == "":
             marker.marker_uuid = str(uuid.uuid4())
 
         marker.marker_id = len(self.list)
         self.list.append(marker)
 
-        Publisher.sendMessage('Add marker', marker=marker, render=render, focus=focus)
+        Publisher.sendMessage("Add marker", marker=marker, render=render, focus=focus)
 
         if marker.is_target:
             self.SetTarget(marker.marker_id, check_for_previous=False)
 
         if marker.is_point_of_interest:
             self.SetPointOfInterest(marker.marker_id)
-            Publisher.sendMessage('Set as Efield target at cortex', position=marker.position,
-                                  orientation=marker.orientation)
+            Publisher.sendMessage(
+                "Set as Efield target at cortex",
+                position=marker.position,
+                orientation=marker.orientation,
+            )
 
         if render:  # this behavior could be misleading
             self.SaveState()
@@ -90,7 +94,7 @@ class MarkersControl(metaclass=Singleton):
             self.UnsetPointOfInterest(marker_id)
 
         if render:
-            Publisher.sendMessage('Delete marker', marker=marker)
+            Publisher.sendMessage("Delete marker", marker=marker)
 
         del self.list[marker_id]
 
@@ -106,7 +110,7 @@ class MarkersControl(metaclass=Singleton):
             markers.append(self.list[m_id])
             self.DeleteMarker(m_id, render=False)
 
-        Publisher.sendMessage('Delete markers', markers=markers)
+        Publisher.sendMessage("Delete markers", markers=markers)
 
         for idx, m in enumerate(self.list):
             m.marker_id = idx
@@ -114,7 +118,6 @@ class MarkersControl(metaclass=Singleton):
         self.SaveState()
 
     def SetTarget(self, marker_id, check_for_previous=True):
-
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
@@ -135,12 +138,12 @@ class MarkersControl(metaclass=Singleton):
         marker = self.list[marker_id]
         marker.is_target = True
 
-        Publisher.sendMessage('Set target', marker=marker)
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=True)
+        Publisher.sendMessage("Set target", marker=marker)
+        Publisher.sendMessage("Set target transparency", marker=marker, transparent=True)
 
-        # When setting a new target, automatically switch into target mode. Note that the order is important here: 
+        # When setting a new target, automatically switch into target mode. Note that the order is important here:
         # first set the target, then move into target mode.
-        Publisher.sendMessage('Press target mode button', pressed=True)
+        Publisher.sendMessage("Press target mode button", pressed=True)
 
         self.SaveState()
 
@@ -160,7 +163,7 @@ class MarkersControl(metaclass=Singleton):
         marker = self.list[marker_id]
         marker.is_point_of_interest = True
 
-        Publisher.sendMessage('Set point of interest', marker=marker)
+        Publisher.sendMessage("Set point of interest", marker=marker)
 
         self.SaveState()
 
@@ -168,8 +171,8 @@ class MarkersControl(metaclass=Singleton):
         marker = self.list[marker_id]
         marker.is_target = False
 
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-        Publisher.sendMessage('Unset target', marker=marker)
+        Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
+        Publisher.sendMessage("Unset target", marker=marker)
 
         self.SaveState()
 
@@ -177,8 +180,8 @@ class MarkersControl(metaclass=Singleton):
         marker = self.list[marker_id]
         marker.is_point_of_interest = False
 
-        Publisher.sendMessage('Set target transparency', marker=marker, transparent=False)
-        Publisher.sendMessage('Unset point of interest', marker=marker)
+        Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
+        Publisher.sendMessage("Unset point of interest", marker=marker)
 
         self.SaveState()
 
@@ -202,7 +205,7 @@ class MarkersControl(metaclass=Singleton):
 
     def ChangeLabel(self, marker, new_label):
         marker.label = str(new_label)
-        Publisher.sendMessage('Update marker label', marker=marker)
+        Publisher.sendMessage("Update marker label", marker=marker)
 
         self.SaveState()
 
@@ -213,7 +216,7 @@ class MarkersControl(metaclass=Singleton):
         """
         assert len(new_color) == 3
         marker.colour8bit = new_color
-        Publisher.sendMessage('Set new color', marker=marker, new_color=new_color)
+        Publisher.sendMessage("Set new color", marker=marker, new_color=new_color)
 
         self.SaveState()
 
@@ -223,11 +226,11 @@ class MarkersControl(metaclass=Singleton):
         where N is a number.
         """
         current_labels = [m.label for m in self.list]
-        label = 'New marker'
+        label = "New marker"
         i = 1
         while label in current_labels:
             i += 1
-            label = 'New marker ' + str(i)
+            label = "New marker " + str(i)
 
         return label
 
@@ -254,7 +257,7 @@ class MarkersControl(metaclass=Singleton):
         self.transformator.UpdateSelectedMarker(marker)
 
         # Highlight marker in viewer volume.
-        Publisher.sendMessage('Highlight marker', marker=marker)
+        Publisher.sendMessage("Highlight marker", marker=marker)
 
     def DeselectMarker(self):
         # Marker transformator needs to know that no marker is selected so it can stop reacting to

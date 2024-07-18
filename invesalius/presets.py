@@ -19,7 +19,7 @@
 import glob
 import os
 import plistlib
-from typing import TYPE_CHECKING, Tuple, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
@@ -99,9 +99,7 @@ class Presets:
 
                 presets[key] = (t_min, t_max)
 
-        Publisher.sendMessage(
-            "Update threshold limits", threshold_range=(thresh_min, thresh_max)
-        )
+        Publisher.sendMessage("Update threshold limits", threshold_range=(thresh_min, thresh_max))
 
     def SavePlist(self, filename: "str | Path") -> str:
         filename = "{}${}".format(filename, "presets.plist")
@@ -176,9 +174,7 @@ class Presets:
 
 
 def get_wwwl_presets() -> Dict[str, str]:
-    files = glob.glob(
-        os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, "*.plist")
-    )
+    files = glob.glob(os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, "*.plist"))
     presets: Dict[str, str] = {}
     for f in files:
         p = os.path.splitext(os.path.basename(f))[0]
