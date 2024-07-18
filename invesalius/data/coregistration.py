@@ -197,8 +197,7 @@ def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id):
     angles = np.degrees(tr.euler_from_matrix(m_img, axes='sxyz'))
 
     # create output coordinate list
-    coord = np.array([ m_img[0, -1], m_img[1, -1], m_img[2, -1],
-        angles[0], angles[1], angles[2] ])
+    coord = (m_img[0, -1], m_img[1, -1], m_img[2, -1], angles[0], angles[1], angles[2])
 
     return coord, m_img
 
@@ -381,17 +380,17 @@ class CoordinateCorregistrate(threading.Thread):
                 # print(f"Set the coordinate")
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
-                #m_change = coreg_data[1]
-                #r_stylus = coreg_data[0] # currently used for probe only 
-                coords, m_imgs = corregistrate_probe(
+                #m_change = coreg_data[1], r_stylus = coreg_data[0] (r_stylus used for probe only)
+                coord_probe, m_img_probe = corregistrate_probe(
                     coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id
                 )
-                coord, m_img = corregistrate_object_dynamic(
+                coord_coil, m_img_coil = corregistrate_object_dynamic(
                     coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp]
                 )
-                
-                coords = np.stack((coords, coord))
-                m_imgs = np.stack((m_imgs, m_img))
+
+                coords = [coord_probe, coord_coil]
+                m_imgs = [m_img_probe, m_img_coil]
+
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
@@ -403,22 +402,23 @@ class CoordinateCorregistrate(threading.Thread):
                 #
                 if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
                     if self.last_coord is None:
-                        self.last_coord = np.array(coord)
+                        self.last_coord = np.array(coord_coil)
                     else:
                         coord = self.last_coord + (self.target - self.last_coord) * 0.05
+                        coords[1] = coord
                         self.last_coord = coord
 
                     angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
                     translate = coord[0:3]
-                    m_img = tr.compose_matrix(angles=angles, translate=translate)
+                    m_imgs[1] = tr.compose_matrix(angles=angles, translate=translate)
+
+                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs, view_obj])
+               
+                coord = coords[1] # main coil
+                m_img = m_imgs[1]
 
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
-                # self.pipeline.set_message(m_img_flip)
-
-                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs, view_obj])
-                # print('CoordCoreg: put {}'.format(count))
-                # count += 1
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
@@ -465,6 +465,8 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 # print(f"Set the coordinate")
                 # print(self.icp, self.m_icp)
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+
+                # NOTE: THIS THREAD WILL BE REFACTORED/DELETED SOON (with multicoil PR)
 
                 #m_change = coreg_data[1]
                 #r_stylus = coreg_data[0] # currently used for probe only 

@@ -1015,7 +1015,7 @@ class StylusPage(wx.Panel):
         self.navigation = nav_hub.navigation
         self.tracker = nav_hub.tracker
 
-        border = wx.FlexGridSizer(1,3, 5)
+        border = wx.FlexGridSizer(1, 3, 5)
         self.border = border
 
         self.done = False
@@ -1025,8 +1025,14 @@ class StylusPage(wx.Panel):
         self.lbl = lbl
         self.help_img = wx.Image(os.path.join(inv_paths.ICON_DIR,"align.png"), wx.BITMAP_TYPE_ANY)
         
-        #first show help in grayscale. when record successful: make it green
-        self.help = wx.GenericStaticBitmap(self, -1, self.help_img.ConvertToGreyscale(), (10, 5), (self.help_img.GetWidth(), self.help_img.GetHeight()))
+        #first show help in grayscale. when record successful: make it green to show success
+        self.help = wx.GenericStaticBitmap(
+            self, 
+            -1, 
+            self.help_img.ConvertToGreyscale(), 
+            (10, 5), 
+            (self.help_img.GetWidth(), self.help_img.GetHeight())
+        )
 
         lbl_rec = wx.StaticText(self, -1, _("Point stylus up relative to head, like so:"))
         btn_rec = wx.Button(self, -1, _("Record"))
@@ -1069,12 +1075,21 @@ class StylusPage(wx.Panel):
         if marker_visibilities[0] and marker_visibilities[1]: #if probe and head are visible
             if self.navigation.SetStylusOrientation(coord_raw): # if successfully created r_stylus
                 # Save to config.json file
-                ses.Session().SetConfig('navigation-stylus', {'r_stylus': self.navigation.r_stylus.tolist()})
+                ses.Session().SetConfig(
+                    'navigation-stylus', 
+                    {'r_stylus': self.navigation.r_stylus.tolist()}
+                )
 
                 if not self.done: #only show green on first record
                     self.done = True
                     self.help.Destroy() #show a colored (green) bitmap as opposed to grayscale
-                    self.help = wx.GenericStaticBitmap(self, -1, self.help_img.ConvertToBitmap(), (10, 5), (self.help_img.GetWidth(), self.help_img.GetHeight()))
+                    self.help = wx.GenericStaticBitmap(
+                        self, 
+                        -1, 
+                        self.help_img.ConvertToBitmap(), 
+                        (10, 5), 
+                        (self.help_img.GetWidth(), self.help_img.GetHeight())
+                    )
                     self.border.Insert(2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
                     self.Layout()
         else:
