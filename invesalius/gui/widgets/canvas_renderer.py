@@ -50,12 +50,6 @@ if TYPE_CHECKING:
     from invesalius.gui.dicom_preview_panel import SingleImagePreview as dicomSingleImagePreview
     from typings.utils import CanvasElement, CanvasObjects
 
-    from invesalius.data.viewer_slice import Viewer as sliceViewer
-    from invesalius.data.viewer_volume import Viewer as volumeViewer
-    from invesalius.gui.bitmap_preview_panel import SingleImagePreview as bitmapSingleImagePreview
-    from invesalius.gui.dicom_preview_panel import SingleImagePreview as dicomSingleImagePreview
-    from typings.utils import CanvasObjects, Element
-
 
 class CanvasEvent:
     def __init__(

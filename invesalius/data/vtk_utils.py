@@ -41,6 +41,7 @@ from invesalius.pubsub import pub as Publisher
 
 if TYPE_CHECKING:
     import numpy as np
+    from vtkmodules.vtkCommonExecutionModel import vtkAlgorithm
 
     from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
@@ -103,14 +104,14 @@ else:
 
 def ShowProgress(
     number_of_filters: int = 1, dialog_type: str = "GaugeProgress"
-) -> Callable[[object, str], float]:
+) -> Callable[[Union[float, int, "vtkAlgorithm"], str], float]:
     """
     To use this closure, do something like this:
         UpdateProgress = ShowProgress(NUM_FILTERS)
         UpdateProgress(vtkObject)
     """
     progress: List[float] = [0]
-    last_obj_progress = [0]
+    last_obj_progress: List[float] = [0]
     if dialog_type == "ProgressDialog":
         try:
             dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
@@ -122,7 +123,7 @@ def ShowProgress(
     number_of_filters = max(number_of_filters, 1)
     ratio = 100.0 / number_of_filters
 
-    def UpdateProgress(obj: object, label: str = "") -> float:
+    def UpdateProgress(obj: Union[float, int, "vtkAlgorithm"], label: str = "") -> float:
         """
         Show progress on GUI according to pipeline execution.
         """

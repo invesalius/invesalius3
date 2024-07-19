@@ -223,7 +223,7 @@ class InnerTaskPanel(wx.Panel):
                 ok = 1
             else:
                 ok = 0
-        except wx._core.PyAssertionError:  # TODO FIX: win64
+        except wx.PyAssertionError:  # TODO FIX: win64
             ok = 1
 
         if ok:

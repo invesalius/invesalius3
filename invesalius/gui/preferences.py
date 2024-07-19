@@ -659,7 +659,7 @@ class ObjectTab(wx.Panel):
 
                         Publisher.sendMessage("Press target mode button", pressed=False)
 
-            except wx._core.PyAssertionError:  # TODO FIX: win64
+            except wx.PyAssertionError:  # TODO FIX: win64
                 pass
             dialog.Destroy()
         else:

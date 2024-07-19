@@ -92,7 +92,7 @@ if not os.path.exists(ICON_DIR):
     DOC_DIR = INV_TOP_DIR.parent.parent.joinpath("docs").resolve()
 
 
-def create_conf_folders():
+def create_conf_folders() -> None:
     USER_INV_DIR.mkdir(parents=True, exist_ok=True)
     USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
     USER_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -100,7 +100,7 @@ def create_conf_folders():
     USER_PLUGINS_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
-def copy_old_files():
+def copy_old_files() -> None:
     for f in OLD_USER_INV_DIR.glob("*"):
         if f.is_file():
             print(

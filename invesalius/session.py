@@ -24,11 +24,14 @@ import json
 import os
 from json.decoder import JSONDecodeError
 from random import randint
-from typing import Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
@@ -148,13 +151,13 @@ class Session(metaclass=Singleton):
 
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
 
-    def ChangeProject(self):
+    def ChangeProject(self) -> None:
         import invesalius.constants as const
 
         debug("Session.ChangeProject")
         self.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
 
-    def CreateProject(self, filename):
+    def CreateProject(self, filename: str) -> None:
         import invesalius.constants as const
 
         debug("Session.CreateProject")
@@ -170,7 +173,7 @@ class Session(metaclass=Singleton):
 
         self.SetConfig("project_status", const.PROJECT_STATUS_NEW)
 
-    def OpenProject(self, filepath):
+    def OpenProject(self, filepath: "str | Path") -> None:
         import invesalius.constants as const
 
         debug("Session.OpenProject")
@@ -183,21 +186,21 @@ class Session(metaclass=Singleton):
         self.SetState("project_path", project_path)
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
 
-    def WriteConfigFile(self):
+    def WriteConfigFile(self) -> None:
         self._write_to_json(self._config, CONFIG_PATH)
 
-    def WriteStateFile(self):
+    def WriteStateFile(self) -> None:
         self._write_to_json(self._state, STATE_PATH)
 
-    def _write_to_json(self, config_dict, config_filename):
+    def _write_to_json(self, config_dict: dict, config_filename: "str | Path") -> None:
         with open(config_filename, "w") as config_file:
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
-    def _add_to_recent_projects(self, item):
+    def _add_to_recent_projects(self, item: Tuple[str, str]) -> None:
         import invesalius.constants as const
 
         # Recent projects list
-        recent_projects = self.GetConfig("recent_projects")
+        recent_projects: List[Tuple[str, str]] = self.GetConfig("recent_projects")
         item = list(item)
 
         # If item exists, remove it from list
@@ -208,7 +211,7 @@ class Session(metaclass=Singleton):
         recent_projects.insert(0, item)
         self.SetConfig("recent_projects", recent_projects[: const.RECENT_PROJECTS_MAXIMUM])
 
-    def _read_config_from_json(self, json_filename):
+    def _read_config_from_json(self, json_filename: "str | Path") -> None:
         with open(json_filename) as config_file:
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
@@ -217,7 +220,7 @@ class Session(metaclass=Singleton):
         # isn't a recover session tool in InVesalius yet.
         self.project_status = 3
 
-    def _read_config_from_ini(self, config_filename):
+    def _read_config_from_ini(self, config_filename: str) -> None:
         file = codecs.open(config_filename, "rb", SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
         config.readfp(file)

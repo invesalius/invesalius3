@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
+from typing import Any, Optional, Tuple
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -90,9 +91,9 @@ class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.current_mask = None
         self.blend_filter = None
-        self.histogram = None
-        self._matrix = None
-        self._affine = np.identity(4)
+        self.histogram: Optional[np.ndarray] = None
+        self._matrix: Optional[np.ndarray] = None
+        self._affine: np.ndarray[Any, np.dtype[np.floating]] = np.identity(4)
         self._n_tracts = 0
         self._tracker = None
         self.aux_matrices = {}
@@ -133,11 +134,11 @@ class Slice(metaclass=utils.Singleton):
         self.opacity = 0.8
 
     @property
-    def matrix(self):
+    def matrix(self) -> Optional[np.ndarray]:
         return self._matrix
 
     @matrix.setter
-    def matrix(self, value):
+    def matrix(self, value: np.ndarray) -> None:
         self._matrix = value
         i, e = value.min(), value.max()
         r = int(e) - int(i)
@@ -145,28 +146,28 @@ class Slice(metaclass=utils.Singleton):
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     @property
-    def spacing(self):
+    def spacing(self) -> Tuple[float, float, float]:
         return self._spacing
 
     @spacing.setter
-    def spacing(self, value):
+    def spacing(self, value: Tuple[float, float, float]) -> None:
         self._spacing = value
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     @property
-    def affine(self):
+    def affine(self) -> np.ndarray[Any, np.dtype[np.floating]]:
         return self._affine
 
     @affine.setter
-    def affine(self, value):
+    def affine(self, value: np.ndarray[Any, np.dtype[np.floating]]) -> None:
         self._affine = value
 
     @property
-    def n_tracts(self):
+    def n_tracts(self) -> int:
         return self._n_tracts
 
     @n_tracts.setter
-    def n_tracts(self, value):
+    def n_tracts(self, value: int) -> None:
         self._n_tracts = value
 
     @property
@@ -177,7 +178,7 @@ class Slice(metaclass=utils.Singleton):
     def tracker(self, value):
         self._tracker = value
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         # General slice control
         Publisher.subscribe(self.CreateSurfaceFromIndex, "Create surface from index")
         # Mask control
@@ -248,8 +249,8 @@ class Slice(metaclass=utils.Singleton):
 
         Publisher.subscribe(self._set_interpolation_method, "Set interpolation method")
 
-    def GetMaxSliceNumber(self, orientation):
-        shape = self.matrix.shape
+    def GetMaxSliceNumber(self, orientation: str) -> int:
+        shape: Tuple[int, int, int] = self.matrix.shape
 
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
@@ -259,8 +260,9 @@ class Slice(metaclass=utils.Singleton):
             return shape[1] - 1
         elif orientation == "SAGITAL":
             return shape[2] - 1
+        raise ValueError(f"Invalid orientation: {orientation}")
 
-    def discard_all_buffers(self):
+    def discard_all_buffers(self) -> None:
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_mask()
             buffer_.discard_mask()
@@ -1843,11 +1845,11 @@ class Slice(metaclass=utils.Singleton):
 
         return area
 
-    def has_affine(self):
+    def has_affine(self) -> bool:
         return not np.allclose(self.affine, np.eye(4))
 
 
-def _conv_area(x, sx, sy, sz):
+def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:
     x = x.reshape((3, 3, 3))
     if x[1, 1, 1]:
         kernel = np.zeros((3, 3, 3))
