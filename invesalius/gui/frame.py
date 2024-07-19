@@ -368,7 +368,7 @@ class Frame(wx.Frame):
         """
         try:
             wx.EndBusyCursor()
-        except wx._core.PyAssertionError:
+        except wx.PyAssertionError:
             # no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
@@ -1587,7 +1587,7 @@ class StatusBar(wx.StatusBar):
             try:
                 # wx.SafeYield()
                 wx.Yield()
-            except wx._core.PyAssertionError:
+            except wx.PyAssertionError:
                 utils.debug("wx._core.PyAssertionError")
 
     def _SetProgressLabel(self, label):
