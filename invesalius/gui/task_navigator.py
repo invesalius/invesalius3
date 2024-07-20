@@ -1342,7 +1342,7 @@ class ControlPanel(wx.Panel):
         show_coil_button.SetBitmap(BMP_SHOW_COIL)
         show_coil_button.SetToolTip(tooltip)
         show_coil_button.SetValue(False)
-        show_coil_button.Enable(False)
+        show_coil_button.Enable(True)
         show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
         self.show_coil_button = show_coil_button
 
@@ -1713,12 +1713,11 @@ class ControlPanel(wx.Panel):
             self.EnableToggleButton(self.checkbox_serial_port, 1)
             self.UpdateToggleButton(self.checkbox_serial_port)
 
-        # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
+        # Enable/Disable track-object checkbox if object registration is valid.
         obj_registration = self.navigation.GetObjectRegistration()
-        enable_track_object = (
-            obj_registration is not None and obj_registration[0] is not None and not nav_status
-        )
+        enable_track_object = obj_registration is not None and obj_registration[0] is not None
         self.EnableTrackObjectButton(enable_track_object)
+        self.EnableShowCoilButton(enable_track_object)
 
     # Robot
     def OnRobotStatus(self, data):
@@ -1819,10 +1818,7 @@ class ControlPanel(wx.Panel):
         if not pressed:
             Publisher.sendMessage("Press target mode button", pressed=pressed)
 
-        # Disable or enable 'Show coil' button, based on if 'Track object' button is pressed.
-        Publisher.sendMessage("Enable show-coil button", enabled=pressed)
-
-        # Also, automatically press or unpress 'Show coil' button.
+        # Automatically press or unpress 'Show coil' button.
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
 
         self.SaveConfig()

@@ -35,14 +35,20 @@ class CoilVisualizer:
         # The vector field visualizer is used to show a vector field relative to the coil.
         self.vector_field_visualizer = vector_field_visualizer
 
+        # Number of coils is by default 1
+        self.n_coils = 1
+
         # The actor for showing the actual coil in the volume viewer.
         self.coil_actor = None
+        self.coil_actors = []
 
         # The actor for showing the center of the actual coil in the volume viewer.
         self.coil_center_actor = None
+        self.coil_center_actors = []
 
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
+        self.target_coil_actors = []
 
         # The assembly for showing the vector field relative to the coil in the volume viewer.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -72,6 +78,9 @@ class CoilVisualizer:
 
         self.LoadConfig()
 
+        self.AddCoilActor(self.coil_path)
+        self.ShowCoil(False)
+
         self.__bind_events()
 
     def __bind_events(self):
@@ -79,6 +88,7 @@ class CoilVisualizer:
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.TrackObject, "Track object")
         Publisher.subscribe(self.ShowCoil, "Show coil in viewer volume")
+        Publisher.subscribe(self.SetCoilCount, "Set coil count")
         Publisher.subscribe(self.ConfigureCoil, "Configure coil")
         Publisher.subscribe(self.UpdateCoilPose, "Update coil pose")
         Publisher.subscribe(self.UpdateVectorField, "Update vector field")
@@ -162,6 +172,9 @@ class CoilVisualizer:
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
         self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color)
 
+    def SetCoilCount(self, n_coils):
+        self.n_coils = n_coils
+
     def RemoveCoilActor(self):
         self.renderer.RemoveActor(self.coil_actor)
         self.renderer.RemoveActor(self.coil_center_actor)
@@ -186,16 +199,11 @@ class CoilVisualizer:
     def TrackObject(self, enabled):
         self.track_object_pressed = enabled
 
-        if self.coil_path is None:
-            return
-
-        # Remove the previous coil actor if it exists.
-        if self.coil_actor is not None:
-            self.RemoveCoilActor()
-
-        # If enabled, add a new coil actor.
+        # Hide coil vector_field if it exists. LUKATODO: what is this vector field?
         if enabled:
-            self.AddCoilActor(self.coil_path)
+            self.vector_field_assembly.SetVisibility(1)
+        else:
+            self.vector_field_assembly.SetVisibility(0)
 
     # Called when 'show coil' button is pressed in the user interface or in code.
     def ShowCoil(self, state):
