@@ -48,7 +48,6 @@ def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """
-
     as1, bs1, gs1 = np.radians(coord_raw[obj_ref_mode, 3:])
     r_probe = tr.euler_matrix(as1, bs1, gs1, "rzyx")
     t_probe_raw = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
@@ -211,23 +210,55 @@ def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id, icp=[None, N
     return coord, m_img
 
 
-def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
+def corregistrate_object_dynamic(inp, coord_raw, i_obj, icp):
+    """
+    Corregistrate the object at coord_raw[i_obj] in dynamic ref_mode
+    """
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
 
     # transform raw marker coordinate to object center
-    m_probe = object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw)
+    m_probe = object_marker_to_center(coord_raw, i_obj, t_obj_raw, s0_raw, r_s0_raw)
 
-    # transform object center to reference marker if specified as dynamic reference
-    if ref_mode_id:
-        m_probe_ref = object_to_reference(coord_raw, m_probe)
-    else:
-        m_probe_ref = m_probe
+    # transform object center to reference marker
+    m_probe_ref = object_to_reference(coord_raw, m_probe)
 
     # invert y coordinate
     m_probe_ref[2, -1] = -m_probe_ref[2, -1]
 
     # corregistrate from tracker to image space
     m_img = tracker_to_image(m_change, m_probe_ref, r_obj_img, m_obj_raw, s0_dyn)
+    m_img = apply_icp(m_img, icp)
+
+    # compute rotation angles
+    angles = np.degrees(tr.euler_from_matrix(m_img, axes="sxyz"))
+
+    # create output coordinate list
+    coord = (
+        m_img[0, -1],
+        m_img[1, -1],
+        m_img[2, -1],
+        angles[0],
+        angles[1],
+        angles[2],
+    )
+
+    return coord, m_img
+
+
+def corregistrate_object_static(inp, coord_raw, i_obj, icp):
+    """
+    Corregistrate the object at coord_raw[i_obj] in static ref_mode
+    """
+    m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
+
+    # transform raw marker coordinate to object center
+    m_probe = object_marker_to_center(coord_raw, i_obj, t_obj_raw, s0_raw, r_s0_raw)
+
+    # invert y coordinate
+    m_probe[2, -1] = -m_probe[2, -1]
+
+    # corregistrate from tracker to image space
+    m_img = tracker_to_image(m_change, m_probe, r_obj_img, m_obj_raw, s0_dyn)
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
@@ -299,6 +330,7 @@ class CoordinateCorregistrate(threading.Thread):
         self,
         ref_mode_id,
         tracker,
+        n_coils,
         coreg_data,
         view_tracts,
         queues,
@@ -312,6 +344,7 @@ class CoordinateCorregistrate(threading.Thread):
         threading.Thread.__init__(self, name="CoordCoregObject")
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
+        self.n_coils = n_coils
         self.coreg_data = coreg_data
         self.coord_queue = queues[0]
         self.view_tracts = view_tracts
@@ -340,9 +373,20 @@ class CoordinateCorregistrate(threading.Thread):
 
     def run(self):
         coreg_data = self.coreg_data
-        view_obj = 1
+        corregistrate_object = (
+            corregistrate_object_dynamic if self.ref_mode_id else corregistrate_object_static
+        )
 
-        # print('CoordCoreg: event {}'.format(self.event.is_set()))
+        # compute n_coils_effective, the no. of coils to actually process:
+        # check how many coords we get from tracker (-2 for probe & head)
+        n_coils_trk = self.tracker.TrackerCoordinates.GetCoordinates()[0].shape[0] - 2
+
+        obj_ref_mode = coreg_data[2]
+        # if obj_ref_mode=0: only coregister one coil
+        # else: process the other (n_coils - 1) coils too
+        # min(obj_ref_mode, 1) = 0 if obj_ref_mode==0 else 1
+        n_coils_effective = min(n_coils_trk, 1 + min(obj_ref_mode, 1) * (self.n_coils - 1))
+
         while not self.event.is_set():
             try:
                 if not self.icp_queue.empty():
@@ -351,19 +395,26 @@ class CoordinateCorregistrate(threading.Thread):
                 if not self.object_at_target_queue.empty():
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
-                # print(f"Set the coordinate")
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
-                # m_change = coreg_data[1], r_stylus = coreg_data[0] (r_stylus used for probe only)
+                # m_change = coreg_data[1], r_stylus = coreg_data[0]
                 coord_probe, m_img_probe = corregistrate_probe(
                     coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id
                 )
-                coord_coil, m_img_coil = corregistrate_object_dynamic(
-                    coreg_data[1:], coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp]
+                coord_coil, m_img_coil = corregistrate_object(
+                    coreg_data[1:], coord_raw, obj_ref_mode, [self.use_icp, self.m_icp]
                 )
 
                 coords = [coord_probe, coord_coil]
                 m_imgs = [m_img_probe, m_img_coil]
+
+                # the possible other coils are i_obj=3 onwards at coord_raw[i_obj]
+                for i_obj in range(3, n_coils_effective + 2):
+                    coord_coil, m_img_coil = corregistrate_object(
+                        coreg_data[1:], coord_raw, i_obj, [self.use_icp, self.m_icp]
+                    )
+                    coords.append(coord_coil)
+                    m_imgs.append(m_img_coil)
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
@@ -385,75 +436,15 @@ class CoordinateCorregistrate(threading.Thread):
                     translate = coord[0:3]
                     m_imgs[1] = tr.compose_matrix(angles=angles, translate=translate)
 
-                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs, view_obj])
+                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
 
                 coord = coords[1]  # main coil
                 m_img = m_imgs[1]
+                # LUKATODO: should coord = coords[track_coil]
+                # should the stuff below ever be done for stylus, but not coil?
 
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
-
-                if self.view_tracts:
-                    self.coord_tracts_queue.put_nowait(m_img_flip)
-                if self.e_field_loaded:
-                    self.efield_queue.put_nowait([m_img, coord])
-                if not self.icp_queue.empty():
-                    self.icp_queue.task_done()
-            except queue.Full:
-                pass
-            # The sleep has to be in both threads
-            sleep(self.sle)
-
-
-class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(
-        self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp, e_field_loaded
-    ):
-        threading.Thread.__init__(self, name="CoordCoregNoObject")
-        self.ref_mode_id = ref_mode_id
-        self.tracker = tracker
-        self.coreg_data = coreg_data
-        self.coord_queue = queues[0]
-        self.view_tracts = view_tracts
-        self.coord_tracts_queue = queues[1]
-        self.event = event
-        self.sle = sle
-        self.icp_queue = queues[2]
-        self.use_icp = icp.use_icp
-        self.m_icp = icp.m_icp
-        self.efield_queue = queues[3]
-        self.e_field_loaded = e_field_loaded
-
-    def run(self):
-        coreg_data = self.coreg_data
-        view_obj = 0
-
-        # print('CoordCoreg: event {}'.format(self.event.is_set()))
-        while not self.event.is_set():
-            try:
-                if self.icp_queue.empty():
-                    None
-                else:
-                    self.use_icp, self.m_icp = self.icp_queue.get_nowait()
-                # print(f"Set the coordinate")
-                # print(self.icp, self.m_icp)
-                coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
-
-                # NOTE: THIS THREAD WILL BE REFACTORED/DELETED SOON (with multicoil PR)
-
-                # m_change = coreg_data[1], r_stylus = coreg_data[0]
-                coord, m_img = corregistrate_probe(
-                    coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id
-                )
-
-                # temporary hack to follow old code structure, will be refactored soon
-                coords = [coord, coord]
-                m_imgs = [m_img, m_img]
-                # print("Coord: ", coord)
-                m_img_flip = m_img.copy()
-                m_img_flip[1, -1] = -m_img_flip[1, -1]
-
-                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs, view_obj])
 
                 if self.view_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
