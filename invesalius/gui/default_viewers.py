@@ -401,9 +401,7 @@ class VolumeToolPanel(wx.Panel):
         BMP_SSAO_ENABLE = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("SSAOEnable_icon.png")), wx.BITMAP_TYPE_PNG
         )
-        BMP_SSAO_DISABLE = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("SSAODisable_icon.png")), wx.BITMAP_TYPE_PNG
-        )
+
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(

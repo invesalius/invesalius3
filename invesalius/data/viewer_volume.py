@@ -372,30 +372,26 @@ class Viewer(wx.Panel):
         Publisher.sendMessage("Press track object button", pressed=True)
         Publisher.sendMessage("Press target mode button", pressed=False)
 
-        self.lightPass = vtkLightsPass()
-        self.opaqueP = vtkOpaquePass()
+        self.opaque_pass = vtkOpaquePass()
 
-        self.SSAOCamP = vtkCameraPass()
-        self.SSAOCamP.SetDelegatePass(self.opaqueP)
+        self.ssao_camera_pass = vtkCameraPass()
+        self.ssao_camera_pass.SetDelegatePass(self.opaque_pass)
 
-        ssaoP = vtkSSAOPass()
-        ssaoP.SetDelegatePass(self.SSAOCamP)
-        ssaoP.SetRadius(100)
-        ssaoP.SetBias(0.001)
-        ssaoP.SetBlur(False)
-        ssaoP.SetKernelSize(512)
+        ssao_pass = vtkSSAOPass()
+        ssao_pass.SetDelegatePass(self.ssao_camera_pass)
+        ssao_pass.SetRadius(100)
+        ssao_pass.SetBias(0.001)
+        ssao_pass.SetBlur(False)
+        ssao_pass.SetKernelSize(512)
 
         collection = vtkRenderPassCollection()
-        collection.AddItem(self.lightPass)
-        collection.AddItem(ssaoP)
+        collection.AddItem(ssao_pass)
 
         sequence = vtkSequencePass()
         sequence.SetPasses(collection)
 
-        self.camP = vtkCameraPass()
-        self.camP.SetDelegatePass(sequence)
-
-        # self.ren.SetPass(camP)
+        self.ssao_camera_pass = vtkCameraPass()
+        self.ssao_camera_pass.SetDelegatePass(sequence)
 
     def UpdateCanvas(self):
         if self.canvas is not None:
@@ -655,7 +651,7 @@ class Viewer(wx.Panel):
 
     def ActivateSSAO(self, activated):
         if activated:
-            self.ren.SetPass(self.camP)
+            self.ren.SetPass(self.ssao_camera_pass)
         else:
             self.ren.SetPass(self.default_pass)
         self.UpdateRender()
