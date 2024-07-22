@@ -1075,27 +1075,23 @@ class StylusPage(wx.Panel):
         marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(
             ref_mode_id=0, n_samples=1
         )
-        if marker_visibilities[0] and marker_visibilities[1]:  # if probe and head are visible
-            if self.navigation.SetStylusOrientation(coord_raw):  # if successfully created r_stylus
-                # Save to config.json file
-                ses.Session().SetConfig(
-                    "navigation-stylus", {"r_stylus": self.navigation.r_stylus.tolist()}
-                )
 
-                if not self.done:  # only show green on first record
-                    self.done = True
-                    self.help.Destroy()  # show a colored (green) bitmap as opposed to grayscale
-                    self.help = wx.GenericStaticBitmap(
-                        self,
-                        -1,
-                        self.help_img.ConvertToBitmap(),
-                        (10, 5),
-                        (self.help_img.GetWidth(), self.help_img.GetHeight()),
-                    )
-                    self.border.Insert(
-                        2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1
-                    )
-                    self.Layout()
+        if marker_visibilities[0] and marker_visibilities[1]:  # if probe and head are visible
+            if self.navigation.SetStylusOrientation(coord_raw) and not self.done:
+                # if successfully created r_stylus in navigation for the first time: make the illustration green to show success
+                self.done = True
+                self.help.Destroy()  # show a colored (green) bitmap as opposed to grayscale
+                self.help = wx.GenericStaticBitmap(
+                    self,
+                    -1,
+                    self.help_img.ConvertToBitmap(),
+                    (10, 5),
+                    (self.help_img.GetWidth(), self.help_img.GetHeight()),
+                )
+                self.border.Insert(
+                    2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1
+                )
+                self.Layout()
         else:
             wx.MessageBox(_("Probe or head not visible to tracker!"), _("InVesalius 3"))
 

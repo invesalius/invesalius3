@@ -344,24 +344,21 @@ class Navigation(metaclass=Singleton):
         session = ses.Session()
         state = session.GetConfig("navigation")
 
-        if state is None:
-            return
+        if state is not None:
+            object_fiducials = np.array(state["object_fiducials"])
+            object_orientations = np.array(state["object_orientations"])
+            object_reference_mode = state["object_reference_mode"]
+            object_name = state["object_name"].encode(const.FS_ENCODE)
+            self.object_registration = (
+                object_fiducials,
+                object_orientations,
+                object_reference_mode,
+                object_name,
+            )
 
-        object_fiducials = np.array(state["object_fiducials"])
-        object_orientations = np.array(state["object_orientations"])
-        object_reference_mode = state["object_reference_mode"]
-        object_name = state["object_name"].encode(const.FS_ENCODE)
-        self.object_registration = (
-            object_fiducials,
-            object_orientations,
-            object_reference_mode,
-            object_name,
-        )
-
-        # Try to load stylus orientation data
-        stylus_data = session.GetConfig("navigation-stylus")
-        if stylus_data is not None:
-            self.r_stylus = np.array(stylus_data["r_stylus"])
+            # Try to load stylus orientation data
+            if "r_stylus" in state:
+                self.r_stylus = np.array(state["r_stylus"])
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -446,6 +443,12 @@ class Navigation(metaclass=Singleton):
 
             # Rotation from tracker to VTK coordinate system
             self.r_stylus = up_vtk @ np.linalg.inv(up_trk)
+
+            # Save r_stylus to config file
+            session = ses.Session()
+            if (nav_config := session.GetConfig("navigation")) is not None:
+                nav_config["r_stylus"] = self.r_stylus.tolist()
+                session.SetConfig("navigation", nav_config)
             return True
         else:
             return False
