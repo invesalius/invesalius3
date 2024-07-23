@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,22 +15,25 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import bisect
 import math
 import os
-import sys
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 import wx
-from invesalius.pubsub import pub as Publisher
 
 import invesalius.gui.dialogs as dialog
-import invesalius.constants as const
-
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from typings.utils import SupportsGetItem
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)
@@ -44,35 +47,40 @@ GRADIENT_RGBA = 0.75 * 255
 RADIUS = 5
 SELECTION_SIZE = 10
 TOOLBAR_SIZE = 30
-TOOLBAR_COLOUR = (25 , 25, 25)
+TOOLBAR_COLOUR = (25, 25, 25)
 RANGE = 10
 PADDING = 2
 
-class Node(object):
+
+class Node:
     """
     Represents the points in the raycasting preset. Contains its colour,
     graylevel (hounsfield scale), opacity, x and y position in the widget.
     """
-    def __init__(self):
-        self.colour = None
-        self.x = 0
-        self.y = 0
-        self.graylevel = 0
-        self.opacity = 0
+
+    def __init__(
+        self, colour: Tuple[int, int, int], x: int, y: int, graylevel: float, opacity: float
+    ):
+        self.colour = colour
+        self.x = x
+        self.y = y
+        self.graylevel = graylevel
+        self.opacity = opacity
 
 
-class Curve(object):
+class Curve:
     """
     Represents the curves in the raycasting preset. It contains the point nodes from
     the curve and its window width & level.
     """
-    def __init__(self):
-        self.wl = 0
-        self.ww = 0
-        self.wl_px = 0
-        self.nodes = []
 
-    def CalculateWWWl(self):
+    def __init__(self) -> None:
+        self.wl: float = 0
+        self.ww: float = 0
+        self.wl_px: Optional[Tuple[float, int]] = None
+        self.nodes: List[Node] = []
+
+    def CalculateWWWl(self) -> None:
         """
         Called when the curve width(ww) or position(wl) is modified.
         """
@@ -80,34 +88,43 @@ class Curve(object):
         self.wl = self.nodes[0].graylevel + self.ww / 2.0
 
 
-class Histogram(object):
-    def __init__(self):
-        self.init = -1024
-        self.end = 2000
-        self.points = ()
+class Histogram:
+    def __init__(self) -> None:
+        self.init: float = -1024
+        self.end: float = 2000
+        self.points: List[Tuple[float, float]] = []
 
 
-class Button(object):
+class Button:
     """
     The button in the clut raycasting.
     """
-    def __init__(self):
-        self.image = None
-        self.position = (0, 0)
-        self.size = (24, 24)
 
-    def HasClicked(self, position):
+    def __init__(self, image: wx.Bitmap) -> None:
+        self.image: wx.Bitmap = image
+        self.position: Tuple[float, float] = (0, 0)
+        self.size: Tuple[int, int] = (24, 24)
+
+    def HasClicked(self, position: Tuple[int, int]) -> bool:
         """
         Test if the button was clicked.
         """
         m_x, m_y = position
         i_x, i_y = self.position
         w, h = self.size
-        if i_x < m_x < i_x + w and \
-           i_y < m_y < i_y + h:
+        if i_x < m_x < i_x + w and i_y < m_y < i_y + h:
             return True
         else:
             return False
+
+
+class CLUTEvent(wx.PyCommandEvent):
+    def __init__(self, evtType: int, id: int, curve: int):
+        wx.PyCommandEvent.__init__(self, evtType, id)
+        self.curve = curve
+
+    def GetCurve(self) -> int:
+        return self.curve
 
 
 class CLUTRaycastingWidget(wx.Panel):
@@ -115,18 +132,18 @@ class CLUTRaycastingWidget(wx.Panel):
     This class represents the frame where images is showed
     """
 
-    def __init__(self, parent, id):
+    def __init__(self, parent: wx.Window, id: int):
         """
         Constructor.
-        
+
         parent -- parent of this frame
         """
-        super(CLUTRaycastingWidget, self).__init__(parent, id)
-        self.points = []
-        self.colours = []
-        self.curves = []
-        self.init = -1024
-        self.end = 2000
+        super().__init__(parent, id)
+        self.points: List[List[Dict[str, float]]] = []
+        self.colours: List[List[Dict[str, float]]] = []
+        self.curves: List[Curve] = []
+        self.init: float = -1024
+        self.end: float = 2000
         self.Histogram = Histogram()
         self.padding = 5
         self.previous_wl = 0
@@ -134,30 +151,30 @@ class CLUTRaycastingWidget(wx.Panel):
         self.dragged = False
         self.middle_drag = False
         self.to_draw_points = 0
-        self.point_dragged = None
-        self.curve_dragged = None
-        self.histogram_array = [100,100]
+        self.point_dragged: Optional[Tuple[int, int]] = None
+        self.curve_dragged: Optional[int] = None
+        self.histogram_array = [100, 100]
         self.CalculatePixelPoints()
         self.__bind_events_wx()
         self._build_buttons()
         self.Show()
 
-    def SetRange(self, range):
+    def SetRange(self, range: Tuple[float, float]) -> None:
         """
         Se the range from hounsfield
         """
         self.init, self.end = range
         self.CalculatePixelPoints()
 
-    def SetPadding(self, padding):
+    def SetPadding(self, padding: int) -> None:
         self.padding = padding
 
-    def __bind_events_wx(self):
+    def __bind_events_wx(self) -> None:
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
-        self.Bind(wx.EVT_LEFT_DOWN , self.OnClick)
-        self.Bind(wx.EVT_LEFT_DCLICK , self.OnDoubleClick)
-        self.Bind(wx.EVT_LEFT_UP , self.OnRelease)
-        self.Bind(wx.EVT_RIGHT_DOWN , self.OnRighClick)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
+        self.Bind(wx.EVT_LEFT_UP, self.OnRelease)
+        self.Bind(wx.EVT_RIGHT_DOWN, self.OnRighClick)
         self.Bind(wx.EVT_MOTION, self.OnMotion)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -165,15 +182,15 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleClick)
         self.Bind(wx.EVT_MIDDLE_UP, self.OnMiddleRelease)
 
-    def OnEraseBackground(self, evt):
+    def OnEraseBackground(self, evt: wx.Event) -> None:
         pass
 
-    def OnClick(self, evt):
+    def OnClick(self, evt: Union[wx.MouseEvent, CLUTEvent]) -> None:
         x, y = evt.GetPosition()
         if self.save_button.HasClicked((x, y)):
             filename = dialog.ShowSavePresetDialog()
             if filename:
-                Publisher.sendMessage('Save raycasting preset', preset_name=filename)
+                Publisher.sendMessage("Save raycasting preset", preset_name=filename)
         point = self._has_clicked_in_a_point((x, y))
         # A point has been selected. It can be dragged.
         if point:
@@ -190,21 +207,22 @@ class CLUTRaycastingWidget(wx.Panel):
             self.GetEventHandler().ProcessEvent(evt)
             return
         else:
-            p = self._has_clicked_in_line((x, y))
+            point_2 = self._has_clicked_in_line((x, y))
             # The user clicked in the line. Insert a new point.
-            if p:
-                n, p = p
-                self.points[n].insert(p, {'x': 0, 'y': 0})
-                self.colours[n].insert(p, {'red': 0, 'green': 0, 'blue': 0})
-                self.points[n][p]['x'] = self.PixelToHounsfield(x)
-                self.points[n][p]['y'] = self.PixelToOpacity(y)
+            if point_2:
+                n, p = point_2
+                self.points[n].insert(p, {"x": 0, "y": 0})
+                self.colours[n].insert(p, {"red": 0, "green": 0, "blue": 0})
+                self.points[n][p]["x"] = self.PixelToHounsfield(x)
+                self.points[n][p]["y"] = self.PixelToOpacity(y)
 
-                node = Node()
-                node.colour = (0, 0, 0)
-                node.x = x
-                node.y = y
-                node.graylevel = self.points[n][p]['x']
-                node.opacity = self.points[n][p]['y']
+                node = Node(
+                    colour=(0, 0, 0),
+                    x=x,
+                    y=y,
+                    graylevel=self.points[n][p]["x"],
+                    opacity=self.points[n][p]["y"],
+                )
                 self.curves[n].nodes.insert(p, node)
 
                 self.Refresh()
@@ -213,7 +231,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 return
         evt.Skip()
 
-    def OnDoubleClick(self, evt):
+    def OnDoubleClick(self, evt: wx.MouseEvent) -> None:
         """
         Used to change the colour of a point
         """
@@ -223,13 +241,13 @@ class CLUTRaycastingWidget(wx.Panel):
             actual_colour = self.curves[i].nodes[j].colour
             colour_dialog = wx.GetColourFromUser(self, actual_colour)
             if colour_dialog.IsOk():
-                i,j = point
+                i, j = point
 
                 r, g, b, a = colour_dialog.Get()
 
-                self.colours[i][j]['red'] = r / 255.0
-                self.colours[i][j]['green'] = g / 255.0
-                self.colours[i][j]['blue'] = b / 255.0
+                self.colours[i][j]["red"] = r / 255.0
+                self.colours[i][j]["green"] = g / 255.0
+                self.colours[i][j]["blue"] = b / 255.0
                 self.curves[i].nodes[j].colour = (r, g, b)
                 self.Refresh()
                 nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), i)
@@ -237,7 +255,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 return
         evt.Skip()
 
-    def OnRighClick(self, evt):
+    def OnRighClick(self, evt: wx.MouseEvent) -> None:
         """
         Used to remove a point
         """
@@ -257,7 +275,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.GetEventHandler().ProcessEvent(nevt)
         evt.Skip()
 
-    def OnRelease(self, evt):
+    def OnRelease(self, evt: Union[wx.MouseEvent, CLUTEvent]) -> None:
         """
         Generate a EVT_CLUT_POINT_CHANGED event indicating that a change has
         been occurred in the preset points.
@@ -271,7 +289,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.to_render = False
         self.previous_wl = 0
 
-    def OnWheel(self, evt):
+    def OnWheel(self, evt: wx.MouseEvent) -> None:
         """
         Increase or decrease the range from hounsfield scale showed. It
         doesn't change values in preset, only to visualization.
@@ -282,19 +300,19 @@ class CLUTRaycastingWidget(wx.Panel):
         self.SetRange((init, end))
         self.Refresh()
 
-    def OnMiddleClick(self, evt):
+    def OnMiddleClick(self, evt: wx.MouseEvent) -> None:
         self.middle_drag = True
         self.last_position = evt.GetX()
 
-    def OnMiddleRelease(self, evt):
+    def OnMiddleRelease(self, evt: wx.MouseEvent) -> None:
         self.middle_drag = False
 
-    def OnMotion(self, evt):
+    def OnMotion(self, evt: wx.MouseEvent) -> None:
         # User dragging a point
         x = evt.GetX()
         y = evt.GetY()
         if self.dragged and self.point_dragged:
-            self._move_node(x, y)
+            self._move_node(x, y, self.point_dragged)
         elif self.dragged and self.curve_dragged is not None:
             self._move_curve(x, y)
         elif self.middle_drag:
@@ -305,18 +323,20 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             evt.Skip()
 
-    def OnPaint(self, evt):
+    def OnPaint(self, evt: wx.Event) -> None:
         dc = wx.BufferedPaintDC(self)
-        dc.SetBackground(wx.Brush('Black'))
+        dc.SetBackground(wx.Brush("Black"))
         dc.Clear()
         if self.to_draw_points:
             self.Render(dc)
 
-    def OnSize(self, evt):
+    def OnSize(self, evt: wx.Event) -> None:
         self.CalculatePixelPoints()
         self.Refresh()
 
-    def _has_clicked_in_a_point(self, position):
+    def _has_clicked_in_a_point(
+        self, position: "SupportsGetItem[float]"
+    ) -> Optional[Tuple[int, int]]:
         """
         returns the index from the selected point
         """
@@ -326,7 +346,9 @@ class CLUTRaycastingWidget(wx.Panel):
                     return (i, j)
         return None
 
-    def distance_from_point_line(self, p1, p2, pc):
+    def distance_from_point_line(
+        self, p1: Tuple[float, float], p2: Tuple[float, float], pc: Tuple[float, float]
+    ) -> numpy.floating[Any]:
         """
         Calculate the distance from point pc to a line formed by p1 and p2.
         """
@@ -343,44 +365,44 @@ class CLUTRaycastingWidget(wx.Panel):
         distance = math.sin(theta) * len_A
         return distance
 
-    def _has_clicked_in_selection_curve(self, position):
-        x, y = position
+    def _has_clicked_in_selection_curve(self, position: "SupportsGetItem[float]") -> Optional[int]:
+        # x, y = position
         for i, curve in enumerate(self.curves):
             if self._calculate_distance(curve.wl_px, position) <= RADIUS:
                 return i
         return None
 
-    def _has_clicked_in_line(self, clicked_point):
-        """ 
+    def _has_clicked_in_line(self, clicked_point: Tuple[int, int]) -> Optional[Tuple[int, int]]:
+        """
         Verify if was clicked in a line. If yes, it returns the insertion
         clicked_point in the point list.
         """
         for n, curve in enumerate(self.curves):
-            position = bisect.bisect([node.x for node in curve.nodes],
-                              clicked_point[0])
+            position = bisect.bisect([node.x for node in curve.nodes], clicked_point[0])
             if position != 0 and position != len(curve.nodes):
-                p1 = curve.nodes[position-1].x, curve.nodes[position-1].y
+                p1 = curve.nodes[position - 1].x, curve.nodes[position - 1].y
                 p2 = curve.nodes[position].x, curve.nodes[position].y
                 if self.distance_from_point_line(p1, p2, clicked_point) <= 5:
                     return (n, position)
         return None
 
-    def _has_clicked_in_save(self, clicked_point):
+    def _has_clicked_in_save(self, clicked_point: Tuple[int, int]) -> bool:
         x, y = clicked_point
-        if self.padding < x < self.padding + 24 and \
-           self.padding < y < self.padding + 24:
+        if self.padding < x < self.padding + 24 and self.padding < y < self.padding + 24:
             return True
         else:
             return False
 
-    def _calculate_distance(self, p1, p2):
-        return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2) ** 0.5
+    def _calculate_distance(
+        self, p1: "SupportsGetItem[float]", p2: "SupportsGetItem[float]"
+    ) -> float:
+        return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
-    def _move_node(self, x, y):
+    def _move_node(self, x: int, y: int, point: Tuple[int, int]) -> None:
         self.to_render = True
-        i,j = self.point_dragged
+        i, j = point
 
-        width, height= self.GetVirtualSize()
+        width, height = self.GetVirtualSize()
 
         if y >= height - self.padding:
             y = height - self.padding
@@ -396,38 +418,36 @@ class CLUTRaycastingWidget(wx.Panel):
         x = max(x, TOOLBAR_SIZE)
 
         # A point must be greater than the previous one, but the first one
-        if j > 0 and x <= self.curves[i].nodes[j-1].x:
-            x = self.curves[i].nodes[j-1].x + 1
+        if j > 0 and x <= self.curves[i].nodes[j - 1].x:
+            x = self.curves[i].nodes[j - 1].x + 1
 
         # A point must be lower than the previous one, but the last one
-        if j < len(self.curves[i].nodes) -1 \
-           and x >= self.curves[i].nodes[j+1].x:
-            x = self.curves[i].nodes[j+1].x - 1
+        if j < len(self.curves[i].nodes) - 1 and x >= self.curves[i].nodes[j + 1].x:
+            x = self.curves[i].nodes[j + 1].x - 1
 
         graylevel = self.PixelToHounsfield(x)
         opacity = self.PixelToOpacity(y)
-        self.points[i][j]['x'] = graylevel
-        self.points[i][j]['y'] = opacity
+        self.points[i][j]["x"] = graylevel
+        self.points[i][j]["y"] = opacity
         self.curves[i].nodes[j].x = x
         self.curves[i].nodes[j].y = y
         self.curves[i].nodes[j].graylevel = graylevel
         self.curves[i].nodes[j].opacity = opacity
         for curve in self.curves:
             curve.CalculateWWWl()
-            curve.wl_px = (self.HounsfieldToPixel(curve.wl),
-                           self.OpacityToPixel(0))
+            curve.wl_px = (self.HounsfieldToPixel(curve.wl), self.OpacityToPixel(0))
         self.Refresh()
 
         # A point in the preset has been changed, raising a event
-        evt = CLUTEvent(myEVT_CLUT_POINT_MOVE , self.GetId(), i)
+        evt = CLUTEvent(myEVT_CLUT_POINT_MOVE, self.GetId(), i)
         self.GetEventHandler().ProcessEvent(evt)
 
-    def _move_curve(self, x, y):
+    def _move_curve(self, x: int, y: int) -> None:
         curve = self.curves[self.curve_dragged]
         curve.wl = self.PixelToHounsfield(x)
         curve.wl_px = x, self.OpacityToPixel(0)
         for node in curve.nodes:
-            node.x += (x - self.previous_wl)
+            node.x += x - self.previous_wl
             node.graylevel = self.PixelToHounsfield(node.x)
 
         self.previous_wl = x
@@ -435,11 +455,10 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Refresh()
 
         # The window level has been changed, raising a event!
-        evt = CLUTEvent(myEVT_CLUT_CURVE_WL_CHANGE, self.GetId(),
-                        self.curve_dragged)
+        evt = CLUTEvent(myEVT_CLUT_CURVE_WL_CHANGE, self.GetId(), self.curve_dragged)
         self.GetEventHandler().ProcessEvent(evt)
 
-    def RemovePoint(self, i, j):
+    def RemovePoint(self, i: int, j: int) -> None:
         """
         The point the point in the given i,j index
         """
@@ -453,8 +472,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.point_dragged = None
         # If there is textbox and the point to remove is before it, then
         # decrement the index referenced to point that have the textbox.
-        elif self.point_dragged and i == self.point_dragged[0] \
-                and j < self.point_dragged[1]:
+        elif self.point_dragged and i == self.point_dragged[0] and j < self.point_dragged[1]:
             new_i = self.point_dragged[0]
             new_j = self.point_dragged[1] - 1
             self.point_dragged = (new_i, new_j)
@@ -464,19 +482,17 @@ class CLUTRaycastingWidget(wx.Panel):
         else:
             curve = self.curves[i]
             curve.CalculateWWWl()
-            curve.wl_px = (self.HounsfieldToPixel(curve.wl),
-                           self.OpacityToPixel(0))
+            curve.wl_px = (self.HounsfieldToPixel(curve.wl), self.OpacityToPixel(0))
 
-    def RemoveCurve(self, n_curve):
+    def RemoveCurve(self, n_curve: int) -> None:
         self.points.pop(n_curve)
         self.colours.pop(n_curve)
         self.point_dragged = None
 
         self.curves.pop(n_curve)
 
-
-    def _draw_gradient(self, ctx, height):
-        #The gradient
+    def _draw_gradient(self, ctx: wx.GraphicsContext, height: int) -> None:
+        # The gradient
         height += self.padding
         for curve in self.curves:
             for nodei, nodej in zip(curve.nodes[:-1], curve.nodes[1:]):
@@ -487,17 +503,17 @@ class CLUTRaycastingWidget(wx.Panel):
                 path.AddLineToPoint(int(nodej.x), nodej.y)
                 path.AddLineToPoint(int(nodej.x), height)
 
-                colouri = nodei.colour[0],nodei.colour[1],nodei.colour[2], GRADIENT_RGBA
-                colourj = nodej.colour[0],nodej.colour[1],nodej.colour[2], GRADIENT_RGBA
-                b = ctx.CreateLinearGradientBrush(int(nodei.x), height,
-                                                  int(nodej.x), height,
-                                                  colouri, colourj)
+                colouri = nodei.colour[0], nodei.colour[1], nodei.colour[2], GRADIENT_RGBA
+                colourj = nodej.colour[0], nodej.colour[1], nodej.colour[2], GRADIENT_RGBA
+                b = ctx.CreateLinearGradientBrush(
+                    int(nodei.x), height, int(nodej.x), height, colouri, colourj
+                )
                 ctx.SetBrush(b)
                 ctx.SetPen(wx.TRANSPARENT_PEN)
                 ctx.FillPath(path)
 
-    def _draw_curves(self, ctx):
-        path = ctx.CreatePath()
+    def _draw_curves(self, ctx: wx.GraphicsContext) -> None:
+        path: wx.GraphicsPath = ctx.CreatePath()
         ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
         for curve in self.curves:
             path.MoveToPoint(curve.nodes[0].x, curve.nodes[0].y)
@@ -505,30 +521,30 @@ class CLUTRaycastingWidget(wx.Panel):
                 path.AddLineToPoint(node.x, node.y)
             ctx.StrokePath(path)
 
-    def _draw_points(self, ctx):
+    def _draw_points(self, ctx: wx.GraphicsContext) -> None:
         for curve in self.curves:
             for node in curve.nodes:
-                path = ctx.CreatePath()
+                path: wx.GraphicsPath = ctx.CreatePath()
                 ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
                 ctx.SetBrush(wx.Brush(node.colour))
                 path.AddCircle(node.x, node.y, RADIUS)
                 ctx.DrawPath(path)
 
-    def _draw_selected_point_text(self, ctx):
-        i,j = self.point_dragged
+    def _draw_selected_point_text(self, ctx: wx.GraphicsContext) -> None:
+        i, j = self.point_dragged
         node = self.curves[i].nodes[j]
-        x,y = node.x, node.y
+        x, y = node.x, node.y
         value = node.graylevel
         alpha = node.opacity
         widget_width, widget_height = self.GetVirtualSize()
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         font.SetWeight(wx.BOLD)
-        font = ctx.CreateFont(font, TEXT_COLOUR)
-        ctx.SetFont(font)
+        graphics_font = ctx.CreateFont(font, TEXT_COLOUR)
+        ctx.SetFont(graphics_font)
 
         text1 = _("Value: %-6d" % value)
-        text2 = _("Alpha: %-.3f" % alpha)
+        text2 = _("Alpha: %-.3f" % alpha)  # noqa: UP031
 
         if ctx.GetTextExtent(text1)[0] > ctx.GetTextExtent(text2)[0]:
             wt, ht = ctx.GetTextExtent(text1)
@@ -537,7 +553,7 @@ class CLUTRaycastingWidget(wx.Panel):
 
         wr, hr = wt + 2 * PADDING, ht * 2 + 2 * PADDING
         xr, yr = x + RADIUS, y - RADIUS - hr
-        
+
         if xr + wr > widget_width:
             xr = x - RADIUS - wr
         if yr < 0:
@@ -551,16 +567,16 @@ class CLUTRaycastingWidget(wx.Panel):
         ctx.DrawText(text1, xf, yf)
         ctx.DrawText(text2, xf, yf + ht)
 
-    def _draw_histogram(self, ctx, height):
+    def _draw_histogram(self, ctx: wx.GraphicsContext, height: int) -> None:
         # The histogram
-        x,y = self.Histogram.points[0]
+        x, y = self.Histogram.points[0]
 
         ctx.SetPen(wx.Pen(HISTOGRAM_LINE_COLOUR, HISTOGRAM_LINE_WIDTH))
         ctx.SetBrush(wx.Brush(HISTOGRAM_FILL_COLOUR))
 
-        path = ctx.CreatePath()
-        path.MoveToPoint(x,y)
-        for x,y in self.Histogram.points:
+        path: wx.GraphicsPath = ctx.CreatePath()
+        path.MoveToPoint(x, y)
+        for x, y in self.Histogram.points:
             path.AddLineToPoint(x, y)
 
         ctx.PushState()
@@ -568,19 +584,20 @@ class CLUTRaycastingWidget(wx.Panel):
         ctx.PopState()
         path.AddLineToPoint(x, height + self.padding)
         path.AddLineToPoint(self.HounsfieldToPixel(self.Histogram.init), height + self.padding)
-        x,y = self.Histogram.points[0]
+        x, y = self.Histogram.points[0]
         path.AddLineToPoint(x, y)
         ctx.FillPath(path)
 
-    def _draw_selection_curve(self, ctx, height):
+    def _draw_selection_curve(self, ctx: wx.GraphicsContext, height: int) -> None:
         ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
         ctx.SetBrush(wx.Brush((0, 0, 0)))
         for curve in self.curves:
             x_center, y_center = curve.wl_px
-            ctx.DrawRectangle(x_center-SELECTION_SIZE/2.0, y_center, 
-                              SELECTION_SIZE, SELECTION_SIZE)
+            ctx.DrawRectangle(
+                x_center - SELECTION_SIZE / 2.0, y_center, SELECTION_SIZE, SELECTION_SIZE
+            )
 
-    def _draw_tool_bar(self, ctx, height):
+    def _draw_tool_bar(self, ctx: wx.GraphicsContext, height: int) -> None:
         ctx.SetPen(wx.TRANSPARENT_PEN)
         ctx.SetBrush(wx.Brush(TOOLBAR_COLOUR))
         ctx.DrawRectangle(0, 0, TOOLBAR_SIZE, height + self.padding * 2)
@@ -591,10 +608,10 @@ class CLUTRaycastingWidget(wx.Panel):
         self.save_button.position = (x, y)
         ctx.DrawBitmap(image, x, y, w, h)
 
-    def Render(self, dc):
+    def Render(self, dc: Union[wx.WindowDC, wx.MemoryDC, wx.PrinterDC, wx.MetafileDC]) -> None:
         ctx = wx.GraphicsContext.Create(dc)
-        width, height= self.GetVirtualSize()
-        height -= (self.padding * 2)
+        width, height = self.GetVirtualSize()
+        height -= self.padding * 2
         width -= self.padding
 
         self._draw_histogram(ctx, height)
@@ -606,15 +623,15 @@ class CLUTRaycastingWidget(wx.Panel):
         if self.point_dragged:
             self._draw_selected_point_text(ctx)
 
-    def _build_histogram(self):
+    def _build_histogram(self) -> None:
         width, height = self.GetVirtualSize()
         width -= self.padding
-        height -= (self.padding * 2)
+        height -= self.padding * 2
         x_init = self.Histogram.init
-        x_end = self.Histogram.end
+        # x_end = self.Histogram.end
         y_init = 0
         y_end = math.log(max(self.histogram_array))
-        proportion_x = width * 1.0 / (x_end - x_init)
+        # proportion_x = width * 1.0 / (x_end - x_init)
         proportion_y = height * 1.0 / (y_end - y_init)
         self.Histogram.points = []
         for i in range(0, len(self.histogram_array), 5):
@@ -626,27 +643,26 @@ class CLUTRaycastingWidget(wx.Panel):
             y = height - y * proportion_y + self.padding
             self.Histogram.points.append((x, y))
 
-    def _build_buttons(self):
-        img = wx.Image(os.path.join(inv_paths.ICON_DIR, 'Floppy.png'))
+    def _build_buttons(self) -> None:
+        img = wx.Image(os.path.join(inv_paths.ICON_DIR, "Floppy.png"))
         width = img.GetWidth()
         height = img.GetHeight()
-        self.save_button = Button()
-        self.save_button.image = wx.Bitmap(img)
+        self.save_button = Button(wx.Bitmap(img))
         self.save_button.size = (width, height)
 
-    def __sort_pixel_points(self):
+    def __sort_pixel_points(self) -> None:
         """
         Sort the pixel points (colours and points) maintaining the reference
         between colours and points. It's necessary mainly in negative window
         width when the user interacts with this widgets.
         """
         for n, (point, colour) in enumerate(zip(self.points, self.colours)):
-            point_colour = zip(point, colour)
-            point_colour = sorted(point_colour, key=lambda x: x[0]['x'])
+            point_colour: Iterable[Tuple[Dict[str, float], Dict[str, float]]] = zip(point, colour)
+            point_colour = sorted(point_colour, key=lambda x: x[0]["x"])
             self.points[n] = [i[0] for i in point_colour]
             self.colours[n] = [i[1] for i in point_colour]
 
-    def CalculatePixelPoints(self):
+    def CalculatePixelPoints(self) -> None:
         """
         Create a list with points (in pixel x, y coordinate) to draw based in
         the preset points (Hounsfield scale, opacity).
@@ -656,87 +672,82 @@ class CLUTRaycastingWidget(wx.Panel):
         for points, colours in zip(self.points, self.colours):
             curve = Curve()
             for point, colour in zip(points, colours):
-                x = self.HounsfieldToPixel(point['x'])
-                y = self.OpacityToPixel(point['y'])
-                node = Node()
-                node.x = x
-                node.y = y
-                node.graylevel = point['x']
-                node.opacity = point['y']
-                node.colour = (int(colour['red'] * 255), 
-                               int(colour['green'] * 255),
-                               int(colour['blue'] * 255))
+                x = self.HounsfieldToPixel(point["x"])
+                y = self.OpacityToPixel(point["y"])
+                node = Node(
+                    colour=(
+                        int(colour["red"] * 255),
+                        int(colour["green"] * 255),
+                        int(colour["blue"] * 255),
+                    ),
+                    x=x,
+                    y=y,
+                    graylevel=point["x"],
+                    opacity=point["y"],
+                )
                 curve.nodes.append(node)
             curve.CalculateWWWl()
-            curve.wl_px = (self.HounsfieldToPixel(curve.wl),
-                           self.OpacityToPixel(0))
+            curve.wl_px = (self.HounsfieldToPixel(curve.wl), self.OpacityToPixel(0))
             self.curves.append(curve)
         self._build_histogram()
 
-    def HounsfieldToPixel(self, graylevel):
+    def HounsfieldToPixel(self, graylevel: float) -> int:
         """
         Given a Hounsfield point returns a pixel point in the canvas.
         """
-        width,height = self.GetVirtualSize()
-        width -= (TOOLBAR_SIZE)
+        width, height = self.GetVirtualSize()
+        width -= TOOLBAR_SIZE
         proportion = width * 1.0 / (self.end - self.init)
         x = (graylevel - self.init) * proportion + TOOLBAR_SIZE
         return x
 
-    def OpacityToPixel(self, opacity):
+    def OpacityToPixel(self, opacity: float) -> int:
         """
         Given a Opacity point returns a pixel point in the canvas.
         """
-        width,height = self.GetVirtualSize()
-        height -= (self.padding * 2)
+        width, height = self.GetVirtualSize()
+        height -= self.padding * 2
         y = height - (opacity * height) + self.padding
         return y
 
-    def PixelToHounsfield(self, x):
+    def PixelToHounsfield(self, x: int) -> float:
         """
         Translate from pixel point to Hounsfield scale.
         """
-        width, height= self.GetVirtualSize()
-        width -= (TOOLBAR_SIZE)
+        width, height = self.GetVirtualSize()
+        width -= TOOLBAR_SIZE
         proportion = width * 1.0 / (self.end - self.init)
         graylevel = (x - TOOLBAR_SIZE) / proportion - abs(self.init)
         return graylevel
 
-    def PixelToOpacity(self, y):
+    def PixelToOpacity(self, y: int) -> float:
         """
         Translate from pixel point to opacity.
         """
-        width, height= self.GetVirtualSize()
-        height -= (self.padding * 2)
+        width, height = self.GetVirtualSize()
+        height -= self.padding * 2
         opacity = (height - y + self.padding) * 1.0 / height
         return opacity
 
-    def SetRaycastPreset(self, preset):
+    def SetRaycastPreset(self, preset: Dict[str, List[List[Dict[str, float]]]]) -> None:
         if not preset:
             self.to_draw_points = 0
-        elif preset['advancedCLUT']:
+        elif preset["advancedCLUT"]:
             self.to_draw_points = 1
-            self.points = preset['16bitClutCurves']
-            self.colours = preset['16bitClutColors']
+            self.points = preset["16bitClutCurves"]
+            self.colours = preset["16bitClutColors"]
             self.CalculatePixelPoints()
         else:
             self.to_draw_points = 0
         self.Refresh()
 
-    def SetHistogramArray(self, h_array, range):
+    def SetHistogramArray(self, h_array: "np.ndarray", range: Tuple[float, float]) -> None:
         self.histogram_array = h_array
         self.Histogram.init = range[0]
         self.Histogram.end = range[1]
 
-    def GetCurveWWWl(self, curve):
+    def GetCurveWWWl(self, curve: int) -> Tuple[float, float]:
         return (self.curves[curve].ww, self.curves[curve].wl)
-
-class CLUTEvent(wx.PyCommandEvent):
-    def __init__(self , evtType, id, curve):
-        wx.PyCommandEvent.__init__(self, evtType, id)
-        self.curve = curve
-    def GetCurve(self):
-        return self.curve
 
 
 # Occurs when CLUT is sliding

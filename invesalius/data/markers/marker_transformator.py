@@ -1,16 +1,14 @@
 import math
 
-import vtk
 import numpy as np
+import vtk
 
-from invesalius.data.markers.marker import MarkerType
-from invesalius.data.markers.surface_geometry import SurfaceGeometry
-
+import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
-
+from invesalius.data.markers.marker import MarkerType
+from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.pubsub import pub as Publisher
-import invesalius.constants as const
 
 
 class MarkerTransformator:
@@ -32,11 +30,11 @@ class MarkerTransformator:
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
-        Publisher.subscribe(self.MoveMarkerByKeyboard, 'Move marker by keyboard')
-        Publisher.subscribe(self.SetTarget, 'Set target')
-        Publisher.subscribe(self.UnsetTarget, 'Unset target')
-        Publisher.subscribe(self.SetTargetMode, 'Set target mode')
+        Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.MoveMarkerByKeyboard, "Move marker by keyboard")
+        Publisher.subscribe(self.SetTarget, "Set target")
+        Publisher.subscribe(self.UnsetTarget, "Unset target")
+        Publisher.subscribe(self.SetTargetMode, "Set target mode")
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -67,16 +65,18 @@ class MarkerTransformator:
         m_displacement = dco.coordinates_to_transformation_matrix(
             position=displacement[:3],
             orientation=displacement[3:],
-            axes='sxyz',
+            axes="sxyz",
         )
         m_marker = dco.coordinates_to_transformation_matrix(
             position=position,
             orientation=orientation,
-            axes='sxyz',
+            axes="sxyz",
         )
         m_marker_new = m_marker @ m_displacement
 
-        new_position, new_orientation = dco.transformation_matrix_to_coordinates(m_marker_new, 'sxyz')
+        new_position, new_orientation = dco.transformation_matrix_to_coordinates(
+            m_marker_new, "sxyz"
+        )
 
         # XXX: Invert back to the get to 'marker space'.
         new_position = list(new_position)
@@ -128,7 +128,7 @@ class MarkerTransformator:
             # XXX: Avoid infinite loop.
             if scale >= 100:
                 break
-            
+
         self.ProjectToScalp(
             marker=marker,
             # We are projecting a marker that is already over the scalp; hence, do not project to the opposite side
@@ -158,7 +158,7 @@ class MarkerTransformator:
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        closest_point, _ = self.surface_geometry.GetClosestPointOnSurface('scalp', marker_position)
+        closest_point, _ = self.surface_geometry.GetClosestPointOnSurface("scalp", marker_position)
 
         distance = np.linalg.norm(np.array(marker_position) - np.array(closest_point))
 
@@ -175,7 +175,9 @@ class MarkerTransformator:
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface('scalp', marker_position)
+        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
+            "scalp", marker_position
+        )
 
         if opposite_side:
             # Move to the other side of the scalp by going towards the closest point and then a bit further.
@@ -183,7 +185,9 @@ class MarkerTransformator:
             new_position = np.array(closest_point) + 1.1 * direction_vector
 
             # Re-compute the closest point and normal, but now for the new position.
-            closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface('scalp', new_position)
+            closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
+                "scalp", new_position
+            )
 
         # The reference direction vector that we want to align the normal to.
         #
@@ -196,7 +200,10 @@ class MarkerTransformator:
 
         # Calculate the rotation axis (cross product) and angle (dot product).
         rotation_axis = np.cross(ref_vector, normal_vector)
-        rotation_angle = np.arccos(np.dot(ref_vector, normal_vector) / (np.linalg.norm(ref_vector) * np.linalg.norm(normal_vector)))
+        rotation_angle = np.arccos(
+            np.dot(ref_vector, normal_vector)
+            / (np.linalg.norm(ref_vector) * np.linalg.norm(normal_vector))
+        )
 
         # Normalize the rotation axis.
         rotation_axis_normalized = rotation_axis / np.linalg.norm(rotation_axis)
@@ -205,7 +212,7 @@ class MarkerTransformator:
         rotation_matrix = tr.rotation_matrix(rotation_angle, rotation_axis_normalized)
 
         # Convert the rotation matrix to Euler angles.
-        euler_angles = tr.euler_from_matrix(rotation_matrix, 'sxyz')
+        euler_angles = tr.euler_from_matrix(rotation_matrix, "sxyz")
 
         # Convert the Euler angles to degrees.
         euler_angles_deg = np.degrees(euler_angles)
@@ -233,13 +240,15 @@ class MarkerTransformator:
 
         The marker can be moved in the X- or Y-direction or rotated along the Z-axis using the keys
         'W', 'A', 'S', 'D', 'PageUp', and 'PageDown'.
-        
+
         The marker can also be moved in the Z-direction using the '+' and '-' keys;
         '+' moves it closer to the scalp, and '-' moves it away from the scalp.
 
         The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
         """
-        marker = self.target if self.is_target_mode and self.target is not None else self.selected_marker
+        marker = (
+            self.target if self.is_target_mode and self.target is not None else self.selected_marker
+        )
 
         # Return early if no marker is selected.
         if marker is None:
@@ -288,13 +297,19 @@ class MarkerTransformator:
             stay_on_scalp = False
             direction = [0, 0, 0, 0, 0, 5]
             marker.z_rotation += 5
-                
-        elif keycode in [const.MOVE_MARKER_CLOSER_KEYCODE, const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE]:
+
+        elif keycode in [
+            const.MOVE_MARKER_CLOSER_KEYCODE,
+            const.MOVE_MARKER_CLOSER_ALTERNATIVE_KEYCODE,
+        ]:
             stay_on_scalp = False
             direction = [0, 0, -1, 0, 0, 0]
             marker.z_offset += 1
 
-        elif keycode in [const.MOVE_MARKER_AWAY_KEYCODE, const.MOVE_MARKER_AWAY_ALTERNATIVE_KEYCODE]:
+        elif keycode in [
+            const.MOVE_MARKER_AWAY_KEYCODE,
+            const.MOVE_MARKER_AWAY_ALTERNATIVE_KEYCODE,
+        ]:
             stay_on_scalp = False
             direction = [0, 0, 1, 0, 0, 0]
             marker.z_offset -= 1
@@ -316,11 +331,16 @@ class MarkerTransformator:
             )
 
         # Update the marker in the volume viewer.
-        Publisher.sendMessage('Update marker', marker=marker, new_position=marker.position, new_orientation=marker.orientation)
+        Publisher.sendMessage(
+            "Update marker",
+            marker=marker,
+            new_position=marker.position,
+            new_orientation=marker.orientation,
+        )
 
         # Update the camera to focus on the marker.
-        Publisher.sendMessage('Set camera to focus on marker', marker=marker)
+        Publisher.sendMessage("Set camera to focus on marker", marker=marker)
 
         # Update the target if the marker is the active target.
         if marker.is_target:
-            Publisher.sendMessage('Set target', marker=marker)
+            Publisher.sendMessage("Set target", marker=marker)

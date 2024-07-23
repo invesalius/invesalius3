@@ -40,11 +40,11 @@ from vtkmodules.vtkIOImage import (
     vtkTIFFReader,
 )
 
-from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.utils as utils
 from invesalius import inv_paths
+from invesalius.pubsub import pub as Publisher
 
 # flag to control vtk error in read files
 no_error = True
@@ -103,7 +103,6 @@ class BitmapData:
             return True
 
     def GetFirstPixelSize(self):
-
         path = self.data[0][0]
         size = ReadBitmap(path).dtype.itemsize * 8
 
@@ -147,7 +146,7 @@ class BitmapFiles:
 class LoadBitmap:
     def __init__(self, bmp_file, filepath):
         self.bmp_file = bmp_file
-        #self.filepath = utils.decode(filepath, const.FS_ENCODE)
+        # self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.filepath = filepath
 
         self.run()
@@ -157,17 +156,15 @@ class LoadBitmap:
 
         # ----- verify extension ------------------
         extension = VerifyDataType(self.filepath)
-        
+
         file_name = self.filepath.decode(const.FS_ENCODE).split(os.path.sep)[-1]
-        
+
         n_array = ReadBitmap(self.filepath)
 
         if not (isinstance(n_array, numpy.ndarray)):
             return False
 
-        image = converters.to_vtk(
-            n_array, spacing=(1, 1, 1), slice_number=1, orientation="AXIAL"
-        )
+        image = converters.to_vtk(n_array, spacing=(1, 1, 1), slice_number=1, orientation="AXIAL")
 
         dim = image.GetDimensions()
         x = dim[0]
@@ -312,7 +309,7 @@ def ScipyRead(filepath):
             return simage
         else:
             return r
-    except (IOError):
+    except IOError:
         return False
 
 
@@ -385,7 +382,6 @@ def ReadBitmap(filepath):
     img_array = VtkRead(filepath, t)
 
     if not (isinstance(img_array, numpy.ndarray)):
-
         no_error = True
 
         img_array = ScipyRead(filepath)
@@ -398,20 +394,19 @@ def ReadBitmap(filepath):
 
 def GetPixelSpacingFromInfoFile(filepath):
     filepath = utils.decode(filepath, const.FS_ENCODE)
-    
+
     if filepath.endswith(".DS_Store"):
         return False
 
-    try: 
-        fi = open(filepath, "r")  
+    try:
+        fi = open(filepath, "r")
         lines = fi.readlines()
-    except(UnicodeDecodeError):
-
-        #fix uCTI from CTI file 
+    except UnicodeDecodeError:
+        # fix uCTI from CTI file
         try:
-            fi = open(filepath,"r",encoding="iso8859-1")
+            fi = open(filepath, "r", encoding="iso8859-1")
             lines = fi.readlines()
-        except(UnicodeDecodeError):
+        except UnicodeDecodeError:
             return False
 
     measure_scale = "mm"

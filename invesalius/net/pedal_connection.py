@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,11 +15,11 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import time
-from threading import Thread
 from functools import partial
+from threading import Thread
 
 import wx
 
@@ -38,15 +38,15 @@ class PedalConnector:
     """
     Interface for using any type of pedal (midi, neuronavigation_api, keystroke)
     """
-    def __init__(self, neuronavigation_api=None, window=None):
 
+    def __init__(self, neuronavigation_api=None, window=None):
         self.pedal_connection = MidiPedal() if HAS_PEDAL_CONNECTION else None
         self.neuronavigation_api = neuronavigation_api
         self.frame = None
 
         if const.KEYSTROKE_PEDAL_ENABLED:
             self._set_frame(window)
-            self.panel_callbacks = {}
+            self.panel_callbacks = {}  # dict[wxpanel_id, dict[callback_name, function]]
 
     def _set_frame(self, panel):
         try:
@@ -70,10 +70,10 @@ class PedalConnector:
                     if remove_when_released:
                         self.panel_callbacks[panel_id].pop(name)
             evt.Skip()
+
         panel.Bind(wx.EVT_CHAR_HOOK, partial(OnKeyPress, state=True))
 
     def add_callback(self, name, callback, remove_when_released=False, panel=None):
-
         if self.pedal_connection is not None:
             self.pedal_connection.add_callback(name, callback, remove_when_released)
 
@@ -89,7 +89,6 @@ class PedalConnector:
             self.panel_callbacks[panel_id].update({name: (callback, remove_when_released)})
 
     def remove_callback(self, name, panel=None):
-
         if self.pedal_connection is not None:
             self.pedal_connection.remove_callback(name)
 
@@ -111,6 +110,7 @@ class MidiPedal(Thread, metaclass=Singleton):
 
     Started by calling MidiPedal().start()
     """
+
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
@@ -126,23 +126,27 @@ class MidiPedal(Thread, metaclass=Singleton):
         #       and note_off messages as the pedal being released. Later, use the correct
         #       message types and be more stringent about the messages.
         #
-        if msg.type == 'note_on':
+        if msg.type == "note_on":
             state = True
 
-        elif msg.type == 'note_off':
+        elif msg.type == "note_off":
             state = False
 
         else:
             print("Unknown message type received from MIDI device")
             return
 
-        Publisher.sendMessage('Pedal state changed', state=state)
+        Publisher.sendMessage("Pedal state changed", state=state)
         for callback_info in self._callback_infos:
-            callback = callback_info['callback']
+            callback = callback_info["callback"]
             callback(state)
 
         if not state:
-            self._callback_infos = [callback_info for callback_info in self._callback_infos if not callback_info['remove_when_released']]
+            self._callback_infos = [
+                callback_info
+                for callback_info in self._callback_infos
+                if not callback_info["remove_when_released"]
+            ]
 
     def _connect_if_disconnected(self):
         if self._midi_in is None and len(self._midi_inputs) > 0:
@@ -151,7 +155,7 @@ class MidiPedal(Thread, metaclass=Singleton):
             self._midi_in._rt.ignore_types(False, False, False)
             self._midi_in.callback = self._midi_to_pedal
 
-            Publisher.sendMessage('Pedal connection', state=True)
+            Publisher.sendMessage("Pedal connection", state=True)
 
             print("Connected to MIDI device")
 
@@ -160,7 +164,7 @@ class MidiPedal(Thread, metaclass=Singleton):
             if self._active_input not in self._midi_inputs:
                 self._midi_in = None
 
-                Publisher.sendMessage('Pedal connection', state=False)
+                Publisher.sendMessage("Pedal connection", state=False)
 
                 print("Disconnected from MIDI device")
 
@@ -171,14 +175,18 @@ class MidiPedal(Thread, metaclass=Singleton):
         return self._midi_in is not None
 
     def add_callback(self, name, callback, remove_when_released=False):
-        self._callback_infos.append({
-            'name': name,
-            'callback': callback,
-            'remove_when_released': remove_when_released,
-        })
+        self._callback_infos.append(
+            {
+                "name": name,
+                "callback": callback,
+                "remove_when_released": remove_when_released,
+            }
+        )
 
     def remove_callback(self, name):
-        self._callback_infos = [callback_info for callback_info in self._callback_infos if callback_info['name'] != name]
+        self._callback_infos = [
+            callback_info for callback_info in self._callback_infos if callback_info["name"] != name
+        ]
 
     def run(self):
         self.in_use = True

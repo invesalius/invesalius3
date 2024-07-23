@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,7 +15,7 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import os
 import plistlib
@@ -25,22 +25,23 @@ import tempfile
 import time
 import weakref
 
+import numpy as np
+from scipy import ndimage
+from vtkmodules.util import numpy_support
+
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.session as ses
 from invesalius.data.volume import VolumeMask
-import numpy as np
-from invesalius_cy import floodfill
 from invesalius.pubsub import pub as Publisher
-from scipy import ndimage
-from vtkmodules.util import numpy_support
+from invesalius_cy import floodfill
 
 
 class EditionHistoryNode(object):
     def __init__(self, index, orientation, array, clean=False):
         self.index = index
         self.orientation = orientation
-        self.fd, self.filename = tempfile.mkstemp(suffix='.npy')
+        self.fd, self.filename = tempfile.mkstemp(suffix=".npy")
         self.clean = clean
 
         self._save_array(array)
@@ -51,19 +52,19 @@ class EditionHistoryNode(object):
 
     def commit_history(self, mvolume):
         array = np.load(self.filename)
-        if self.orientation == 'AXIAL':
-            mvolume[self.index+1,1:,1:] = array
+        if self.orientation == "AXIAL":
+            mvolume[self.index + 1, 1:, 1:] = array
             if self.clean:
-                mvolume[self.index+1, 0, 0] = 1
-        elif self.orientation == 'CORONAL':
-            mvolume[1:, self.index+1, 1:] = array
+                mvolume[self.index + 1, 0, 0] = 1
+        elif self.orientation == "CORONAL":
+            mvolume[1:, self.index + 1, 1:] = array
             if self.clean:
-                mvolume[0, self.index+1, 0] = 1
-        elif self.orientation == 'SAGITAL':
-            mvolume[1:, 1:, self.index+1] = array
+                mvolume[0, self.index + 1, 0] = 1
+        elif self.orientation == "SAGITAL":
+            mvolume[1:, 1:, self.index + 1] = array
             if self.clean:
-                mvolume[0, 0, self.index+1] = 1
-        elif self.orientation == 'VOLUME':
+                mvolume[0, 0, self.index + 1] = 1
+        elif self.orientation == "VOLUME":
             mvolume[:] = array
 
         print("applying to", self.orientation, "at slice", self.index)
@@ -97,7 +98,7 @@ class EditionHistory(object):
             self.index -= 1
 
         if self.index < len(self.history):
-            self.history = self.history[:self.index + 1]
+            self.history = self.history[: self.index + 1]
         self.history.append(node)
         self.index += 1
 
@@ -108,21 +109,28 @@ class EditionHistory(object):
     def undo(self, mvolume, actual_slices=None):
         h = self.history
         if self.index > 0:
-            #if self.index > 0 and h[self.index].clean:
-                ##self.index -= 1
-                ##h[self.index].commit_history(mvolume)
-                #self._reload_slice(self.index - 1)
-            if h[self.index - 1].orientation == 'VOLUME':
+            # if self.index > 0 and h[self.index].clean:
+            ##self.index -= 1
+            ##h[self.index].commit_history(mvolume)
+            # self._reload_slice(self.index - 1)
+            if h[self.index - 1].orientation == "VOLUME":
                 self.index -= 1
                 h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable redo", value=True)
-            elif actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
+            elif (
+                actual_slices
+                and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index
+            ):
                 self._reload_slice(self.index - 1)
             else:
                 self.index -= 1
                 h[self.index].commit_history(mvolume)
-                if actual_slices and self.index and actual_slices[h[self.index - 1].orientation] == h[self.index - 1].index:
+                if (
+                    actual_slices
+                    and self.index
+                    and actual_slices[h[self.index - 1].orientation] == h[self.index - 1].index
+                ):
                     self.index -= 1
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
@@ -135,22 +143,29 @@ class EditionHistory(object):
     def redo(self, mvolume, actual_slices=None):
         h = self.history
         if self.index < len(h) - 1:
-            #if self.index < len(h) - 1 and h[self.index].clean:
-                ##self.index += 1
-                ##h[self.index].commit_history(mvolume)
-                #self._reload_slice(self.index + 1)
+            # if self.index < len(h) - 1 and h[self.index].clean:
+            ##self.index += 1
+            ##h[self.index].commit_history(mvolume)
+            # self._reload_slice(self.index + 1)
 
-            if h[self.index + 1].orientation == 'VOLUME':
+            if h[self.index + 1].orientation == "VOLUME":
                 self.index += 1
                 h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable undo", value=True)
-            elif actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
+            elif (
+                actual_slices
+                and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index
+            ):
                 self._reload_slice(self.index + 1)
             else:
                 self.index += 1
                 h[self.index].commit_history(mvolume)
-                if actual_slices and self.index < len(h) - 1 and actual_slices[h[self.index + 1].orientation] == h[self.index + 1].index:
+                if (
+                    actual_slices
+                    and self.index < len(h) - 1
+                    and actual_slices[h[self.index + 1].orientation] == h[self.index + 1].index
+                ):
                     self.index += 1
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
@@ -161,8 +176,10 @@ class EditionHistory(object):
         print("AT", self.index, len(h), h[self.index].filename)
 
     def _reload_slice(self, index):
-        Publisher.sendMessage(('Set scroll position', self.history[index].orientation),
-                              index=self.history[index].index)
+        Publisher.sendMessage(
+            ("Set scroll position", self.history[index].orientation),
+            index=self.history[index].index,
+        )
 
     def _config_undo_redo(self, visible):
         v_undo = False
@@ -186,8 +203,9 @@ class EditionHistory(object):
         Publisher.sendMessage("Enable redo", value=False)
 
 
-class Mask():
+class Mask:
     general_index = -1
+
     def __init__(self):
         Mask.general_index += 1
         self.index = Mask.general_index
@@ -197,7 +215,7 @@ class Mask():
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
-        self.name = const.MASK_NAME_PATTERN %(Mask.general_index+1)
+        self.name = const.MASK_NAME_PATTERN % (Mask.general_index + 1)
         self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
         self.is_shown = 1
         self.edited_points = {}
@@ -211,8 +229,8 @@ class Mask():
         self.history = EditionHistory()
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
-        Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
+        Publisher.subscribe(self.OnFlipVolume, "Flip volume")
+        Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
     def as_vtkimagedata(self):
         print("Converting to VTK")
@@ -250,7 +268,7 @@ class Mask():
 
         session = ses.Session()
         if session.mask_3d_preview:
-            Publisher.sendMessage('Show mask preview', index=self.index, flag=bool(self.is_shown))
+            Publisher.sendMessage("Show mask preview", index=self.index, flag=bool(self.is_shown))
             Publisher.sendMessage("Render volume viewer")
 
     def create_3d_preview(self):
@@ -267,7 +285,7 @@ class Mask():
             #  np_image[:] = self.matrix.reshape(-1)
             self.imagedata.SetDimensions(dx - 1, dy - 1, dz - 1)
             self.imagedata.SetSpacing(self.spacing)
-            self.imagedata.SetExtent(0, dx - 1, 0, dy - 1,  0, dz - 1)
+            self.imagedata.SetExtent(0, dx - 1, 0, dy - 1, 0, dz - 1)
             self.imagedata.Modified()
             self.volume._actor.Update()
 
@@ -276,28 +294,28 @@ class Mask():
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
-        filename = u'mask_%d' % self.index
-        mask_filename = u'%s.dat' % filename
+        filename = "mask_%d" % self.index
+        mask_filename = "%s.dat" % filename
         mask_filepath = os.path.join(dir_temp, mask_filename)
         filelist[self.temp_file] = mask_filename
-        #self._save_mask(mask_filepath)
+        # self._save_mask(mask_filepath)
 
-        mask['index'] = self.index
-        mask['name'] = self.name
-        mask['colour'] = self.colour[:3]
-        mask['opacity'] = self.opacity
-        mask['threshold_range'] = self.threshold_range
-        mask['edition_threshold_range'] = self.edition_threshold_range
-        mask['visible'] = self.is_shown
-        mask['mask_file'] = mask_filename
-        mask['mask_shape'] = self.matrix.shape
-        mask['edited'] = self.was_edited
+        mask["index"] = self.index
+        mask["name"] = self.name
+        mask["colour"] = self.colour[:3]
+        mask["opacity"] = self.opacity
+        mask["threshold_range"] = self.threshold_range
+        mask["edition_threshold_range"] = self.edition_threshold_range
+        mask["visible"] = self.is_shown
+        mask["mask_file"] = mask_filename
+        mask["mask_shape"] = self.matrix.shape
+        mask["edited"] = self.was_edited
 
-        plist_filename = filename + u'.plist'
-        #plist_filepath = os.path.join(dir_temp, plist_filename)
+        plist_filename = filename + ".plist"
+        # plist_filepath = os.path.join(dir_temp, plist_filename)
 
         temp_fd, temp_plist = tempfile.mkstemp()
-        with open(temp_plist, 'w+b') as f:
+        with open(temp_plist, "w+b") as f:
             plistlib.dump(mask, f)
 
         filelist[temp_plist] = plist_filename
@@ -306,19 +324,19 @@ class Mask():
         return plist_filename
 
     def OpenPList(self, filename):
-        with open(filename, 'r+b') as f:
+        with open(filename, "r+b") as f:
             mask = plistlib.load(f, fmt=plistlib.FMT_XML)
 
-        self.index = mask['index']
-        self.name = mask['name']
-        self.colour = mask['colour']
-        self.opacity = mask['opacity']
-        self.threshold_range = mask['threshold_range']
-        self.edition_threshold_range = mask['edition_threshold_range']
-        self.is_shown = mask['visible']
-        mask_file = mask['mask_file']
-        shape = mask['mask_shape']
-        self.was_edited = mask.get('edited', False)
+        self.index = mask["index"]
+        self.name = mask["name"]
+        self.colour = mask["colour"]
+        self.opacity = mask["opacity"]
+        self.threshold_range = mask["threshold_range"]
+        self.edition_threshold_range = mask["edition_threshold_range"]
+        self.is_shown = mask["visible"]
+        mask_file = mask["mask_file"]
+        shape = mask["mask_shape"]
+        self.was_edited = mask.get("edited", False)
 
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
@@ -348,7 +366,7 @@ class Mask():
     def _save_mask(self, filename):
         shutil.copyfile(self.temp_file, filename)
 
-    def _open_mask(self, filename, shape, dtype='uint8'):
+    def _open_mask(self, filename, shape, dtype="uint8"):
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
@@ -380,7 +398,7 @@ class Mask():
         """
         self.temp_fd, self.temp_file = tempfile.mkstemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
-        self.matrix = np.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
+        self.matrix = np.memmap(self.temp_file, mode="w+", dtype="uint8", shape=shape)
 
     def modified(self, all_volume=False):
         if all_volume:
@@ -389,7 +407,7 @@ class Mask():
             self.matrix[:, :, 0] = 1
 
         session = ses.Session()
-        if session.GetConfig('auto_reload_preview'):
+        if session.GetConfig("auto_reload_preview"):
             self._update_imagedata()
 
         self.modified_time = time.monotonic()
@@ -430,7 +448,7 @@ class Mask():
         new_mask.is_shown = self.is_shown
         new_mask.was_edited = self.was_edited
 
-        new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
+        new_mask.create_mask(shape=[i - 1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]
         new_mask.spacing = self.spacing
 
@@ -443,12 +461,12 @@ class Mask():
         CON2D = {4: 1, 8: 2}
         CON3D = {6: 1, 18: 2, 26: 3}
 
-        if target == '3D':
+        if target == "3D":
             cp_mask = self.matrix.copy()
             matrix = self.matrix[1:, 1:, 1:]
             bstruct = ndimage.generate_binary_structure(3, CON3D[conn])
 
-            imask = (~(matrix > 127))
+            imask = ~(matrix > 127)
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
 
             if nlabels == 0:
@@ -460,16 +478,16 @@ class Mask():
         else:
             bstruct = ndimage.generate_binary_structure(2, CON2D[conn])
 
-            if orientation == 'AXIAL':
-                matrix = self.matrix[index+1, 1:, 1:]
-            elif orientation == 'CORONAL':
-                matrix = self.matrix[1:, index+1, 1:]
-            elif orientation == 'SAGITAL':
-                matrix = self.matrix[1:, 1:, index+1]
+            if orientation == "AXIAL":
+                matrix = self.matrix[index + 1, 1:, 1:]
+            elif orientation == "CORONAL":
+                matrix = self.matrix[1:, index + 1, 1:]
+            elif orientation == "SAGITAL":
+                matrix = self.matrix[1:, 1:, index + 1]
 
             cp_mask = matrix.copy()
 
-            imask = (~(matrix > 127))
+            imask = ~(matrix > 127)
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
 
             if nlabels == 0:

@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,30 +15,28 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 import os
 import sys
 
 import wx
+
 try:
     import wx.lib.agw.hyperlink as hl
 except ImportError:
     import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 
-from invesalius.pubsub import pub as Publisher
-
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
-
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
 
 BTN_IMPORT_LOCAL = wx.NewIdRef()
 BTN_IMPORT_PACS = wx.NewIdRef()
 BTN_OPEN_PROJECT = wx.NewIdRef()
 BTN_IMPORT_NIFTI = wx.NewIdRef()
-
 
 
 class TaskPanel(wx.Panel):
@@ -48,19 +46,19 @@ class TaskPanel(wx.Panel):
         inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
-                  wx.LEFT, 7)
+        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
+
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        backgroud_colour = wx.Colour(255,255,255)
+        backgroud_colour = wx.Colour(255, 255, 255)
 
         self.SetBackgroundColour(backgroud_colour)
         self.SetAutoLayout(1)
@@ -94,17 +92,17 @@ class InnerTaskPanel(wx.Panel):
         link_import_nifti.UpdateLink()
         link_import_nifti.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportNifti)
 
-        #tooltip = "Import DICOM files from PACS server"
-        #link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
-        #link_import_pacs.SetUnderlines(False, False, False)
-        #link_import_pacs.SetColours("BLACK", "BLACK", "BLACK")
-        #link_import_pacs.SetToolTip(tooltip)
-        #link_import_pacs.AutoBrowse(False)
-        #link_import_pacs.UpdateLink()
-        #link_import_pacs.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
+        # tooltip = "Import DICOM files from PACS server"
+        # link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
+        # link_import_pacs.SetUnderlines(False, False, False)
+        # link_import_pacs.SetColours("BLACK", "BLACK", "BLACK")
+        # link_import_pacs.SetToolTip(tooltip)
+        # link_import_pacs.AutoBrowse(False)
+        # link_import_pacs.UpdateLink()
+        # link_import_pacs.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
 
         tooltip = _("Open an existing InVesalius project...")
-        link_open_proj = hl.HyperLinkCtrl(self,-1,_("Open an existing project..."))
+        link_open_proj = hl.HyperLinkCtrl(self, -1, _("Open an existing project..."))
         link_open_proj.SetUnderlines(False, False, False)
         link_open_proj.SetBold(True)
         link_open_proj.SetColours("BLACK", "BLACK", "BLACK")
@@ -115,44 +113,54 @@ class InnerTaskPanel(wx.Panel):
         link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
 
         # Image(s) for buttons
-        BMP_IMPORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_import_original.png")), wx.BITMAP_TYPE_PNG)
-        BMP_OPEN_PROJECT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("file_open_original.png")), wx.BITMAP_TYPE_PNG)
+        BMP_IMPORT = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("file_import_original.png")), wx.BITMAP_TYPE_PNG
+        )
+        BMP_OPEN_PROJECT = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("file_open_original.png")), wx.BITMAP_TYPE_PNG
+        )
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
-        button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
-                                               BMP_IMPORT, style=button_style)
+        button_import_local = pbtn.PlateButton(
+            self, BTN_IMPORT_LOCAL, "", BMP_IMPORT, style=button_style
+        )
         button_import_local.SetBackgroundColour(self.GetBackgroundColour())
-        button_import_nifti = pbtn.PlateButton(self, BTN_IMPORT_NIFTI, "",
-                                               BMP_IMPORT, style=button_style)
+        button_import_nifti = pbtn.PlateButton(
+            self, BTN_IMPORT_NIFTI, "", BMP_IMPORT, style=button_style
+        )
         button_import_nifti.SetBackgroundColour(self.GetBackgroundColour())
-        button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
-                                            BMP_OPEN_PROJECT, style=button_style)
+        button_open_proj = pbtn.PlateButton(
+            self, BTN_OPEN_PROJECT, "", BMP_OPEN_PROJECT, style=button_style
+        )
         button_open_proj.SetBackgroundColour(self.GetBackgroundColour())
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Tags and grid sizer for fixed items
-        flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
+        flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        #fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
+        # fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
-        fixed_sizer.AddMany([ #(link_import_pacs, 1, flag_link, 3),
-                              #(button_import_pacs, 0, flag_button),
-                              (link_import_local, 1, flag_link, 3),
-                              (button_import_local, 0, flag_button),
-                              (link_import_nifti, 3, flag_link, 3),
-                              (button_import_nifti, 0, flag_button),
-                              (link_open_proj, 5, flag_link, 3),
-                              (button_open_proj, 0, flag_button) ])
+        fixed_sizer.AddMany(
+            [  # (link_import_pacs, 1, flag_link, 3),
+                # (button_import_pacs, 0, flag_button),
+                (link_import_local, 1, flag_link, 3),
+                (button_import_local, 0, flag_button),
+                (link_import_nifti, 3, flag_link, 3),
+                (button_import_nifti, 0, flag_button),
+                (link_open_proj, 5, flag_link, 3),
+                (button_open_proj, 0, flag_button),
+            ]
+        )
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(fixed_sizer, 0, wx.GROW|wx.EXPAND)
+        main_sizer.Add(fixed_sizer, 0, wx.GROW | wx.EXPAND)
 
         # Update main sizer and panel layout
         self.SetSizer(main_sizer)
@@ -162,12 +170,12 @@ class InnerTaskPanel(wx.Panel):
 
         # Test load and unload specific projects' links
         self.TestLoadProjects2()
-        #self.__bind_events()
+        # self.__bind_events()
 
-    #def __bind_events(self):
+    # def __bind_events(self):
     #    Publisher.subscribe(self.OnLoadRecentProjects, "Load recent projects")
 
-    #def OnLoadRecentProjects(self, pubsub_evt):
+    # def OnLoadRecentProjects(self, pubsub_evt):
     #    projects = pubsub_evt.data
     #    for tuple in projects:
     #        filename = tuple[1]
@@ -178,11 +186,10 @@ class InnerTaskPanel(wx.Panel):
         import invesalius.session as ses
 
         session = ses.Session()
-        recent_projects = session.GetConfig('recent_projects')
+        recent_projects = session.GetConfig("recent_projects")
 
         for path, filename in recent_projects:
             self.LoadProject(filename, path)
-
 
     def TestLoadProjects(self):
         self.LoadProject("test1.inv3", "/Volumes/file/inv3")
@@ -200,11 +207,11 @@ class InnerTaskPanel(wx.Panel):
 
         proj_path = os.path.join(proj_dir, proj_name)
 
-        if (self.proj_count < 3):
+        if self.proj_count < 3:
             self.proj_count += 1
 
             # Create name to be plot on GUI
-            label = "     "+str(self.proj_count)+". "+proj_name
+            label = "     " + str(self.proj_count) + ". " + proj_name
 
             # Create corresponding hyperlink
             proj_link = hl.HyperLinkCtrl(self, -1, label)
@@ -213,8 +220,7 @@ class InnerTaskPanel(wx.Panel):
             proj_link.SetBackgroundColour(self.GetBackgroundColour())
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
-            proj_link.Bind(hl.EVT_HYPERLINK_LEFT,
-                       lambda e: self.OpenProject(proj_path))
+            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProject(proj_path))
 
             # Add to existing frame
             self.sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
@@ -222,7 +228,6 @@ class InnerTaskPanel(wx.Panel):
 
             # Add hyperlink to floating hyperlinks list
             self.float_hyper_list.append(proj_link)
-
 
     def OnLinkImport(self, event):
         self.ImportDicom()
@@ -240,33 +245,32 @@ class InnerTaskPanel(wx.Panel):
         self.OpenProject()
         event.Skip()
 
-
     def ImportPACS(self):
         print("TODO: Send Signal - Import DICOM files from PACS")
 
-
-#######
+    #######
     def ImportDicom(self):
-        Publisher.sendMessage('Show import directory dialog')
+        Publisher.sendMessage("Show import directory dialog")
 
     def ImportNifti(self):
-        Publisher.sendMessage('Show import other files dialog', id_type=const.ID_NIFTI_IMPORT)
+        Publisher.sendMessage("Show import other files dialog", id_type=const.ID_NIFTI_IMPORT)
 
     def OpenProject(self, path=None):
         if path:
-            Publisher.sendMessage('Open recent project', filepath=path)
+            Publisher.sendMessage("Open recent project", filepath=path)
         else:
-            Publisher.sendMessage('Show open project dialog')
+            Publisher.sendMessage("Show open project dialog")
 
     def SaveAsProject(self):
-        Publisher.sendMessage('Show save dialog', save_as=True)
+        Publisher.sendMessage("Show save dialog", save_as=True)
 
     def SaveProject(self):
-        Publisher.sendMessage('Show save dialog', save_as=False)
+        Publisher.sendMessage("Show save dialog", save_as=False)
 
     def CloseProject(self):
-        Publisher.sendMessage('Close Project')
-#######
+        Publisher.sendMessage("Close Project")
+
+    #######
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -277,10 +281,8 @@ class InnerTaskPanel(wx.Panel):
             self.ImportNifti()
         elif id == BTN_IMPORT_PACS:
             self.ImportPACS()
-        else: #elif id == BTN_OPEN_PROJECT:
+        else:  # elif id == BTN_OPEN_PROJECT:
             self.OpenProject()
-
-
 
     def UnloadProjects(self):
         """
@@ -295,7 +297,7 @@ class InnerTaskPanel(wx.Panel):
         # Delete hyperlinks
         for hyper in self.float_hyper_list:
             hyper.Destroy()
-            del(hyper)
+            del hyper
 
         # Update GUI
         self.sizer.Layout()

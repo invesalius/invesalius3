@@ -19,17 +19,13 @@
 
 import gdcm
 import numpy as np
-
 from vtkmodules.util import numpy_support
-from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkCommonCore import (
     vtkPoints,
 )
-from vtkmodules.vtkCommonDataModel import (
-    vtkCellArray,
-    vtkPolyData,
-    vtkTriangle
-)
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkImageData, vtkPolyData, vtkTriangle
+
+
 def to_vtk(
     n_array,
     spacing=(1.0, 1.0, 1.0),
@@ -182,9 +178,7 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
         shape = image.GetDimension(1), image.GetDimension(0), pf.GetSamplesPerPixel()
     dtype = map_gdcm_np[pf.GetScalarType()]
     gdcm_array = image.GetBuffer()
-    np_array = np.frombuffer(
-        gdcm_array.encode("utf-8", errors="surrogateescape"), dtype=dtype
-    )
+    np_array = np.frombuffer(gdcm_array.encode("utf-8", errors="surrogateescape"), dtype=dtype)
     if pf.GetScalarType() == gdcm.PixelFormat.SINGLEBIT:
         np_array = np.unpackbits(np_array)
     np_array.shape = shape
@@ -199,15 +193,17 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
     else:
         return np_array
 
+
 def convert_custom_bin_to_vtk(filename):
     import os
+
     if os.path.exists(filename):
         numbers = np.fromfile(filename, count=3, dtype=np.int32)
         points = np.fromfile(filename, dtype=np.float32)
         elements = np.fromfile(filename, dtype=np.int32)
 
-        points1 = points[3:(numbers[1]) * 3 + 3]*1000
-        elements1 = elements[numbers[1] * 3 + 3:]
+        points1 = points[3 : (numbers[1]) * 3 + 3] * 1000
+        elements1 = elements[numbers[1] * 3 + 3 :]
 
         points2 = points1.reshape(numbers[1], 3)
         elements2 = elements1.reshape(numbers[2], 3)
@@ -233,4 +229,3 @@ def convert_custom_bin_to_vtk(filename):
     else:
         print("File does not exists")
         return
-

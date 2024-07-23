@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,12 +15,11 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import os
 
 import nibabel as nib
-
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
@@ -40,7 +39,7 @@ def ReadOthers(dir_):
     """
 
     if not const.VTK_WARNING:
-        log_path = os.path.join(inv_paths.USER_LOG_DIR, 'vtkoutput.txt')
+        log_path = os.path.join(inv_paths.USER_LOG_DIR, "vtkoutput.txt")
         fow = vtkFileOutputWindow()
         fow.SetFileName(log_path.encode(const.FS_ENCODE))
         ow = vtkOutputWindow()
@@ -52,10 +51,13 @@ def ReadOthers(dir_):
         imagedata.update_header()
 
         if len(imagedata.shape) == 4:
-            import invesalius.gui.dialogs as dlg
             from wx import ID_OK
 
-            dialog = dlg.SelectNiftiVolumeDialog(volumes=[str(n+1) for n in range(imagedata.shape[-1])])
+            import invesalius.gui.dialogs as dlg
+
+            dialog = dlg.SelectNiftiVolumeDialog(
+                volumes=[str(n + 1) for n in range(imagedata.shape[-1])]
+            )
             status = dialog.ShowModal()
 
             success = status == ID_OK
@@ -81,7 +83,7 @@ def ReadOthers(dir_):
 
             dialog.Destroy()
 
-    except(nib.filebasedimages.ImageFileError):
+    except nib.filebasedimages.ImageFileError:
         return False
 
     return imagedata
