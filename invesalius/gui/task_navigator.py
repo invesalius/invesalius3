@@ -1768,8 +1768,9 @@ class ControlPanel(wx.Panel):
         if not pressed:
             Publisher.sendMessage("Press target mode button", pressed=pressed)
 
-        # Automatically press or unpress 'Show coil' button.
+        # Automatically press or unpress 'Show coil' and 'Show probe' button.
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
+        Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
 
         self.SaveConfig()
 

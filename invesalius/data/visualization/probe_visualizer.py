@@ -27,14 +27,6 @@ class ProbeVisualizer:
     def __bind_events(self):
         Publisher.subscribe(self.ShowProbe, "Show probe in viewer volume")
         Publisher.subscribe(self.UpdateProbePose, "Update probe pose")
-        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
-
-    def OnNavigationStatus(self, nav_status, vis_status):
-        self.is_navigating = nav_status  # show probe when start navigation
-        if self.probe_actor is not None:  # and hide it when stop navigation
-            Publisher.sendMessage("Press show-probe button", pressed=nav_status)
-            self.ShowProbe(self.is_navigating)
-            self.interactor.Render()
 
     def ShowProbe(self, state):
         self.show_probe = state
