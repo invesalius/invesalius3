@@ -35,20 +35,11 @@ class CoilVisualizer:
         # The vector field visualizer is used to show a vector field relative to the coil.
         self.vector_field_visualizer = vector_field_visualizer
 
-        # Number of coils is by default 1
-        self.n_coils = 1
-
-        # The actor for showing the actual coil in the volume viewer.
-        self.coil_actor = None
-        self.coil_actors = []
-
-        # The actor for showing the center of the actual coil in the volume viewer.
-        self.coil_center_actor = None
-        self.coil_center_actors = []
+        # Keyed by coil name, each coil has a dict holding its coil actor, coil center actor, coil path.
+        self.coils = {}
 
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
-        self.target_coil_actors = []
 
         # The assembly for showing the vector field relative to the coil in the volume viewer.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -59,26 +50,10 @@ class CoilVisualizer:
 
         self.coil_at_target = False
 
-        self.coil_path = None
-        self.coil_polydata = None
-
-        # Show coil button status
-        self.show_coil_pressed = False
-
-        # Track object button status
-        self.track_object_pressed = False
-
-        # Is this the first time show coil button has been pressed
-        self.initial_button_press = True
-
-        # Is this the initial project that was loaded
-        self.initial_project = True
-
         self.is_navigating = False
 
         self.LoadConfig()
 
-        self.AddCoilActor(self.coil_path)
         self.ShowCoil(False)
 
         self.__bind_events()
@@ -86,58 +61,22 @@ class CoilVisualizer:
     def __bind_events(self):
         Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
-        Publisher.subscribe(self.TrackObject, "Track object")
         Publisher.subscribe(self.ShowCoil, "Show coil in viewer volume")
-        Publisher.subscribe(self.SetCoilCount, "Set coil count")
-        Publisher.subscribe(self.ConfigureCoil, "Configure coil")
-        Publisher.subscribe(self.UpdateCoilPose, "Update coil pose")
+        Publisher.subscribe(lambda n_coils: self.RemoveCoil(), "Reset coil selection")
+        Publisher.subscribe(self.SelectCoil, "Select coil")
+        Publisher.subscribe(self.UpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.UpdateVectorField, "Update vector field")
-        Publisher.subscribe(self.OnSetTrackerFiducials, "Tracker fiducials set")
-        Publisher.subscribe(self.OnResetTrackerFiducials, "Reset tracker fiducials")
-        Publisher.subscribe(self.OnLoadProject, "Project loaded successfully")
-
-    def SaveConfig(self):
-        coil_path = self.coil_path.decode(const.FS_ENCODE) if self.coil_path is not None else None
-
-        session = ses.Session()
-        session.SetConfig("coil_path", coil_path)
 
     def LoadConfig(self):
         session = ses.Session()
-        coil_path_unencoded = session.GetConfig("coil_path")
 
-        if coil_path_unencoded is None:
-            return
-
-        self.coil_path = coil_path_unencoded.encode(const.FS_ENCODE)
-        self.coil_polydata = pu.LoadPolydata(path=coil_path_unencoded)
-
-    def OnSetTrackerFiducials(self):
-        self.tracker_fiducials_set = True
-
-        # If the track coil button is not pressed, press it after tracker fiducials have been set
-        if not self.track_object_pressed:
-            Publisher.sendMessage("Press track object button", pressed=True)
-
-        elif not self.show_coil_pressed:
-            Publisher.sendMessage("Press show-coil button", pressed=True)
-        else:
-            self.ShowCoil(self.show_coil_pressed)
-
-    def OnResetTrackerFiducials(self):
-        self.tracker_fiducials_set = False
-
-        # If the show coil button is pressed, press it again to hide the coil
-        if self.show_coil_pressed:
-            Publisher.sendMessage("Press show-coil button", pressed=False)
-
-    def OnLoadProject(self):
-        # When loading some other than the initially loaded project, reset some instance variables
-        if self.initial_project:
-            self.initial_project = False
-        else:
-            self.tracker_fiducials_set = False
-            # self.initial_button_press = True
+        # Get the list of coil names of coils selected for navigation
+        selected_coils = (session.GetConfig("navigation") or {}).get("selected_coils", [])
+        
+        saved_registrations = session.GetConfig("coil_registrations") or {}
+        for coil_name in selected_coils:
+            if (coil := saved_registrations.get(coil_name, None)) is not None:
+                self.AddCoil(coil_name, coil["path"])
 
     def UpdateVectorField(self):
         """
@@ -170,59 +109,24 @@ class CoilVisualizer:
 
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
-        self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color)
-
-    def SetCoilCount(self, n_coils):
-        self.n_coils = n_coils
-
-    def RemoveCoilActor(self):
-        self.renderer.RemoveActor(self.coil_actor)
-        self.renderer.RemoveActor(self.coil_center_actor)
-        # TODO: Vector field assembly follows a different pattern for removal, should unify.
-        self.vector_field_assembly.SetVisibility(0)
-
-        self.coil_actor = None
-        self.coil_center_actor = None
-
-    def ConfigureCoil(self, coil_path=None, polydata=None):
-        self.coil_path = coil_path
-        self.coil_polydata = polydata
-
-        self.SaveConfig()
+        #self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
-        if self.is_navigating and self.coil_actor is not None:
-            self.coil_actor.SetVisibility(self.show_coil_pressed)
-
-    # Called when 'track object' button is pressed in the user interface or in code.
-    def TrackObject(self, enabled):
-        self.track_object_pressed = enabled
-
-        # Hide coil vector_field if it exists. LUKATODO: what is this vector field?
-        if enabled:
-            self.vector_field_assembly.SetVisibility(1)
-        else:
-            self.vector_field_assembly.SetVisibility(0)
 
     # Called when 'show coil' button is pressed in the user interface or in code.
-    def ShowCoil(self, state):
-        self.show_coil_pressed = state
+    # LUKATODO: Right-click 'show coil' button to open combobox to choose specific coil to show/hide
+    def ShowCoil(self, state, coil_name=None):
+        if coil_name is None:  # Show/hide all coils
+            for coil in self.coils.values():
+                coil["actor"].SetVisibility(state)
+        elif (coil := self.coils.get(coil_name, None)) is not None:
+            coil["actor"].SetVisibility(state)
 
-        # Initially, if the tracker fiducials are not set but the show coil button is pressed,
-        # press it again to hide the coil
-        if not self.tracker_fiducials_set and self.show_coil_pressed and self.initial_button_press:
-            self.initial_button_press = False
-
-            # Press the show coil button to turn it off
-            Publisher.sendMessage("Press show-coil button", pressed=False)
-            return
-
+        # LUKATODO: target?
         if self.target_coil_actor is not None:
-            self.target_coil_actor.SetVisibility(self.show_coil_pressed)
-
-        if self.coil_actor:
-            self.coil_actor.SetVisibility(self.show_coil_pressed)
+            self.target_coil_actor.SetVisibility(state)
+        self.vector_field_assembly.SetVisibility(state)
 
         if not self.is_navigating:
             self.interactor.Render()
@@ -286,7 +190,14 @@ class CoilVisualizer:
         self.renderer.RemoveActor(self.target_coil_actor)
         self.target_coil_actor = None
 
-    def AddCoilActor(self, coil_path):
+    # Called when a coil is (un)selected for navigation
+    def SelectCoil(self, coil_name, coil_registration):
+        if coil_registration is not None:  # coil is selected
+            self.AddCoil(coil_name, coil_registration["path"])
+        else:  # coil is unselected
+            self.RemoveCoil(coil_name)
+
+    def AddCoil(self, coil_name, coil_path):
         """
         Add actors for actual coil, coil center, and x, y, and z-axes to the renderer.
         """
@@ -320,8 +231,6 @@ class CoilVisualizer:
         coil_actor.GetProperty().SetOpacity(0.4)
         coil_actor.SetVisibility(0)
 
-        self.coil_actor = coil_actor
-
         # Create an actor for the coil center.
         coil_center_actor = self.actor_factory.CreateTorus(
             position=[0.0, 0.0, 0.0],
@@ -329,25 +238,48 @@ class CoilVisualizer:
             colour=vtk_colors.GetColor3d("Red"),
             scale=0.5,
         )
-        self.coil_center_actor = coil_center_actor
 
-        self.renderer.AddActor(self.coil_actor)
-        self.renderer.AddActor(self.coil_center_actor)
-        # TODO: Vector field assembly follows a different pattern for addition, should unify.
-        self.vector_field_assembly.SetVisibility(1)
+        self.renderer.AddActor(coil_actor)
+        self.renderer.AddActor(coil_center_actor)
+        
+        self.coils[coil_name] = {}
+        self.coils[coil_name]["actor"] = coil_actor
+        self.coils[coil_name]["center_actor"] = coil_center_actor
+        self.coils[coil_name]["path"] = coil_path
 
-    def UpdateCoilPose(self, m_img, coord):
+        # LUKATODO: Vector field assembly follows a different pattern for addition, should unify.
+        # self.vector_field_assembly.SetVisibility(1)
+
+    def RemoveCoil(self, coil_name=None):
+        if coil_name is not None:
+            coil = self.coils.pop(coil_name)
+            self.renderer.RemoveActor(coil["actor"])
+            self.renderer.RemoveActor(coil["center_actor"])
+        else:  # Remove all coils
+            for coil in self.coils.values():
+                self.renderer.RemoveActor(coil["actor"])
+                self.renderer.RemoveActor(coil["center_actor"])
+            # LUKATODO: what about target_actors and other things?
+            self.coils = {}
+
+        # self.vector_field_assembly.SetVisibility(0)
+
+    def UpdateCoilPoses(self, m_imgs, coords):
         """
         During navigation, use updated coil pose to perform the following tasks:
 
         - Update actor positions for coil, coil center, and coil orientation axes.
         """
-        m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-        m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
+        for name, m_img in m_imgs.items():
+            m_img_flip = m_img.copy()
+            m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-        # Update actor positions for coil, coil center, and coil orientation axes.
-        self.coil_actor.SetUserMatrix(m_img_vtk)
-        self.coil_center_actor.SetUserMatrix(m_img_vtk)
-        self.vector_field_assembly.SetUserMatrix(m_img_vtk)
+            m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
+
+            # Update actor positions for coil, coil center, and coil orientation axes.
+            self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
+            self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
+
+            # LUKATODO: what to do with this??? Is mtms field needed? If not, just delete vector_field_assembly...?
+            # self.vector_field_assembly[name].SetUserMatrix(m_img_vtk)

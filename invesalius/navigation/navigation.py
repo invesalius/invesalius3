@@ -145,7 +145,9 @@ class UpdateNavigationScene(threading.Thread):
                 got_coords = True
 
                 probe_visible = marker_visibilities[0]
-                coil_visible = marker_visibilities[2]
+
+                #LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
+                coil_visible = marker_visibilities[2] # LUKATODO: will static mode work with this?
 
                 # automatically track either coil or stylus if only one of them is visible, otherise use navigation.track_obj
                 track_coil = (
@@ -153,10 +155,16 @@ class UpdateNavigationScene(threading.Thread):
                     if (coil_visible ^ probe_visible)
                     else self.navigation.track_obj
                 )
-
+                main_coil = self.navigation.main_coil
+                track_this = main_coil if track_coil else "probe"
                 # choose which object to track in slices and viewer_volume pointer
-                coord = coords[track_coil]  # main-coil if track_coil else stylus
-                m_img = m_imgs[track_coil]
+                coord = coords[track_this]  # main-coil if track_coil else stylus
+                m_img = m_imgs[track_this]
+                #LUKATODO: do Debug approach here
+
+                # Remove probe, so that coords/m_imgs only contain coils
+                probe_coord = coords.pop("probe")
+                probe_m_img = m_imgs.pop("probe")
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -200,14 +208,18 @@ class UpdateNavigationScene(threading.Thread):
                 )
 
                 if coil_visible:
+                    # Check pubsub "Update coil pose" dependencies
                     wx.CallAfter(
-                        Publisher.sendMessage, "Update coil pose", m_img=m_imgs[1], coord=coords[1]
+                        Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
+                    )
+                    wx.CallAfter( # LUKATODO: this is just for viewer_volume...
+                        Publisher.sendMessage, "Update coil pose", m_img=m_imgs[main_coil], coord=coords[main_coil]
                     )
                     wx.CallAfter(
-                        Publisher.sendMessage,
+                        Publisher.sendMessage, #LUKATODO: what is this?
                         "Update object arrow matrix",
-                        m_img=m_imgs[1],
-                        coord=coords[1],
+                        m_img=m_imgs[main_coil],
+                        coord=coords[main_coil],
                         flag=self.peel_loaded,
                     )
 
@@ -215,8 +227,8 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(
                             Publisher.sendMessage,
                             "Update point location for e-field calculation",
-                            m_img=m_imgs[1],
-                            coord=coords[1],
+                            m_img=m_imgs[main_coil],
+                            coord=coords[main_coil],
                             queue_IDs=self.e_field_IDs_queue,
                         )
                         try:
@@ -234,7 +246,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 if probe_visible:
                     wx.CallAfter(
-                        Publisher.sendMessage, "Update probe pose", m_img=m_imgs[0], coord=coords[0]
+                        Publisher.sendMessage, "Update probe pose", m_img=probe_m_img, coord=probe_coord
                     )
 
                 # Render the volume viewer and the slice viewers.
@@ -255,15 +267,14 @@ class Navigation(metaclass=Singleton):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
-        self.correg = None
         self.target = None
         self.n_coils = 1
-        self.obj_registrations = []
-        self.object_registration = None
+        self.coil_registrations = {}
+        self.main_coil = None  # Which coil to track with pointer
         self.track_obj = False
         self.m_change = None
         self.r_stylus = None
-        self.obj_data = None
+
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
@@ -319,49 +330,65 @@ class Navigation(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, "Coil at target")
+        Publisher.subscribe(self.SetNoOfCoils, "Reset coil selection")
+        Publisher.subscribe(self.SelectCoil, "Select coil")
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
-        Publisher.subscribe(self.UpdateObjectRegistration, "Update object registration")
         Publisher.subscribe(self.TrackObject, "Track object")
 
-    def SaveConfig(self):
-        # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
-        #   None parameter when the project is closed, crashing without this checks.
-        if self.object_registration is None:
-            return
-
-        object_fiducials, object_orientations, object_reference_mode, object_name = (
-            self.object_registration
-        )
-
-        state = {
-            "object_fiducials": object_fiducials.tolist(),
-            "object_orientations": object_orientations.tolist(),
-            "object_reference_mode": object_reference_mode,
-            "object_name": object_name.decode(const.FS_ENCODE),
-        }
-
+    def SaveConfig(self, key=None, value=None):
+        """
+        Save either the whole state, or a specific key-value pair into navigation configuration
+        """
         session = ses.Session()
-        session.SetConfig("navigation", state)
+        if key is None:  # Save the whole state
+            state = {"selected_coils": list(self.coil_registrations)}
+            if self.r_stylus is not None:
+                state["r_stylus"] = self.r_stylus.tolist()
+            session.SetConfig("navigation", state)
+
+        elif value is not None:
+            state = session.GetConfig("navigation") or {}
+            state[key] = value
+            session.SetConfig("navigation", state)
 
     def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig("navigation")
 
+        # Get the dict of all coil_registrations saved to config file
+        saved_coil_registrations = session.GetConfig("coil_registrations")
+
         if state is not None:
-            object_fiducials = np.array(state["object_fiducials"])
-            object_orientations = np.array(state["object_orientations"])
-            object_reference_mode = state["object_reference_mode"]
-            object_name = state["object_name"].encode(const.FS_ENCODE)
-            self.object_registration = (
-                object_fiducials,
-                object_orientations,
-                object_reference_mode,
-                object_name,
-            )
+            # Try to load selected_coils, the list of names of coils to use for navigation
+            if ("selected_coils" in state) and (saved_coil_registrations is not None):
+                selected_coils = state["selected_coils"]
+                self.coil_registrations = {
+                    coil_name: saved_coil_registrations[coil_name]
+                    for coil_name in selected_coils
+                    if coil_name in saved_coil_registrations
+                }
+                if self.coil_registrations:
+                    self.main_coil = state.get("main_coil", None) or next(iter(self.coil_registrations))
+                    self.n_coils = len(self.coil_registrations)
 
             # Try to load stylus orientation data
             if "r_stylus" in state:
                 self.r_stylus = np.array(state["r_stylus"])
+
+    def CoilSelectionDone(self):
+        return len(self.coil_registrations) == self.n_coils
+
+    def SelectCoil(self, coil_name, coil_registration):
+        if coil_registration is not None:  # Add the coil to selection
+            self.coil_registrations[coil_name] = coil_registration
+            if self.main_coil is None:
+                self.main_coil = coil_name
+        else:  # Remove the coil from selection
+            self.coil_registrations.pop(coil_name, None)
+            if self.main_coil == coil_name:
+                self.main_coil = None
+
+        self.SaveConfig("selected_coils", list(self.coil_registrations.keys()))
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -375,19 +402,23 @@ class Navigation(metaclass=Singleton):
         self.com_port = com_port
         self.baud_rate = baud_rate
 
-    def UpdateObjectRegistration(self, data=None):
-        self.object_registration = data
-
-        self.SaveConfig()
-
-    def GetObjectRegistration(self):
-        return self.object_registration
-
     def TrackObject(self, enabled=False):
         self.track_obj = enabled
 
     def SetLockToTarget(self, value):
         self.lock_to_target = value
+
+    def SetNoOfCoils(self, n_coils):
+        self.n_coils = n_coils
+
+        # Reset coil selection
+        self.coil_registrations = {}
+        self.main_coil = None
+        self.SaveConfig("selected_coils", [])
+
+    def SetMainCoil(self, main_coil):
+        self.main_coil = main_coil
+        self.SaveConfig("main_coil", main_coil)
 
     def SetReferenceMode(self, value):
         self.ref_mode_id = value
@@ -451,10 +482,7 @@ class Navigation(metaclass=Singleton):
             # Rotation from tracker to VTK coordinate system
             self.r_stylus = up_vtk @ np.linalg.inv(R @ up_trk @ np.linalg.inv(R))
             # Save r_stylus to config file
-            session = ses.Session()
-            if (nav_config := session.GetConfig("navigation")) is not None:
-                nav_config["r_stylus"] = self.r_stylus.tolist()
-                session.SetConfig("navigation", nav_config)
+            self.SaveConfig("r_stylus", self.r_stylus.tolist())
             return True
         else:
             return False
@@ -484,28 +512,48 @@ class Navigation(metaclass=Singleton):
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
-        # LUKATODO: object_registration --> coil_registrations
-        if self.object_registration is None:
-            # check if object registration was performed
-            wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
-        else:
-            # if object registration was correctly performed continue with navigation
-            # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
-            obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
-
-            coreg_data = [self.r_stylus, self.m_change, obj_ref_mode]
-
-            if self.ref_mode_id:
-                coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
-            else:
-                coord_raw = np.array([None])
-
-            # LUKATODO: NOTE: coil does not need to be visible here, we only need the head coord for obj_data:
-            self.obj_data = db.object_registration(
-                obj_fiducials, obj_orients, coord_raw, self.m_change
+        if not self.CoilSelectionDone():
+            wx.MessageBox(
+                _(
+                    f"No. of coils to track is {self.n_coils}, but no. of coils registered is {len(self.coil_registrations)}"
+                ),
+                _("InVesalius 3"),
             )
-            coreg_data.extend(self.obj_data)
+        else:
+            # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
+            # data is accessed from dict by coil name
+            obj_datas = {}
+            for coil_name in self.coil_registrations:
+                if self.ref_mode_id:
+                    coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
+                else:
+                    coord_raw = np.array([None])
 
+                coil_registration = self.coil_registrations[coil_name]
+                obj_id = coil_registration["obj_id"]
+
+                # Check that the object index is in range of Tracker coordinates
+                if obj_id >= coord_raw.shape[0]:
+                    wx.MessageBox(
+                        _(
+                            f"Coil index {obj_id} for coil {coil_name} is out of range of current Tracker! Change the coil index in Preferences - TMS Coil tab"
+                        ),
+                        _("InVesalius 3"),
+                    )
+                    return
+
+                # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
+                obj_data = (obj_id,) + db.object_registration(
+                    np.array(coil_registration["fiducials"]),
+                    np.array(coil_registration["orientations"]),
+                    coord_raw,
+                    self.m_change,
+                )
+                obj_datas[coil_name] = obj_data
+
+            coreg_data = [self.m_change, self.r_stylus]
+
+            # LUKATODO: coord_queue is accounted for but what about others for multicoil?
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,
@@ -519,6 +567,7 @@ class Navigation(metaclass=Singleton):
                     tracker,
                     self.n_coils,
                     coreg_data,
+                    obj_datas,
                     self.view_tracts,
                     queues,
                     self.event,

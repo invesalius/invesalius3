@@ -343,9 +343,7 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-        # Automatically enable and press 'Track object' button.
-        Publisher.sendMessage("Enable track object button", enabled=True)
-        Publisher.sendMessage("Press track object button", pressed=True)
+        # LUKATODO: delete this?
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):

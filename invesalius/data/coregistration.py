@@ -31,14 +31,14 @@ import invesalius.data.transformations as tr
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
 
 
-def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw):
+def object_marker_to_center(coord_raw, obj_id, t_obj_raw, s0_raw, r_s0_raw):
     """Translate and rotate the raw coordinate given by the tracking device to the reference system created during
     the object registration.
 
     :param coord_raw: Coordinates returned by the tracking device
     :type coord_raw: numpy.ndarray
-    :param obj_ref_mode:
-    :type obj_ref_mode: int
+    :param obj_id:
+    :type obj_id: int
     :param t_obj_raw:
     :type t_obj_raw: numpy.ndarray
     :param s0_raw:
@@ -48,9 +48,9 @@ def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw
     :return: 4 x 4 numpy double array
     :rtype: numpy.ndarray
     """
-    as1, bs1, gs1 = np.radians(coord_raw[obj_ref_mode, 3:])
+    as1, bs1, gs1 = np.radians(coord_raw[obj_id, 3:])
     r_probe = tr.euler_matrix(as1, bs1, gs1, "rzyx")
-    t_probe_raw = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
+    t_probe_raw = tr.translation_matrix(coord_raw[obj_id, :3])
     t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
     t_offset = np.identity(4)
     t_offset[:, -1] = t_offset_aux[:, -1]
@@ -213,14 +213,14 @@ def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id, icp=[None, N
     return coord, m_img
 
 
-def corregistrate_object_dynamic(inp, coord_raw, i_obj, icp):
+def corregistrate_object_dynamic(m_change, obj_data, coord_raw, icp):
     """
-    Corregistrate the object at coord_raw[i_obj] in dynamic ref_mode
+    Corregistrate the object define by obj_data in dynamic ref_mode
     """
-    m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
+    obj_id, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = obj_data
 
     # transform raw marker coordinate to object center
-    m_probe = object_marker_to_center(coord_raw, i_obj, t_obj_raw, s0_raw, r_s0_raw)
+    m_probe = object_marker_to_center(coord_raw, obj_id, t_obj_raw, s0_raw, r_s0_raw)
 
     # transform object center to reference marker
     m_probe_ref = object_to_reference(coord_raw, m_probe)
@@ -248,14 +248,14 @@ def corregistrate_object_dynamic(inp, coord_raw, i_obj, icp):
     return coord, m_img
 
 
-def corregistrate_object_static(inp, coord_raw, i_obj, icp):
+def corregistrate_object_static(m_change, obj_data, coord_raw, icp):
     """
-    Corregistrate the object at coord_raw[i_obj] in static ref_mode
+    Corregistrate the object define by obj_data in static ref_mode
     """
-    m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
+    obj_id, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = obj_data
 
     # transform raw marker coordinate to object center
-    m_probe = object_marker_to_center(coord_raw, i_obj, t_obj_raw, s0_raw, r_s0_raw)
+    m_probe = object_marker_to_center(coord_raw, obj_id, t_obj_raw, s0_raw, r_s0_raw)
 
     # invert y coordinate
     m_probe[2, -1] = -m_probe[2, -1]
@@ -280,10 +280,10 @@ def corregistrate_object_static(inp, coord_raw, i_obj, icp):
     return coord, m_img
 
 
-def compute_marker_transformation(coord_raw, obj_ref_mode):
+def compute_marker_transformation(coord_raw, obj_id):
     m_probe = dco.coordinates_to_transformation_matrix(
-        position=coord_raw[obj_ref_mode, :3],
-        orientation=coord_raw[obj_ref_mode, 3:],
+        position=coord_raw[obj_id, :3],
+        orientation=coord_raw[obj_id, 3:],
         axes="rzyx",
     )
     return m_probe
@@ -335,6 +335,7 @@ class CoordinateCorregistrate(threading.Thread):
         tracker,
         n_coils,
         coreg_data,
+        obj_datas,
         view_tracts,
         queues,
         event,
@@ -347,8 +348,11 @@ class CoordinateCorregistrate(threading.Thread):
         threading.Thread.__init__(self, name="CoordCoregObject")
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
-        self.n_coils = n_coils
+        self.n_coils = (
+            n_coils  # LUKATODO: remove n_coils since this is just equal to len(obj_datas)
+        )
         self.coreg_data = coreg_data
+        self.obj_datas = obj_datas
         self.coord_queue = queues[0]
         self.view_tracts = view_tracts
         self.coord_tracts_queue = queues[1]
@@ -375,20 +379,12 @@ class CoordinateCorregistrate(threading.Thread):
             self.target[1] = -self.target[1]
 
     def run(self):
-        coreg_data = self.coreg_data
+        m_change, r_stylus = self.coreg_data
+        obj_datas = self.obj_datas
+
         corregistrate_object = (
             corregistrate_object_dynamic if self.ref_mode_id else corregistrate_object_static
         )
-
-        # compute n_coils_effective, the no. of coils to actually process:
-        # check how many coords we get from tracker (-2 for probe & head)
-        n_coils_trk = self.tracker.TrackerCoordinates.GetCoordinates()[0].shape[0] - 2
-
-        obj_ref_mode = coreg_data[2]
-        # if obj_ref_mode=0: only coregister one coil
-        # else: process the other (n_coils - 1) coils too
-        # min(obj_ref_mode, 1) = 0 if obj_ref_mode==0 else 1
-        n_coils_effective = min(n_coils_trk, 1 + min(obj_ref_mode, 1) * (self.n_coils - 1))
 
         while not self.event.is_set():
             try:
@@ -400,51 +396,29 @@ class CoordinateCorregistrate(threading.Thread):
 
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
-                # m_change = coreg_data[1], r_stylus = coreg_data[0]
                 coord_probe, m_img_probe = corregistrate_probe(
-                    coreg_data[1], coreg_data[0], coord_raw, self.ref_mode_id
-                )
-                coord_coil, m_img_coil = corregistrate_object(
-                    coreg_data[1:], coord_raw, obj_ref_mode, [self.use_icp, self.m_icp]
+                    m_change, r_stylus, coord_raw, self.ref_mode_id
                 )
 
-                coords = [coord_probe, coord_coil]
-                m_imgs = [m_img_probe, m_img_coil]
+                coords = {"probe": coord_probe}
+                m_imgs = {"probe": m_img_probe}
 
-                # the possible other coils are i_obj=3 onwards at coord_raw[i_obj]
-                for i_obj in range(3, n_coils_effective + 2):
+                for coil_name in obj_datas:
                     coord_coil, m_img_coil = corregistrate_object(
-                        coreg_data[1:], coord_raw, i_obj, [self.use_icp, self.m_icp]
+                        m_change, obj_datas[coil_name], coord_raw, [self.use_icp, self.m_icp]
                     )
-                    coords.append(coord_coil)
-                    m_imgs.append(m_img_coil)
-
-                # XXX: This is not the best place to do the logic related to approaching the target when the
-                #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
-                #      the tracker space where it is hard to make the tracker approach the target in the image space.
-                #      Ideally, the transformation from the tracker space to the image space (the function
-                #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
-                #      tracker, and then the whole class would be mocked when using the debug tracker. However,
-                #      those abstractions do not currently exist and doing them would need a larger refactoring.
-                #
-                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
-                    if self.last_coord is None:
-                        self.last_coord = np.array(coord_coil)
-                    else:
-                        coord = self.last_coord + (self.target - self.last_coord) * 0.05
-                        coords[1] = coord
-                        self.last_coord = coord
-
-                    angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
-                    translate = coord[0:3]
-                    m_imgs[1] = tr.compose_matrix(angles=angles, translate=translate)
-
+                    coords[coil_name] = coord_coil
+                    m_imgs[coil_name] = m_img_coil
+                
                 self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
-
-                coord = coords[1]  # main coil
-                m_img = m_imgs[1]
-                # LUKATODO: should coord = coords[track_coil]
-                # should the stuff below ever be done for stylus, but not coil?
+                
+                # LUKATODO: Refactor so that all coils are processed
+                # we need tracts, efield, etc. for all coils. what about stylus?
+               
+                # LUKATODO: coords is unordered so this randomly gives probe/somecoil...
+                #coord = coords.values()[1]
+                coord = coords["coil1"]
+                m_img = m_imgs["coil1"]
 
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
@@ -457,5 +431,30 @@ class CoordinateCorregistrate(threading.Thread):
                     self.icp_queue.task_done()
             except queue.Full:
                 pass
+
             # The sleep has to be in both threads
             sleep(self.sle)
+                
+                
+            # LUKATODO: move below Debug approach to UpdateNavigationScene
+            # Better way to do debug approach...? Just change the main_coil coord in UpdateNavigationScene...
+            """
+            # XXX: This is not the best place to do the logic related to approaching the target when the
+            #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
+            #      the tracker space where it is hard to make the tracker approach the target in the image space.
+            #      Ideally, the transformation from the tracker space to the image space (the function
+            #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
+            #      tracker, and then the whole class would be mocked when using the debug tracker. However,
+            #      those abstractions do not currently exist and doing them would need a larger refactoring.
+                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
+                if self.last_coord is None:
+                    self.last_coord = np.array(coord_coil)
+                else:
+                    coord = self.last_coord + (self.target - self.last_coord) * 0.05
+                    coords[1] = coord
+                    self.last_coord = coord
+
+                angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
+                translate = coord[0:3]
+                m_imgs[1] = tr.compose_matrix(angles=angles, translate=translate)
+            """

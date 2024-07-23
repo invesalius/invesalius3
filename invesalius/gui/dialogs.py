@@ -3890,7 +3890,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = tracker.GetTrackerId()
         self.show_sensor_options: bool = self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
-        self.obj_ref_id = 2
+        self.obj_id = 2  # the index of the object in coord_raw
         self.coil_path = None
         self.polydata = None
 
@@ -3922,22 +3922,26 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ball_actors: List[Optional[vtkActor]] = [None] * 4
         self.txt_coord = [list(), list(), list(), list()]
 
-        # ComboBox for tracker reference mode
-        tooltip = _("Choose the object reference mode")
+        # ComboBox for object index in coord_raw (0 for static, 2 for dynamic, 3, 4, ... for multiple coils)
+        # Check how many coords the tracker gives, ie. coord_raw.shape[0]
+        max_obj_id = self.tracker.GetTrackerCoordinates(ref_mode_id=0)[2].shape[0]
+        tooltip = _(
+            "Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic mode and 3 onwards for multiple coils."
+        )
         choice_ref = wx.ComboBox(
             self,
             -1,
             "",
             size=wx.Size(90, 23),
-            choices=const.REF_MODE,
+            choices=["0"] + [str(i) for i in range(2, max_obj_id)],
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
         choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChooseReferenceMode)
+        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
         choice_ref.SetSelection(1)
         choice_ref.Enable(True)
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
-            self.obj_ref_id = 0
+            self.obj_id = 0
             choice_ref.SetSelection(0)
             choice_ref.Enable(False)
 
@@ -4012,12 +4016,20 @@ class ObjectCalibrationDialog(wx.Dialog):
         group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
         group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20), (extra_sizer, 0, wx.LEFT, 10)])
 
+        name_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        lbl_name = wx.StaticText(self, -1, _("Name the coil:"))
+        self.name_box = name_box = wx.TextCtrl(self, -1, _("coil1"))
+        name_sizer.AddMany(
+            [(lbl_name, 1, wx.ALIGN_CENTER_VERTICAL), (name_box, 1, wx.ALIGN_CENTER_VERTICAL)]
+        )
+        # LUKATODO: Add warning about overwriting old coil
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(
             group_sizer, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP | wx.RIGHT | wx.BOTTOM, 10
         )
-
+        main_sizer.Add(name_sizer, 0, wx.EXPAND)
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
@@ -4204,8 +4216,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         #      mode" principle above, but it's hard to come up with a simple change to increase the consistency
         #      and not change the function to the point of potentially breaking it.)
         #
-        if self.obj_ref_id and fiducial_index == const.OBJECT_FIDUCIAL_FIXED:
-            coord = coord_raw[self.obj_ref_id, :]
+        if self.obj_id and fiducial_index == const.OBJECT_FIDUCIAL_FIXED:
+            coord = coord_raw[self.obj_id, :]
         else:
             coord = coord_raw[0, :]
 
@@ -4241,7 +4253,7 @@ class ObjectCalibrationDialog(wx.Dialog):
     def OnReset(self, evt: wx.CommandEvent) -> None:
         self.ResetObjectFiducials()
 
-    def OnChooseReferenceMode(self, evt: wx.CommandEvent) -> None:
+    def OnChooseObjID(self, evt: wx.CommandEvent) -> None:
         # When ref mode is changed the tracker coordinates are set to nan
         # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
         # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
@@ -4249,13 +4261,12 @@ class ObjectCalibrationDialog(wx.Dialog):
         # I use the index 2 directly here to send to the coregistration module where it is possible to access without
         # any conditional statement the correct index of coordinates.
 
-        if evt.GetSelection() == 1:
-            self.obj_ref_id = 2
-            if self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS:
-                self.choice_sensor.Show(True)
-        else:
-            self.obj_ref_id = 0
+        if evt.GetSelection() == 0:
+            self.obj_id = 0
             self.choice_sensor.Show(False)
+        else:
+            self.obj_id = evt.GetSelection() + 1
+            self.choice_sensor.Show(self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS)
 
         self.ResetObjectFiducials()
 
@@ -4264,14 +4275,22 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def OnChoiceFTSensor(self, evt: wx.CommandEvent) -> None:
         if evt.GetSelection():
-            self.obj_ref_id = 3
+            self.obj_id = 3
         else:
-            self.obj_ref_id = 0
+            self.obj_id = 0
 
     def GetValue(
         self,
     ) -> Tuple[np.ndarray, np.ndarray, int, Optional[bytes], Optional[vtkPolyData]]:
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.coil_path, self.polydata
+        coil_name = self.name_box.GetValue().strip()
+        return (
+            coil_name,
+            self.coil_path,
+            self.obj_fiducials,
+            self.obj_orients,
+            self.obj_id,
+            self.tracker_id,
+        )
 
     def OnOk(self, evt: wx.CommandEvent) -> None:
         if evt.GetId() == wx.ID_OK:
@@ -6891,7 +6910,6 @@ class ConfigurePolarisDialog(wx.Dialog):
         row_ref = wx.BoxSizer(wx.VERTICAL)
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Reference ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
         row_ref.Add(self.dir_ref, 0, wx.ALL | wx.CENTER | wx.EXPAND)
-
 
         self.dir_objs = []
         row_objs = []

@@ -166,12 +166,12 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, ntw, spacing=0, leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
-        item = fold_panel.AddFoldPanel(_("Navigation"), collapsed=True)
-        self.__id_nav = item.GetId()
-        ntw = NavigationPanel(parent=item, nav_hub=nav_hub)
+        self.nav_panel = nav_panel = fold_panel.AddFoldPanel(_("Navigation"), collapsed=True)
+        self.__id_nav = nav_panel.GetId()
+        ntw = NavigationPanel(parent=nav_panel, nav_hub=nav_hub)
 
-        fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, ntw, spacing=0, leftSpacing=0, rightSpacing=0)
+        fold_panel.ApplyCaptionStyle(nav_panel, style)
+        fold_panel.AddFoldPanelWindow(nav_panel, ntw, spacing=0, leftSpacing=0, rightSpacing=0)
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -194,6 +194,7 @@ class InnerFoldPanel(wx.Panel):
         # Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
         Publisher.subscribe(self.OpenNavigation, "Open navigation menu")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
+        Publisher.subscribe(self.CollapseNavigation, "Coil selection done")
 
     def __calc_best_size(self, panel):
         parent = panel.GetParent()
@@ -272,17 +273,19 @@ class InnerFoldPanel(wx.Panel):
         pressed = self.show_coil_button.GetValue()
         Publisher.sendMessage("Show coil in viewer volume", state=pressed)
 
+    def CollapseNavigation(self, done):
+        if not done: # Coil selection is no longer complete, so hide navigation panel
+            self.fold_panel.Collapse(self.nav_panel)
+
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
         expanded = evt.GetFoldStatus()
 
-        if id == self.__id_nav:
-            status = self.CheckRegistration()  # noqa: F841
-
-        if not expanded:
-            self.fold_panel.Expand(evt.GetTag())
-        else:
+        if expanded:
             self.fold_panel.Collapse(evt.GetTag())
+        elif id != self.__id_nav or self.CheckRegistration():
+            # Only expand navigation panel if coil selection/registration is done
+            self.fold_panel.Expand(evt.GetTag())
 
     def ResizeFPB(self):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
@@ -293,7 +296,7 @@ class InnerFoldPanel(wx.Panel):
         return (
             self.tracker.AreTrackerFiducialsSet()
             and self.image.AreImageFiducialsSet()
-            and self.navigation.GetObjectRegistration() is not None
+            and self.navigation.CoilSelectionDone()
         )
 
     def OpenNavigation(self):
@@ -1065,7 +1068,7 @@ class StylusPage(wx.Panel):
         self.__bind_events()
 
     def __bind_events(self):
-        pass  # Publisher.subscribe(self.OnCloseProject, 'Remove object data')
+        pass
 
     def onRecord(self, evt):
         marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(
@@ -1103,51 +1106,39 @@ class StimulatorPage(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.navigation = nav_hub.navigation
 
-        border = wx.FlexGridSizer(2, 3, 5)
-        object_reg = self.navigation.GetObjectRegistration()
-        self.object_reg = object_reg
+        border = wx.FlexGridSizer(1, 2, 1)
+        self.coil_registrations = []
 
-        lbl = wx.StaticText(self, -1, _("No TMS coil configured!"))
-        lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        lbl = wx.StaticText(self, -1, _("Coil selection done, ready for navigation!"))
+        # lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
 
-        config_txt = wx.StaticText(self, -1, "")
-        self.config_txt = config_txt
-        self.config_txt.Hide()
-
-        lbl_edit = wx.StaticText(self, -1, _("Edit Configuration:"))
-        btn_edit = wx.Button(self, -1, _("Preferences"))
+        btn_edit = wx.Button(self, -1, _("Edit selection in Preferences"))
         btn_edit.SetToolTip("Open preferences menu")
         btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
 
         border.AddMany(
             [
-                (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
-                (0, 0),
-                (config_txt, 1, wx.EXPAND | wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 10),
-                (0, 0),
-                (lbl_edit, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
-                (btn_edit, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 10),
+                (lbl, 1, wx.EXPAND),
+                (btn_edit, 1, wx.EXPAND),
             ]
         )
 
         next_button = wx.Button(self, label="Proceed to navigation")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
-        if self.object_reg is None:
-            next_button.Disable()
+        if not self.navigation.CoilSelectionDone():
+            self.lbl.SetLabel("Please select which coil(s) to track")
+            next_button.Enable(False)
         self.next_button = next_button
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(next_button)
-
-        if self.object_reg is not None:
-            self.OnObjectUpdate()
+        bottom_sizer.Add(next_button, 1, wx.EXPAND)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
-                (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
-                (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20),
+                (border, 0, wx.EXPAND, 5),
+                (bottom_sizer, 0, wx.EXPAND, 5),
             ]
         )
 
@@ -1156,27 +1147,24 @@ class StimulatorPage(wx.Panel):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnObjectUpdate, "Update object registration")
+        Publisher.subscribe(self.CoilSelectionDone, "Coil selection done")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnCloseProject, "Remove object data")
 
     def OnCloseProject(self):
+        Publisher.sendMessage("Enable start navigation button", enabled=False)
+        # LUKATODO: delete the below?
         Publisher.sendMessage("Press track object button", pressed=False)
         Publisher.sendMessage("Enable track object button", enabled=False)
 
-    def UpdateObjectRegistration(self):
-        self.object_reg = self.navigation.GetObjectRegistration()
-
-    def OnObjectUpdate(self, data=None):
-        self.lbl.SetLabel("Current Configuration:")
-        self.UpdateObjectRegistration()
-        if self.object_reg is not None:
-            self.config_txt.SetLabelText(os.path.basename(self.object_reg[-1]))
+    def CoilSelectionDone(self, done):
+        if done:
+            self.lbl.SetLabel("Coil selection done, ready for navigation!")
         else:
-            self.config_txt.SetLabelText("None")
+            self.lbl.SetLabel("Please select which coil(s) to track")
+
+        self.next_button.Enable(done)
         self.lbl.Show()
-        self.config_txt.Show()
-        self.next_button.Enable()
 
     def OnEditPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu", page=3)
@@ -1301,6 +1289,7 @@ class ControlPanel(wx.Panel):
         )
         track_object_button.SetBackgroundColour(GREY_COLOR)
         track_object_button.SetBitmap(BMP_TRACK)
+        track_object_button.Enable(True)
         track_object_button.SetValue(False)
         track_object_button.SetToolTip(tooltip)
         track_object_button.Bind(
@@ -1582,7 +1571,6 @@ class ControlPanel(wx.Panel):
         state = {
             "track_object": {
                 "checked": track_object.GetValue(),
-                "enabled": track_object.IsEnabled(),
             }
         }
 
@@ -1593,13 +1581,9 @@ class ControlPanel(wx.Panel):
         session = ses.Session()
         state = session.GetConfig("object_registration_panel")
 
-        if state is None:
-            return
-
-        track_object = state["track_object"]
-
-        self.EnableTrackObjectButton(track_object["enabled"])
-        self.PressTrackObjectButton(track_object["checked"])
+        if state is not None:
+            track_object = state["track_object"]
+            self.PressTrackObjectButton(track_object["checked"])
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -1706,12 +1690,6 @@ class ControlPanel(wx.Panel):
         else:
             self.EnableToggleButton(self.checkbox_serial_port, 1)
             self.UpdateToggleButton(self.checkbox_serial_port)
-
-        # Enable/Disable track-object checkbox if object registration is valid.
-        obj_registration = self.navigation.GetObjectRegistration()
-        enable_track_object = obj_registration is not None and obj_registration[0] is not None
-        self.EnableTrackObjectButton(enable_track_object)
-        self.EnableShowCoilButton(enable_track_object)
 
     # Robot
     def OnRobotStatus(self, data):
@@ -2076,6 +2054,29 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT), (btn_delete_all, 0, wx.LEFT)])
 
+        # Combobox to choose the main coil (ie. the coil which to track with pointer and to use for marker creation)
+        #LUKATODO: how to ensure the choices are updated when coil selection changes
+        self.select_main_coil = select_main_coil = wx.ComboBox(
+            self,
+            -1,
+            "",
+            size=(145, -1),
+            choices=list(self.navigation.coil_registrations),
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        maincoil_tooltip = "Select which coil to record markers with"
+        select_main_coil.SetToolTip(maincoil_tooltip)
+        select_main_coil.Bind(
+            wx.EVT_COMBOBOX, partial(self.OnChooseMainCoil, ctrl=select_main_coil)
+        )
+
+        # If main coil is defined, set this in the combobox        
+        if (main_coil := self.navigation.main_coil) is not None:
+            main_coil_index = select_main_coil.FindString(main_coil)
+            select_main_coil.SetSelection(main_coil_index)
+        sizer_main_coil = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
+        sizer_main_coil.Add(select_main_coil)
+
         screen_width, screen_height = wx.DisplaySize()
 
         # The marker list height is set to 120 pixels (accommodating 4 markers) if the screen height is
@@ -2138,6 +2139,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
@@ -2174,6 +2176,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.GetRotationPosition, "Send coil position and rotation")
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
+
+        # Update main_coil combobox
+        Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
 
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, "Add marker")
@@ -2584,6 +2589,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(list_index)
 
         self.markers.CreateCoilTargetFromCoilPose(marker)
+
+    def UpdateMainCoilCombobox(self, done):
+        select_main_coil = self.select_main_coil
+        if done:
+            select_main_coil.Clear()
+            select_main_coil.AppendItems(list(self.navigation.coil_registrations))
+            main_coil_index = select_main_coil.FindString(self.navigation.main_coil)
+            select_main_coil.SetSelection(main_coil_index)
+        else:
+            select_main_coil.Clear()
+
+    def OnChooseMainCoil(self, evt, ctrl):
+        choice = evt.GetSelection()
+        main_coil = ctrl.GetString(choice)
+        self.navigation.SetMainCoil(main_coil)
+        ctrl.SetSelection(choice)
+
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
