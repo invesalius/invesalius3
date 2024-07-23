@@ -30,7 +30,7 @@ from invesalius import inv_paths
 
 
 class TrackerConnection:
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         self.connection = None
         self.configuration = None
         self.model = model
@@ -80,7 +80,7 @@ class OptitrackTrackerConnection(TrackerConnection):
     loads User Profile (Rigid bodies information).
     """
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -127,7 +127,7 @@ class OptitrackTrackerConnection(TrackerConnection):
 
 
 class ClaronTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -167,7 +167,7 @@ class ClaronTrackerConnection(TrackerConnection):
 
 
 class PolhemusTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         assert model in [
             "fastrak",
             "isotrak",
@@ -355,7 +355,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
 
 class CameraTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -383,11 +383,12 @@ class CameraTrackerConnection(TrackerConnection):
 
 
 class PolarisTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
+        self.n_coils = n_coils
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.ConfigurePolarisDialog()
+        dialog = dlg.ConfigurePolarisDialog(self.n_coils)
         status = dialog.ShowModal()
 
         success = status == ID_OK
@@ -447,11 +448,11 @@ class PolarisTrackerConnection(TrackerConnection):
 
 
 class PolarisP4TrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.ConfigurePolarisDialog()
+        dialog = dlg.ConfigurePolarisDialog(1)
         status = dialog.ShowModal()
 
         success = status == ID_OK
@@ -507,7 +508,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
 
 
 class DebugTrackerRandomConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -525,7 +526,7 @@ class DebugTrackerRandomConnection(TrackerConnection):
 
 
 class DebugTrackerApproachConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -556,7 +557,7 @@ TRACKER_CONNECTION_CLASSES = {
 }
 
 
-def CreateTrackerConnection(tracker_id):
+def CreateTrackerConnection(tracker_id, n_coils):
     """
     Initialize spatial tracker connection for coordinate detection during navigation.
 
@@ -578,5 +579,5 @@ def CreateTrackerConnection(tracker_id):
     else:
         model = None
 
-    tracker_connection = tracker_connection_class(model=model)
+    tracker_connection = tracker_connection_class(model=model, n_coils=n_coils)
     return tracker_connection

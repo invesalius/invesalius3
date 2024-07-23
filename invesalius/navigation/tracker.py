@@ -92,9 +92,9 @@ class Tracker(metaclass=Singleton):
 
         self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
 
-    def SetTracker(self, tracker_id, configuration=None):
+    def SetTracker(self, tracker_id, n_coils=1, configuration=None):
         if tracker_id:
-            self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+            self.tracker_connection = tc.CreateTrackerConnection(tracker_id, n_coils)
 
             # Configure tracker.
             if configuration is not None:

@@ -6800,13 +6800,14 @@ class RobotCoregistrationDialog(wx.Dialog):
 
 
 class ConfigurePolarisDialog(wx.Dialog):
-    def __init__(self, title: str = _("Configure NDI Polaris")):
+    def __init__(self, n_coils, title: str = _("Configure NDI Polaris")):
+        self.n_coils = n_coils
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
             -1,
             title,
-            size=wx.Size(1000, 200),
+            size=wx.Size(1000, 200 + (n_coils - 1) * 50),
             style=wx.DEFAULT_DIALOG_STYLE
             | wx.FRAME_FLOAT_ON_PARENT
             | wx.STAY_ON_TOP
@@ -6858,14 +6859,14 @@ class ConfigurePolarisDialog(wx.Dialog):
         session = ses.Session()
         last_ndi_probe_marker = session.GetConfig("last_ndi_probe_marker", "")
         last_ndi_ref_marker = session.GetConfig("last_ndi_ref_marker", "")
-        last_ndi_obj_marker = session.GetConfig("last_ndi_obj_marker", "")
+        last_ndi_obj_markers = session.GetConfig("last_ndi_obj_markers", "")
 
         if not last_ndi_probe_marker:
             last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
         if not last_ndi_ref_marker:
             last_ndi_ref_marker = inv_paths.NDI_MAR_DIR_REF
-        if not last_ndi_obj_marker:
-            last_ndi_obj_marker = inv_paths.NDI_MAR_DIR_OBJ
+        if not last_ndi_obj_markers:
+            last_ndi_obj_markers = self.n_coils * [inv_paths.NDI_MAR_DIR_OBJ]
 
         self.dir_probe = wx.FilePickerCtrl(
             self,
@@ -6891,18 +6892,24 @@ class ConfigurePolarisDialog(wx.Dialog):
         row_ref.Add(wx.StaticText(self, wx.ID_ANY, "Reference ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
         row_ref.Add(self.dir_ref, 0, wx.ALL | wx.CENTER | wx.EXPAND)
 
-        self.dir_obj = wx.FilePickerCtrl(
-            self,
-            path=last_ndi_obj_marker,
-            style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
-            wildcard="Rom files (*.rom)|*.rom",
-            message="Select the ROM file of the object",
-            size=(700, -1),
-        )
-        # self.dir_probe.Bind(wx.EVT_FILEPICKER_CHANGED, self.Selected)
-        row_obj = wx.BoxSizer(wx.VERTICAL)
-        row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Coil ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
-        row_obj.Add(self.dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
+
+        self.dir_objs = []
+        row_objs = []
+        for i in range(self.n_coils):
+            dir_obj = wx.FilePickerCtrl(
+                self,
+                path=last_ndi_obj_markers[i],
+                style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
+                wildcard="Rom files (*.rom)|*.rom",
+                message="Select the ROM file of the object",
+                size=(700, -1),
+            )
+            self.dir_objs.append(dir_obj)
+
+            row_obj = wx.BoxSizer(wx.VERTICAL)
+            row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Coil ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
+            row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
+            row_objs.append(row_obj)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
@@ -6925,8 +6932,9 @@ class ConfigurePolarisDialog(wx.Dialog):
         main_sizer.Add(row_probe, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         main_sizer.Add((5, 5))
         main_sizer.Add(row_ref, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        main_sizer.Add((5, 5))
-        main_sizer.Add(row_obj, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        for row_obj in row_objs:
+            main_sizer.Add((5, 5))
+            main_sizer.Add(row_obj, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         main_sizer.Add((15, 15))
         main_sizer.Add(btnsizer, 0, wx.EXPAND)
         main_sizer.Add((5, 5))
@@ -6942,17 +6950,17 @@ class ConfigurePolarisDialog(wx.Dialog):
     def GetValue(self) -> Tuple[str, str, str, str]:
         fn_probe = self.dir_probe.GetPath()
         fn_ref = self.dir_ref.GetPath()
-        fn_obj = self.dir_obj.GetPath()
+        fn_objs = [dir_obj.GetPath() for dir_obj in self.dir_objs]
 
-        if fn_probe and fn_ref and fn_obj:
+        if fn_probe and fn_ref and fn_objs:
             session = ses.Session()
-            session.SetConfig("last_ndi_probe_marker", self.dir_probe.GetPath())
-            session.SetConfig("last_ndi_ref_marker", self.dir_ref.GetPath())
-            session.SetConfig("last_ndi_obj_marker", self.dir_obj.GetPath())
+            session.SetConfig("last_ndi_probe_marker", fn_probe)
+            session.SetConfig("last_ndi_ref_marker", fn_ref)
+            session.SetConfig("last_ndi_obj_markers", fn_objs)
 
         com_port = self.com_ports.GetValue()
 
-        return com_port, fn_probe, fn_ref, fn_obj
+        return com_port, fn_probe, fn_ref, fn_objs
 
 
 class SetCOMPort(wx.Dialog):
