@@ -31,6 +31,8 @@ jobs:
         
       - name: Check pyinstaller
         run: cd pyinstaller
+
+      - name: Show files  
         run: dir
 
       - name: Compile InVesalius Cython parts
