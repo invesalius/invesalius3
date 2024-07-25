@@ -18,6 +18,7 @@
 #    detalhes.
 # ---------------------------------------------------------------------
 # import gdcm
+import ast
 import sys
 import time
 
@@ -442,7 +443,7 @@ class Parser:
         except KeyError:
             return ""
         if data:
-            return [eval(value) for value in data.split("\\")]
+            return [ast.literal_eval(value) for value in data.split("\\")]
         return ""
 
     def GetImageLocation(self):
@@ -455,7 +456,7 @@ class Parser:
         """
         data = self.data_image[str(0x020)][str(0x1041)]
         if data:
-            return eval(data)
+            return ast.literal_eval(data)
         return ""
 
     def GetImageOffset(self):
@@ -1774,7 +1775,7 @@ def BuildDictionary(filename):
     # file, given keys in info_keys list. Example:
     # info["AcquisitionDate"] = dicom.GetAcquisitionDate()
     for key in INFO_KEYS:
-        info[key] = eval("parser.Get" + key + "()")
+        info[key] = ast.literal_eval("parser.Get" + key + "()")
 
     return info
 
