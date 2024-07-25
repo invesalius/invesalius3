@@ -444,9 +444,12 @@ class Navigation(metaclass=Singleton):
             # up_vtk: orientation 'stylus pointing up along head' in vtk space
             up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes="rxyz")[:3, :3]
 
-            # Rotation from tracker to VTK coordinate system
-            self.r_stylus = up_vtk @ np.linalg.inv(up_trk)
+            # Rotate 90 degrees around z-axis from trk system where stylus points in x-axis
+            # to vtk-system where stylus points in y-axis
+            R = tr.euler_matrix(*np.radians([0, 0, -90]), axes="rxyz")[:3, :3]
 
+            # Rotation from tracker to VTK coordinate system
+            self.r_stylus = up_vtk @ np.linalg.inv(R @ up_trk @ np.linalg.inv(R))
             # Save r_stylus to config file
             session = ses.Session()
             if (nav_config := session.GetConfig("navigation")) is not None:

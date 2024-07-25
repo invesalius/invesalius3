@@ -1302,8 +1302,6 @@ class ControlPanel(wx.Panel):
         track_object_button.SetBackgroundColour(GREY_COLOR)
         track_object_button.SetBitmap(BMP_TRACK)
         track_object_button.SetValue(False)
-        if not self.track_obj:
-            track_object_button.Enable(False)
         track_object_button.SetToolTip(tooltip)
         track_object_button.Bind(
             wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button)
