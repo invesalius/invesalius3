@@ -190,8 +190,11 @@ def corregistrate_probe(m_change, r_stylus, coord_raw, ref_mode_id, icp=[None, N
     m_img = m_change @ m_probe_ref
     m_img = apply_icp(m_img, icp)
 
+    # Rotate from trk system where stylus points in x-axis to vtk-system where stylus points in y-axis
+    R = tr.euler_matrix(*np.radians([0, 0, -90]), axes="rxyz")[:3, :3]
+
     # rotate m_probe_ref from tracker to image space
-    r_img = r_stylus @ m_probe_ref[:3, :3]
+    r_img = r_stylus @ R @ m_probe_ref[:3, :3] @ np.linalg.inv(R)
     m_img[:3, :3] = r_img[:3, :3]
 
     # compute rotation angles
