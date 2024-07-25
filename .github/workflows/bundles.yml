@@ -8,8 +8,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - run: echo "The job generate bundles was automatically triggered by a ${{ github.event_name }} event."
-      #- uses: actions/checkout@v4
-      #- uses: ilammy/msvc-dev-cmd@v1.4.1
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1.4.1
     #- uses: actions/checkout@v3
     #  with:
     #    repository: 'pyinstaller/pyinstaller'
