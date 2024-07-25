@@ -10,10 +10,18 @@ jobs:
       - run: echo "The job generate bundles was automatically triggered by a ${{ github.event_name }} event."
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1.4.1
-      - uses: actions/setup-python@v5
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11' 
-          run: python -m pip install -r requirements.txt
+          python-version: '3.11.2'
+          cache: 'pip'
+
+      - name: Upgrade pip and enable wheel support
+        run: python -m pip install --upgrade pip setuptools wheel 
+    
+      - name: Install Requirements
+        run: pip install -r requirements.txt
 
     #- uses: actions/checkout@v3
     #  with:
