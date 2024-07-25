@@ -10,6 +10,11 @@ jobs:
       - run: echo "The job generate bundles was automatically triggered by a ${{ github.event_name }} event."
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1.4.1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' 
+          run: python 
+
     #- uses: actions/checkout@v3
     #  with:
     #    repository: 'pyinstaller/pyinstaller'
