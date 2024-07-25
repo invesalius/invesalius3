@@ -23,7 +23,17 @@ jobs:
       - name: Install Requirements
         run: pip install -r requirements.txt
 
-      - name: Compiling InVesalius Cython parts
+      - name: Install and generate pyinstaller bootloader
+        uses: engineerd/configurator@v0.0.1
+        with:
+          url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
+          pathInArchive: "pyinstaller/"
+        
+      - name: Check pyinstaller
+        run: cd pyinstaller
+        run: dir
+
+      - name: Compile InVesalius Cython parts
         run: python setup.py build_ext --inplace
 
     #- uses: actions/checkout@v3
