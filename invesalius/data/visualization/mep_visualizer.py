@@ -1,58 +1,33 @@
 import vtk
 import numpy as np
 
-import scipy.io
-from vtkmodules.vtkCommonColor import vtkNamedColors
-from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
-from vtkmodules.vtkCommonCore import mutable, vtkPoints
-from vtkmodules.vtkCommonDataModel import (
-    vtkCellLocator,
-    vtkIterativeClosestPointTransform,
-    vtkPolyData,
-)
-from vtkmodules.vtkCommonMath import vtkMatrix4x4
-from vtkmodules.vtkCommonTransforms import vtkTransform
-from vtkmodules.vtkFiltersCore import vtkCleanPolyData, vtkPolyDataNormals, vtkAppendPolyData
-from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
-from vtkmodules.vtkFiltersSources import (
-    vtkArrowSource,
-    vtkCylinderSource,
-    vtkParametricFunctionSource,
-    vtkRegularPolygonSource,
-    vtkSphereSource,
-)
-from vtkmodules.vtkInteractionStyle import (
-    vtkInteractorStyleTrackballActor,
-    vtkInteractorStyleTrackballCamera,
-)
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
-from vtkmodules.vtkRenderingCore import (
-    vtkActor,
-    vtkCellPicker,
-    vtkFollower,
-    vtkPolyDataMapper,
-    vtkProperty,
-    vtkRenderer,
-)
-from vtkmodules.vtkIOImage import vtkPNGWriter
-from vtkmodules.vtkRenderingCore import (
-    vtkActor,
-    vtkPolyDataMapper,
-    vtkRenderWindow,
-    vtkRenderWindowInteractor,
-    vtkRenderer,
-    vtkWindowToImageFilter
-)
 
-from vtkmodules.vtkRenderingFreeType import vtkVectorText
-from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-import time
+from vtkmodules.vtkIOGeometry import vtkSTLReader
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkPolyDataMapper,
+)
 
 from invesalius.data.markers.marker import Marker
 
 import random
+
+
+class MEPVisualizerConfig:
+    def __init__(self):
+        self.threshold_down = 0
+        self.range_up = 1
+        self.dims_size = 100
+        self.gaussain_sharpness = .4
+        self.gaussian_radius = 20
+        self.bounds = None
+        self.test_data_filename = 'data/MEP_data.txt'
+        self.colormap_range_uv = {
+            "min": 50,
+            "low": 200,
+            "mid": 600,
+            "max": 1000
+        }
 
 
 class MEPVisualizer:
@@ -62,13 +37,7 @@ class MEPVisualizer:
         self.surface = self.read_surface_data(actor_out=True)
 
         # configuration variables
-        self.threshold_down = 0
-        self.range_up = 1
-        self.dims_size = 100
-        self.gaussain_sharpness = .4
-        self.gaussian_radius = 20
-        self.bounds = None
-        self.test_data_filename = 'data/MEP_data.txt'
+        self.conf = MEPVisualizerConfig()
 
         self.renderer = renderer
         self.interactor = interactor
@@ -114,10 +83,10 @@ class MEPVisualizer:
         surface = self.surface
         points = self.points
 
-        bounds = np.array(self.bounds)
-        gaussian_sharpness = self.gaussain_sharpness
-        gaussian_radius = self.gaussian_radius
-        dims_size = self.dims_size
+        bounds = np.array(self.conf.bounds)
+        gaussian_sharpness = self.conf.gaussain_sharpness
+        gaussian_radius = self.conf.gaussian_radius
+        dims_size = self.conf.dims_size
         dims = np.array([dims_size, dims_size, dims_size])
 
         box = vtk.vtkImageData()
@@ -144,7 +113,7 @@ class MEPVisualizer:
 
     def lut_setup(self):
         lut = vtk.vtkLookupTable()
-        lut.SetTableRange(self.threshold_down, self.range_up)
+        lut.SetTableRange(self.conf.threshold_down, self.conf.range_up)
         colorSeries = vtk.vtkColorSeries()
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
         colorSeries.SetColorScheme(seriesEnum)
@@ -198,10 +167,13 @@ class MEPVisualizer:
                 marker.position[0], -marker.position[1], marker.position[2])
 
             # 4. Generate a random MEP value (Or get it from marker object)
-            if hasattr(marker, "mep_value"):
-                mep_value = marker.mep_value
-            else:
-                mep_value = random.uniform(0, 10)/10  # Adjust range as needed
+            # if hasattr(marker, "mep_value"):
+            #     mep_value = marker.mep_value
+            #     if mep_value is None:
+            #         mep_value = 0
+
+            # else:
+            mep_value = random.uniform(0, 10)/10  # Adjust range as needed
 
             # 5. Add the MEP value to the 'MEP' array
             mep_array.InsertNextValue(mep_value)
@@ -259,12 +231,12 @@ class MEPVisualizer:
         normals.ComputeCellNormalsOff()
         normals.Update()
 
-        data_range = (self.threshold_down, self.range_up)
+        data_range = (self.conf.threshold_down, self.conf.range_up)
 
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         if data_range is None:
-            data_range = (self.threshold_down, self.range_up)
+            data_range = (self.conf.threshold_down, self.conf.range_up)
         mapper.SetScalarRange(data_range)
 
         lut = self.lut_setup()
@@ -315,14 +287,15 @@ class MEPVisualizer:
             print('No surface data found')
             return
         self.surface = surface
-        self.bounds = np.array(surface.GetBounds())
+        self.conf.bounds = np.array(surface.GetBounds())
         # points = self.read_point_data()
         points = self.points
 
         # Calculate data range and dims
         range_up = points.GetPointData().GetScalars().GetRange()[1]
-        data_range = (self.threshold_down, self.range_up)
-        dims = np.array([self.dims_size, self.dims_size, self.dims_size])
+        data_range = (self.conf.threshold_down, self.conf.range_up)
+        dims = np.array(
+            [self.conf.dims_size, self.conf.dims_size, self.conf.dims_size])
 
         # Interpolate and create actors (initially)
         interpolated_data = self.interpolate_data()

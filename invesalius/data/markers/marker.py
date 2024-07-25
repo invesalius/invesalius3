@@ -48,9 +48,9 @@ class Marker:
     x: float = 0
     y: float = 0
     z: float = 0
-    alpha: float = dataclasses.field(default = None)
-    beta: float = dataclasses.field(default = None)
-    gamma: float = dataclasses.field(default = None)
+    alpha: float = dataclasses.field(default=None)
+    beta: float = dataclasses.field(default=None)
+    gamma: float = dataclasses.field(default=None)
     r: float = 0
     g: float = 1
     b: float = 0
@@ -65,14 +65,18 @@ class Marker:
     x_cortex: float = 0
     y_cortex: float = 0
     z_cortex: float = 0
-    alpha_cortex: float = dataclasses.field(default = None)
-    beta_cortex: float = dataclasses.field(default = None)
-    gamma_cortex: float = dataclasses.field(default = None)
+    alpha_cortex: float = dataclasses.field(default=None)
+    beta_cortex: float = dataclasses.field(default=None)
+    gamma_cortex: float = dataclasses.field(default=None)
     marker_type: MarkerType = MarkerType.LANDMARK
     z_rotation: float = 0.0
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
     marker_uuid: str = ''
+
+    # #TODO: add a reference to original coil marker to relate it to MEP
+    # in micro Volts (but scale in milli Volts for display)
+    mep_value: float = dataclasses.field(default=None)
 
     # x, y, z can be jointly accessed as position
     @property
@@ -135,8 +139,10 @@ class Marker:
     @classmethod
     def to_csv_header(cls):
         """Return the string containing tab-separated list of field names (header)."""
-        res = [field.name for field in dataclasses.fields(cls) if (field.name != 'version' and field.name != 'marker_uuid')]
-        res.extend(['x_world', 'y_world', 'z_world', 'alpha_world', 'beta_world', 'gamma_world'])
+        res = [field.name for field in dataclasses.fields(cls) if (
+            field.name != 'version' and field.name != 'marker_uuid')]
+        res.extend(['x_world', 'y_world', 'z_world',
+                   'alpha_world', 'beta_world', 'gamma_world'])
         return '\t'.join(map(lambda x: '\"%s\"' % x, res))
 
     def to_csv_row(self):
@@ -163,11 +169,12 @@ class Marker:
 
         else:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
-                    position=[self.x, self.y, self.z],
-                    orientation=[0,0,0],
-                )
+                position=[self.x, self.y, self.z],
+                orientation=[0, 0, 0],
+            )
 
-        res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x), (*position_world, *orientation_world)))
+        res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x),
+                         (*position_world, *orientation_world)))
         return res
 
     def to_dict(self):
@@ -185,6 +192,7 @@ class Marker:
             'cortex_position_orientation': self.cortex_position_orientation,
             'z_rotation': self.z_rotation,
             'z_offset': self.z_offset,
+            'mep_value': self.mep_value,
         }
 
     def from_dict(self, d):
@@ -192,10 +200,13 @@ class Marker:
         #
         # For instance, when stored as a state in state.json, the marker dictionary has the fields 'position' and
         # 'orientation', whereas when stored in a marker file, the fields are 'x', 'y', 'z', 'alpha', 'beta', 'gamma'.
-        position = d['position'] if 'position' in d else [d['x'], d['y'], d['z']]
-        orientation = d['orientation'] if 'orientation' in d else [d['alpha'], d['beta'], d['gamma']]
+        position = d['position'] if 'position' in d else [
+            d['x'], d['y'], d['z']]
+        orientation = d['orientation'] if 'orientation' in d else [
+            d['alpha'], d['beta'], d['gamma']]
         colour = d['colour'] if 'colour' in d else [d['r'], d['g'], d['b']]
-        seed = d['seed'] if 'seed' in d else [d['x_seed'], d['y_seed'], d['z_seed']]
+        seed = d['seed'] if 'seed' in d else [
+            d['x_seed'], d['y_seed'], d['z_seed']]
 
         # The old versions of the markers dictionary do not have the 'marker_type' field; in that case, infer the
         # marker type from the label and orientation.
@@ -204,10 +215,10 @@ class Marker:
         else:
             if d['label'] in ['LEI', 'REI', 'NAI']:
                 marker_type = MarkerType.FIDUCIAL.value
-                
+
             elif orientation == [None, None, None]:
                 marker_type = MarkerType.LANDMARK.value
-                
+
             else:
                 marker_type = MarkerType.COIL_TARGET.value
 
@@ -252,7 +263,8 @@ class Marker:
         # Manually copy all attributes except the visualization and the marker_uuid.
         for field in dataclasses.fields(self):
             if field.name != 'visualization' and field.name != 'marker_uuid':
-                setattr(new_marker, field.name, copy.deepcopy(getattr(self, field.name)))
+                setattr(new_marker, field.name, copy.deepcopy(
+                    getattr(self, field.name)))
 
         # Give the duplicate marker unique uuid
         new_marker.marker_uuid = str(uuid.uuid4())

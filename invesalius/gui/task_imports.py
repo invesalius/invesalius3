@@ -190,7 +190,7 @@ class InnerFoldPanel(wx.Panel):
                  (_("Tractography"), tractography.TaskPanel),
                  (_("E-Field"), efield.TaskPanel),
                  (_("fMRI support"), fmrisupport.TaskPanel),
-                 (_("MEP Mapping"), mepmapping.TaskPanel)
+                #  (_("MEP Mapping"), mepmapping.TaskPanel)
                  ]
 
         style = fpb.CaptionBarStyle()

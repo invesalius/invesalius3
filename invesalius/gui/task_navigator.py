@@ -1979,6 +1979,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.SetColumnWidth(
             const.POINT_OF_INTEREST_TARGET_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.MEP_COLUMN, 'MEP (uV)')
+        marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
+
         if self.session.GetConfig('debug'):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, 'X')
             marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
@@ -2254,6 +2257,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
+
             if is_active_target:
                 target_menu_item = menu_id.Append(
                     unique_menu_id + 3, _('Unset target'))
@@ -2269,6 +2273,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     unique_menu_id + 3, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget,
                              target_menu_item)
+
+            # show MEP menu item
+            mep_menu_item = menu_id.Append(
+                unique_menu_id + 3, _('Change MEP value'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP,
+                         mep_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
@@ -2652,6 +2662,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker_id = self.__get_marker_id(idx)
         self.markers.UnsetTarget(marker_id)
+
+    def OnMenuChangeMEP(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.__get_marker(idx)
+
+        new_mep = dlg.ShowEnterMEPValue(
+            self.marker_list_ctrl.GetItemText(idx, const.MEP_COLUMN))
+        self.markers.ChangeMEP(marker, new_mep)
 
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)

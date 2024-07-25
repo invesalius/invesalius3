@@ -1,9 +1,13 @@
+from invesalius.data.visualization.mep_visualizer import MEPVisualizerConfig
+import invesalius.gui.widgets.gradient as grad
 import sys
 import os
 
 from functools import partial
 import nibabel as nb
 import numpy as np
+import matplotlib.pyplot as plt
+
 import invesalius.constants as const
 import invesalius.session as ses
 import invesalius.gui.dialogs as dlg
@@ -27,7 +31,7 @@ class Preferences(wx.Dialog):
     def __init__(
         self,
         parent,
-        page, 
+        page,
         id_=-1,
         title=_("Preferences"),
         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
@@ -54,7 +58,8 @@ class Preferences(wx.Dialog):
             )
             self.navigation_tab = NavigationTab(self.book, navigation)
             self.tracker_tab = TrackerTab(self.book, tracker, robot)
-            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector, neuronavigation_api)
+            self.object_tab = ObjectTab(
+                self.book, navigation, tracker, pedal_connector, neuronavigation_api)
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
             self.book.AddPage(self.tracker_tab, _("Tracker"))
@@ -116,8 +121,18 @@ class VisualizationTab(wx.Panel):
 
         wx.Panel.__init__(self, parent)
 
+        self.colormaps = ["autumn", "hot", "plasma", "cividis",  # sequential
+                          "bwr", "RdBu",  # diverging
+                          "Set3", "tab10",  # categorical
+                          "twilight", "hsv"]   # cyclic
+        self.current_colormap = "autumn"
+        self.number_colors = 4
+        self.cluster_volume = None
+        self.conf = MEPVisualizerConfig()  # Get default values
+
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
-        lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
+        lbl_inter = wx.StaticText(
+            bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
         rb_inter = self.rb_inter = wx.RadioBox(
             bsizer.GetStaticBox(),
             -1,
@@ -130,7 +145,8 @@ class VisualizationTab(wx.Panel):
         bsizer.Add(lbl_inter, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_inter, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-        lbl_rendering = wx.StaticText(bsizer.GetStaticBox(), -1, _("Volume Rendering"))
+        lbl_rendering = wx.StaticText(
+            bsizer.GetStaticBox(), -1, _("Volume Rendering"))
         rb_rendering = self.rb_rendering = wx.RadioBox(
             bsizer.GetStaticBox(),
             -1,
@@ -141,8 +157,10 @@ class VisualizationTab(wx.Panel):
         bsizer.Add(lbl_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("2D Visualization"))
-        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Slice Interpolation "))
+        bsizer_slices = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _("2D Visualization"))
+        lbl_inter_sl = wx.StaticText(
+            bsizer_slices.GetStaticBox(), -1, _("Slice Interpolation "))
         rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
             bsizer_slices.GetStaticBox(),
             -1,
@@ -150,16 +168,25 @@ class VisualizationTab(wx.Panel):
             majorDimension=3,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
-
-        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
-        bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP |
+                          wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_slices.Add(rb_inter_sl, 0, wx.TOP |
+                          wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         border = wx.BoxSizer(wx.VERTICAL)
-        border.Add(bsizer_slices, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
-        
+
+        # Creating MEP Mapping BoxSizer
+        self.bsizer_mep = self.InitMEPMapping(None)
+
+        border.Add(self.bsizer_mep, 0, wx.EXPAND |
+                   wx.ALL | wx.FIXED_MINSIZE, 10)
+
         self.SetSizerAndFit(border)
         self.Layout()
+
+        self.HideMEPSettings(None)
 
     def GetSelection(self):
 
@@ -171,6 +198,181 @@ class VisualizationTab(wx.Panel):
 
         return options
 
+    def InitMEPMapping(self, event):
+        # Adding a new sized for MEP Mapping options
+        # Structured as follows:
+        # MEP Mapping
+        # - Gaussian Radius -> SpinCtrlDouble
+        # - Gaussian Standard Deviation -> SpinCtrlDouble
+        # - Select Colormap -> ComboBox + Image frame
+        # - Color Map Values
+        # -- Min Value -> SpinCtrlDouble
+        # -- Low Value -> SpinCtrlDouble
+        # -- Mid Value -> SpinCtrlDouble
+        # -- Max Value -> SpinCtrlDouble
+        # TODO: Add a button to apply the colormap to the current volume
+        # TODO: Store MEP visualization settings in a 
+
+        bsizer_mep = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _("TMS Motor Mapping"))
+
+        # Gaussian Radius Line
+        lbl_gaussian_radius = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Gaussian Radius:"))
+        spin_gaussian_radius = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.5)
+        spin_gaussian_radius.Enable(1)
+        spin_gaussian_radius.SetRange(1, 99)
+        spin_gaussian_radius.SetValue(self.conf.gaussian_radius)
+
+        line_gaussian_radius = wx.BoxSizer(
+            wx.HORIZONTAL)
+        line_gaussian_radius.AddMany([
+            (lbl_gaussian_radius, 1, wx.EXPAND |
+             wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+            (spin_gaussian_radius, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        ])
+
+        # Gaussian Standard Deviation Line
+        lbl_std_dev = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Gaussian Standard Deviation:"))
+        spin_std_dev = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.01)
+        spin_std_dev.Enable(1)
+        spin_std_dev.SetRange(0.01, 5.0)
+        spin_std_dev.SetValue(self.conf.gaussain_sharpness)
+
+        line_std_dev = wx.BoxSizer(wx.HORIZONTAL)
+        line_std_dev.AddMany([
+            (lbl_std_dev, 1, wx.EXPAND |
+             wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+            (spin_std_dev, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        ])
+
+        # Select Colormap Line
+        lbl_colormap = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Select Colormap:"))
+
+        combo_thresh = wx.ComboBox(bsizer_mep.GetStaticBox(), -1, "",  # size=(15,-1),
+                                   choices=self.colormaps,
+                                   style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
+        # by default use the initial value set in self.current_colormap
+        combo_thresh.SetSelection(self.colormaps.index(self.current_colormap))
+
+        self.combo_thresh = combo_thresh
+
+        cmap = plt.get_cmap(self.current_colormap)
+        colors_gradient = self.GenerateColormapColors(cmap)
+
+        self.gradient = grad.GradientDisp(bsizer_mep.GetStaticBox(), -1, -5000, 5000, -5000, 5000,
+                                          colors_gradient)
+
+        colormap_sizer = wx.BoxSizer(
+            wx.VERTICAL)
+
+        colormap_sizer.AddMany(
+            [
+                (lbl_colormap, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+                (combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5),
+                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)]
+        )
+
+        colormap_custom = wx.BoxSizer(
+            wx.VERTICAL)
+
+        lbl_colormap_ranges = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Custom Colormap Ranges"))
+        lbl_colormap_ranges.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+
+        lbl_min = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Min Value (uV):"))
+
+        spin_min = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
+        spin_min.Enable(1)
+        spin_min.SetRange(0, 10000)
+        spin_min.SetValue(self.conf.colormap_range_uv.get('min'))
+        line_cm_min = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_min.AddMany([
+            (lbl_min, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+            (spin_min, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        ])
+
+        lbl_low = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Low Value (uV):"))
+        spin_low = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
+        spin_low.Enable(1)
+        spin_low.SetRange(0, 10000)
+        spin_low.SetValue(self.conf.colormap_range_uv.get('low'))
+        line_cm_low = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_low.AddMany([
+            (lbl_low, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+            (spin_low, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        ])
+
+        lbl_mid = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Mid Value (uV):"))
+        spin_mid = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
+        spin_mid.Enable(1)
+        spin_mid.SetRange(0, 10000)
+        spin_mid.SetValue(self.conf.colormap_range_uv.get('mid'))
+        line_cm_mid = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_mid.AddMany([
+            (lbl_mid, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+            (spin_mid, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        ])
+
+        lbl_max = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Max Value (uV):"))
+        spin_max = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
+        spin_max.Enable(1)
+        spin_max.SetRange(0, 10000)
+        spin_max.SetValue(self.conf.colormap_range_uv.get('max'))
+        line_cm_max = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_max.AddMany([
+            (lbl_max, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+            (spin_max, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        ])
+
+        colormap_custom.AddMany([
+            (lbl_colormap_ranges, 0, wx.TOP | wx.LEFT, 10),
+            (line_cm_min, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (line_cm_low, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (line_cm_mid, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (line_cm_max, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        ])
+
+        colormap_sizer.Add(colormap_custom, 0, wx.GROW |
+                           wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        bsizer_mep.AddMany([
+            (line_gaussian_radius, 0, wx.GROW | wx.EXPAND |
+             wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (line_std_dev, 0, wx.GROW | wx.EXPAND |
+             wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (colormap_sizer, 0, wx.GROW | wx.EXPAND |
+                wx.LEFT | wx.RIGHT | wx.TOP, 5)]
+        )
+
+        return bsizer_mep
+
+    def HideMEPSettings(self, event=None):
+        for child in self.bsizer_mep.GetChildren():
+            widget = child.GetWindow()
+            if widget:
+                widget.Hide()
+        self.Layout()
+
+    def ShowMEPSettings(self, event=None):
+        for child in self.bsizer_mep.GetChildren():
+            widget = child.GetWindow()
+            if widget:
+                widget.Show()
+        self.Layout()
+
     def LoadSelection(self, values):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
@@ -180,11 +382,64 @@ class VisualizationTab(wx.Panel):
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
+    def OnSelectColormap(self, event=None):
+        self.current_colormap = self.colormaps[self.combo_thresh.GetSelection(
+        )]
+        colors = self.GenerateColormapColors(
+            self.current_colormap, self.number_colors)
+
+        self.UpdateGradient(self.gradient, colors)
+
+        if isinstance(self.cluster_volume, np.ndarray):
+            self.apply_colormap(self.current_colormap,
+                                self.cluster_volume, self.zero_value)
+
+    def GenerateColormapColors(self, colormap_name, number_colors=4):
+        cmap = plt.get_cmap(colormap_name)
+        colors_gradient = [(int(255*cmap(i)[0]),
+                            int(255*cmap(i)[1]),
+                            int(255*cmap(i)[2]),
+                            int(255*cmap(i)[3])) for i in np.linspace(0, 1, number_colors)]
+
+        return colors_gradient
+
+    def UpdateGradient(self, gradient, colors):
+        gradient.SetGradientColours(colors)
+        gradient.Refresh()
+        gradient.Update()
+
+        self.Refresh()
+        self.Update()
+        self.Show(True)
+
+    def apply_colormap(self, colormap, cluster_volume, zero_value):
+        # 2. Attribute different hue accordingly
+        cmap = plt.get_cmap(colormap)
+
+        # new way
+        # Flatten the data to 1D
+        cluster_volume_unique = np.unique(cluster_volume)
+        # Map the scaled data to colors
+        colors = cmap(cluster_volume_unique / 255)
+        # Create a dictionary where keys are scaled data and values are colors
+        color_dict = {val: color for val, color in zip(
+            cluster_volume_unique, map(tuple, colors))}
+
+        self.slc.aux_matrices_colours['color_overlay'] = color_dict
+        # add transparent color for nans and non GM voxels
+        if zero_value in self.slc.aux_matrices_colours['color_overlay']:
+            self.slc.aux_matrices_colours['color_overlay'][zero_value] = (
+                0.0, 0.0, 0.0, 0.0)
+        else:
+            print("Zero value not found in color_overlay. No data is set as transparent.")
+
+        Publisher.sendMessage('Reload actual slice')
+
 
 class NavigationTab(wx.Panel):
     def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
-        
+
         self.session = ses.Session()
         self.navigation = navigation
         self.sleep_nav = self.navigation.sleep_nav
@@ -192,43 +447,53 @@ class NavigationTab(wx.Panel):
 
         self.LoadConfig()
 
-        text_note = wx.StaticText(self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
+        text_note = wx.StaticText(
+            self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!"))
         # Change sleep pause between navigation loops
         nav_sleep = wx.StaticText(self, -1, _("Navigation Sleep (s):"))
-        spin_nav_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        spin_nav_sleep = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23), inc=0.01)
         spin_nav_sleep.Enable(1)
         spin_nav_sleep.SetRange(0.01, 10.0)
         spin_nav_sleep.SetValue(self.sleep_nav)
-        spin_nav_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
-        spin_nav_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+        spin_nav_sleep.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+        spin_nav_sleep.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectNavSleep, ctrl=spin_nav_sleep))
 
         # Change sleep pause between coordinate update
         coord_sleep = wx.StaticText(self, -1, _("Coordinate Sleep (s):"))
-        spin_coord_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        spin_coord_sleep = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23), inc=0.01)
         spin_coord_sleep.Enable(1)
         spin_coord_sleep.SetRange(0.01, 10.0)
         spin_coord_sleep.SetValue(self.sleep_coord)
-        spin_coord_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectCoordSleep, ctrl=spin_coord_sleep))
-        spin_coord_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectCoordSleep, ctrl=spin_coord_sleep))
+        spin_coord_sleep.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectCoordSleep, ctrl=spin_coord_sleep))
+        spin_coord_sleep.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectCoordSleep, ctrl=spin_coord_sleep))
 
         line_nav_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_nav_sleep.AddMany([
-            (nav_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (nav_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
             (spin_nav_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
-            ])
+        ])
 
         line_coord_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_coord_sleep.AddMany([
-            (coord_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (coord_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
             (spin_coord_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
-            ])
+        ])
 
         # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Sleep time configuration"))
+        conf_sizer = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _("Sleep time configuration"))
         conf_sizer.AddMany([
             (text_note, 0, wx.ALL, 10),
-            (line_nav_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-            (line_coord_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+            (line_nav_sleep, 0, wx.GROW | wx.EXPAND |
+             wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            (line_coord_sleep, 0, wx.GROW | wx.EXPAND |
+             wx.LEFT | wx.RIGHT | wx.TOP, 5)
         ])
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -254,7 +519,7 @@ class NavigationTab(wx.Panel):
 
         if sleep_nav is not None:
             self.sleep_nav = sleep_nav
-        
+
         if sleep_coord is not None:
             self.sleep_coord = sleep_coord
 
@@ -266,7 +531,7 @@ class ObjectTab(wx.Panel):
         self.session = ses.Session()
 
         self.coil_list = const.COIL
-        
+
         self.tracker = tracker
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
@@ -302,20 +567,25 @@ class ObjectTab(wx.Panel):
         btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveCoil)
         self.btn_save = btn_save
-        
+
         if self.state:
-            config_txt = wx.StaticText(self, -1, os.path.basename(self.coil_path))
+            config_txt = wx.StaticText(
+                self, -1, os.path.basename(self.coil_path))
         else:
             config_txt = wx.StaticText(self, -1, "None")
 
-        self.config_txt = config_txt    
+        self.config_txt = config_txt
         lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        lbl_new = wx.StaticText(self, -1, _("Create a new stimulator registration: "))
-        lbl_load = wx.StaticText(self, -1, _("Load a stimulator registration: "))
-        lbl_save = wx.StaticText(self, -1, _("Save current stimulator registration: "))
+        lbl_new = wx.StaticText(
+            self, -1, _("Create a new stimulator registration: "))
+        lbl_load = wx.StaticText(
+            self, -1, _("Load a stimulator registration: "))
+        lbl_save = wx.StaticText(
+            self, -1, _("Save current stimulator registration: "))
 
-        load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator registration"))
+        load_sizer = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _("Stimulator registration"))
         inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
         inner_load_sizer.AddMany([
             (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
@@ -330,57 +600,69 @@ class ObjectTab(wx.Panel):
         load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold (degrees):"))
-        spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
+        spin_size_angles = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23))
         spin_size_angles.SetRange(0.1, 99)
         spin_size_angles.SetValue(self.angle_threshold)
-        spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
-        spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+        spin_size_angles.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+        spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectAngleThreshold, ctrl=spin_size_angles))
 
         # Change dist threshold
         text_dist = wx.StaticText(self, -1, _("Distance threshold (mm):"))
         spin_size_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
         spin_size_dist.SetRange(0.1, 99)
         spin_size_dist.SetValue(self.distance_threshold)
-        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
-        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
+        spin_size_dist.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
+        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectDistanceThreshold, ctrl=spin_size_dist))
 
         # Change timestamp interval
         text_timestamp = wx.StaticText(self, -1, _("Timestamp interval (s):"))
-        spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
+        spin_timestamp_dist = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23), inc=0.1)
         spin_timestamp_dist.SetRange(0.5, 60.0)
         spin_timestamp_dist.SetValue(self.timestamp)
-        spin_timestamp_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
-        spin_timestamp_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
+        spin_timestamp_dist.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
+        spin_timestamp_dist.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
         self.spin_timestamp_dist = spin_timestamp_dist
 
         # Create a horizontal sizer to threshold configs
         line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
         line_angle_threshold.AddMany([
-            (text_angles, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (text_angles, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
             (spin_size_angles, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
-            ])
+        ])
 
         line_dist_threshold = wx.BoxSizer(wx.HORIZONTAL)
         line_dist_threshold.AddMany([
-            (text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
             (spin_size_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
-            ])
+        ])
 
         line_timestamp = wx.BoxSizer(wx.HORIZONTAL)
         line_timestamp.AddMany([
-            (text_timestamp, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+            (text_timestamp, 1, wx.EXPAND | wx.GROW |
+             wx.TOP | wx.RIGHT | wx.LEFT, 5),
             (spin_timestamp_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
-            ])
-
-        # Add line sizers into main sizer
-        conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Stimulator configuration"))
-        conf_sizer.AddMany([
-            (line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
-            (line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
-            (line_timestamp, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20)
         ])
 
-        
+        # Add line sizers into main sizer
+        conf_sizer = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _("Stimulator configuration"))
+        conf_sizer.AddMany([
+            (line_angle_threshold, 0, wx.GROW |
+             wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
+            (line_dist_threshold, 0, wx.GROW |
+             wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
+            (line_timestamp, 0, wx.GROW | wx.EXPAND |
+             wx.LEFT | wx.RIGHT | wx.TOP, 20)
+        ])
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany([
             (load_sizer, 0, wx.ALL | wx.EXPAND, 10),
@@ -393,8 +675,10 @@ class ObjectTab(wx.Panel):
         Publisher.subscribe(self.OnObjectUpdate, 'Update object registration')
 
     def LoadConfig(self):
-        self.angle_threshold = self.session.GetConfig('angle_threshold') or const.DEFAULT_ANGLE_THRESHOLD
-        self.distance_threshold = self.session.GetConfig('distance_threshold') or const.DEFAULT_DISTANCE_THRESHOLD
+        self.angle_threshold = self.session.GetConfig(
+            'angle_threshold') or const.DEFAULT_ANGLE_THRESHOLD
+        self.distance_threshold = self.session.GetConfig(
+            'distance_threshold') or const.DEFAULT_DISTANCE_THRESHOLD
 
         state = self.session.GetConfig('navigation')
 
@@ -408,7 +692,8 @@ class ObjectTab(wx.Panel):
 
     def OnCreateNewCoil(self, event=None):
         if self.tracker.IsTrackerInitialized():
-            dialog = dlg.ObjectCalibrationDialog(self.tracker, self.pedal_connector, self.neuronavigation_api)
+            dialog = dlg.ObjectCalibrationDialog(
+                self.tracker, self.pedal_connector, self.neuronavigation_api)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
                     obj_fiducials, obj_orients, obj_ref_mode, coil_path, polydata = dialog.GetValue()
@@ -427,10 +712,13 @@ class ObjectTab(wx.Panel):
                         )
 
                         # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
-                        Publisher.sendMessage('Enable track object button', enabled=True)
-                        Publisher.sendMessage('Press track object button', pressed=True)
+                        Publisher.sendMessage(
+                            'Enable track object button', enabled=True)
+                        Publisher.sendMessage(
+                            'Press track object button', pressed=True)
 
-                        Publisher.sendMessage('Press target mode button', pressed=False)
+                        Publisher.sendMessage(
+                            'Press target mode button', pressed=False)
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -450,7 +738,8 @@ class ObjectTab(wx.Panel):
                 with open(filename, 'r') as text_file:
                     data = [s.split('\t') for s in text_file.readlines()]
 
-                registration_coordinates = np.array(data[1:]).astype(np.float32)
+                registration_coordinates = np.array(
+                    data[1:]).astype(np.float32)
                 obj_fiducials = registration_coordinates[:, :3]
                 obj_orients = registration_coordinates[:, 3:]
 
@@ -458,13 +747,15 @@ class ObjectTab(wx.Panel):
                 obj_ref_mode = int(data[0][-1])
 
                 if not os.path.exists(coil_path):
-                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                    coil_path = os.path.join(
+                        inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
                 polydata = vtk_utils.CreateObjectPolyData(coil_path)
                 if polydata:
                     self.neuronavigation_api.update_coil_mesh(polydata)
                 else:
-                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+                    coil_path = os.path.join(
+                        inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
                 Publisher.sendMessage('Update object registration',
                                       data=(obj_fiducials, obj_orients, obj_ref_mode, coil_path))
@@ -477,40 +768,51 @@ class ObjectTab(wx.Panel):
                 )
 
                 # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
-                Publisher.sendMessage('Enable track object button', enabled=True)
-                Publisher.sendMessage('Press track object button', pressed=True)
-                Publisher.sendMessage('Press target mode button', pressed=False)
+                Publisher.sendMessage(
+                    'Enable track object button', enabled=True)
+                Publisher.sendMessage(
+                    'Press track object button', pressed=True)
+                Publisher.sendMessage(
+                    'Press target mode button', pressed=False)
 
                 msg = _("Object file successfully loaded")
                 wx.MessageBox(msg, _("InVesalius 3"))
         except:
-            wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
+            wx.MessageBox(
+                _("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage('Update status text in GUI', label="")
 
     def OnSaveCoil(self, evt):
         obj_fiducials, obj_orients, obj_ref_mode, coil_path = self.navigation.GetObjectRegistration()
         if np.isnan(obj_fiducials).any() or np.isnan(obj_orients).any():
-            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
+            wx.MessageBox(
+                _("Digitize all object fiducials before saving"), _("Save error"))
         else:
             filename = dlg.ShowLoadSaveDialog(message=_(u"Save object registration as..."),
-                                              wildcard=_("Registration files (*.obr)|*.obr"),
+                                              wildcard=_(
+                                                  "Registration files (*.obr)|*.obr"),
                                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
                                               default_filename="object_registration.obr", save_ext="obr")
             if filename:
-                hdr = 'Object' + "\t" + utils.decode(coil_path, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % obj_ref_mode)
+                hdr = 'Object' + "\t" + \
+                    utils.decode(coil_path, const.FS_ENCODE) + "\t" + \
+                    'Reference' + "\t" + str('%d' % obj_ref_mode)
                 data = np.hstack([obj_fiducials, obj_orients])
-                np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
+                np.savetxt(filename, data, fmt='%.4f',
+                           delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         self.angle_threshold = ctrl.GetValue()
-        Publisher.sendMessage('Update angle threshold', angle=self.angle_threshold)
+        Publisher.sendMessage('Update angle threshold',
+                              angle=self.angle_threshold)
 
         self.session.SetConfig('angle_threshold', self.angle_threshold)
 
     def OnSelectDistanceThreshold(self, evt, ctrl):
         self.distance_threshold = ctrl.GetValue()
-        Publisher.sendMessage('Update distance threshold', dist_threshold=self.distance_threshold)
+        Publisher.sendMessage('Update distance threshold',
+                              dist_threshold=self.distance_threshold)
 
         self.session.SetConfig('distance_threshold', self.distance_threshold)
 
@@ -536,25 +838,29 @@ class TrackerTab(wx.Panel):
         # ComboBox for spatial tracker device selection
         tracker_options = [_("Select")] + self.tracker.get_trackers()
         select_tracker_elem = wx.ComboBox(self, -1, "", size=(145, -1),
-                                          choices=tracker_options, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+                                          choices=tracker_options, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         tooltip = _("Choose the tracking device")
         select_tracker_elem.SetToolTip(tooltip)
         select_tracker_elem.SetSelection(self.tracker.tracker_id)
-        select_tracker_elem.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem))
+        select_tracker_elem.Bind(wx.EVT_COMBOBOX, partial(
+            self.OnChooseTracker, ctrl=select_tracker_elem))
         self.select_tracker_elem = select_tracker_elem
 
-        select_tracker_label = wx.StaticText(self, -1, _('Choose the tracking device: '))
+        select_tracker_label = wx.StaticText(
+            self, -1, _('Choose the tracking device: '))
 
         # ComboBox for tracker reference mode
         tooltip = _("Choose the navigation reference mode")
         choice_ref = wx.ComboBox(self, -1, "", size=(145, -1),
-                                 choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+                                 choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
         choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(wx.EVT_COMBOBOX, partial(self.OnChooseReferenceMode, ctrl=select_tracker_elem))
+        choice_ref.Bind(wx.EVT_COMBOBOX, partial(
+            self.OnChooseReferenceMode, ctrl=select_tracker_elem))
         self.choice_ref = choice_ref
 
-        choice_ref_label = wx.StaticText(self, -1, _('Choose the navigation reference mode: '))
+        choice_ref_label = wx.StaticText(
+            self, -1, _('Choose the navigation reference mode: '))
 
         ref_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=5, vgap=5)
         ref_sizer.AddMany([
@@ -567,20 +873,22 @@ class TrackerTab(wx.Panel):
 
         sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
-        
+
         lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
         tooltip = _("Choose or type the robot IP")
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
+        robot_ip_options = [_("Select robot IP:")] + \
+            const.ROBOT_ElFIN_IP + const.ROBOT_DOBOT_IP
         choice_IP = wx.ComboBox(self, -1, "",
-                                  choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+                                choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         choice_IP.SetToolTip(tooltip)
         if self.robot.robot_ip is not None:
             choice_IP.SetSelection(robot_ip_options.index(self.robot.robot_ip))
         else:
             choice_IP.SetSelection(0)
-        choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
+        choice_IP.Bind(wx.EVT_COMBOBOX, partial(
+            self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
         self.choice_IP = choice_IP
 
@@ -623,7 +931,8 @@ class TrackerTab(wx.Panel):
             (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15)
         ])
 
-        rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
+        rob_static_sizer = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _("Setup robot"))
         rob_static_sizer.Add(rob_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -636,9 +945,11 @@ class TrackerTab(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
-        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
-        Publisher.subscribe(self.OnSetRobotTransformationMatrix, "Neuronavigation to Robot: Set robot transformation matrix")
-    
+        Publisher.subscribe(
+            self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
+        Publisher.subscribe(self.OnSetRobotTransformationMatrix,
+                            "Neuronavigation to Robot: Set robot transformation matrix")
+
     def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig('robot')
@@ -677,14 +988,14 @@ class TrackerTab(wx.Panel):
             self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
-        # Probably need to refactor object registration as a whole to use the 
+        # Probably need to refactor object registration as a whole to use the
         # OnChooseReferenceMode function which was used earlier. It can be found in
         # the deprecated code in ObjectRegistrationPanel in task_navigator.py.
         pass
 
     def HideParent(self):  # hide preferences dialog box
         self.GetGrandParent().Hide()
-    
+
     def ShowParent(self):  # show preferences dialog box
         self.GetGrandParent().Show()
 
@@ -693,13 +1004,14 @@ class TrackerTab(wx.Panel):
 
     def OnChoiceIP(self, evt, ctrl):
         self.robot_ip = ctrl.GetStringSelection()
-    
+
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None:
             self.status_text.SetLabelText("Trying to connect to robot...")
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
-            Publisher.sendMessage('Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
+            Publisher.sendMessage(
+                'Neuronavigation to Robot: Connect to robot', robot_IP=self.robot_ip)
 
     def OnRobotRegister(self, evt):
         if sys.platform == 'darwin':
@@ -711,7 +1023,7 @@ class TrackerTab(wx.Panel):
             wx.CallAfter(self.GetParent().Show)
         else:
             self.ShowParent()
-    
+
     def OnRobotStatus(self, data):
         if data:
             self.status_text.SetLabelText("Setup robot transformation matrix:")

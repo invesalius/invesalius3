@@ -700,6 +700,7 @@ POINT_OF_INTEREST_TARGET_COLUMN = 6
 X_COLUMN = 7
 Y_COLUMN = 8
 Z_COLUMN = 9
+MEP_COLUMN  = 10
 
 #------------ Navigation defaults -------------------
 
