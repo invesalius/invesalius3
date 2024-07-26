@@ -6,6 +6,7 @@ jobs:
   windows:
     name: run on windows
     runs-on: windows-latest
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -44,13 +45,3 @@ jobs:
         run: |
               python3 ./waf distclean all
               python3 setup.py install
-
-      - name: Compile InVesalius Cython parts
-        run: python setup.py build_ext --inplace
-
-    #- uses: actions/checkout@v3
-    #  with:
-    #    repository: 'pyinstaller/pyinstaller'
-    #    path: develop
-    #    token: ${{ secrets.GITHUB_AUTH_TOKEN }}
-    #    run: dir
