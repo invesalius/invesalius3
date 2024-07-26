@@ -27,11 +27,11 @@ jobs:
         run: pwd
 
       - name: pyinstaller download
-        uses: blauqs/action-download-asset@master
+        uses: blauqs/actions-download-asset@v1.2
         id: download
         with:
           repo: pyinstaller/pyinstaller
-          version: tags/6.9.0
+          version: tags/v6.9.0
           file: v6.9.0.zip
           out: ./
 
