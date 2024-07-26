@@ -42,7 +42,8 @@ jobs:
         run: |
               cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
               python3 ./waf distclean all
-              pip install .
+              dir
+              python3 setup.py install
 
       - name: Test bootloader
         run: pyinstaller
