@@ -23,6 +23,12 @@ jobs:
       #- name: Install Requirements
       #  run: pip install -r requirements.txt
 
+      - name: pwd file
+        run: pwd
+
+      -name: list
+        run: dir
+
       - name: Install and generate pyinstaller bootloader
         uses: engineerd/configurator@v0.0.1
         with:                  
