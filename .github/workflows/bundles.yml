@@ -31,19 +31,18 @@ jobs:
         name: Download the file
         with:
           url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
-          target: ./
+          target: ./pyinstaller/
 
       - name: Extract pyinstaller file
         uses: ihiroky/extract-action@v1
         with:
-          file_path: v6.9.0.zip
-          extract_dir: pyinstaller
-
+          file_path: ./pyinstaller/v6.9.0.zip
+          extract_dir: ./pyinstaller/
 
       - name: show 2
         run: |
               dir
-              cd pyinstaller
+              cd pyinstaller/
               dir
 
       - name: Install and generate pyinstaller bootloader
