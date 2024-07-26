@@ -42,7 +42,7 @@ jobs:
       - name: show 2
         run: |
               dir
-              cd pyinstaller/pyinstaller-6.9.0/
+              cd ./pyinstaller/pyinstaller-6.9.0/
               dir
 
       - name: Compile InVesalius Cython parts
