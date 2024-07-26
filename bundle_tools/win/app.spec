@@ -9,6 +9,7 @@ import glob
 from pathlib import Path
 
 SOURCE_DIR = Path("./").resolve()
+print("SOURCE_DIR", SOURCE_DIR)
 
 from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_libs
 from PyInstaller.compat import is_win
@@ -150,9 +151,8 @@ a = Analysis(['app.py'],
              datas=data_files,
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
-                            'pywt._extensions._cwt','keras','plaidml.keras',\
-                            'plaidml.keras.backend','skimage.filters.rank.core_cy_3d',\
-                            'encodings'],
+                            'pywt._extensions._cwt','skimage.filters.rank.core_cy_3d',\
+                            'encodings'], #,'keras','plaidml.keras','plaidml.keras.backend'
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
