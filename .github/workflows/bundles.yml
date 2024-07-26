@@ -52,7 +52,9 @@ jobs:
               pip install .
 
       - name: Generate InVesalius .exe file
-        run: pyinstaller ./bundle_tools/win/app.spec --clean --noconfirm
+        run: |
+              cp ./bundle_tools/win/app.spec ./  
+              pyinstaller app.spec --clean --noconfirm
 
       - name: show exe files
         run: |
