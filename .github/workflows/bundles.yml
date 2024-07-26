@@ -17,15 +17,16 @@ jobs:
           python-version: '3.11.2'
           cache: 'pip'
 
-      - name: Upgrade pip and enable wheel support
-        run: python -m pip install --upgrade pip setuptools wheel 
+      #- name: Upgrade pip and enable wheel support
+      #  run: python -m pip install --upgrade pip setuptools wheel 
     
-      - name: Install Requirements
-        run: pip install -r requirements.txt
+      #- name: Install Requirements
+      #  run: pip install -r requirements.txt
 
       - name: Install and generate pyinstaller bootloader
         uses: engineerd/configurator@v0.0.1
-        with:
+        with:                  
+          name: "h3.exe"
           url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
           pathInArchive: "pyinstaller/"
         
