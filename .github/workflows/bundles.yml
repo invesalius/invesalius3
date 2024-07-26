@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup VC++
-        uses: ilammy/msvc-dev-cmd@v1.4.1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
           arch: 'x64'
       
@@ -45,4 +45,4 @@ jobs:
               pip install .
 
       - name: Test bootloader
-        run: pyinstaller
+        run: pyinstaller -h
