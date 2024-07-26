@@ -27,7 +27,7 @@ jobs:
         run: mkdir pyinstaller
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 # 1.6.0
-        id: downloadfile  # Remember to give an ID if you need the output filename
+        id: pyinstaller  # Remember to give an ID if you need the output filename
         name: Download the file
         with:
           url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
@@ -42,7 +42,7 @@ jobs:
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
         with:
-          file_path: v6.9.0.zip
+          file_path: pyinstaller.zip
           extract_dir: pyinstaller
 
       - name: Install and generate pyinstaller bootloader
