@@ -30,8 +30,8 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           repository: 'pyinstaller/pyinstaller'
-          releaseId: 'v6.9.0'
-          fileName: 'v6.9.0.zip'
+          tag: 'v6.9.0'
+          fileName: '*.zip'
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
