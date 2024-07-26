@@ -7,9 +7,10 @@ jobs:
     name: run on windows
     runs-on: windows-latest
     steps:
-      - run: echo "The job generate bundles was automatically triggered by a ${{ github.event_name }} event."
       - uses: actions/checkout@v4
-      - uses: ilammy/msvc-dev-cmd@v1.4.1
+
+      - name: Setup VC++
+        uses: ilammy/msvc-dev-cmd@v1.4.1
       
       - name: Set up Python
         uses: actions/setup-python@v5
