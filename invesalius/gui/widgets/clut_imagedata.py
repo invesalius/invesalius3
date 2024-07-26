@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+import sys
 
 import wx
 
@@ -24,8 +25,8 @@ RADIUS = 5
 
 PADDING = 2
 
-
-@dataclass(order=True, slots=True)
+py310 = sys.version_info.minor >= 10 or sys.version_info.major > 3
+@dataclass(order=True, **({"slots": True} if py310 else {}))
 class Node:
     value: float
     colour: Tuple[int, int, int] = field(compare=False)
