@@ -348,7 +348,7 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def distance_from_point_line(
         self, p1: Tuple[float, float], p2: Tuple[float, float], pc: Tuple[float, float]
-    ) -> numpy.floating[Any]:
+    ) -> numpy.floating:
         """
         Calculate the distance from point pc to a line formed by p1 and p2.
         """
