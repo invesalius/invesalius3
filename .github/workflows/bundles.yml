@@ -10,10 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup VC++ 2022 (17.0)
+      - name: Setup VC++
         uses: ilammy/msvc-dev-cmd@v1.4.1
         with:
-          vsversion: '17.0'
           arch: 'x64'
       
       - name: Setup Python
@@ -43,7 +42,7 @@ jobs:
               cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
               python3 ./waf distclean all
               cd ..
-              python3 setup.py install
+              pip install .
 
       - name: Test bootloader
         run: pyinstaller
