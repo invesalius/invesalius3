@@ -32,7 +32,7 @@ jobs:
         with:
           repo: pyinstaller/pyinstaller
           version: '6.9.0'
-          file: '*.zip'
+          file: 'pyinstaller-6.9.0.zip'
           out: ./
           token: ${{ secrets.GITHUB_TOKEN }}
 
