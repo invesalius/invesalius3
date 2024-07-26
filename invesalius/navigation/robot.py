@@ -84,6 +84,9 @@ class Robot(metaclass=Singleton):
 
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
 
+    def SetExcessiveForceAdjust(self):
+        Publisher.sendMessage('Neuronavigation to Robot: Excessive force adjust off')
+
     def SaveConfig(self):
         matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
 

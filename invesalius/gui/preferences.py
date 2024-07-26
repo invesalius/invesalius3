@@ -92,9 +92,11 @@ class Preferences(wx.Dialog):
 
         lang = self.language_tab.GetSelection()
         viewer = self.visualization_tab.GetSelection()
+        force = self.navigation_tab.GetSelection()
 
         values.update(lang)
         values.update(viewer)
+        values.update(force)
 
         if self.have_log_tab == 1:
             logging = self.logging_tab.GetSelection()
@@ -108,6 +110,8 @@ class Preferences(wx.Dialog):
         surface_interpolation = session.GetConfig("surface_interpolation")
         language = session.GetConfig("language")
         slice_interpolation = session.GetConfig("slice_interpolation")
+        # What exactly is happening here is unclear to me
+        excessive_force_adjust = session.GetConfig("excessive_force_adjust")
 
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
@@ -133,6 +137,7 @@ class Preferences(wx.Dialog):
             const.LOGFILE: logging_file,
             const.CONSOLE_LOGGING: console_logging,
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
+            const.EXCESSIVE_FORCE_ADJUST: excessive_force_adjust,
         }
 
         self.visualization_tab.LoadSelection(values)
@@ -299,6 +304,7 @@ class LoggingTab(wx.Panel):
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_logging, 1, wx.EXPAND | wx.ALL, 10)  # | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer_console_logging, 1, wx.EXPAND | wx.ALL, 10)  # | wx.FIXED_MINSIZE, 10)
+        
         self.SetSizerAndFit(border)
 
         self.Layout()
@@ -428,8 +434,24 @@ class NavigationTab(wx.Panel):
             ]
         )
 
+        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("Force sensor adjustement"))
+        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Excessive force adjustment"))
+        ft_inter_sl = self.ft_inter_sl = wx.RadioBox(
+            bsizer_slices.GetStaticBox(),
+            -1,
+            choices=[_("Yes"), _("No")],
+            majorDimension=3,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+
+        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_slices.Add(ft_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        main_sizer.Add(bsizer_slices, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        
         self.SetSizerAndFit(main_sizer)
         self.Layout()
 
@@ -454,6 +476,18 @@ class NavigationTab(wx.Panel):
 
         if sleep_coord is not None:
             self.sleep_coord = sleep_coord
+
+
+    def GetSelection(self):
+        options = {
+            const.EXCESSIVE_FORCE_ADJUST: self.ft_inter_sl.GetSelection(),
+        }
+        return options
+
+    def LoadSelection(self, values):
+        ft_usage = values[const.EXCESSIVE_FORCE_ADJUST]
+
+        self.ft_inter_sl.SetSelection(int(ft_usage))
 
 
 class ObjectTab(wx.Panel):

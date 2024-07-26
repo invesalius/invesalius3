@@ -297,6 +297,7 @@ class Navigation(metaclass=Singleton):
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
         Publisher.subscribe(self.UpdateObjectRegistration, "Update object registration")
         Publisher.subscribe(self.TrackObject, "Track object")
+        Publisher.subscribe(self.UpdateExcessiveForceAdjust, "Update excessive force adjustment")
 
     def SaveConfig(self):
         # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
@@ -335,6 +336,12 @@ class Navigation(metaclass=Singleton):
             object_reference_mode,
             object_name,
         )
+
+    def UpdateExcessiveForceAdjust(self):
+        session = ses.Session()
+        excessive_force_adjust = session.GetConfig("excessive_force_adjust")
+        print("UpdateExcessiveForceAdjust ran")
+        Publisher.sendMessage('Neuronavigation to Robot: Update excessive force adjustment', data=excessive_force_adjust)
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
