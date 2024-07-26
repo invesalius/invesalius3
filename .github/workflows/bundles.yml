@@ -7,18 +7,18 @@ jobs:
     name: run on windows
     runs-on: windows-latest
     steps:
-      #- run: echo "The job generate bundles was automatically triggered by a ${{ github.event_name }} event."
-      #- uses: actions/checkout@v4
-      #- uses: ilammy/msvc-dev-cmd@v1.4.1
+      - run: echo "The job generate bundles was automatically triggered by a ${{ github.event_name }} event."
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1.4.1
       
-      #- name: Set up Python
-      #  uses: actions/setup-python@v5
-      #  with:
-      #    python-version: '3.11.2'
-      #    cache: 'pip'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.2'
+          cache: 'pip'
 
-      #- name: Upgrade pip and enable wheel support
-      #  run: python -m pip install --upgrade pip setuptools wheel 
+      - name: Upgrade pip and enable wheel support
+        run: python -m pip install --upgrade pip setuptools wheel 
     
       #- name: Install Requirements
       #  run: pip install -r requirements.txt
@@ -45,12 +45,11 @@ jobs:
               cd ./pyinstaller/pyinstaller-6.9.0/
               dir
 
-      - name: Compile InVesalius Cython parts
-        run: python setup.py build_ext --inplace
+      -name: Compile pyinstaller bootloader
+        run: |
+              python3 ./waf distclean all
+              python3 setup.py install
 
-    #- uses: actions/checkout@v3
-    #  with:
-    #    repository: 'pyinstaller/pyinstaller'
-    #    path: develop
-    #    token: ${{ secrets.GITHUB_AUTH_TOKEN }}
-    #    run: dir
+      #- name: Compile InVesalius Cython parts
+      #  run: python setup.py build_ext --inplace
+
