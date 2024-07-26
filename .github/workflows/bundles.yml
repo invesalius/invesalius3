@@ -26,18 +26,18 @@ jobs:
       - name: file
         run: mkdir pyinstaller
 
-    - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 # 1.6.0
-      id: downloadfile  # Remember to give an ID if you need the output filename
-      name: Download the file
-      with:
-        url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
-        target: ./pyinstaller/
+      - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 # 1.6.0
+        id: downloadfile  # Remember to give an ID if you need the output filename
+        name: Download the file
+        with:
+          url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
+          target: ./pyinstaller/
 
-    - name: show
-      run: cd pyinstaller
+      - name: show
+        run: cd pyinstaller
 
-    - name: show 2
-      run: dir
+      - name: show 2
+        run: dir
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
