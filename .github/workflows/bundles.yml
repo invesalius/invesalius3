@@ -31,8 +31,8 @@ jobs:
         id: download
         with:
           repo: pyinstaller/pyinstaller
-          version: 6.9.0
-          file: v6.9.0.zip
+          version: '6.9.0'
+          file: '*.zip'
           out: ./
           token: ${{ secrets.GITHUB_TOKEN }}
 
