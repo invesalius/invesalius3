@@ -196,8 +196,10 @@ True
 from __future__ import division, print_function
 
 import math
+from typing import Any, Sequence, Union
 
 import numpy
+import numpy.typing
 
 __version__ = "2015.07.18"
 __docformat__ = "restructuredtext en"
@@ -219,7 +221,7 @@ def identity_matrix():
     return numpy.identity(4)
 
 
-def translation_matrix(direction):
+def translation_matrix(direction: Union[Sequence[float], numpy.ndarray]) -> numpy.ndarray:
     """Return matrix to translate by direction vector.
 
     >>> v = numpy.random.random(3) - 0.5
@@ -1885,7 +1887,9 @@ def inverse_matrix(matrix):
     return numpy.linalg.inv(matrix)
 
 
-def concatenate_matrices(*matrices):
+def concatenate_matrices(
+    *matrices: numpy.ndarray,
+) -> numpy.ndarray[Any, numpy.dtype[numpy.float64]]:
     """Return concatenation of series of transformation matrices.
 
     >>> M = numpy.random.rand(16).reshape((4, 4)) - 0.5

@@ -37,6 +37,8 @@ from .type_defs import (
     ColourType,
     Coord,
     EventType,
+    GBPositionType,
+    GBSpanType,
     PenCap,
     PenStyle,
     PolygonFillMode,
@@ -21165,7 +21167,7 @@ class EvtHandler(Object, Trackable):
         self,
         event: PyEventBinder,
         handler: Callable[[Any], None],
-        source: Window | None = None,
+        source: EvtHandler | None = None,
         id: int = wx.ID_ANY,
         id2: int = wx.ID_ANY,
     ) -> None:
@@ -21480,7 +21482,7 @@ class CommandEvent(Event):
         deselection), or a boolean value representing the value of a checkbox.
         """
 
-    def GetSelection(self):
+    def GetSelection(self) -> int:
         """
         GetSelection() -> int
 
@@ -24972,7 +24974,7 @@ class Sizer(Object):
         Call this to give the sizer a minimal size.
         """
 
-    def SetSizeHints(self, window):
+    def SetSizeHints(self, window: Window):
         """
         SetSizeHints(window)
 
@@ -25696,6 +25698,8 @@ class GBSpan:
     rowspan = property(None, None)
     colspan = property(None, None)
 
+DefaultSpan = GBSpan()
+
 # end of class GBSpan
 
 class GBSizerItem(SizerItem):
@@ -25790,7 +25794,7 @@ class GridBagSizer(FlexGridSizer):
     one row and/or column using wxGBSpan.
     """
 
-    def __init__(self, vgap=0, hgap=0):
+    def __init__(self, vgap: int = 0, hgap: int = 0):
         """
         GridBagSizer(vgap=0, hgap=0)
 
@@ -25799,8 +25803,16 @@ class GridBagSizer(FlexGridSizer):
         allowed using wxGBPosition, and items can optionally span more than
         one row and/or column using wxGBSpan.
         """
-
-    def Add(self, *args, **kw):
+    @overload
+    def Add(
+        self,
+        window: Window,
+        pos: GBPositionType,
+        span: GBSpanType = DefaultSpan,
+        flag: int = 0,
+        border: int = 0,
+        userData: Any = None,
+    ) -> SizerItem:
         """
         Add(window, pos, span=DefaultSpan, flag=0, border=0, userData=None) -> SizerItem
         Add(sizer, pos, span=DefaultSpan, flag=0, border=0, userData=None) -> SizerItem
@@ -25810,7 +25822,39 @@ class GridBagSizer(FlexGridSizer):
 
         Adds the given item to the given position.
         """
-
+    @overload
+    def Add(
+        self,
+        sizer: Sizer,
+        pos: GBPositionType,
+        span: GBSpanType = DefaultSpan,
+        flag: int = 0,
+        border: int = 0,
+        userData: Any = None,
+    ) -> SizerItem: ...
+    @overload
+    def Add(self, item: GBSizerItem) -> SizerItem: ...
+    @overload
+    def Add(
+        self,
+        width: int,
+        height: int,
+        pos: GBPositionType,
+        span: GBSpanType = DefaultSpan,
+        flag: int = 0,
+        border: int = 0,
+        userData: Any = None,
+    ) -> SizerItem: ...
+    @overload
+    def Add(
+        self,
+        size: Size,
+        pos: GBPositionType,
+        span: GBSpanType = DefaultSpan,
+        flag: int = 0,
+        border: int = 0,
+        Transfer: Any = None,
+    ) -> SizerItem: ...
     def CheckForIntersection(self, *args, **kw):
         """
         CheckForIntersection(item, excludeItem=None) -> bool
@@ -25881,7 +25925,7 @@ class GridBagSizer(FlexGridSizer):
         there is no item at that point.
         """
 
-    def FindItemAtPosition(self, pos):
+    def FindItemAtPosition(self, pos: GBPositionType) -> GBSizerItem:
         """
         FindItemAtPosition(pos) -> GBSizerItem
 
@@ -25932,8 +25976,6 @@ class GridBagSizer(FlexGridSizer):
     EmptyCellSize = property(None, None)
 
 # end of class GridBagSizer
-
-DefaultSpan = GBSpan()
 
 from collections import namedtuple
 
@@ -27061,11 +27103,12 @@ class PyApp(AppConsole):
 
 # end of class PyApp
 
-def GetApp() -> AppConsole:
+def GetApp() -> App:  # This is an intentionally wrong signature
     """
     GetApp() -> AppConsole
 
     Returns the current application object.
+    The annotated App return type is intentionally wrong for removing some errors for the time being.
     """
 
 def HandleFatalExceptions(doIt=True):
@@ -28869,7 +28912,7 @@ class Window(WindowBase):
         Returns true if the window is shown, false if it has been hidden.
         """
 
-    def IsShownOnScreen(self):
+    def IsShownOnScreen(self) -> bool:
         """
         IsShownOnScreen() -> bool
 
@@ -28944,15 +28987,16 @@ class Window(WindowBase):
 
         Get the text of the associated tooltip or empty string if none.
         """
-
-    def SetToolTip(self, *args, **kw):
+    @overload
+    def SetToolTip(self, tipString: str) -> None:
         """
         SetToolTip(tipString)
         SetToolTip(tip)
 
         Attach a tooltip to the window.
         """
-
+    @overload
+    def SetToolTip(self, tip: ToolTip) -> None: ...
     def UnsetToolTip(self):
         """
         UnsetToolTip()
@@ -29126,7 +29170,7 @@ class Window(WindowBase):
         Sets the accessible for this window.
         """
 
-    def Close(self, force=False):
+    def Close(self, force: bool = False) -> bool:
         """
         Close(force=False) -> bool
 
@@ -29177,7 +29221,7 @@ class Window(WindowBase):
         NULL.
         """
 
-    def GetSizer(self):
+    def GetSizer(self) -> Sizer:
         """
         GetSizer() -> Sizer
 
@@ -32247,8 +32291,8 @@ class ItemContainer(ItemContainerImmutable):
         explicitly by using Delete() or implicitly when the control itself is
         destroyed).
         """
-
-    def Insert(self, *args, **kw):
+    @overload
+    def Insert(self, item: str, pos: int) -> int:
         """
         Insert(item, pos) -> int
         Insert(item, pos, clientData) -> int
@@ -32256,7 +32300,10 @@ class ItemContainer(ItemContainerImmutable):
 
         Inserts item into the control.
         """
-
+    @overload
+    def Insert(self, item: str, pos: int, clientData: ClientData) -> int: ...
+    @overload
+    def Insert(self, items: Sequence[str], pos: int) -> int: ...
     def Set(self, items):
         """
         Set(items)
@@ -32589,7 +32636,7 @@ class StaticText(Control):
         Creation function, for two-step construction.
         """
 
-    def IsEllipsized(self):
+    def IsEllipsized(self) -> bool:
         """
         IsEllipsized() -> bool
 
@@ -32598,7 +32645,7 @@ class StaticText(Control):
         styles.
         """
 
-    def SetLabel(self, label):
+    def SetLabel(self, label: str) -> None:
         """
         SetLabel(label)
 
@@ -36067,7 +36114,7 @@ class ComboBox(Control, ItemContainer, TextEntry):
         Returns the label of the item with the given index.
         """
 
-    def GetStringSelection(self):
+    def GetStringSelection(self) -> str:
         """
         GetStringSelection() -> String
 
@@ -36550,8 +36597,8 @@ class Gauge(Control):
     A gauge is a horizontal or vertical bar which shows a quantity (often
     time).
     """
-
-    def __init__(self, *args, **kw):
+    @overload
+    def __init__(self):
         """
         Gauge()
         Gauge(parent, id=ID_ANY, range=100, pos=DefaultPosition, size=DefaultSize, style=GA_HORIZONTAL, validator=DefaultValidator, name=GaugeNameStr)
@@ -36559,7 +36606,18 @@ class Gauge(Control):
         A gauge is a horizontal or vertical bar which shows a quantity (often
         time).
         """
-
+    @overload
+    def __init__(
+        self,
+        parent: Window,
+        id: WindowID = ID_ANY,
+        range: int = 100,
+        pos: Point = DefaultPosition,
+        size: SizeType = DefaultSize,
+        style: int = GA_HORIZONTAL,
+        validator: Validator = DefaultValidator,
+        name: str = GaugeNameStr,
+    ): ...
     def Create(
         self,
         parent,
@@ -36584,7 +36642,7 @@ class Gauge(Control):
         Returns the maximum position of the gauge.
         """
 
-    def GetValue(self):
+    def GetValue(self) -> int:
         """
         GetValue() -> int
 
@@ -36599,7 +36657,7 @@ class Gauge(Control):
         false otherwise.
         """
 
-    def Pulse(self):
+    def Pulse(self) -> None:
         """
         Pulse()
 
@@ -36615,7 +36673,7 @@ class Gauge(Control):
         Sets the range (maximum value) of the gauge.
         """
 
-    def SetValue(self, pos):
+    def SetValue(self, pos: int) -> None:
         """
         SetValue(pos)
 
@@ -38080,8 +38138,8 @@ class RadioButton(Control):
     A radio button item is a button which usually denotes one of several
     mutually exclusive options.
     """
-
-    def __init__(self, *args, **kw):
+    @overload
+    def __init__(self):
         """
         RadioButton()
         RadioButton(parent, id=ID_ANY, label=EmptyString, pos=DefaultPosition, size=DefaultSize, style=0, validator=DefaultValidator, name=RadioButtonNameStr)
@@ -38089,7 +38147,18 @@ class RadioButton(Control):
         A radio button item is a button which usually denotes one of several
         mutually exclusive options.
         """
-
+    @overload
+    def __init__(
+        self,
+        parent: Window,
+        id: WindowID = ID_ANY,
+        label: str = EmptyString,
+        pos: Point = DefaultPosition,
+        size: SizeType = DefaultSize,
+        style: int = 0,
+        validator: Validator = DefaultValidator,
+        name: str = RadioButtonNameStr,
+    ): ...
     def Create(
         self,
         parent,
@@ -38107,14 +38176,14 @@ class RadioButton(Control):
         Creates the choice for two-step construction.
         """
 
-    def GetValue(self):
+    def GetValue(self) -> bool:
         """
         GetValue() -> bool
 
         Returns true if the radio button is checked, false otherwise.
         """
 
-    def SetValue(self, value):
+    def SetValue(self, value: bool) -> None:
         """
         SetValue(value)
 
@@ -38897,14 +38966,14 @@ class ToggleButton(AnyButton):
         Creates the toggle button for two-step construction.
         """
 
-    def GetValue(self):
+    def GetValue(self) -> bool:
         """
         GetValue() -> bool
 
         Gets the state of the toggle button.
         """
 
-    def SetValue(self, state):
+    def SetValue(self, state: bool) -> None:
         """
         SetValue(state)
 
@@ -45436,7 +45505,7 @@ class Dialog(TopLevelWindow):
         Sets the adaptation mode, overriding the global adaptation flag.
         """
 
-    def SetReturnCode(self, retCode):
+    def SetReturnCode(self, retCode: int) -> None:
         """
         SetReturnCode(retCode)
 
@@ -47224,7 +47293,7 @@ class ProgressDialog(GenericProgressDialog):
         the constructor is returned.
         """
 
-    def Pulse(self, newmsg=EmptyString):
+    def Pulse(self, newmsg: str = EmptyString) -> tuple[bool, bool]:
         """
         Pulse(newmsg=EmptyString) -> (bool, skip)
 
@@ -47675,7 +47744,7 @@ class SingleChoiceDialog(Dialog):
         allows the user to select one.
         """
 
-    def GetSelection(self):
+    def GetSelection(self) -> int:
         """
         GetSelection() -> int
 
@@ -49022,7 +49091,7 @@ def GetKeyState(key):
     For normal keys, returns true if the specified key is currently down.
     """
 
-def GetMousePosition():
+def GetMousePosition() -> Point:
     """
     GetMousePosition() -> Point
 

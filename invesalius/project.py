@@ -345,7 +345,7 @@ class Project(metaclass=Singleton):
             self.mask_dict[m.index] = m
 
         # Opening the surfaces
-        self.surface_dict = {}
+        self.surface_dict: dict[int, srf.Surface] = {}
         for index in sorted(project.get("surfaces", []), key=lambda x: int(x)):
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)

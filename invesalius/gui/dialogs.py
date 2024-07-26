@@ -26,7 +26,19 @@ import sys
 import time
 from concurrent import futures
 from functools import partial
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    MutableSequence,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 if sys.platform == "win32":
     try:
@@ -99,8 +111,20 @@ from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
 
 if TYPE_CHECKING:
-    from invesalius.data.styles import WatershedConfig
+    from invesalius.data.mask import Mask
+    from invesalius.data.measures import AngularMeasure, LinearMeasure
+    from invesalius.data.styles import (
+        CropMaskConfig,
+        FFillSegmentationConfig,
+        SelectPartConfig,
+        WatershedConfig,
+    )
     from invesalius.gui.widgets.clut_imagedata import CLUTEvent, Node
+    from invesalius.navigation.mtms import mTMS
+    from invesalius.navigation.navigation import Navigation
+    from invesalius.navigation.tracker import Tracker
+    from invesalius.net.neuronavigation_api import NeuronavigationApi
+    from invesalius.net.pedal_connection import PedalConnector
     from typings.wx.type_defs import ColourType  # type: ignore
 
 
@@ -2100,10 +2124,7 @@ class SurfaceMethodPanel(wx.Panel):
         evt.Skip()
 
     def GetAlgorithmSelected(self) -> str:
-        try:
-            return self.alg_types[self.cb_types.GetValue()]
-        except KeyError:
-            return self.alg_types[0]
+        return self.alg_types.get(self.cb_types.GetValue(), "Default")
 
     def GetOptions(self) -> Dict[str, float]:
         if self.GetAlgorithmSelected() == "ca_smoothing":
@@ -2307,7 +2328,7 @@ class WatershedOptionsDialog(wx.Dialog):
 class MaskBooleanDialog(wx.Dialog):
     def __init__(
         self,
-        masks,
+        masks: Dict[int, "Mask"],
         ID=-1,
         title=_("Boolean operations"),
         style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
@@ -2317,7 +2338,7 @@ class MaskBooleanDialog(wx.Dialog):
         self._init_gui(masks)
         self.CenterOnScreen()
 
-    def _init_gui(self, masks) -> None:
+    def _init_gui(self, masks: Dict[int, "Mask"]) -> None:
         mask_choices = [(masks[i].name, masks[i]) for i in sorted(masks)]
         self.mask1 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
         self.mask2 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
@@ -2530,7 +2551,7 @@ class ImportBitmapParameters(wx.Dialog):
             style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
         )
 
-        self.interval = 0
+        self.interval: int = 0
 
         self._init_gui()
         self.bind_evts()
@@ -2570,19 +2591,13 @@ class ImportBitmapParameters(wx.Dialog):
 
         gbs.Add(stx_name, (0, 0), flag=flag_labels)
         gbs.Add(tx_name, (0, 1))
-        try:
-            gbs.Add(0, 0, (1, 0))
-        except TypeError:
-            gbs.AddStretchSpacer((1, 0))
+        gbs.Add(0, 0, (1, 0))
 
         gbs.Add(stx_orientation, (2, 0), flag=flag_labels)
         gbs.Add(cb_orientation, (2, 1))
 
         gbs.Add(stx_spacing, (3, 0))
-        try:
-            gbs.Add(0, 0, (4, 0))
-        except TypeError:
-            gbs.AddStretchSpacer((4, 0))
+        gbs.Add(0, 0, (4, 0))
 
         # --- spacing --------------
         gbs_spacing = wx.GridBagSizer(2, 6)
@@ -2633,19 +2648,14 @@ class ImportBitmapParameters(wx.Dialog):
 
         btn_cancel = wx.Button(p, wx.ID_CANCEL)
 
-        try:
-            gbs_button.Add(0, 0, (0, 2))
-        except TypeError:
-            gbs_button.AddStretchSpacer((0, 2))
+        gbs_button.Add(0, 0, (0, 2))
+
         gbs_button.Add(btn_cancel, (1, 2))
         gbs_button.Add(btn_ok, (1, 3))
 
         gbs_principal.Add(gbs, (0, 0), flag=wx.ALL | wx.EXPAND)
         gbs_principal.Add(gbs_spacing, (1, 0), flag=wx.ALL | wx.EXPAND)
-        try:
-            gbs_principal.Add(0, 0, (2, 0))
-        except TypeError:
-            gbs_principal.AddStretchSpacer((2, 0))
+        gbs_principal.Add(0, 0, (2, 0))
         gbs_principal.Add(gbs_button, (3, 0), flag=wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
@@ -2655,13 +2665,13 @@ class ImportBitmapParameters(wx.Dialog):
         box.Fit(self)
         self.Layout()
 
-    def bind_evts(self):
+    def bind_evts(self) -> None:
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
 
-    def SetInterval(self, v):
+    def SetInterval(self, v: int) -> None:
         self.interval = v
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.Event) -> None:
         orient_selection = self.cb_orientation.GetSelection()
 
         if orient_selection == 1:
@@ -2685,7 +2695,7 @@ class ImportBitmapParameters(wx.Dialog):
         self.Destroy()
 
 
-def BitmapNotSameSize():
+def BitmapNotSameSize() -> None:
     dlg = wx.MessageDialog(
         None,
         _("All bitmaps files must be the same \n width and height size."),
@@ -2698,26 +2708,22 @@ def BitmapNotSameSize():
 
 
 class PanelTargeFFill(wx.Panel):
-    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL | wx.NO_BORDER):
+    def __init__(
+        self, parent: wx.Window, ID: int = -1, style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER
+    ):
         wx.Panel.__init__(self, parent, ID, style=style)
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.target_2d = wx.RadioButton(self, -1, _("2D - Actual slice"), style=wx.RB_GROUP)
         self.target_3d = wx.RadioButton(self, -1, _("3D - All slices"))
 
         sizer = wx.GridBagSizer(5, 5)
 
-        try:
-            sizer.Add(0, 0, (0, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(self.target_2d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.target_3d, (2, 0), (1, 6), flag=wx.LEFT, border=5)
-        try:
-            sizer.Add(0, 0, (3, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((3, 0))
+        sizer.Add(0, 0, (3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2726,30 +2732,28 @@ class PanelTargeFFill(wx.Panel):
 
 class Panel2DConnectivity(wx.Panel):
     def __init__(
-        self, parent, ID=-1, show_orientation=False, style=wx.TAB_TRAVERSAL | wx.NO_BORDER
+        self,
+        parent: wx.Window,
+        ID: int = -1,
+        show_orientation: bool = False,
+        style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER,
     ):
         wx.Panel.__init__(self, parent, ID, style=style)
         self._init_gui(show_orientation)
 
-    def _init_gui(self, show_orientation):
+    def _init_gui(self, show_orientation: bool) -> None:
         self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
         self.conect2D_8 = wx.RadioButton(self, -1, "8")
 
         sizer = wx.GridBagSizer(5, 5)
 
-        try:
-            sizer.Add(0, 0, (0, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(
             wx.StaticText(self, -1, _("2D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5
         )
         sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
         sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
-        try:
-            sizer.Add(0, 0, (3, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((3, 0))
+        sizer.Add(0, 0, (3, 0))
 
         if show_orientation:
             self.cmb_orientation = wx.ComboBox(
@@ -2767,59 +2771,52 @@ class Panel2DConnectivity(wx.Panel):
             sizer.Add(
                 self.cmb_orientation, (5, 0), (1, 10), flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=7
             )
-            try:
-                sizer.Add(0, 0, (6, 0))
-            except TypeError:
-                sizer.AddStretchSpacer((6, 0))
+            sizer.Add(0, 0, (6, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
-    def GetConnSelected(self):
+    def GetConnSelected(self) -> Literal[4, 8]:
         if self.conect2D_4.GetValue():
             return 4
         else:
             return 8
 
-    def GetOrientation(self):
+    def GetOrientation(self) -> str:
         dic_ori = {_("Axial"): "AXIAL", _("Coronal"): "CORONAL", _("Sagital"): "SAGITAL"}
 
         return dic_ori[self.cmb_orientation.GetStringSelection()]
 
 
 class Panel3DConnectivity(wx.Panel):
-    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL | wx.NO_BORDER):
+    def __init__(
+        self, parent: wx.Window, ID: int = -1, style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER
+    ):
         wx.Panel.__init__(self, parent, ID, style=style)
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
         self.conect3D_18 = wx.RadioButton(self, -1, "18")
         self.conect3D_26 = wx.RadioButton(self, -1, "26")
 
         sizer = wx.GridBagSizer(5, 5)
 
-        try:
-            sizer.Add(0, 0, (0, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(
             wx.StaticText(self, -1, _("3D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5
         )
         sizer.Add(self.conect3D_6, (2, 0), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_18, (2, 1), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_26, (2, 2), flag=wx.LEFT, border=9)
-        try:
-            sizer.Add(0, 0, (3, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((3, 0))
+        sizer.Add(0, 0, (3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
-    def GetConnSelected(self):
+    def GetConnSelected(self) -> Literal[6, 18, 26]:
         if self.conect3D_6.GetValue():
             return 6
         elif self.conect3D_18.GetValue():
@@ -2829,14 +2826,20 @@ class Panel3DConnectivity(wx.Panel):
 
 
 class PanelFFillThreshold(wx.Panel):
-    def __init__(self, parent, config, ID=-1, style=wx.TAB_TRAVERSAL | wx.NO_BORDER):
+    def __init__(
+        self,
+        parent: wx.Window,
+        config: "FFillSegmentationConfig",
+        ID: int = -1,
+        style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER,
+    ) -> None:
         wx.Panel.__init__(self, parent, ID, style=style)
 
         self.config = config
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         import invesalius.project as prj
 
         project = prj.Project()
@@ -2861,21 +2864,27 @@ class PanelFFillThreshold(wx.Panel):
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanged, self.threshold)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.threshold)
 
-    def OnSlideChanged(self, evt):
+    def OnSlideChanged(self, evt: wx.Event) -> None:
         self.config.t0 = int(self.threshold.GetMinValue())
         self.config.t1 = int(self.threshold.GetMaxValue())
         print(self.config.t0, self.config.t1)
 
 
 class PanelFFillDynamic(wx.Panel):
-    def __init__(self, parent, config, ID=-1, style=wx.TAB_TRAVERSAL | wx.NO_BORDER):
+    def __init__(
+        self,
+        parent: wx.Window,
+        config: "FFillSegmentationConfig",
+        ID: int = -1,
+        style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER,
+    ):
         wx.Panel.__init__(self, parent, ID, style=style)
 
         self.config = config
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.use_ww_wl = wx.CheckBox(self, -1, _("Use WW&WL"))
         self.use_ww_wl.SetValue(self.config.use_ww_wl)
 
@@ -2891,17 +2900,11 @@ class PanelFFillDynamic(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        try:
-            sizer.Add(0, 0, (0, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        try:
-            sizer.Add(0, 0, (2, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((2, 0))
+        sizer.Add(0, 0, (2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _("Deviation")), (3, 0), (1, 6), flag=wx.LEFT, border=5)
 
@@ -2921,10 +2924,7 @@ class PanelFFillDynamic(wx.Panel):
         )
         sizer.Add(self.deviation_max, (4, 3))
 
-        try:
-            sizer.Add(0, 0, (5, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((5, 0))
+        sizer.Add(0, 0, (5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2934,23 +2934,29 @@ class PanelFFillDynamic(wx.Panel):
         self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
         self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
 
-    def OnSetUseWWWL(self, evt):
+    def OnSetUseWWWL(self, evt: wx.Event) -> None:
         self.config.use_ww_wl = self.use_ww_wl.GetValue()
 
-    def OnSetDeviation(self, evt):
+    def OnSetDeviation(self, evt: wx.Event) -> None:
         self.config.dev_max = self.deviation_max.GetValue()
         self.config.dev_min = self.deviation_min.GetValue()
 
 
 class PanelFFillConfidence(wx.Panel):
-    def __init__(self, parent, config, ID=-1, style=wx.TAB_TRAVERSAL | wx.NO_BORDER):
+    def __init__(
+        self,
+        parent: wx.Window,
+        config: "FFillSegmentationConfig",
+        ID: int = -1,
+        style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER,
+    ):
         wx.Panel.__init__(self, parent, ID, style=style)
 
         self.config = config
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.use_ww_wl = wx.CheckBox(self, -1, _("Use WW&WL"))
         self.use_ww_wl.SetValue(self.config.use_ww_wl)
 
@@ -2974,17 +2980,11 @@ class PanelFFillConfidence(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        try:
-            sizer.Add(0, 0, (0, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        try:
-            sizer.Add(0, 0, (2, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((2, 0))
+        sizer.Add(0, 0, (2, 0))
 
         sizer.Add(
             wx.StaticText(self, -1, _("Multiplier")),
@@ -3004,10 +3004,7 @@ class PanelFFillConfidence(wx.Panel):
         )
         sizer.Add(self.spin_iters, (4, 3), (1, 2))
 
-        try:
-            sizer.Add(0, 0, (5, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((5, 0))
+        sizer.Add(0, 0, (5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -3017,22 +3014,24 @@ class PanelFFillConfidence(wx.Panel):
         self.spin_mult.Bind(wx.EVT_SPINCTRL, self.OnSetMult)
         self.spin_iters.Bind(wx.EVT_SPINCTRL, self.OnSetIters)
 
-    def OnSetUseWWWL(self, evt):
+    def OnSetUseWWWL(self, evt: wx.Event) -> None:
         self.config.use_ww_wl = self.use_ww_wl.GetValue()
 
-    def OnSetMult(self, evt):
+    def OnSetMult(self, evt: wx.Event) -> None:
         self.config.confid_mult = self.spin_mult.GetValue()
 
-    def OnSetIters(self, evt):
+    def OnSetIters(self, evt: wx.Event) -> None:
         self.config.confid_iters = self.spin_iters.GetValue()
 
 
 class PanelFFillProgress(wx.Panel):
-    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL | wx.NO_BORDER):
+    def __init__(
+        self, parent: wx.Window, ID: int = -1, style: int = wx.TAB_TRAVERSAL | wx.NO_BORDER
+    ) -> None:
         wx.Panel.__init__(self, parent, ID, style=style)
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.progress = wx.Gauge(self, -1)
         self.lbl_progress_caption = wx.StaticText(self, -1, _("Elapsed time:"))
         self.lbl_time = wx.StaticText(self, -1, _("00:00:00"))
@@ -3048,22 +3047,22 @@ class PanelFFillProgress(wx.Panel):
         main_sizer.Fit(self)
         main_sizer.SetSizeHints(self)
 
-    def StartTimer(self):
+    def StartTimer(self) -> None:
         self.t0 = time.time()
 
-    def StopTimer(self):
+    def StopTimer(self) -> None:
         fmt = "%H:%M:%S"
         self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
         self.progress.SetValue(0)
 
-    def Pulse(self):
+    def Pulse(self) -> None:
         fmt = "%H:%M:%S"
         self.lbl_time.SetLabel(time.strftime(fmt, time.gmtime(time.time() - self.t0)))
         self.progress.Pulse()
 
 
 class FFillOptionsDialog(wx.Dialog):
-    def __init__(self, title, config):
+    def __init__(self, title: str, config: "FFillSegmentationConfig"):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -3076,7 +3075,7 @@ class FFillOptionsDialog(wx.Dialog):
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         """
         Create the widgets.
         """
@@ -3092,28 +3091,28 @@ class FFillOptionsDialog(wx.Dialog):
         self.panel3dcon = Panel3DConnectivity(self, style=border_style | wx.TAB_TRAVERSAL)
 
         if self.config.target == "2D":
-            self.panel_target.target_2d.SetValue(1)
+            self.panel_target.target_2d.SetValue(True)
             self.panel2dcon.Enable(True)
             self.panel3dcon.Enable(False)
         else:
-            self.panel_target.target_3d.SetValue(1)
+            self.panel_target.target_3d.SetValue(True)
             self.panel3dcon.Enable(True)
             self.panel2dcon.Enable(False)
 
         # Connectivity 2D
         if self.config.con_2d == 8:
-            self.panel2dcon.conect2D_8.SetValue(1)
+            self.panel2dcon.conect2D_8.SetValue(True)
         else:
-            self.panel2dcon.conect2D_4.SetValue(1)
+            self.panel2dcon.conect2D_4.SetValue(True)
             self.config.con_2d = 4
 
         # Connectivity 3D
         if self.config.con_3d == 18:
-            self.panel3dcon.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(True)
         elif self.config.con_3d == 26:
-            self.panel3dcon.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(True)
         else:
-            self.panel3dcon.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(True)
 
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
@@ -3140,10 +3139,10 @@ class FFillOptionsDialog(wx.Dialog):
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnBtnClose(self, evt):
+    def OnBtnClose(self, evt: wx.Event) -> None:
         self.Close()
 
-    def OnSetRadio(self, evt):
+    def OnSetRadio(self, evt: wx.Event) -> None:
         # Target
         if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
@@ -3168,7 +3167,7 @@ class FFillOptionsDialog(wx.Dialog):
         elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-    def OnClose(self, evt):
+    def OnClose(self, evt: wx.Event) -> None:
         print("ONCLOSE")
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_MASK_FFILL)
@@ -3177,7 +3176,7 @@ class FFillOptionsDialog(wx.Dialog):
 
 
 class SelectPartsOptionsDialog(wx.Dialog):
-    def __init__(self, config):
+    def __init__(self, config: "SelectPartConfig"):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -3192,18 +3191,18 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.target_name = wx.TextCtrl(self, -1)
         self.target_name.SetValue(self.config.mask_name)
 
         # Connectivity 3D
         self.panel3dcon = Panel3DConnectivity(self)
         if self.config.con_3d == 18:
-            self.panel3dcon.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(True)
         elif self.config.con_3d == 26:
-            self.panel3dcon.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(True)
         else:
-            self.panel3dcon.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(True)
 
         self.btn_ok = wx.Button(self, wx.ID_OK)
         self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
@@ -3236,19 +3235,19 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.Event) -> None:
         self.SetReturnCode(wx.OK)
         self.Close()
 
-    def OnCancel(self, evt):
+    def OnCancel(self, evt: wx.Event) -> None:
         self.SetReturnCode(wx.CANCEL)
         self.Close()
 
-    def OnChar(self, evt):
+    def OnChar(self, evt: wx.Event) -> None:
         evt.Skip()
         self.config.mask_name = self.target_name.GetValue()
 
-    def OnSetRadio(self, evt):
+    def OnSetRadio(self, evt: wx.Event) -> None:
         if self.panel3dcon.conect3D_6.GetValue():
             self.config.con_3d = 6
         elif self.panel3dcon.conect3D_18.GetValue():
@@ -3256,7 +3255,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-    def OnClose(self, evt):
+    def OnClose(self, evt: wx.Event) -> None:
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
@@ -3266,10 +3265,10 @@ class SelectPartsOptionsDialog(wx.Dialog):
 class FFillSegmentationOptionsDialog(wx.Dialog):
     def __init__(
         self,
-        config,
-        ID=-1,
-        title=_("Region growing"),
-        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
+        config: "FFillSegmentationConfig",
+        ID: int = -1,
+        title: str = _("Region growing"),
+        style: int = wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
     ):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
@@ -3277,7 +3276,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         """
         Create the widgets.
         """
@@ -3293,28 +3292,28 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.panel3dcon = Panel3DConnectivity(self, style=border_style | wx.TAB_TRAVERSAL)
 
         if self.config.target == "2D":
-            self.panel_target.target_2d.SetValue(1)
+            self.panel_target.target_2d.SetValue(True)
             self.panel2dcon.Enable(True)
             self.panel3dcon.Enable(False)
         else:
-            self.panel_target.target_3d.SetValue(1)
+            self.panel_target.target_3d.SetValue(True)
             self.panel3dcon.Enable(True)
             self.panel2dcon.Enable(False)
 
         # Connectivity 2D
         if self.config.con_2d == 8:
-            self.panel2dcon.conect2D_8.SetValue(1)
+            self.panel2dcon.conect2D_8.SetValue(True)
         else:
-            self.panel2dcon.conect2D_4.SetValue(1)
+            self.panel2dcon.conect2D_4.SetValue(True)
             self.config.con_2d = 4
 
         # Connectivity 3D
         if self.config.con_3d == 18:
-            self.panel3dcon.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(True)
         elif self.config.con_3d == 26:
-            self.panel3dcon.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(True)
         else:
-            self.panel3dcon.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(True)
 
         self.cmb_method = wx.ComboBox(
             self, -1, choices=(_("Dynamic"), _("Threshold"), _("Confidence")), style=wx.CB_READONLY
@@ -3354,30 +3353,15 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         # Sizer
         sizer = wx.GridBagSizer(2, 2)
 
-        try:
-            sizer.Add(0, 0, (0, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(wx.StaticText(self, -1, _("Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
-        try:
-            sizer.Add(0, 0, (2, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((2, 0))
+        sizer.Add(0, 0, (2, 0))
         sizer.Add(self.panel_target, (3, 0), (1, 6), flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=7)
-        try:
-            sizer.Add(0, 0, (4, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((4, 0))
+        sizer.Add(0, 0, (4, 0))
         sizer.Add(self.panel2dcon, (5, 0), (1, 6), flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=7)
-        try:
-            sizer.Add(0, 0, (6, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((6, 0))
+        sizer.Add(0, 0, (6, 0))
         sizer.Add(self.panel3dcon, (7, 0), (1, 6), flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=7)
-        try:
-            sizer.Add(0, 0, (8, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((8, 0))
+        sizer.Add(0, 0, (8, 0))
 
         sizer.Add(
             wx.StaticText(self, -1, _("Method")),
@@ -3388,10 +3372,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         )
         sizer.Add(self.cmb_method, (9, 1), (1, 5), flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=7)
 
-        try:
-            sizer.Add(0, 0, (10, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((10, 0))
+        sizer.Add(0, 0, (10, 0))
 
         if self.config.method == "dynamic":
             self.cmb_method.SetSelection(0)
@@ -3425,22 +3406,13 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             )
             self.config.method = "threshold"
 
-        try:
-            sizer.Add(0, 0, (12, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((12, 0))
+        sizer.Add(0, 0, (12, 0))
         sizer.Add(
             self.panel_ffill_progress, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5
         )
-        try:
-            sizer.Add(0, 0, (14, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((14, 0))
+        sizer.Add(0, 0, (14, 0))
         sizer.Add(self.close_btn, (15, 0), (1, 6), flag=wx.ALIGN_RIGHT | wx.RIGHT, border=5)
-        try:
-            sizer.Add(0, 0, (16, 0))
-        except TypeError:
-            sizer.AddStretchSpacer((16, 0))
+        sizer.Add(0, 0, (16, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -3451,7 +3423,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnSetRadio(self, evt):
+    def OnSetRadio(self, evt: wx.Event) -> None:
         # Target
         if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
@@ -3476,7 +3448,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-    def OnSetMethod(self, evt):
+    def OnSetMethod(self, evt: wx.Event) -> None:
         item_panel = self.GetSizer().FindItemAtPosition((11, 0)).GetWindow()
 
         if self.cmb_method.GetSelection() == 0:
@@ -3500,10 +3472,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.GetSizer().Fit(self)
         self.Layout()
 
-    def OnBtnClose(self, evt):
+    def OnBtnClose(self, evt: wx.Event) -> None:
         self.Close()
 
-    def OnClose(self, evt):
+    def OnClose(self, evt: wx.Event) -> None:
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
@@ -3513,16 +3485,16 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 class CropOptionsDialog(wx.Dialog):
     def __init__(
         self,
-        config,
-        ID=-1,
-        title=_("Crop mask"),
-        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
+        config: "CropMaskConfig",
+        ID: int = -1,
+        title: str = _("Crop mask"),
+        style: int = wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
     ):
         self.config = config
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
         self._init_gui()
 
-    def UpdateValues(self, limits):
+    def UpdateValues(self, limits: Iterable[float]) -> None:
         xi, xf, yi, yf, zi, zf = limits
 
         self.tx_axial_i.SetValue(str(zi))
@@ -3534,7 +3506,7 @@ class CropOptionsDialog(wx.Dialog):
         self.tx_coronal_i.SetValue(str(yi))
         self.tx_coronal_f.SetValue(str(yf))
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         p = wx.Panel(
             self, -1, style=wx.TAB_TRAVERSAL | wx.CLIP_CHILDREN | wx.FULL_REPAINT_ON_RESIZE
         )
@@ -3596,12 +3568,9 @@ class CropOptionsDialog(wx.Dialog):
         gbs_button.Add(btn_ok, (0, 1))
 
         gbs_principal.Add(gbs, (0, 0), flag=wx.ALL | wx.EXPAND)
-        try:
-            gbs_principal.Add(0, 0, (1, 0))
-            gbs_principal.Add(0, 0, (2, 0))
-        except TypeError:
-            gbs_principal.AddStretchSpacer((1, 0))
-            gbs_principal.AddStretchSpacer((2, 0))
+        gbs_principal.Add(0, 0, (1, 0))
+        gbs_principal.Add(0, 0, (2, 0))
+
         gbs_principal.Add(gbs_button, (3, 0), flag=wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
@@ -3622,13 +3591,13 @@ class CropOptionsDialog(wx.Dialog):
         btn_cancel.Bind(wx.EVT_BUTTON, self.OnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.Event) -> None:
         self.config.dlg_visible = False
         Publisher.sendMessage("Crop mask")
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
 
-    def OnClose(self, evt):
+    def OnClose(self, evt: wx.Event) -> None:
         self.config.dlg_visible = False
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
@@ -3636,7 +3605,7 @@ class CropOptionsDialog(wx.Dialog):
 
 
 class FillHolesAutoDialog(wx.Dialog):
-    def __init__(self, title):
+    def __init__(self, title: str):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -3646,7 +3615,7 @@ class FillHolesAutoDialog(wx.Dialog):
         )
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         if sys.platform == "win32":
             border_style = wx.SIMPLE_BORDER
         else:
@@ -3662,9 +3631,9 @@ class FillHolesAutoDialog(wx.Dialog):
         self.panel2dcon.Enable(True)
         self.panel3dcon.Enable(False)
 
-        self.panel_target.target_2d.SetValue(1)
-        self.panel2dcon.conect2D_4.SetValue(1)
-        self.panel3dcon.conect3D_6.SetValue(1)
+        self.panel_target.target_2d.SetValue(True)
+        self.panel2dcon.conect2D_4.SetValue(True)
+        self.panel3dcon.conect3D_6.SetValue(True)
 
         self.apply_btn = wx.Button(self, wx.ID_APPLY)
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
@@ -3713,7 +3682,7 @@ class FillHolesAutoDialog(wx.Dialog):
         self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
 
-    def OnApply(self, evt):
+    def OnApply(self, evt: wx.Event) -> None:
         if self.panel_target.target_2d.GetValue():
             target = "2D"
             conn = self.panel2dcon.GetConnSelected()
@@ -3732,11 +3701,11 @@ class FillHolesAutoDialog(wx.Dialog):
 
         Publisher.sendMessage("Fill holes automatically", parameters=parameters)
 
-    def OnBtnClose(self, evt):
+    def OnBtnClose(self, evt: wx.Event) -> None:
         self.Close()
         self.Destroy()
 
-    def OnSetRadio(self, evt):
+    def OnSetRadio(self, evt: wx.Event) -> None:
         # Target
         if self.panel_target.target_2d.GetValue():
             self.panel2dcon.Enable(True)
@@ -3747,7 +3716,7 @@ class FillHolesAutoDialog(wx.Dialog):
 
 
 class MaskDensityDialog(wx.Dialog):
-    def __init__(self, title):
+    def __init__(self, title: str) -> None:
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -3758,7 +3727,7 @@ class MaskDensityDialog(wx.Dialog):
         self._init_gui()
         self._bind_events()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         import invesalius.project as prj
 
         project = prj.Project()
@@ -3831,16 +3800,16 @@ class MaskDensityDialog(wx.Dialog):
 
         self.CenterOnScreen()
 
-    def _create_selectable_label_text(self, text):
+    def _create_selectable_label_text(self, text: str) -> wx.TextCtrl:
         label = wx.TextCtrl(self, -1, style=wx.TE_READONLY)
         label.SetValue(text)
         #  label.SetBackgroundColour(self.GetBackgroundColour())
         return label
 
-    def _bind_events(self):
+    def _bind_events(self) -> None:
         self.calc_button.Bind(wx.EVT_BUTTON, self.OnCalcButton)
 
-    def OnCalcButton(self, evt):
+    def OnCalcButton(self, evt: wx.Event) -> None:
         from invesalius.data.slice_ import Slice
 
         mask = self.cmb_mask.GetClientData(self.cmb_mask.GetSelection())
@@ -3872,7 +3841,12 @@ class MaskDensityDialog(wx.Dialog):
 
 
 class ObjectCalibrationDialog(wx.Dialog):
-    def __init__(self, tracker, pedal_connector, neuronavigation_api):
+    def __init__(
+        self,
+        tracker: "Tracker",
+        pedal_connector: "PedalConnector",
+        neuronavigation_api: "NeuronavigationApi",
+    ):
         self.tracker = tracker
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
@@ -3899,7 +3873,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self._init_pedal()
         self.InitializeObject()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
         self.ren = vtkRenderer()
@@ -3907,8 +3881,8 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         # Initialize list of buttons and txtctrls for wx objects
         self.btns_coord = [None] * 4
-        self.text_actors = [None] * 4
-        self.ball_actors = [None] * 4
+        self.text_actors: List[Optional[vtkFollower]] = [None] * 4
+        self.ball_actors: List[Optional[vtkActor]] = [None] * 4
         self.txt_coord = [list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
@@ -4010,7 +3984,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def _init_pedal(self):
+    def _init_pedal(self) -> None:
         def set_fiducial_callback(state):
             index = self.buttons.focused_index
             if state and index is not None:
@@ -4021,7 +3995,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         )
         self.Bind(wx.EVT_BUTTON, self.OnOk)
 
-    def ObjectImportDialog(self):
+    def ObjectImportDialog(self) -> Literal[0, 1]:
         msg = _("Would like to use InVesalius default object?")
         if sys.platform == "darwin":
             dlg = wx.MessageDialog(None, "", msg, wx.ICON_QUESTION | wx.YES_NO)
@@ -4035,7 +4009,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:  # answer == wx.ID_NO:
             return 0
 
-    def ShowObject(self, polydata):
+    def ShowObject(self, polydata: "LinearMeasure | AngularMeasure") -> None:
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(
                 _("InVesalius was not able to import this surface"), _("Import surface error")
@@ -4068,7 +4042,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ball_actors[2], self.text_actors[2] = self.OnCreateObjectText("Anterior", (23, 0, 0))
 
         # Match actor colors with fiducial buttons
-        def set_actor_colors(n, color_float):
+        def set_actor_colors(n: int, color_float: Sequence[float]) -> None:
             if n != const.OBJECT_FIDUCIAL_FIXED:
                 self.ball_actors[n].GetProperty().SetColor(color_float)
                 self.text_actors[n].GetProperty().SetColor(color_float)
@@ -4082,7 +4056,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.interactor.Render()
 
-    def ConfigureObject(self):
+    def ConfigureObject(self) -> bool:
         use_default_coil = self.ObjectImportDialog()
 
         if use_default_coil:
@@ -4110,7 +4084,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         return True
 
-    def InitializeObject(self):
+    def InitializeObject(self) -> None:
         success = self.ConfigureObject()
         if success:
             # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
@@ -4120,7 +4094,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.polydata = pu.LoadPolydata(path=object_path)
             self.ShowObject(polydata=self.polydata)
 
-    def OnCreateObjectText(self, name, coord):
+    def OnCreateObjectText(self, name: str, coord: Sequence[float]) -> Tuple[vtkActor, vtkFollower]:
         ball_source = vtkSphereSource()
         ball_source.SetRadius(3)
         mapper = vtkPolyDataMapper()
@@ -4146,11 +4120,11 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ren.AddActor(ball_actor)
         return ball_actor, tactor
 
-    def IsObjectFiducialSet(self, fiducial_index):
+    def IsObjectFiducialSet(self, fiducial_index: int) -> bool:
         fiducial = self.obj_fiducials[fiducial_index]
         return not np.isnan(fiducial).any()
 
-    def OnObjectFiducialButton(self, index, evt):
+    def OnObjectFiducialButton(self, index: int, evt) -> None:
         button = self.buttons[index]
 
         if button is self.buttons.focused:
@@ -4160,7 +4134,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:
             self.buttons.Focus(index)
 
-    def SetObjectFiducial(self, fiducial_index):
+    def SetObjectFiducial(self, fiducial_index: int) -> None:
         if not self.tracker.IsTrackerInitialized():
             ShowNavigationTrackerWarning(0, "choose")
             return
@@ -4215,22 +4189,22 @@ class ObjectCalibrationDialog(wx.Dialog):
         if fiducial_index == const.OBJECT_FIDUCIAL_ANTERIOR and not self.show_sensor_options:
             self.SetObjectFiducial(const.OBJECT_FIDUCIAL_FIXED)
 
-    def ResetObjectFiducials(self):
+    def ResetObjectFiducials(self) -> None:
         for m in range(0, 4):
             self.ResetObjectFiducial(m)
         self.buttons.Update()
 
-    def ResetObjectFiducial(self, index):
+    def ResetObjectFiducial(self, index: int) -> None:
         self.obj_fiducials[index, :] = np.full([1, 3], np.nan)
         self.obj_orients[index, :] = np.full([1, 3], np.nan)
         for coord_index in range(0, 3):
             self.txt_coord[index][coord_index].SetLabel("-")
         self.buttons.Unset(index)
 
-    def OnReset(self, evt):
+    def OnReset(self, evt) -> None:
         self.ResetObjectFiducials()
 
-    def OnChooseReferenceMode(self, evt):
+    def OnChooseReferenceMode(self, evt) -> None:
         # When ref mode is changed the tracker coordinates are set to nan
         # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
         # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
@@ -4251,7 +4225,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         # Used to update choice sensor controls
         self.Layout()
 
-    def OnChoiceFTSensor(self, evt):
+    def OnChoiceFTSensor(self, evt) -> None:
         if evt.GetSelection():
             self.obj_ref_id = 3
         else:
@@ -4260,7 +4234,7 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(self):
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.coil_path, self.polydata
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.Event) -> None:
         if evt.GetId() == wx.ID_OK:
             # This should always be called when the dialog is closed. Seems to be working correctly.
             self.pedal_connector.remove_callback("fiducial", panel=self)
@@ -4269,7 +4243,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
 
 class ICPCorregistrationDialog(wx.Dialog):
-    def __init__(self, navigation, tracker):
+    def __init__(self, navigation: "Navigation", tracker: "Tracker"):
         import invesalius.project as prj
 
         self.tracker = tracker
@@ -4303,7 +4277,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
         self.ren = vtkRenderer()
@@ -4397,7 +4371,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def LoadActor(self):
+    def LoadActor(self) -> None:
         """
         Load the selected actor from the project (self.surface) into the scene
         :return:
@@ -4440,7 +4414,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def RemoveAllActors(self):
+    def RemoveAllActors(self) -> None:
         self.ren.RemoveAllViewProps()
         self.actors_static_points = []
         self.point_coord = []
@@ -4452,21 +4426,21 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def RemoveSinglePointActor(self):
+    def RemoveSinglePointActor(self) -> None:
         self.ren.RemoveActor(self.actors_static_points[-1])
         self.actors_static_points.pop()
         self.point_coord.pop()
         self.collect_points.SetValue(str(int(self.collect_points.GetValue()) - 1))
         self.interactor.Render()
 
-    def GetCurrentCoord(self):
+    def GetCurrentCoord(self) -> Tuple[Tuple, List[bool]]:
         coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
         coord, _ = dcr.corregistrate_dynamic(
             (self.m_change, 0), coord_raw, const.DEFAULT_REF_MODE, [None, None]
         )
         return coord[:3], marker_visibilities
 
-    def AddMarker(self, size, colour, coord):
+    def AddMarker(self, size: int, colour: Tuple[int, int, int], coord: np.ndarray) -> None:
         """
         Points are rendered into the scene. These points give visual information about the registration.
         :param size: value of the marker size
@@ -4509,11 +4483,11 @@ class ICPCorregistrationDialog(wx.Dialog):
         if self.progress.GetValue() != 0:
             self.SetProgress(0)
 
-    def SetProgress(self, progress):
+    def SetProgress(self, progress: float) -> None:
         self.progress.SetValue(int(progress * 100))
         self.interactor.Render()
 
-    def vtkmatrix_to_numpy(self, matrix):
+    def vtkmatrix_to_numpy(self, matrix: vtkMatrix4x4) -> np.ndarray:
         """
         Copies the elements of a vtkMatrix4x4 into a numpy array.
 
@@ -4527,7 +4501,7 @@ class ICPCorregistrationDialog(wx.Dialog):
                 m[i, j] = matrix.GetElement(i, j)
         return m
 
-    def SetCameraVolume(self, position):
+    def SetCameraVolume(self, position: Sequence[float]) -> None:
         """
         Positioning of the camera based on the acquired point
         :param position: x, y, z of the last acquired point
@@ -4556,12 +4530,14 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.interactor.Render()
 
-    def CheckTransformedPointsDistribution(self, points):
+    def CheckTransformedPointsDistribution(
+        self, points: Union[Sequence[float], np.ndarray]
+    ) -> np.floating:
         from scipy.spatial.distance import pdist
 
         return np.mean(pdist(points))
 
-    def ErrorEstimation(self, surface, points):
+    def ErrorEstimation(self, surface, points: np.ndarray) -> np.floating:
         """
         Estimation of the average squared distance between the cloud of points to the closest mesh
         :param surface: Surface polydata of the scene
@@ -4585,7 +4561,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.mean(error)
 
-    def DistanceBetweenPointAndSurface(self, surface, points):
+    def DistanceBetweenPointAndSurface(self, surface, points: np.ndarray) -> np.floating:
         """
         Estimation of the squared distance between the point to the closest mesh
         :param surface: Surface polydata of the scene
@@ -4606,7 +4582,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.sqrt(float(d))
 
-    def OnComboName(self, evt):
+    def OnComboName(self, evt: wx.CommandEvent) -> None:
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
@@ -4614,20 +4590,23 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.RemoveAllActors()
         self.LoadActor()
 
-    def OnChoiceICPMethod(self, evt):
+    def OnChoiceICPMethod(self, evt) -> None:
         self.icp_mode = evt.GetSelection()
 
-    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(
+        self, evt: Optional[wx.Event] = None, btn: Optional[wx.ToggleButton] = None
+    ) -> None:
+        assert btn is not None, "btn must be provided"
         value = btn.GetValue()
         if value:
             self.timer.Start(500)
         else:
             self.timer.Stop()
 
-    def HandleContinuousAcquisition(self, evt):
+    def HandleContinuousAcquisition(self, evt: wx.Event) -> None:
         self.CreatePoint()
 
-    def CreatePoint(self, evt=None):
+    def CreatePoint(self, evt=None) -> None:
         current_coord, marker_visibilities = self.GetCurrentCoord()
 
         probe_visible, head_visible, _ = marker_visibilities
@@ -4644,7 +4623,7 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.txt_markers_not_detected.VisibilityOn()
             self.interactor.Render()
 
-    def OnDeleteLastPoint(self):
+    def OnDeleteLastPoint(self) -> None:
         # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
@@ -4652,7 +4631,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.RemoveSinglePointActor()
 
-    def OnResetPoints(self, evt):
+    def OnResetPoints(self, evt) -> None:
         # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
@@ -4661,7 +4640,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.RemoveAllActors()
         self.LoadActor()
 
-    def OnICP(self, evt):
+    def OnICP(self, evt) -> None:
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
@@ -4782,11 +4761,11 @@ class EfieldConfiguration(wx.Dialog):
         self.brain_surface = None
         self.scalp_surface = None
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         tooltip = _("Load Brain Meshes")
         btn_act = wx.Button(self, -1, _("Load"), size=wx.Size(100, 23))
         btn_act.SetToolTip(tooltip)
-        btn_act.Enable(1)
+        btn_act.Enable(True)
         btn_act.Bind(wx.EVT_BUTTON, self.OnAddMeshes)
 
         txt_brain_surface = wx.StaticText(self, -1, _("Select the brain surface:"))
@@ -4846,17 +4825,17 @@ class EfieldConfiguration(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def OnComboNameBrainSurface(self, evt):
+    def OnComboNameBrainSurface(self, evt) -> Union[str, vtkPolyData]:
         surface_index = evt.GetSelection()
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         return self.brain_surface
 
-    def OnComboNameScalpSurface(self, evt):
+    def OnComboNameScalpSurface(self, evt) -> Union[str, vtkPolyData]:
         surface_index = evt.GetSelection()
         self.scalp_surface = self.proj.surface_dict[surface_index].polydata
         return self.scalp_surface
 
-    def OnAddMeshes(self, evt):
+    def OnAddMeshes(self, evt) -> None:
         filename = ShowImportMeshFilesDialog()
         if filename:
             convert_to_inv = ImportMeshCoordSystem()
@@ -4865,7 +4844,13 @@ class EfieldConfiguration(wx.Dialog):
 
 
 class CreateBrainTargetDialog(wx.Dialog):
-    def __init__(self, marker, mTMS=None, brain_target=False, brain_actor=None):
+    def __init__(
+        self,
+        marker,
+        mTMS: Optional["mTMS"] = None,
+        brain_target: bool = False,
+        brain_actor: Optional[vtkActor] = None,
+    ):
         import invesalius.project as prj
 
         self.obj_actor = None
@@ -4904,7 +4889,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
         self.ren = vtkRenderer()
@@ -5098,7 +5083,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def get_vtk_mouse_position(self):
+    def get_vtk_mouse_position(self) -> Tuple[int, int]:
         """
         Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
         tuple with X and Y position.
@@ -5119,7 +5104,7 @@ class CreateBrainTargetDialog(wx.Dialog):
             my *= scale
         return int(mx), int(my)
 
-    def OnCreateDummyCoil(self, target_actor):
+    def OnCreateDummyCoil(self, target_actor: vtkActor) -> None:
         if self.dummy_coil_actor:
             self.RemoveActor(self.dummy_coil_actor)
 
@@ -5156,7 +5141,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.dummy_coil_actor.PickableOff()
         self.ren.AddActor(self.dummy_coil_actor)
 
-    def OnWheelMouseClick(self, obj, evt):
+    def OnWheelMouseClick(self, obj, evt) -> None:
         x, y = self.get_vtk_mouse_position()
         self.picker.Pick(x, y, 0, self.ren)
         if self.picker.GetActor():
@@ -5175,7 +5160,7 @@ class CreateBrainTargetDialog(wx.Dialog):
                 self.OnCreateDummyCoil(self.marker_actor)
             self.interactor.Render()
 
-    def OnCrossMouseClick(self, obj, evt):
+    def OnCrossMouseClick(self, obj, evt) -> None:
         if self.brain_target:
             self.obj_actor.PickableOn()
             if self.peel_brain_actor:
@@ -5198,17 +5183,17 @@ class CreateBrainTargetDialog(wx.Dialog):
                 self.peel_brain_actor.PickableOff()
             self.interactor.Render()
 
-    def OnCheckBoxScalp(self, evt=None):
+    def OnCheckBoxScalp(self, evt=None) -> None:
         status = self.chk_show_surface.GetValue()
         self.obj_actor.SetVisibility(status)
         self.interactor.Render()
 
-    def OnCheckBoxBrain(self, evt=None):
+    def OnCheckBoxBrain(self, evt=None) -> None:
         status = self.chk_show_brain_surface.GetValue()
         self.brain_actor.SetVisibility(status)
         self.interactor.Render()
 
-    def OnResetOrientation(self, evt=None):
+    def OnResetOrientation(self, evt=None) -> None:
         self.rotationX = self.rotationY = self.rotationZ = 0
         self.slider_rotation_x.SetValue(0)
         self.slider_rotation_y.SetValue(0)
@@ -5216,22 +5201,22 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnRotationX(self, evt):
+    def OnRotationX(self, evt: Union[wx.CommandEvent, wx.ThreadEvent]) -> None:
         self.rotationX = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnRotationY(self, evt):
+    def OnRotationY(self, evt: Union[wx.CommandEvent, wx.ThreadEvent]) -> None:
         self.rotationY = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnRotationZ(self, evt):
+    def OnRotationZ(self, evt: Union[wx.CommandEvent, wx.ThreadEvent]) -> None:
         self.rotationZ = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnDepth(self, evt):
+    def OnDepth(self, evt: Union[wx.KeyEvent, wx.ListEvent, wx.TreeEvent]) -> None:
         if evt.GetKeyCode() == wx.WXK_UP:
             depth = 1
         elif evt.GetKeyCode() == wx.WXK_DOWN:
@@ -5241,30 +5226,30 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.marker_actor.AddPosition(0, 0, depth)
         self.interactor.Render()
 
-    def OnPressLeftButton(self, evt, obj):
+    def OnPressLeftButton(self, evt, obj) -> None:
         self.spinning = True
 
-    def OnReleaseLeftButton(self, evt, obj):
+    def OnReleaseLeftButton(self, evt, obj) -> None:
         self.spinning = False
 
-    def OnSpinMove(self, evt, obj):
+    def OnSpinMove(self, evt, obj) -> None:
         self.interactor.SetInteractorStyle(self.actor_style)
         if self.spinning:
             evt.Spin()
             evt.OnRightButtonDown()
 
-    def OnZoomMove(self, evt, obj):
+    def OnZoomMove(self, evt, obj) -> None:
         self.interactor.SetInteractorStyle(self.camera_style)
         if obj == "MouseWheelForwardEvent":
             self.camera_style.OnMouseWheelForward()
         else:
             self.camera_style.OnMouseWheelBackward()
 
-    def OnChangeView(self, evt):
+    def OnChangeView(self, evt) -> None:
         self.ren.GetActiveCamera().Roll(90)
         self.interactor.Render()
 
-    def OnComboNameBrainSurface(self, evt):
+    def OnComboNameBrainSurface(self, evt) -> None:
         surface_index = evt.GetSelection()
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         if self.brain_actor:
@@ -5272,7 +5257,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.brain_actor = self.LoadActor(self.brain_surface)
         self.chk_show_brain_surface.SetValue(True)
 
-    def OnComboNameScalpSurface(self, evt):
+    def OnComboNameScalpSurface(self, evt) -> None:
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
@@ -5289,7 +5274,11 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.coil_pose_actor = self.LoadTarget()
         self.chk_show_surface.SetValue(True)
 
-    def LoadCenterBrainTarget(self, coil_target_position, coil_target_orientation):
+    def LoadCenterBrainTarget(
+        self,
+        coil_target_position: Union[Sequence, np.ndarray],
+        coil_target_orientation: Union[Sequence, np.ndarray],
+    ) -> None:
         m_coil = dco.coordinates_to_transformation_matrix(
             position=coil_target_position,
             orientation=coil_target_orientation,
@@ -5317,7 +5306,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         print("Adding brain markers")
 
-    def LoadTarget(self):
+    def LoadTarget(self) -> vtkActor:
         coord_flip = list(self.marker)
         coord_flip[1] = -coord_flip[1]
         if self.brain_target:
@@ -5352,7 +5341,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return marker_actor
 
-    def LoadActor(self, surface):
+    def LoadActor(self, surface: vtkPolyData) -> vtkActor:
         """
         Load the selected actor from the project (self.surface) into the scene
         :return:
@@ -5374,16 +5363,21 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return obj_actor
 
-    def RemoveActor(self, actor):
+    def RemoveActor(self, actor: vtkActor) -> None:
         self.ren.RemoveActor(actor)
         self.interactor.Render()
 
-    def RemoveAllActor(self):
+    def RemoveAllActor(self) -> None:
         self.ren.RemoveAllViewProps()
         self.ren.ResetCamera()
         self.interactor.Render()
 
-    def AddTarget(self, coord_flip, colour=[0.0, 0.0, 1.0], scale=10):
+    def AddTarget(
+        self,
+        coord_flip: Sequence[float],
+        colour: MutableSequence[float] = [0.0, 0.0, 1.0],
+        scale: float = 10,
+    ):
         rx, ry, rz = coord_flip[3:]
         if rx is None:
             coord = self.Versor(self.CenterOfMass(self.brain_surface), coord_flip[:3])
@@ -5481,7 +5475,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return actor
 
-    def vtkmatrix2numpy(self, matrix):
+    def vtkmatrix2numpy(self, matrix: vtkMatrix4x4) -> np.ndarray:
         """
         Copies the elements of a vtkMatrix4x4 into a numpy array.
         param matrix: The matrix to be copied into an array.
@@ -5494,7 +5488,9 @@ class CreateBrainTargetDialog(wx.Dialog):
                 m[i, j] = matrix.GetElement(i, j)
         return m
 
-    def ICP(self, coord, center, surface):
+    def ICP(
+        self, coord: Sequence[float], center: Sequence, surface: vtkPolyData
+    ) -> Tuple[int, int, int, None, None, None]:
         """
         Apply ICP transforms to fit the spiral points to the surface
         Args:
@@ -5565,14 +5561,14 @@ class CreateBrainTargetDialog(wx.Dialog):
         # self.ActorCollection.AddItem(actor)
         # self.interactor.Render()
         # coord = p[0], p[1], p[2], center[3], center[4], center[5]
-        coord = p[0], p[1], p[2], None, None, None
+        ret = p[0], p[1], p[2], None, None, None
 
-        return coord
+        return ret
 
         # p[1] = -p[1]
         # self.icp_points.append(p)
 
-    def CreateSphere(self, center, radius):
+    def CreateSphere(self, center: Sequence[float], radius: float) -> vtkPolyData:
         point = vtkSphereSource()
         point.SetCenter(center)
         point.SetRadius(radius)
@@ -5591,7 +5587,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return point.GetOutput()
 
-    def CreateGrid(self, resolution, space_x, space_y):
+    def CreateGrid(self, resolution: int, space_x: float, space_y: float) -> List[np.ndarray]:
         minX, maxX, minY, maxY = -space_x, space_x, -space_y, space_y
         # create one-dimensional arrays for x and y
         x = np.linspace(minX, maxX, resolution)
@@ -5599,7 +5595,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return np.meshgrid(x, y)
 
-    def OnCreateRandomTargetGrid(self, evt):
+    def OnCreateRandomTargetGrid(self, evt) -> None:
         vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
@@ -5654,7 +5650,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         self.interactor.Render()
 
-    def OnCreateTargetGrid(self, evt):
+    def OnCreateTargetGrid(self, evt) -> None:
         vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
@@ -5707,7 +5703,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         self.interactor.Render()
 
-    def OnCreateBrainGrid(self, evt):
+    def OnCreateBrainGrid(self, evt) -> None:
         if self.coil_target_actor_list:
             for coil_target_actor in self.coil_target_actor_list:
                 vtkmat = coil_target_actor.GetMatrix()
@@ -5743,7 +5739,7 @@ class CreateBrainTargetDialog(wx.Dialog):
                 self.brain_target_actor_list.append(brain_target_actor)
                 print("Adding brain markers")
 
-    def OnSendMtms(self, evt=None):
+    def OnSendMtms(self, evt=None) -> None:
         vtkmat = self.marker_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
@@ -5753,7 +5749,12 @@ class CreateBrainTargetDialog(wx.Dialog):
         if self.mTMS:
             self.mTMS.UpdateTarget(coil_pose=self.marker, brain_target=position + orientation)
 
-    def CreateVTKObjectMatrix(self, direction, orientation, new_target):
+    def CreateVTKObjectMatrix(
+        self,
+        direction: "Sequence[float] | np.ndarray",
+        orientation: "Sequence[float] | np.ndarray",
+        new_target: bool,
+    ) -> Tuple[vtkMatrix4x4, float, float, float]:
         m_img = dco.coordinates_to_transformation_matrix(
             position=direction,
             orientation=orientation,
@@ -5774,7 +5775,13 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return m_img_vtk_rotate, rx, ry, rz
 
-    def GetRotationMatrix(self, v1_start, v2_start, v1_target, v2_target):
+    def GetRotationMatrix(
+        self,
+        v1_start: np.ndarray,
+        v2_start: np.ndarray,
+        v1_target: np.ndarray,
+        v2_target: np.ndarray,
+    ) -> np.ndarray:
         """
         based on https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
         calculating M the rotation matrix from base U to base V
@@ -5797,7 +5804,9 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return np.dot(V, np.linalg.inv(U))
 
-    def GetEulerAnglesFromVectors(self, init_arrow_vector, target_arrow_vector):
+    def GetEulerAnglesFromVectors(
+        self, init_arrow_vector: np.ndarray, target_arrow_vector
+    ) -> np.ndarray[Any, np.dtype[Any]]:
         import invesalius.data.transformations as tr
 
         init_up_vector = self.GetPerpendicularVector(init_arrow_vector)
@@ -5808,7 +5817,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return np.rad2deg(tr.euler_from_matrix(rot_mat, axes="sxyz"))
 
-    def CenterOfMass(self, surface):
+    def CenterOfMass(self, surface: vtkPolyData) -> List[float]:
         barycenter = [0.0, 0.0, 0.0]
         n = surface.GetNumberOfPoints()
         for i in range(n):
@@ -5822,10 +5831,10 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return barycenter
 
-    def Normalize(self, v):
+    def Normalize(self, v: np.ndarray) -> np.ndarray[Any, np.dtype[np.float64]]:
         return v / np.linalg.norm(v)
 
-    def Versor(self, init_point, final_point):
+    def Versor(self, init_point: Sequence[float], final_point: Sequence[float]) -> List[float]:
         init_point = np.array(init_point)
         final_point = np.array(final_point)
         norm = (sum((final_point - init_point) ** 2)) ** 0.5
@@ -5833,7 +5842,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return versor_factor
 
-    def GetPerpendicularVector(self, vector):
+    def GetPerpendicularVector(self, vector: np.ndarray) -> np.ndarray[Any, np.dtype[np.float64]]:
         ez = np.array([0, 0, 1])
         look_at_vector = self.Normalize(vector)
         up_vector = self.Normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)
@@ -7392,11 +7401,11 @@ class ProgressBarHandler(wx.ProgressDialog):
                 value = self.max_value
             super().Update(int(value), msg)
 
-    def close(self):
+    def close(self) -> None:
         if self.IsShown():
             self.Destroy()
 
-    def pulse(self, msg=None):
+    def pulse(self, msg: Optional[str] = None) -> None:
         # if self.IsShown():
         if msg is None:
             super().Pulse()
