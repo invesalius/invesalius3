@@ -32,6 +32,7 @@ jobs:
           repo: 'pyinstaller/pyinstaller'
           tag: 'tags/v6.9.0'
           fileName: 'v6.9.0.zip'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
