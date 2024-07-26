@@ -13,6 +13,7 @@ jobs:
       - name: Setup VC++
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
+          vsversion: '17.0'
           arch: 'x64'
       
       - name: Setup Python
