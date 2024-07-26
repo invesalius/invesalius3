@@ -41,7 +41,7 @@ jobs:
               cd ./pyinstaller/pyinstaller-6.9.0/
               dir
 
-      -name: Compile pyinstaller bootloader
+      - name: Compile pyinstaller bootloader
         run: |
               python3 ./waf distclean all
               python3 setup.py install
