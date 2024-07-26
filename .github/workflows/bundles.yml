@@ -34,6 +34,7 @@ jobs:
           version: tags/v6.9.0
           file: v6.9.0.zip
           out: ./
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
