@@ -63,24 +63,24 @@ libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy',\
     'interpolation.*.pyd'))[0],'invesalius_cy'))
 
 #add plaidml modules and files
-libraries.append((os.path.join(python_dir,'library','bin','plaidml.dll'),'library\\bin'))
-
-plaidml_files = get_all_files(os.path.join(python_dir,'share','plaidml'))
-
-for v in plaidml_files:
-    if not(check_extension(v)):
-        #take only folder name and remove first '\\'
-        dest_dir = os.path.dirname(v.replace(python_dir,''))[1:]
-        libraries.append((v, dest_dir))
-
-
-plaidml_files = get_all_files(os.path.join(site_packages,'plaidml'))
-
-for v in plaidml_files:
-    if not(check_extension(v)):
-        #take only folder name and remove first '\\'
-        dest_dir = os.path.dirname(v.replace(site_packages,''))[1:]
-        libraries.append((v, dest_dir))
+#libraries.append((os.path.join(python_dir,'library','bin','plaidml.dll'),'library\\bin'))
+#
+#plaidml_files = get_all_files(os.path.join(python_dir,'share','plaidml'))
+#
+#for v in plaidml_files:
+#    if not(check_extension(v)):
+#        #take only folder name and remove first '\\'
+#        dest_dir = os.path.dirname(v.replace(python_dir,''))[1:]
+#        libraries.append((v, dest_dir))
+#
+#
+#plaidml_files = get_all_files(os.path.join(site_packages,'plaidml'))
+#
+#for v in plaidml_files:
+#    if not(check_extension(v)):
+#        #take only folder name and remove first '\\'
+#        dest_dir = os.path.dirname(v.replace(site_packages,''))[1:]
+#        libraries.append((v, dest_dir))
 
 # -- data files -----
 
@@ -150,7 +150,7 @@ a = Analysis(['app.py'],
              datas=data_files,
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
-                            'pywt._extensions._cwt','keras','plaidml','plaidml.keras',\
+                            'pywt._extensions._cwt','keras','plaidml.keras',\
                             'plaidml.keras.backend','skimage.filters.rank.core_cy_3d',\
                             'encodings'],
              hookspath=[],
