@@ -26,8 +26,18 @@ jobs:
       - name: file
         run: pwd
 
-      - name: list
-        run: dir
+      - name: Download pyinstaller
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: 'pyinstaller/pyinstaller'
+          tag: 'v6.9.0'
+          fileName: 'pyinstaller.zip'
+
+      - name: Extract tgz
+        uses: ihiroky/extract-action@v1
+        with:
+          file_path: pyinstaller.zip
+          extract_dir: pyinstaller
 
       - name: Install and generate pyinstaller bootloader
         uses: engineerd/configurator@v0.0.1
