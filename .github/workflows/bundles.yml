@@ -31,12 +31,12 @@ jobs:
         with:
           repository: 'pyinstaller/pyinstaller'
           tag: 'v6.9.0'
-          fileName: 'pyinstaller.zip'
+          fileName: 'v6.9.0.zip'
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
         with:
-          file_path: pyinstaller.zip
+          file_path: v6.9.0.zip
           extract_dir: pyinstaller
 
       - name: Install and generate pyinstaller bootloader
