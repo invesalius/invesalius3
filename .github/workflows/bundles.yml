@@ -12,8 +12,11 @@ jobs:
 
       - name: Setup VC++
         uses: ilammy/msvc-dev-cmd@v1.4.1
+        with:
+          vsversion: '17.0'
+          arch: 'x64'
       
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11.2'
@@ -37,6 +40,6 @@ jobs:
 
       - name: Compile pyinstaller bootloader
         run: |
-              cd ./pyinstaller/pyinstaller-6.9.0/
+              cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
               python3 ./waf distclean all
               python3 setup.py install
