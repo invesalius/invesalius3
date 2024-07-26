@@ -25,6 +25,8 @@ ColourType = (
     | str
 )
 SizeType = tuple[int, int] | list[int] | wx.Size
+GBPositionType = tuple[int, int] | list[int] | wx.GBPosition
+GBSpanType = tuple[int, int] | list[int] | wx.GBSpan
 
 class wxAssertionError(AssertionError): ...
 class PyAssertionError(wxAssertionError): ...

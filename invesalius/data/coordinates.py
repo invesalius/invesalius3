@@ -21,7 +21,7 @@ import threading
 from math import cos, sin
 from random import uniform
 from time import sleep
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import wx
@@ -560,7 +560,11 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
     return np.vstack([coord1, coord2, coord3, coord4]), marker_visibilities
 
 
-def coordinates_to_transformation_matrix(position, orientation, axes="sxyz"):
+def coordinates_to_transformation_matrix(
+    position: Union[Sequence[float], np.ndarray],
+    orientation: Union[Sequence[float], np.ndarray],
+    axes="sxyz",
+) -> np.ndarray[Any, np.dtype[np.float64]]:
     """
     Transform vectors consisting of position and orientation (in Euler angles) in 3d-space into a 4x4
     transformation matrix that combines the rotation and translation.
