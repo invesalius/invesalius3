@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup VC++
+      - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
           vsversion: '17.0'
@@ -51,3 +51,10 @@ jobs:
               cd ..
               pip install .
 
+      - name: Generate InVesalius .exe file
+        run: pyinstaller ./bundle_tools/win/app.spec --clean --noconfirm
+
+      - name: show exe files
+        run: |
+              cd dist
+              dir
