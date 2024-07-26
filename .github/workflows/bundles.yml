@@ -34,7 +34,10 @@ jobs:
           target: ./pyinstaller/
 
       - name: show 2
-        run: dir
+        run: |
+              dir
+              cd pyinstaller
+              dir
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
