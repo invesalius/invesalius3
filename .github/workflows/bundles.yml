@@ -39,7 +39,7 @@ jobs:
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
         with:
-          file_path: pyinstaller.zip
+          file_path: pyinstaller
           extract_dir: pyinstaller
 
       - name: Install and generate pyinstaller bootloader
