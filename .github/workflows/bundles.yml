@@ -27,11 +27,11 @@ jobs:
         run: pwd
 
       - name: Download pyinstaller
-        uses: robinraju/release-downloader@v1
+        uses: dsaltares/fetch-gh-release-asset@master
         with:
-          repository: 'pyinstaller/pyinstaller'
-          tag: 'v6.9.0'
-          fileName: '*.zip'
+          repo: 'pyinstaller/pyinstaller'
+          tag: 'tags/v6.9.0'
+          fileName: 'v6.9.0.zip'
 
       - name: Extract tgz
         uses: ihiroky/extract-action@v1
