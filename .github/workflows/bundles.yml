@@ -23,7 +23,13 @@ jobs:
 
       - name: Upgrade pip and enable wheel support
         run: python -m pip install --upgrade pip setuptools wheel 
-    
+
+      - name: Install InVesalius requirements
+        run: pip install -r requirements.txt
+
+      - name: Compile InVesalius Cython parts
+        run: python3 setup.py build_ext --inplace
+
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
         name: Download pyinstaller
@@ -44,5 +50,3 @@ jobs:
               cd ..
               pip install .
 
-      - name: Test bootloader
-        run: pyinstaller -h
