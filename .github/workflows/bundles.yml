@@ -23,8 +23,8 @@ jobs:
       #- name: Install Requirements
       #  run: pip install -r requirements.txt
 
-      - name: file
-        run: mkdir pyinstaller
+      #- name: file
+      #  run: mkdir pyinstaller
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 # 1.6.0
         id: pyinstaller  # Remember to give an ID if you need the output filename
