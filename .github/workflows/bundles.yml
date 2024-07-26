@@ -23,10 +23,10 @@ jobs:
       #- name: Install Requirements
       #  run: pip install -r requirements.txt
 
-      - name: pwd file
+      - name: file
         run: pwd
 
-      -name: list
+      - name: list
         run: dir
 
       - name: Install and generate pyinstaller bootloader
