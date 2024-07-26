@@ -35,13 +35,8 @@ jobs:
           file_path: ./pyinstaller/v6.9.0.zip
           extract_dir: ./pyinstaller/
 
-      - name: show 2
-        run: |
-              dir
-              cd ./pyinstaller/pyinstaller-6.9.0/
-              dir
-
       - name: Compile pyinstaller bootloader
         run: |
+              cd ./pyinstaller/pyinstaller-6.9.0/
               python3 ./waf distclean all
               python3 setup.py install
