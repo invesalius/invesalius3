@@ -81,8 +81,8 @@ Source: ..\..\samples\*; DestDir: {app}\dist\samples; Flags: ignoreversion recur
 
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: .\install_vc.bat; DestDir: {app}; Flags: deleteafterinstall
-Source: .\vcredist_x64.exe; DestDir: {app}; Flags: deleteafterinstall
+Source: install_vc.bat; DestDir: {app}; Flags: deleteafterinstall
+Source: vc_redist_2015_2022_x64.exe; DestDir: {app}; Flags: deleteafterinstall
 ;Source: .\gtk_bundle-2.16-bin\*; DestDir: {sys}; Flags: replacesameversion
 
 [Icons]
