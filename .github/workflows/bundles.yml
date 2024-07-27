@@ -31,7 +31,7 @@ jobs:
       - name: Compile InVesalius Cython parts
         run: |
               python3 setup.py build_ext --inplace
-              python3 setup.py build_plugins
+              # python3 setup.py build_plugins
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
