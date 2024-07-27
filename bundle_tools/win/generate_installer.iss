@@ -42,9 +42,9 @@ WizardImageFile=..\..\icons\invesalius_install_wizard.bmp
 WizardSmallImageFile=..\..\icons\invesalius_install_wizard_small.bmp
 
 [Languages]
-Name: english; MessagesFile: compiler:Default.isl; LicenseFile: "..\\invesalius3\LICENSE.txt"
-Name: brazilianportuguese; MessagesFile: compiler:Languages\BrazilianPortuguese.isl; LicenseFile: "..\\invesalius3\LICENSE.pt.txt"
-Name: spanish; MessagesFile: compiler:Languages\Spanish.isl; LicenseFile: "..\\invesalius3\LICENSE.txt"
+Name: english; MessagesFile: compiler:Default.isl; LicenseFile: "..\\..\LICENSE.txt"
+Name: brazilianportuguese; MessagesFile: compiler:Languages\BrazilianPortuguese.isl; LicenseFile: "..\\..\LICENSE.pt.txt"
+Name: spanish; MessagesFile: compiler:Languages\Spanish.isl; LicenseFile: "..\\..\LICENSE.txt"
 
 [Tasks]
 Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:AdditionalIcons}; Flags: unchecked
