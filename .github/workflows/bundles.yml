@@ -56,7 +56,12 @@ jobs:
               cp ./bundle_tools/win/app.spec ./  
               pyinstaller app.spec --clean --noconfirm
 
-      - name: show exe files
+      - name: Generate InVesalius installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: ./bundle_tools/win/generate_installer.iss
+          options: /O+
+
+      - name: Show files
         run: |
-              cd dist
               dir
