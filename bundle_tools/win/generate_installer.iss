@@ -32,14 +32,14 @@ AppContact=invesalius@cti.gov.br
 AppCopyright=Copyright 2007-2024 - Centro de Tecnologia da Informação Renato Archer
 DefaultDirName={pf}\InVesalius 3.1
 DefaultGroupName=InVesalius 3.1
-OutputDir=C:\build_win64\
+OutputDir=..\..\
 OutputBaseFilename=invesalius-3.1.99998-win64
-SetupIconFile=..\invesalius3\icons\invesalius.ico
+SetupIconFile=..\..\icons\invesalius.ico
 Compression=lzma2/ultra64
 SolidCompression=true
 DisableWelcomePage = No
-WizardImageFile=..\invesalius3\icons\invesalius_install_wizard.bmp
-WizardSmallImageFile=..\invesalius3\icons\invesalius_install_wizard_small.bmp
+WizardImageFile=..\..\icons\invesalius_install_wizard.bmp
+WizardSmallImageFile=..\..\icons\invesalius_install_wizard_small.bmp
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl; LicenseFile: "..\\invesalius3\LICENSE.txt"
@@ -51,16 +51,16 @@ Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:Ad
 ;Name: quicklaunchicon; Description: {cm:CreateQuickLaunchIcon}; GroupDescription: {cm:AdditionalIcons}; Flags: unchecked
 
 [Files]
-Source: ..\\invesalius3\dist\app\InVesalius 3.1.exe; DestDir: {app}\dist; Flags: ignoreversion
-Source: ..\\invesalius3\dist\app\*; DestDir: {app}\dist; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\\..\dist\app\InVesalius 3.1.exe; DestDir: {app}\dist; Flags: ignoreversion
+Source: ..\\..\dist\app\*; DestDir: {app}\dist; Flags: ignoreversion recursesubdirs createallsubdirs
 ;Source: ..\\invesalius3\plugins\*; DestDir: {app}\dist\plugins; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\ai\*; DestDir: {app}\dist\ai; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\locale\*; DestDir: {app}\dist\locale; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\icons\*; DestDir: {app}\dist\icons; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\presets\*; DestDir: {app}\dist\presets; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\docs\user_guide_pt_BR.pdf; DestDir: {app}\dist\docs; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\docs\user_guide_en.pdf; DestDir: {app}\dist\docs; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\invesalius3\samples\*; DestDir: {app}\dist\samples; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\ai\*; DestDir: {app}\dist\ai; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\locale\*; DestDir: {app}\dist\locale; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\icons\*; DestDir: {app}\dist\icons; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\presets\*; DestDir: {app}\dist\presets; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\docs\user_guide_pt_BR.pdf; DestDir: {app}\dist\docs; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\docs\user_guide_en.pdf; DestDir: {app}\dist\docs; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\samples\*; DestDir: {app}\dist\samples; Flags: ignoreversion recursesubdirs createallsubdirs
                                       
 
 ;to fix error
@@ -81,8 +81,8 @@ Source: ..\invesalius3\samples\*; DestDir: {app}\dist\samples; Flags: ignorevers
 
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: .\system_dll\install_vc.bat; DestDir: {app}; Flags: deleteafterinstall
-Source: .\\system_dll\vcredist_x64.exe; DestDir: {app}; Flags: deleteafterinstall
+Source: .\install_vc.bat; DestDir: {app}; Flags: deleteafterinstall
+Source: .\vcredist_x64.exe; DestDir: {app}; Flags: deleteafterinstall
 ;Source: .\gtk_bundle-2.16-bin\*; DestDir: {sys}; Flags: replacesameversion
 
 [Icons]
