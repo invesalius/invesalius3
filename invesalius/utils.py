@@ -28,8 +28,8 @@ from functools import wraps
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
-#from setuptools.extern.packaging.version import Version
-import setuptools
+from packaging.version import Version
+
 
 def format_time(value: str) -> str:
     sp1 = value.split(".")
@@ -455,8 +455,8 @@ def UpdateCheck() -> None:
         url = response.readline().rstrip().decode("utf8")
 
         try:
-            last_ver = setuptools.extern.packaging.version.Version(last)
-            actual_ver = setuptools.extern.packaging.version.Version(const.INVESALIUS_VERSION)
+            last_ver = Version(last)
+            actual_ver = Version(const.INVESALIUS_VERSION)
         except (ValueError, AttributeError):
             return
 
