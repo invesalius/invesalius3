@@ -112,7 +112,6 @@ from invesalius.pubsub import pub as Publisher
 
 if TYPE_CHECKING:
     from invesalius.data.mask import Mask
-    from invesalius.data.measures import AngularMeasure, LinearMeasure
     from invesalius.data.styles import (
         CropMaskConfig,
         FFillSegmentationConfig,
@@ -122,6 +121,7 @@ if TYPE_CHECKING:
     from invesalius.gui.widgets.clut_imagedata import CLUTEvent, Node
     from invesalius.navigation.mtms import mTMS
     from invesalius.navigation.navigation import Navigation
+    from invesalius.navigation.robot import Robot
     from invesalius.navigation.tracker import Tracker
     from invesalius.net.neuronavigation_api import NeuronavigationApi
     from invesalius.net.pedal_connection import PedalConnector
@@ -817,14 +817,14 @@ class UpdateMessageDialog(wx.Dialog):
         # Subscribing to the pubsub event which happens when InVesalius is closed.
         Publisher.subscribe(self._Exit, "Exit")
 
-    def _OnYes(self, evt: wx.Event) -> None:
+    def _OnYes(self, evt: wx.CommandEvent) -> None:
         # Launches the default browser with the url to download the new
         # InVesalius version.
         wx.LaunchDefaultBrowser(self.url)
         self.Close()
         self.Destroy()
 
-    def _OnNo(self, evt: wx.Event) -> None:
+    def _OnNo(self, evt: wx.CommandEvent) -> None:
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()
@@ -1342,7 +1342,7 @@ class NewMask(wx.Dialog):
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
 
-    def OnComboThresh(self, evt: MaskEvent) -> None:
+    def OnComboThresh(self, evt: wx.CommandEvent) -> None:
         import invesalius.project as prj
 
         proj = prj.Project()
@@ -1922,7 +1922,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-    def OnSetMask(self, evt) -> None:
+    def OnSetMask(self, evt: wx.CommandEvent) -> None:
         new_evt = MaskEvent(myEVT_MASK_SET, -1, self.combo_mask.GetSelection())
         self.GetEventHandler().ProcessEvent(new_evt)
 
@@ -1988,7 +1988,7 @@ class SurfaceTransparencyDialog(wx.Dialog):
         self.Layout()
         self.CenterOnScreen()
 
-    def on_slider(self, event) -> None:
+    def on_slider(self, event: wx.CommandEvent) -> None:
         value = self.slider.GetValue()
         self.value_text.SetLabel(f"Surface transparency: {value}%")
 
@@ -1996,7 +1996,7 @@ class SurfaceTransparencyDialog(wx.Dialog):
             "Set surface transparency", surface_index=self.surface_index, transparency=value / 100.0
         )
 
-    def on_ok(self, event) -> None:
+    def on_ok(self, event: wx.CommandEvent) -> None:
         self.EndModal(wx.ID_OK)
 
     def get_value(self) -> int:
@@ -2116,7 +2116,7 @@ class SurfaceMethodPanel(wx.Panel):
     def _bind_wx(self) -> None:
         self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
 
-    def _set_cb_types(self, evt: MaskEvent) -> None:
+    def _set_cb_types(self, evt: wx.CommandEvent) -> None:
         if self.alg_types[evt.GetString()] == "ca_smoothing":
             self.ca_options.Enable()
         else:
@@ -2320,7 +2320,7 @@ class WatershedOptionsDialog(wx.Dialog):
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         self.CenterOnScreen()
 
-    def OnOk(self, evt: wx.Event) -> None:
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         self.wop.apply_options()
         evt.Skip()
 
@@ -2397,7 +2397,7 @@ class MaskBooleanDialog(wx.Dialog):
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
 
-    def OnOk(self, evt: wx.Event) -> None:
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         op = self.op_boolean.GetClientData(self.op_boolean.GetSelection())
         m1 = self.mask1.GetClientData(self.mask1.GetSelection())
         m2 = self.mask2.GetClientData(self.mask2.GetSelection())
@@ -2502,26 +2502,26 @@ class ReorientImageDialog(wx.Dialog):
     def _close_dialog(self) -> None:
         self.Destroy()
 
-    def apply_reorientation(self, evt: wx.Event) -> None:
+    def apply_reorientation(self, evt: wx.CommandEvent) -> None:
         Publisher.sendMessage("Apply reorientation")
         self.Close()
 
-    def OnClose(self, evt: wx.Event) -> None:
+    def OnClose(self, evt: wx.CloseEvent) -> None:
         self._closed = True
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_REORIENT)
         Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
         self.Destroy()
 
-    def OnSelect(self, evt: wx.Event) -> None:
+    def OnSelect(self, evt: wx.CommandEvent) -> None:
         im_code = self.interp_method.GetClientData(self.interp_method.GetSelection())
         Publisher.sendMessage("Set interpolation method", interp_method=im_code)
 
-    def OnSetFocus(self, evt: wx.Event) -> None:
+    def OnSetFocus(self, evt: wx.FocusEvent) -> None:
         self._last_ax = self.anglex.GetValue()
         self._last_ay = self.angley.GetValue()
         self._last_az = self.anglez.GetValue()
 
-    def OnLostFocus(self, evt: wx.Event) -> None:
+    def OnLostFocus(self, evt: wx.FocusEvent) -> None:
         if not self._closed:
             try:
                 ax = np.deg2rad(float(self.anglex.GetValue()))
@@ -2671,7 +2671,7 @@ class ImportBitmapParameters(wx.Dialog):
     def SetInterval(self, v: int) -> None:
         self.interval = v
 
-    def OnOk(self, evt: wx.Event) -> None:
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         orient_selection = self.cb_orientation.GetSelection()
 
         if orient_selection == 1:
@@ -2934,10 +2934,10 @@ class PanelFFillDynamic(wx.Panel):
         self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
         self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
 
-    def OnSetUseWWWL(self, evt: wx.Event) -> None:
+    def OnSetUseWWWL(self, evt: wx.CommandEvent) -> None:
         self.config.use_ww_wl = self.use_ww_wl.GetValue()
 
-    def OnSetDeviation(self, evt: wx.Event) -> None:
+    def OnSetDeviation(self, evt: wx.SpinEvent) -> None:
         self.config.dev_max = self.deviation_max.GetValue()
         self.config.dev_min = self.deviation_min.GetValue()
 
@@ -3014,13 +3014,13 @@ class PanelFFillConfidence(wx.Panel):
         self.spin_mult.Bind(wx.EVT_SPINCTRL, self.OnSetMult)
         self.spin_iters.Bind(wx.EVT_SPINCTRL, self.OnSetIters)
 
-    def OnSetUseWWWL(self, evt: wx.Event) -> None:
+    def OnSetUseWWWL(self, evt: wx.CommandEvent) -> None:
         self.config.use_ww_wl = self.use_ww_wl.GetValue()
 
-    def OnSetMult(self, evt: wx.Event) -> None:
+    def OnSetMult(self, evt: wx.SpinEvent) -> None:
         self.config.confid_mult = self.spin_mult.GetValue()
 
-    def OnSetIters(self, evt: wx.Event) -> None:
+    def OnSetIters(self, evt: wx.SpinEvent) -> None:
         self.config.confid_iters = self.spin_iters.GetValue()
 
 
@@ -3139,10 +3139,10 @@ class FFillOptionsDialog(wx.Dialog):
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnBtnClose(self, evt: wx.Event) -> None:
+    def OnBtnClose(self, evt: wx.CommandEvent) -> None:
         self.Close()
 
-    def OnSetRadio(self, evt: wx.Event) -> None:
+    def OnSetRadio(self, evt: wx.CommandEvent) -> None:
         # Target
         if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
@@ -3167,7 +3167,7 @@ class FFillOptionsDialog(wx.Dialog):
         elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-    def OnClose(self, evt: wx.Event) -> None:
+    def OnClose(self, evt: wx.CloseEvent) -> None:
         print("ONCLOSE")
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_MASK_FFILL)
@@ -3235,19 +3235,19 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnOk(self, evt: wx.Event) -> None:
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         self.SetReturnCode(wx.OK)
         self.Close()
 
-    def OnCancel(self, evt: wx.Event) -> None:
+    def OnCancel(self, evt: wx.CommandEvent) -> None:
         self.SetReturnCode(wx.CANCEL)
         self.Close()
 
-    def OnChar(self, evt: wx.Event) -> None:
+    def OnChar(self, evt: wx.KeyEvent) -> None:
         evt.Skip()
         self.config.mask_name = self.target_name.GetValue()
 
-    def OnSetRadio(self, evt: wx.Event) -> None:
+    def OnSetRadio(self, evt: wx.CommandEvent) -> None:
         if self.panel3dcon.conect3D_6.GetValue():
             self.config.con_3d = 6
         elif self.panel3dcon.conect3D_18.GetValue():
@@ -3255,7 +3255,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-    def OnClose(self, evt: wx.Event) -> None:
+    def OnClose(self, evt: wx.CloseEvent) -> None:
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
@@ -3423,7 +3423,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnSetRadio(self, evt: wx.Event) -> None:
+    def OnSetRadio(self, evt: wx.CommandEvent) -> None:
         # Target
         if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
@@ -3448,8 +3448,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-    def OnSetMethod(self, evt: wx.Event) -> None:
-        item_panel = self.GetSizer().FindItemAtPosition((11, 0)).GetWindow()
+    def OnSetMethod(self, evt: wx.CommandEvent) -> None:
+        sizer = self.GetSizer()
+        assert isinstance(sizer, wx.GridBagSizer), "assigned sizer must be a wx.GridBagSizer"
+        item_panel = sizer.FindItemAtPosition((11, 0)).GetWindow()
 
         if self.cmb_method.GetSelection() == 0:
             self.config.method = "dynamic"
@@ -3472,10 +3474,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.GetSizer().Fit(self)
         self.Layout()
 
-    def OnBtnClose(self, evt: wx.Event) -> None:
+    def OnBtnClose(self, evt: wx.CommandEvent) -> None:
         self.Close()
 
-    def OnClose(self, evt: wx.Event) -> None:
+    def OnClose(self, evt: wx.CloseEvent) -> None:
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
@@ -3591,13 +3593,13 @@ class CropOptionsDialog(wx.Dialog):
         btn_cancel.Bind(wx.EVT_BUTTON, self.OnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnOk(self, evt: wx.Event) -> None:
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         self.config.dlg_visible = False
         Publisher.sendMessage("Crop mask")
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
 
-    def OnClose(self, evt: wx.Event) -> None:
+    def OnClose(self, evt: Union[wx.CommandEvent, wx.CloseEvent]) -> None:
         self.config.dlg_visible = False
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
@@ -3682,7 +3684,7 @@ class FillHolesAutoDialog(wx.Dialog):
         self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
 
-    def OnApply(self, evt: wx.Event) -> None:
+    def OnApply(self, evt: wx.CommandEvent) -> None:
         if self.panel_target.target_2d.GetValue():
             target = "2D"
             conn = self.panel2dcon.GetConnSelected()
@@ -3701,11 +3703,11 @@ class FillHolesAutoDialog(wx.Dialog):
 
         Publisher.sendMessage("Fill holes automatically", parameters=parameters)
 
-    def OnBtnClose(self, evt: wx.Event) -> None:
+    def OnBtnClose(self, evt: wx.CommandEvent) -> None:
         self.Close()
         self.Destroy()
 
-    def OnSetRadio(self, evt: wx.Event) -> None:
+    def OnSetRadio(self, evt: wx.CommandEvent) -> None:
         # Target
         if self.panel_target.target_2d.GetValue():
             self.panel2dcon.Enable(True)
@@ -3809,7 +3811,7 @@ class MaskDensityDialog(wx.Dialog):
     def _bind_events(self) -> None:
         self.calc_button.Bind(wx.EVT_BUTTON, self.OnCalcButton)
 
-    def OnCalcButton(self, evt: wx.Event) -> None:
+    def OnCalcButton(self, evt: wx.CommandEvent) -> None:
         from invesalius.data.slice_ import Slice
 
         mask = self.cmb_mask.GetClientData(self.cmb_mask.GetSelection())
@@ -4009,7 +4011,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         else:  # answer == wx.ID_NO:
             return 0
 
-    def ShowObject(self, polydata: "LinearMeasure | AngularMeasure") -> None:
+    def ShowObject(self, polydata: vtkPolyData) -> None:
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(
                 _("InVesalius was not able to import this surface"), _("Import surface error")
@@ -4124,7 +4126,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         fiducial = self.obj_fiducials[fiducial_index]
         return not np.isnan(fiducial).any()
 
-    def OnObjectFiducialButton(self, index: int, evt) -> None:
+    def OnObjectFiducialButton(self, index: int, evt: wx.CommandEvent) -> None:
         button = self.buttons[index]
 
         if button is self.buttons.focused:
@@ -4201,10 +4203,10 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.txt_coord[index][coord_index].SetLabel("-")
         self.buttons.Unset(index)
 
-    def OnReset(self, evt) -> None:
+    def OnReset(self, evt: wx.CommandEvent) -> None:
         self.ResetObjectFiducials()
 
-    def OnChooseReferenceMode(self, evt) -> None:
+    def OnChooseReferenceMode(self, evt: wx.CommandEvent) -> None:
         # When ref mode is changed the tracker coordinates are set to nan
         # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
         # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
@@ -4215,26 +4217,28 @@ class ObjectCalibrationDialog(wx.Dialog):
         if evt.GetSelection() == 1:
             self.obj_ref_id = 2
             if self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS:
-                self.choice_sensor.Show(self.obj_ref_id)
+                self.choice_sensor.Show(True)
         else:
             self.obj_ref_id = 0
-            self.choice_sensor.Show(self.obj_ref_id)
+            self.choice_sensor.Show(False)
 
         self.ResetObjectFiducials()
 
         # Used to update choice sensor controls
         self.Layout()
 
-    def OnChoiceFTSensor(self, evt) -> None:
+    def OnChoiceFTSensor(self, evt: wx.CommandEvent) -> None:
         if evt.GetSelection():
             self.obj_ref_id = 3
         else:
             self.obj_ref_id = 0
 
-    def GetValue(self):
+    def GetValue(
+        self,
+    ) -> Tuple[np.ndarray, np.ndarray, int, Optional[bytes], Optional[vtkPolyData]]:
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.coil_path, self.polydata
 
-    def OnOk(self, evt: wx.Event) -> None:
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         if evt.GetId() == wx.ID_OK:
             # This should always be called when the dialog is closed. Seems to be working correctly.
             self.pedal_connector.remove_callback("fiducial", panel=self)
@@ -4590,11 +4594,11 @@ class ICPCorregistrationDialog(wx.Dialog):
             self.RemoveAllActors()
         self.LoadActor()
 
-    def OnChoiceICPMethod(self, evt) -> None:
+    def OnChoiceICPMethod(self, evt: wx.CommandEvent) -> None:
         self.icp_mode = evt.GetSelection()
 
     def OnContinuousAcquisitionButton(
-        self, evt: Optional[wx.Event] = None, btn: Optional[wx.ToggleButton] = None
+        self, evt: Optional[wx.CommandEvent] = None, btn: Optional[wx.ToggleButton] = None
     ) -> None:
         assert btn is not None, "btn must be provided"
         value = btn.GetValue()
@@ -4603,10 +4607,10 @@ class ICPCorregistrationDialog(wx.Dialog):
         else:
             self.timer.Stop()
 
-    def HandleContinuousAcquisition(self, evt: wx.Event) -> None:
+    def HandleContinuousAcquisition(self, evt: wx.TimerEvent) -> None:
         self.CreatePoint()
 
-    def CreatePoint(self, evt=None) -> None:
+    def CreatePoint(self, evt: Optional[wx.CommandEvent] = None) -> None:
         current_coord, marker_visibilities = self.GetCurrentCoord()
 
         probe_visible, head_visible, _ = marker_visibilities
@@ -4631,7 +4635,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         self.RemoveSinglePointActor()
 
-    def OnResetPoints(self, evt) -> None:
+    def OnResetPoints(self, evt: wx.CommandEvent) -> None:
         # Stop continuous acquisition if it is running.
         if self.cont_point:
             self.cont_point.SetValue(False)
@@ -4640,7 +4644,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.RemoveAllActors()
         self.LoadActor()
 
-    def OnICP(self, evt) -> None:
+    def OnICP(self, evt: wx.CommandEvent) -> None:
         if self.cont_point:
             self.cont_point.SetValue(False)
             self.OnContinuousAcquisitionButton(evt=None, btn=self.cont_point)
@@ -4688,7 +4692,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         icpTransformFilter.SetTransform(icp)
         icpTransformFilter.Update()
 
-        transformedSource = icpTransformFilter.GetOutput()
+        transformedSource: vtkPolyData = icpTransformFilter.GetOutput()
 
         transformed_points = []
 
@@ -4825,17 +4829,17 @@ class EfieldConfiguration(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def OnComboNameBrainSurface(self, evt) -> Union[str, vtkPolyData]:
+    def OnComboNameBrainSurface(self, evt: wx.CommandEvent) -> Union[str, vtkPolyData]:
         surface_index = evt.GetSelection()
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         return self.brain_surface
 
-    def OnComboNameScalpSurface(self, evt) -> Union[str, vtkPolyData]:
+    def OnComboNameScalpSurface(self, evt: wx.CommandEvent) -> Union[str, vtkPolyData]:
         surface_index = evt.GetSelection()
         self.scalp_surface = self.proj.surface_dict[surface_index].polydata
         return self.scalp_surface
 
-    def OnAddMeshes(self, evt) -> None:
+    def OnAddMeshes(self, evt: wx.CommandEvent) -> None:
         filename = ShowImportMeshFilesDialog()
         if filename:
             convert_to_inv = ImportMeshCoordSystem()
@@ -5183,17 +5187,17 @@ class CreateBrainTargetDialog(wx.Dialog):
                 self.peel_brain_actor.PickableOff()
             self.interactor.Render()
 
-    def OnCheckBoxScalp(self, evt=None) -> None:
+    def OnCheckBoxScalp(self, evt: Optional[wx.CommandEvent] = None) -> None:
         status = self.chk_show_surface.GetValue()
         self.obj_actor.SetVisibility(status)
         self.interactor.Render()
 
-    def OnCheckBoxBrain(self, evt=None) -> None:
+    def OnCheckBoxBrain(self, evt: Optional[wx.CommandEvent] = None) -> None:
         status = self.chk_show_brain_surface.GetValue()
         self.brain_actor.SetVisibility(status)
         self.interactor.Render()
 
-    def OnResetOrientation(self, evt=None) -> None:
+    def OnResetOrientation(self, evt: Optional[wx.CommandEvent] = None) -> None:
         self.rotationX = self.rotationY = self.rotationZ = 0
         self.slider_rotation_x.SetValue(0)
         self.slider_rotation_y.SetValue(0)
@@ -5201,22 +5205,22 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnRotationX(self, evt: Union[wx.CommandEvent, wx.ThreadEvent]) -> None:
+    def OnRotationX(self, evt: wx.CommandEvent) -> None:
         self.rotationX = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnRotationY(self, evt: Union[wx.CommandEvent, wx.ThreadEvent]) -> None:
+    def OnRotationY(self, evt: wx.CommandEvent) -> None:
         self.rotationY = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnRotationZ(self, evt: Union[wx.CommandEvent, wx.ThreadEvent]) -> None:
+    def OnRotationZ(self, evt: wx.CommandEvent) -> None:
         self.rotationZ = evt.GetInt()
         self.marker_actor.SetOrientation(self.rotationX, self.rotationY, self.rotationZ)
         self.interactor.Render()
 
-    def OnDepth(self, evt: Union[wx.KeyEvent, wx.ListEvent, wx.TreeEvent]) -> None:
+    def OnDepth(self, evt: wx.KeyEvent) -> None:
         if evt.GetKeyCode() == wx.WXK_UP:
             depth = 1
         elif evt.GetKeyCode() == wx.WXK_DOWN:
@@ -5245,11 +5249,11 @@ class CreateBrainTargetDialog(wx.Dialog):
         else:
             self.camera_style.OnMouseWheelBackward()
 
-    def OnChangeView(self, evt) -> None:
+    def OnChangeView(self, evt: wx.CommandEvent) -> None:
         self.ren.GetActiveCamera().Roll(90)
         self.interactor.Render()
 
-    def OnComboNameBrainSurface(self, evt) -> None:
+    def OnComboNameBrainSurface(self, evt: wx.CommandEvent) -> None:
         surface_index = evt.GetSelection()
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         if self.brain_actor:
@@ -5257,7 +5261,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.brain_actor = self.LoadActor(self.brain_surface)
         self.chk_show_brain_surface.SetValue(True)
 
-    def OnComboNameScalpSurface(self, evt) -> None:
+    def OnComboNameScalpSurface(self, evt: wx.CommandEvent) -> None:
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
@@ -5377,7 +5381,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         coord_flip: Sequence[float],
         colour: MutableSequence[float] = [0.0, 0.0, 1.0],
         scale: float = 10,
-    ):
+    ) -> Tuple[vtkActor, Tuple[float, float, float, float, float, float]]:
         rx, ry, rz = coord_flip[3:]
         if rx is None:
             coord = self.Versor(self.CenterOfMass(self.brain_surface), coord_flip[:3])
@@ -5595,7 +5599,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return np.meshgrid(x, y)
 
-    def OnCreateRandomTargetGrid(self, evt) -> None:
+    def OnCreateRandomTargetGrid(self, evt: wx.CommandEvent) -> None:
         vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
@@ -5650,7 +5654,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         self.interactor.Render()
 
-    def OnCreateTargetGrid(self, evt) -> None:
+    def OnCreateTargetGrid(self, evt: wx.CommandEvent) -> None:
         vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
@@ -5703,7 +5707,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         self.interactor.Render()
 
-    def OnCreateBrainGrid(self, evt) -> None:
+    def OnCreateBrainGrid(self, evt: wx.CommandEvent) -> None:
         if self.coil_target_actor_list:
             for coil_target_actor in self.coil_target_actor_list:
                 vtkmat = coil_target_actor.GetMatrix()
@@ -5739,7 +5743,7 @@ class CreateBrainTargetDialog(wx.Dialog):
                 self.brain_target_actor_list.append(brain_target_actor)
                 print("Adding brain markers")
 
-    def OnSendMtms(self, evt=None) -> None:
+    def OnSendMtms(self, evt: Optional[wx.CommandEvent] = None) -> None:
         vtkmat = self.marker_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
@@ -5834,7 +5838,11 @@ class CreateBrainTargetDialog(wx.Dialog):
     def Normalize(self, v: np.ndarray) -> np.ndarray[Any, np.dtype[np.float64]]:
         return v / np.linalg.norm(v)
 
-    def Versor(self, init_point: Sequence[float], final_point: Sequence[float]) -> List[float]:
+    def Versor(
+        self,
+        init_point: Union[Sequence[float], np.ndarray],
+        final_point: Union[Sequence[float], np.ndarray],
+    ) -> List[float]:
         init_point = np.array(init_point)
         final_point = np.array(final_point)
         norm = (sum((final_point - init_point) ** 2)) ** 0.5
@@ -5848,17 +5856,19 @@ class CreateBrainTargetDialog(wx.Dialog):
         up_vector = self.Normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)
         return up_vector
 
-    def GetValue(self):
+    def GetValue(
+        self,
+    ) -> Tuple[List[List[np.float64]], List[np.ndarray], List[List[np.float64]], List[np.ndarray]]:
         self.ren.RemoveActor(self.peel_brain_actor)
         vtkmat = self.coil_pose_actor.GetMatrix()
         narray = np.eye(4)
         vtkmat.DeepCopy(narray.ravel(), vtkmat)
-        position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+        position: List[np.float64] = [narray[0][-1], -narray[1][-1], narray[2][-1]]
         m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
         coil_target_position = [position]
         coil_target_orientation = [np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))]
 
-        brain_target_position = []
+        brain_target_position: List[List[np.float64]] = []
         brain_target_orientation = []
         for coil_target_actor in self.coil_target_actor_list:
             vtkmat = coil_target_actor.GetMatrix()
@@ -5887,7 +5897,7 @@ class CreateBrainTargetDialog(wx.Dialog):
             brain_target_orientation,
         )
 
-    def GetValueBrainTarget(self):
+    def GetValueBrainTarget(self) -> Tuple[List[List[np.float64]], List[np.ndarray]]:
         import invesalius.data.transformations as tr
 
         brain_target_position = []
@@ -5896,7 +5906,7 @@ class CreateBrainTargetDialog(wx.Dialog):
             vtkmat = brain_target_actor.GetMatrix()
             narray = np.eye(4)
             vtkmat.DeepCopy(narray.ravel(), vtkmat)
-            position = [narray[0][-1], -narray[1][-1], narray[2][-1]]
+            position: List[np.float64] = [narray[0][-1], -narray[1][-1], narray[2][-1]]
             m_rotation = [narray[0][:3], narray[1][:3], narray[2][:3]]
             orientation = np.rad2deg(tr.euler_from_matrix(m_rotation, axes="sxyz"))
             brain_target_position.append(position)
@@ -5905,7 +5915,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
 
 class TractographyProgressWindow:
-    def __init__(self, msg):
+    def __init__(self, msg: str):
         self.title = "InVesalius 3"
         self.msg = msg
         self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
@@ -5914,16 +5924,16 @@ class TractographyProgressWindow:
         self.error = None
         self.dlg.Show()
 
-    def WasCancelled(self):
+    def WasCancelled(self) -> bool:
         return self.dlg.WasCancelled()
 
-    def Update(self, msg=None, value=None):
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
         if msg is None:
             self.dlg.Pulse()
         else:
             self.dlg.Pulse(msg)
 
-    def Close(self):
+    def Close(self) -> None:
         self.dlg.Destroy()
 
 
@@ -5937,7 +5947,7 @@ class SurfaceSmoothingProgressWindow:
         self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
         self.dlg.Show()
 
-    def Close(self):
+    def Close(self) -> None:
         self.dlg.Destroy()
 
 
@@ -5951,22 +5961,22 @@ class SurfaceProgressWindow:
         self.error = None
         self.dlg.Show()
 
-    def WasCancelled(self):
+    def WasCancelled(self) -> bool:
         #  print("Cancelled?", self.dlg.WasCancelled())
         return self.dlg.WasCancelled()
 
-    def Update(self, msg=None, value=None):
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
         if msg is None:
             self.dlg.Pulse()
         else:
             self.dlg.Pulse(msg)
 
-    def Close(self):
+    def Close(self) -> None:
         self.dlg.Destroy()
 
 
 class GoToDialog(wx.Dialog):
-    def __init__(self, title=_("Go to slice ..."), init_orientation=const.AXIAL_STR):
+    def __init__(self, title: str = _("Go to slice ..."), init_orientation: str = const.AXIAL_STR):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -5976,7 +5986,7 @@ class GoToDialog(wx.Dialog):
         )
         self._init_gui(init_orientation)
 
-    def _init_gui(self, init_orientation):
+    def _init_gui(self, init_orientation: str) -> None:
         orientations = (
             (_("Axial"), const.AXIAL_STR),
             (_("Coronal"), const.CORONAL_STR),
@@ -6031,10 +6041,10 @@ class GoToDialog(wx.Dialog):
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.SetNewFocalPoint, "Cross focal point")
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         try:
             slice_number = int(self.goto_slice.GetValue())
             orientation = self.orientation = self.goto_orientation.GetClientData(
@@ -6048,7 +6058,7 @@ class GoToDialog(wx.Dialog):
             pass
         self.Close()
 
-    def SetNewFocalPoint(self, coord, spacing):
+    def SetNewFocalPoint(self, coord: Iterable[int], spacing: Sequence[int]) -> None:
         newCoord = list(coord)
         if self.orientation == "AXIAL":
             newCoord[2] = int(self.goto_slice.GetValue()) * spacing[2]
@@ -6059,13 +6069,13 @@ class GoToDialog(wx.Dialog):
 
         Publisher.sendMessage("Update cross pos", coord=newCoord)
 
-    def Close(self):
+    def Close(self) -> None:
         wx.Dialog.Close(self)
         self.Destroy()
 
 
 class GoToDialogScannerCoord(wx.Dialog):
-    def __init__(self, title=_("Go to scanner coord...")):
+    def __init__(self, title: str = _("Go to scanner coord...")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6075,7 +6085,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         )
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.goto_sagital = wx.TextCtrl(self, size=(50, -1))
         self.goto_coronal = wx.TextCtrl(self, size=(50, -1))
         self.goto_axial = wx.TextCtrl(self, size=(50, -1))
@@ -6121,13 +6131,13 @@ class GoToDialogScannerCoord(wx.Dialog):
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.SetNewFocalPoint, "Cross focal point")
 
     def SetNewFocalPoint(self, coord, spacing):
         Publisher.sendMessage("Update cross pos", coord=self.result * spacing)
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         import invesalius.data.slice_ as slc
 
         try:
@@ -6156,13 +6166,13 @@ class GoToDialogScannerCoord(wx.Dialog):
             pass
         self.Close()
 
-    def Close(self):
+    def Close(self) -> None:
         wx.Dialog.Close(self)
         self.Destroy()
 
 
 class SelectNiftiVolumeDialog(wx.Dialog):
-    def __init__(self, volumes, title=_("Select NIfTI volume")):
+    def __init__(self, volumes: Sequence[str], title: str = _("Select NIfTI volume")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6173,7 +6183,7 @@ class SelectNiftiVolumeDialog(wx.Dialog):
 
         self._init_gui(volumes)
 
-    def _init_gui(self, volumes):
+    def _init_gui(self, volumes: Sequence[str]) -> None:
         self.cmb_volume = wx.ComboBox(
             self, -1, choices=volumes, style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
@@ -6206,13 +6216,13 @@ class SelectNiftiVolumeDialog(wx.Dialog):
         # self.Layout()
         self.CenterOnParent()
 
-    def GetVolumeChoice(self):
+    def GetVolumeChoice(self) -> int:
         volume_choice = int(self.cmb_volume.GetString(self.cmb_volume.GetSelection())) - 1
 
         return volume_choice
 
 
-def DialogRescalePixelIntensity(max_intensity, unique_values):
+def DialogRescalePixelIntensity(max_intensity: float, unique_values: Any) -> bool:
     msg = (
         _("Maximum pixel intensity is: ")
         + str(round(max_intensity, 1))
@@ -6238,7 +6248,7 @@ def DialogRescalePixelIntensity(max_intensity, unique_values):
 
 
 class ConfigureOptitrackDialog(wx.Dialog):
-    def __init__(self, title=_("Configure Optitrack")):
+    def __init__(self, title: str = _("Configure Optitrack")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6252,7 +6262,7 @@ class ConfigureOptitrackDialog(wx.Dialog):
         )
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         session = ses.Session()
         last_optitrack_cal_dir = session.GetConfig("last_optitrack_cal_dir", "")
         last_optitrack_User_Profile_dir = session.GetConfig("last_optitrack_User_Profile_dir", "")
@@ -6316,7 +6326,7 @@ class ConfigureOptitrackDialog(wx.Dialog):
 
         self.CenterOnParent()
 
-    def GetValue(self):
+    def GetValue(self) -> Tuple[str, str]:
         fn_cal = self.dir_cal.GetPath()
         fn_userprofile = self.dir_UserProfile.GetPath()
 
@@ -6334,7 +6344,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
     A dialog pops up showing a combobox with all trackers but debugs and the robot itself (const.TRACKERS[:-3])
     """
 
-    def __init__(self, title=_("Set tracker device")):
+    def __init__(self, title: str = _("Set tracker device")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6349,7 +6359,7 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         self.tracker_id = const.DEFAULT_TRACKER
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         # ComboBox for spatial tracker device selection
         tooltip = _("Choose the tracking device")
         trackers = const.TRACKERS.copy()
@@ -6391,16 +6401,16 @@ class SetTrackerDeviceToRobot(wx.Dialog):
 
         self.CenterOnParent()
 
-    def OnChoiceTracker(self, evt, ctrl):
+    def OnChoiceTracker(self, evt: wx.CommandEvent, ctrl: wx.ComboBox) -> None:
         choice = evt.GetSelection()
         self.tracker_id = choice
 
-    def GetValue(self):
+    def GetValue(self) -> int:
         return self.tracker_id
 
 
 class SetRobotIP(wx.Dialog):
-    def __init__(self, title=_("Set Robot IP")):
+    def __init__(self, title: str = _("Set Robot IP")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6415,7 +6425,7 @@ class SetRobotIP(wx.Dialog):
         self.robot_ip = None
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         # ComboBox for spatial tracker device selection
         tooltip = _("Choose or type the robot IP")
         robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
@@ -6452,18 +6462,23 @@ class SetRobotIP(wx.Dialog):
 
         self.CenterOnParent()
 
-    def OnTxt_Ent(self, evt, ctrl):
+    def OnTxt_Ent(self, evt: wx.CommandEvent, ctrl: wx.TextEntry) -> None:
         self.robot_ip = str(ctrl.GetValue())
 
-    def OnChoiceIP(self, evt, ctrl):
+    def OnChoiceIP(self, evt: wx.CommandEvent, ctrl: wx.ComboBox) -> None:
         self.robot_ip = ctrl.GetStringSelection()
 
-    def GetValue(self):
+    def GetValue(self) -> Optional[str]:
         return self.robot_ip
 
 
 class RobotCoregistrationDialog(wx.Dialog):
-    def __init__(self, robot, tracker, title=_("Create transformation matrix to robot space")):
+    def __init__(
+        self,
+        robot: "Robot",
+        tracker: "Tracker",
+        title: str = _("Create transformation matrix to robot space"),
+    ):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6487,7 +6502,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         # Buttons to acquire and remove points
         txt_acquisition = wx.StaticText(self, -1, _("Poses acquisition for robot registration:"))
 
@@ -6599,7 +6614,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.CenterOnParent()
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(
             self.UpdateRobotTransformationMatrix,
             "Robot to Neuronavigation: Update robot transformation matrix",
@@ -6609,34 +6624,37 @@ class RobotCoregistrationDialog(wx.Dialog):
             "Robot to Neuronavigation: Coordinates for the robot transformation matrix collected",
         )
 
-    def OnContinuousAcquisitionButton(self, evt=None, btn=None):
+    def OnContinuousAcquisitionButton(
+        self, evt: Optional[wx.CommandEvent] = None, btn: Optional[wx.ToggleButton] = None
+    ) -> None:
+        assert btn is not None, "btn must be provided"
         value = btn.GetValue()
         if value:
             self.timer.Start(100)
         else:
             self.timer.Stop()
 
-    def StopContinuousAcquisition(self):
+    def StopContinuousAcquisition(self) -> None:
         if self.btn_cont_point:
             self.btn_cont_point.SetValue(False)
             self.OnContinuousAcquisitionButton(btn=self.btn_cont_point)
 
-    def HandleContinuousAcquisition(self, evt):
+    def HandleContinuousAcquisition(self, evt: wx.TimerEvent) -> None:
         self.CreatePoint()
 
-    def CreatePoint(self, evt=None):
+    def CreatePoint(self, evt: Optional[wx.CommandEvent] = None) -> None:
         Publisher.sendMessage(
             "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
             data=None,
         )
 
-    def GetAcquiredPoints(self):
+    def GetAcquiredPoints(self) -> int:
         return int(self.txt_number.GetLabel())
 
-    def SetAcquiredPoints(self, num_points):
+    def SetAcquiredPoints(self, num_points: int) -> None:
         self.txt_number.SetLabel(str(num_points))
 
-    def PointRegisteredByRobot(self):
+    def PointRegisteredByRobot(self) -> None:
         # Increment the number of acquired points.
         num_points = self.GetAcquiredPoints()
         num_points += 1
@@ -6646,7 +6664,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         if self.robot.IsConnected() and num_points >= 3:
             self.btn_apply_reg.Enable(True)
 
-    def ResetPoints(self, evt):
+    def ResetPoints(self, evt: wx.CommandEvent) -> None:
         Publisher.sendMessage(
             "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
             data=None,
@@ -6661,7 +6679,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         self.matrix_tracker_to_robot = []
 
-    def ApplyRegistration(self, evt):
+    def ApplyRegistration(self, evt: wx.CommandEvent) -> None:
         self.StopContinuousAcquisition()
 
         Publisher.sendMessage(
@@ -6673,10 +6691,10 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         # TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def UpdateRobotTransformationMatrix(self, data):
+    def UpdateRobotTransformationMatrix(self, data: Any) -> None:
         self.matrix_tracker_to_robot = np.array(data)
 
-    def SaveRegistration(self, evt):
+    def SaveRegistration(self, evt: wx.CommandEvent) -> None:
         if self.matrix_tracker_to_robot is None:
             return
 
@@ -6696,7 +6714,7 @@ class RobotCoregistrationDialog(wx.Dialog):
             writer = csv.writer(file, delimiter="\t")
             writer.writerows(np.vstack(self.matrix_tracker_to_robot).tolist())
 
-    def LoadRegistration(self, evt):
+    def LoadRegistration(self, evt: wx.CommandEvent) -> None:
         # Open dialog to choose filename.
         filename = ShowLoadSaveDialog(
             message=_("Load robot transformation"),
@@ -6722,12 +6740,12 @@ class RobotCoregistrationDialog(wx.Dialog):
         if self.robot.IsConnected():
             self.btn_ok.Enable(True)
 
-    def GetValue(self):
+    def GetValue(self) -> Optional[Union[np.ndarray, List]]:
         return self.matrix_tracker_to_robot
 
 
 class ConfigurePolarisDialog(wx.Dialog):
-    def __init__(self, title=_("Configure NDI Polaris")):
+    def __init__(self, title: str = _("Configure NDI Polaris")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6741,14 +6759,14 @@ class ConfigurePolarisDialog(wx.Dialog):
         )
         self._init_gui()
 
-    def serial_ports(self):
+    def serial_ports(self) -> Tuple[List[str], List[int]]:
         """
         Lists serial port names and pre-select the description containing NDI
         """
         import serial.tools.list_ports
 
-        port_list = []
-        desc_list = []
+        port_list: List[str] = []
+        desc_list: List[str] = []
         ports = serial.tools.list_ports.comports()
         if sys.platform.startswith("win"):
             for port, desc, hwid in sorted(ports):
@@ -6765,7 +6783,7 @@ class ConfigurePolarisDialog(wx.Dialog):
 
         return port_list, port_selec
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
         com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
         row_com = wx.BoxSizer(wx.VERTICAL)
@@ -6863,10 +6881,10 @@ class ConfigurePolarisDialog(wx.Dialog):
 
         self.CenterOnParent()
 
-    def OnChoicePort(self, evt, ctrl):
+    def OnChoicePort(self, evt: wx.CommandEvent, ctrl: wx.ComboBox) -> None:
         self.btn_ok.Enable(True)
 
-    def GetValue(self):
+    def GetValue(self) -> Tuple[str, str, str, str]:
         fn_probe = self.dir_probe.GetPath()
         fn_ref = self.dir_ref.GetPath()
         fn_obj = self.dir_obj.GetPath()
@@ -6883,7 +6901,7 @@ class ConfigurePolarisDialog(wx.Dialog):
 
 
 class SetCOMPort(wx.Dialog):
-    def __init__(self, select_baud_rate, title=_("Select COM port")):
+    def __init__(self, select_baud_rate: bool, title: str = _("Select COM port")):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),
@@ -6895,7 +6913,7 @@ class SetCOMPort(wx.Dialog):
         self.select_baud_rate = select_baud_rate
         self._init_gui()
 
-    def serial_ports(self):
+    def serial_ports(self) -> List[str]:
         """
         Lists serial port names
         """
@@ -6907,7 +6925,7 @@ class SetCOMPort(wx.Dialog):
             raise OSError("Unsupported platform")
         return ports
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         # COM port selection
         ports = self.serial_ports()
         self.com_port_dropdown = wx.ComboBox(
@@ -6967,11 +6985,11 @@ class SetCOMPort(wx.Dialog):
 
         self.CenterOnParent()
 
-    def GetCOMPort(self):
+    def GetCOMPort(self) -> str:
         com_port = self.com_port_dropdown.GetString(self.com_port_dropdown.GetSelection())
         return com_port
 
-    def GetBaudRate(self):
+    def GetBaudRate(self) -> Optional[str]:
         if not self.select_baud_rate:
             return None
 
@@ -6980,11 +6998,11 @@ class SetCOMPort(wx.Dialog):
 
 
 class ManualWWWLDialog(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent: wx.Window):
         wx.Dialog.__init__(self, parent, -1, _("Set WW&WL manually"))
         self._init_gui()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         import invesalius.data.slice_ as slc
 
         ww = slc.Slice().window_width
@@ -7025,7 +7043,7 @@ class ManualWWWLDialog(wx.Dialog):
         self.Layout()
         self.Center()
 
-    def OnOK(self, evt):
+    def OnOK(self, evt: wx.CommandEvent) -> None:
         try:
             ww = int(self.txt_ww.GetValue())
             wl = int(self.txt_wl.GetValue())
@@ -7043,22 +7061,22 @@ class ManualWWWLDialog(wx.Dialog):
 
         self.Close()
 
-    def OnCancel(self, evt):
+    def OnCancel(self, evt: wx.CommandEvent) -> None:
         self.Close()
 
-    def OnClose(self, evt):
+    def OnClose(self, evt: wx.CloseEvent) -> None:
         self.Destroy()
 
 
 class SetSpacingDialog(wx.Dialog):
     def __init__(
         self,
-        parent,
-        sx,
-        sy,
-        sz,
-        title=_("Set spacing"),
-        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
+        parent: wx.Window,
+        sx: float,
+        sy: float,
+        sz: float,
+        title: str = _("Set spacing"),
+        style: int = wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
     ):
         wx.Dialog.__init__(self, parent, -1, title=title, style=style)
         self.spacing_original_x = sx
@@ -7068,7 +7086,7 @@ class SetSpacingDialog(wx.Dialog):
         self._init_gui()
         self._bind_events()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.txt_spacing_new_x = wx.TextCtrl(self, -1, value=str(self.spacing_original_x))
         self.txt_spacing_new_y = wx.TextCtrl(self, -1, value=str(self.spacing_original_y))
         self.txt_spacing_new_z = wx.TextCtrl(self, -1, value=str(self.spacing_original_z))
@@ -7110,7 +7128,7 @@ class SetSpacingDialog(wx.Dialog):
         main_sizer.Fit(self)
         self.Layout()
 
-    def _bind_events(self):
+    def _bind_events(self) -> None:
         self.txt_spacing_new_x.Bind(wx.EVT_KILL_FOCUS, self.OnSetNewSpacing)
         self.txt_spacing_new_y.Bind(wx.EVT_KILL_FOCUS, self.OnSetNewSpacing)
         self.txt_spacing_new_z.Bind(wx.EVT_KILL_FOCUS, self.OnSetNewSpacing)
@@ -7118,7 +7136,7 @@ class SetSpacingDialog(wx.Dialog):
         self.button_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         self.button_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
 
-    def OnSetNewSpacing(self, evt):
+    def OnSetNewSpacing(self, evt: wx.FocusEvent) -> None:
         try:
             new_spacing_x = float(self.txt_spacing_new_x.GetValue())
         except ValueError:
@@ -7136,7 +7154,7 @@ class SetSpacingDialog(wx.Dialog):
 
         self.set_new_spacing(new_spacing_x, new_spacing_y, new_spacing_z)
 
-    def set_new_spacing(self, sx, sy, sz):
+    def set_new_spacing(self, sx: float, sy: float, sz: float) -> None:
         self.spacing_new_x = sx
         self.spacing_new_y = sy
         self.spacing_new_z = sz
@@ -7145,7 +7163,7 @@ class SetSpacingDialog(wx.Dialog):
         self.txt_spacing_new_y.ChangeValue(str(sy))
         self.txt_spacing_new_z.ChangeValue(str(sz))
 
-    def OnOk(self, evt):
+    def OnOk(self, evt: wx.CommandEvent) -> None:
         if self.spacing_new_x == 0.0:
             self.txt_spacing_new_x.SetFocus()
         elif self.spacing_new_y == 0.0:
@@ -7155,7 +7173,7 @@ class SetSpacingDialog(wx.Dialog):
         else:
             self.EndModal(wx.ID_OK)
 
-    def OnCancel(self, evt):
+    def OnCancel(self, evt: wx.CommandEvent) -> None:
         self.EndModal(wx.ID_CANCEL)
 
 
@@ -7163,7 +7181,7 @@ class PeelsCreationDlg(wx.Dialog):
     FROM_MASK = 1
     FROM_FILES = 2
 
-    def __init__(self, parent, *args, **kwds):
+    def __init__(self, parent: wx.Window, *args, **kwds):
         wx.Dialog.__init__(self, parent, *args, **kwds)
 
         self.mask_path = ""
@@ -7173,7 +7191,7 @@ class PeelsCreationDlg(wx.Dialog):
         self._bind_events_wx()
         self.get_all_masks()
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         self.SetTitle(_("Create peel"))
 
         from_mask_stbox = self._from_mask_gui()
@@ -7203,7 +7221,7 @@ class PeelsCreationDlg(wx.Dialog):
 
         self.Layout()
 
-    def _from_mask_gui(self):
+    def _from_mask_gui(self) -> wx.StaticBoxSizer:
         mask_box = wx.StaticBox(self, -1, _("From mask"))
         from_mask_stbox = wx.StaticBoxSizer(mask_box, wx.VERTICAL)
 
@@ -7218,7 +7236,7 @@ class PeelsCreationDlg(wx.Dialog):
 
         return from_mask_stbox
 
-    def _from_files_gui(self):
+    def _from_files_gui(self) -> wx.StaticBoxSizer:
         session = ses.Session()
         last_directory = session.GetConfig("last_directory_%d" % const.ID_NIFTI_IMPORT, "")
 
@@ -7247,11 +7265,11 @@ class PeelsCreationDlg(wx.Dialog):
 
         return from_files_stbox
 
-    def _bind_events_wx(self):
+    def _bind_events_wx(self) -> None:
         self.from_mask_rb.Bind(wx.EVT_RADIOBUTTON, self.on_select_method)
         self.from_files_rb.Bind(wx.EVT_RADIOBUTTON, self.on_select_method)
 
-    def get_all_masks(self):
+    def get_all_masks(self) -> None:
         import invesalius.project as prj
 
         inv_proj = prj.Project()
@@ -7267,7 +7285,7 @@ class PeelsCreationDlg(wx.Dialog):
         self.cb_masks.SetValue(initial_value)
         self.btn_ok.Enable(enable)
 
-    def on_select_method(self, evt):
+    def on_select_method(self, evt: wx.CommandEvent) -> None:
         radio_selected = evt.GetEventObject()
         if radio_selected is self.from_mask_rb:
             self.method = self.FROM_MASK
@@ -7282,7 +7300,7 @@ class PeelsCreationDlg(wx.Dialog):
             else:
                 self.btn_ok.Enable(False)
 
-    def _set_files_callback(self, mask_path=""):
+    def _set_files_callback(self, mask_path: str = "") -> None:
         if mask_path:
             self.mask_path = mask_path
         if self.method == self.FROM_FILES:
@@ -7291,12 +7309,12 @@ class PeelsCreationDlg(wx.Dialog):
             else:
                 self.btn_ok.Enable(False)
 
-    def _check_if_files_exists(self):
-        return self.mask_path and os.path.exists(self.mask_path)
+    def _check_if_files_exists(self) -> bool:
+        return bool(self.mask_path and os.path.exists(self.mask_path))
 
 
 class FileSelectionDialog(wx.Dialog):
-    def __init__(self, title, default_dir, wildcard):
+    def __init__(self, title: str, default_dir: str, wildcard: str):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow())
         self.SetTitle(title)
 
@@ -7334,11 +7352,11 @@ class FileSelectionDialog(wx.Dialog):
 
         self.Layout()
 
-    def _from_files_gui(self):
+    def _from_files_gui(self) -> wx.StaticBoxSizer:
         files_box = wx.StaticBox(self, -1)
         from_files_static_box = wx.StaticBoxSizer(files_box, wx.VERTICAL)
 
-        def callback(evt):
+        def callback(evt) -> None:
             self._set_path(path=evt.GetString())
 
         file_browse = filebrowse.FileBrowseButton(
@@ -7360,18 +7378,24 @@ class FileSelectionDialog(wx.Dialog):
 
         return from_files_static_box
 
-    def _set_path(self, path=""):
+    def _set_path(self, path: str = "") -> None:
         self.path = path
 
-    def FitSizers(self):
+    def FitSizers(self) -> None:
         self._outer_sizer.Fit(self)
 
-    def GetPath(self):
+    def GetPath(self) -> str:
         return self.path
 
 
 class ProgressBarHandler(wx.ProgressDialog):
-    def __init__(self, parent, title="Progress Dialog", msg="Initializing...", max_value=None):
+    def __init__(
+        self,
+        parent: wx.Window,
+        title: str = "Progress Dialog",
+        msg: str = "Initializing...",
+        max_value: Optional[float] = None,
+    ):
         super().__init__(title, msg, parent=parent, style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE)
 
         self.max_value = max_value
@@ -7381,15 +7405,15 @@ class ProgressBarHandler(wx.ProgressDialog):
         # self.Show()
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         # Subscribe to pubsub messages
         Publisher.subscribe(self.update, "Update Progress bar")
         Publisher.subscribe(self.close, "Close Progress bar")
 
-    def was_cancelled(self):
+    def was_cancelled(self) -> bool:
         return super().WasCancelled()
 
-    def update(self, value, msg=None):
+    def update(self, value: float, msg: Optional[str] = None) -> None:
         if self.was_cancelled():
             return
 

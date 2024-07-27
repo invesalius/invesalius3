@@ -19,7 +19,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import sys
-from typing import Any, Iterable, List, Literal, Optional, Sequence, SupportsInt, Tuple, Union
+from typing import Iterable, List, Literal, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
 
@@ -106,7 +106,7 @@ class GradientSlider(wx.Panel):
         self.Bind(wx.EVT_MOTION, self.OnMotion)
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def OnLeaveWindow(self, evt: Union[wx.KeyEvent, wx.SetCursorEvent, wx.SplitterEvent]) -> None:
+    def OnLeaveWindow(self, evt: wx.MouseEvent) -> None:
         if self.selected == 0:
             return
 
@@ -137,7 +137,7 @@ class GradientSlider(wx.Panel):
         self._generate_event(myEVT_SLIDER_CHANGED)
         evt.Skip()
 
-    def OnPaint(self, evt: wx.Event) -> None:
+    def OnPaint(self, evt: wx.PaintEvent) -> None:
         # Where the magic happens. Here the controls are drawn.
         dc = wx.BufferedPaintDC(self)
         dc.Clear()
@@ -211,11 +211,11 @@ class GradientSlider(wx.Panel):
         # else:
         #     dc.DrawBitmap(slider, self.min_position, 0, True)
 
-    def OnEraseBackGround(self, evt: wx.Event) -> None:
+    def OnEraseBackGround(self, evt: wx.EraseEvent) -> None:
         # Only to avoid this widget to flick.
         pass
 
-    def OnMotion(self, evt: Union[wx.KeyEvent, wx.SetCursorEvent, wx.SplitterEvent]) -> None:
+    def OnMotion(self, evt: wx.MouseEvent) -> None:
         x = evt.GetX()
         w, h = self.GetSize()
 
@@ -283,7 +283,7 @@ class GradientSlider(wx.Panel):
             self.Refresh()
         evt.Skip()
 
-    def OnClick(self, evt: Union[wx.KeyEvent, wx.SetCursorEvent, wx.SplitterEvent]) -> None:
+    def OnClick(self, evt: wx.MouseEvent) -> None:
         x = evt.GetX()
         self.selected = self._is_over_what(x)
         if self.selected == 1:
@@ -294,13 +294,13 @@ class GradientSlider(wx.Panel):
             self._delta = x - self.min_position
         evt.Skip()
 
-    def OnRelease(self, evt: wx.Event) -> None:
+    def OnRelease(self, evt: wx.MouseEvent) -> None:
         if self.selected:
             self.selected = 0
             self._generate_event(myEVT_SLIDER_CHANGED)
         evt.Skip()
 
-    def OnSize(self, evt: wx.Event) -> None:
+    def OnSize(self, evt: wx.SizeEvent) -> None:
         self.CalculateControlPositions()
         self.Refresh()
         evt.Skip()
@@ -433,7 +433,7 @@ class GradientNoSlide(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OutPaint)
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackGround)
 
-    def OutPaint(self, evt: wx.Event) -> None:
+    def OutPaint(self, evt: wx.PaintEvent) -> None:
         # Where the magic happens. Here the controls are drawn.
         dc = wx.BufferedPaintDC(self)
         dc.Clear()
@@ -455,11 +455,11 @@ class GradientNoSlide(wx.Panel):
             gc.StrokePath(path)
             gc.FillPath(path)
 
-    def OnEraseBackGround(self, evt: wx.Event) -> None:
+    def OnEraseBackGround(self, evt: wx.EraseEvent) -> None:
         # Only to avoid this widget to flick.
         pass
 
-    def OnMotion(self, evt: Union[wx.KeyEvent, wx.SetCursorEvent, wx.SplitterEvent]) -> None:
+    def OnMotion(self, evt: wx.MouseEvent) -> None:
         x = evt.GetX()
         w, h = self.GetSize()
 
@@ -527,7 +527,7 @@ class GradientNoSlide(wx.Panel):
             self.Refresh()
         evt.Skip()
 
-    def OnClick(self, evt: Union[wx.KeyEvent, wx.SetCursorEvent, wx.SplitterEvent]) -> None:
+    def OnClick(self, evt: wx.MouseEvent) -> None:
         x = evt.GetX()
         self.selected = self._is_over_what(x)
         if self.selected == 1:
@@ -538,13 +538,13 @@ class GradientNoSlide(wx.Panel):
             self._delta = x - self.min_position
         evt.Skip()
 
-    def OnRelease(self, evt: wx.Event) -> None:
+    def OnRelease(self, evt: wx.MouseEvent) -> None:
         if self.selected:
             self.selected = 0
             self._generate_event(myEVT_SLIDER_CHANGED)
         evt.Skip()
 
-    def OnSize(self, evt: wx.Event) -> None:
+    def OnSize(self, evt: wx.SizeEvent) -> None:
         self.CalculateControlPositions()
         self.Refresh()
         evt.Skip()
@@ -709,14 +709,14 @@ class GradientCtrl(wx.Panel):
         self.spin_min.Bind(wx.EVT_SPINCTRL, self.OnMinMouseWheel)
         self.spin_max.Bind(wx.EVT_SPINCTRL, self.OnMaxMouseWheel)
 
-    def OnSlider(self, evt: Any) -> None:
+    def OnSlider(self, evt: SliderEvent) -> None:
         self.spin_min.SetValue(evt.minimun)
         self.spin_max.SetValue(evt.maximun)
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
-    def OnSliding(self, evt: Any) -> None:
+    def OnSliding(self, evt: SliderEvent) -> None:
         self.spin_min.SetValue(evt.minimun)
         self.spin_max.SetValue(evt.maximun)
         self.minimun = evt.minimun
@@ -753,7 +753,7 @@ class GradientCtrl(wx.Panel):
         if self.changed:
             self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
-    def OnMinMouseWheel(self, e: Any) -> None:
+    def OnMinMouseWheel(self, e: wx.SpinEvent) -> None:
         """
         When the user wheel the mouse over min texbox
         """
@@ -761,7 +761,7 @@ class GradientCtrl(wx.Panel):
         self.SetMinValue(v)
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
-    def OnMaxMouseWheel(self, e: Any) -> None:
+    def OnMaxMouseWheel(self, e: wx.SpinEvent) -> None:
         """
         When the user wheel the mouse over max texbox
         """
@@ -896,12 +896,12 @@ class GradientDisp(wx.Panel):
     def _bind_events_wx(self) -> None:
         return
 
-    def OnSlider(self, evt: Any) -> None:
+    def OnSlider(self, evt: SliderEvent) -> None:
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
-    def OnSliding(self, evt: Any) -> None:
+    def OnSliding(self, evt: SliderEvent) -> None:
         self.minimun = evt.minimun
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)

@@ -21166,7 +21166,7 @@ class EvtHandler(Object, Trackable):
     def Bind(
         self,
         event: PyEventBinder,
-        handler: Callable[[Any], None],
+        handler: Callable,
         source: EvtHandler | None = None,
         id: int = wx.ID_ANY,
         id2: int = wx.ID_ANY,
@@ -24302,7 +24302,7 @@ class SizerItem(Object):
         Get the userData item attribute.
         """
 
-    def GetWindow(self):
+    def GetWindow(self) -> Window:
         """
         GetWindow() -> Window
 
@@ -24998,7 +24998,7 @@ class Sizer(Object):
         Show or hide all items managed by the sizer.
         """
 
-    def AddMany(self, items: list[tuple[Any, ...] | Any]) -> None:
+    def AddMany(self, items: Iterable[tuple[Any, ...] | Any]) -> None:
         """
         :meth:`AddMany` is a convenience method for adding several items to a sizer
         at one time. Simply pass it a list of tuples, where each tuple
@@ -28271,7 +28271,7 @@ class Window(WindowBase):
         A synonym for Centre().
         """
 
-    def CenterOnParent(self, dir=BOTH):
+    def CenterOnParent(self, dir: int = BOTH) -> None:
         """
         CenterOnParent(dir=BOTH)
 
@@ -28530,7 +28530,7 @@ class Window(WindowBase):
         will be repainted.
         """
 
-    def Update(self):
+    def Update(self) -> None:
         """
         Update()
 
@@ -32377,7 +32377,7 @@ class ItemContainer(ItemContainerImmutable):
         Alias for :meth:`GetStrings`
         """
 
-    def SetItems(self, items):
+    def SetItems(self, items: Iterable[str]) -> None:
         """
         Alias for :meth:`Set`
         """
@@ -36107,7 +36107,7 @@ class ComboBox(Control, ItemContainer, TextEntry):
         Finds an item whose label matches the given string.
         """
 
-    def GetString(self, n):
+    def GetString(self, n: int) -> str:
         """
         GetString(n) -> String
 
@@ -42704,7 +42704,7 @@ class FilePickerCtrl(PickerBase):
         Creates this widget with the given parameters.
         """
 
-    def GetPath(self):
+    def GetPath(self) -> str:
         """
         GetPath() -> String
 
@@ -47316,7 +47316,7 @@ class ProgressDialog(GenericProgressDialog):
         constructor.
         """
 
-    def WasCancelled(self):
+    def WasCancelled(self) -> bool:
         """
         WasCancelled() -> bool
 
