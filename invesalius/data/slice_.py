@@ -93,7 +93,7 @@ class Slice(metaclass=utils.Singleton):
         self.blend_filter = None
         self.histogram: Optional[np.ndarray] = None
         self._matrix: Optional[np.ndarray] = None
-        self._affine: np.ndarray[Any, np.dtype[np.floating]] = np.identity(4)
+        self._affine: np.ndarray = np.identity(4)
         self._n_tracts = 0
         self._tracker = None
         self.aux_matrices = {}
@@ -155,11 +155,11 @@ class Slice(metaclass=utils.Singleton):
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     @property
-    def affine(self) -> np.ndarray[Any, np.dtype[np.floating]]:
+    def affine(self) -> np.ndarray:
         return self._affine
 
     @affine.setter
-    def affine(self, value: np.ndarray[Any, np.dtype[np.floating]]) -> None:
+    def affine(self, value: np.ndarray) -> None:
         self._affine = value
 
     @property
