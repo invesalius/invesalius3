@@ -32,7 +32,7 @@ AppContact=invesalius@cti.gov.br
 AppCopyright=Copyright 2007-2024 - Centro de Tecnologia da Informação Renato Archer
 DefaultDirName={pf}\InVesalius 3.1
 DefaultGroupName=InVesalius 3.1
-OutputDir=..\..\
+OutputDir=..\..\installer\
 OutputBaseFilename=invesalius-3.1.99998-win64
 SetupIconFile=..\..\icons\invesalius.ico
 Compression=lzma2/ultra64
@@ -53,7 +53,7 @@ Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:Ad
 [Files]
 Source: ..\\..\dist\app\InVesalius 3.1.exe; DestDir: {app}\dist; Flags: ignoreversion
 Source: ..\\..\dist\app\*; DestDir: {app}\dist; Flags: ignoreversion recursesubdirs createallsubdirs
-;Source: ..\\invesalius3\plugins\*; DestDir: {app}\dist\plugins; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ..\..\plugins\*; DestDir: {app}\dist\plugins; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\ai\*; DestDir: {app}\dist\ai; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\locale\*; DestDir: {app}\dist\locale; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\icons\*; DestDir: {app}\dist\icons; Flags: ignoreversion recursesubdirs createallsubdirs

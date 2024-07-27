@@ -3,7 +3,7 @@ name: generate bundles
 on: [push]
 
 jobs:
-  windows:
+  build-win64:
     name: run on windows
     runs-on: windows-latest
     
@@ -29,7 +29,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Compile InVesalius Cython parts
-        run: python3 setup.py build_ext --inplace
+        run: |
+              python3 setup.py build_ext --inplace
+              python3 setup.py build_plugins
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
@@ -62,6 +64,24 @@ jobs:
           path: ./bundle_tools/win/generate_installer.iss
           options: /O+
 
-      - name: Show files
-        run: |
-              dir
+      #- name: Upload installer
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    path: './installer/*.exe'
+      #    name: invesalius-3.1.99998-win64
+      #    retention-days: 1
+
+      - name: Update Nightly Release
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          name: 'InVesalius Nightly Release'
+          draft: false
+          prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
+          body: |
+            This is a nightly release of the Logseq desktop app.
+            It's unstable compared to the official releases, **use it with caution**!
+          files: |
+            ./installer/*.exe'
