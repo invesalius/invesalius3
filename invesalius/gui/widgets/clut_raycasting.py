@@ -20,7 +20,7 @@
 import bisect
 import math
 import os
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 import wx
@@ -348,7 +348,7 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def distance_from_point_line(
         self, p1: Tuple[float, float], p2: Tuple[float, float], pc: Tuple[float, float]
-    ) -> numpy.floating[Any]:
+    ) -> float:
         """
         Calculate the distance from point pc to a line formed by p1 and p2.
         """
@@ -362,7 +362,7 @@ class CLUTRaycastingWidget(wx.Panel):
         theta = math.acos(numpy.dot(A, B) / (len_A * len_B))
         # Using the sin from theta, calculate the adjacent leg, which is the
         # distance from the point to the line
-        distance = math.sin(theta) * len_A
+        distance = float(math.sin(theta) * len_A)
         return distance
 
     def _has_clicked_in_selection_curve(self, position: "SupportsGetItem[float]") -> Optional[int]:
