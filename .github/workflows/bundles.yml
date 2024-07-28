@@ -12,25 +12,20 @@ jobs:
         with:
           submodules: true
         
-      - name: Test1
-        id: t1
-        uses: Kaven-Universe/github-action-current-date-time@v1
-        with:
-          format: "yyyy-MM-dd"
-
       - name: Put current date into a variable
         run: |
           $NOW=& Get-Date -format yyyy-MM-dd
           echo "NOW=$NOW" >> $env:GITHUB_ENV
 
-      - name: date_test
-        env:
-          DATE: ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}
-        run: echo "teste $DATE"
-
+      - name: Put current commit hash in a variable
+        run: |
+          $COMMIT=$(git rev-parse --short "$GITHUB_SHA")
+          echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
+          
       - name: Output1
         run: |
-          echo "The time was ${{ env.NOW }}!"
+          echo "${{ env.NOW }}"
+          echo "Commit: ${{ env.COMMIT }}"
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
