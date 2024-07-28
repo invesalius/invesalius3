@@ -25,7 +25,7 @@ jobs:
 
       - name: Output1
         run: |
-          echo "The time was $DATE"
+          echo "The time was ${{ env.DATE }}!"
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
