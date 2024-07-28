@@ -14,8 +14,8 @@ jobs:
         
       - name: Put current date into a variable
         run: |
-          $NOW=& Get-Date -format yyyy-MM-dd
-          echo "NOW=$NOW" >> $env:GITHUB_ENV
+          $DATE=& Get-Date -format yyyy-MM-dd
+          echo "DATE=$DATE" >> $env:GITHUB_ENV
 
       - name: Put current commit hash in a variable
         run: |
@@ -24,7 +24,7 @@ jobs:
           
       - name: Output1
         run: |
-          echo "${{ env.NOW }}"
+          echo "${{ env.DATE }}"
           echo "Commit: ${{ env.COMMIT }}"
 
       - name: Setup VC++ 2022 (17.0)
@@ -79,7 +79,7 @@ jobs:
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
           path: ./bundle_tools/win/generate_installer.iss
-          options: /O+
+          options: /F invesalius-3.1.99998-nightly-win64 /O ..\..\installer\
 
       - name: Show files
         run: |
@@ -98,4 +98,4 @@ jobs:
           body: |
             This is a nightly release InVesalius.
             It's unstable compared to the official releases, **use it with caution**!
-          files: installer/invesalius-3.1.99998-win64.exe
+          files: installer/invesalius-3.1.99998-nightly-win64.exe
