@@ -2,9 +2,6 @@ name: generate bundles
 
 on: [push]
 
-#env:
-#  DATE: ${{ steps.date.outputs.date }}
-
 jobs:
   build-win64:
     name: run on windows
