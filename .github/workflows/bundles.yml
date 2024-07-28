@@ -21,7 +21,7 @@ jobs:
       # Use the output from the `t1` step
       - name: Output1
         run: |
-          echo "The time was ${{ steps.t1.outputs }}"
+          echo "The time was ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }"
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
