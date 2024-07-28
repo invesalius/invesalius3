@@ -12,11 +12,6 @@ jobs:
         with:
           submodules: true
 
-    - name: Teste
-      run: |
-        $NOW=& Get-Date -format yyyy-MM-dd
-        echo "NOW=$NOW" >> $env:GITHUB_ENV
-
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
