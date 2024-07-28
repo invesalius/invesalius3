@@ -53,7 +53,10 @@ Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:Ad
 [Files]
 Source: ..\..\dist\app\InVesalius 3.1.exe; DestDir: {app}\dist; Flags: ignoreversion
 Source: ..\..\dist\app\*; DestDir: {app}\dist; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: ..\..\plugins\*; DestDir: {app}\dist\plugins; Flags: ignoreversion recursesubdirs createallsubdirs
+
+;Only the plugin folder should remain in "_internal" after installation.
+Source: ..\..\plugins\*; DestDir: {app}\dist\_internal\plugins; Flags: ignoreversion recursesubdirs createallsubdirs
+
 Source: ..\..\ai\*; DestDir: {app}\dist\ai; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\locale\*; DestDir: {app}\dist\locale; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\icons\*; DestDir: {app}\dist\icons; Flags: ignoreversion recursesubdirs createallsubdirs
