@@ -79,7 +79,9 @@ jobs:
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
           path: ./bundle_tools/win/generate_installer.iss
-          options: /F invesalius-3.1.99998-nightly-win64 /O ..\..\installer\
+          options: | 
+                  /F invesalius-3.1.99998_nightly_win64 
+                  /O ..\..\installer\
 
       - name: Show files
         run: |
@@ -98,4 +100,4 @@ jobs:
           body: |
             This is a nightly release InVesalius.
             It's unstable compared to the official releases, **use it with caution**!
-          files: installer/invesalius-3.1.99998-nightly-win64.exe
+          files: installer/invesalius-3.1.99998_nightly_win64.exe
