@@ -18,6 +18,12 @@ jobs:
         with:
           format: "yyyy-MM-dd"
 
+        - name: Put current date into a variable
+          run: |
+            $NOW=& Get-Date -format yyyy-MM-dd
+            echo "NOW=$NOW" >> $env:GITHUB_ENV
+
+
       - name: date_test
         env:
           DATE: ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}
@@ -25,7 +31,7 @@ jobs:
 
       - name: Output1
         run: |
-          echo "The time was ${{ env.DATE }}!"
+          echo "The time was ${{ env.NOW }}!"
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
