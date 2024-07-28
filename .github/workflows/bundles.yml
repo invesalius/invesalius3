@@ -11,11 +11,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      
-      - name: Put current date into a variable
+        
+      - name: Test1
+        id: t1
+        uses: Kaven-Universe/github-action-current-date-time@v1
+        with:
+          format: "yyyy-MM-dd"
+
+      # Use the output from the `t1` step
+      - name: Output1
         run: |
-            $NOW=& Get-Date -format yyyy-MM-dd
-            echo "NOW=$NOW" >> $env:GITHUB_ENV
+          echo "The time was ${{ steps.t1.outputs }}"
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
