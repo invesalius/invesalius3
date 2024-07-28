@@ -18,11 +18,10 @@ jobs:
         with:
           format: "yyyy-MM-dd"
 
-        - name: Put current date into a variable
-          run: |
-            $NOW=& Get-Date -format yyyy-MM-dd
-            echo "NOW=$NOW" >> $env:GITHUB_ENV
-
+      - name: Put current date into a variable
+        run: |
+          $NOW=& Get-Date -format yyyy-MM-dd
+          echo "NOW=$NOW" >> $env:GITHUB_ENV
 
       - name: date_test
         env:
