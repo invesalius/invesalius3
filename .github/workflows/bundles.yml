@@ -23,7 +23,7 @@ jobs:
       #  run: |
       #    echo "The time was ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}"
 
-      - name date_test:
+      - name: date_test
         env: 
           DATE : ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}
 
