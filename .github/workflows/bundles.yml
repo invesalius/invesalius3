@@ -2,18 +2,23 @@ name: generate bundles
 
 on: [push]
 
+#env:
+#  DATE: ${{ steps.date.outputs.date }}
+
 jobs:
   build-win64:
     name: run on windows
     runs-on: windows-latest
 
     steps:
-      env:
-        DATE: ${{ steps.date.outputs.date }}
-
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+    - name: Teste
+      run: |
+        $NOW=& Get-Date -format yyyy-MM-dd
+        echo "NOW=$NOW" >> $env:GITHUB_ENV
 
       - name: showinfo
         uses: actions/hello-world-docker-action@master
