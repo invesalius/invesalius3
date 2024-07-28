@@ -2,15 +2,23 @@ name: generate bundles
 
 on: [push]
 
+env:
+  DATE: ${{ steps.date.outputs.date }}
+
 jobs:
   build-win64:
     name: run on windows
     runs-on: windows-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+      - name: showinfo
+        uses: actions/hello-world-docker-action@master
+        with:
+          who-to-greet: ==>>>$DATE
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
