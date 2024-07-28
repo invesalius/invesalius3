@@ -9,6 +9,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
@@ -31,7 +33,7 @@ jobs:
       - name: Compile InVesalius Cython parts
         run: |
               python3 setup.py build_ext --inplace
-              # python3 setup.py build_plugins
+              python3 setup.py build_plugins
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
@@ -63,13 +65,6 @@ jobs:
         with:
           path: ./bundle_tools/win/generate_installer.iss
           options: /O+
-
-      #- name: Upload installer
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    path: './installer/*.exe'
-      #    name: invesalius-3.1.99998-win64
-      #    retention-days: 1
 
       - name: Show files
         run: |
