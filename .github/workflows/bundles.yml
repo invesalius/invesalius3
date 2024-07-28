@@ -20,11 +20,6 @@ jobs:
         $NOW=& Get-Date -format yyyy-MM-dd
         echo "NOW=$NOW" >> $env:GITHUB_ENV
 
-      - name: showinfo
-        uses: actions/hello-world-docker-action@master
-        with:
-          who-to-greet: ==>>>$DATE
-
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
