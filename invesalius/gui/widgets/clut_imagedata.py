@@ -25,7 +25,7 @@ RADIUS = 5
 PADDING = 2
 
 
-@dataclass(order=True, slots=True)
+@dataclass(order=True)
 class Node:
     value: float
     colour: Tuple[int, int, int] = field(compare=False)
