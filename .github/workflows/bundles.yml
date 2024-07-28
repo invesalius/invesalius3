@@ -11,6 +11,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      
+      - name: Put current date into a variable
+        run: |
+            $NOW=& Get-Date -format yyyy-MM-dd
+            echo "NOW=$NOW" >> $env:GITHUB_ENV
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
