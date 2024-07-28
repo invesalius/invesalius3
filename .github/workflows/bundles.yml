@@ -18,20 +18,14 @@ jobs:
         with:
           format: "yyyy-MM-dd"
 
-      # Use the output from the `t1` step
-      #- name: Output1
-      #  run: |
-      #    echo "The time was ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}"
-
       - name: date_test
-        env: 
-          DATE : ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}
+        env:
+          DATE: ${{ steps.t1.outputs.year }}-${{ steps.t1.outputs.month }}-${{ steps.t1.outputs.day }}
+        run: echo "teste $DATE"
 
       - name: Output1
         run: |
           echo "The time was $DATE"
-
-
 
       - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
