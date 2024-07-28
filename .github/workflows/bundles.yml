@@ -19,7 +19,7 @@ jobs:
 
       - name: Put current commit hash in a variable
         run: |
-          $COMMIT=$(git rev-parse HEAD")
+          $COMMIT=$(git rev-parse HEAD)
           echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
           
       - name: Output1
