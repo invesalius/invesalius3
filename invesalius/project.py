@@ -404,7 +404,7 @@ class Project(metaclass=Singleton):
             "scalar_range": (int(image.min()), int(image.max())),
             "spacing": spacing,
             "affine": affine,
-            "image_fiducials": np.full([3, 3], np.nan),
+            "image_fiducials": np.full([3, 3], np.nan).tolist(),
             "matrix": matrix,
         }
 
